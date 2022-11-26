@@ -1,0 +1,71 @@
+{
+  "name": "eddo-app",
+  "version": "0.0.1",
+  "author": "Walter Rafelsberger <walter@rafelsberger.at>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/walterra/eddoapp"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18.11.0",
+    "pnpm": ">=7.1.0"
+  },
+  "dependencies": {
+    "d3-array": "^3.0.3",
+    "date-fns": "^2.29.3",
+    "events": "^3.3.0",
+    "flowbite": "^1.5.4",
+    "flowbite-react": "^0.3.5",
+    "lodash-es": "^4.17.21",
+    "pouchdb-browser": "^7.3.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.6.0"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.3.3",
+    "@tailwindcss/typography": "^0.5.8",
+    "@trivago/prettier-plugin-sort-imports": "^3.3.0",
+    "@types/d3-array": "^3.0.3",
+    "@types/lodash-es": "^4.17.6",
+    "@types/node": "^18.7.20",
+    "@types/pouchdb-browser": "^6.1.3",
+    "@types/prettier": "^2.7.1",
+    "@types/react": "^18.0.21",
+    "@types/react-dom": "^18.0.6",
+    "@typescript-eslint/eslint-plugin": "^5.38.0",
+    "@typescript-eslint/parser": "^5.38.0",
+    "@vitejs/plugin-react": "^2.1.0",
+    "autoprefixer": "^10.4.12",
+    "eslint": "^8.24.0",
+    "eslint-import-resolver-typescript": "^3.5.1",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-react": "^7.31.8",
+    "eslint-plugin-typescript-sort-keys": "^2.1.0",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.16",
+    "prettier": "^2.7.1",
+    "prettier-plugin-tailwindcss": "^0.1.13",
+    "tailwindcss": "^3.1.8",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.3",
+    "vite": "^3.1.3",
+    "vitest": "^0.23.4"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev",
+    "format": "prettier --write ./src",
+    "lint:format": "prettier --cache --check ./src",
+    "lint": "eslint --cache ./src",
+    "test": "npm-run-all --parallel tsc:check vitest:run lint lint:format",
+    "tsc:check": "tsc",
+    "vitest:run": "vitest run"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all"
+  ]
+}
