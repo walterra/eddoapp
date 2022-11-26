@@ -78,7 +78,11 @@ export const TodoListElement: FC<TodoListElementProps> = ({
   }, [active]);
 
   return (
-    <div className="mb-2 flex max-w-md transform flex-col rounded-lg bg-white px-1 py-1 shadow dark:bg-gray-800">
+    <div
+      className={`${
+        active ? 'border-2 border-sky-600 ' : ''
+      }mb-2 flex max-w-md transform flex-col rounded-lg bg-white px-1 py-1 shadow dark:bg-gray-800`}
+    >
       <div className="flex items-center justify-between">
         <div className="text-base text-gray-900 dark:text-white">
           <div className="flex space-x-1">
