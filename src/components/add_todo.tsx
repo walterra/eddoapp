@@ -1,13 +1,11 @@
 import { useState, type FC } from 'react';
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
-import { Button, Select, TextInput } from 'flowbite-react';
+import { Button, TextInput } from 'flowbite-react';
 import { add, sub, getISOWeek } from 'date-fns';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
 import { NewTodo } from '../types/todo';
-
-import { FormattedMessage } from './formatted_message';
 
 interface AddTodoProps {
   currentDate: Date;
