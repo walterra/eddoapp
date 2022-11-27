@@ -8,6 +8,7 @@ import { getActiveDuration } from '../utils/get_active_duration';
 import { getFormattedDuration } from '../utils/get_formatted_duration';
 
 import { FormattedMessage } from './formatted_message';
+import { TodoEditModal } from './todo_edit_modal';
 
 interface TodoListElementProps {
   active: boolean;
@@ -23,15 +24,18 @@ export const TodoListElement: FC<TodoListElementProps> = ({
   const db = usePouchDb();
 
   const [activeCounter, setActiveCounter] = useState(0);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   function toggleCheckbox(todo: Todo) {
     todo.completed = todo.completed === null ? new Date().toISOString() : null;
     db.put(todo);
   }
 
-  function deleteButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
+  function showEditModalButtonPressed(
+    event: React.FormEvent<HTMLButtonElement>,
+  ) {
     event.preventDefault();
-    db.remove(todo);
+    setShowEditModal(true);
   }
 
   function timeTrackingButtonPressed(
@@ -91,6 +95,8 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                 className="checkbox checkbox-xs text-gray-400"
                 color="gray"
                 defaultChecked={todo.completed !== null}
+                // random key to fix updating checkbox after editing
+                key={Math.random()}
                 onChange={() => toggleCheckbox(todo)}
               />
             </div>
@@ -131,13 +137,18 @@ export const TodoListElement: FC<TodoListElementProps> = ({
           )}
           <button
             className="rounded-lg py-0 pr-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
-            onClick={deleteButtonPressed}
+            onClick={showEditModalButtonPressed}
             type="button"
           >
             <BiEdit size="1.3em" />
           </button>
         </div>
       </div>
+      <TodoEditModal
+        onClose={() => setShowEditModal(false)}
+        show={showEditModal}
+        todo={todo}
+      />
     </div>
   );
 };

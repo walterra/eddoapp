@@ -88,7 +88,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
           startkey: currentStartOfWeek.toISOString(),
         },
       );
-      console.log('resp', newTodos);
 
       setOutdatedTodos(
         newTodos?.rows
