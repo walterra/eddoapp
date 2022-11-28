@@ -41,6 +41,12 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
         <form className="flex flex-col gap-4">
           <div>
             <div className="mb-2 block">
+              <Label htmlFor="eddoTodoCreationDate" value="Creation date" />
+            </div>
+            {editedTodo._id}
+          </div>
+          <div>
+            <div className="mb-2 block">
               <Label htmlFor="eddoTodoContext" value="Context" />
             </div>
             <TextInput
@@ -74,6 +80,43 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
               type="text"
               value={editedTodo.title}
             />
+          </div>
+          <div>
+            <div className="-mx-3 mb-2 flex flex-wrap items-end">
+              <div className="mb-6 grow px-3 md:mb-0">
+                <div className="mb-2 block">
+                  <Label htmlFor="eddoTodoDue" value="Due date" />
+                </div>
+                <TextInput
+                  aria-label="Due date"
+                  id="eddoTodoDue"
+                  onChange={(e) =>
+                    setEditedTodo((editedTodo) => ({
+                      ...editedTodo,
+                      due: e.target.value,
+                    }))
+                  }
+                  placeholder="todo"
+                  type="text"
+                  value={editedTodo.due}
+                />
+              </div>
+              <div className="mb-6 flex-none px-3 md:mb-0">
+                <Button
+                  color="gray"
+                  onClick={() =>
+                    setEditedTodo((editedTodo) => ({
+                      ...editedTodo,
+                      due: `${new Date().toISOString().split('T')[0]}T${
+                        editedTodo.due.split('T')[1]
+                      }`,
+                    }))
+                  }
+                >
+                  Set to today
+                </Button>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
