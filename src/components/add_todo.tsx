@@ -40,10 +40,11 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
       context,
       description: '',
       due: `${dueDate}T23:59:59.999Z`,
+      link: null,
       repeat: null,
       tags: [],
       title,
-      version: 'alpha2',
+      version: 'alpha3',
     };
 
     try {
