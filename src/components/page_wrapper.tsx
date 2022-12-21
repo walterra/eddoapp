@@ -22,7 +22,11 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
           {children}
         </main>
       </div>
-      <footer className="mx-3 mt-auto">walterra.dev/eddo</footer>
+      <footer className="mx-3 mt-auto">
+        <a href="https://eddoapp.com" rel="noreferrer" target="_BLANK">
+          eddoapp.com
+        </a>
+      </footer>
     </>
   );
 };
