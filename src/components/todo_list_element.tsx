@@ -106,7 +106,18 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                   todo.completed ? 'text-gray-400 line-through' : ''
                 }`}
               >
-                <FormattedMessage message={todo.title} />
+                {todo.link !== null ? (
+                  <a
+                    className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+                    href={todo.link}
+                    rel="noreferrer"
+                    target="_BLANK"
+                  >
+                    <FormattedMessage message={todo.title} />
+                  </a>
+                ) : (
+                  <FormattedMessage message={todo.title} />
+                )}
               </span>
             </div>
           </div>
@@ -118,7 +129,6 @@ export const TodoListElement: FC<TodoListElementProps> = ({
               className="text-xs text-gray-400"
               data-counter={activeCounter}
             >
-              {' '}
               {getFormattedDuration(activeDuration)}
             </span>
           )}

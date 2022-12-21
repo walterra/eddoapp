@@ -15,11 +15,12 @@ interface AddTodoProps {
 export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
   const db = usePouchDb();
 
-  const [context, setContext] = useState(CONTEXT_DEFAULT);
-  const [dueDate, setDueDate] = useState(
+  const [todoContext, setTodoContext] = useState(CONTEXT_DEFAULT);
+  const [todoDue, setTodoDue] = useState(
     new Date().toISOString().split('T')[0],
   );
-  const [todoInput, setTodoInput] = useState('');
+  const [todoLink, setTodoLink] = useState('');
+  const [todoTitle, setTodoTitle] = useState('');
 
   const currentCalendarWeek = getISOWeek(currentDate);
 
@@ -31,7 +32,12 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
     setCurrentDate(add(currentDate, { weeks: 1 }));
   }
 
-  async function addTodo(title: string, context: string, dueDate: string) {
+  async function addTodo(
+    title: string,
+    context: string,
+    dueDate: string,
+    link: string,
+  ) {
     const _id = new Date().toISOString();
     const todo: NewTodo = {
       _id,
@@ -40,10 +46,11 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
       context,
       description: '',
       due: `${dueDate}T23:59:59.999Z`,
+      link: link !== '' ? link : null,
       repeat: null,
       tags: [],
       title,
-      version: 'alpha2',
+      version: 'alpha3',
     };
 
     try {
@@ -55,8 +62,8 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
 
   function addTodoHandler(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (todoInput !== '') {
-      addTodo(todoInput, context, dueDate);
+    if (todoTitle !== '') {
+      addTodo(todoTitle, todoContext, todoDue, todoLink);
     }
   }
 
@@ -67,28 +74,37 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
           <div className="pr-3">
             <TextInput
               aria-label="Context"
-              onChange={(e) => setContext(e.target.value)}
+              onChange={(e) => setTodoContext(e.target.value)}
               placeholder="context"
               type="text"
-              value={context}
+              value={todoContext}
             />
           </div>
           <div className="pr-3">
             <TextInput
               aria-label="New todo"
-              onChange={(e) => setTodoInput(e.target.value)}
+              onChange={(e) => setTodoTitle(e.target.value)}
               placeholder="todo"
               type="text"
-              value={todoInput}
+              value={todoTitle}
+            />
+          </div>
+          <div className="pr-3">
+            <TextInput
+              aria-label="Link"
+              onChange={(e) => setTodoLink(e.target.value)}
+              placeholder="url"
+              type="text"
+              value={todoLink}
             />
           </div>
           <div className="pr-3">
             <TextInput
               aria-label="Due date"
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={(e) => setTodoDue(e.target.value)}
               placeholder="..."
               type="text"
-              value={dueDate}
+              value={todoDue}
             />
           </div>
           <div className="pr-3">
