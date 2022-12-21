@@ -3,6 +3,7 @@ import { Button, Checkbox, Label, Modal, TextInput } from 'flowbite-react';
 
 import { usePouchDb } from '../pouch_db';
 import { type Todo } from '../types/todo';
+import { getRepeatTodo } from '../utils/get_repeat_todo';
 
 interface TodoEditModalProps {
   onClose: () => void;
@@ -31,6 +32,14 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
   function editSaveButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
     db.put(editedTodo);
+
+    if (
+      typeof editedTodo.repeat === 'number' &&
+      editedTodo.completed &&
+      todo.completed !== editedTodo.completed
+    ) {
+      db.put(getRepeatTodo(editedTodo));
+    }
     onClose();
   }
 
@@ -135,6 +144,25 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
                 </Button>
               </div>
             </div>
+          </div>
+          <div>
+            <div className="mb-2 block">
+              <Label htmlFor="eddoTodoRepeat" value="Repeat in X days" />
+            </div>
+            <TextInput
+              aria-label="Repeat"
+              id="eddoTodoRepeat"
+              onChange={(e) =>
+                setEditedTodo((editedTodo) => ({
+                  ...editedTodo,
+                  repeat:
+                    e.target.value !== '' ? parseInt(e.target.value, 10) : null,
+                }))
+              }
+              placeholder="days"
+              type="text"
+              value={editedTodo.repeat ?? ''}
+            />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox

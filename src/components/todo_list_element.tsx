@@ -6,6 +6,7 @@ import { usePouchDb } from '../pouch_db';
 import { type Todo } from '../types/todo';
 import { getActiveDuration } from '../utils/get_active_duration';
 import { getFormattedDuration } from '../utils/get_formatted_duration';
+import { getRepeatTodo } from '../utils/get_repeat_todo';
 
 import { FormattedMessage } from './formatted_message';
 import { TodoEditModal } from './todo_edit_modal';
@@ -29,6 +30,11 @@ export const TodoListElement: FC<TodoListElementProps> = ({
   function toggleCheckbox(todo: Todo) {
     todo.completed = todo.completed === null ? new Date().toISOString() : null;
     db.put(todo);
+
+    // check if we need to create a new todo based on repeat setting
+    if (typeof todo.repeat === 'number' && todo.completed) {
+      db.put(getRepeatTodo(todo));
+    }
   }
 
   function showEditModalButtonPressed(
