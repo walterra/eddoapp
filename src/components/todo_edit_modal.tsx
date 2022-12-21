@@ -82,6 +82,24 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
             />
           </div>
           <div>
+            <div className="mb-2 block">
+              <Label htmlFor="eddoTodoLink" value="Link" />
+            </div>
+            <TextInput
+              aria-label="Link"
+              id="eddoTodoLink"
+              onChange={(e) =>
+                setEditedTodo((editedTodo) => ({
+                  ...editedTodo,
+                  link: e.target.value !== '' ? e.target.value : null,
+                }))
+              }
+              placeholder="url"
+              type="text"
+              value={editedTodo.link ?? ''}
+            />
+          </div>
+          <div>
             <div className="-mx-3 mb-2 flex flex-wrap items-end">
               <div className="mb-6 grow px-3 md:mb-0">
                 <div className="mb-2 block">
