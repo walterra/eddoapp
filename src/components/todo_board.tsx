@@ -178,12 +178,21 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
                             ('' + a.title).localeCompare(b.title),
                           );
 
+                          let displayDate = '';
+
+                          try {
+                            displayDate = format(
+                              new Date(todoDate),
+                              'yyyy-MM-dd',
+                            );
+                          } catch (e) {
+                            displayDate = format(new Date(), 'yyyy-MM-dd');
+                          }
+
                           return (
                             <div key={`${context}_${todoDate}`}>
                               <div className="flex items-center justify-between">
-                                <div className="mx-1">
-                                  {format(new Date(todoDate), 'yyyy-MM-dd')}
-                                </div>
+                                <div className="mx-1">{displayDate}</div>
                                 <div className="mx-1 text-xs text-gray-400">
                                   {getFormattedDurationForTodos(todosForDate)}
                                 </div>
