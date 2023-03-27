@@ -1,7 +1,7 @@
 import { useState, type FC } from 'react';
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 import { Button, TextInput } from 'flowbite-react';
-import { add, sub, getISOWeek } from 'date-fns';
+import { add, format, sub, getISOWeek } from 'date-fns';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
@@ -38,6 +38,15 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
     dueDate: string,
     link: string,
   ) {
+    // sanity check if due date is parsable
+    const due = `${dueDate}T23:59:59.999Z`;
+    try {
+      format(new Date(due), 'yyyy-MM-dd');
+    } catch (e) {
+      console.error('failed to parse due date', due);
+      return;
+    }
+
     const _id = new Date().toISOString();
     const todo: NewTodo = {
       _id,
@@ -45,7 +54,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
       completed: null,
       context,
       description: '',
-      due: `${dueDate}T23:59:59.999Z`,
+      due,
       link: link !== '' ? link : null,
       repeat: null,
       tags: [],
