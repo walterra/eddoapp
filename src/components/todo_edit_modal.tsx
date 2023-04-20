@@ -4,6 +4,8 @@ import { Button, Checkbox, Label, Modal, TextInput } from 'flowbite-react';
 import { usePouchDb } from '../pouch_db';
 import { type Todo } from '../types/todo';
 import { getRepeatTodo } from '../utils/get_repeat_todo';
+import { getActiveDuration } from '../utils/get_active_duration';
+import { getFormattedDuration } from '../utils/get_formatted_duration';
 
 interface TodoEditModalProps {
   onClose: () => void;
@@ -42,6 +44,17 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
     }
     onClose();
   }
+
+  const activeArray = Object.entries(editedTodo.active);
+
+  const isActiveValid = activeArray.reduce((valid, [from, to]) => {
+    try {
+      getFormattedDuration(getActiveDuration({ [from]: to }));
+      return valid;
+    } catch (e) {
+      return false;
+    }
+  }, true);
 
   return (
     <Modal onClose={onClose} show={show}>
@@ -184,12 +197,66 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
             />
             <Label htmlFor="eddoTodoComplete">Completed</Label>
           </div>
+          <div>
+            <div className="mb-2 block">
+              <Label htmlFor="" value="Time tracking" />
+            </div>
+            {activeArray.map(([from, to], index) => (
+              <div className="-mx-3 mb-2 flex flex-wrap items-end" key={index}>
+                <div className="mb-6 grow px-3 md:mb-0">
+                  <TextInput
+                    aria-label="From"
+                    id={`eddoTodoFrom-${index}`}
+                    onChange={(e) => {
+                      activeArray[index] = [e.target.value, to];
+                      setEditedTodo((editedTodo) => ({
+                        ...editedTodo,
+                        active: Object.fromEntries(activeArray),
+                      }));
+                    }}
+                    placeholder="from"
+                    type="text"
+                    value={from ?? ''}
+                  />
+                </div>
+                <div className="mb-6 grow px-3 md:mb-0">
+                  <TextInput
+                    aria-label="To"
+                    id={`eddoTodoTo-${index}`}
+                    onChange={(e) => {
+                      activeArray[index] = [from, e.target.value];
+                      setEditedTodo((editedTodo) => ({
+                        ...editedTodo,
+                        active: Object.fromEntries(activeArray),
+                      }));
+                    }}
+                    placeholder="to"
+                    type="text"
+                    value={to ?? ''}
+                  />
+                </div>
+                <div className="mb-6 grow px-3 md:mb-0">
+                  {(function () {
+                    try {
+                      return getFormattedDuration(
+                        getActiveDuration({ [from]: to }),
+                      );
+                    } catch (e) {
+                      return 'n/a';
+                    }
+                  })()}
+                </div>
+              </div>
+            ))}
+          </div>
         </form>
       </Modal.Body>
       <Modal.Footer>
         <div className="flex w-full justify-between">
           <div>
-            <Button onClick={editSaveButtonPressed}>Save</Button>
+            <Button disabled={!isActiveValid} onClick={editSaveButtonPressed}>
+              Save
+            </Button>
           </div>
           <div>
             <Button color="failure" onClick={deleteButtonPressed}>
