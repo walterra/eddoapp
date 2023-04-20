@@ -75,7 +75,7 @@ module.exports = {
     'space-before-blocks': 2,
     'space-before-function-paren': [
       2,
-      { anonymous: 'never', asyncArrow: 'always', named: 'never' },
+      { anonymous: 'always', asyncArrow: 'always', named: 'never' },
     ],
     'typescript-sort-keys/interface': 2,
     'typescript-sort-keys/string-enum': 2,
