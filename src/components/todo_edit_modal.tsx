@@ -4,6 +4,8 @@ import { Button, Checkbox, Label, Modal, TextInput } from 'flowbite-react';
 import { usePouchDb } from '../pouch_db';
 import { type Todo } from '../types/todo';
 import { getRepeatTodo } from '../utils/get_repeat_todo';
+import { getActiveDuration } from '../utils/get_active_duration';
+import { getFormattedDuration } from '../utils/get_formatted_duration';
 
 interface TodoEditModalProps {
   onClose: () => void;
@@ -183,6 +185,23 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
               }
             />
             <Label htmlFor="eddoTodoComplete">Completed</Label>
+          </div>
+          <div>
+            <div className="mb-2 block">
+              <Label htmlFor="" value="Time tracking" />
+            </div>
+            {Object.entries(editedTodo.active).map(([from, to]) => (
+              <div
+                className="-mx-3 mb-2 flex flex-wrap items-end"
+                key={`${from}-${to}`}
+              >
+                <div className="mb-6 grow px-3 md:mb-0">{from}</div>
+                <div className="mb-6 grow px-3 md:mb-0">{to}</div>
+                <div className="mb-6 grow px-3 md:mb-0">
+                  {getFormattedDuration(getActiveDuration({ [from]: to }))}
+                </div>
+              </div>
+            ))}
           </div>
         </form>
       </Modal.Body>
