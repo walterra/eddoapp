@@ -17,7 +17,7 @@ const shortEnLocale = {
 };
 
 export function getFormattedDuration(duration: number): string {
-  const format = ['hours', 'minutes', 'seconds'];
+  const format = ['days', 'hours', 'minutes', 'seconds'];
 
   if (duration > 60000) {
     format.pop();

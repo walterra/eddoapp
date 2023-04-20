@@ -1,4 +1,4 @@
-import { Todo } from '../types/todo';
+import type { Todo } from '../types/todo';
 
 export function getActiveDuration(active: Todo['active']): number {
   return Object.entries(active).reduce((p, c) => {
