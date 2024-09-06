@@ -2,7 +2,7 @@ import { isTodoAlpha1 } from './todo_alpha1';
 import { isTodoAlpha2, migrateToAlpha2 } from './todo_alpha2';
 import { isTodoAlpha3, migrateToAlpha3, type TodoAlpha3 } from './todo_alpha3';
 
-export function isLatestVersion(todo: unknown): boolean {
+export function isLatestVersion(todo: unknown): todo is TodoAlpha3 {
   return isTodoAlpha3(todo);
 }
 

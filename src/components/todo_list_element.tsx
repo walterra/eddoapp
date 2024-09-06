@@ -13,12 +13,16 @@ import { TodoEditModal } from './todo_edit_modal';
 
 interface TodoListElementProps {
   active: boolean;
+  activeDate: string;
+  activityOnly: boolean;
   timeTrackingActive: boolean;
   todo: Todo;
 }
 
 export const TodoListElement: FC<TodoListElementProps> = ({
   active,
+  activeDate,
+  activityOnly,
   timeTrackingActive,
   todo,
 }) => {
@@ -68,7 +72,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     (d) => d === null,
   );
 
-  const activeDuration = getActiveDuration(todo.active);
+  const activeDuration = getActiveDuration(todo.active, activeDate);
 
   function updateActiveCounter() {
     setTimeout(() => {
@@ -97,22 +101,24 @@ export const TodoListElement: FC<TodoListElementProps> = ({
         <div className="text-base text-gray-900 dark:text-white">
           <div className="flex space-x-1">
             <div className="mx-1">
-              <Checkbox
-                className="checkbox checkbox-xs text-gray-400"
-                color="gray"
-                defaultChecked={todo.completed !== null}
-                // random key to fix updating checkbox after editing
-                key={Math.random()}
-                onChange={() => toggleCheckbox(todo)}
-              />
+              {!activityOnly && (
+                <Checkbox
+                  className="checkbox checkbox-xs text-gray-400"
+                  color="gray"
+                  defaultChecked={todo.completed !== null}
+                  // random key to fix updating checkbox after editing
+                  key={Math.random()}
+                  onChange={() => toggleCheckbox(todo)}
+                />
+              )}
             </div>
             <div>
               <span
-                className={`text-sm ${
-                  todo.completed ? 'text-gray-400 line-through' : ''
-                }`}
+                className={`text-sm${
+                  todo.completed || activityOnly ? ' text-gray-400' : ''
+                }${todo.completed ? ' line-through' : ''}`}
               >
-                {todo.link !== null ? (
+                {todo.link !== null && !activityOnly ? (
                   <a
                     className="font-medium text-blue-600 hover:underline dark:text-blue-500"
                     href={todo.link}
@@ -138,26 +144,30 @@ export const TodoListElement: FC<TodoListElementProps> = ({
               {getFormattedDuration(activeDuration)}
             </span>
           )}
-          {(!timeTrackingActive || active) && (
-            <button
-              className="rounded-lg py-0 pl-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
-              onClick={timeTrackingButtonPressed}
-              type="button"
-            >
-              {thisButtonTimeTrackingActive ? (
-                <BiPauseCircle size="1.3em" />
-              ) : (
-                <BiPlayCircle size="1.3em" />
+          {!activityOnly && (
+            <>
+              {(!timeTrackingActive || active) && (
+                <button
+                  className="rounded-lg py-0 pl-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                  onClick={timeTrackingButtonPressed}
+                  type="button"
+                >
+                  {thisButtonTimeTrackingActive ? (
+                    <BiPauseCircle size="1.3em" />
+                  ) : (
+                    <BiPlayCircle size="1.3em" />
+                  )}
+                </button>
               )}
-            </button>
+              <button
+                className="rounded-lg py-0 pr-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                onClick={showEditModalButtonPressed}
+                type="button"
+              >
+                <BiEdit size="1.3em" />
+              </button>
+            </>
           )}
-          <button
-            className="rounded-lg py-0 pr-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
-            onClick={showEditModalButtonPressed}
-            type="button"
-          >
-            <BiEdit size="1.3em" />
-          </button>
         </div>
       </div>
       <TodoEditModal
