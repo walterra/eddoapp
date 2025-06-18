@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest';
-
 import { getActiveDuration } from './get_active_duration';
+import { describe, expect, it } from 'vitest';
 
 describe('getActiveDuration', () => {
   it('gets 1m active duration of a single time logging entry', () => {

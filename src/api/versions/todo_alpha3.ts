@@ -1,6 +1,5 @@
-import isNil from 'lodash-es/isNil';
-
 import { type TodoAlpha2 } from './todo_alpha2';
+import isNil from 'lodash-es/isNil';
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 

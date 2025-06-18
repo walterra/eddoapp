@@ -1,15 +1,13 @@
-import { useEffect, useState, type FC } from 'react';
-import { BiPauseCircle, BiPlayCircle, BiEdit } from 'react-icons/bi';
-import { Checkbox } from 'flowbite-react';
-
 import { usePouchDb } from '../pouch_db';
 import { type Todo } from '../types/todo';
 import { getActiveDuration } from '../utils/get_active_duration';
 import { getFormattedDuration } from '../utils/get_formatted_duration';
 import { getRepeatTodo } from '../utils/get_repeat_todo';
-
 import { FormattedMessage } from './formatted_message';
 import { TodoEditModal } from './todo_edit_modal';
+import { Checkbox } from 'flowbite-react';
+import { useEffect, useState, type FC } from 'react';
+import { BiPauseCircle, BiPlayCircle, BiEdit } from 'react-icons/bi';
 
 interface TodoListElementProps {
   active: boolean;
@@ -94,7 +92,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
   return (
     <div
       className={`${
-        active ? 'border-2 border-sky-600 ' : ''
+        active ? 'border-2 border-sky-600' : ''
       }mb-2 flex max-w-md transform flex-col rounded-lg bg-white px-1 py-1 shadow dark:bg-gray-800`}
     >
       <div className="flex items-center justify-between">
@@ -115,8 +113,8 @@ export const TodoListElement: FC<TodoListElementProps> = ({
             <div>
               <span
                 className={`text-sm${
-                  todo.completed || activityOnly ? ' text-gray-400' : ''
-                }${todo.completed ? ' line-through' : ''}`}
+                  todo.completed || activityOnly ? 'text-gray-400' : ''
+                }${todo.completed ? 'line-through' : ''}`}
               >
                 {todo.link !== null && !activityOnly ? (
                   <a

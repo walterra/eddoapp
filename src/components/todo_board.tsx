@@ -1,18 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type FC } from 'react';
-import { group } from 'd3-array';
-import { add, format, getISOWeek, startOfWeek, endOfWeek } from 'date-fns';
-import { uniqBy, isEqual } from 'lodash-es';
-
+import { isLatestVersion, migrateTodo } from '../api/versions/migrate';
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
-
-import { isLatestVersion, migrateTodo } from '../api/versions/migrate';
 import { type Activity } from '../types/activity';
 import { type Todo } from '../types/todo';
 import { getFormattedDurationForActivities } from '../utils/get_formatted_duration';
-
 import { FormattedMessage } from './formatted_message';
 import { TodoListElement } from './todo_list_element';
+import { group } from 'd3-array';
+import { add, format, getISOWeek, startOfWeek, endOfWeek } from 'date-fns';
+import { uniqBy, isEqual } from 'lodash-es';
+import { useEffect, useMemo, useRef, useState, type FC } from 'react';
 
 interface TodoBoardProps {
   currentDate: Date;

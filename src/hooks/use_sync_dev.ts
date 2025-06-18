@@ -1,7 +1,6 @@
+import { usePouchDb } from '../pouch_db';
 import PouchDB from 'pouchdb-browser';
 import { useEffect } from 'react';
-
-import { usePouchDb } from '../pouch_db';
 
 export const useSyncDev = () => {
   const db = usePouchDb();

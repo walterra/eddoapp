@@ -1,10 +1,9 @@
-import { formatDuration, intervalToDuration } from 'date-fns';
-
 import { type Activity } from '../types/activity';
 import { type Todo } from '../types/todo';
 import { getActiveDuration } from './get_active_duration';
 import { getActiveRecordForActivities } from './get_active_record_for_activities';
 import { getActiveRecordForTodos } from './get_active_record_for_todos';
+import { formatDuration, intervalToDuration } from 'date-fns';
 
 const formatDistanceLocale = {
   xDays: '{{count}}d',
