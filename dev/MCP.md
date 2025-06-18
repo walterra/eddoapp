@@ -1,10 +1,10 @@
 # MCP Server for Eddo
 
-This document outlines the implementation of a Model Context Protocol (MCP) server for the Eddo GTD app using FastMCP, enabling LLM applications like Claude Code to interact with todos programmatically.
+This document outlines the implementation of a Model Context Protocol (MCP) server integrated into the existing Eddo GTD web app using FastMCP, enabling LLM applications like Claude Code to interact with todos programmatically.
 
 ## Overview
 
-The MCP server will expose the same todo management capabilities available through the UI, allowing LLMs to:
+The MCP server will be integrated directly into the existing Vite/React application, exposing the same todo management capabilities available through the UI, allowing LLMs to:
 - Create, read, update, and delete todos
 - Manage time tracking (start/stop)
 - Handle repeating todos
@@ -13,33 +13,33 @@ The MCP server will expose the same todo management capabilities available throu
 ## Architecture
 
 ```
-LLM Client (Claude Code) <--MCP--> FastMCP Server <---> PouchDB
+LLM Client (Claude Code) <--MCP--> Vite Dev Server + FastMCP <---> PouchDB (Browser)
 ```
+
+The MCP server will run alongside the Vite development server, sharing the same PouchDB database instance used by the React frontend.
 
 ## Implementation Plan
 
-### 1. Project Setup
+### 1. Add Dependencies to Existing Project
 
 ```bash
-# Create MCP server directory
-mkdir eddo-mcp-server
-cd eddo-mcp-server
-
-# Initialize and install dependencies
-npm init -y
-npm install fastmcp zod pouchdb pouchdb-find @types/pouchdb
-npm install -D typescript @types/node tsx
+# Add MCP server dependencies to existing package.json
+pnpm add fastmcp zod
+pnpm add -D @types/node tsx
 ```
 
-### 2. Server Configuration
+### 2. Create MCP Server Module
+
+Create a new server module that can be run alongside the Vite dev server:
 
 ```typescript
-// server.ts
+// src/mcp-server.ts
 import { FastMCP } from 'fastmcp';
 import { z } from 'zod';
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 
+// Use the same PouchDB setup as the main app
 PouchDB.plugin(PouchDBFind);
 
 const server = new FastMCP({
@@ -48,7 +48,7 @@ const server = new FastMCP({
   description: 'MCP server for Eddo GTD todo management'
 });
 
-// Initialize PouchDB
+// Initialize PouchDB with same database name as main app
 const db = new PouchDB('eddo-todos');
 ```
 
@@ -300,47 +300,102 @@ server.addTool({
 });
 ```
 
-### 4. Start the Server
+### 4. Complete the MCP Server
 
 ```typescript
-// server.ts (continued)
+// src/mcp-server.ts (continued)
+
+// Start the server on a different port than Vite
 server.start({
   transportType: 'httpStream',
   httpStream: {
-    port: 3000,
+    port: 3001, // Different from Vite dev server (5173)
     corsOptions: {
-      origin: '*', // Configure appropriately for production
+      origin: 'http://localhost:5173', // Allow Vite dev server
       credentials: true
     }
   }
 });
 
-console.log('Eddo MCP server running on port 3000');
+console.log('Eddo MCP server running on port 3001');
+console.log('Connect with: http://localhost:3001/mcp');
 ```
 
-### 5. Client Configuration for Claude Code
+### 5. Create Standalone MCP Server Script
 
-To use the MCP server with Claude Code, add to your Claude Desktop configuration:
+Create a separate script to run the MCP server:
 
+```typescript
+// scripts/start-mcp.ts
+import '../src/mcp-server.js';
+```
+
+### 6. Update Package.json Scripts
+
+Add new scripts to run the MCP server alongside the development server:
+
+```json
+{
+  "scripts": {
+    "dev": "vite dev",
+    "dev:mcp": "tsx scripts/start-mcp.ts",
+    "dev:all": "npm-run-all --parallel dev dev:mcp",
+    "build": "vite build",
+    "build:mcp": "tsc src/mcp-server.ts --outDir dist-mcp --target es2020 --module commonjs"
+  }
+}
+```
+
+### 7. Alternative: Vite Plugin Integration
+
+For tighter integration, you could create a Vite plugin that starts the MCP server:
+
+```typescript
+// vite.config.ts
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+// Custom plugin to start MCP server during development
+function mcpServerPlugin() {
+  return {
+    name: 'mcp-server',
+    configureServer() {
+      // Import and start MCP server when Vite dev server starts
+      import('./src/mcp-server.js');
+    }
+  };
+}
+
+export default defineConfig({
+  plugins: [
+    react(),
+    mcpServerPlugin() // Add MCP server plugin
+  ]
+});
+```
+
+### 8. Client Configuration for Claude Code
+
+#### Option A: HTTP Streaming (Recommended)
 ```json
 {
   "mcpServers": {
     "eddo": {
-      "command": "node",
-      "args": ["/path/to/eddo-mcp-server/dist/server.js"],
-      "env": {}
+      "url": "http://localhost:3001/mcp"
     }
   }
 }
 ```
 
-Or for HTTP streaming:
-
+#### Option B: Stdio Transport
 ```json
 {
   "mcpServers": {
     "eddo": {
-      "url": "http://localhost:3000/mcp"
+      "command": "tsx",
+      "args": ["scripts/start-mcp.ts"],
+      "cwd": "/path/to/eddoapp",
+      "env": {}
     }
   }
 }
@@ -356,27 +411,68 @@ Or for HTTP streaming:
 
 ## Development Workflow
 
-1. **TypeScript Build**:
-   ```bash
-   npx tsc --init
-   # Configure tsconfig.json for ES modules and Node.js
-   npx tsc
+### Method 1: Separate Processes (Recommended)
+```bash
+# Terminal 1: Start Vite dev server
+pnpm dev
+
+# Terminal 2: Start MCP server
+pnpm dev:mcp
+
+# Or run both simultaneously
+pnpm dev:all
+```
+
+### Method 2: Vite Plugin (Integrated)
+```bash
+# Single command starts both servers
+pnpm dev
+```
+
+### Database Considerations
+
+Since both the React app and MCP server use the same PouchDB database (`'eddo-todos'`), they will share the same data. However, consider:
+
+1. **Browser vs Node.js PouchDB**: 
+   - React app uses `pouchdb-browser` (IndexedDB)
+   - MCP server would need `pouchdb-node` (LevelDB) or connect to browser storage
+   
+2. **Shared Storage Solution**:
+   ```typescript
+   // Option 1: MCP server uses filesystem storage
+   const db = new PouchDB('./eddo-todos-mcp');
+   
+   // Option 2: Both connect to CouchDB instance
+   const db = new PouchDB('http://localhost:5984/eddo-todos');
    ```
 
-2. **Development Mode**:
-   ```bash
-   npx tsx watch server.ts
+3. **Data Sync**: Implement sync between browser and MCP server databases:
+   ```typescript
+   // In MCP server
+   const browserDB = new PouchDB('http://localhost:5984/eddo-todos');
+   const serverDB = new PouchDB('./eddo-todos-mcp');
+   
+   // Bidirectional sync
+   serverDB.sync(browserDB, { live: true, retry: true });
    ```
 
-3. **Testing with Claude Code**:
-   - Start the MCP server
-   - Configure Claude Desktop
-   - Test commands like:
-     ```
-     Create a new todo "Review MCP implementation" for tomorrow in work context
-     List all incomplete todos for this week
-     Start time tracking for todo with ID xxx
-     ```
+### Testing with Claude Code
+
+1. **Start both servers**:
+   ```bash
+   pnpm dev:all
+   ```
+
+2. **Configure Claude Desktop** with the MCP server URL
+
+3. **Test commands**:
+   ```
+   Create a new todo "Review MCP implementation" for tomorrow in work context
+   List all incomplete todos for this week
+   Start time tracking for todo with ID xxx
+   ```
+
+4. **Verify data consistency**: Changes via MCP should appear in the React UI and vice versa
 
 ## Future Enhancements
 
