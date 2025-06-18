@@ -6,18 +6,15 @@ function mcpServerPlugin() {
   return {
     name: 'mcp-server',
     configureServer(server: any) {
-      server.middlewares.use('/', (req: any, res: any, next: any) => {
-        // Only start MCP server on first request to avoid multiple starts
-        if (!(globalThis as any).mcpServerStarted) {
-          (globalThis as any).mcpServerStarted = true;
-          import('./src/mcp-server.js').then(({ startMcpServer }) => {
-            startMcpServer();
-          }).catch((error: unknown) => {
-            console.error('Failed to start MCP server:', error);
-          });
-        }
-        next();
-      });
+      // Start MCP server immediately when Vite dev server starts
+      if (!(globalThis as any).mcpServerStarted) {
+        (globalThis as any).mcpServerStarted = true;
+        import('./src/mcp-server.js').then(({ startMcpServer }) => {
+          startMcpServer();
+        }).catch((error: unknown) => {
+          console.error('Failed to start MCP server:', error);
+        });
+      }
     }
   };
 }
