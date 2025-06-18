@@ -113,9 +113,13 @@ export const TodoListElement: FC<TodoListElementProps> = ({
             </div>
             <div>
               <span
-                className={`text-sm${
-                  todo.completed || activityOnly ? 'text-gray-400' : ''
-                }${todo.completed ? 'line-through' : ''}`}
+                className={[
+                  'text-sm',
+                  todo.completed || activityOnly ? 'text-gray-400' : '',
+                  todo.completed ? 'line-through' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               >
                 {todo.link !== null && !activityOnly ? (
                   <a
