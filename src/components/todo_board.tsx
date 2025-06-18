@@ -1,16 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type FC } from 'react';
 import { group } from 'd3-array';
-import { add, format, getISOWeek, startOfWeek, endOfWeek } from 'date-fns';
-import { uniqBy, isEqual } from 'lodash-es';
-
-import { CONTEXT_DEFAULT } from '../constants';
-import { usePouchDb } from '../pouch_db';
+import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
+import { isEqual, uniqBy } from 'lodash-es';
+import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isLatestVersion, migrateTodo } from '../api/versions/migrate';
+import { CONTEXT_DEFAULT } from '../constants';
+import { usePouchDb } from '../pouch_db';
 import { type Activity } from '../types/activity';
 import { type Todo } from '../types/todo';
 import { getFormattedDurationForActivities } from '../utils/get_formatted_duration';
-
 import { FormattedMessage } from './formatted_message';
 import { TodoListElement } from './todo_list_element';
 
@@ -86,15 +84,28 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
         designDoc = await db.get(designDocId);
 
         // Check if design doc has all views
-        if (!isEqual((designDoc as any).views, designDocViews)) {
+        if (
+          !isEqual(
+            (
+              designDoc as PouchDB.Core.GetMeta & {
+                views?: typeof designDocViews;
+              }
+            ).views,
+            designDocViews,
+          )
+        ) {
           throw new Error('Design document is missing views.');
         }
 
         // You can then proceed with your logic, e.g., update or query it
         setIsInitialized(true);
-      } catch (err: any) {
+      } catch (err) {
         // If an error occurs, it means the design document does not exist
-        if (err.status === 404) {
+        if (
+          err instanceof Error &&
+          'status' in err &&
+          (err as PouchDB.Core.Error).status === 404
+        ) {
           // Save the design document to your database
           await db.put({
             _id: '_design/todos',
@@ -102,7 +113,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
           });
 
           setIsInitialized(true);
-        } else if (err.message === 'Design document is missing views.') {
+        } else if (
+          err instanceof Error &&
+          err.message === 'Design document is missing views.'
+        ) {
           // Save the design document to your database
           await db.put({
             ...designDoc,
@@ -345,7 +359,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
                               new Date(todoDate),
                               'yyyy-MM-dd',
                             );
-                          } catch (e) {
+                          } catch (_e) {
                             displayDate = format(new Date(), 'yyyy-MM-dd');
                           }
 

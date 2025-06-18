@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { todos } from './__mocks__/todos';
-
 import { getActiveRecordForTodos } from './get_active_record_for_todos';
 
 describe('getActiveRecordForTodos', () => {

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { todos } from './__mocks__/todos';
-
 import {
   getFormattedDuration,
   getFormattedDurationForTodos,
