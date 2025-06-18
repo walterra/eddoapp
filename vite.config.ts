@@ -5,14 +5,14 @@ import { defineConfig } from 'vite';
 function mcpServerPlugin() {
   return {
     name: 'mcp-server',
-    configureServer(server) {
-      server.middlewares.use('/', (req, res, next) => {
+    configureServer(server: any) {
+      server.middlewares.use('/', (req: any, res: any, next: any) => {
         // Only start MCP server on first request to avoid multiple starts
-        if (!global.mcpServerStarted) {
-          global.mcpServerStarted = true;
-          import('./src/mcp-server.ts').then(({ startMcpServer }) => {
+        if (!(globalThis as any).mcpServerStarted) {
+          (globalThis as any).mcpServerStarted = true;
+          import('./src/mcp-server.js').then(({ startMcpServer }) => {
             startMcpServer();
-          }).catch(error => {
+          }).catch((error: unknown) => {
             console.error('Failed to start MCP server:', error);
           });
         }

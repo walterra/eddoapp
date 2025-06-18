@@ -1,6 +1,6 @@
 import { FastMCP } from 'fastmcp';
-import { z } from 'zod';
 import nano from 'nano';
+import { z } from 'zod';
 
 // Import the TodoAlpha3 type
 import { type TodoAlpha3 } from './api/versions/todo_alpha3';
@@ -8,7 +8,6 @@ import { type TodoAlpha3 } from './api/versions/todo_alpha3';
 const server = new FastMCP({
   name: 'eddo-mcp',
   version: '1.0.0',
-  description: 'MCP server for Eddo GTD todo management',
 });
 
 // Initialize nano connection to CouchDB
@@ -46,8 +45,13 @@ async function createIndexes() {
     });
 
     console.log('✅ CouchDB indexes created successfully');
-  } catch (error: any) {
-    if (error.statusCode === 409) {
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'statusCode' in error &&
+      error.statusCode === 409
+    ) {
       console.log('ℹ️  Indexes already exist');
     } else {
       console.error('❌ Error creating indexes:', error);
@@ -73,7 +77,7 @@ server.addTool({
     const dueDate =
       args.due || new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
 
-    const todo: TodoAlpha3 = {
+    const todo = {
       _id: now,
       active: {},
       completed: null,
@@ -104,7 +108,7 @@ server.addTool({
     limit: z.number().default(50),
   }),
   execute: async (args) => {
-    const selector: any = { version: 'alpha3' };
+    const selector: Record<string, unknown> = { version: 'alpha3' };
 
     if (args.context) {
       selector.context = args.context;
@@ -115,13 +119,15 @@ server.addTool({
     }
 
     if (args.dateFrom || args.dateTo) {
-      selector.due = {};
-      if (args.dateFrom) selector.due.$gte = args.dateFrom;
-      if (args.dateTo) selector.due.$lte = args.dateTo;
+      const dueFilter: Record<string, string> = {};
+      if (args.dateFrom) dueFilter.$gte = args.dateFrom;
+      if (args.dateTo) dueFilter.$lte = args.dateTo;
+      selector.due = dueFilter;
     }
 
     const result = await db.find({
-      selector,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      selector: selector as any,
       limit: args.limit,
       sort: [{ due: 'asc' }],
     });
@@ -145,9 +151,9 @@ server.addTool({
     link: z.string().nullable().optional(),
   }),
   execute: async (args) => {
-    const todo: TodoAlpha3 = await db.get(args.id);
+    const todo = (await db.get(args.id)) as TodoAlpha3;
 
-    const updated: TodoAlpha3 = {
+    const updated = {
       ...todo,
       title: args.title ?? todo.title,
       description: args.description ?? todo.description,
@@ -172,7 +178,7 @@ server.addTool({
     completed: z.boolean(),
   }),
   execute: async (args) => {
-    const todo: TodoAlpha3 = await db.get(args.id);
+    const todo = (await db.get(args.id)) as TodoAlpha3;
     const now = new Date().toISOString();
 
     if (args.completed && !todo.completed) {
@@ -183,13 +189,14 @@ server.addTool({
         const newDueDate = new Date(todo.due);
         newDueDate.setDate(newDueDate.getDate() + todo.repeat);
 
-        const newTodo: TodoAlpha3 = {
+        const newTodo = {
           ...todo,
           _id: new Date().toISOString(),
           completed: null,
           active: {},
           due: newDueDate.toISOString(),
         };
+        delete (newTodo as Record<string, unknown>)._rev;
 
         await db.insert(newTodo);
         await db.insert(todo);
@@ -214,7 +221,7 @@ server.addTool({
     id: z.string(),
   }),
   execute: async (args) => {
-    const todo: TodoAlpha3 = await db.get(args.id);
+    const todo = (await db.get(args.id)) as TodoAlpha3;
     await db.destroy(todo._id, todo._rev!);
     return `Todo deleted: ${todo.title}`;
   },
@@ -228,7 +235,7 @@ server.addTool({
     id: z.string(),
   }),
   execute: async (args) => {
-    const todo: TodoAlpha3 = await db.get(args.id);
+    const todo = (await db.get(args.id)) as TodoAlpha3;
     const now = new Date().toISOString();
 
     todo.active[now] = null;
@@ -246,7 +253,7 @@ server.addTool({
     id: z.string(),
   }),
   execute: async (args) => {
-    const todo: TodoAlpha3 = await db.get(args.id);
+    const todo = (await db.get(args.id)) as TodoAlpha3;
     const now = new Date().toISOString();
 
     // Find the active tracking session (value is null)
@@ -277,9 +284,10 @@ server.addTool({
       },
     });
 
-    const activeTodos = result.docs.filter((todo: TodoAlpha3) =>
-      Object.values(todo.active).some((end) => end === null),
-    );
+    const activeTodos = result.docs.filter((todo: unknown) => {
+      const typedTodo = todo as TodoAlpha3;
+      return Object.values(typedTodo.active).some((end) => end === null);
+    });
 
     return JSON.stringify(activeTodos, null, 2);
   },
@@ -298,10 +306,10 @@ export async function startMcpServer() {
       transportType: 'httpStream',
       httpStream: {
         port: 3001, // Different from Vite dev server (5173)
-        corsOptions: {
-          origin: 'http://localhost:5173', // Allow Vite dev server
-          credentials: true,
-        },
+        // corsOptions: {
+        //   origin: 'http://localhost:5173', // Allow Vite dev server
+        //   credentials: true,
+        // },
       },
     });
 
