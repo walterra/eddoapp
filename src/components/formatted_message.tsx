@@ -1,5 +1,6 @@
-import { shuffle } from '../utils/shuffle';
 import { type FC } from 'react';
+
+import { shuffle } from '../utils/shuffle';
 
 const SHUFFLE = false;
 

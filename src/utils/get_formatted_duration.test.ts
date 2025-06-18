@@ -1,9 +1,10 @@
+import { describe, expect, it } from 'vitest';
+
 import { todos } from './__mocks__/todos';
 import {
   getFormattedDuration,
   getFormattedDurationForTodos,
 } from './get_formatted_duration';
-import { describe, expect, it } from 'vitest';
 
 describe('getFormattedDuration', () => {
   it('gets 1s formatted duration', () => {

@@ -1,6 +1,7 @@
+import { describe, expect, it } from 'vitest';
+
 import { todos } from './__mocks__/todos';
 import { getActiveRecordForTodos } from './get_active_record_for_todos';
-import { describe, expect, it } from 'vitest';
 
 describe('getActiveRecordForTodos', () => {
   it('gets empty active duration of a single todo without time logging', () => {

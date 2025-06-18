@@ -1,3 +1,7 @@
+import { Checkbox } from 'flowbite-react';
+import { type FC, useEffect, useState } from 'react';
+import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
+
 import { usePouchDb } from '../pouch_db';
 import { type Todo } from '../types/todo';
 import { getActiveDuration } from '../utils/get_active_duration';
@@ -5,9 +9,6 @@ import { getFormattedDuration } from '../utils/get_formatted_duration';
 import { getRepeatTodo } from '../utils/get_repeat_todo';
 import { FormattedMessage } from './formatted_message';
 import { TodoEditModal } from './todo_edit_modal';
-import { Checkbox } from 'flowbite-react';
-import { useEffect, useState, type FC } from 'react';
-import { BiPauseCircle, BiPlayCircle, BiEdit } from 'react-icons/bi';
 
 interface TodoListElementProps {
   active: boolean;

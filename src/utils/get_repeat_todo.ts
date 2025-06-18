@@ -1,5 +1,6 @@
-import type { Todo, NewTodo } from '../types/todo';
 import { addDays, format } from 'date-fns';
+
+import type { NewTodo, Todo } from '../types/todo';
 
 export function getRepeatTodo(todo: Todo): NewTodo {
   const now = new Date();

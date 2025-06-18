@@ -1,9 +1,10 @@
+import { useState } from 'react';
+
 import { AddTodo } from './components/add_todo';
 import { PageWrapper } from './components/page_wrapper';
 import { TodoBoard } from './components/todo_board';
 import { useSyncDev } from './hooks/use_sync_dev';
-import { pouchDb, PouchDbContext } from './pouch_db';
-import { useState } from 'react';
+import { PouchDbContext, pouchDb } from './pouch_db';
 
 function DevSync() {
   useSyncDev();
