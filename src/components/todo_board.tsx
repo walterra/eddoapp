@@ -24,27 +24,27 @@ const designDocByDueDateView = 'todos/byDueDate';
 const designDocByTimeTrackingActiveView = 'todos/byTimeTrackingActive';
 const designDocViews = {
   byActive: {
-    map: function (doc) {
+    map: `function (doc) {
       if (doc.active) {
         Object.entries(doc.active).forEach(([from, to]) => {
           emit(from, { doc, from, id: doc._id, to });
         });
       }
-    }.toString(),
+    }`,
   },
   byDueDate: {
-    map: function (doc) {
+    map: `function (doc) {
       if (doc.due) {
         emit(doc.due, doc);
       }
-    }.toString(),
+    }`,
   },
   byTimeTrackingActive: {
-    map: function (doc) {
-      Object.entries((doc as Todo).active).forEach((d) => {
+    map: `function (doc) {
+      Object.entries(doc.active).forEach((d) => {
         emit(d[1], {});
       });
-    }.toString(),
+    }`,
   },
 };
 
@@ -86,13 +86,13 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
         designDoc = await db.get(designDocId);
 
         // Check if design doc has all views
-        if (!isEqual(designDoc.views, designDocViews)) {
+        if (!isEqual((designDoc as any).views, designDocViews)) {
           throw new Error('Design document is missing views.');
         }
 
         // You can then proceed with your logic, e.g., update or query it
         setIsInitialized(true);
-      } catch (err) {
+      } catch (err: any) {
         // If an error occurs, it means the design document does not exist
         if (err.status === 404) {
           // Save the design document to your database
