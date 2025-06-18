@@ -36,13 +36,13 @@ This is a GTD-inspired todo and time tracking application built with React, Type
 
 ```typescript
 interface TodoAlpha3 {
-  _id: string;           // ISO timestamp of creation
-  active: Record<string, string | null>;  // Time tracking entries
+  _id: string; // ISO timestamp of creation
+  active: Record<string, string | null>; // Time tracking entries
   completed: string | null;
-  context: string;       // GTD context
+  context: string; // GTD context
   description: string;
-  due: string;          // ISO date string
-  link: string | null;  // Added in alpha3
+  due: string; // ISO date string
+  link: string | null; // Added in alpha3
   repeat: number | null; // Days
   tags: string[];
   title: string;
@@ -70,3 +70,8 @@ interface TodoAlpha3 {
 - Use TailwindCSS for styling
 - Use try/catch for error handling with console.error
 - Use Prettier for formatting with existing config
+
+## Git Rules
+
+- Use CC (Conventional Commit) prefixes for commit messages
+- Do not add author or generator notes into git commit messages
