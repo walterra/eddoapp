@@ -1,13 +1,9 @@
 import { FastMCP } from 'fastmcp';
 import { z } from 'zod';
-import PouchDB from 'pouchdb-browser';
-import PouchDBFind from 'pouchdb-find';
+import nano from 'nano';
 
 // Import the TodoAlpha3 type
 import { type TodoAlpha3 } from './api/versions/todo_alpha3';
-
-// Use the same PouchDB setup as the main app
-PouchDB.plugin(PouchDBFind);
 
 const server = new FastMCP({
   name: 'eddo-mcp',
@@ -15,8 +11,9 @@ const server = new FastMCP({
   description: 'MCP server for Eddo GTD todo management'
 });
 
-// Initialize PouchDB with same database name as main app
-const db = new PouchDB('todos');
+// Initialize nano connection to CouchDB
+const couch = nano('http://admin:password@localhost:5984');
+const db = couch.db.use('todos-dev');
 
 // Create Todo Tool
 server.addTool({
@@ -37,7 +34,6 @@ server.addTool({
     
     const todo: TodoAlpha3 = {
       _id: now,
-      _rev: '', // Will be set by PouchDB
       active: {},
       completed: null,
       context: args.context,
@@ -50,7 +46,7 @@ server.addTool({
       version: 'alpha3'
     };
     
-    const result = await db.put(todo);
+    const result = await db.insert(todo);
     return `Todo created with ID: ${result.id}`;
   }
 });
@@ -121,7 +117,7 @@ server.addTool({
       link: args.link !== undefined ? args.link : todo.link
     };
     
-    const result = await db.put(updated);
+    const result = await db.insert(updated);
     return `Todo updated: ${result.id}`;
   }
 });
@@ -149,21 +145,20 @@ server.addTool({
         const newTodo: TodoAlpha3 = {
           ...todo,
           _id: new Date().toISOString(),
-          _rev: '', // Will be set by PouchDB
           completed: null,
           active: {},
           due: newDueDate.toISOString()
         };
         
-        await db.put(newTodo);
-        await db.put(todo);
+        await db.insert(newTodo);
+        await db.insert(todo);
         return `Todo completed and repeated for ${newDueDate.toISOString()}`;
       }
     } else if (!args.completed) {
       todo.completed = null;
     }
     
-    await db.put(todo);
+    await db.insert(todo);
     return `Todo ${args.completed ? 'completed' : 'uncompleted'}: ${todo.title}`;
   }
 });
@@ -177,7 +172,7 @@ server.addTool({
   }),
   execute: async (args) => {
     const todo: TodoAlpha3 = await db.get(args.id);
-    await db.remove(todo);
+    await db.destroy(todo._id, todo._rev!);
     return `Todo deleted: ${todo.title}`;
   }
 });
@@ -194,7 +189,7 @@ server.addTool({
     const now = new Date().toISOString();
     
     todo.active[now] = null;
-    await db.put(todo);
+    await db.insert(todo);
     
     return `Started time tracking for: ${todo.title}`;
   }
@@ -216,7 +211,7 @@ server.addTool({
     
     if (activeSession) {
       todo.active[activeSession[0]] = now;
-      await db.put(todo);
+      await db.insert(todo);
       return `Stopped time tracking for: ${todo.title}`;
     }
     
