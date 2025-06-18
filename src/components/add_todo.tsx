@@ -78,7 +78,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
 
   return (
     <form onSubmit={addTodoHandler}>
-      <div className="block items-center justify-between border-b border-gray-200 bg-white py-4 dark:border-gray-700 dark:bg-gray-800 sm:flex lg:mt-1.5">
+      <div className="block items-center justify-between border-b border-gray-200 bg-white py-4 sm:flex lg:mt-1.5 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center divide-x divide-gray-100 dark:divide-gray-700">
           <div className="pr-3">
             <TextInput
@@ -120,7 +120,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
             <Button type="submit">Add todo</Button>
           </div>
         </div>
-        <div className="hidden items-center space-y-3 space-x-0 sm:flex sm:space-y-0 sm:space-x-3">
+        <div className="hidden items-center space-x-0 space-y-3 sm:flex sm:space-x-3 sm:space-y-0">
           <Button className="p-0" onClick={previousWeekClickHandler} size="xs">
             <RiArrowLeftSLine size="2em" />
           </Button>{' '}

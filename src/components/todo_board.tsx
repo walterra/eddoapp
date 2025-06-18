@@ -86,15 +86,28 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
         designDoc = await db.get(designDocId);
 
         // Check if design doc has all views
-        if (!isEqual((designDoc as any).views, designDocViews)) {
+        if (
+          !isEqual(
+            (
+              designDoc as PouchDB.Core.GetMeta & {
+                views?: typeof designDocViews;
+              }
+            ).views,
+            designDocViews,
+          )
+        ) {
           throw new Error('Design document is missing views.');
         }
 
         // You can then proceed with your logic, e.g., update or query it
         setIsInitialized(true);
-      } catch (err: any) {
+      } catch (err) {
         // If an error occurs, it means the design document does not exist
-        if (err.status === 404) {
+        if (
+          err instanceof Error &&
+          'status' in err &&
+          (err as PouchDB.Core.Error).status === 404
+        ) {
           // Save the design document to your database
           await db.put({
             _id: '_design/todos',
@@ -102,7 +115,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
           });
 
           setIsInitialized(true);
-        } else if (err.message === 'Design document is missing views.') {
+        } else if (
+          err instanceof Error &&
+          err.message === 'Design document is missing views.'
+        ) {
           // Save the design document to your database
           await db.put({
             ...designDoc,
