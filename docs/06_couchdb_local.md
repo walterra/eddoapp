@@ -381,27 +381,33 @@ The sync implementation handles:
 - Check CouchDB logs: `docker logs couchdb`
 
 ### CORS issues
-- Configure CORS in CouchDB:
+
+The easiest way to configure CORS is using the `add-cors-to-couchdb` npm package:
+
+```bash
+# Install globally
+npm install -g add-cors-to-couchdb
+
+# For local development (allows all origins)
+add-cors-to-couchdb http://localhost:5984 -u admin -p password
+
+# For specific server
+add-cors-to-couchdb http://your-couchdb-server.com:5984 -u admin -p password
+```
+
+For more fine-grained control, you can still use curl commands:
 ```bash
 # Enable CORS
 curl -X PUT http://admin:password@localhost:5984/_node/_local/_config/httpd/enable_cors -d '"true"'
 
-# Set allowed origins (be specific in production!)
-# Development:
-curl -X PUT http://admin:password@localhost:5984/_node/_local/_config/cors/origins -d '"http://localhost:5173"'
-
-# Production (replace with your domain):
+# Set specific origins for production (replace with your domain)
 curl -X PUT http://admin:password@localhost:5984/_node/_local/_config/cors/origins -d '"https://your-app.com"'
-
-# Set allowed headers
-curl -X PUT http://admin:password@localhost:5984/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer"'
-
-# Set allowed methods
-curl -X PUT http://admin:password@localhost:5984/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
 
 # Enable credentials for session auth
 curl -X PUT http://admin:password@localhost:5984/_node/_local/_config/cors/credentials -d '"true"'
 ```
+
+Note: The npm script configures CORS with permissive settings suitable for development. For production, consider setting specific allowed origins.
 
 ### macOS-specific issues
 - If using Docker Desktop, ensure it has enough allocated memory (2GB minimum)
