@@ -3,7 +3,14 @@
     "allow": [
       "Bash(gh label create:*)",
       "Bash(gh issue create:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "mcp__eddo-server__createTodo",
+      "mcp__eddo-server__toggleTodoCompletion",
+      "mcp__eddo-server__stopTimeTracking",
+      "mcp__eddo-server__listTodos",
+      "mcp__eddo-server__startTimeTracking",
+      "mcp__eddo-server__updateTodo",
+      "mcp__eddo-server__getActiveTimeTracking"
     ],
     "deny": []
   }

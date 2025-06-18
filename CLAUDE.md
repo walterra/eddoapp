@@ -74,4 +74,4 @@ interface TodoAlpha3 {
 ## Git Rules
 
 - Use CC (Conventional Commit) prefixes for commit messages
-- Do not add author or generator notes into git commit messages
+- Do not add "Generated with" or "Co-authored" sections to commit messages
