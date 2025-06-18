@@ -15,6 +15,46 @@ const server = new FastMCP({
 const couch = nano('http://admin:password@localhost:5984');
 const db = couch.db.use('todos-dev');
 
+// Create indexes for efficient querying
+async function createIndexes() {
+  try {
+    // Index for sorting by due date
+    await db.createIndex({
+      index: {
+        fields: ['version', 'due']
+      },
+      name: 'version-due-index',
+      type: 'json'
+    });
+    
+    // Index for context and due date
+    await db.createIndex({
+      index: {
+        fields: ['version', 'context', 'due']
+      },
+      name: 'version-context-due-index',
+      type: 'json'
+    });
+    
+    // Index for completed status and due date
+    await db.createIndex({
+      index: {
+        fields: ['version', 'completed', 'due']
+      },
+      name: 'version-completed-due-index',
+      type: 'json'
+    });
+    
+    console.log('✅ CouchDB indexes created successfully');
+  } catch (error: any) {
+    if (error.statusCode === 409) {
+      console.log('ℹ️  Indexes already exist');
+    } else {
+      console.error('❌ Error creating indexes:', error);
+    }
+  }
+}
+
 // Create Todo Tool
 server.addTool({
   name: 'createTodo',
@@ -245,6 +285,9 @@ export const mcpServer = server;
 
 export async function startMcpServer() {
   try {
+    // Create indexes before starting the server
+    await createIndexes();
+    
     // Start the server on a different port than Vite
     await server.start({
       transportType: 'httpStream',
