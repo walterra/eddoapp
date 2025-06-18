@@ -51,7 +51,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
     try {
       getFormattedDuration(getActiveDuration({ [from]: to }));
       return valid;
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   }, true);
@@ -241,7 +241,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
                       return getFormattedDuration(
                         getActiveDuration({ [from]: to }),
                       );
-                    } catch (e) {
+                    } catch (_e) {
                       return 'n/a';
                     }
                   })()}

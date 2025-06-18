@@ -42,7 +42,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
     const due = `${dueDate}T23:59:59.999Z`;
     try {
       format(new Date(due), 'yyyy-MM-dd');
-    } catch (e) {
+    } catch (_e) {
       console.error('failed to parse due date', due);
       return;
     }

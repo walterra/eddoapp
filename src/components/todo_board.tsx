@@ -361,7 +361,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
                               new Date(todoDate),
                               'yyyy-MM-dd',
                             );
-                          } catch (e) {
+                          } catch (_e) {
                             displayDate = format(new Date(), 'yyyy-MM-dd');
                           }
 
