@@ -376,6 +376,106 @@ server.addTool({
   },
 });
 
+// Get Server Info Tool
+server.addTool({
+  name: 'getServerInfo',
+  description: 'Get comprehensive information about the Eddo MCP server, including data model, available tools, and usage examples',
+  parameters: z.object({
+    section: z
+      .enum(['overview', 'datamodel', 'tools', 'examples', 'all'])
+      .default('all')
+      .describe('Specific section of documentation to retrieve'),
+  }),
+  execute: async (args) => {
+    const sections: Record<string, string> = {
+      overview: `# Eddo MCP Server Overview
+      
+The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD-inspired todo and time tracking application.
+
+- **Database**: CouchDB (http://localhost:5984/todos-dev)
+- **Data Model**: TodoAlpha3 schema
+- **Features**: Todo CRUD, time tracking, repeating tasks, GTD contexts
+- **Port**: 3001 (http://localhost:3001/mcp)`,
+
+      datamodel: `# TodoAlpha3 Data Model
+
+{
+  _id: string;              // ISO timestamp of creation (auto-generated)
+  _rev: string;             // CouchDB revision (auto-managed)
+  active: Record<string, string | null>;  // Time tracking: key=start ISO, value=end ISO or null if running
+  completed: string | null; // Completion ISO timestamp (null if not completed)
+  context: string;          // GTD context (e.g., "work", "private", "errands")
+  description: string;      // Detailed notes (supports markdown)
+  due: string;              // Due date ISO string
+  link: string | null;      // Optional URL/reference
+  repeat: number | null;    // Repeat interval in days
+  tags: string[];           // Categorization tags
+  title: string;            // Todo title
+  version: 'alpha3';        // Schema version
+}`,
+
+      tools: `# Available Tools
+
+1. **createTodo** - Create a new todo item
+2. **listTodos** - List todos with optional filters (context, completed, date range)
+3. **updateTodo** - Update an existing todo's properties
+4. **toggleTodoCompletion** - Mark todo as completed/uncompleted (handles repeating)
+5. **deleteTodo** - Permanently delete a todo
+6. **startTimeTracking** - Start tracking time for a todo
+7. **stopTimeTracking** - Stop active time tracking
+8. **getActiveTimeTracking** - Get todos with active time tracking
+9. **getServerInfo** - Get this documentation`,
+
+      examples: `# Usage Examples
+
+## Create a simple todo
+{
+  "tool": "createTodo",
+  "arguments": {
+    "title": "Buy groceries"
+  }
+}
+
+## Create a work todo with full details
+{
+  "tool": "createTodo",
+  "arguments": {
+    "title": "Complete Q4 report",
+    "description": "Include sales analysis and projections",
+    "context": "work",
+    "due": "2025-06-25T17:00:00.000Z",
+    "tags": ["reports", "urgent"],
+    "repeat": 90,
+    "link": "https://docs.example.com/q4-template"
+  }
+}
+
+## List incomplete work todos
+{
+  "tool": "listTodos",
+  "arguments": {
+    "context": "work",
+    "completed": false
+  }
+}
+
+## Start time tracking
+{
+  "tool": "startTimeTracking",
+  "arguments": {
+    "id": "2025-06-19T10:30:00.000Z"
+  }
+}`,
+    };
+
+    if (args.section === 'all') {
+      return Object.values(sections).join('\n\n---\n\n');
+    }
+
+    return sections[args.section] || 'Invalid section. Choose from: overview, datamodel, tools, examples, all';
+  },
+});
+
 // Export the server instance and start function
 export const mcpServer = server;
 
@@ -394,6 +494,7 @@ export async function startMcpServer() {
         //   credentials: true,
         // },
       },
+      instructions: 'Eddo Todo MCP Server - Manages GTD-style todos with time tracking. Creates, updates, lists todos with contexts ("work", "private"), due dates, tags, and repeat intervals. Supports time tracking start/stop and completion status. Uses CouchDB backend with TodoAlpha3 schema. Default context is "private", default due is end of current day. Use getServerInfo tool for complete documentation and examples.',
     });
 
     console.log('🚀 Eddo MCP server running on port 3001');
