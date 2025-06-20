@@ -17,7 +17,7 @@ function mcpServerPlugin() {
       // Start MCP server immediately when Vite dev server starts
       if (!(globalThis as any).mcpServerStarted) {
         (globalThis as any).mcpServerStarted = true;
-        import('./src/mcp-server.js').then(({ startMcpServer }) => {
+        import('./packages/server/src/mcp-server.js').then(({ startMcpServer }) => {
           startMcpServer();
         }).catch((error: unknown) => {
           console.error('Failed to start MCP server:', error);
@@ -30,6 +30,11 @@ function mcpServerPlugin() {
 export default defineConfig({
   plugins: [
     react(),
-    mcpServerPlugin() // Re-enabled with nano instead of PouchDB
+    mcpServerPlugin()
   ],
+  root: './packages/client',
+  build: {
+    outDir: '../../dist',
+    emptyOutDir: true
+  }
 });
