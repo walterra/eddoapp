@@ -1,9 +1,8 @@
+// Import the TodoAlpha3 type
+import { type TodoAlpha3 } from '@eddo/shared';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 import { z } from 'zod';
-
-// Import the TodoAlpha3 type
-import { type TodoAlpha3 } from './api/versions/todo_alpha3';
 
 const server = new FastMCP({
   name: 'eddo-mcp',
