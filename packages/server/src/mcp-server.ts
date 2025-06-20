@@ -3,7 +3,7 @@ import nano from 'nano';
 import { z } from 'zod';
 
 // Import the TodoAlpha3 type
-import { type TodoAlpha3 } from './api/versions/todo_alpha3';
+import { type TodoAlpha3 } from '@eddo/shared';
 
 const server = new FastMCP({
   name: 'eddo-mcp',

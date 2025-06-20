@@ -3,12 +3,9 @@ import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
 import { isEqual, uniqBy } from 'lodash-es';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 
-import { isLatestVersion, migrateTodo } from '../api/versions/migrate';
+import { isLatestVersion, migrateTodo, type Activity, type Todo, getFormattedDurationForActivities } from '@eddo/shared';
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
-import { type Activity } from '../types/activity';
-import { type Todo } from '../types/todo';
-import { getFormattedDurationForActivities } from '../utils/get_formatted_duration';
 import { FormattedMessage } from './formatted_message';
 import { TodoListElement } from './todo_list_element';
 

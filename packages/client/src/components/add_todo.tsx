@@ -5,7 +5,7 @@ import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
-import { NewTodo } from '../types/todo';
+import { NewTodo } from '@eddo/shared';
 
 interface AddTodoProps {
   currentDate: Date;

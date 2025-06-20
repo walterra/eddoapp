@@ -3,10 +3,7 @@ import { type FC, useEffect, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { usePouchDb } from '../pouch_db';
-import { type Todo } from '../types/todo';
-import { getActiveDuration } from '../utils/get_active_duration';
-import { getFormattedDuration } from '../utils/get_formatted_duration';
-import { getRepeatTodo } from '../utils/get_repeat_todo';
+import { type Todo, getActiveDuration, getFormattedDuration, getRepeatTodo } from '@eddo/shared';
 import { FormattedMessage } from './formatted_message';
 import { TodoEditModal } from './todo_edit_modal';
 
