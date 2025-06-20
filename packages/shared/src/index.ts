@@ -1,12 +1,16 @@
 // Types
 export * from './types/todo';
 export * from './types/activity';
+export * from './types/database-errors';
 
 // API versions
 export * from './api/versions/todo_alpha1';
 export * from './api/versions/todo_alpha2';
 export * from './api/versions/todo_alpha3';
 export * from './api/versions/migrate';
+
+// Safe database operations
+export * from './api/safe-db-operations';
 
 // Utils
 export * from './utils/generate_stable_key';
