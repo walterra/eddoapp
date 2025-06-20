@@ -148,7 +148,10 @@ server.addTool({
       });
       return `Todo created with ID: ${result.id}`;
     } catch (error) {
-      log.error('Failed to create todo', { title: args.title, error });
+      log.error('Failed to create todo', {
+        title: args.title,
+        error: String(error),
+      });
       throw error;
     }
   },
@@ -219,7 +222,7 @@ server.addTool({
       log.info('Todos retrieved successfully', { count: result.docs.length });
       return JSON.stringify(result.docs, null, 2);
     } catch (error) {
-      log.error('Failed to list todos', { selector, error });
+      log.error('Failed to list todos', { error: String(error) });
       throw error;
     }
   },
@@ -280,7 +283,7 @@ server.addTool({
       });
       return `Todo updated: ${result.id}`;
     } catch (error) {
-      log.error('Failed to update todo', { id: args.id, error });
+      log.error('Failed to update todo', { id: args.id, error: String(error) });
       throw error;
     }
   },
@@ -358,7 +361,7 @@ server.addTool({
       log.error('Failed to toggle todo completion', {
         id: args.id,
         completed: args.completed,
-        error,
+        error: String(error),
       });
       throw error;
     }
@@ -387,7 +390,7 @@ server.addTool({
       log.info('Todo deleted successfully', { title: todo.title });
       return `Todo deleted: ${todo.title}`;
     } catch (error) {
-      log.error('Failed to delete todo', { id: args.id, error });
+      log.error('Failed to delete todo', { id: args.id, error: String(error) });
       throw error;
     }
   },
@@ -423,7 +426,10 @@ server.addTool({
       });
       return `Started time tracking for: ${todo.title}`;
     } catch (error) {
-      log.error('Failed to start time tracking', { id: args.id, error });
+      log.error('Failed to start time tracking', {
+        id: args.id,
+        error: String(error),
+      });
       throw error;
     }
   },
@@ -470,7 +476,10 @@ server.addTool({
       log.warn('No active time tracking found', { title: todo.title });
       return `No active time tracking found for: ${todo.title}`;
     } catch (error) {
-      log.error('Failed to stop time tracking', { id: args.id, error });
+      log.error('Failed to stop time tracking', {
+        id: args.id,
+        error: String(error),
+      });
       throw error;
     }
   },
@@ -506,7 +515,9 @@ server.addTool({
       });
       return JSON.stringify(activeTodos, null, 2);
     } catch (error) {
-      log.error('Failed to retrieve active time tracking todos', { error });
+      log.error('Failed to retrieve active time tracking todos', {
+        error: String(error),
+      });
       throw error;
     }
   },
