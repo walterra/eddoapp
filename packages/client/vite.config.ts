@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   root: '.',
-  publicDir: '../../public',
+  publicDir: false,
   build: {
     outDir: '../../dist/client',
     emptyOutDir: true,
