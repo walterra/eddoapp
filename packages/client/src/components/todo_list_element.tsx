@@ -1,4 +1,5 @@
 import {
+  type DatabaseError,
   type Todo,
   getActiveDuration,
   getFormattedDuration,
@@ -27,18 +28,36 @@ export const TodoListElement: FC<TodoListElementProps> = ({
   timeTrackingActive,
   todo,
 }) => {
-  const db = usePouchDb();
+  const { safeDb } = usePouchDb();
 
   const [activeCounter, setActiveCounter] = useState(0);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [error, setError] = useState<DatabaseError | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  function toggleCheckbox(todo: Todo) {
-    todo.completed = todo.completed === null ? new Date().toISOString() : null;
-    db.put(todo);
+  async function toggleCheckbox(todo: Todo) {
+    if (isUpdating) return;
 
-    // check if we need to create a new todo based on repeat setting
-    if (typeof todo.repeat === 'number' && todo.completed) {
-      db.put(getRepeatTodo(todo));
+    setError(null);
+    setIsUpdating(true);
+
+    const updatedTodo = {
+      ...todo,
+      completed: todo.completed === null ? new Date().toISOString() : null,
+    };
+
+    try {
+      await safeDb.safePut(updatedTodo);
+
+      // check if we need to create a new todo based on repeat setting
+      if (typeof updatedTodo.repeat === 'number' && updatedTodo.completed) {
+        await safeDb.safePut(getRepeatTodo(updatedTodo));
+      }
+    } catch (err) {
+      console.error('Failed to update todo:', err);
+      setError(err as DatabaseError);
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -49,24 +68,41 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     setShowEditModal(true);
   }
 
-  function timeTrackingButtonPressed(
+  async function timeTrackingButtonPressed(
     event: React.FormEvent<HTMLButtonElement>,
   ) {
     event.preventDefault();
+    if (isUpdating) return;
+
+    setError(null);
+    setIsUpdating(true);
+
+    const updatedActive = { ...todo.active };
+
     if (
-      Object.keys(todo.active).length === 0 ||
-      Object.values(todo.active).every((d) => d !== null)
+      Object.keys(updatedActive).length === 0 ||
+      Object.values(updatedActive).every((d) => d !== null)
     ) {
-      todo.active[new Date().toISOString()] = null;
+      updatedActive[new Date().toISOString()] = null;
     } else {
-      const activeEntry = Object.entries(todo.active).find(
+      const activeEntry = Object.entries(updatedActive).find(
         (d) => d[1] === null,
       );
       if (activeEntry) {
-        todo.active[activeEntry[0]] = new Date().toISOString();
+        updatedActive[activeEntry[0]] = new Date().toISOString();
       }
     }
-    db.put(todo);
+
+    const updatedTodo = { ...todo, active: updatedActive };
+
+    try {
+      await safeDb.safePut(updatedTodo);
+    } catch (err) {
+      console.error('Failed to update time tracking:', err);
+      setError(err as DatabaseError);
+    } finally {
+      setIsUpdating(false);
+    }
   }
 
   const thisButtonTimeTrackingActive = Object.values(todo.active).some(
@@ -98,6 +134,19 @@ export const TodoListElement: FC<TodoListElementProps> = ({
         active ? 'border-2 border-sky-600' : ''
       }mb-2 flex max-w-md transform flex-col rounded-lg bg-white px-1 py-1 shadow dark:bg-gray-800`}
     >
+      {error && (
+        <div className="mb-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs dark:border-red-700 dark:bg-red-900">
+          <span className="text-red-700 dark:text-red-200">
+            Failed to update todo
+          </span>
+          <button
+            className="ml-2 text-red-600 hover:text-red-500"
+            onClick={() => setError(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div className="text-base text-gray-900 dark:text-white">
           <div className="flex space-x-1">
@@ -107,6 +156,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                   className="checkbox checkbox-xs text-gray-400"
                   color="gray"
                   defaultChecked={todo.completed !== null}
+                  disabled={isUpdating}
                   // stable key based on todo ID and completion state
                   key={`checkbox-${todo._id}-${todo.completed !== null}`}
                   onChange={() => toggleCheckbox(todo)}
@@ -153,7 +203,8 @@ export const TodoListElement: FC<TodoListElementProps> = ({
             <>
               {(!timeTrackingActive || active) && (
                 <button
-                  className="rounded-lg py-0 pl-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                  className="rounded-lg py-0 pl-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                  disabled={isUpdating}
                   onClick={timeTrackingButtonPressed}
                   type="button"
                 >

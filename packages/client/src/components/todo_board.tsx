@@ -1,5 +1,7 @@
 import {
   type Activity,
+  type DatabaseError,
+  DatabaseErrorType,
   type Todo,
   getFormattedDurationForActivities,
   isLatestVersion,
@@ -8,7 +10,14 @@ import {
 import { group } from 'd3-array';
 import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
 import { isEqual, uniqBy } from 'lodash-es';
-import { type FC, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type FC,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
@@ -20,9 +29,6 @@ interface TodoBoardProps {
 }
 
 const designDocId = '_design/todos';
-const designDocByActiveView = 'todos/byActive';
-const designDocByDueDateView = 'todos/byDueDate';
-const designDocByTimeTrackingActiveView = 'todos/byTimeTrackingActive';
 const designDocViews = {
   byActive: {
     map: `function (doc) {
@@ -50,13 +56,16 @@ const designDocViews = {
 };
 
 export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
-  const db = usePouchDb();
+  const dbContext = usePouchDb();
+  const { safeDb } = dbContext;
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
   ]);
   const [outdatedTodos, setOutdatedTodos] = useState<unknown[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [error, setError] = useState<DatabaseError | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // avoid multiple fetches
   const isFetching = useRef(false);
@@ -80,65 +89,42 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
 
     // async iife
     (async () => {
+      setError(null);
       let designDoc;
 
       try {
         // Attempt to get the design document from the database
-        designDoc = await db.get(designDocId);
+        designDoc = await safeDb.safeGet<
+          PouchDB.Core.GetMeta & {
+            views?: typeof designDocViews;
+          }
+        >(designDocId);
 
         // Check if design doc has all views
-        if (
-          !isEqual(
-            (
-              designDoc as PouchDB.Core.GetMeta & {
-                views?: typeof designDocViews;
-              }
-            ).views,
-            designDocViews,
-          )
-        ) {
-          throw new Error('Design document is missing views.');
+        if (!designDoc || !isEqual(designDoc.views, designDocViews)) {
+          // Save the design document to your database
+          await safeDb.safePut({
+            _id: '_design/todos',
+            _rev: designDoc?._rev,
+            views: designDocViews,
+          });
         }
 
         // You can then proceed with your logic, e.g., update or query it
         setIsInitialized(true);
       } catch (err) {
-        // If an error occurs, it means the design document does not exist
-        if (
-          err instanceof Error &&
-          'status' in err &&
-          (err as PouchDB.Core.Error).status === 404
-        ) {
-          // Save the design document to your database
-          await db.put({
-            _id: '_design/todos',
-            views: designDocViews,
-          });
-
-          setIsInitialized(true);
-        } else if (
-          err instanceof Error &&
-          err.message === 'Design document is missing views.'
-        ) {
-          // Save the design document to your database
-          await db.put({
-            ...designDoc,
-            views: designDocViews,
-          });
-
-          setIsInitialized(true);
-        } else {
-          // Handle other errors
-          console.error('Error retrieving design document:', err);
-        }
+        console.error('Error initializing design document:', err);
+        setError(err as DatabaseError);
+        // Still try to initialize to avoid blocking the app
+        setIsInitialized(true);
       }
     })();
-  }, [isInitialized]);
+  }, [isInitialized, safeDb]);
 
   useEffect(() => {
     if (!isInitialized) return;
 
-    const listener = db
+    const listener = dbContext
       .changes({
         live: true,
         since: 'now',
@@ -155,28 +141,35 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     };
   }, [currentDate, isInitialized]);
 
-  async function fetchTimeTrackingActive() {
+  const fetchTimeTrackingActive = useCallback(async () => {
     try {
-      const resp = await db.query(designDocByTimeTrackingActiveView, {
-        key: null,
-      });
-      setTimeTrackingActive(resp.rows.map((d) => d.id));
+      const resp = await safeDb.safeQuery<{ id: string }>(
+        'todos',
+        'byTimeTrackingActive',
+        {
+          key: null,
+        },
+      );
+      setTimeTrackingActive(resp.map((d) => d.id));
     } catch (e) {
-      console.error('not able to fetch active todos', e);
+      console.error('Not able to fetch active todos:', e);
+      setError(e as DatabaseError);
     }
-  }
+  }, [safeDb]);
 
-  async function fetchTodos() {
+  const fetchTodos = useCallback(async () => {
     if (isFetching.current) {
       shouldFetch.current = true;
       return;
     }
 
     isFetching.current = true;
+    setIsLoading(true);
+    setError(null);
 
     try {
       console.time('fetchTodos');
-      const newTodos = await db.query(designDocByDueDateView, {
+      const newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
         descending: false,
         endkey: currentEndOfWeek.toISOString(),
         include_docs: false,
@@ -185,43 +178,49 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
       console.timeEnd('fetchTodos');
 
       console.time('fetchActivities');
-      const newActivities = await db.query(designDocByActiveView, {
-        descending: false,
-        endkey: currentEndOfWeek.toISOString(),
-        include_docs: false,
-        startkey: currentStartOfWeek.toISOString(),
-      });
+      const newActivities = await safeDb.safeQuery<Activity>(
+        'todos',
+        'byActive',
+        {
+          descending: false,
+          endkey: currentEndOfWeek.toISOString(),
+          include_docs: false,
+          startkey: currentStartOfWeek.toISOString(),
+        },
+      );
       console.timeEnd('fetchActivities');
 
       console.time('setOutdatedTodos');
       setOutdatedTodos(
-        newTodos?.rows
-          .filter((d) => !isLatestVersion(d.value))
-          .map((d) => d.value),
+        newTodos.filter((d) => !isLatestVersion(d)).map((d) => d),
       );
       console.timeEnd('setOutdatedTodos');
 
       console.time('setTodos');
-      setTodos(
-        (newTodos?.rows
-          .filter((d) => isLatestVersion(d.value))
-          .map((d) => d.value) ?? []) as Todo[],
-      );
+      setTodos(newTodos.filter((d) => isLatestVersion(d)) as Todo[]);
       console.timeEnd('setTodos');
 
       console.time('setActivities');
-      setActivities(newActivities.rows.map((d) => d.value));
+      setActivities(newActivities);
       console.timeEnd('setActivities');
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch todos:', err);
+      setError(err as DatabaseError);
+
+      // Show user-friendly error message
+      if ((err as DatabaseError).type === DatabaseErrorType.NETWORK_ERROR) {
+        // We're in offline mode, keep existing data
+        console.log('Working in offline mode');
+      }
     } finally {
       isFetching.current = false;
+      setIsLoading(false);
       if (shouldFetch.current) {
         shouldFetch.current = false;
         fetchTodos();
       }
     }
-  }
+  }, [safeDb, currentStartOfWeek, currentEndOfWeek]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -236,8 +235,15 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     // disabled for now
     return;
 
-    db.bulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
-  }, [outdatedTodos, isInitialized]);
+    (async () => {
+      try {
+        await safeDb.safeBulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
+      } catch (err) {
+        console.error('Failed to migrate outdated todos:', err);
+        setError(err as DatabaseError);
+      }
+    })();
+  }, [outdatedTodos, isInitialized, safeDb]);
 
   const filteredActivities = activities.filter((a) => {
     // TODO The 'split' is a CEST quick fix
@@ -296,8 +302,93 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     'data:text/json;charset=utf-8,' +
     encodeURIComponent(JSON.stringify(todos, null, 2));
 
+  // Show error state if there's an error and no data
+  if (error && todos.length === 0 && !isLoading) {
+    return (
+      <div className="bg-gray-50 p-8 dark:bg-gray-800">
+        <div className="mx-auto max-w-2xl">
+          <div className="rounded-lg bg-red-50 p-6 dark:bg-red-900">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-6 w-6 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Database Error
+                </h3>
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                  <p>
+                    {error.type === DatabaseErrorType.NETWORK_ERROR
+                      ? 'Unable to connect to the database. Please check your internet connection.'
+                      : error.type === DatabaseErrorType.QUOTA_EXCEEDED
+                        ? 'Storage quota exceeded. Please clear some data to continue.'
+                        : 'A database error occurred. Please try again.'}
+                  </p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    className="inline-flex items-center rounded-md border border-transparent bg-red-100 px-3 py-2 text-sm font-medium leading-4 text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                    onClick={() => {
+                      setError(null);
+                      fetchTodos();
+                    }}
+                    type="button"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
+      {/* Show inline error if we have data */}
+      {error && todos.length > 0 && (
+        <div className="border-b border-yellow-200 bg-yellow-50 px-4 py-2 dark:border-yellow-700 dark:bg-yellow-900">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-yellow-800 dark:text-yellow-200">
+              {error.type === DatabaseErrorType.NETWORK_ERROR
+                ? 'Working offline - changes will sync when connection is restored'
+                : 'Some operations may fail - working with cached data'}
+            </span>
+            <button
+              className="text-yellow-600 hover:text-yellow-500"
+              onClick={() => setError(null)}
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M6 18L18 6M6 6l12 12"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mt-2 flex flex-col">
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
