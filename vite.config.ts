@@ -6,6 +6,14 @@ function mcpServerPlugin() {
   return {
     name: 'mcp-server',
     configureServer(server: any) {
+      // Check if MCP server should be loaded (defaults to true)
+      const shouldLoadMcp = process.env.VITE_LOAD_MCP !== 'false';
+      
+      if (!shouldLoadMcp) {
+        console.log('MCP server disabled');
+        return;
+      }
+      
       // Start MCP server immediately when Vite dev server starts
       if (!(globalThis as any).mcpServerStarted) {
         (globalThis as any).mcpServerStarted = true;
