@@ -58,13 +58,18 @@
     "vitest": "^3.2.4"
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "node scripts/dev.js",
-    "format": "prettier --write ./src",
-    "lint:format": "prettier --cache --check ./src",
-    "lint": "eslint --cache ./src",
+    "build": "pnpm run --recursive build",
+    "build:client": "pnpm --filter @eddo/client build",
+    "build:server": "pnpm --filter @eddo/server build",
+    "build:shared": "pnpm --filter @eddo/shared build",
+    "dev": "vite",
+    "dev:client": "pnpm --filter @eddo/client dev",
+    "dev:server": "pnpm --filter @eddo/server dev",
+    "format": "prettier --write ./packages",
+    "lint:format": "prettier --cache --check ./packages",
+    "lint": "eslint --cache ./packages",
     "test": "npm-run-all --parallel tsc:check vitest:run lint lint:format",
-    "tsc:check": "tsc",
+    "tsc:check": "tsc --build",
     "vitest:run": "vitest run"
   },
   "browserslist": [
