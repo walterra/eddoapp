@@ -1,0 +1,22 @@
+{
+  "name": "@eddo/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/mcp-server.ts",
+  "dependencies": {
+    "@eddo/shared": "workspace:*",
+    "fastmcp": "^3.4.0",
+    "nano": "^10.1.4",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "dev": "tsx src/mcp-server.ts",
+    "build": "tsc"
+  }
+}
