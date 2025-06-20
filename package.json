@@ -67,7 +67,7 @@
     "dev:server": "pnpm --filter @eddo/server dev",
     "format": "prettier --write ./packages",
     "lint:format": "prettier --cache --check ./packages",
-    "lint": "eslint --cache ./packages",
+    "lint": "eslint --cache ./packages --ignore-pattern '**/dist/**'",
     "test": "npm-run-all --parallel tsc:check vitest:run lint lint:format",
     "tsc:check": "tsc --build",
     "vitest:run": "vitest run"

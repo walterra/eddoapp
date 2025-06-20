@@ -1,9 +1,15 @@
+import {
+  type Activity,
+  type Todo,
+  getFormattedDurationForActivities,
+  isLatestVersion,
+  migrateTodo,
+} from '@eddo/shared';
 import { group } from 'd3-array';
 import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
 import { isEqual, uniqBy } from 'lodash-es';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 
-import { isLatestVersion, migrateTodo, type Activity, type Todo, getFormattedDurationForActivities } from '@eddo/shared';
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
 import { FormattedMessage } from './formatted_message';

@@ -1,8 +1,13 @@
+import {
+  type Todo,
+  getActiveDuration,
+  getFormattedDuration,
+  getRepeatTodo,
+} from '@eddo/shared';
 import { Button, Checkbox, Label, Modal, TextInput } from 'flowbite-react';
 import { type FC, useEffect, useState } from 'react';
 
 import { usePouchDb } from '../pouch_db';
-import { type Todo, getActiveDuration, getFormattedDuration, getRepeatTodo } from '@eddo/shared';
 
 interface TodoEditModalProps {
   onClose: () => void;

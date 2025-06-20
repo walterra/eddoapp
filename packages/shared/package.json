@@ -11,8 +11,14 @@
     "./utils/*": "./src/utils/*.ts",
     "./api/*": "./src/api/*.ts"
   },
+  "dependencies": {
+    "date-fns": "^2.29.3",
+    "lodash-es": "^4.17.21"
+  },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "@types/lodash-es": "^4.17.6",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "scripts": {
     "build": "tsc"

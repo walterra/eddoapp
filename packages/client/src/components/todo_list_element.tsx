@@ -1,9 +1,14 @@
+import {
+  type Todo,
+  getActiveDuration,
+  getFormattedDuration,
+  getRepeatTodo,
+} from '@eddo/shared';
 import { Checkbox } from 'flowbite-react';
 import { type FC, useEffect, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { usePouchDb } from '../pouch_db';
-import { type Todo, getActiveDuration, getFormattedDuration, getRepeatTodo } from '@eddo/shared';
 import { FormattedMessage } from './formatted_message';
 import { TodoEditModal } from './todo_edit_modal';
 

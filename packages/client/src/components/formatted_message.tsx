@@ -1,6 +1,5 @@
-import { type FC } from 'react';
-
 import { shuffle } from '@eddo/shared';
+import { type FC } from 'react';
 
 const SHUFFLE = false;
 
