@@ -9,6 +9,7 @@ export * from './api/versions/todo_alpha3';
 export * from './api/versions/migrate';
 
 // Utils
+export * from './utils/generate_stable_key';
 export * from './utils/get_active_duration';
 export * from './utils/get_active_record_for_activities';
 export * from './utils/get_active_record_for_todos';
