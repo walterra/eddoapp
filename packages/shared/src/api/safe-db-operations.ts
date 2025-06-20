@@ -4,6 +4,7 @@ import {
   DatabaseOperationError,
 } from '../types/database-errors';
 
+/** Configuration for retry behavior */
 type RetryConfig = {
   maxRetries: number;
   baseDelay: number;
@@ -16,6 +17,7 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxDelay: 5000,
 };
 
+/** Determines if an error should trigger a retry */
 const isRetryableError = (error: unknown): boolean => {
   const err = error as Record<string, unknown>;
   if (
@@ -49,6 +51,7 @@ const isRetryableError = (error: unknown): boolean => {
   return false;
 };
 
+/** Creates a structured database error from a raw error */
 const createDatabaseError = (
   error: unknown,
   operation: string,
@@ -94,6 +97,7 @@ const createDatabaseError = (
   );
 };
 
+/** Executes an operation with exponential backoff retry logic */
 const withRetry = async <T>(
   operation: () => Promise<T>,
   operationName: string,
@@ -133,7 +137,13 @@ const withRetry = async <T>(
   throw lastError!;
 };
 
+/**
+ * Creates a set of database operations with error handling and retry logic
+ * @param db - PouchDB database instance
+ * @returns Object with safe database operation methods
+ */
 export const createSafeDbOperations = (db: PouchDB.Database) => ({
+  /** Get a document by ID, returns null if not found */
   safeGet: async <T>(id: string): Promise<T | null> => {
     try {
       return await withRetry(() => db.get<T>(id), 'get', id);
@@ -145,6 +155,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
     }
   },
 
+  /** Create or update a document */
   safePut: async <T>(doc: T & { _id: string }): Promise<T> => {
     try {
       const result = await withRetry(() => db.put(doc), 'put', doc._id);
@@ -155,6 +166,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
     }
   },
 
+  /** Remove a document */
   safeRemove: async (doc: { _id: string; _rev: string }): Promise<void> => {
     try {
       await withRetry(() => db.remove(doc), 'remove', doc._id);
@@ -163,6 +175,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
     }
   },
 
+  /** Fetch multiple documents with options */
   safeAllDocs: async <T>(
     options: PouchDB.Core.AllDocsOptions = {},
   ): Promise<T[]> => {
@@ -178,6 +191,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
     }
   },
 
+  /** Bulk create/update documents, returns successful saves */
   safeBulkDocs: async <T extends { _id?: string; _rev?: string }>(
     docs: T[],
   ): Promise<T[]> => {
@@ -220,6 +234,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
     }
   },
 
+  /** Query a design document view */
   safeQuery: async <T>(
     designDoc: string,
     viewName: string,

@@ -60,6 +60,7 @@ interface TodoAlpha3 {
 ## Code Style
 
 - Prefer more functional style over pure JS object-oriented style
+- Use minimal/lightweight TypeScript-style JSDoc to document code
 - Use snake_case for filenames
 - Use camelCase for variables/functions, PascalCase for components/types
 - Single quotes, trailing commas
