@@ -107,8 +107,8 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                   className="checkbox checkbox-xs text-gray-400"
                   color="gray"
                   defaultChecked={todo.completed !== null}
-                  // random key to fix updating checkbox after editing
-                  key={Math.random()}
+                  // stable key based on todo ID and completion state
+                  key={`checkbox-${todo._id}-${todo.completed !== null}`}
                   onChange={() => toggleCheckbox(todo)}
                 />
               )}
