@@ -185,8 +185,8 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
               color="gray"
               defaultChecked={editedTodo.completed !== null}
               id="eddoTodoComplete"
-              // random key to fix updating checkbox after editing
-              key={Math.random()}
+              // stable key based on todo ID and completion state
+              key={`edit-checkbox-${editedTodo._id}-${editedTodo.completed !== null}`}
               onChange={() =>
                 setEditedTodo((editedTodo) => ({
                   ...editedTodo,
