@@ -59,7 +59,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "dev": "vite dev",
+    "dev": "node scripts/dev.js",
     "format": "prettier --write ./src",
     "lint:format": "prettier --cache --check ./src",
     "lint": "eslint --cache ./src",
