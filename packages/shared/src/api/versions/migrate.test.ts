@@ -211,7 +211,9 @@ describe('Database Migration Functions', () => {
       const updatedDocs = await db.allDocs({ include_docs: true });
       updatedDocs.rows.forEach((row) => {
         if (row.doc) {
-          const doc = row.doc as any;
+          const doc = row.doc as PouchDB.Core.ExistingDocument<{
+            version: string;
+          }>;
           expect(doc.version).toBe('alpha3');
           expect(isLatestVersion(doc)).toBe(true);
         }

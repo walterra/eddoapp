@@ -93,7 +93,7 @@ describe('SafeDbOperations Integration Tests', () => {
       const result = await safeDb.safePut(todo);
 
       expect(result._id).toBe('test-put-id');
-      expect((result as any)._rev).toBeDefined();
+      expect(result._rev).toBeDefined();
       expect(result.title).toBe('New Todo');
 
       // Verify it was saved
@@ -121,7 +121,7 @@ describe('SafeDbOperations Integration Tests', () => {
 
       expect(updateResult.title).toBe('Updated Title');
       expect(updateResult.completed).toBe('2025-01-01T12:00:00.000Z');
-      expect((updateResult as any)._rev).not.toBe((createResult as any)._rev);
+      expect(updateResult._rev).not.toBe(createResult._rev);
     });
 
     it('should handle conflict errors', async () => {
@@ -137,7 +137,7 @@ describe('SafeDbOperations Integration Tests', () => {
       // Create a conflicting update with old revision
       const conflictUpdate = {
         ...todo,
-        _rev: (result1 as any)._rev,
+        _rev: result1._rev,
         title: 'Conflict Update',
       };
 
@@ -161,7 +161,7 @@ describe('SafeDbOperations Integration Tests', () => {
       });
 
       const putResult = await safeDb.safePut(todo);
-      await safeDb.safeRemove({ _id: putResult._id, _rev: (putResult as any)._rev });
+      await safeDb.safeRemove({ _id: putResult._id, _rev: putResult._rev });
 
       // Verify document is gone
       const getResult = await safeDb.safeGet('remove-id');
@@ -261,9 +261,9 @@ describe('SafeDbOperations Integration Tests', () => {
 
       expect(result).toHaveLength(2);
       expect(result[0]._id).toBe('bulk-1');
-      expect((result[0] as any)._rev).toBeDefined();
+      expect(result[0]._rev).toBeDefined();
       expect(result[1]._id).toBe('bulk-2');
-      expect((result[1] as any)._rev).toBeDefined();
+      expect(result[1]._rev).toBeDefined();
 
       // Verify they were saved
       const saved1 = await safeDb.safeGet<TodoAlpha3>('bulk-1');
@@ -414,7 +414,9 @@ describe('SafeDbOperations Integration Tests', () => {
           callCount++;
           if (callCount === 1) {
             // Simulate a retryable error
-            const error = new Error('Temporary failure') as any;
+            const error = new Error('Temporary failure') as Error & {
+              status: number;
+            };
             error.status = 500;
             throw error;
           }
@@ -423,7 +425,7 @@ describe('SafeDbOperations Integration Tests', () => {
       };
 
       // Create a new safeDb instance with the mocked db
-      const mockedSafeDb = createSafeDbOperations(mockedDb as any);
+      const mockedSafeDb = createSafeDbOperations(mockedDb as PouchDB.Database);
 
       const result = await mockedSafeDb.safeGet<TodoAlpha3>('retry-test');
 

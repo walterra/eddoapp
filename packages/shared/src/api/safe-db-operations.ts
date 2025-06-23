@@ -156,7 +156,9 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
   },
 
   /** Create or update a document */
-  safePut: async <T>(doc: T & { _id: string }): Promise<T> => {
+  safePut: async <T>(
+    doc: T & { _id: string },
+  ): Promise<T & { _rev: string }> => {
     try {
       const result = await withRetry(() => db.put(doc), 'put', doc._id);
 
@@ -194,7 +196,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
   /** Bulk create/update documents, returns successful saves */
   safeBulkDocs: async <T extends { _id?: string; _rev?: string }>(
     docs: T[],
-  ): Promise<T[]> => {
+  ): Promise<(T & { _rev: string })[]> => {
     try {
       const results = (await withRetry(
         () =>
@@ -204,7 +206,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
         'bulkDocs',
       )) as Array<{ ok: boolean; id: string; rev: string } | { error: string }>;
 
-      const successful: T[] = [];
+      const successful: (T & { _rev: string })[] = [];
       const errors: DatabaseError[] = [];
 
       results.forEach((result, index) => {
@@ -220,7 +222,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
           successful.push({
             ...docs[index],
             _rev: result.rev,
-          } as T);
+          } as T & { _rev: string });
         }
       });
 

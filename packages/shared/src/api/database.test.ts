@@ -103,7 +103,7 @@ describe('Database Operations', () => {
 
       const result = await db.bulkDocs(todos);
       expect(result).toHaveLength(10);
-      expect(result.every((r) => (r as any).ok)).toBe(true);
+      expect(result.every((r) => 'ok' in r && r.ok)).toBe(true);
 
       const allDocs = await db.allDocs();
       expect(allDocs.rows).toHaveLength(10);
@@ -197,7 +197,7 @@ describe('Database Operations', () => {
 
   describe('Changes Feed', () => {
     it('should react to database changes', async () => {
-      const changes: any[] = [];
+      const changes: PouchDB.Core.ChangesResponseChange<object>[] = [];
 
       const changeHandler = db
         .changes({
@@ -222,13 +222,13 @@ describe('Database Operations', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(changes).toHaveLength(1);
-      expect(changes[0].doc.title).toBe('Change Test');
+      expect((changes[0].doc as TodoAlpha3).title).toBe('Change Test');
 
       changeHandler.cancel();
     });
 
     it('should handle multiple changes', async () => {
-      const changes: any[] = [];
+      const changes: PouchDB.Core.ChangesResponseChange<object>[] = [];
 
       const changeHandler = db
         .changes({

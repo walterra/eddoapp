@@ -35,7 +35,7 @@ export const createSafeDbOperationsWithHealth = (
   };
 
   const wrapPut = <T>(operation: typeof baseSafeOps.safePut) => {
-    return async (doc: T & { _id: string }): Promise<T> => {
+    return async (doc: T & { _id: string }): Promise<T & { _rev: string }> => {
       const startTime = Date.now();
       try {
         const result = await operation(doc);
@@ -82,7 +82,7 @@ export const createSafeDbOperationsWithHealth = (
   const wrapBulkDocs = <T extends { _id?: string; _rev?: string }>(
     operation: typeof baseSafeOps.safeBulkDocs,
   ) => {
-    return async (docs: T[]): Promise<T[]> => {
+    return async (docs: T[]): Promise<(T & { _rev: string })[]> => {
       const startTime = Date.now();
       try {
         const result = await operation<T>(docs);

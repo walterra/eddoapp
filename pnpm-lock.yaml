@@ -32,9 +32,6 @@ importers:
       nano:
         specifier: ^10.1.4
         version: 10.1.4
-      pouchdb-browser:
-        specifier: ^7.3.1
-        version: 7.3.1
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -120,6 +117,9 @@ importers:
       pouchdb-adapter-memory:
         specifier: ^9.0.0
         version: 9.0.0
+      pouchdb-browser:
+        specifier: ^7.3.1
+        version: 7.3.1
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
@@ -251,6 +251,12 @@ importers:
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
+      pouchdb-adapter-memory:
+        specifier: ^9.0.0
+        version: 9.0.0
+      pouchdb-browser:
+        specifier: ^7.3.1
+        version: 7.3.1
     devDependencies:
       '@types/lodash-es':
         specifier: ^4.17.6
