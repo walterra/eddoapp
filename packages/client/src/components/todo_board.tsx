@@ -21,6 +21,8 @@ import {
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
+import { DatabaseErrorFallback } from './database_error_fallback';
+import { DatabaseErrorMessage } from './database_error_message';
 import { FormattedMessage } from './formatted_message';
 import { TodoListElement } from './todo_list_element';
 
@@ -303,53 +305,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   if (error && todos.length === 0 && !isLoading) {
     return (
       <div className="bg-gray-50 p-8 dark:bg-gray-800">
-        <div className="mx-auto max-w-2xl">
-          <div className="rounded-lg bg-red-50 p-6 dark:bg-red-900">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-6 w-6 text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                  Database Error
-                </h3>
-                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-                  <p>
-                    {error.type === DatabaseErrorType.NETWORK_ERROR
-                      ? 'Unable to connect to the database. Please check your internet connection.'
-                      : error.type === DatabaseErrorType.QUOTA_EXCEEDED
-                        ? 'Storage quota exceeded. Please clear some data to continue.'
-                        : 'A database error occurred. Please try again.'}
-                  </p>
-                </div>
-                <div className="mt-4">
-                  <button
-                    className="inline-flex items-center rounded-md border border-transparent bg-red-100 px-3 py-2 text-sm font-medium leading-4 text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                    onClick={() => {
-                      setError(null);
-                      fetchTodos();
-                    }}
-                    type="button"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DatabaseErrorFallback
+          error={error}
+          onDismiss={() => setError(null)}
+          onRetry={() => {
+            setError(null);
+            fetchTodos();
+          }}
+        />
       </div>
     );
   }
@@ -358,32 +321,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     <div className="bg-gray-50 dark:bg-gray-800">
       {/* Show inline error if we have data */}
       {error && todos.length > 0 && (
-        <div className="border-b border-yellow-200 bg-yellow-50 px-4 py-2 dark:border-yellow-700 dark:bg-yellow-900">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-yellow-800 dark:text-yellow-200">
-              {error.type === DatabaseErrorType.NETWORK_ERROR
-                ? 'Working offline - changes will sync when connection is restored'
-                : 'Some operations may fail - working with cached data'}
-            </span>
-            <button
-              className="text-yellow-600 hover:text-yellow-500"
-              onClick={() => setError(null)}
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M6 18L18 6M6 6l12 12"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                />
-              </svg>
-            </button>
-          </div>
+        <div className="px-4 pt-2">
+          <DatabaseErrorMessage
+            error={error}
+            onDismiss={() => setError(null)}
+          />
         </div>
       )}
       <div className="mt-2 flex flex-col">
