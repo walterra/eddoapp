@@ -21,14 +21,11 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
             </div>
           </div> */}
         <main className="h-full w-full flex-grow overflow-auto p-3" role="main">
-          <div className="prose">
-            <div className="flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="prose">
               <h1>Eddo</h1>
-              <DatabaseHealthIndicator
-                className="not-prose"
-                healthCheck={healthCheck}
-              />
             </div>
+            <DatabaseHealthIndicator healthCheck={healthCheck} />
           </div>
           {children}
         </main>
