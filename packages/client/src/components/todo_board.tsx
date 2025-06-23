@@ -56,8 +56,7 @@ const designDocViews = {
 };
 
 export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
-  const dbContext = usePouchDb();
-  const { safeDb } = dbContext;
+  const { safeDb, changes } = usePouchDb();
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
   ]);
@@ -124,15 +123,13 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   useEffect(() => {
     if (!isInitialized) return;
 
-    const listener = dbContext
-      .changes({
-        live: true,
-        since: 'now',
-      })
-      .on('change', () => {
-        fetchTodos();
-        fetchTimeTrackingActive();
-      });
+    const listener = changes({
+      live: true,
+      since: 'now',
+    }).on('change', () => {
+      fetchTodos();
+      fetchTimeTrackingActive();
+    });
 
     fetchTimeTrackingActive();
 

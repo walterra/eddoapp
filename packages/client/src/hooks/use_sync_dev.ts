@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePouchDb } from '../pouch_db';
 
 export const useSyncDev = () => {
-  const db = usePouchDb();
+  const { sync } = usePouchDb();
 
   useEffect(() => {
     // Development only - no auth needed
@@ -12,11 +12,11 @@ export const useSyncDev = () => {
       'http://admin:password@localhost:5984/todos-dev',
     );
 
-    const sync = db.sync(remoteDb, {
+    const syncHandler = sync(remoteDb, {
       live: true,
       retry: true,
     });
 
-    return () => sync.cancel();
-  }, [db]);
+    return () => syncHandler.cancel();
+  }, [sync]);
 };
