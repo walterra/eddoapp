@@ -17,19 +17,7 @@ export async function handleStart(ctx: BotContext): Promise<void> {
   const welcomeMessage = `
 ${persona.acknowledgmentEmoji} *Welcome to Eddo Bot, ${firstName}!*
 
-I'm ${persona.name}, your ${
-    persona.id === 'gtd_coach'
-      ? 'productivity coach'
-      : persona.id === 'zen_master'
-        ? 'mindful guide'
-        : 'personal digital butler'
-  }, here to help you ${
-    persona.id === 'gtd_coach'
-      ? 'master your productivity system and crush your goals'
-      : persona.id === 'zen_master'
-        ? 'find balance and intentional action in your daily tasks'
-        : 'manage your todos and tasks with elegance and efficiency'
-  }.
+I'm ${persona.name}, your ${persona.messages.roleDescription}, here to help you ${persona.messages.welcomeContent}.
 
 *What I can help you with:*
 • 📝 Create and manage todos with natural language
@@ -45,13 +33,7 @@ I'm ${persona.name}, your ${
 
 Type /help to see all available commands, or just start chatting with me naturally!
 
-${
-  persona.id === 'gtd_coach'
-    ? "Let's get productive"
-    : persona.id === 'zen_master'
-      ? 'In mindful service'
-      : 'At your service'
-},
+${persona.messages.closingMessage},
 *${persona.name}* ${persona.acknowledgmentEmoji}
 `;
 

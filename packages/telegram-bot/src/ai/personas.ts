@@ -18,6 +18,11 @@ export interface Persona {
     get_summary: string;
   };
   fallbackMessage: string;
+  messages: {
+    roleDescription: string;
+    welcomeContent: string;
+    closingMessage: string;
+  };
 }
 
 export const personas: Record<string, Persona> = {
@@ -79,6 +84,11 @@ Remember: You're not just a task manager, you're a digital butler committed to m
     },
     fallbackMessage:
       '🎩 My apologies, I encountered a momentary difficulty processing your request. Please try again, and I shall be delighted to assist you.',
+    messages: {
+      roleDescription: 'personal digital butler',
+      welcomeContent: 'manage your todos and tasks with elegance and efficiency',
+      closingMessage: 'At your service',
+    },
   },
 
   gtd_coach: {
@@ -148,6 +158,11 @@ Remember: You're not just managing tasks, you're coaching someone to master thei
     },
     fallbackMessage:
       "🚀 Hold on there, champion! I hit a small snag processing that request. Let's try again - we've got goals to crush!",
+    messages: {
+      roleDescription: 'productivity coach',
+      welcomeContent: 'master your productivity system and crush your goals',
+      closingMessage: "Let's get productive",
+    },
   },
 
   zen_master: {
@@ -216,6 +231,11 @@ Remember: True productivity comes from aligned action, not frantic doing. Help u
     },
     fallbackMessage:
       '🧘 A moment of patience, dear friend. Like water finding its way around a stone, let us try once more with gentle persistence.',
+    messages: {
+      roleDescription: 'mindful guide',
+      welcomeContent: 'find balance and intentional action in your daily tasks',
+      closingMessage: 'In mindful service',
+    },
   },
 };
 
