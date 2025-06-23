@@ -1,4 +1,6 @@
 import {
+  type DatabaseError,
+  DatabaseErrorType,
   type Todo,
   getActiveDuration,
   getFormattedDuration,
@@ -20,31 +22,59 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
   show,
   todo,
 }) => {
-  const db = usePouchDb();
+  const { safeDb } = usePouchDb();
 
   const [editedTodo, setEditedTodo] = useState(todo);
+  const [error, setError] = useState<DatabaseError | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setEditedTodo(todo);
   }, [todo]);
 
-  function deleteButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
+  async function deleteButtonPressed(
+    event: React.FormEvent<HTMLButtonElement>,
+  ) {
     event.preventDefault();
-    db.remove(todo);
+    setError(null);
+    setIsDeleting(true);
+
+    try {
+      await safeDb.safeRemove(todo);
+      onClose();
+    } catch (err) {
+      console.error('Failed to delete todo:', err);
+      setError(err as DatabaseError);
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
-  function editSaveButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
+  async function editSaveButtonPressed(
+    event: React.FormEvent<HTMLButtonElement>,
+  ) {
     event.preventDefault();
-    db.put(editedTodo);
+    setError(null);
+    setIsSaving(true);
 
-    if (
-      typeof editedTodo.repeat === 'number' &&
-      editedTodo.completed &&
-      todo.completed !== editedTodo.completed
-    ) {
-      db.put(getRepeatTodo(editedTodo));
+    try {
+      await safeDb.safePut(editedTodo);
+
+      if (
+        typeof editedTodo.repeat === 'number' &&
+        editedTodo.completed &&
+        todo.completed !== editedTodo.completed
+      ) {
+        await safeDb.safePut(getRepeatTodo(editedTodo));
+      }
+      onClose();
+    } catch (err) {
+      console.error('Failed to save todo:', err);
+      setError(err as DatabaseError);
+    } finally {
+      setIsSaving(false);
     }
-    onClose();
   }
 
   const activeArray = Object.entries(editedTodo.active);
@@ -62,6 +92,55 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
     <Modal onClose={onClose} show={show}>
       <Modal.Header>Edit Todo</Modal.Header>
       <Modal.Body>
+        {error && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-700 dark:bg-red-900">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm text-red-700 dark:text-red-200">
+                  {error.type === DatabaseErrorType.SYNC_CONFLICT
+                    ? 'This todo was modified by another device. Please close and try again.'
+                    : error.message}
+                </p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  className="inline-flex text-red-400 hover:text-red-500"
+                  onClick={() => setError(null)}
+                  type="button"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M6 18L18 6M6 6l12 12"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <form className="flex flex-col gap-4">
           <div>
             <div className="mb-2 block">
@@ -256,13 +335,20 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
       <Modal.Footer>
         <div className="flex w-full justify-between">
           <div>
-            <Button disabled={!isActiveValid} onClick={editSaveButtonPressed}>
-              Save
+            <Button
+              disabled={!isActiveValid || isSaving || isDeleting}
+              onClick={editSaveButtonPressed}
+            >
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
           <div>
-            <Button color="failure" onClick={deleteButtonPressed}>
-              Delete
+            <Button
+              color="failure"
+              disabled={isSaving || isDeleting}
+              onClick={deleteButtonPressed}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
         </div>

@@ -1,5 +1,7 @@
 import {
   type Activity,
+  type DatabaseError,
+  DatabaseErrorType,
   type Todo,
   getFormattedDurationForActivities,
   isLatestVersion,
@@ -8,10 +10,19 @@ import {
 import { group } from 'd3-array';
 import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
 import { isEqual, uniqBy } from 'lodash-es';
-import { type FC, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type FC,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { usePouchDb } from '../pouch_db';
+import { DatabaseErrorFallback } from './database_error_fallback';
+import { DatabaseErrorMessage } from './database_error_message';
 import { FormattedMessage } from './formatted_message';
 import { TodoListElement } from './todo_list_element';
 
@@ -20,9 +31,6 @@ interface TodoBoardProps {
 }
 
 const designDocId = '_design/todos';
-const designDocByActiveView = 'todos/byActive';
-const designDocByDueDateView = 'todos/byDueDate';
-const designDocByTimeTrackingActiveView = 'todos/byTimeTrackingActive';
 const designDocViews = {
   byActive: {
     map: `function (doc) {
@@ -50,13 +58,15 @@ const designDocViews = {
 };
 
 export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
-  const db = usePouchDb();
+  const { safeDb, changes } = usePouchDb();
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
   ]);
   const [outdatedTodos, setOutdatedTodos] = useState<unknown[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [error, setError] = useState<DatabaseError | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // avoid multiple fetches
   const isFetching = useRef(false);
@@ -80,73 +90,48 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
 
     // async iife
     (async () => {
+      setError(null);
       let designDoc;
 
       try {
         // Attempt to get the design document from the database
-        designDoc = await db.get(designDocId);
+        designDoc = await safeDb.safeGet<
+          PouchDB.Core.GetMeta & {
+            views?: typeof designDocViews;
+          }
+        >(designDocId);
 
         // Check if design doc has all views
-        if (
-          !isEqual(
-            (
-              designDoc as PouchDB.Core.GetMeta & {
-                views?: typeof designDocViews;
-              }
-            ).views,
-            designDocViews,
-          )
-        ) {
-          throw new Error('Design document is missing views.');
+        if (!designDoc || !isEqual(designDoc.views, designDocViews)) {
+          // Save the design document to your database
+          await safeDb.safePut({
+            _id: '_design/todos',
+            _rev: designDoc?._rev,
+            views: designDocViews,
+          });
         }
 
         // You can then proceed with your logic, e.g., update or query it
         setIsInitialized(true);
       } catch (err) {
-        // If an error occurs, it means the design document does not exist
-        if (
-          err instanceof Error &&
-          'status' in err &&
-          (err as PouchDB.Core.Error).status === 404
-        ) {
-          // Save the design document to your database
-          await db.put({
-            _id: '_design/todos',
-            views: designDocViews,
-          });
-
-          setIsInitialized(true);
-        } else if (
-          err instanceof Error &&
-          err.message === 'Design document is missing views.'
-        ) {
-          // Save the design document to your database
-          await db.put({
-            ...designDoc,
-            views: designDocViews,
-          });
-
-          setIsInitialized(true);
-        } else {
-          // Handle other errors
-          console.error('Error retrieving design document:', err);
-        }
+        console.error('Error initializing design document:', err);
+        setError(err as DatabaseError);
+        // Still try to initialize to avoid blocking the app
+        setIsInitialized(true);
       }
     })();
-  }, [isInitialized]);
+  }, [isInitialized, safeDb]);
 
   useEffect(() => {
     if (!isInitialized) return;
 
-    const listener = db
-      .changes({
-        live: true,
-        since: 'now',
-      })
-      .on('change', () => {
-        fetchTodos();
-        fetchTimeTrackingActive();
-      });
+    const listener = changes({
+      live: true,
+      since: 'now',
+    }).on('change', () => {
+      fetchTodos();
+      fetchTimeTrackingActive();
+    });
 
     fetchTimeTrackingActive();
 
@@ -155,28 +140,35 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     };
   }, [currentDate, isInitialized]);
 
-  async function fetchTimeTrackingActive() {
+  const fetchTimeTrackingActive = useCallback(async () => {
     try {
-      const resp = await db.query(designDocByTimeTrackingActiveView, {
-        key: null,
-      });
-      setTimeTrackingActive(resp.rows.map((d) => d.id));
+      const resp = await safeDb.safeQuery<{ id: string }>(
+        'todos',
+        'byTimeTrackingActive',
+        {
+          key: null,
+        },
+      );
+      setTimeTrackingActive(resp.map((d) => d.id));
     } catch (e) {
-      console.error('not able to fetch active todos', e);
+      console.error('Not able to fetch active todos:', e);
+      setError(e as DatabaseError);
     }
-  }
+  }, [safeDb]);
 
-  async function fetchTodos() {
+  const fetchTodos = useCallback(async () => {
     if (isFetching.current) {
       shouldFetch.current = true;
       return;
     }
 
     isFetching.current = true;
+    setIsLoading(true);
+    setError(null);
 
     try {
       console.time('fetchTodos');
-      const newTodos = await db.query(designDocByDueDateView, {
+      const newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
         descending: false,
         endkey: currentEndOfWeek.toISOString(),
         include_docs: false,
@@ -185,43 +177,49 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
       console.timeEnd('fetchTodos');
 
       console.time('fetchActivities');
-      const newActivities = await db.query(designDocByActiveView, {
-        descending: false,
-        endkey: currentEndOfWeek.toISOString(),
-        include_docs: false,
-        startkey: currentStartOfWeek.toISOString(),
-      });
+      const newActivities = await safeDb.safeQuery<Activity>(
+        'todos',
+        'byActive',
+        {
+          descending: false,
+          endkey: currentEndOfWeek.toISOString(),
+          include_docs: false,
+          startkey: currentStartOfWeek.toISOString(),
+        },
+      );
       console.timeEnd('fetchActivities');
 
       console.time('setOutdatedTodos');
       setOutdatedTodos(
-        newTodos?.rows
-          .filter((d) => !isLatestVersion(d.value))
-          .map((d) => d.value),
+        newTodos.filter((d) => !isLatestVersion(d)).map((d) => d),
       );
       console.timeEnd('setOutdatedTodos');
 
       console.time('setTodos');
-      setTodos(
-        (newTodos?.rows
-          .filter((d) => isLatestVersion(d.value))
-          .map((d) => d.value) ?? []) as Todo[],
-      );
+      setTodos(newTodos.filter((d) => isLatestVersion(d)) as Todo[]);
       console.timeEnd('setTodos');
 
       console.time('setActivities');
-      setActivities(newActivities.rows.map((d) => d.value));
+      setActivities(newActivities);
       console.timeEnd('setActivities');
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch todos:', err);
+      setError(err as DatabaseError);
+
+      // Show user-friendly error message
+      if ((err as DatabaseError).type === DatabaseErrorType.NETWORK_ERROR) {
+        // We're in offline mode, keep existing data
+        console.log('Working in offline mode');
+      }
     } finally {
       isFetching.current = false;
+      setIsLoading(false);
       if (shouldFetch.current) {
         shouldFetch.current = false;
         fetchTodos();
       }
     }
-  }
+  }, [safeDb, currentStartOfWeek, currentEndOfWeek]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -236,8 +234,15 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     // disabled for now
     return;
 
-    db.bulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
-  }, [outdatedTodos, isInitialized]);
+    (async () => {
+      try {
+        await safeDb.safeBulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
+      } catch (err) {
+        console.error('Failed to migrate outdated todos:', err);
+        setError(err as DatabaseError);
+      }
+    })();
+  }, [outdatedTodos, isInitialized, safeDb]);
 
   const filteredActivities = activities.filter((a) => {
     // TODO The 'split' is a CEST quick fix
@@ -296,8 +301,33 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     'data:text/json;charset=utf-8,' +
     encodeURIComponent(JSON.stringify(todos, null, 2));
 
+  // Show error state if there's an error and no data
+  if (error && todos.length === 0 && !isLoading) {
+    return (
+      <div className="bg-gray-50 p-8 dark:bg-gray-800">
+        <DatabaseErrorFallback
+          error={error}
+          onDismiss={() => setError(null)}
+          onRetry={() => {
+            setError(null);
+            fetchTodos();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
+      {/* Show inline error if we have data */}
+      {error && todos.length > 0 && (
+        <div className="px-4 pt-2">
+          <DatabaseErrorMessage
+            error={error}
+            onDismiss={() => setError(null)}
+          />
+        </div>
+      )}
       <div className="mt-2 flex flex-col">
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
