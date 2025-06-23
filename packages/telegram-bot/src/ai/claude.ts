@@ -164,6 +164,8 @@ Use this documentation to understand the exact capabilities and parameters for e
         max_tokens: 1000,
         system: `Parse the user's message to extract todo management intent. Return JSON only.
 
+IMPORTANT: For multiple todos, create them ONE AT A TIME using only "create" action. DO NOT use "create_multiple" or any other action.
+
 IMPORTANT: When parsing dates, convert natural language to ISO format (YYYY-MM-DDTHH:mm:ss.sssZ):
 - "tomorrow" → next day at 23:59:59.999Z
 - "June 20th" or "June 20" → current/next year-06-20T23:59:59.999Z
@@ -173,6 +175,8 @@ IMPORTANT: When parsing dates, convert natural language to ISO format (YYYY-MM-D
 - If no time specified, default to 23:59:59.999Z
 
 Current date for reference: ${new Date().toISOString()}
+
+VALID ACTIONS ONLY: create, list, update, complete, delete, start_timer, stop_timer, get_summary
 
 Examples:
 - "Add buy groceries to shopping for tomorrow" → {"action": "create", "title": "buy groceries", "context": "shopping", "due": "${new Date(Date.now() + 86400000).toISOString().split('T')[0]}T23:59:59.999Z"}
@@ -210,6 +214,13 @@ If the message is not about todo management, return null.`,
       return TodoIntentSchema.parse(parsed);
     } catch (error) {
       logger.error('Failed to parse user intent', { error, message });
+      
+      // If it's a Zod validation error, it means Claude tried to parse a todo request but used invalid values
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
+        // Return a special error object that the handler can distinguish from "not a todo request"
+        throw new Error(`Invalid todo request format: ${JSON.stringify(error)}`);
+      }
+      
       return null;
     }
   }

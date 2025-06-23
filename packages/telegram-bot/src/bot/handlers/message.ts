@@ -21,7 +21,26 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
 
   try {
     // Parse user intent with AI
-    const intent = await claude.parseUserIntent(messageText);
+    let intent: TodoIntent | null = null;
+    
+    try {
+      intent = await claude.parseUserIntent(messageText);
+    } catch (parseError) {
+      // Handle parsing errors (e.g., invalid enum values from Claude)
+      logger.error('Intent parsing failed', { error: parseError, messageText });
+      
+      const errorResponse = await claude.generateResponse(
+        userId.toString(),
+        messageText,
+        { 
+          mcpResponse: `Parsing Error: ${parseError instanceof Error ? parseError.message : String(parseError)}. Please rephrase your request.`,
+          action: 'parsing_error'
+        }
+      );
+      
+      await ctx.reply(errorResponse.content, { parse_mode: 'Markdown' });
+      return;
+    }
     
     if (!intent) {
       // Not a todo request, just have a conversation
