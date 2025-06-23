@@ -79,7 +79,9 @@ export const createSafeDbOperationsWithHealth = (
     };
   };
 
-  const wrapBulkDocs = <T extends { _id?: string; _rev?: string }>(operation: typeof baseSafeOps.safeBulkDocs) => {
+  const wrapBulkDocs = <T extends { _id?: string; _rev?: string }>(
+    operation: typeof baseSafeOps.safeBulkDocs,
+  ) => {
     return async (docs: T[]): Promise<T[]> => {
       const startTime = Date.now();
       try {
@@ -98,7 +100,10 @@ export const createSafeDbOperationsWithHealth = (
     return async (
       designDoc: string,
       viewName: string,
-      options?: PouchDB.Query.Options<Record<string, unknown>, Record<string, unknown>>,
+      options?: PouchDB.Query.Options<
+        Record<string, unknown>,
+        Record<string, unknown>
+      >,
     ): Promise<T[]> => {
       const startTime = Date.now();
       try {

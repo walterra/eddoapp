@@ -221,7 +221,7 @@ export class DatabaseHealthMonitor {
 
   private classifyError(error: unknown): DatabaseError {
     const errorObj = error as Record<string, unknown>;
-    
+
     // Reuse existing error classification logic
     if (errorObj.name === 'QuotaExceededError' || errorObj.code === 22) {
       return {
