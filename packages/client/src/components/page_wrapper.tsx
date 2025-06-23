@@ -1,10 +1,15 @@
 import { type FC } from 'react';
 
+import { useDatabaseHealth } from '../hooks/use_database_health';
+import { DatabaseHealthIndicator } from './database_health_indicator';
+
 interface PageWrapperProps {
   children?: React.ReactNode;
 }
 
 export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
+  const { healthCheck } = useDatabaseHealth();
+
   return (
     <>
       <div className="flex w-full flex-grow flex-col overflow-hidden sm:flex-row">
@@ -17,7 +22,13 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
           </div> */}
         <main className="h-full w-full flex-grow overflow-auto p-3" role="main">
           <div className="prose">
-            <h1>Eddo</h1>
+            <div className="flex items-center justify-between">
+              <h1>Eddo</h1>
+              <DatabaseHealthIndicator
+                className="not-prose"
+                healthCheck={healthCheck}
+              />
+            </div>
           </div>
           {children}
         </main>
