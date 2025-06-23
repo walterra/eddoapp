@@ -24,7 +24,10 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     let intent: TodoIntent | MultiTodoIntent | null = null;
 
     try {
-      intent = await claude.parseUserIntent(messageText, ctx.session.lastBotMessage);
+      intent = await claude.parseUserIntent(
+        messageText,
+        ctx.session.lastBotMessage,
+      );
     } catch (parseError) {
       // Handle parsing errors (e.g., invalid enum values from Claude)
       logger.error('Intent parsing failed', { error: parseError, messageText });
@@ -99,7 +102,8 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     }
   } catch (error) {
     logger.error('Error in message handler', { error, userId, messageText });
-    const fallbackMessage = '🎩 My apologies, I encountered an issue processing your request. Please try again in a moment.';
+    const persona = claude.getPersona();
+    const fallbackMessage = persona.fallbackMessage;
     await ctx.reply(fallbackMessage);
     ctx.session.lastBotMessage = fallbackMessage;
   }

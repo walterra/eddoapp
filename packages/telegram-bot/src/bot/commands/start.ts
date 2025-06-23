@@ -1,3 +1,4 @@
+import { getClaudeAI } from '../../ai/claude.js';
 import { logger } from '../../utils/logger.js';
 import { BotContext } from '../bot.js';
 
@@ -10,10 +11,25 @@ export async function handleStart(ctx: BotContext): Promise<void> {
 
   logger.info('User started bot', { userId, firstName });
 
-  const welcomeMessage = `
-🎩 *Welcome to Eddo Bot, ${firstName}!*
+  const claude = getClaudeAI();
+  const persona = claude.getPersona();
 
-I'm your personal digital butler, here to help you manage your todos and tasks with the elegance and efficiency you deserve.
+  const welcomeMessage = `
+${persona.acknowledgmentEmoji} *Welcome to Eddo Bot, ${firstName}!*
+
+I'm ${persona.name}, your ${
+    persona.id === 'gtd_coach'
+      ? 'productivity coach'
+      : persona.id === 'zen_master'
+        ? 'mindful guide'
+        : 'personal digital butler'
+  }, here to help you ${
+    persona.id === 'gtd_coach'
+      ? 'master your productivity system and crush your goals'
+      : persona.id === 'zen_master'
+        ? 'find balance and intentional action in your daily tasks'
+        : 'manage your todos and tasks with elegance and efficiency'
+  }.
 
 *What I can help you with:*
 • 📝 Create and manage todos with natural language
@@ -29,8 +45,14 @@ I'm your personal digital butler, here to help you manage your todos and tasks w
 
 Type /help to see all available commands, or just start chatting with me naturally!
 
-At your service,
-*Mr. Stevens* 🎩
+${
+  persona.id === 'gtd_coach'
+    ? "Let's get productive"
+    : persona.id === 'zen_master'
+      ? 'In mindful service'
+      : 'At your service'
+},
+*${persona.name}* ${persona.acknowledgmentEmoji}
 `;
 
   await ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
@@ -40,8 +62,11 @@ At your service,
  * Handle the /help command
  */
 export async function handleHelp(ctx: BotContext): Promise<void> {
+  const claude = getClaudeAI();
+  const persona = claude.getPersona();
+
   const helpMessage = `
-🎩 *Eddo Bot Commands & Usage*
+${persona.acknowledgmentEmoji} *Eddo Bot Commands & Usage*
 
 *Basic Commands:*
 /start - Welcome message and introduction
@@ -71,7 +96,7 @@ export async function handleHelp(ctx: BotContext): Promise<void> {
 
 *Contexts:* work, personal, home, shopping, health, learning
 
-Just chat naturally - I'll understand what you need! 🎩
+Just chat naturally - I'll understand what you need! ${persona.acknowledgmentEmoji}
 `;
 
   await ctx.reply(helpMessage, { parse_mode: 'Markdown' });
@@ -81,8 +106,11 @@ Just chat naturally - I'll understand what you need! 🎩
  * Handle the /status command
  */
 export async function handleStatus(ctx: BotContext): Promise<void> {
+  const claude = getClaudeAI();
+  const persona = claude.getPersona();
+
   const statusMessage = `
-🎩 *Bot Status*
+${persona.acknowledgmentEmoji} *Bot Status*
 
 ✅ Telegram Bot: Online
 🔄 Checking MCP Server connection...
@@ -91,6 +119,7 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
 • User ID: ${ctx.session.userId}
 • Last Activity: ${ctx.session.lastActivity.toLocaleString()}
 • Conversation Active: ${ctx.session.conversationId ? 'Yes' : 'No'}
+• Current Persona: ${persona.name} (${persona.id})
 
 *Capabilities:*
 • Natural Language Processing: ✅
@@ -98,7 +127,7 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
 • Time Tracking: ✅ (via MCP)
 • AI Assistant: ✅ (Claude)
 
-Everything is running smoothly! 🎩
+Everything is running smoothly! ${persona.acknowledgmentEmoji}
 `;
 
   await ctx.reply(statusMessage, { parse_mode: 'Markdown' });

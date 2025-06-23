@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getMCPClient } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
+import { type Persona, getPersona } from './personas.js';
 
 export interface AISession {
   id: string;
@@ -62,53 +63,13 @@ export type MultiTodoIntent = z.infer<typeof MultiTodoIntentSchema>;
 export class ClaudeAI {
   private client: Anthropic;
   private sessions: Map<string, AISession> = new Map();
-  private readonly systemPrompt = `You are Mr. Stevens, a sophisticated digital butler working for the Eddo todo management system. You help users manage their tasks with elegance, efficiency, and a professional demeanor.
-
-Your capabilities through the MCP server:
-- **createTodo**: Create new todos with title, description, context, due date, tags, repeat interval, and links
-- **listTodos**: Query todos with filters (context, completion status, date range)
-- **updateTodo**: Modify existing todos (requires finding the ID first)
-- **toggleTodoCompletion**: Mark todos as complete/incomplete (handles repeating todos automatically)
-- **deleteTodo**: Permanently remove todos
-- **startTimeTracking/stopTimeTracking**: Track time spent on tasks
-- **getActiveTimeTracking**: See which todos are currently being timed
-
-Todo Properties:
-- title: Main task name (required)
-- description: Detailed notes (markdown supported)
-- context: GTD category (work, private, errands, shopping, calls, learning, health, home)
-- due: ISO date when task should be completed (defaults to end of current day)
-- tags: Labels for categorization
-- repeat: Days to repeat after completion (null for no repeat)
-- link: Associated URL or reference
-- completed: ISO timestamp when completed (null if not done)
-- active: Time tracking sessions (start/end timestamps)
-
-Date Handling:
-- Always convert natural language dates to ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)
-- Default time is 23:59:59.999Z if not specified
-- Understand "tomorrow", "next Friday", "June 25th", "in 3 days", etc.
-- Use current date as reference for relative dates
-
-When users make requests:
-1. Parse their intent carefully, understanding both explicit requests and implied needs
-2. Extract all relevant information (title, context, dates, etc.)
-3. Use appropriate MCP tools to fulfill their request
-4. When updating/completing/deleting, first list to find the correct todo ID
-5. Provide helpful, butler-like responses confirming actions taken
-
-Always be:
-- Professional and courteous
-- Proactive in offering assistance
-- Clear about what actions you're taking
-- Efficient in helping users achieve their goals
-
-Remember: You're not just a task manager, you're a digital butler committed to making your user's life more organized and productive.`;
+  private persona: Persona;
 
   constructor() {
     this.client = new Anthropic({
       apiKey: appConfig.ANTHROPIC_API_KEY,
     });
+    this.persona = getPersona(appConfig.BOT_PERSONA_ID);
   }
 
   /**
@@ -118,13 +79,13 @@ Remember: You're not just a task manager, you're a digital butler committed to m
     try {
       const mcpClient = getMCPClient();
       if (!mcpClient.isClientConnected()) {
-        return this.systemPrompt;
+        return this.persona.systemPrompt;
       }
 
       // Get comprehensive MCP server documentation
       const serverInfo = await mcpClient.getServerInfo('all');
 
-      return `${this.systemPrompt}
+      return `${this.persona.systemPrompt}
 
 ## MCP Server Documentation
 ${serverInfo}
@@ -134,7 +95,7 @@ Use this documentation to understand the exact capabilities and parameters for e
       logger.warn('Failed to get MCP server info for enhanced prompt', {
         error,
       });
-      return this.systemPrompt;
+      return this.persona.systemPrompt;
     }
   }
 
@@ -189,9 +150,13 @@ Use this documentation to understand the exact capabilities and parameters for e
         max_tokens: 1000,
         system: `Parse the user's message to extract todo management intent(s). Return JSON only.
 
-${lastBotMessage ? `CONTEXT: The bot's last response was: "${lastBotMessage}"
+${
+  lastBotMessage
+    ? `CONTEXT: The bot's last response was: "${lastBotMessage}"
 
-Consider this context when parsing the user's current message. If the user is responding with contextual phrases like "continue", "yes please", "do it", "proceed", etc., interpret their intent based on what the bot previously suggested or offered.` : ''}
+Consider this context when parsing the user's current message. If the user is responding with contextual phrases like "continue", "yes please", "do it", "proceed", etc., interpret their intent based on what the bot previously suggested or offered.`
+    : ''
+}
 
 You can return either:
 1. Single action: {"action": "create", "title": "task", ...}
@@ -340,8 +305,7 @@ If the message is not about todo management, return null.`,
 
       // Fallback response
       return {
-        content:
-          '🎩 My apologies, I encountered a momentary difficulty processing your request. Please try again, and I shall be delighted to assist you.',
+        content: this.persona.fallbackMessage,
         sessionId: session.id,
       };
     }
@@ -357,25 +321,21 @@ If the message is not about todo management, return null.`,
       if (actionCount === 1) {
         return this.generateAcknowledgment(intent.actions[0]);
       }
-      return `🎩 Excellent! Let me handle those ${actionCount} tasks for you...`;
+      return `${this.persona.acknowledgmentEmoji} Excellent! Let me handle those ${actionCount} tasks for you...`;
     }
 
     // Handle single intent
-    const acknowledgments = {
-      create: '🎩 Certainly! Let me create that todo for you...',
-      list: '🎩 Of course! Let me retrieve your todos...',
-      update: '🎩 Absolutely! Let me update that todo...',
-      complete: '🎩 Excellent! Let me mark that as completed...',
-      delete: '🎩 Very well! Let me remove that todo...',
-      start_timer: '🎩 Right away! Let me start the timer...',
-      stop_timer: '🎩 Certainly! Let me stop the timer...',
-      get_summary: '🎩 Of course! Let me prepare your summary...',
-    };
-
     return (
-      acknowledgments[intent.action] ||
-      '🎩 At your service! Let me handle that for you...'
+      this.persona.acknowledgments[intent.action] ||
+      `${this.persona.acknowledgmentEmoji} At your service! Let me handle that for you...`
     );
+  }
+
+  /**
+   * Get current persona information
+   */
+  getPersona(): Persona {
+    return this.persona;
   }
 
   /**

@@ -23,6 +23,9 @@ const ConfigSchema = z.object({
   // Claude Code SDK Configuration
   CLAUDE_CODE_WORKING_DIR: z.string().default('./bot_workspace'),
   CLAUDE_CODE_SESSION_TIMEOUT: z.coerce.number().default(3600),
+
+  // Bot Persona Configuration
+  BOT_PERSONA_ID: z.string().default('butler'),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
