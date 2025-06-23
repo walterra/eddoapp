@@ -1,9 +1,9 @@
 import { createBot } from './bot/bot.js';
-import { handleStart, handleHelp, handleStatus } from './bot/commands/start.js';
+import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
-import { logger } from './utils/logger.js';
-import { appConfig } from './utils/config.js';
 import { getMCPClient } from './mcp/client.js';
+import { appConfig } from './utils/config.js';
+import { logger } from './utils/logger.js';
 
 /**
  * Main application entry point
@@ -18,12 +18,14 @@ async function main(): Promise<void> {
     // Initialize MCP client
     logger.info('Initializing MCP client...');
     const mcpClient = getMCPClient();
-    
+
     try {
       await mcpClient.connect();
       logger.info('✅ MCP client connected successfully');
     } catch (mcpError) {
-      logger.warn('⚠️ MCP client connection failed, will retry as needed', { error: mcpError });
+      logger.warn('⚠️ MCP client connection failed, will retry as needed', {
+        error: mcpError,
+      });
       // Continue starting the bot even if MCP is not immediately available
     }
 
@@ -49,10 +51,9 @@ async function main(): Promise<void> {
     // Start the bot
     logger.info('Starting bot polling...');
     await bot.start();
-    
+
     logger.info('🎩 Eddo Bot is now running and ready to serve!');
     logger.info('📡 Connect your Telegram bot and start chatting!');
-
   } catch (error) {
     logger.error('Failed to start bot', { error });
     process.exit(1);

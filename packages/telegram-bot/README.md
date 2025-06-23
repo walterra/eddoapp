@@ -35,12 +35,13 @@ A sophisticated digital butler bot for Telegram that integrates with the Eddo to
 
 ```
 /setdescription - Set bot description
-/setabouttext - Set about text  
+/setabouttext - Set about text
 /setuserpic - Upload a profile picture
 /setcommands - Set command menu
 ```
 
 Example commands to set:
+
 ```
 start - Welcome message and introduction
 help - Show available commands and examples
@@ -58,21 +59,24 @@ status - Check bot and server status
 ### Step 3: Installation & Configuration
 
 1. **Install dependencies** from the repo root:
+
 ```bash
 pnpm install
 ```
 
 2. **Copy environment template**:
+
 ```bash
 cp packages/telegram-bot/.env.example packages/telegram-bot/.env
 ```
 
 3. **Configure your `.env` file** with your tokens:
+
 ```bash
 # From BotFather (Step 1)
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 
-# From Anthropic Console (Step 2)  
+# From Anthropic Console (Step 2)
 ANTHROPIC_API_KEY=sk-ant-api03-...
 
 # MCP Server (should be running on port 3001, no auth required)
@@ -86,11 +90,13 @@ LOG_LEVEL=info
 ### Step 4: Start the System
 
 1. **Start the MCP Server** (in one terminal):
+
 ```bash
 pnpm dev:server
 ```
 
 2. **Start the Telegram Bot** (in another terminal):
+
 ```bash
 pnpm dev:telegram-bot
 ```
@@ -138,6 +144,7 @@ Once your bot is running, start a conversation:
 ### Natural Language Todo Management
 
 **Creating Todos:**
+
 ```
 "Add buy groceries to shopping for tomorrow"
 "Create a work task to review quarterly reports by Friday"
@@ -146,6 +153,7 @@ Once your bot is running, start a conversation:
 ```
 
 **Viewing Todos:**
+
 ```
 "Show me my work tasks"
 "What do I have due this week?"
@@ -155,6 +163,7 @@ Once your bot is running, start a conversation:
 ```
 
 **Completing & Managing:**
+
 ```
 "Mark grocery shopping as completed"
 "Mark 'finish proposal' as done"
@@ -163,6 +172,7 @@ Once your bot is running, start a conversation:
 ```
 
 **Time Tracking:**
+
 ```
 "Start timer for meeting preparation"
 "Begin timing the project work"
@@ -172,6 +182,7 @@ Once your bot is running, start a conversation:
 ```
 
 **Getting Summaries:**
+
 ```
 "Give me a summary of today's tasks"
 "What did I accomplish this week?"
@@ -209,7 +220,7 @@ Once your bot is running, start a conversation:
 
 - **Bot Framework**: Grammy for Telegram API
 - **AI Processing**: Anthropic Claude for natural language understanding
-- **MCP Client**: Connects to the Eddo MCP server for todo operations  
+- **MCP Client**: Connects to the Eddo MCP server for todo operations
 - **Session Management**: Maintains conversation context
 - **Error Handling**: Graceful degradation and retry logic
 
@@ -217,22 +228,24 @@ Once your bot is running, start a conversation:
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather | Required |
-| `ANTHROPIC_API_KEY` | Claude API key | Required |
-| `MCP_SERVER_URL` | MCP server endpoint | `http://localhost:3001` |
-| `NODE_ENV` | Environment | `development` |
-| `LOG_LEVEL` | Logging level | `info` |
+| Variable             | Description               | Default                 |
+| -------------------- | ------------------------- | ----------------------- |
+| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather | Required                |
+| `ANTHROPIC_API_KEY`  | Claude API key            | Required                |
+| `MCP_SERVER_URL`     | MCP server endpoint       | `http://localhost:3001` |
+| `NODE_ENV`           | Environment               | `development`           |
+| `LOG_LEVEL`          | Logging level             | `info`                  |
 
 ### MCP Server Connection
 
 The bot connects to the MCP server using HTTP streaming transport. The server requires:
+
 - No authentication (uses CouchDB auth internally)
 - Running on `http://localhost:3001/mcp`
 - FastMCP server with httpStream transport
 
 To test the connection:
+
 ```bash
 # Build and test MCP connection
 pnpm build && node test-mcp.js
@@ -241,17 +254,20 @@ pnpm build && node test-mcp.js
 ## Deployment
 
 ### Development
+
 ```bash
 pnpm dev
 ```
 
 ### Production
+
 ```bash
 pnpm build
 pnpm start
 ```
 
 ### Docker (Future)
+
 ```bash
 docker build -t eddo-telegram-bot .
 docker run -d --env-file .env eddo-telegram-bot
@@ -262,40 +278,50 @@ docker run -d --env-file .env eddo-telegram-bot
 ### Common Issues
 
 #### 1. Bot Not Responding
+
 **Symptoms**: Bot doesn't reply to messages, shows as offline
 **Solutions**:
+
 - Verify `TELEGRAM_BOT_TOKEN` is correct (check BotFather)
 - Ensure bot is running (`pnpm dev:telegram-bot`)
 - Check console for error messages
 - Test token with: `curl https://api.telegram.org/bot<YOUR_TOKEN>/getMe`
 
 #### 2. "MCP Server Not Available" Errors
+
 **Symptoms**: Bot responds but can't manage todos
 **Solutions**:
+
 - Start MCP server: `pnpm dev:server`
 - Check MCP server is on port 3001: `curl http://localhost:3001/mcp`
 - Verify CouchDB is running (see server package README)
 - Check `MCP_SERVER_URL` in `.env`
 
 #### 3. AI/Claude API Errors
+
 **Symptoms**: Bot can't understand natural language, gives generic responses
 **Solutions**:
+
 - Verify `ANTHROPIC_API_KEY` is valid (starts with `sk-ant-`)
 - Check API key has sufficient credits
 - Test key independently: visit Anthropic Console
 - Check network connectivity to Anthropic services
 
 #### 4. Permission/Network Issues
+
 **Symptoms**: Various connection timeouts
 **Solutions**:
+
 - Check firewall settings for ports 3001 and 5984 (CouchDB)
 - Verify internet connectivity
 - Try running with `NODE_ENV=development` for more logs
 - Check corporate proxy settings if applicable
 
 #### 5. Environment Configuration
+
 **Symptoms**: "Configuration validation failed" on startup
 **Solutions**:
+
 - Ensure `.env` file exists in `packages/telegram-bot/`
 - Check all required variables are set (see `.env.example`)
 - Verify no extra spaces or quotes in `.env` values
@@ -304,6 +330,7 @@ docker run -d --env-file .env eddo-telegram-bot
 ### Debugging Tools
 
 #### Enable Debug Logging
+
 ```bash
 # In .env file
 LOG_LEVEL=debug
@@ -311,11 +338,12 @@ NODE_ENV=development
 ```
 
 #### Check Service Health
+
 ```bash
 # Test MCP server
 curl http://localhost:3001/mcp
 
-# Test CouchDB  
+# Test CouchDB
 curl http://localhost:5984
 
 # Test Telegram API
@@ -323,6 +351,7 @@ curl https://api.telegram.org/bot<YOUR_TOKEN>/getMe
 ```
 
 #### View Logs
+
 ```bash
 # Real-time logs
 tail -f packages/telegram-bot/combined.log
@@ -346,18 +375,21 @@ If you're still having issues:
 ## Development Roadmap
 
 ### Phase 1: Core Infrastructure ✅
+
 - [x] Grammy bot framework
 - [x] MCP client integration
 - [x] Claude AI integration
 - [x] Basic message handling
 
 ### Phase 2: Advanced Features (In Progress)
+
 - [ ] Enhanced intent recognition
 - [ ] Time tracking improvements
 - [ ] Smart notifications
 - [ ] Batch operations
 
 ### Phase 3: Polish & Deployment
+
 - [ ] Comprehensive testing
 - [ ] Docker deployment
 - [ ] Performance optimization
@@ -375,6 +407,7 @@ If you're still having issues:
 ### BotFather Commands
 
 Create and manage your bot:
+
 ```
 /newbot - Create a new bot
 /setname - Change bot name
@@ -387,18 +420,18 @@ Create and manage your bot:
 
 ### Environment Variables
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `TELEGRAM_BOT_TOKEN` | ✅ | From BotFather | `123456789:ABC...` |
-| `ANTHROPIC_API_KEY` | ✅ | Claude AI key | `sk-ant-api03-...` |
-| `MCP_SERVER_URL` | ✅ | MCP endpoint | `http://localhost:3001/mcp` |
-| `NODE_ENV` | ⚪ | Environment | `development` |
-| `LOG_LEVEL` | ⚪ | Logging level | `info` |
+| Variable             | Required | Description    | Example                     |
+| -------------------- | -------- | -------------- | --------------------------- |
+| `TELEGRAM_BOT_TOKEN` | ✅       | From BotFather | `123456789:ABC...`          |
+| `ANTHROPIC_API_KEY`  | ✅       | Claude AI key  | `sk-ant-api03-...`          |
+| `MCP_SERVER_URL`     | ✅       | MCP endpoint   | `http://localhost:3001/mcp` |
+| `NODE_ENV`           | ⚪       | Environment    | `development`               |
+| `LOG_LEVEL`          | ⚪       | Logging level  | `info`                      |
 
 ### Service Dependencies
 
 1. **CouchDB** (port 5984) - Database for todos
-2. **MCP Server** (port 3001) - Todo operations API  
+2. **MCP Server** (port 3001) - Todo operations API
 3. **Telegram Bot** (your bot) - User interface
 4. **Anthropic API** - AI processing
 

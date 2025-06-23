@@ -1,4 +1,5 @@
 import { Bot, Context, session } from 'grammy';
+
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
@@ -8,6 +9,7 @@ interface SessionData {
   conversationId?: string;
   lastActivity: Date;
   context: Record<string, unknown>;
+  lastBotMessage?: string;
 }
 
 // Extend the context with session data
@@ -22,13 +24,15 @@ export function createBot(): Bot<BotContext> {
   const bot = new Bot<BotContext>(appConfig.TELEGRAM_BOT_TOKEN);
 
   // Add session middleware
-  bot.use(session({
-    initial: (): SessionData => ({
-      userId: '',
-      lastActivity: new Date(),
-      context: {},
+  bot.use(
+    session({
+      initial: (): SessionData => ({
+        userId: '',
+        lastActivity: new Date(),
+        context: {},
+      }),
     }),
-  }));
+  );
 
   // Add logging middleware
   bot.use(async (ctx, next) => {
@@ -59,9 +63,11 @@ export function createBot(): Bot<BotContext> {
         username,
         messageText,
       });
-      
+
       // Send error message to user
-      await ctx.reply('Sorry, I encountered an error processing your request. Please try again.');
+      await ctx.reply(
+        'Sorry, I encountered an error processing your request. Please try again.',
+      );
     }
 
     const duration = Date.now() - start;

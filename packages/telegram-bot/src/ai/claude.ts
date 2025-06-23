@@ -1,8 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
+
+import { getMCPClient } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { z } from 'zod';
-import { getMCPClient } from '../mcp/client.js';
 
 export interface AISession {
   id: string;
@@ -20,22 +21,40 @@ export interface AIResponse {
 
 // Schema for structured todo extraction
 export const TodoIntentSchema = z.object({
-  action: z.enum(['create', 'list', 'update', 'complete', 'delete', 'start_timer', 'stop_timer', 'get_summary']),
+  action: z.enum([
+    'create',
+    'list',
+    'update',
+    'complete',
+    'delete',
+    'start_timer',
+    'stop_timer',
+    'get_summary',
+  ]),
   title: z.string().optional(),
   description: z.string().optional(),
   context: z.string().optional(),
   due: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  filters: z.object({
-    context: z.string().optional(),
-    completed: z.boolean().optional(),
-    dateFrom: z.string().optional(),
-    dateTo: z.string().optional(),
-  }).optional(),
+  filters: z
+    .object({
+      context: z.string().optional(),
+      completed: z.boolean().optional(),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+    })
+    .optional(),
   todoId: z.string().optional(),
 });
 
+// Schema for multiple actions in a single message
+export const MultiTodoIntentSchema = z.object({
+  actions: z.array(TodoIntentSchema),
+  requiresSequential: z.boolean().optional(), // Whether actions must be executed in order
+});
+
 export type TodoIntent = z.infer<typeof TodoIntentSchema>;
+export type MultiTodoIntent = z.infer<typeof MultiTodoIntentSchema>;
 
 /**
  * Claude AI client for natural language processing and conversation
@@ -104,7 +123,7 @@ Remember: You're not just a task manager, you're a digital butler committed to m
 
       // Get comprehensive MCP server documentation
       const serverInfo = await mcpClient.getServerInfo('all');
-      
+
       return `${this.systemPrompt}
 
 ## MCP Server Documentation
@@ -112,7 +131,9 @@ ${serverInfo}
 
 Use this documentation to understand the exact capabilities and parameters for each tool.`;
     } catch (error) {
-      logger.warn('Failed to get MCP server info for enhanced prompt', { error });
+      logger.warn('Failed to get MCP server info for enhanced prompt', {
+        error,
+      });
       return this.systemPrompt;
     }
   }
@@ -121,8 +142,9 @@ Use this documentation to understand the exact capabilities and parameters for e
    * Create or get an existing session
    */
   private getOrCreateSession(userId: string): AISession {
-    const existingSession = Array.from(this.sessions.values())
-      .find((session) => session.userId === userId);
+    const existingSession = Array.from(this.sessions.values()).find(
+      (session) => session.userId === userId,
+    );
 
     if (existingSession) {
       existingSession.lastActivity = new Date();
@@ -146,7 +168,7 @@ Use this documentation to understand the exact capabilities and parameters for e
    */
   private cleanupOldSessions(): void {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
+
     for (const [sessionId, session] of this.sessions.entries()) {
       if (session.lastActivity < oneHourAgo) {
         this.sessions.delete(sessionId);
@@ -155,16 +177,34 @@ Use this documentation to understand the exact capabilities and parameters for e
   }
 
   /**
-   * Parse user message to extract todo intent
+   * Parse user message to extract todo intent(s)
    */
-  async parseUserIntent(message: string): Promise<TodoIntent | null> {
+  async parseUserIntent(
+    message: string,
+    lastBotMessage?: string,
+  ): Promise<TodoIntent | MultiTodoIntent | null> {
     try {
       const response = await this.client.messages.create({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1000,
-        system: `Parse the user's message to extract todo management intent. Return JSON only.
+        system: `Parse the user's message to extract todo management intent(s). Return JSON only.
 
-IMPORTANT: For multiple todos, create them ONE AT A TIME using only "create" action. DO NOT use "create_multiple" or any other action.
+${lastBotMessage ? `CONTEXT: The bot's last response was: "${lastBotMessage}"
+
+Consider this context when parsing the user's current message. If the user is responding with contextual phrases like "continue", "yes please", "do it", "proceed", etc., interpret their intent based on what the bot previously suggested or offered.` : ''}
+
+You can return either:
+1. Single action: {"action": "create", "title": "task", ...}
+2. Multiple actions: {"actions": [{"action": "create", "title": "task1"}, {"action": "create", "title": "task2"}], "requiresSequential": true}
+
+Use multiple actions format when:
+- Creating multiple todos at once
+- Need to search then update/complete/delete a todo
+- Need to perform related actions in sequence
+- Batch operations requested
+
+Set "requiresSequential": true when actions depend on each other (e.g., search for ID then update that ID).
+Set "requiresSequential": false (or omit) when actions are independent.
 
 IMPORTANT: When parsing dates, convert natural language to ISO format (YYYY-MM-DDTHH:mm:ss.sssZ):
 - "tomorrow" → next day at 23:59:59.999Z
@@ -179,14 +219,14 @@ Current date for reference: ${new Date().toISOString()}
 VALID ACTIONS ONLY: create, list, update, complete, delete, start_timer, stop_timer, get_summary
 
 Examples:
+Single actions:
 - "Add buy groceries to shopping for tomorrow" → {"action": "create", "title": "buy groceries", "context": "shopping", "due": "${new Date(Date.now() + 86400000).toISOString().split('T')[0]}T23:59:59.999Z"}
-- "Create task for June 25th" → {"action": "create", "title": "task", "due": "${new Date().getFullYear()}-06-25T23:59:59.999Z"}
 - "Show me my work tasks" → {"action": "list", "filters": {"context": "work"}}
-- "Show incomplete todos due this week" → {"action": "list", "filters": {"completed": false, "dateFrom": "[start of week ISO]", "dateTo": "[end of week ISO]"}}
-- "Mark grocery shopping as done" → {"action": "complete", "title": "grocery shopping"}
-- "Complete todo ID 2025-06-18T10:30:00.000Z" → {"action": "complete", "todoId": "2025-06-18T10:30:00.000Z"}
-- "Start timer for meeting prep" → {"action": "start_timer", "title": "meeting prep"}
-- "Update todo ID 2025-06-18T10:30:00.000Z title to 'New Title'" → {"action": "update", "todoId": "2025-06-18T10:30:00.000Z", "title": "New Title"}
+
+Multiple actions:
+- "Create buy groceries and walk dog todos" → {"actions": [{"action": "create", "title": "buy groceries"}, {"action": "create", "title": "walk dog"}], "requiresSequential": false}
+- "Find my grocery shopping todo and mark it complete" → {"actions": [{"action": "list", "filters": {"title": "grocery shopping"}}, {"action": "complete", "title": "grocery shopping"}], "requiresSequential": true}
+- "Create 3 work todos: meeting prep, email review, and status report" → {"actions": [{"action": "create", "title": "meeting prep", "context": "work"}, {"action": "create", "title": "email review", "context": "work"}, {"action": "create", "title": "status report", "context": "work"}], "requiresSequential": false}
 
 Available contexts: work, private, errands, shopping, calls, learning, health, home
 Default context: private
@@ -211,16 +251,28 @@ If the message is not about todo management, return null.`,
         return null;
       }
 
-      return TodoIntentSchema.parse(parsed);
+      // Try to parse as multi-intent first, then fall back to single intent
+      try {
+        return MultiTodoIntentSchema.parse(parsed);
+      } catch {
+        return TodoIntentSchema.parse(parsed);
+      }
     } catch (error) {
       logger.error('Failed to parse user intent', { error, message });
-      
+
       // If it's a Zod validation error, it means Claude tried to parse a todo request but used invalid values
-      if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'name' in error &&
+        error.name === 'ZodError'
+      ) {
         // Return a special error object that the handler can distinguish from "not a todo request"
-        throw new Error(`Invalid todo request format: ${JSON.stringify(error)}`);
+        throw new Error(
+          `Invalid todo request format: ${JSON.stringify(error)}`,
+        );
       }
-      
+
       return null;
     }
   }
@@ -231,7 +283,7 @@ If the message is not about todo management, return null.`,
   async generateResponse(
     userId: string,
     message: string,
-    context?: { mcpResponse?: string; action?: string }
+    context?: { mcpResponse?: string; action?: string },
   ): Promise<AIResponse> {
     this.cleanupOldSessions();
     const session = this.getOrCreateSession(userId);
@@ -246,7 +298,7 @@ If the message is not about todo management, return null.`,
       }
 
       let systemMessage = await this.getEnhancedSystemPrompt();
-      
+
       if (context?.mcpResponse && context?.action) {
         systemMessage += `\n\nContext: You just performed "${context.action}" with this result: ${context.mcpResponse}. Now provide a helpful response to the user.`;
       }
@@ -279,13 +331,17 @@ If the message is not about todo management, return null.`,
         content: responseText,
         sessionId: session.id,
       };
-
     } catch (error) {
-      logger.error('Failed to generate AI response', { error, userId, message });
-      
+      logger.error('Failed to generate AI response', {
+        error,
+        userId,
+        message,
+      });
+
       // Fallback response
       return {
-        content: '🎩 My apologies, I encountered a momentary difficulty processing your request. Please try again, and I shall be delighted to assist you.',
+        content:
+          '🎩 My apologies, I encountered a momentary difficulty processing your request. Please try again, and I shall be delighted to assist you.',
         sessionId: session.id,
       };
     }
@@ -294,7 +350,17 @@ If the message is not about todo management, return null.`,
   /**
    * Generate a quick acknowledgment while processing
    */
-  generateAcknowledgment(intent: TodoIntent): string {
+  generateAcknowledgment(intent: TodoIntent | MultiTodoIntent): string {
+    // Handle multi-intent
+    if ('actions' in intent) {
+      const actionCount = intent.actions.length;
+      if (actionCount === 1) {
+        return this.generateAcknowledgment(intent.actions[0]);
+      }
+      return `🎩 Excellent! Let me handle those ${actionCount} tasks for you...`;
+    }
+
+    // Handle single intent
     const acknowledgments = {
       create: '🎩 Certainly! Let me create that todo for you...',
       list: '🎩 Of course! Let me retrieve your todos...',
@@ -306,7 +372,10 @@ If the message is not about todo management, return null.`,
       get_summary: '🎩 Of course! Let me prepare your summary...',
     };
 
-    return acknowledgments[intent.action] || '🎩 At your service! Let me handle that for you...';
+    return (
+      acknowledgments[intent.action] ||
+      '🎩 At your service! Let me handle that for you...'
+    );
   }
 
   /**
@@ -315,9 +384,10 @@ If the message is not about todo management, return null.`,
   getSessionStats(): { totalSessions: number; activeSessions: number } {
     const now = new Date();
     const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
-    
-    const activeSessions = Array.from(this.sessions.values())
-      .filter((session) => session.lastActivity > fifteenMinutesAgo).length;
+
+    const activeSessions = Array.from(this.sessions.values()).filter(
+      (session) => session.lastActivity > fifteenMinutesAgo,
+    ).length;
 
     return {
       totalSessions: this.sessions.size,

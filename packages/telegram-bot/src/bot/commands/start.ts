@@ -1,5 +1,5 @@
-import { BotContext } from '../bot.js';
 import { logger } from '../../utils/logger.js';
+import { BotContext } from '../bot.js';
 
 /**
  * Handle the /start command

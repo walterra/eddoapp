@@ -1,8 +1,9 @@
+import type { TodoAlpha3 } from '@eddo/shared';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import type { TodoAlpha3 } from '@eddo/shared';
 
 export interface MCPTool {
   name: string;
@@ -58,11 +59,13 @@ export class MCPClient {
    */
   async connect(): Promise<void> {
     try {
-      logger.info('Connecting to MCP server', { url: appConfig.MCP_SERVER_URL });
+      logger.info('Connecting to MCP server', {
+        url: appConfig.MCP_SERVER_URL,
+      });
 
       // Use StreamableHTTPClientTransport for FastMCP servers
       this.transport = new StreamableHTTPClientTransport(
-        new URL(appConfig.MCP_SERVER_URL)
+        new URL(appConfig.MCP_SERVER_URL),
       );
 
       this.client = new Client(
@@ -74,7 +77,7 @@ export class MCPClient {
           capabilities: {
             tools: {},
           },
-        }
+        },
       );
 
       await this.client.connect(this.transport);
@@ -86,7 +89,6 @@ export class MCPClient {
       // List available tools
       const tools = await this.listTools();
       logger.info('Available MCP tools', { tools: tools.map((t) => t.name) });
-
     } catch (error) {
       logger.error('Failed to connect to MCP server', { error });
       this.isConnected = false;
@@ -149,7 +151,10 @@ export class MCPClient {
   /**
    * Execute an MCP tool call with error handling and retry logic
    */
-  private async callTool(name: string, arguments_: Record<string, unknown>): Promise<string> {
+  private async callTool(
+    name: string,
+    arguments_: Record<string, unknown>,
+  ): Promise<string> {
     if (!this.isClientConnected()) {
       logger.warn('MCP client not connected, attempting reconnection');
       await this.attemptReconnect();
@@ -165,28 +170,41 @@ export class MCPClient {
       });
 
       if (response.isError) {
-        const errorContent = Array.isArray(response.content) ? response.content[0] : response.content;
-        const errorText = errorContent && typeof errorContent === 'object' && 'text' in errorContent ? 
-          String(errorContent.text) : 'Unknown error';
+        const errorContent = Array.isArray(response.content)
+          ? response.content[0]
+          : response.content;
+        const errorText =
+          errorContent &&
+          typeof errorContent === 'object' &&
+          'text' in errorContent
+            ? String(errorContent.text)
+            : 'Unknown error';
         throw new Error(`MCP tool error: ${errorText}`);
       }
 
-      const content = Array.isArray(response.content) ? response.content[0] : response.content;
-      const result = content && typeof content === 'object' && 'text' in content ? 
-        String(content.text) : '';
-      
-      logger.debug('MCP tool call successful', { name, result: result.substring(0, 200) });
-      
+      const content = Array.isArray(response.content)
+        ? response.content[0]
+        : response.content;
+      const result =
+        content && typeof content === 'object' && 'text' in content
+          ? String(content.text)
+          : '';
+
+      logger.debug('MCP tool call successful', {
+        name,
+        result: result.substring(0, 200),
+      });
+
       return result;
     } catch (error) {
       logger.error('MCP tool call failed', { name, error });
-      
+
       // Try to reconnect on connection errors
       if (error instanceof Error && error.message.includes('connection')) {
         this.isConnected = false;
         await this.attemptReconnect();
       }
-      
+
       throw error;
     }
   }
@@ -275,7 +293,10 @@ export class MCPClient {
     try {
       return JSON.parse(result);
     } catch (error) {
-      logger.error('Failed to parse getActiveTimeTracking response', { error, result });
+      logger.error('Failed to parse getActiveTimeTracking response', {
+        error,
+        result,
+      });
       throw new Error('Invalid response format from MCP server');
     }
   }
@@ -283,7 +304,9 @@ export class MCPClient {
   /**
    * Get server information
    */
-  async getServerInfo(section: 'overview' | 'datamodel' | 'tools' | 'examples' | 'all' = 'all'): Promise<string> {
+  async getServerInfo(
+    section: 'overview' | 'datamodel' | 'tools' | 'examples' | 'all' = 'all',
+  ): Promise<string> {
     return this.callTool('getServerInfo', { section });
   }
 
