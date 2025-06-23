@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "date-fns": "^2.29.3",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "pouchdb-adapter-memory": "^9.0.0",
+    "pouchdb-browser": "^7.3.1"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.6",
