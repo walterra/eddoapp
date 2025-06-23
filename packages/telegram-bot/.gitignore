@@ -1,2 +1,6 @@
+.env
 node_modules
 dist
+test-mcp.js
+*.log
+bot_workspace

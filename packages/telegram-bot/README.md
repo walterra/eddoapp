@@ -75,8 +75,8 @@ TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 # From Anthropic Console (Step 2)  
 ANTHROPIC_API_KEY=sk-ant-api03-...
 
-# MCP Server (should be running on port 3001)
-MCP_SERVER_URL=http://localhost:3001
+# MCP Server (should be running on port 3001, no auth required)
+MCP_SERVER_URL=http://localhost:3001/mcp
 
 # Optional: Adjust logging and environment
 NODE_ENV=development
@@ -227,7 +227,16 @@ Once your bot is running, start a conversation:
 
 ### MCP Server Connection
 
-The bot connects to the MCP server to perform all todo operations. Ensure the MCP server is running before starting the bot.
+The bot connects to the MCP server using HTTP streaming transport. The server requires:
+- No authentication (uses CouchDB auth internally)
+- Running on `http://localhost:3001/mcp`
+- FastMCP server with httpStream transport
+
+To test the connection:
+```bash
+# Build and test MCP connection
+pnpm build && node test-mcp.js
+```
 
 ## Deployment
 
@@ -382,7 +391,7 @@ Create and manage your bot:
 |----------|----------|-------------|---------|
 | `TELEGRAM_BOT_TOKEN` | ✅ | From BotFather | `123456789:ABC...` |
 | `ANTHROPIC_API_KEY` | ✅ | Claude AI key | `sk-ant-api03-...` |
-| `MCP_SERVER_URL` | ✅ | MCP endpoint | `http://localhost:3001` |
+| `MCP_SERVER_URL` | ✅ | MCP endpoint | `http://localhost:3001/mcp` |
 | `NODE_ENV` | ⚪ | Environment | `development` |
 | `LOG_LEVEL` | ⚪ | Logging level | `info` |
 

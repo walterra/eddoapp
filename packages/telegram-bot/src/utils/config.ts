@@ -12,8 +12,7 @@ const ConfigSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1, 'Anthropic API key is required'),
   
   // MCP Server Configuration
-  MCP_SERVER_URL: z.string().url().default('http://localhost:3001'),
-  MCP_SERVER_AUTH: z.string().optional(),
+  MCP_SERVER_URL: z.string().url().default('http://localhost:3001/mcp'),
   
   // Application Configuration
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

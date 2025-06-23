@@ -1,5 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import type { TodoAlpha3 } from '@eddo/shared';
@@ -44,7 +44,7 @@ export interface UpdateTodoParams extends Record<string, unknown> {
  */
 export class MCPClient {
   private client: Client | null = null;
-  private transport: StdioClientTransport | null = null;
+  private transport: StreamableHTTPClientTransport | null = null;
   private isConnected = false;
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
@@ -60,12 +60,10 @@ export class MCPClient {
     try {
       logger.info('Connecting to MCP server', { url: appConfig.MCP_SERVER_URL });
 
-      // For now, use stdio transport to connect to a local MCP server process
-      // In production, this would connect to the HTTP endpoint
-      this.transport = new StdioClientTransport({
-        command: 'node',
-        args: ['../server/dist/mcp-server.js'], // Adjust path as needed
-      });
+      // Use StreamableHTTPClientTransport for FastMCP servers
+      this.transport = new StreamableHTTPClientTransport(
+        new URL(appConfig.MCP_SERVER_URL)
+      );
 
       this.client = new Client(
         {
