@@ -1,3 +1,4 @@
+import { approvalManager } from '../../agent/approval-manager.js';
 import { getClaudeAI } from '../../ai/claude.js';
 import { logger } from '../../utils/logger.js';
 import { BotContext } from '../bot.js';
@@ -54,6 +55,8 @@ ${persona.acknowledgmentEmoji} *Eddo Bot Commands & Usage*
 /start - Welcome message and introduction
 /help - Show this help message
 /status - Check bot and MCP server status
+/approve - Approve pending workflow step
+/deny - Deny pending workflow step
 /summary - Get today's task summary
 
 *Natural Language Examples:*
@@ -113,4 +116,70 @@ Everything is running smoothly! ${persona.acknowledgmentEmoji}
 `;
 
   await ctx.reply(statusMessage, { parse_mode: 'Markdown' });
+}
+
+/**
+ * Handle the /approve command
+ */
+export async function handleApprove(ctx: BotContext): Promise<void> {
+  const userId = ctx.from?.id?.toString();
+  
+  if (!userId) {
+    await ctx.reply('❌ Unable to identify user for approval.');
+    return;
+  }
+
+  const pendingRequests = approvalManager.getPendingRequests(userId);
+  
+  if (pendingRequests.length === 0) {
+    await ctx.reply('ℹ️ No pending approval requests found.');
+    return;
+  }
+
+  // Approve the most recent request
+  const approvedRequest = approvalManager.approveRequest(userId);
+  
+  if (approvedRequest) {
+    await ctx.reply(`✅ APPROVED: ${approvedRequest.stepId}\n\nThe workflow will continue execution.`);
+    logger.info('User approved request via command', {
+      userId,
+      requestId: approvedRequest.id,
+      stepId: approvedRequest.stepId
+    });
+  } else {
+    await ctx.reply('❌ Failed to approve request.');
+  }
+}
+
+/**
+ * Handle the /deny command  
+ */
+export async function handleDeny(ctx: BotContext): Promise<void> {
+  const userId = ctx.from?.id?.toString();
+  
+  if (!userId) {
+    await ctx.reply('❌ Unable to identify user for denial.');
+    return;
+  }
+
+  const pendingRequests = approvalManager.getPendingRequests(userId);
+  
+  if (pendingRequests.length === 0) {
+    await ctx.reply('ℹ️ No pending approval requests found.');
+    return;
+  }
+
+  // Deny the most recent request
+  const deniedRequest = approvalManager.denyRequest(userId);
+  
+  if (deniedRequest) {
+    await ctx.reply(`❌ DENIED: ${deniedRequest.stepId}\n\nThe step has been skipped.`);
+    logger.info('User denied request via command', {
+      userId,
+      requestId: deniedRequest.id,
+      stepId: deniedRequest.stepId
+    });
+  } else {
+    await ctx.reply('❌ Failed to deny request.');
+  }
 }

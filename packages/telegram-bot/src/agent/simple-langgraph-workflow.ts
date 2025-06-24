@@ -257,33 +257,51 @@ export class SimpleLangGraphWorkflow {
           const stepResult = await executeStep(currentState);
           currentState = { ...currentState, ...stepResult };
 
-          // Handle approval requests (in a real implementation, this would be handled by a separate handler)
+          // Handle approval requests - check if user has responded
           if (currentState.awaitingApproval) {
-            // For now, auto-approve low-risk operations, deny high-risk ones
+            logger.info('Workflow waiting for user approval', {
+              userId,
+              stepIndex: currentState.currentStepIndex,
+              pendingRequests: currentState.approvalRequests.length
+            });
+            
+            // Check if user has responded via global approval manager
             const pendingApproval = currentState.approvalRequests[currentState.approvalRequests.length - 1];
             const currentStep = currentState.executionPlan.steps[currentState.currentStepIndex];
             
-            if (currentStep && currentStep.action !== 'delete_todo') {
-              // Auto-approve non-destructive operations
-              pendingApproval.approved = true;
-              pendingApproval.response = '✅ Auto-approved (non-destructive operation)';
+            // Import and check approval manager for this user's responses
+            const { approvalManager } = await import('./approval-manager.js');
+            const globalRequests = approvalManager.getAllRequests(userId);
+            const globalResponse = globalRequests.find(req => 
+              req.stepId === currentStep?.id && req.approved !== undefined
+            );
+            
+            if (globalResponse) {
+              // User has responded - update local state and continue
+              pendingApproval.approved = globalResponse.approved;
+              pendingApproval.response = globalResponse.response;
               currentState.awaitingApproval = false;
               
-              await telegramContext.reply(
-                `✅ **Auto-approved:** ${currentStep.description}\n\nContinuing execution...`,
-                { parse_mode: 'Markdown' }
-              );
+              logger.info('User approval received, continuing workflow', {
+                userId,
+                approved: globalResponse.approved,
+                stepId: currentStep?.id
+              });
+              
+              if (!globalResponse.approved) {
+                // User denied - exit workflow
+                currentState.shouldExit = true;
+                await telegramContext.reply(
+                  `⏭️ STEP DENIED\n\nStep "${currentStep?.description}" was denied. Workflow stopped.`
+                );
+              }
             } else {
-              // Auto-deny destructive operations for safety
-              pendingApproval.approved = false;
-              pendingApproval.response = '❌ Auto-denied (destructive operation requires manual approval)';
-              currentState.awaitingApproval = false;
-              currentState.shouldExit = true;
-              
-              await telegramContext.reply(
-                `❌ **Auto-denied:** ${currentStep?.description}\n\nDestructive operations require manual approval. Please break down your request into simpler steps.`,
-                { parse_mode: 'Markdown' }
-              );
+              // Still waiting - exit and let user respond
+              logger.info('Still waiting for user approval, pausing workflow', {
+                userId,
+                stepId: currentStep?.id
+              });
+              break;
             }
           }
         }

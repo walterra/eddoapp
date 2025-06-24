@@ -1,5 +1,5 @@
 import { createBot } from './bot/bot.js';
-import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
+import { handleApprove, handleDeny, handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessageEnhanced } from './bot/handlers/enhanced-message.js';
 import { getMCPClient } from './mcp/client.js';
 import { appConfig } from './utils/config.js';
@@ -36,6 +36,8 @@ async function main(): Promise<void> {
     bot.command('start', handleStart);
     bot.command('help', handleHelp);
     bot.command('status', handleStatus);
+    bot.command('approve', handleApprove);
+    bot.command('deny', handleDeny);
 
     // Register enhanced message handler for general text with agent workflow
     bot.on('message:text', handleMessageEnhanced);

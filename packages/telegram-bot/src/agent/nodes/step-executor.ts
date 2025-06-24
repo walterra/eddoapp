@@ -1,6 +1,7 @@
 import { getMCPClient } from '../../mcp/client.js';
 import { getClaudeAI } from '../../ai/claude.js';
 import { logger } from '../../utils/logger.js';
+import { approvalManager } from '../approval-manager.js';
 import type { WorkflowNode, ExecutionStep, WorkflowState, ApprovalRequest } from '../types/workflow-types.js';
 
 /**
@@ -47,33 +48,38 @@ export const executeStep: WorkflowNode = async (state: WorkflowState): Promise<P
     );
     
     if (pendingRequest) {
-      // Check if request has expired (5 minutes)
+      // Check if request has expired (5 minutes) - just log but don't auto-deny
       if (pendingRequest.expiresAt && Date.now() > pendingRequest.expiresAt) {
-        logger.warn('Approval request expired, auto-denying', {
+        logger.warn('Approval request expired but keeping workflow paused', {
           stepId: currentStep.id,
           requestId: pendingRequest.id
         });
-        
-        pendingRequest.approved = false;
-        pendingRequest.response = 'Auto-denied due to timeout';
-      } else {
-        // Still waiting for approval, don't proceed
-        logger.info('Still waiting for approval', {
-          stepId: currentStep.id,
-          requestId: pendingRequest.id
-        });
-        
-        return { 
-          shouldExit: true,
-          awaitingApproval: true
-        };
       }
+      
+      // Still waiting for approval, don't proceed
+      logger.info('Still waiting for approval', {
+        stepId: currentStep.id,
+        requestId: pendingRequest.id
+      });
+      
+      return { 
+        shouldExit: true,
+        awaitingApproval: true
+      };
     }
     
-    // Check if approval was granted or denied
-    const approvedRequest = state.approvalRequests.find((req) => 
+    // Check if approval was granted or denied (both local state and global manager)
+    const localApprovedRequest = state.approvalRequests.find((req) => 
       req.stepId === currentStep.id && req.approved !== undefined
     );
+    
+    // Also check global approval manager for recent approvals
+    const globalAllRequests = approvalManager.getAllRequests(state.userId);
+    const globalApprovedRequest = globalAllRequests.find((req) =>
+      req.stepId === currentStep.id && req.approved !== undefined
+    );
+    
+    const approvedRequest = localApprovedRequest || globalApprovedRequest;
     
     if (approvedRequest) {
       if (!approvedRequest.approved) {
@@ -88,8 +94,7 @@ export const executeStep: WorkflowNode = async (state: WorkflowState): Promise<P
         
         await sendProgressUpdate(state, currentStep, 'skipped');
         await state.telegramContext.reply(
-          `⏭️ **Step Skipped**\n\nStep "${currentStep.description}" was denied and has been skipped.`,
-          { parse_mode: 'Markdown' }
+          `⏭️ STEP SKIPPED\n\nStep "${currentStep.description}" was denied and has been skipped.`
         );
         
         return {
@@ -105,8 +110,7 @@ export const executeStep: WorkflowNode = async (state: WorkflowState): Promise<P
         });
         
         await state.telegramContext.reply(
-          `✅ **Approved:** ${currentStep.description}\n\nContinuing execution...`,
-          { parse_mode: 'Markdown' }
+          `✅ APPROVED: ${currentStep.description}\n\nContinuing execution...`
         );
         
         // Reset approval state and continue
@@ -120,19 +124,29 @@ export const executeStep: WorkflowNode = async (state: WorkflowState): Promise<P
   if (!dependencyCheck.satisfied) {
     logger.warn('Step dependencies not satisfied', {
       stepId: currentStep.id,
-      missingDeps: dependencyCheck.missing
+      dependencies: currentStep.dependencies,
+      missingDeps: dependencyCheck.missing,
+      completedSteps: state.executionSteps.map((s) => ({ id: s.id, status: s.status }))
     });
     
-    // Skip step and mark as skipped
-    currentStep.status = 'skipped';
-    currentStep.error = new Error(`Dependencies not satisfied: ${dependencyCheck.missing.join(', ')}`);
-    
-    await sendProgressUpdate(state, currentStep, 'skipped');
-    
-    return {
-      currentStepIndex: state.currentStepIndex + 1,
-      executionSteps: [...state.executionSteps, currentStep]
-    };
+    // For bulk operations, if previous list step completed, allow the delete step to proceed
+    // This is a temporary workaround for dependency naming issues
+    if (currentStep.action.includes('delete') && state.executionSteps.some((s) => s.action === 'list_todos' && s.status === 'completed')) {
+      logger.info('Allowing delete step to proceed after successful list_todos', {
+        stepId: currentStep.id
+      });
+    } else {
+      // Skip step and mark as skipped
+      currentStep.status = 'skipped';
+      currentStep.error = new Error(`Dependencies not satisfied: ${dependencyCheck.missing.join(', ')}`);
+      
+      await sendProgressUpdate(state, currentStep, 'skipped');
+      
+      return {
+        currentStepIndex: state.currentStepIndex + 1,
+        executionSteps: [...state.executionSteps, currentStep]
+      };
+    }
   }
 
   try {
@@ -212,8 +226,7 @@ export const executeStep: WorkflowNode = async (state: WorkflowState): Promise<P
     
     if (!shouldContinue) {
       await state.telegramContext.reply(
-        `❌ **Execution Stopped**\n\nStep "${currentStep.description}" failed and I cannot continue safely. Please review the plan and try again.`,
-        { parse_mode: 'Markdown' }
+        `❌ EXECUTION STOPPED\n\nStep "${currentStep.description}" failed and I cannot continue safely. Please review the plan and try again.`
       );
       
       return {
@@ -254,8 +267,7 @@ async function requestApproval(state: WorkflowState, step: ExecutionStep): Promi
     };
     
     await state.telegramContext.reply(
-      `✅ **Auto-approved:** ${step.description}\n\nContinuing execution...`,
-      { parse_mode: 'Markdown' }
+      `✅ AUTO-APPROVED: ${step.description}\n\nContinuing execution...`
     );
     
     return {
@@ -270,14 +282,14 @@ async function requestApproval(state: WorkflowState, step: ExecutionStep): Promi
     id: approvalId,
     planId: state.executionPlan!.id,
     stepId: step.id,
-    message: `⚠️ **Approval Required**\n\n**Step:** ${step.description}\n**Action:** ${step.action}\n**Risk:** This operation ${getRiskDescription(step)}\n\nDo you want to proceed?`,
+    message: `⚠️ APPROVAL REQUIRED\n\nStep: ${step.description}\nAction: ${step.action}\nRisk: This operation ${getRiskDescription(step)}\n\nDo you want to proceed?`,
     options: ['✅ Approve', '❌ Deny', '⏭️ Skip'],
     timestamp: Date.now(),
     expiresAt: Date.now() + (5 * 60 * 1000) // 5 minute timeout
   };
 
   await state.telegramContext.reply(approvalRequest.message, { 
-    parse_mode: 'Markdown'
+    // Removed parse_mode to avoid markdown escaping issues
     // Note: In a real implementation, you'd add inline keyboard buttons here
   });
 
@@ -287,12 +299,13 @@ async function requestApproval(state: WorkflowState, step: ExecutionStep): Promi
     stepId: step.id
   });
 
-  // For now, auto-approve after a short delay to prevent infinite loops
-  // In a real implementation, you'd wait for user input
-  setTimeout(() => {
-    approvalRequest.approved = true;
-    approvalRequest.response = 'Auto-approved after timeout';
-  }, 2000);
+  // Register with global approval manager
+  approvalManager.addRequest(state.userId, approvalRequest);
+
+  // Include instructions for user
+  await state.telegramContext.reply(
+    `💡 TIP: Use /approve to approve or /deny to deny this request.`
+  );
 
   return {
     awaitingApproval: true,
@@ -446,7 +459,7 @@ async function executeFallbackAction(step: ExecutionStep, state: WorkflowState):
 function decideContinueOnFailure(failedStep: ExecutionStep, plan: WorkflowState['executionPlan']): boolean {
   // Don't continue if it's a critical step (first step or has many dependencies)
   const dependentSteps = plan!.steps.filter((step) => 
-    step.dependencies.includes(failedStep.id)
+    step.dependencies && step.dependencies.includes(failedStep.id)
   );
   
   if (dependentSteps.length > 2) {
@@ -480,29 +493,29 @@ async function sendProgressUpdate(
   switch (status) {
     case 'started':
       icon = '🔄';
-      message = `${icon} **Step ${stepNumber}/${totalSteps}:** ${step.description}\n${progressBar}`;
+      message = `${icon} Step ${stepNumber}/${totalSteps}: ${step.description}\n${progressBar}`;
       break;
     case 'completed':
       icon = '✅';
-      message = `${icon} **Completed:** ${step.description}\n${progressBar}`;
+      message = `${icon} Completed: ${step.description}\n${progressBar}`;
       break;
     case 'failed':
       icon = '❌';
-      message = `${icon} **Failed:** ${step.description}\n${progressBar}\nError: ${step.error?.message}`;
+      message = `${icon} Failed: ${step.description}\n${progressBar}\nError: ${step.error?.message}`;
       break;
     case 'skipped':
       icon = '⏭️';
-      message = `${icon} **Skipped:** ${step.description}\n${progressBar}\nReason: Dependencies not met`;
+      message = `${icon} Skipped: ${step.description}\n${progressBar}\nReason: Dependencies not met`;
       break;
     case 'recovered':
       icon = '🔄';
-      message = `${icon} **Recovered:** ${step.description}\n${progressBar}\nFallback action succeeded`;
+      message = `${icon} Recovered: ${step.description}\n${progressBar}\nFallback action succeeded`;
       break;
   }
   
   // Send update to user (in a real implementation, you might throttle these)
   if (status === 'completed' || status === 'failed' || status === 'recovered') {
-    await state.telegramContext.reply(message, { parse_mode: 'Markdown' });
+    await state.telegramContext.reply(message);
   }
 }
 
