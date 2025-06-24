@@ -5,6 +5,9 @@ import { logger } from '../utils/logger.js';
 import type { BotContext } from '../bot/bot.js';
 import { analyzeTaskComplexity } from './nodes/complexity-analyzer.js';
 import { executeSimpleTask } from './nodes/simple-executor.js';
+import { planComplexTask } from './nodes/complex-planner.js';
+import { executeStep } from './nodes/step-executor.js';
+import { generateExecutionSummary } from './nodes/execution-summarizer.js';
 import type { TaskComplexityAnalysis as _TaskComplexityAnalysis, ExecutionSummary as _ExecutionSummary } from './types/workflow-types.js';
 
 /**
@@ -216,18 +219,87 @@ export class SimpleLangGraphWorkflow {
           messages: [...messages, new AIMessage(executionResult.finalResponse || 'Task completed')],
         };
       } else {
-        // Handle complex tasks (placeholder for Phase 2)
-        const response = `🚧 **Complex Task Detected**\n\nI've analyzed your request and classified it as "${complexityResult.complexityAnalysis?.classification || 'complex'}".\n\n` +
-          `**Analysis:** ${complexityResult.complexityAnalysis?.reasoning || 'Requires multi-step planning'}\n\n` +
-          `Complex task execution is coming in Phase 2! For now, please try breaking your request into simpler steps.`;
+        // Handle complex tasks with full Phase 2 implementation
+        logger.info('Executing complex task workflow', {
+          userId,
+          classification: complexityResult.complexityAnalysis?.classification
+        });
 
-        await telegramContext.reply(response, { parse_mode: 'Markdown' });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let currentState: any = {
+          ...workflowState,
+          complexityAnalysis: complexityResult.complexityAnalysis,
+          sessionContext: complexityResult.sessionContext || workflowState.sessionContext,
+          currentStepIndex: 0,
+          executionSteps: [],
+          mcpResponses: [],
+          approvalRequests: [],
+          awaitingApproval: false,
+          shouldExit: false
+        };
+
+        // Step 2.1: Plan complex task
+        const planResult = await planComplexTask(currentState);
+        currentState = { ...currentState, ...planResult };
+
+        if (planResult.error || planResult.shouldExit) {
+          return {
+            ...state,
+            finalResponse: 'Complex task planning failed',
+            complexityAnalysis: complexityResult.complexityAnalysis,
+            error: planResult.error,
+            messages: [...messages, new AIMessage('Complex task planning failed')],
+          };
+        }
+
+        // Step 2.2: Execute steps one by one
+        while (!currentState.shouldExit && currentState.executionPlan) {
+          const stepResult = await executeStep(currentState);
+          currentState = { ...currentState, ...stepResult };
+
+          // Handle approval requests (in a real implementation, this would be handled by a separate handler)
+          if (currentState.awaitingApproval) {
+            // For now, auto-approve low-risk operations, deny high-risk ones
+            const pendingApproval = currentState.approvalRequests[currentState.approvalRequests.length - 1];
+            const currentStep = currentState.executionPlan.steps[currentState.currentStepIndex];
+            
+            if (currentStep && currentStep.action !== 'delete_todo') {
+              // Auto-approve non-destructive operations
+              pendingApproval.approved = true;
+              pendingApproval.response = '✅ Auto-approved (non-destructive operation)';
+              currentState.awaitingApproval = false;
+              
+              await telegramContext.reply(
+                `✅ **Auto-approved:** ${currentStep.description}\n\nContinuing execution...`,
+                { parse_mode: 'Markdown' }
+              );
+            } else {
+              // Auto-deny destructive operations for safety
+              pendingApproval.approved = false;
+              pendingApproval.response = '❌ Auto-denied (destructive operation requires manual approval)';
+              currentState.awaitingApproval = false;
+              currentState.shouldExit = true;
+              
+              await telegramContext.reply(
+                `❌ **Auto-denied:** ${currentStep?.description}\n\nDestructive operations require manual approval. Please break down your request into simpler steps.`,
+                { parse_mode: 'Markdown' }
+              );
+            }
+          }
+        }
+
+        // Step 2.3: Generate execution summary
+        const summaryResult = await generateExecutionSummary(currentState);
+        currentState = { ...currentState, ...summaryResult };
 
         return {
           ...state,
-          finalResponse: 'Complex task execution not yet implemented',
+          finalResponse: currentState.finalResponse || 'Complex task execution completed',
+          executionSummary: currentState.executionSummary,
           complexityAnalysis: complexityResult.complexityAnalysis,
-          messages: [...messages, new AIMessage(response)],
+          executionPlan: currentState.executionPlan,
+          executionSteps: currentState.executionSteps,
+          messages: [...messages, new AIMessage(currentState.finalResponse || 'Complex task completed')],
         };
       }
     } catch (error) {

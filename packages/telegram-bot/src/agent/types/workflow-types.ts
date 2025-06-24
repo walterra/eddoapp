@@ -59,11 +59,13 @@ export interface ExecutionPlan {
 export interface ApprovalRequest {
   id: string;
   planId: string;
+  stepId: string;
   message: string;
   options: string[];
   approved?: boolean;
   response?: string;
   timestamp: number;
+  expiresAt?: number;
 }
 
 /**
@@ -118,6 +120,7 @@ export interface WorkflowState {
     commonContexts?: string[];
     startTime?: number;
     lastComplexityAnalysis?: string;
+    lastPlanId?: string;
   };
   
   // Control flow
