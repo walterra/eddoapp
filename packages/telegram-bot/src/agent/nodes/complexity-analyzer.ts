@@ -108,9 +108,9 @@ TASK CLASSIFICATION RULES:
 - MCP Actions: Single create_todo, update_todo, list_todos, delete_todo, toggle_completion call
 
 **COMPOUND**: 2-3 related steps with clear sequence and dependencies  
-- Examples: "Schedule team meeting for next week", "Add grocery shopping and set reminder", "Update project status and notify team"
-- Characteristics: Multiple related actions, some dependencies, manageable sequence
-- MCP Actions: 2-3 coordinated calls, may need list_todos → create_todo pattern
+- Examples: "Schedule team meeting for next week", "Add grocery shopping and set reminder", "Update project status and notify team", "Start working on the leaky faucet", "Let's begin with the budget spreadsheet"
+- Characteristics: Multiple related actions, some dependencies, manageable sequence, may need to search for existing items first
+- MCP Actions: 2-3 coordinated calls, may need list_todos → create_todo pattern, or list_todos → start_timer pattern
 
 **COMPLEX**: Multi-step workflow requiring planning, analysis, or extensive coordination
 - Examples: "Clean up my todo list", "Organize my tasks by priority", "Plan my weekly schedule", "Review overdue items and reschedule"
@@ -128,7 +128,7 @@ AVAILABLE MCP ACTIONS FOR REFERENCE:
 - update_todo(id, fields) - Update existing todo fields
 - delete_todo(id) - Delete specific todo
 - toggle_completion(id, completed) - Mark todo as complete/incomplete
-- start_time_tracking(id) - Start timer for todo
+- start_time_tracking(id) - Start timer for todo (requires todo ID, may need list_todos first to find ID)
 - stop_time_tracking(id) - Stop timer for todo
 - get_active_timers() - Get currently running timers
 

@@ -152,6 +152,12 @@ PLANNING RULES:
    c) The step executor will automatically handle individual operations for each todo found
    d) Example: For "delete all host todos" → step 1: list_todos({"context": "host"}), step 2: delete_todo({})
 
+CRITICAL START_TIMER PATTERN: When user wants to work on a task by name (e.g., "start with the leaky faucet"), you MUST:
+   a) First include a list_todos step to search for existing todos with that title
+   b) Then include a start_time_tracking step that will either start timer on existing todo OR create then start timer
+   c) The step executor will automatically handle finding the ID or creating the todo first
+   d) Example: "Let's start with the leaky faucet" → step 1: list_todos({"title": "leaky faucet"}), step 2: start_time_tracking({"title": "leaky faucet"})
+
 SAFE OPERATIONS (no approval needed):
 - analysis - Data discovery and analysis steps
 - list_todos - Reading/listing existing todos

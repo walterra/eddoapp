@@ -116,9 +116,16 @@ Use multiple actions format when:
 - Need to perform related actions in sequence
 - Batch operations requested
 - User confirms a bulk operation from previous context
+- Starting work on a task that might already exist (search first, then start_timer or create)
 
-Set "requiresSequential": true when actions depend on each other (e.g., search for ID then update that ID).
+Set "requiresSequential": true when actions depend on each other (e.g., search for ID then update that ID, or search for existing task then start timer).
 Set "requiresSequential": false (or omit) when actions are independent.
+
+IMPORTANT: When user expresses intent to START WORKING on a task (phrases like "let's start with", "begin with", "work on", "tackle"):
+1. First search for existing todos with that title/description  
+2. If found → start_timer on the existing todo
+3. If not found → create the todo then start_timer
+Use the multiple actions format: [{"action": "list", "filters": {"title": "task name"}}, {"action": "start_timer", "title": "task name"}] with requiresSequential: true
 
 CRITICAL: You MUST only use these exact action values:
 - create
@@ -152,6 +159,8 @@ Multiple actions:
 - "Find my grocery shopping todo and mark it complete" → {"actions": [{"action": "list", "filters": {"title": "grocery shopping"}}, {"action": "complete", "title": "grocery shopping"}], "requiresSequential": true}
 - "Delete all todos with health context" → {"actions": [{"action": "list", "filters": {"context": "health"}}, {"action": "delete", "context": "health"}], "requiresSequential": true}
 - "Create 3 work todos: meeting prep, email review, and status report" → {"actions": [{"action": "create", "title": "meeting prep", "context": "work"}, {"action": "create", "title": "email review", "context": "work"}, {"action": "create", "title": "status report", "context": "work"}], "requiresSequential": false}
+- "Let's start with the leaky faucet" → {"actions": [{"action": "list", "filters": {"title": "leaky faucet"}}, {"action": "start_timer", "title": "leaky faucet"}], "requiresSequential": true}
+- "I want to work on my budget spreadsheet" → {"actions": [{"action": "list", "filters": {"title": "budget spreadsheet"}}, {"action": "start_timer", "title": "budget spreadsheet"}], "requiresSequential": true}
 
 Contextual confirmations (when lastBotMessage contains context):
 - If bot suggested: "I found 3 health todos. Should I delete them?" and user says "yes delete these todos" → {"actions": [{"action": "list", "filters": {"context": "health"}}, {"action": "delete", "context": "health"}], "requiresSequential": true}

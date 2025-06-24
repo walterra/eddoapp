@@ -601,8 +601,17 @@ async function executeStepAction(
     }
 
     case 'start_time_tracking': {
-      const params = step.parameters as { id: string };
-      return await mcpClient.startTimeTracking(params.id);
+      const params = step.parameters as { id?: string; title?: string };
+      
+      if (params.id) {
+        // Direct ID provided, start timer immediately
+        return await mcpClient.startTimeTracking(params.id);
+      } else if (params.title) {
+        // Only title provided, need to find or create the todo first
+        return await startTimeTrackingByTitle(params.title, state);
+      } else {
+        throw new Error('Either todoId or title is required to start timer');
+      }
     }
 
     case 'stop_time_tracking': {
@@ -1124,4 +1133,105 @@ function generateProgressBar(current: number, total: number): string {
   const empty = 10 - filled;
 
   return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${percentage}%`;
+}
+
+/**
+ * Starts time tracking for a todo by title - finds existing or creates new
+ */
+async function startTimeTrackingByTitle(
+  title: string,
+  state: WorkflowState,
+): Promise<string> {
+  const mcpClient = getMCPClient();
+  
+  logger.info('Starting time tracking by title', { title });
+  
+  // Look for previous list_todos results in this workflow that might contain the todo
+  const listSteps = state.executionSteps.filter(
+    (step) => step.action === 'list_todos' && step.status === 'completed'
+  );
+  
+  let existingTodo = null;
+  
+  // Check if we already have the todo from a previous list operation
+  for (const listStep of listSteps.reverse()) { // Start with most recent
+    const listResult = state.mcpResponses[state.executionSteps.indexOf(listStep)];
+    
+    try {
+      let todos: Array<{ _id: string; title: string; [key: string]: unknown }> = [];
+      if (typeof listResult === 'string') {
+        todos = JSON.parse(listResult);
+      } else if (Array.isArray(listResult)) {
+        todos = listResult;
+      }
+      
+      // Find a todo that matches the title (case-insensitive partial match)
+      existingTodo = todos.find((todo) => 
+        todo.title.toLowerCase().includes(title.toLowerCase()) ||
+        title.toLowerCase().includes(todo.title.toLowerCase())
+      );
+      
+      if (existingTodo) {
+        logger.info('Found existing todo in previous results', { 
+          todoId: existingTodo._id, 
+          todoTitle: existingTodo.title,
+          searchTitle: title
+        });
+        break;
+      }
+    } catch (error) {
+      logger.warn('Failed to parse previous list results', { error });
+    }
+  }
+  
+  // If not found in previous results, search explicitly
+  if (!existingTodo) {
+    logger.info('Todo not found in previous results, searching explicitly', { title });
+    
+    try {
+      const searchResults = await mcpClient.listTodos({ limit: 50 });
+      existingTodo = searchResults.find((todo) => 
+        todo.title.toLowerCase().includes(title.toLowerCase()) ||
+        title.toLowerCase().includes(todo.title.toLowerCase())
+      );
+      
+      if (existingTodo) {
+        logger.info('Found existing todo via search', { 
+          todoId: existingTodo._id, 
+          todoTitle: existingTodo.title,
+          searchTitle: title
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to search for existing todos', { error });
+    }
+  }
+  
+  if (existingTodo) {
+    // Start timer on existing todo
+    logger.info('Starting timer on existing todo', { 
+      todoId: existingTodo._id, 
+      title: existingTodo.title 
+    });
+    return await mcpClient.startTimeTracking(existingTodo._id);
+  } else {
+    // Create new todo and start timer
+    logger.info('Creating new todo and starting timer', { title });
+    
+    const createResult = await mcpClient.createTodo({ 
+      title,
+      context: 'private' // Default context, can be enhanced later
+    });
+    
+    // Extract the ID from the create result (format might vary)
+    const idMatch = createResult.match(/[a-f0-9-]{36}|[a-f0-9]{24}/i);
+    if (!idMatch) {
+      throw new Error('Failed to extract todo ID from create result');
+    }
+    
+    const newTodoId = idMatch[0];
+    logger.info('Created todo and starting timer', { todoId: newTodoId, title });
+    
+    return await mcpClient.startTimeTracking(newTodoId);
+  }
 }
