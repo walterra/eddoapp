@@ -678,10 +678,418 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
 - **Visual Planning**: Flowchart generation for complex plans
 - **Document Integration**: Import/export todo lists from external sources
 
+## Enhanced MCP Integration with @langchain/mcp-adapters
+
+### Current Implementation Limitations
+
+Our current implementation uses direct MCP SDK integration, which has several limitations:
+
+- **Manual MCP Client Management**: We manually create and manage MCP client instances
+- **Custom Tool Wrapping**: We manually convert MCP tools to be compatible with LangGraph
+- **Error Handling Complexity**: Direct SDK usage requires extensive custom error handling
+- **Limited Multi-Server Support**: Difficult to integrate multiple MCP servers efficiently
+- **Tool Registration Overhead**: Manual registration and configuration of each MCP tool
+
+### Improved Architecture with @langchain/mcp-adapters
+
+The `@langchain/mcp-adapters` package provides a more sophisticated and maintainable approach:
+
+#### Key Benefits
+
+1. **Simplified Multi-Server Management**: Single client can manage multiple MCP servers
+2. **Automatic Tool Conversion**: MCP tools automatically become LangChain-compatible
+3. **Built-in Error Handling**: Robust error handling and retry mechanisms
+4. **Standardized Content Blocks**: Consistent tool output formatting
+5. **Transport Flexibility**: Support for stdio, HTTP, and SSE transports
+6. **Tool Naming Strategies**: Automatic tool prefixing and naming conventions
+
+#### Implementation Architecture
+
+```typescript
+// Enhanced MCP Integration Setup
+import { MultiServerMCPClient } from "@langchain/mcp-adapters";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { ChatAnthropic } from "@langchain/anthropic";
+
+interface EnhancedMCPSetup {
+  client: MultiServerMCPClient;
+  tools: Tool[];
+  agent: RunnableSequence;
+}
+
+async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
+  // Configure multiple MCP servers
+  const client = new MultiServerMCPClient({
+    // Global configuration
+    throwOnLoadError: true,
+    prefixToolNameWithServerName: true,
+    additionalToolNamePrefix: "eddo",
+    useStandardContentBlocks: true,
+    
+    // Server configurations
+    mcpServers: {
+      // Primary Eddo todo server
+      todo: {
+        transport: "streamable_http",
+        url: "http://localhost:3002/mcp",
+        // Optional: authentication headers
+        headers: {
+          "Authorization": `Bearer ${process.env.MCP_API_KEY}`
+        }
+      },
+      
+      // Future: Calendar integration
+      calendar: {
+        transport: "stdio",
+        command: "npx",
+        args: ["-y", "@eddo/calendar-mcp-server"]
+      },
+      
+      // Future: File management server
+      files: {
+        transport: "stdio", 
+        command: "python",
+        args: ["/path/to/file_server.py"]
+      }
+    },
+    
+    // Advanced configuration
+    outputHandling: {
+      // Map resource content to artifacts (not used as LLM context)
+      resourceContentToArtifact: true,
+      // Keep text and error content as main content
+      textContentToContent: true
+    }
+  });
+
+  // Get all available tools across servers
+  const tools = await client.get_tools();
+  
+  // Create enhanced agent with all MCP tools
+  const llm = new ChatAnthropic({
+    model: "claude-3-5-sonnet-20241022",
+    temperature: 0
+  });
+  
+  const agent = createReactAgent({
+    llm,
+    tools,
+    // Enhanced system message for multi-server context
+    systemMessage: buildEnhancedSystemMessage(tools)
+  });
+
+  return { client, tools, agent };
+}
+```
+
+#### Enhanced Workflow Integration
+
+```typescript
+// Updated Workflow Node for MCP Adapters
+import { Tool } from "@langchain/core/tools";
+import { HumanMessage } from "@langchain/core/messages";
+
+interface EnhancedWorkflowState extends WorkflowState {
+  mcpTools: Tool[];
+  activeServers: string[];
+  toolResults: Record<string, any>;
+}
+
+/**
+ * Enhanced step executor using LangChain MCP adapters
+ */
+export const executeStepWithAdapters: WorkflowNode = async (
+  state: EnhancedWorkflowState
+): Promise<Partial<EnhancedWorkflowState>> => {
+  const currentStep = state.executionPlan!.steps[state.currentStepIndex];
+  
+  try {
+    // Find the appropriate tool from MCP adapters
+    const tool = state.mcpTools.find(t => 
+      t.name.includes(currentStep.action) || 
+      t.name.endsWith(`_${currentStep.action}`)
+    );
+    
+    if (!tool) {
+      throw new Error(`Tool not found for action: ${currentStep.action}`);
+    }
+    
+    // Execute using LangChain tool interface
+    const result = await tool.invoke(currentStep.parameters);
+    
+    // Store result with standardized format
+    const toolResults = {
+      ...state.toolResults,
+      [currentStep.id]: {
+        content: result.content || result,
+        artifact: result.artifact,
+        metadata: {
+          toolName: tool.name,
+          server: extractServerName(tool.name),
+          timestamp: Date.now()
+        }
+      }
+    };
+    
+    // Update step status
+    currentStep.status = 'completed';
+    currentStep.result = result;
+    currentStep.duration = Date.now() - (currentStep.timestamp || Date.now());
+
+    logger.info('Enhanced step completed', {
+      stepId: currentStep.id,
+      toolName: tool.name,
+      server: extractServerName(tool.name),
+      duration: currentStep.duration
+    });
+
+    return {
+      currentStepIndex: state.currentStepIndex + 1,
+      executionSteps: [...state.executionSteps, currentStep],
+      toolResults,
+      mcpResponses: [...state.mcpResponses, result]
+    };
+    
+  } catch (error) {
+    return handleEnhancedStepError(error, currentStep, state);
+  }
+};
+
+/**
+ * Enhanced error handling with multi-server context
+ */
+async function handleEnhancedStepError(
+  error: any,
+  step: ExecutionStep, 
+  state: EnhancedWorkflowState
+): Promise<Partial<EnhancedWorkflowState>> {
+  logger.error('Enhanced step execution failed', {
+    error,
+    stepId: step.id,
+    action: step.action,
+    availableTools: state.mcpTools.map(t => t.name),
+    activeServers: state.activeServers
+  });
+
+  // Try alternative tools from different servers
+  const alternativeTools = state.mcpTools.filter(tool => 
+    tool.description?.includes(step.action) ||
+    tool.name.includes('fallback') ||
+    tool.name.includes('backup')
+  );
+
+  if (alternativeTools.length > 0) {
+    logger.info('Attempting fallback with alternative tools', {
+      stepId: step.id,
+      alternatives: alternativeTools.map(t => t.name)
+    });
+    
+    // Try each alternative tool
+    for (const altTool of alternativeTools) {
+      try {
+        const fallbackResult = await altTool.invoke(step.parameters);
+        
+        step.status = 'completed';
+        step.result = fallbackResult;
+        step.metadata = { ...step.metadata, usedFallback: altTool.name };
+        
+        return {
+          currentStepIndex: state.currentStepIndex + 1,
+          executionSteps: [...state.executionSteps, step],
+          toolResults: {
+            ...state.toolResults,
+            [step.id]: fallbackResult
+          }
+        };
+      } catch (fallbackError) {
+        logger.warn('Fallback tool also failed', { 
+          tool: altTool.name, 
+          error: fallbackError 
+        });
+      }
+    }
+  }
+
+  // Mark step as failed if no alternatives worked
+  step.status = 'failed';
+  step.error = error instanceof Error ? error : new Error(String(error));
+  
+  return {
+    currentStepIndex: state.currentStepIndex + 1,
+    executionSteps: [...state.executionSteps, step],
+    error: step.error
+  };
+}
+```
+
+#### Multi-Server Planning Enhancement
+
+```typescript
+/**
+ * Enhanced planner that leverages multiple MCP servers
+ */
+async function generateEnhancedExecutionPlan(
+  userMessage: string,
+  availableTools: Tool[],
+  sessionContext: SessionContext
+): Promise<ExecutionPlan> {
+  
+  // Group tools by server capability
+  const toolsByCapability = categorizeToolsByCapability(availableTools);
+  
+  const prompt = `You are an execution planner with access to multiple specialized servers.
+
+AVAILABLE TOOL CATEGORIES:
+${Object.entries(toolsByCapability).map(([category, tools]) => 
+  `${category.toUpperCase()}:\n${tools.map(t => `  - ${t.name}: ${t.description}`).join('\n')}`
+).join('\n\n')}
+
+MULTI-SERVER COORDINATION RULES:
+1. Prefer tools from the same server for related operations (better consistency)
+2. Use cross-server tools when combining different domains (todo + calendar)
+3. Consider fallback tools from alternative servers for critical operations
+4. Optimize for minimal server round-trips when possible
+
+ENHANCED CAPABILITIES:
+- Cross-server data correlation (todo completion affects calendar)
+- Multi-domain workflow orchestration (todos, calendar, files)
+- Intelligent fallback and error recovery across servers
+- Resource sharing between different tool contexts
+
+USER REQUEST: "${userMessage}"
+
+Generate an execution plan that leverages the full multi-server ecosystem...`;
+
+  // Use enhanced Claude call with tool context
+  const response = await claude.messages.create({
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 2000,
+    temperature: 0.3,
+    system: prompt,
+    messages: [{ role: 'user', content: userMessage }]
+  });
+
+  return parseEnhancedExecutionPlan(response.content[0].text, availableTools);
+}
+
+/**
+ * Categorize tools by their functional capability
+ */
+function categorizeToolsByCapability(tools: Tool[]): Record<string, Tool[]> {
+  const categories: Record<string, Tool[]> = {
+    todo_management: [],
+    time_tracking: [],
+    calendar: [],
+    file_operations: [],
+    analysis: [],
+    notifications: [],
+    integration: []
+  };
+
+  for (const tool of tools) {
+    const name = tool.name.toLowerCase();
+    const desc = tool.description?.toLowerCase() || '';
+    
+    if (name.includes('todo') || name.includes('task')) {
+      categories.todo_management.push(tool);
+    } else if (name.includes('time') || name.includes('timer')) {
+      categories.time_tracking.push(tool);
+    } else if (name.includes('calendar') || name.includes('schedule')) {
+      categories.calendar.push(tool);
+    } else if (name.includes('file') || name.includes('document')) {
+      categories.file_operations.push(tool);
+    } else if (desc.includes('analy') || desc.includes('report')) {
+      categories.analysis.push(tool);
+    } else if (name.includes('notify') || name.includes('alert')) {
+      categories.notifications.push(tool);
+    } else {
+      categories.integration.push(tool);
+    }
+  }
+
+  return categories;
+}
+```
+
+### Migration Strategy
+
+#### Phase 1: Parallel Implementation (1-2 weeks)
+1. **Add @langchain/mcp-adapters dependency**
+   ```bash
+   pnpm add @langchain/mcp-adapters
+   ```
+
+2. **Create enhanced MCP setup alongside existing implementation**
+   ```typescript
+   // New file: src/mcp/enhanced-client.ts
+   export const enhancedMCPSetup = setupEnhancedMCPIntegration();
+   ```
+
+3. **Implement feature flag for gradual rollout**
+   ```typescript
+   const useEnhancedMCP = process.env.USE_ENHANCED_MCP === 'true';
+   ```
+
+#### Phase 2: Enhanced Workflow Integration (2-3 weeks)
+1. **Update workflow nodes to use LangChain tools**
+2. **Implement multi-server error handling**
+3. **Add cross-server coordination capabilities**
+4. **Enhanced logging and monitoring**
+
+#### Phase 3: Full Migration (1 week)
+1. **Remove direct MCP SDK usage**
+2. **Clean up legacy code**
+3. **Update tests and documentation**
+4. **Performance optimization**
+
+### Expected Benefits
+
+#### Technical Improvements
+- **50% reduction in MCP integration code** due to adapter abstractions
+- **Better error handling** with built-in retry and fallback mechanisms
+- **Improved maintainability** with standardized tool interfaces
+- **Enhanced testing** using LangChain's testing framework
+
+#### Operational Benefits
+- **Multi-server orchestration** enables complex cross-domain workflows
+- **Automatic tool discovery** simplifies adding new MCP servers
+- **Standardized monitoring** across all MCP interactions
+- **Better performance** with connection pooling and optimization
+
+#### Future-Proofing
+- **Ecosystem compatibility** with LangChain tooling and patterns
+- **Community support** and ongoing development from LangChain team
+- **Standards compliance** with emerging MCP protocol updates
+- **Integration readiness** for additional LangChain features
+
+### Monitoring and Observability
+
+```typescript
+// Enhanced monitoring with multi-server context
+interface EnhancedMCPMetrics {
+  serverHealth: Record<string, 'healthy' | 'degraded' | 'down'>;
+  toolLatency: Record<string, number>;
+  errorRates: Record<string, number>;
+  crossServerOperations: number;
+  fallbackUsage: Record<string, number>;
+}
+
+async function monitorEnhancedMCP(): Promise<EnhancedMCPMetrics> {
+  // Implement comprehensive monitoring across all connected servers
+  // Track performance, errors, and usage patterns
+  // Enable intelligent routing and load balancing
+}
+```
+
 ## Conclusion
 
 This implementation plan transforms the Eddo Telegram Bot from a simple intent-action system into a sophisticated AI agent capable of handling complex, multi-step tasks. By leveraging proven agentic patterns and focusing on reliable external feedback mechanisms, we can create a production-ready system that significantly enhances user productivity while maintaining safety and control.
 
+The enhanced MCP integration using `@langchain/mcp-adapters` provides a more robust, maintainable, and scalable foundation for multi-server workflows. This approach aligns with industry best practices and positions the system for future enhancements.
+
 The phased approach allows for incremental development and testing, ensuring each component works reliably before adding complexity. The emphasis on human-in-the-loop design and comprehensive error handling addresses the key limitations identified in current LLM self-correction research.
 
-**Next Steps**: Begin with Phase 1 implementation, focusing on enhanced intent analysis and plan generation for a small set of complex operations like "cleanup" and "organize" tasks.
+**Next Steps**: 
+1. **Immediate**: Begin with Phase 1 implementation, focusing on enhanced intent analysis and plan generation
+2. **Short-term**: Implement @langchain/mcp-adapters integration for improved tool management
+3. **Long-term**: Develop multi-server orchestration capabilities for cross-domain workflows

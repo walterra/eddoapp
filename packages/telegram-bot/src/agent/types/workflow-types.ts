@@ -38,6 +38,7 @@ export interface ExecutionStep {
   error?: Error;
   timestamp?: number;
   duration?: number;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -59,13 +60,19 @@ export interface ExecutionPlan {
  */
 export interface ApprovalRequest {
   id: string;
-  planId: string;
+  userId: string;
+  planId?: string;
   stepId: string;
-  message: string;
-  options: string[];
+  action: string;
+  parameters: Record<string, unknown>;
+  description: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  message?: string;
+  options?: string[];
   approved?: boolean;
   response?: string;
-  timestamp: number;
+  createdAt: number;
+  timestamp?: number;
   expiresAt?: number;
 }
 

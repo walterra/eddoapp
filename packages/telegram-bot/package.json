@@ -13,8 +13,10 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.2",
     "@eddo/shared": "workspace:*",
+    "@langchain/anthropic": "^0.3.10",
     "@langchain/core": "^0.3.61",
     "@langchain/langgraph": "^0.3.5",
+    "@langchain/mcp-adapters": "^0.5.2",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "dotenv": "^16.3.1",
     "grammy": "^1.21.1",

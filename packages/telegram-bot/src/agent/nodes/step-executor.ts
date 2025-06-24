@@ -423,12 +423,18 @@ async function requestApproval(
 
     const autoApprovalRequest: ApprovalRequest = {
       id: `auto_approval_${Date.now()}_${step.id}`,
+      userId: state.userId,
       planId: state.executionPlan!.id,
       stepId: step.id,
+      action: step.action,
+      parameters: step.parameters,
+      description: step.description,
+      riskLevel: 'low',
       message: `Auto-approved safe operation: ${step.description}`,
       options: [],
       approved: true,
       response: 'Auto-approved (safe operation)',
+      createdAt: Date.now(),
       timestamp: Date.now(),
     };
 
@@ -446,18 +452,27 @@ async function requestApproval(
 
   const approvalRequest: ApprovalRequest = {
     id: approvalId,
+    userId: state.userId,
     planId: state.executionPlan!.id,
     stepId: step.id,
+    action: step.action,
+    parameters: step.parameters,
+    description: step.description,
+    riskLevel: getRiskLevel(step),
     message: `⚠️ APPROVAL REQUIRED\n\nStep: ${step.description}\nAction: ${step.action}\nRisk: This operation ${getRiskDescription(step)}\n\nDo you want to proceed?`,
     options: ['✅ Approve', '❌ Deny', '⏭️ Skip'],
+    createdAt: Date.now(),
     timestamp: Date.now(),
     expiresAt: Date.now() + 5 * 60 * 1000, // 5 minute timeout
   };
 
-  await state.telegramContext.reply(approvalRequest.message, {
-    // Removed parse_mode to avoid markdown escaping issues
-    // Note: In a real implementation, you'd add inline keyboard buttons here
-  });
+  await state.telegramContext.reply(
+    approvalRequest.message || 'Approval required',
+    {
+      // Removed parse_mode to avoid markdown escaping issues
+      // Note: In a real implementation, you'd add inline keyboard buttons here
+    },
+  );
 
   logger.info('Approval requested', {
     userId: state.userId,
@@ -577,7 +592,9 @@ async function executeStepAction(
         stepId: step.id,
         parameters: step.parameters,
       });
-      const listResult = await mcpClient.listTodos(step.parameters as Parameters<typeof mcpClient.listTodos>[0]);
+      const listResult = await mcpClient.listTodos(
+        step.parameters as Parameters<typeof mcpClient.listTodos>[0],
+      );
       logger.info('list_todos completed', {
         stepId: step.id,
         resultType: typeof listResult,
@@ -587,7 +604,9 @@ async function executeStepAction(
     }
 
     case 'create_todo':
-      return await mcpClient.createTodo(step.parameters as Parameters<typeof mcpClient.createTodo>[0]);
+      return await mcpClient.createTodo(
+        step.parameters as Parameters<typeof mcpClient.createTodo>[0],
+      );
 
     case 'update_todo':
       return await executeBulkOrSingleUpdate(step, state);
@@ -596,23 +615,36 @@ async function executeStepAction(
       return await executeBulkOrSingleDelete(step, state);
 
     case 'toggle_completion': {
-      const params = step.parameters as { id?: string; completed?: boolean; title?: string };
-      
+      const params = step.parameters as {
+        id?: string;
+        completed?: boolean;
+        title?: string;
+      };
+
       if (params.id && typeof params.completed === 'boolean') {
         // Direct ID and completion status provided
-        return await mcpClient.toggleTodoCompletion(params.id, params.completed);
+        return await mcpClient.toggleTodoCompletion(
+          params.id,
+          params.completed,
+        );
       } else if (params.title) {
         // Need to find the todo by title first, then toggle it
-        return await toggleTodoCompletionByTitle(params.title, params.completed, state);
+        return await toggleTodoCompletionByTitle(
+          params.title,
+          params.completed,
+          state,
+        );
       } else {
-        throw new Error('Either (todoId and completed status) or title is required to toggle completion');
+        throw new Error(
+          'Either (todoId and completed status) or title is required to toggle completion',
+        );
       }
     }
 
     case 'start_timer':
     case 'start_time_tracking': {
       const params = step.parameters as { id?: string; title?: string };
-      
+
       if (params.id) {
         // Direct ID provided, start timer immediately
         return await mcpClient.startTimeTracking(params.id);
@@ -627,7 +659,7 @@ async function executeStepAction(
     case 'stop_timer':
     case 'stop_time_tracking': {
       const params = step.parameters as { id?: string; title?: string };
-      
+
       if (params.id) {
         // Direct ID provided, stop timer immediately
         return await mcpClient.stopTimeTracking(params.id);
@@ -656,47 +688,61 @@ async function executeAnalysisStep(
 
   // Get current context for analysis - use same parameters as the associated list_todos step if available
   const mcpClient = getMCPClient();
-  
+
   // Look for a related list_todos step to get the specific filtering parameters
   let listTodosParams = { limit: 50 };
   const recentListStep = state.executionSteps
     .filter((s) => s.action === 'list_todos' && s.status === 'completed')
     .pop();
-  
+
   if (recentListStep && recentListStep.parameters) {
     listTodosParams = { ...listTodosParams, ...recentListStep.parameters };
   }
-  
+
   const currentTodos = await mcpClient.listTodos(listTodosParams);
   const activeTodos = currentTodos.filter((todo) => !todo.completed);
-  
+
   // Group todos by context for better analysis
-  const todosByContext = activeTodos.reduce((acc: Record<string, Array<typeof activeTodos[0]>>, todo) => {
-    if (!acc[todo.context]) acc[todo.context] = [];
-    acc[todo.context].push(todo);
-    return acc;
-  }, {});
-  
+  const todosByContext = activeTodos.reduce(
+    (acc: Record<string, Array<(typeof activeTodos)[0]>>, todo) => {
+      if (!acc[todo.context]) acc[todo.context] = [];
+      acc[todo.context].push(todo);
+      return acc;
+    },
+    {},
+  );
+
   // Analyze due dates and priorities
-  const overdueTodos = activeTodos.filter((t) => t.due && new Date(t.due) < new Date());
+  const overdueTodos = activeTodos.filter(
+    (t) => t.due && new Date(t.due) < new Date(),
+  );
   const todayTodos = activeTodos.filter((t) => {
     if (!t.due) return false;
     const dueDate = new Date(t.due);
     const today = new Date();
     return dueDate.toDateString() === today.toDateString();
   });
-  
+
   // Build detailed context information
   let contextDetails = '';
   if (Object.keys(todosByContext).length > 0) {
     contextDetails = `
 DETAILED BREAKDOWN:
-${Object.entries(todosByContext).map(([context, contextTodos]) => 
-  `${context.toUpperCase()} Context (${contextTodos.length} active todos):
-${contextTodos.slice(0, 3).map((todo) => 
-  `  - "${todo.title}"${todo.due ? ` (due: ${new Date(todo.due).toLocaleDateString()})` : ''}${todo.tags && Array.isArray(todo.tags) && todo.tags.length > 0 ? ` [${todo.tags.join(', ')}]` : ''}`
-).join('\n')}${contextTodos.length > 3 ? `\n  ... and ${contextTodos.length - 3} more todos` : ''}`
-).join('\n\n')}`;
+${Object.entries(todosByContext)
+  .map(
+    ([context, contextTodos]) =>
+      `${context.toUpperCase()} Context (${contextTodos.length} active todos):
+${contextTodos
+  .slice(0, 3)
+  .map(
+    (todo) =>
+      `  - "${todo.title}"${todo.due ? ` (due: ${new Date(todo.due).toLocaleDateString()})` : ''}${todo.tags && Array.isArray(todo.tags) && todo.tags.length > 0 ? ` [${todo.tags.join(', ')}]` : ''}`,
+  )
+  .join(
+    '\n',
+  )}${contextTodos.length > 3 ? `\n  ... and ${contextTodos.length - 3} more todos` : ''}`,
+  )
+  .join('\n\n')}`;
   }
 
   const analysisPrompt = `Analyze the current todo state for the following request and provide specific actionable insights:
@@ -1157,79 +1203,100 @@ function generateProgressBar(current: number, total: number): string {
  * Finds the best matching todo from a list using flexible matching strategies
  */
 function findBestTodoMatch(
-  todos: Array<{ _id: string; title: string; description?: string; [key: string]: any }>,
-  searchTitle: string
-): typeof todos[0] | null {
+  todos: Array<{
+    _id: string;
+    title: string;
+    description?: string;
+    [key: string]: any;
+  }>,
+  searchTitle: string,
+): (typeof todos)[0] | null {
   if (!searchTitle || todos.length === 0) return null;
-  
+
   const searchLower = searchTitle.toLowerCase().trim();
-  const searchWords = searchLower.split(/\s+/).filter(word => word.length > 2); // Only meaningful words
-  
-  logger.info('Searching for todo match', { 
-    searchTitle, 
+  const searchWords = searchLower
+    .split(/\s+/)
+    .filter((word) => word.length > 2); // Only meaningful words
+
+  logger.info('Searching for todo match', {
+    searchTitle,
     searchWords,
-    availableTodos: todos.map(t => ({ id: t._id, title: t.title }))
+    availableTodos: todos.map((t) => ({ id: t._id, title: t.title })),
   });
-  
+
   // Strategy 1: Exact match (case-insensitive)
-  let match = todos.find(todo => 
-    todo.title.toLowerCase().trim() === searchLower
+  let match = todos.find(
+    (todo) => todo.title.toLowerCase().trim() === searchLower,
   );
   if (match) {
     logger.info('Found exact match', { todoTitle: match.title, searchTitle });
     return match;
   }
-  
+
   // Strategy 2: Full substring match (either direction)
-  match = todos.find(todo => {
+  match = todos.find((todo) => {
     const todoLower = todo.title.toLowerCase();
     return todoLower.includes(searchLower) || searchLower.includes(todoLower);
   });
   if (match) {
-    logger.info('Found substring match', { todoTitle: match.title, searchTitle });
+    logger.info('Found substring match', {
+      todoTitle: match.title,
+      searchTitle,
+    });
     return match;
   }
-  
+
   // Strategy 3: Key word matching - find todo with most overlapping meaningful words
   let bestMatch = null;
   let bestScore = 0;
-  
+
   for (const todo of todos) {
     const todoLower = todo.title.toLowerCase();
-    const todoWords = todoLower.split(/\s+/).filter(word => word.length > 2);
-    
+    const todoWords = todoLower.split(/\s+/).filter((word) => word.length > 2);
+
     // Calculate overlap score
     let score = 0;
-    
+
     // Bonus for exact word matches
     for (const searchWord of searchWords) {
-      if (todoWords.some(todoWord => todoWord === searchWord)) {
+      if (todoWords.some((todoWord) => todoWord === searchWord)) {
         score += 3; // High score for exact word match
-      } else if (todoWords.some(todoWord => todoWord.includes(searchWord) || searchWord.includes(todoWord))) {
+      } else if (
+        todoWords.some(
+          (todoWord) =>
+            todoWord.includes(searchWord) || searchWord.includes(todoWord),
+        )
+      ) {
         score += 1; // Lower score for partial word match
       }
     }
-    
+
     // Special keyword matching for common variations
     const keywordMatches = [
       // Faucet/tap variations
       { search: ['faucet', 'tap'], todo: ['faucet', 'tap', 'plumbing'] },
-      // Kitchen/cooking variations  
+      // Kitchen/cooking variations
       { search: ['kitchen'], todo: ['kitchen', 'cooking'] },
       // Repair/fix variations
-      { search: ['repair', 'fix'], todo: ['repair', 'fix', 'broken', 'leaky', 'leaking'] },
+      {
+        search: ['repair', 'fix'],
+        todo: ['repair', 'fix', 'broken', 'leaky', 'leaking'],
+      },
       // Leaky variations
-      { search: ['leaky', 'leaking'], todo: ['leaky', 'leaking', 'dripping', 'broken'] }
+      {
+        search: ['leaky', 'leaking'],
+        todo: ['leaky', 'leaking', 'dripping', 'broken'],
+      },
     ];
-    
+
     for (const { search: searchKeys, todo: todoKeys } of keywordMatches) {
-      const hasSearchKey = searchKeys.some(key => searchLower.includes(key));
-      const hasTodoKey = todoKeys.some(key => todoLower.includes(key));
+      const hasSearchKey = searchKeys.some((key) => searchLower.includes(key));
+      const hasTodoKey = todoKeys.some((key) => todoLower.includes(key));
       if (hasSearchKey && hasTodoKey) {
         score += 2; // Bonus for semantic similarity
       }
     }
-    
+
     // Check description field too
     if (todo.description && typeof todo.description === 'string') {
       const descLower = todo.description.toLowerCase();
@@ -1239,31 +1306,35 @@ function findBestTodoMatch(
         }
       }
     }
-    
+
     logger.info('Todo match scoring', {
       todoTitle: todo.title,
       todoWords,
       searchWords,
       score,
-      currentBest: bestScore
+      currentBest: bestScore,
     });
-    
-    if (score > bestScore && score >= 2) { // Minimum threshold
+
+    if (score > bestScore && score >= 2) {
+      // Minimum threshold
       bestScore = score;
       bestMatch = todo;
     }
   }
-  
+
   if (bestMatch) {
-    logger.info('Found best match via scoring', { 
-      todoTitle: bestMatch.title, 
-      searchTitle, 
-      score: bestScore 
+    logger.info('Found best match via scoring', {
+      todoTitle: bestMatch.title,
+      searchTitle,
+      score: bestScore,
     });
     return bestMatch;
   }
-  
-  logger.info('No suitable todo match found', { searchTitle, todoCount: todos.length });
+
+  logger.info('No suitable todo match found', {
+    searchTitle,
+    todoCount: todos.length,
+  });
   return null;
 }
 
@@ -1275,36 +1346,39 @@ async function startTimeTrackingByTitle(
   state: WorkflowState,
 ): Promise<string> {
   const mcpClient = getMCPClient();
-  
+
   logger.info('Starting time tracking by title', { title });
-  
+
   // Look for previous list_todos results in this workflow that might contain the todo
   const listSteps = state.executionSteps.filter(
-    (step) => step.action === 'list_todos' && step.status === 'completed'
+    (step) => step.action === 'list_todos' && step.status === 'completed',
   );
-  
+
   let existingTodo = null;
-  
+
   // Check if we already have the todo from a previous list operation
-  for (const listStep of listSteps.reverse()) { // Start with most recent
-    const listResult = state.mcpResponses[state.executionSteps.indexOf(listStep)];
-    
+  for (const listStep of listSteps.reverse()) {
+    // Start with most recent
+    const listResult =
+      state.mcpResponses[state.executionSteps.indexOf(listStep)];
+
     try {
-      let todos: Array<{ _id: string; title: string; [key: string]: unknown }> = [];
+      let todos: Array<{ _id: string; title: string; [key: string]: unknown }> =
+        [];
       if (typeof listResult === 'string') {
         todos = JSON.parse(listResult);
       } else if (Array.isArray(listResult)) {
         todos = listResult;
       }
-      
+
       // Find a todo that matches the title with flexible matching
       existingTodo = findBestTodoMatch(todos, title);
-      
+
       if (existingTodo) {
-        logger.info('Found existing todo in previous results', { 
-          todoId: existingTodo._id, 
+        logger.info('Found existing todo in previous results', {
+          todoId: existingTodo._id,
           todoTitle: existingTodo.title,
-          searchTitle: title
+          searchTitle: title,
         });
         break;
       }
@@ -1312,73 +1386,79 @@ async function startTimeTrackingByTitle(
       logger.warn('Failed to parse previous list results', { error });
     }
   }
-  
+
   // If not found in previous results, search explicitly
   if (!existingTodo) {
-    logger.info('Todo not found in previous results, searching explicitly', { title });
-    
+    logger.info('Todo not found in previous results, searching explicitly', {
+      title,
+    });
+
     try {
       const searchResults = await mcpClient.listTodos({ limit: 50 });
       existingTodo = findBestTodoMatch(searchResults, title);
-      
+
       if (existingTodo) {
-        logger.info('Found existing todo via search', { 
-          todoId: existingTodo._id, 
+        logger.info('Found existing todo via search', {
+          todoId: existingTodo._id,
           todoTitle: existingTodo.title,
-          searchTitle: title
+          searchTitle: title,
         });
       }
     } catch (error) {
       logger.error('Failed to search for existing todos', { error });
     }
   }
-  
+
   if (existingTodo) {
     // Start timer on existing todo
-    logger.info('Starting timer on existing todo', { 
-      todoId: existingTodo._id, 
-      title: existingTodo.title 
+    logger.info('Starting timer on existing todo', {
+      todoId: existingTodo._id,
+      title: existingTodo.title,
     });
     return await mcpClient.startTimeTracking(existingTodo._id);
   } else {
     // Create new todo and start timer
     logger.info('Creating new todo and starting timer', { title });
-    
+
     // Determine appropriate context - check if previous search specified a context
     let context = 'private'; // Default
-    
+
     // Check if there was a context filter in the previous list step
     const recentListStep = listSteps[listSteps.length - 1];
-    if (recentListStep && recentListStep.parameters && typeof recentListStep.parameters === 'object') {
+    if (
+      recentListStep &&
+      recentListStep.parameters &&
+      typeof recentListStep.parameters === 'object'
+    ) {
       const listParams = recentListStep.parameters as { context?: string };
       if (listParams.context) {
         context = listParams.context;
         logger.info('Using context from previous search', { context });
       }
     }
-    
-    const createResult = await mcpClient.createTodo({ 
+
+    const createResult = await mcpClient.createTodo({
       title,
-      context
+      context,
     });
-    
+
     logger.info('Create result received', { createResult, title });
-    
+
     // Extract the ID from the create result (try multiple patterns)
     let newTodoId = null;
-    
+
     // Try different ID patterns
     const patterns = [
       /Todo created with ID:\s*([^\s\n]+)/i, // "Todo created with ID: ..." format
-      /[a-f0-9-]{36}/i,  // UUID with dashes
-      /[a-f0-9]{32}/i,   // UUID without dashes
-      /[a-f0-9]{24}/i,   // MongoDB ObjectId
+      /[a-f0-9-]{36}/i, // UUID with dashes
+      /[a-f0-9]{32}/i, // UUID without dashes
+      /[a-f0-9]{24}/i, // MongoDB ObjectId
       /"id":\s*"([^"]+)"/i, // JSON with id field
       /"_id":\s*"([^"]+)"/i, // JSON with _id field
       /ID:\s*([^\s\n]+)/i, // Generic "ID: ..." format
       /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/i, // ISO timestamp format
     ];
-    
+
     for (const pattern of patterns) {
       const match = createResult.match(pattern);
       if (match) {
@@ -1386,36 +1466,50 @@ async function startTimeTrackingByTitle(
         break;
       }
     }
-    
+
     if (!newTodoId) {
       // Fallback: try to find the todo by searching for it immediately after creation
-      logger.warn('Could not extract ID from create result, searching for newly created todo', { 
-        createResult, 
-        title 
-      });
-      
+      logger.warn(
+        'Could not extract ID from create result, searching for newly created todo',
+        {
+          createResult,
+          title,
+        },
+      );
+
       try {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Brief delay for consistency
+        await new Promise((resolve) => setTimeout(resolve, 100)); // Brief delay for consistency
         const searchResults = await mcpClient.listTodos({ limit: 10 });
-        const newTodo = searchResults.find((todo) => 
-          todo.title.toLowerCase() === title.toLowerCase()
+        const newTodo = searchResults.find(
+          (todo) => todo.title.toLowerCase() === title.toLowerCase(),
         );
-        
+
         if (newTodo) {
           newTodoId = newTodo._id;
-          logger.info('Found newly created todo via search', { todoId: newTodoId, title });
+          logger.info('Found newly created todo via search', {
+            todoId: newTodoId,
+            title,
+          });
         }
       } catch (searchError) {
-        logger.error('Failed to find newly created todo', { searchError, title });
+        logger.error('Failed to find newly created todo', {
+          searchError,
+          title,
+        });
       }
     }
-    
+
     if (!newTodoId) {
-      throw new Error(`Failed to get todo ID after creation. Create result: ${createResult}`);
+      throw new Error(
+        `Failed to get todo ID after creation. Create result: ${createResult}`,
+      );
     }
-    
-    logger.info('Starting timer on newly created todo', { todoId: newTodoId, title });
-    
+
+    logger.info('Starting timer on newly created todo', {
+      todoId: newTodoId,
+      title,
+    });
+
     return await mcpClient.startTimeTracking(newTodoId);
   }
 }
@@ -1428,65 +1522,71 @@ async function stopActiveTimeTracking(
   state?: WorkflowState,
 ): Promise<string> {
   const mcpClient = getMCPClient();
-  
+
   logger.info('Stopping active time tracking', { specificTitle });
-  
+
   try {
     // Get all active timers
     const activeTimers = await mcpClient.getActiveTimeTracking();
-    
+
     if (!activeTimers || activeTimers.length === 0) {
       logger.info('No active timers found to stop');
       return 'No active timers are currently running';
     }
-    
-    logger.info('Found active timers', { 
+
+    logger.info('Found active timers', {
       count: activeTimers.length,
-      timers: activeTimers.map(t => ({ id: t._id, title: t.title }))
+      timers: activeTimers.map((t) => ({ id: t._id, title: t.title })),
     });
-    
+
     let timerToStop = null;
-    
+
     // If a specific title is provided, try to find a matching active timer
     if (specificTitle) {
       timerToStop = findBestTodoMatch(activeTimers, specificTitle);
-      
+
       if (timerToStop) {
-        logger.info('Found specific timer to stop', { 
-          todoId: timerToStop._id, 
+        logger.info('Found specific timer to stop', {
+          todoId: timerToStop._id,
           title: timerToStop.title,
-          searchTitle: specificTitle 
+          searchTitle: specificTitle,
         });
       } else {
-        logger.warn('No active timer matches the specified title', { specificTitle });
+        logger.warn('No active timer matches the specified title', {
+          specificTitle,
+        });
       }
     }
-    
+
     // If no specific timer found or no title provided, stop the most recent timer
     if (!timerToStop) {
       // Sort by _id (which are timestamps) to get the most recent
-      const sortedTimers = activeTimers.sort((a, b) => b._id.localeCompare(a._id));
+      const sortedTimers = activeTimers.sort((a, b) =>
+        b._id.localeCompare(a._id),
+      );
       timerToStop = sortedTimers[0];
-      
-      logger.info('Stopping most recent active timer', { 
-        todoId: timerToStop._id, 
-        title: timerToStop.title 
+
+      logger.info('Stopping most recent active timer', {
+        todoId: timerToStop._id,
+        title: timerToStop.title,
       });
     }
-    
+
     // Stop the selected timer
     const stopResult = await mcpClient.stopTimeTracking(timerToStop._id);
-    
-    logger.info('Successfully stopped timer', { 
-      todoId: timerToStop._id, 
+
+    logger.info('Successfully stopped timer', {
+      todoId: timerToStop._id,
       title: timerToStop.title,
-      result: stopResult
+      result: stopResult,
     });
-    
+
     return stopResult;
-    
   } catch (error) {
-    logger.error('Failed to stop active time tracking', { error, specificTitle });
+    logger.error('Failed to stop active time tracking', {
+      error,
+      specificTitle,
+    });
     throw error;
   }
 }
@@ -1500,37 +1600,44 @@ async function toggleTodoCompletionByTitle(
   state: WorkflowState,
 ): Promise<string> {
   const mcpClient = getMCPClient();
-  
+
   logger.info('Toggling todo completion by title', { title, completed });
-  
+
   // Look for previous list_todos results in this workflow that might contain the todo
   const listSteps = state.executionSteps.filter(
-    (step) => step.action === 'list_todos' && step.status === 'completed'
+    (step) => step.action === 'list_todos' && step.status === 'completed',
   );
-  
+
   let existingTodo = null;
-  
+
   // Check if we already have the todo from a previous list operation
-  for (const listStep of listSteps.reverse()) { // Start with most recent
-    const listResult = state.mcpResponses[state.executionSteps.indexOf(listStep)];
-    
+  for (const listStep of listSteps.reverse()) {
+    // Start with most recent
+    const listResult =
+      state.mcpResponses[state.executionSteps.indexOf(listStep)];
+
     try {
-      let todos: Array<{ _id: string; title: string; completed?: string | null; [key: string]: any }> = [];
+      let todos: Array<{
+        _id: string;
+        title: string;
+        completed?: string | null;
+        [key: string]: any;
+      }> = [];
       if (typeof listResult === 'string') {
         todos = JSON.parse(listResult);
       } else if (Array.isArray(listResult)) {
         todos = listResult;
       }
-      
+
       // Find a todo that matches the title with flexible matching
       existingTodo = findBestTodoMatch(todos, title);
-      
+
       if (existingTodo) {
-        logger.info('Found existing todo in previous results', { 
-          todoId: existingTodo._id, 
+        logger.info('Found existing todo in previous results', {
+          todoId: existingTodo._id,
           todoTitle: existingTodo.title,
           searchTitle: title,
-          currentCompleted: existingTodo.completed
+          currentCompleted: existingTodo.completed,
         });
         break;
       }
@@ -1538,32 +1645,34 @@ async function toggleTodoCompletionByTitle(
       logger.warn('Failed to parse previous list results', { error });
     }
   }
-  
+
   // If not found in previous results, search explicitly
   if (!existingTodo) {
-    logger.info('Todo not found in previous results, searching explicitly', { title });
-    
+    logger.info('Todo not found in previous results, searching explicitly', {
+      title,
+    });
+
     try {
       const searchResults = await mcpClient.listTodos({ limit: 50 });
       existingTodo = findBestTodoMatch(searchResults, title);
-      
+
       if (existingTodo) {
-        logger.info('Found existing todo via search', { 
-          todoId: existingTodo._id, 
+        logger.info('Found existing todo via search', {
+          todoId: existingTodo._id,
           todoTitle: existingTodo.title,
           searchTitle: title,
-          currentCompleted: existingTodo.completed
+          currentCompleted: existingTodo.completed,
         });
       }
     } catch (error) {
       logger.error('Failed to search for existing todos', { error });
     }
   }
-  
+
   if (!existingTodo) {
     throw new Error(`Could not find todo matching "${title}"`);
   }
-  
+
   // Determine completion status
   let targetCompleted: boolean;
   if (typeof completed === 'boolean') {
@@ -1572,13 +1681,36 @@ async function toggleTodoCompletionByTitle(
     // If no specific completion status provided, toggle current status
     targetCompleted = !existingTodo.completed;
   }
-  
-  logger.info('Toggling todo completion', { 
-    todoId: existingTodo._id, 
+
+  logger.info('Toggling todo completion', {
+    todoId: existingTodo._id,
     title: existingTodo.title,
     currentCompleted: existingTodo.completed,
-    targetCompleted
+    targetCompleted,
   });
-  
-  return await mcpClient.toggleTodoCompletion(existingTodo._id, targetCompleted);
+
+  return await mcpClient.toggleTodoCompletion(
+    existingTodo._id,
+    targetCompleted,
+  );
+}
+
+/**
+ * Determine risk level for approval requirements
+ */
+function getRiskLevel(step: ExecutionStep): 'low' | 'medium' | 'high' {
+  const action = step.action.toLowerCase();
+
+  // High risk: Destructive operations
+  if (action.includes('delete') || action.includes('remove')) {
+    return 'high';
+  }
+
+  // Medium risk: Bulk operations or updates
+  if (action.includes('bulk') || action.includes('update_todo')) {
+    return 'medium';
+  }
+
+  // Low risk: Read operations or single item changes
+  return 'low';
 }

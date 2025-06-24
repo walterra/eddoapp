@@ -173,17 +173,19 @@ async function describeStepChange(step: ExecutionStep): Promise<string | null> {
     case 'start_timer':
     case 'start_time_tracking': {
       const params = step.parameters as { id?: string; title?: string };
-      
+
       // Try to extract todo information from the result
       let todoInfo = '';
       if (step.result && typeof step.result === 'string') {
         // Look for todo title in the result message
-        const titleMatch = step.result.match(/Started time tracking for:\s*(.+)/i);
+        const titleMatch = step.result.match(
+          /Started time tracking for:\s*(.+)/i,
+        );
         if (titleMatch) {
           todoInfo = `"${titleMatch[1]}"`;
         }
       }
-      
+
       if (todoInfo) {
         return `Started timer for task: ${todoInfo}`;
       } else if (params.id) {
@@ -198,17 +200,19 @@ async function describeStepChange(step: ExecutionStep): Promise<string | null> {
     case 'stop_timer':
     case 'stop_time_tracking': {
       const params = step.parameters as { id?: string; title?: string };
-      
+
       // Try to extract todo information from the result
       let todoInfo = '';
       if (step.result && typeof step.result === 'string') {
         // Look for todo title in the result message
-        const titleMatch = step.result.match(/Stopped time tracking for:\s*(.+)/i);
+        const titleMatch = step.result.match(
+          /Stopped time tracking for:\s*(.+)/i,
+        );
         if (titleMatch) {
           todoInfo = `"${titleMatch[1]}"`;
         }
       }
-      
+
       if (todoInfo) {
         return `Stopped timer for task: ${todoInfo}`;
       } else if (params.id) {
@@ -242,46 +246,67 @@ async function generateSuggestions(state: WorkflowState): Promise<string[]> {
 
   // Get actual todo data from completed list_todos steps for context-aware suggestions
   const listTodosSteps = state.executionSteps.filter(
-    (step) => step.action === 'list_todos' && step.status === 'completed'
+    (step) => step.action === 'list_todos' && step.status === 'completed',
   );
-  
+
   let todoContext = '';
   if (listTodosSteps.length > 0) {
     const latestListStep = listTodosSteps[listTodosSteps.length - 1];
-    const listResult = state.mcpResponses[state.executionSteps.indexOf(latestListStep)];
-    
+    const listResult =
+      state.mcpResponses[state.executionSteps.indexOf(latestListStep)];
+
     try {
-      let todos: Array<{ _id: string; title?: string; context: string; completed?: string | null; due?: string; [key: string]: unknown }> = [];
+      let todos: Array<{
+        _id: string;
+        title?: string;
+        context: string;
+        completed?: string | null;
+        due?: string;
+        [key: string]: unknown;
+      }> = [];
       if (typeof listResult === 'string') {
         todos = JSON.parse(listResult);
       } else if (Array.isArray(listResult)) {
         todos = listResult;
       }
-      
+
       if (todos.length > 0) {
         const activeTodos = todos.filter((t) => !t.completed);
-        const todosByContext = activeTodos.reduce((acc: Record<string, Array<typeof todos[0]>>, todo) => {
-          if (!acc[todo.context]) acc[todo.context] = [];
-          acc[todo.context].push(todo);
-          return acc;
-        }, {});
-        
+        const todosByContext = activeTodos.reduce(
+          (acc: Record<string, Array<(typeof todos)[0]>>, todo) => {
+            if (!acc[todo.context]) acc[todo.context] = [];
+            acc[todo.context].push(todo);
+            return acc;
+          },
+          {},
+        );
+
         todoContext = `
 CURRENT TODOS:
 - Total active todos: ${activeTodos.length}
 - Contexts: ${Object.keys(todosByContext).join(', ')}
 
 TODOS BY CONTEXT:
-${Object.entries(todosByContext).map(([context, contextTodos]) => 
-  `\n${context.toUpperCase()} (${contextTodos.length} todos):
-${contextTodos.slice(0, 5).map((todo) => 
-  `  - "${todo.title}"${todo.due ? ` (due: ${new Date(todo.due).toLocaleDateString()})` : ''}`
-).join('\n')}${contextTodos.length > 5 ? `\n  ... and ${contextTodos.length - 5} more` : ''}`
-).join('\n')}`;
+${Object.entries(todosByContext)
+  .map(
+    ([context, contextTodos]) =>
+      `\n${context.toUpperCase()} (${contextTodos.length} todos):
+${contextTodos
+  .slice(0, 5)
+  .map(
+    (todo) =>
+      `  - "${todo.title}"${todo.due ? ` (due: ${new Date(todo.due).toLocaleDateString()})` : ''}`,
+  )
+  .join(
+    '\n',
+  )}${contextTodos.length > 5 ? `\n  ... and ${contextTodos.length - 5} more` : ''}`,
+  )
+  .join('\n')}`;
       }
     } catch (_error) {
       // If parsing fails, fall back to basic info
-      todoContext = '\nTODO DATA: Available but could not parse for detailed analysis.';
+      todoContext =
+        '\nTODO DATA: Available but could not parse for detailed analysis.';
     }
   }
 
@@ -337,40 +362,50 @@ Respond with ONLY a JSON array of exactly 3 suggestion strings, no other text.`;
     'Consider what needs to be done in this context and add it to your list',
     'Review other contexts to see if tasks can be moved here',
   ];
-  
+
   // If we have todo context data, try to provide more specific fallback suggestions
   if (todoContext && todoContext.includes('CURRENT TODOS:')) {
     try {
       const listTodosSteps = state.executionSteps.filter(
-        (step) => step.action === 'list_todos' && step.status === 'completed'
+        (step) => step.action === 'list_todos' && step.status === 'completed',
       );
-      
+
       if (listTodosSteps.length > 0) {
         const latestListStep = listTodosSteps[listTodosSteps.length - 1];
-        const listResult = state.mcpResponses[state.executionSteps.indexOf(latestListStep)];
-        
-        let todos: Array<{ _id: string; title?: string; context: string; completed?: string | null; due?: string; [key: string]: unknown }> = [];
+        const listResult =
+          state.mcpResponses[state.executionSteps.indexOf(latestListStep)];
+
+        let todos: Array<{
+          _id: string;
+          title?: string;
+          context: string;
+          completed?: string | null;
+          due?: string;
+          [key: string]: unknown;
+        }> = [];
         if (typeof listResult === 'string') {
           todos = JSON.parse(listResult);
         } else if (Array.isArray(listResult)) {
           todos = listResult;
         }
-        
+
         const activeTodos = todos.filter((t) => !t.completed);
-        const overdueTodos = activeTodos.filter((t) => t.due && new Date(t.due) < new Date());
+        const overdueTodos = activeTodos.filter(
+          (t) => t.due && new Date(t.due) < new Date(),
+        );
         const todayTodos = activeTodos.filter((t) => {
           if (!t.due) return false;
           const dueDate = new Date(t.due);
           const today = new Date();
           return dueDate.toDateString() === today.toDateString();
         });
-        
+
         const contextSpecificSuggestions = [];
-        
+
         // Always pick a specific todo as the first recommendation
         let chosenTodo = null;
         let reason = '';
-        
+
         if (overdueTodos.length > 0) {
           chosenTodo = overdueTodos[0];
           reason = `This task is overdue and needs immediate attention`;
@@ -385,34 +420,45 @@ Respond with ONLY a JSON array of exactly 3 suggestion strings, no other text.`;
             if (!b.due) return -1;
             return new Date(a.due).getTime() - new Date(b.due).getTime();
           })[0];
-          reason = chosenTodo.due 
+          reason = chosenTodo.due
             ? `This task has the earliest due date`
             : `This is the next task in your queue`;
         }
-        
+
         if (chosenTodo && chosenTodo.title) {
           contextSpecificSuggestions.push(`Start with: "${chosenTodo.title}"`);
           contextSpecificSuggestions.push(reason);
-          
+
           // Add a third suggestion about the overall context
           if (overdueTodos.length > 1) {
-            contextSpecificSuggestions.push(`After this, address your other ${overdueTodos.length - 1} overdue tasks`);
+            contextSpecificSuggestions.push(
+              `After this, address your other ${overdueTodos.length - 1} overdue tasks`,
+            );
           } else if (activeTodos.length > 1) {
-            contextSpecificSuggestions.push(`You have ${activeTodos.length - 1} other tasks in this context to tackle next`);
+            contextSpecificSuggestions.push(
+              `You have ${activeTodos.length - 1} other tasks in this context to tackle next`,
+            );
           } else {
-            contextSpecificSuggestions.push(`Great job staying on top of this context!`);
+            contextSpecificSuggestions.push(
+              `Great job staying on top of this context!`,
+            );
           }
         }
-        
+
         if (contextSpecificSuggestions.length > 0) {
-          return [...contextSpecificSuggestions, ...fallbackSuggestions].slice(0, 3);
+          return [...contextSpecificSuggestions, ...fallbackSuggestions].slice(
+            0,
+            3,
+          );
         }
       }
     } catch (error) {
-      logger.warn('Failed to generate context-specific fallback suggestions', { error });
+      logger.warn('Failed to generate context-specific fallback suggestions', {
+        error,
+      });
     }
   }
-  
+
   return fallbackSuggestions;
 }
 
@@ -440,7 +486,7 @@ async function generateNextActions(state: WorkflowState): Promise<string[]> {
 
   // Use LLM to generate intelligent next actions based on context
   const claudeAI = getClaudeAI();
-  
+
   const nextActionsPrompt = `Based on the execution results and user intent, suggest 2-3 practical next actions for the user.
 
 EXECUTION CONTEXT:
@@ -450,7 +496,10 @@ EXECUTION CONTEXT:
 - Failed Steps: ${state.executionSteps.filter((s) => s.status === 'failed').length}
 
 COMPLETED ACTIONS:
-${state.executionSteps.filter((s) => s.status === 'completed').map((step) => `- ${step.description}`).join('\n')}
+${state.executionSteps
+  .filter((s) => s.status === 'completed')
+  .map((step) => `- ${step.description}`)
+  .join('\n')}
 
 If the user was seeking a recommendation about what to work on next (e.g., asked about todos in a context), prioritize action-oriented suggestions like:
 - "Take action on the recommended task above"
@@ -463,10 +512,16 @@ Provide 2-3 concise, actionable next steps in a JSON array of strings.
 Respond with ONLY a JSON array, no other text.`;
 
   try {
-    const response = await claudeAI.generateResponse(state.userId, nextActionsPrompt);
+    const response = await claudeAI.generateResponse(
+      state.userId,
+      nextActionsPrompt,
+    );
     const aiNextActions = JSON.parse(response.content);
-    
-    if (Array.isArray(aiNextActions) && aiNextActions.every((action) => typeof action === 'string')) {
+
+    if (
+      Array.isArray(aiNextActions) &&
+      aiNextActions.every((action) => typeof action === 'string')
+    ) {
       return aiNextActions.slice(0, 3);
     }
   } catch (error) {
@@ -477,7 +532,7 @@ Respond with ONLY a JSON array, no other text.`;
   return [
     'Take action on any recommendations provided above',
     'Update your todo list based on your progress',
-    'Review your accomplishments and plan your next steps'
+    'Review your accomplishments and plan your next steps',
   ];
 }
 
