@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Helper function to get the next occurrence of a specific weekday
@@ -6,13 +6,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 function getNextWeekday(from: Date, targetDay: number): Date {
   const result = new Date(from);
   const currentDay = result.getDay();
-  
+
   // Calculate days until target weekday
   let daysUntil = targetDay - currentDay;
   if (daysUntil <= 0) {
     daysUntil += 7; // Next week
   }
-  
+
   result.setDate(result.getDate() + daysUntil);
   return result;
 }
@@ -20,25 +20,27 @@ function getNextWeekday(from: Date, targetDay: number): Date {
 /**
  * Validates and fixes date formats in step parameters
  */
-function validateAndFixDates(parameters: Record<string, unknown>): Record<string, unknown> {
+function validateAndFixDates(
+  parameters: Record<string, unknown>,
+): Record<string, unknown> {
   const fixed = { ...parameters };
-  
+
   if (fixed.due && typeof fixed.due === 'string') {
     const due = fixed.due.toLowerCase();
-    
+
     // If it's already an ISO string, keep it
     if (due.includes('t') && due.includes('z')) {
       return fixed;
     }
-    
+
     // Convert common relative dates to ISO format
     const now = new Date();
     let targetDate: Date;
-    
+
     if (due.includes('saturday')) {
       targetDate = getNextWeekday(now, 6); // Saturday = 6
     } else if (due.includes('sunday')) {
-      targetDate = getNextWeekday(now, 0); // Sunday = 0  
+      targetDate = getNextWeekday(now, 0); // Sunday = 0
     } else if (due.includes('monday')) {
       targetDate = getNextWeekday(now, 1);
     } else if (due.includes('tuesday')) {
@@ -67,15 +69,15 @@ function validateAndFixDates(parameters: Record<string, unknown>): Record<string
         targetDate.setHours(23, 59, 59, 999);
       }
     }
-    
+
     // Set time to end of day if no specific time mentioned
     if (!due.includes(':') && !due.includes('am') && !due.includes('pm')) {
       targetDate.setHours(23, 59, 59, 999);
     }
-    
+
     fixed.due = targetDate.toISOString();
   }
-  
+
   return fixed;
 }
 
@@ -120,14 +122,14 @@ describe('Date Validation and Fixing', () => {
       const isoDate = '2025-06-24T09:00:00.000Z';
       const parameters = { due: isoDate, title: 'Test' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(result.due).toBe(isoDate);
     });
 
     it('should convert "saturday" to proper ISO date', () => {
       const parameters = { due: 'saturday', title: 'Weekend task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       const resultDate = new Date(result.due as string);
       expect(resultDate.getDay()).toBe(6); // Saturday
@@ -139,7 +141,7 @@ describe('Date Validation and Fixing', () => {
     it('should convert "sunday" to proper ISO date', () => {
       const parameters = { due: 'sunday', title: 'Sunday task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       const resultDate = new Date(result.due as string);
       expect(resultDate.getDay()).toBe(0); // Sunday
@@ -150,7 +152,7 @@ describe('Date Validation and Fixing', () => {
     it('should handle case-insensitive weekday names', () => {
       const parameters = { due: 'FRIDAY', title: 'Friday task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       const resultDate = new Date(result.due as string);
       expect(resultDate.getDay()).toBe(5); // Friday
@@ -159,7 +161,7 @@ describe('Date Validation and Fixing', () => {
     it('should convert "tomorrow" to next day', () => {
       const parameters = { due: 'tomorrow', title: 'Tomorrow task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       const resultDate = new Date(result.due as string);
       expect(resultDate.getDate()).toBe(25); // June 25, 2025
@@ -169,7 +171,7 @@ describe('Date Validation and Fixing', () => {
     it('should convert "today" to current day', () => {
       const parameters = { due: 'today', title: 'Today task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       const resultDate = new Date(result.due as string);
       expect(resultDate.getDate()).toBe(24); // June 24, 2025
@@ -179,7 +181,7 @@ describe('Date Validation and Fixing', () => {
     it('should handle invalid date strings by defaulting to end of today', () => {
       const parameters = { due: 'invalid date', title: 'Invalid date task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       const resultDate = new Date(result.due as string);
       expect(resultDate.getDate()).toBe(24); // June 24, 2025 (today)
@@ -187,14 +189,14 @@ describe('Date Validation and Fixing', () => {
     });
 
     it('should preserve non-due parameters unchanged', () => {
-      const parameters = { 
-        due: 'saturday', 
+      const parameters = {
+        due: 'saturday',
         title: 'Weekend task',
         context: 'work',
-        tags: ['important']
+        tags: ['important'],
       };
       const result = validateAndFixDates(parameters);
-      
+
       expect(result.title).toBe('Weekend task');
       expect(result.context).toBe('work');
       expect(result.tags).toEqual(['important']);
@@ -203,21 +205,21 @@ describe('Date Validation and Fixing', () => {
     it('should handle parameters without due date', () => {
       const parameters = { title: 'No due date task', context: 'work' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(result).toEqual(parameters);
     });
 
     it('should handle non-string due values', () => {
       const parameters = { due: 12345, title: 'Numeric due' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(result.due).toBe(12345); // Should remain unchanged
     });
 
     it('should handle undefined due values', () => {
       const parameters = { due: undefined, title: 'Undefined due' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(result.due).toBeUndefined();
     });
   });
@@ -226,7 +228,7 @@ describe('Date Validation and Fixing', () => {
     it('should preserve time information when present', () => {
       const parameters = { due: 'saturday 2:30 pm', title: 'Timed task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       // Should not set to end of day since time was specified
       const resultDate = new Date(result.due as string);
@@ -236,7 +238,7 @@ describe('Date Validation and Fixing', () => {
     it('should preserve colon-separated time format', () => {
       const parameters = { due: 'sunday 14:30', title: 'Military time task' };
       const result = validateAndFixDates(parameters);
-      
+
       expect(typeof result.due).toBe('string');
       const resultDate = new Date(result.due as string);
       expect(resultDate.getDay()).toBe(0); // Sunday

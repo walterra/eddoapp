@@ -1,5 +1,11 @@
 import { createBot } from './bot/bot.js';
-import { handleApprove, handleDeny, handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
+import {
+  handleApprove,
+  handleDeny,
+  handleHelp,
+  handleStart,
+  handleStatus,
+} from './bot/commands/start.js';
 import { handleMessageEnhanced } from './bot/handlers/enhanced-message.js';
 import { getMCPClient } from './mcp/client.js';
 import { appConfig } from './utils/config.js';

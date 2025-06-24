@@ -44,11 +44,7 @@ export function createClaudeAI(): ClaudeAI {
 
   const sessionManager = createSessionManager();
   const intentParser = createIntentParser(apiKey);
-  const responseGenerator = createResponseGenerator(
-    apiKey,
-    mcpClient,
-    persona,
-  );
+  const responseGenerator = createResponseGenerator(apiKey, mcpClient, persona);
 
   const parseUserIntent = async (
     message: string,
@@ -176,7 +172,9 @@ export function createClaudeAI(): ClaudeAI {
     }
   };
 
-  const generateAcknowledgment = (intent: TodoIntent | MultiTodoIntent): string => {
+  const generateAcknowledgment = (
+    intent: TodoIntent | MultiTodoIntent,
+  ): string => {
     // Handle multi-intent
     if ('actions' in intent) {
       const actionCount = intent.actions.length;
@@ -197,7 +195,10 @@ export function createClaudeAI(): ClaudeAI {
     return persona;
   };
 
-  const getSessionStats = (): { totalSessions: number; activeSessions: number } => {
+  const getSessionStats = (): {
+    totalSessions: number;
+    activeSessions: number;
+  } => {
     return sessionManager.getSessionStats();
   };
 

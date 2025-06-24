@@ -1,25 +1,35 @@
 import Anthropic from '@anthropic-ai/sdk';
+
 import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
-import type { WorkflowNode, TaskComplexityAnalysis, WorkflowState } from '../types/workflow-types.js';
+import type {
+  TaskComplexityAnalysis,
+  WorkflowNode,
+  WorkflowState,
+} from '../types/workflow-types.js';
 
 /**
  * LLM-based task complexity analyzer node
  */
-export const analyzeTaskComplexity: WorkflowNode = async (state: WorkflowState): Promise<Partial<WorkflowState>> => {
-  logger.info('Analyzing task complexity', { 
-    userId: state.userId, 
-    message: state.userMessage 
+export const analyzeTaskComplexity: WorkflowNode = async (
+  state: WorkflowState,
+): Promise<Partial<WorkflowState>> => {
+  logger.info('Analyzing task complexity', {
+    userId: state.userId,
+    message: state.userMessage,
   });
 
   try {
-    const analysis = await performComplexityAnalysis(state.userMessage, state.sessionContext);
-    
+    const analysis = await performComplexityAnalysis(
+      state.userMessage,
+      state.sessionContext,
+    );
+
     logger.info('Task complexity analysis completed', {
       userId: state.userId,
       classification: analysis.classification,
       confidence: analysis.confidence,
-      requiresApproval: analysis.requiresApproval
+      requiresApproval: analysis.requiresApproval,
     });
 
     return {
@@ -27,14 +37,14 @@ export const analyzeTaskComplexity: WorkflowNode = async (state: WorkflowState):
       // Update session context based on analysis
       sessionContext: {
         ...state.sessionContext,
-        lastComplexityAnalysis: analysis.classification
-      }
+        lastComplexityAnalysis: analysis.classification,
+      },
     };
   } catch (error) {
     logger.error('Failed to analyze task complexity', {
       error,
       userId: state.userId,
-      message: state.userMessage
+      message: state.userMessage,
     });
 
     // Fallback to simple classification on error
@@ -44,12 +54,12 @@ export const analyzeTaskComplexity: WorkflowNode = async (state: WorkflowState):
       confidence: 0.5,
       requiresApproval: false,
       estimatedSteps: 1,
-      riskLevel: 'low'
+      riskLevel: 'low',
     };
 
     return {
       complexityAnalysis: fallbackAnalysis,
-      error: error instanceof Error ? error : new Error(String(error))
+      error: error instanceof Error ? error : new Error(String(error)),
     };
   }
 };
@@ -59,18 +69,18 @@ export const analyzeTaskComplexity: WorkflowNode = async (state: WorkflowState):
  */
 async function performComplexityAnalysis(
   userMessage: string,
-  sessionContext: WorkflowState['sessionContext']
+  sessionContext: WorkflowState['sessionContext'],
 ): Promise<TaskComplexityAnalysis> {
   const client = new Anthropic({ apiKey: appConfig.ANTHROPIC_API_KEY });
-  
+
   const prompt = buildComplexityAnalysisPrompt(userMessage, sessionContext);
-  
+
   const response = await client.messages.create({
     model: 'claude-3-5-sonnet-20241022',
     max_tokens: 500,
     temperature: 0.2, // Low temperature for consistent classification
     system: prompt,
-    messages: [{ role: 'user', content: userMessage }]
+    messages: [{ role: 'user', content: userMessage }],
   });
 
   const content = response.content[0];
@@ -86,7 +96,7 @@ async function performComplexityAnalysis(
  */
 function buildComplexityAnalysisPrompt(
   userMessage: string,
-  sessionContext: WorkflowState['sessionContext']
+  sessionContext: WorkflowState['sessionContext'],
 ): string {
   return `You are a task complexity analyzer for a todo management system with MCP server integration.
 
@@ -148,41 +158,53 @@ function parseComplexityResponse(responseText: string): TaskComplexityAnalysis {
       .trim();
 
     const parsed = JSON.parse(cleanedText);
-    
+
     // Validate required fields
-    if (!parsed.classification || !['simple', 'compound', 'complex'].includes(parsed.classification)) {
+    if (
+      !parsed.classification ||
+      !['simple', 'compound', 'complex'].includes(parsed.classification)
+    ) {
       throw new Error('Invalid classification value');
     }
 
-    if (typeof parsed.confidence !== 'number' || parsed.confidence < 0 || parsed.confidence > 1) {
+    if (
+      typeof parsed.confidence !== 'number' ||
+      parsed.confidence < 0 ||
+      parsed.confidence > 1
+    ) {
       throw new Error('Invalid confidence value');
     }
 
-    if (typeof parsed.estimatedSteps !== 'number' || parsed.estimatedSteps < 1) {
+    if (
+      typeof parsed.estimatedSteps !== 'number' ||
+      parsed.estimatedSteps < 1
+    ) {
       throw new Error('Invalid estimatedSteps value');
     }
 
     // Ensure required boolean fields
     const requiresApproval = Boolean(parsed.requiresApproval);
-    
+
     // Validate risk level
-    const riskLevel = ['low', 'medium', 'high'].includes(parsed.riskLevel) 
-      ? parsed.riskLevel 
+    const riskLevel = ['low', 'medium', 'high'].includes(parsed.riskLevel)
+      ? parsed.riskLevel
       : 'low';
 
     return {
       classification: parsed.classification,
       reasoning: String(parsed.reasoning || 'No reasoning provided'),
       confidence: parsed.confidence,
-      suggestedSteps: Array.isArray(parsed.suggestedSteps) ? parsed.suggestedSteps : [],
+      suggestedSteps: Array.isArray(parsed.suggestedSteps)
+        ? parsed.suggestedSteps
+        : [],
       requiresApproval,
       estimatedSteps: parsed.estimatedSteps,
-      riskLevel
+      riskLevel,
     };
   } catch (error) {
     logger.warn('Failed to parse complexity analysis response', {
       error,
-      responseText
+      responseText,
     });
 
     // Return conservative fallback
@@ -192,7 +214,7 @@ function parseComplexityResponse(responseText: string): TaskComplexityAnalysis {
       confidence: 0.3,
       requiresApproval: false,
       estimatedSteps: 1,
-      riskLevel: 'low'
+      riskLevel: 'low',
     };
   }
 }

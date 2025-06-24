@@ -278,7 +278,9 @@ export function createMCPClient(): MCPClient {
     return callTool('createTodo', params);
   };
 
-  const listTodos = async (params: ListTodosParams = {}): Promise<TodoAlpha3[]> => {
+  const listTodos = async (
+    params: ListTodosParams = {},
+  ): Promise<TodoAlpha3[]> => {
     const result = await callTool('listTodos', params);
     try {
       return JSON.parse(result);
@@ -292,7 +294,10 @@ export function createMCPClient(): MCPClient {
     return callTool('updateTodo', params);
   };
 
-  const toggleTodoCompletion = async (id: string, completed: boolean): Promise<string> => {
+  const toggleTodoCompletion = async (
+    id: string,
+    completed: boolean,
+  ): Promise<string> => {
     return callTool('toggleTodoCompletion', { id, completed });
   };
 

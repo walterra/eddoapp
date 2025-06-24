@@ -4,12 +4,14 @@ import type { RouteFunction, WorkflowState } from '../types/workflow-types.js';
 /**
  * Routes execution based on task complexity analysis
  */
-export const routeByComplexity: RouteFunction = (state: WorkflowState): string => {
+export const routeByComplexity: RouteFunction = (
+  state: WorkflowState,
+): string => {
   const analysis = state.complexityAnalysis;
-  
+
   if (!analysis) {
     logger.warn('No complexity analysis found, routing to simple execution', {
-      userId: state.userId
+      userId: state.userId,
     });
     return 'execute_simple';
   }
@@ -18,26 +20,26 @@ export const routeByComplexity: RouteFunction = (state: WorkflowState): string =
     userId: state.userId,
     classification: analysis.classification,
     confidence: analysis.confidence,
-    requiresApproval: analysis.requiresApproval
+    requiresApproval: analysis.requiresApproval,
   });
 
   // Route based on complexity
   switch (analysis.classification) {
     case 'simple':
       return 'execute_simple';
-    
+
     case 'compound':
       // Compound tasks go to planning but with simplified flow
       return 'generate_plan';
-    
+
     case 'complex':
       // Complex tasks always need planning
       return 'generate_plan';
-    
+
     default:
       logger.warn('Unknown complexity classification, defaulting to simple', {
         userId: state.userId,
-        classification: analysis.classification
+        classification: analysis.classification,
       });
       return 'execute_simple';
   }
@@ -46,13 +48,15 @@ export const routeByComplexity: RouteFunction = (state: WorkflowState): string =
 /**
  * Routes execution steps based on current step status and results
  */
-export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): string => {
+export const routeByExecutionStatus: RouteFunction = (
+  state: WorkflowState,
+): string => {
   const plan = state.executionPlan;
   const currentIndex = state.currentStepIndex;
-  
+
   if (!plan) {
     logger.error('No execution plan found during step routing', {
-      userId: state.userId
+      userId: state.userId,
     });
     return 'generate_error_response';
   }
@@ -62,7 +66,7 @@ export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): str
     logger.info('All execution steps completed', {
       userId: state.userId,
       planId: plan.id,
-      totalSteps: plan.steps.length
+      totalSteps: plan.steps.length,
     });
     return 'generate_summary';
   }
@@ -76,7 +80,7 @@ export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): str
     logger.warn('Execution step failed, checking for retry or fallback', {
       userId: state.userId,
       stepId: lastResult.id,
-      error: lastResult.error?.message
+      error: lastResult.error?.message,
     });
 
     // For now, continue to next step (could implement retry logic here)
@@ -88,18 +92,19 @@ export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): str
     logger.info('Step requires user approval', {
       userId: state.userId,
       stepId: currentStep.id,
-      description: currentStep.description
+      description: currentStep.description,
     });
     return 'request_approval';
   }
 
   // Check if we're waiting for approval
   if (state.awaitingApproval) {
-    const lastApproval = state.approvalRequests[state.approvalRequests.length - 1];
-    
+    const lastApproval =
+      state.approvalRequests[state.approvalRequests.length - 1];
+
     if (!lastApproval) {
       logger.error('Awaiting approval but no approval request found', {
-        userId: state.userId
+        userId: state.userId,
       });
       return 'generate_error_response';
     }
@@ -108,7 +113,7 @@ export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): str
       // Still waiting for user response
       logger.info('Still awaiting user approval', {
         userId: state.userId,
-        approvalId: lastApproval.id
+        approvalId: lastApproval.id,
       });
       return 'wait_for_approval';
     }
@@ -116,7 +121,7 @@ export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): str
     if (!lastApproval.approved) {
       logger.info('User rejected approval, aborting execution', {
         userId: state.userId,
-        approvalId: lastApproval.id
+        approvalId: lastApproval.id,
       });
       return 'handle_rejection';
     }
@@ -124,7 +129,7 @@ export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): str
     // Approval granted, continue execution
     logger.info('User approved, continuing execution', {
       userId: state.userId,
-      approvalId: lastApproval.id
+      approvalId: lastApproval.id,
     });
   }
 
@@ -135,12 +140,15 @@ export const routeByExecutionStatus: RouteFunction = (state: WorkflowState): str
 /**
  * Routes based on approval status
  */
-export const routeByApproval: RouteFunction = (state: WorkflowState): string => {
-  const lastApproval = state.approvalRequests[state.approvalRequests.length - 1];
-  
+export const routeByApproval: RouteFunction = (
+  state: WorkflowState,
+): string => {
+  const lastApproval =
+    state.approvalRequests[state.approvalRequests.length - 1];
+
   if (!lastApproval) {
     logger.error('No approval request found when routing by approval', {
-      userId: state.userId
+      userId: state.userId,
     });
     return 'generate_error_response';
   }
@@ -148,7 +156,7 @@ export const routeByApproval: RouteFunction = (state: WorkflowState): string => 
   if (lastApproval.approved === undefined) {
     logger.info('Still waiting for approval response', {
       userId: state.userId,
-      approvalId: lastApproval.id
+      approvalId: lastApproval.id,
     });
     return 'wait_for_approval';
   }
@@ -156,13 +164,13 @@ export const routeByApproval: RouteFunction = (state: WorkflowState): string => 
   if (lastApproval.approved) {
     logger.info('Approval granted, continuing execution', {
       userId: state.userId,
-      approvalId: lastApproval.id
+      approvalId: lastApproval.id,
     });
     return 'execute_next_step';
   } else {
     logger.info('Approval denied, handling rejection', {
       userId: state.userId,
-      approvalId: lastApproval.id
+      approvalId: lastApproval.id,
     });
     return 'handle_rejection';
   }
@@ -175,14 +183,14 @@ export const routeByError: RouteFunction = (state: WorkflowState): string => {
   if (state.error) {
     logger.error('Error detected in workflow state', {
       userId: state.userId,
-      error: state.error.message
+      error: state.error.message,
     });
     return 'generate_error_response';
   }
 
   if (state.shouldExit) {
     logger.info('Exit flag set, ending workflow', {
-      userId: state.userId
+      userId: state.userId,
     });
     return 'generate_summary';
   }
@@ -198,13 +206,13 @@ export const shouldContinueExecution = (state: WorkflowState): boolean => {
   // Exit conditions
   if (state.shouldExit) return false;
   if (state.error) return false;
-  
+
   // If we have a plan, check if all steps are complete
   if (state.executionPlan) {
-    const completedSteps = state.executionSteps.filter((step) => 
-      step.status === 'completed'
+    const completedSteps = state.executionSteps.filter(
+      (step) => step.status === 'completed',
     ).length;
-    
+
     return completedSteps < state.executionPlan.steps.length;
   }
 

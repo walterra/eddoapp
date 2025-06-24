@@ -11,14 +11,17 @@ export async function handleMessageWithAgent(ctx: BotContext): Promise<void> {
   const userId = ctx.from?.id;
 
   if (!messageText || !userId) {
-    logger.warn('Invalid message or user ID', { messageText: !!messageText, userId });
+    logger.warn('Invalid message or user ID', {
+      messageText: !!messageText,
+      userId,
+    });
     return;
   }
 
-  logger.info('Processing message with agent workflow', { 
-    userId, 
+  logger.info('Processing message with agent workflow', {
+    userId,
     messageLength: messageText.length,
-    username: ctx.from?.username
+    username: ctx.from?.username,
   });
 
   try {
@@ -26,14 +29,14 @@ export async function handleMessageWithAgent(ctx: BotContext): Promise<void> {
     const agent = getEddoAgent({
       enableStreaming: true,
       enableApprovals: true,
-      maxExecutionTime: 300000 // 5 minutes
+      maxExecutionTime: 300000, // 5 minutes
     });
 
     // Process the message through the agent workflow
     const result = await agent.processMessage(
       messageText,
       userId.toString(),
-      ctx
+      ctx,
     );
 
     // Log the result
@@ -42,7 +45,7 @@ export async function handleMessageWithAgent(ctx: BotContext): Promise<void> {
         userId,
         hasSummary: !!result.summary,
         complexity: result.finalState.complexityAnalysis?.classification,
-        stepsExecuted: result.finalState.executionSteps.length
+        stepsExecuted: result.finalState.executionSteps.length,
       });
 
       // Update session with the last bot message
@@ -53,29 +56,28 @@ export async function handleMessageWithAgent(ctx: BotContext): Promise<void> {
       logger.error('Agent workflow failed', {
         userId,
         error: result.error?.message,
-        errorStack: result.error?.stack
+        errorStack: result.error?.stack,
       });
 
       // Send error message if not already handled
       if (!result.finalState.finalResponse) {
         await ctx.reply(
           '❌ Sorry, I encountered an error processing your request. Please try again.',
-          { parse_mode: 'Markdown' }
+          { parse_mode: 'Markdown' },
         );
       }
     }
-
   } catch (error) {
     logger.error('Fatal error in agent message handler', {
       error: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
       userId,
-      messageText: messageText.substring(0, 100) // Log first 100 chars only
+      messageText: messageText.substring(0, 100), // Log first 100 chars only
     });
 
     // Send fallback error message
     await ctx.reply(
-      '🔧 Something went wrong. Please try again or contact support if the issue persists.'
+      '🔧 Something went wrong. Please try again or contact support if the issue persists.',
     );
   }
 }
@@ -84,7 +86,9 @@ export async function handleMessageWithAgent(ctx: BotContext): Promise<void> {
  * Fallback to original message handler for compatibility
  * This allows gradual migration and rollback if needed
  */
-export async function handleMessageWithFallback(ctx: BotContext): Promise<void> {
+export async function handleMessageWithFallback(
+  ctx: BotContext,
+): Promise<void> {
   const messageText = ctx.message?.text;
   const userId = ctx.from?.id;
 
@@ -99,8 +103,9 @@ export async function handleMessageWithFallback(ctx: BotContext): Promise<void> 
     await handleMessageWithAgent(ctx);
   } catch (agentError) {
     logger.warn('Agent workflow failed, falling back to original handler', {
-      agentError: agentError instanceof Error ? agentError.message : String(agentError),
-      userId
+      agentError:
+        agentError instanceof Error ? agentError.message : String(agentError),
+      userId,
     });
 
     try {
@@ -109,13 +114,17 @@ export async function handleMessageWithFallback(ctx: BotContext): Promise<void> 
       await originalHandler(ctx);
     } catch (fallbackError) {
       logger.error('Both agent and fallback handlers failed', {
-        agentError: agentError instanceof Error ? agentError.message : String(agentError),
-        fallbackError: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-        userId
+        agentError:
+          agentError instanceof Error ? agentError.message : String(agentError),
+        fallbackError:
+          fallbackError instanceof Error
+            ? fallbackError.message
+            : String(fallbackError),
+        userId,
       });
 
       await ctx.reply(
-        '🚨 System error. Please try again later or contact support.'
+        '🚨 System error. Please try again later or contact support.',
       );
     }
   }

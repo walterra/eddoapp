@@ -1,4 +1,5 @@
 import type { BaseMessage } from '@langchain/core/messages';
+
 import type { BotContext } from '../../bot/bot.js';
 import type { MultiTodoIntent, TodoIntent } from '../../types/ai-types.js';
 
@@ -92,27 +93,27 @@ export interface WorkflowState {
   messages: BaseMessage[];
   userMessage: string;
   userId: string;
-  
+
   // Analysis results
   complexityAnalysis?: TaskComplexityAnalysis;
   originalIntent?: TodoIntent | MultiTodoIntent;
-  
+
   // Planning
   executionPlan?: ExecutionPlan;
   currentStepIndex: number;
-  
+
   // Execution tracking
   executionSteps: ExecutionStep[];
   mcpResponses: unknown[];
-  
+
   // User interaction
   approvalRequests: ApprovalRequest[];
   awaitingApproval: boolean;
-  
+
   // Results
   executionSummary?: ExecutionSummary;
   finalResponse?: string;
-  
+
   // Context
   sessionContext: {
     todoCount?: number;
@@ -122,11 +123,11 @@ export interface WorkflowState {
     lastComplexityAnalysis?: string;
     lastPlanId?: string;
   };
-  
+
   // Control flow
   shouldExit: boolean;
   error?: Error;
-  
+
   // Telegram context (for responses)
   telegramContext: BotContext;
 }
@@ -134,7 +135,9 @@ export interface WorkflowState {
 /**
  * Node function type for LangGraph nodes
  */
-export type WorkflowNode = (state: WorkflowState) => Promise<Partial<WorkflowState>>;
+export type WorkflowNode = (
+  state: WorkflowState,
+) => Promise<Partial<WorkflowState>>;
 
 /**
  * Routing function type for conditional edges

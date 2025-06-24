@@ -1,38 +1,42 @@
 import { getClaudeAI } from '../../ai/claude.js';
 import { getMCPClient } from '../../mcp/client.js';
-import { logger } from '../../utils/logger.js';
 import type { TodoIntent } from '../../types/ai-types.js';
+import { logger } from '../../utils/logger.js';
 import type { WorkflowNode, WorkflowState } from '../types/workflow-types.js';
 
 /**
  * Executes simple tasks using the existing single-step flow
  * This node wraps our current implementation for simple tasks
  */
-export const executeSimpleTask: WorkflowNode = async (state: WorkflowState): Promise<Partial<WorkflowState>> => {
+export const executeSimpleTask: WorkflowNode = async (
+  state: WorkflowState,
+): Promise<Partial<WorkflowState>> => {
   logger.info('Executing simple task using existing flow', {
     userId: state.userId,
-    message: state.userMessage
+    message: state.userMessage,
   });
 
   try {
     const claudeAI = getClaudeAI();
     const mcpClient = getMCPClient();
-    
+
     // Use existing intent parsing
     const intent = await claudeAI.parseUserIntent(
       state.userMessage,
-      state.telegramContext.session.lastBotMessage
+      state.telegramContext.session.lastBotMessage,
     );
 
     if (!intent) {
       // Not a todo request, just have a conversation
       const response = await claudeAI.generateResponse(
         state.userId,
-        state.userMessage
+        state.userMessage,
       );
 
-      await state.telegramContext.reply(response.content, { parse_mode: 'Markdown' });
-      
+      await state.telegramContext.reply(response.content, {
+        parse_mode: 'Markdown',
+      });
+
       return {
         finalResponse: response.content,
         shouldExit: true,
@@ -46,8 +50,8 @@ export const executeSimpleTask: WorkflowNode = async (state: WorkflowState): Pro
           duration: Date.now() - (state.sessionContext.startTime || Date.now()),
           changes: [],
           suggestions: [],
-          nextActions: []
-        }
+          nextActions: [],
+        },
       };
     }
 
@@ -61,14 +65,17 @@ export const executeSimpleTask: WorkflowNode = async (state: WorkflowState): Pro
     const result = await executeSingleMCPAction(mcpClient, singleIntent);
 
     // Generate AI response
-    const actionName = 'actions' in intent ? intent.actions[0].action : intent.action;
+    const actionName =
+      'actions' in intent ? intent.actions[0].action : intent.action;
     const aiResponse = await claudeAI.generateResponse(
       state.userId,
       state.userMessage,
-      { mcpResponse: result, action: actionName }
+      { mcpResponse: result, action: actionName },
     );
 
-    await state.telegramContext.reply(aiResponse.content, { parse_mode: 'Markdown' });
+    await state.telegramContext.reply(aiResponse.content, {
+      parse_mode: 'Markdown',
+    });
 
     return {
       originalIntent: intent,
@@ -84,28 +91,27 @@ export const executeSimpleTask: WorkflowNode = async (state: WorkflowState): Pro
         duration: Date.now() - (state.sessionContext.startTime || Date.now()),
         changes: [result],
         suggestions: [],
-        nextActions: []
-      }
+        nextActions: [],
+      },
     };
-
   } catch (error) {
     logger.error('Simple task execution failed', {
       error,
       userId: state.userId,
-      message: state.userMessage
+      message: state.userMessage,
     });
 
     // Use fallback response from existing error handling
     const claudeAI = getClaudeAI();
     const persona = claudeAI.getCurrentPersona();
     const fallbackMessage = persona.fallbackMessage;
-    
+
     await state.telegramContext.reply(fallbackMessage);
 
     return {
       error: error instanceof Error ? error : new Error(String(error)),
       finalResponse: fallbackMessage,
-      shouldExit: true
+      shouldExit: true,
     };
   }
 };
@@ -115,7 +121,7 @@ export const executeSimpleTask: WorkflowNode = async (state: WorkflowState): Pro
  */
 async function executeSingleMCPAction(
   mcpClient: ReturnType<typeof getMCPClient>,
-  intent: TodoIntent
+  intent: TodoIntent,
 ): Promise<string> {
   // Ensure MCP client is connected
   if (!mcpClient.isClientConnected()) {
@@ -132,7 +138,7 @@ async function executeSingleMCPAction(
         description: intent.description,
         context: intent.context || 'private',
         due: intent.due,
-        tags: intent.tags
+        tags: intent.tags,
       });
     }
 
@@ -151,7 +157,7 @@ async function executeSingleMCPAction(
         description: intent.description,
         context: intent.context,
         due: intent.due,
-        tags: intent.tags
+        tags: intent.tags,
       });
     }
 

@@ -1,31 +1,39 @@
 import Anthropic from '@anthropic-ai/sdk';
+
 import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
-import type { WorkflowNode, ExecutionPlan, ExecutionStep, WorkflowState } from '../types/workflow-types.js';
+import type {
+  ExecutionPlan,
+  ExecutionStep,
+  WorkflowNode,
+  WorkflowState,
+} from '../types/workflow-types.js';
 
 /**
  * Complex task planner node - generates detailed execution plans for multi-step workflows
  */
-export const planComplexTask: WorkflowNode = async (state: WorkflowState): Promise<Partial<WorkflowState>> => {
-  logger.info('Planning complex task', { 
-    userId: state.userId, 
+export const planComplexTask: WorkflowNode = async (
+  state: WorkflowState,
+): Promise<Partial<WorkflowState>> => {
+  logger.info('Planning complex task', {
+    userId: state.userId,
     message: state.userMessage,
-    classification: state.complexityAnalysis?.classification 
+    classification: state.complexityAnalysis?.classification,
   });
 
   try {
     const plan = await generateExecutionPlan(
-      state.userMessage, 
+      state.userMessage,
       state.complexityAnalysis,
-      state.sessionContext
+      state.sessionContext,
     );
-    
+
     logger.info('Complex task plan generated', {
       userId: state.userId,
       planId: plan.id,
       totalSteps: plan.steps.length,
       estimatedDuration: plan.estimatedDuration,
-      requiresApproval: plan.requiresApproval
+      requiresApproval: plan.requiresApproval,
     });
 
     // Send plan preview to user
@@ -37,23 +45,25 @@ export const planComplexTask: WorkflowNode = async (state: WorkflowState): Promi
       currentStepIndex: 0,
       sessionContext: {
         ...state.sessionContext,
-        lastPlanId: plan.id
-      }
+        lastPlanId: plan.id,
+      },
     };
   } catch (error) {
     logger.error('Failed to plan complex task', {
       error,
       userId: state.userId,
-      message: state.userMessage
+      message: state.userMessage,
     });
 
     // Fallback to simple execution
     const fallbackMessage = `❌ **Planning Failed**\n\nI couldn't create a detailed plan for your request. Let me try a simpler approach or please break down your request into smaller steps.`;
-    await state.telegramContext.reply(fallbackMessage, { parse_mode: 'Markdown' });
+    await state.telegramContext.reply(fallbackMessage, {
+      parse_mode: 'Markdown',
+    });
 
     return {
       error: error instanceof Error ? error : new Error(String(error)),
-      shouldExit: true
+      shouldExit: true,
     };
   }
 };
@@ -64,18 +74,22 @@ export const planComplexTask: WorkflowNode = async (state: WorkflowState): Promi
 async function generateExecutionPlan(
   userMessage: string,
   complexityAnalysis: WorkflowState['complexityAnalysis'],
-  sessionContext: WorkflowState['sessionContext']
+  sessionContext: WorkflowState['sessionContext'],
 ): Promise<ExecutionPlan> {
   const client = new Anthropic({ apiKey: appConfig.ANTHROPIC_API_KEY });
-  
-  const prompt = buildPlanningPrompt(userMessage, complexityAnalysis, sessionContext);
-  
+
+  const prompt = buildPlanningPrompt(
+    userMessage,
+    complexityAnalysis,
+    sessionContext,
+  );
+
   const response = await client.messages.create({
     model: 'claude-3-5-sonnet-20241022',
     max_tokens: 2000,
     temperature: 0.3, // Balanced creativity for planning
     system: prompt,
-    messages: [{ role: 'user', content: userMessage }]
+    messages: [{ role: 'user', content: userMessage }],
   });
 
   const content = response.content[0];
@@ -92,7 +106,7 @@ async function generateExecutionPlan(
 function buildPlanningPrompt(
   userMessage: string,
   complexityAnalysis: WorkflowState['complexityAnalysis'],
-  sessionContext: WorkflowState['sessionContext']
+  sessionContext: WorkflowState['sessionContext'],
 ): string {
   return `You are an execution planner for a todo management system with MCP server integration.
 
@@ -132,6 +146,11 @@ PLANNING RULES:
    - "saturday" → calculate the next Saturday and format as "2025-06-28T09:00:00.000Z"
    - "next week" → calculate specific date and format as ISO string
    - "tomorrow at 3pm" → "2025-06-25T15:00:00.000Z"
+9. CRITICAL BULK OPERATIONS RULE: For bulk operations affecting multiple todos (delete, update, toggle completion), you MUST:
+   a) First include a list_todos step to get the todos matching the criteria
+   b) Then create a SINGLE bulk operation step (delete_todo, update_todo, etc.) WITHOUT specific ID parameters
+   c) The step executor will automatically handle individual operations for each todo found
+   d) Example: For "delete all host todos" → step 1: list_todos({"context": "host"}), step 2: delete_todo({})
 
 SAFE OPERATIONS (no approval needed):
 - analysis - Data discovery and analysis steps
@@ -147,6 +166,13 @@ DESTRUCTIVE OPERATIONS requiring approval:
 CURRENT DATE/TIME: ${new Date().toISOString()} (${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })})
 
 USER REQUEST: "${userMessage}"
+
+BULK OPERATION EXAMPLE:
+If user requests "delete all todos with context 'work'", create steps like:
+1. list_todos with {"context": "work"} to find matching todos (MUST include context filter)
+2. delete_todo with {} (empty parameters - executor will handle all found todos automatically)
+
+CRITICAL SAFETY RULE: When user specifies a context filter (e.g., "with context 'travel'"), the list_todos step MUST include that exact context in its parameters. Never use empty parameters {} for list_todos when user specifies filtering criteria.
 
 Generate a detailed execution plan in JSON format:
 
@@ -176,7 +202,10 @@ Respond with ONLY the JSON - no markdown formatting or explanations.`;
 /**
  * Parses the LLM response into an ExecutionPlan
  */
-function parseExecutionPlan(responseText: string, userIntent: string): ExecutionPlan {
+function parseExecutionPlan(
+  responseText: string,
+  userIntent: string,
+): ExecutionPlan {
   try {
     // Clean the response text
     const cleanedText = responseText
@@ -186,7 +215,7 @@ function parseExecutionPlan(responseText: string, userIntent: string): Execution
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parsed = JSON.parse(cleanedText) as any;
-    
+
     // Validate required fields
     if (!parsed.steps || !Array.isArray(parsed.steps)) {
       throw new Error('Invalid steps array');
@@ -195,36 +224,58 @@ function parseExecutionPlan(responseText: string, userIntent: string): Execution
     // Generate unique IDs for plan and steps
     const planId = `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const steps: ExecutionStep[] = parsed.steps.map((step: any, index: number) => ({
-      id: `step_${index + 1}`,
-      action: step.action || 'unknown',
-      parameters: step.parameters || {},
-      description: step.description || 'No description',
-      successCriteria: step.successCriteria || 'Step completed',
-      requiresApproval: Boolean(step.requiresApproval),
-      dependencies: Array.isArray(step.dependencies) ? step.dependencies : [],
-      fallbackAction: step.fallbackAction || 'Retry or skip step',
-      status: 'pending' as const,
-      timestamp: Date.now(),
-      duration: undefined
-    }));
+    const steps: ExecutionStep[] = parsed.steps.map(
+      (step: any, index: number) => {
+        const stepObj = {
+          id: `step_${index + 1}`,
+          action: step.action || 'unknown',
+          parameters: step.parameters || {},
+          description: step.description || 'No description',
+          successCriteria: step.successCriteria || 'Step completed',
+          requiresApproval: Boolean(step.requiresApproval),
+          dependencies: Array.isArray(step.dependencies)
+            ? step.dependencies
+            : [],
+          fallbackAction: step.fallbackAction || 'Retry or skip step',
+          status: 'pending' as const,
+          timestamp: Date.now(),
+          duration: undefined,
+        };
+
+        logger.info('Generated step with dependencies', {
+          stepId: stepObj.id,
+          action: stepObj.action,
+          originalDependencies: step.dependencies,
+          processedDependencies: stepObj.dependencies,
+          description: stepObj.description,
+        });
+
+        return stepObj;
+      },
+    );
 
     const plan: ExecutionPlan = {
       id: planId,
       userIntent: parsed.userIntent || userIntent,
-      complexity: ['compound', 'complex'].includes(parsed.complexity) ? parsed.complexity : 'complex',
+      complexity: ['compound', 'complex'].includes(parsed.complexity)
+        ? parsed.complexity
+        : 'complex',
       steps,
       estimatedDuration: parsed.estimatedDuration || 'Unknown',
-      riskLevel: ['low', 'medium', 'high'].includes(parsed.riskLevel) ? parsed.riskLevel : 'medium',
-      requiresApproval: Boolean(parsed.requiresApproval || steps.some((s) => s.requiresApproval)),
-      createdAt: Date.now()
+      riskLevel: ['low', 'medium', 'high'].includes(parsed.riskLevel)
+        ? parsed.riskLevel
+        : 'medium',
+      requiresApproval: Boolean(
+        parsed.requiresApproval || steps.some((s) => s.requiresApproval),
+      ),
+      createdAt: Date.now(),
     };
 
     return plan;
   } catch (error) {
     logger.warn('Failed to parse execution plan response', {
       error,
-      responseText: responseText.substring(0, 500)
+      responseText: responseText.substring(0, 500),
     });
 
     // Return fallback plan
@@ -237,7 +288,7 @@ function parseExecutionPlan(responseText: string, userIntent: string): Execution
  */
 function createFallbackPlan(userIntent: string): ExecutionPlan {
   const planId = `fallback_${Date.now()}`;
-  
+
   return {
     id: planId,
     userIntent,
@@ -253,25 +304,28 @@ function createFallbackPlan(userIntent: string): ExecutionPlan {
         dependencies: [],
         fallbackAction: 'Continue with best effort',
         status: 'pending',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       },
       {
         id: 'step_2',
         action: 'create_todo',
-        parameters: { title: 'Process complex request', description: userIntent },
+        parameters: {
+          title: 'Process complex request',
+          description: userIntent,
+        },
         description: 'Create todo to track this complex request',
         successCriteria: 'Todo created successfully',
         requiresApproval: false,
         dependencies: ['step_1'],
         fallbackAction: 'Continue without tracking todo',
         status: 'pending',
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     ],
     estimatedDuration: '1-2 minutes',
     riskLevel: 'low',
     requiresApproval: false,
-    createdAt: Date.now()
+    createdAt: Date.now(),
   };
 }
 
@@ -280,26 +334,31 @@ function createFallbackPlan(userIntent: string): ExecutionPlan {
  */
 function generatePlanPreview(plan: ExecutionPlan): string {
   const approvalIcon = plan.requiresApproval ? '⚠️' : '✅';
-  const riskIcon = plan.riskLevel === 'high' ? '🔴' : plan.riskLevel === 'medium' ? '🟡' : '🟢';
-  
+  const riskIcon =
+    plan.riskLevel === 'high'
+      ? '🔴'
+      : plan.riskLevel === 'medium'
+        ? '🟡'
+        : '🟢';
+
   let preview = `📋 **Execution Plan Created**\n\n`;
   preview += `**Goal:** ${plan.userIntent}\n`;
   preview += `**Complexity:** ${plan.complexity}\n`;
   preview += `**Estimated Time:** ${plan.estimatedDuration}\n`;
   preview += `**Risk Level:** ${riskIcon} ${plan.riskLevel}\n`;
   preview += `**Requires Approval:** ${approvalIcon} ${plan.requiresApproval ? 'Yes' : 'No'}\n\n`;
-  
+
   preview += `**Steps (${plan.steps.length}):**\n`;
   plan.steps.forEach((step, index) => {
     const stepIcon = step.requiresApproval ? '⚠️' : '📝';
     preview += `${index + 1}. ${stepIcon} ${step.description}\n`;
   });
-  
+
   if (plan.requiresApproval) {
     preview += `\n⚠️ **This plan includes destructive operations that require your approval before execution.**\n`;
   }
-  
+
   preview += `\nReady to execute? The system will proceed step by step and provide updates.`;
-  
+
   return preview;
 }

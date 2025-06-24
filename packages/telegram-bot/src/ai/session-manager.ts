@@ -48,7 +48,10 @@ export function createSessionManager(): SessionManager {
     }
   };
 
-  const getSessionStats = (): { totalSessions: number; activeSessions: number } => {
+  const getSessionStats = (): {
+    totalSessions: number;
+    activeSessions: number;
+  } => {
     const now = new Date();
     const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
 

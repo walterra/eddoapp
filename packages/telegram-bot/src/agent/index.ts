@@ -1,7 +1,7 @@
+import type { BotContext } from '../bot/bot.js';
+import { logger } from '../utils/logger.js';
 import { BasicWorkflow } from './basic-workflow.js';
 import { SimpleLangGraphWorkflow } from './simple-langgraph-workflow.js';
-import { logger } from '../utils/logger.js';
-import type { BotContext } from '../bot/bot.js';
 import type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';
 
 /**
@@ -19,22 +19,27 @@ export class EddoAgent {
       maxExecutionTime: 300000, // 5 minutes
       maxRetries: 3,
       checkpointInterval: 5000,
-      ...config
+      ...config,
     };
 
     // Use LangGraph by default, fall back to BasicWorkflow if there are issues
     this.useLangGraph = process.env.USE_LANGGRAPH !== 'false';
-    
+
     try {
-      this.workflow = this.useLangGraph ? new SimpleLangGraphWorkflow() : new BasicWorkflow();
-      
+      this.workflow = this.useLangGraph
+        ? new SimpleLangGraphWorkflow()
+        : new BasicWorkflow();
+
       logger.info('EddoAgent initialized', {
         version: '1.0.0',
         workflowType: this.useLangGraph ? 'SimpleLangGraph' : 'Basic',
-        config: this.config
+        config: this.config,
       });
     } catch (error) {
-      logger.warn('Failed to initialize SimpleLangGraph workflow, falling back to BasicWorkflow', { error });
+      logger.warn(
+        'Failed to initialize SimpleLangGraph workflow, falling back to BasicWorkflow',
+        { error },
+      );
       this.workflow = new BasicWorkflow();
       this.useLangGraph = false;
     }
@@ -46,24 +51,28 @@ export class EddoAgent {
   async processMessage(
     userMessage: string,
     userId: string,
-    telegramContext: BotContext
+    telegramContext: BotContext,
   ): Promise<WorkflowResult> {
     const startTime = Date.now();
-    
+
     logger.info('Agent processing message', {
       userId,
-      messageLength: userMessage.length
+      messageLength: userMessage.length,
     });
 
     try {
-      const result = await this.workflow.execute(userMessage, userId, telegramContext);
-      
+      const result = await this.workflow.execute(
+        userMessage,
+        userId,
+        telegramContext,
+      );
+
       const duration = Date.now() - startTime;
       logger.info('Agent processing completed', {
         userId,
         duration,
         success: result.success,
-        hasError: !!result.error
+        hasError: !!result.error,
       });
 
       // Convert simple workflow result to WorkflowResult format
@@ -82,19 +91,19 @@ export class EddoAgent {
           shouldExit: true,
           finalResponse: result.finalResponse,
           sessionContext: {
-            startTime
+            startTime,
           },
-          telegramContext
-        }
+          telegramContext,
+        },
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       logger.error('Agent processing failed', {
         error,
         userId,
         duration,
-        userMessage: userMessage.substring(0, 100) // Log first 100 chars
+        userMessage: userMessage.substring(0, 100), // Log first 100 chars
       });
 
       // Return error result
@@ -113,10 +122,10 @@ export class EddoAgent {
           shouldExit: true,
           error: error instanceof Error ? error : new Error(String(error)),
           sessionContext: {
-            startTime: Date.now()
+            startTime: Date.now(),
           },
-          telegramContext
-        }
+          telegramContext,
+        },
       };
     }
   }
@@ -134,7 +143,7 @@ export class EddoAgent {
       version: '1.0.0',
       workflowType: this.useLangGraph ? 'SimpleLangGraph' : 'Basic',
       config: this.config,
-      uptime: process.uptime()
+      uptime: process.uptime(),
     };
   }
 }
