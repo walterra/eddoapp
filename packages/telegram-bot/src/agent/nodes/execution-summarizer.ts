@@ -131,7 +131,34 @@ async function describeStepChange(step: ExecutionStep): Promise<string | null> {
       return `Updated todo: "${step.parameters.title || 'Unknown'}"`;
 
     case 'delete_todo':
-      return `Deleted todo with ID: ${step.parameters.id}`;
+      // Check if this is a bulk delete operation
+      if (
+        !step.parameters.id &&
+        step.result &&
+        typeof step.result === 'object'
+      ) {
+        const result = step.result as {
+          total?: number;
+          successful?: number;
+          failed?: number;
+        };
+        if (
+          typeof result.total === 'number' &&
+          typeof result.successful === 'number' &&
+          typeof result.failed === 'number'
+        ) {
+          // This is a bulk delete result
+          const parts = [
+            `Deleted ${result.successful} todo${result.successful !== 1 ? 's' : ''}`,
+          ];
+          if (result.failed > 0) {
+            parts.push(`(${result.failed} failed)`);
+          }
+          return parts.join(' ');
+        }
+      }
+      // Single delete operation
+      return `Deleted todo with ID: ${step.parameters.id || 'unknown'}`;
 
     case 'toggle_completion':
       return `${step.parameters.completed ? 'Completed' : 'Reopened'} todo with ID: ${step.parameters.id}`;
@@ -162,7 +189,52 @@ async function describeStepChange(step: ExecutionStep): Promise<string | null> {
 async function generateSuggestions(state: WorkflowState): Promise<string[]> {
   const claudeAI = getClaudeAI();
 
-  const prompt = `Based on the execution of this todo management workflow, provide 2-3 brief suggestions for improving the user's productivity or todo organization.
+  // Get actual todo data from completed list_todos steps for context-aware suggestions
+  const listTodosSteps = state.executionSteps.filter(
+    (step) => step.action === 'list_todos' && step.status === 'completed'
+  );
+  
+  let todoContext = '';
+  if (listTodosSteps.length > 0) {
+    const latestListStep = listTodosSteps[listTodosSteps.length - 1];
+    const listResult = state.mcpResponses[state.executionSteps.indexOf(latestListStep)];
+    
+    try {
+      let todos: Array<{ _id: string; title?: string; context: string; completed?: string | null; due?: string; [key: string]: unknown }> = [];
+      if (typeof listResult === 'string') {
+        todos = JSON.parse(listResult);
+      } else if (Array.isArray(listResult)) {
+        todos = listResult;
+      }
+      
+      if (todos.length > 0) {
+        const activeTodos = todos.filter((t) => !t.completed);
+        const todosByContext = activeTodos.reduce((acc: Record<string, Array<typeof todos[0]>>, todo) => {
+          if (!acc[todo.context]) acc[todo.context] = [];
+          acc[todo.context].push(todo);
+          return acc;
+        }, {});
+        
+        todoContext = `
+CURRENT TODOS:
+- Total active todos: ${activeTodos.length}
+- Contexts: ${Object.keys(todosByContext).join(', ')}
+
+TODOS BY CONTEXT:
+${Object.entries(todosByContext).map(([context, contextTodos]) => 
+  `\n${context.toUpperCase()} (${contextTodos.length} todos):
+${contextTodos.slice(0, 5).map((todo) => 
+  `  - "${todo.title}"${todo.due ? ` (due: ${new Date(todo.due).toLocaleDateString()})` : ''}`
+).join('\n')}${contextTodos.length > 5 ? `\n  ... and ${contextTodos.length - 5} more` : ''}`
+).join('\n')}`;
+      }
+    } catch (_error) {
+      // If parsing fails, fall back to basic info
+      todoContext = '\nTODO DATA: Available but could not parse for detailed analysis.';
+    }
+  }
+
+  const prompt = `Based on the execution of this todo management workflow, provide 2-3 brief, specific suggestions for the user's next actions or productivity improvements.
 
 EXECUTION CONTEXT:
 - User Request: ${state.userMessage}
@@ -172,14 +244,27 @@ EXECUTION CONTEXT:
 
 STEP DETAILS:
 ${state.executionSteps.map((step) => `- ${step.status.toUpperCase()}: ${step.description}`).join('\n')}
+${todoContext}
 
-Provide practical, actionable suggestions in a JSON array of strings. Focus on:
-- Better todo organization
-- Workflow optimization  
-- Preventing similar issues
-- Productivity improvements
+Based on the user's request and available todo data, determine if they are seeking a specific recommendation about what to work on next. If so, you MUST make a decisive recommendation by picking ONE specific todo as the primary next action.
 
-Respond with ONLY a JSON array of 2-3 suggestion strings, no other text.`;
+For recommendation-seeking requests, structure your response as:
+1. FIRST suggestion: "Start with: [specific todo title]" - always pick the most logical next action
+2. SECOND suggestion: Brief reasoning why this todo was chosen
+3. THIRD suggestion: General productivity tip or follow-up action
+
+For other types of requests, provide relevant suggestions based on what was accomplished.
+
+Prioritize todos by:
+1. Overdue items (most urgent first)
+2. Items due today 
+3. Items with earlier due dates
+4. Items that logically come first in workflow
+5. Quick wins or high-impact tasks
+
+Be decisive and specific. Don't just analyze - make a clear recommendation.
+
+Respond with ONLY a JSON array of exactly 3 suggestion strings, no other text.`;
 
   try {
     const response = await claudeAI.generateResponse(state.userId, prompt);
@@ -195,12 +280,89 @@ Respond with ONLY a JSON array of 2-3 suggestion strings, no other text.`;
     logger.warn('Failed to generate AI suggestions', { error });
   }
 
-  // Fallback suggestions
-  return [
-    'Consider grouping related todos by context or project',
-    'Set due dates for time-sensitive tasks',
-    'Review and clean up completed todos regularly',
+  // Fallback suggestions - try to be more specific if we have todo context
+  const fallbackSuggestions = [
+    'Start with: Create a new task to get momentum going',
+    'Consider what needs to be done in this context and add it to your list',
+    'Review other contexts to see if tasks can be moved here',
   ];
+  
+  // If we have todo context data, try to provide more specific fallback suggestions
+  if (todoContext && todoContext.includes('CURRENT TODOS:')) {
+    try {
+      const listTodosSteps = state.executionSteps.filter(
+        (step) => step.action === 'list_todos' && step.status === 'completed'
+      );
+      
+      if (listTodosSteps.length > 0) {
+        const latestListStep = listTodosSteps[listTodosSteps.length - 1];
+        const listResult = state.mcpResponses[state.executionSteps.indexOf(latestListStep)];
+        
+        let todos: Array<{ _id: string; title?: string; context: string; completed?: string | null; due?: string; [key: string]: unknown }> = [];
+        if (typeof listResult === 'string') {
+          todos = JSON.parse(listResult);
+        } else if (Array.isArray(listResult)) {
+          todos = listResult;
+        }
+        
+        const activeTodos = todos.filter((t) => !t.completed);
+        const overdueTodos = activeTodos.filter((t) => t.due && new Date(t.due) < new Date());
+        const todayTodos = activeTodos.filter((t) => {
+          if (!t.due) return false;
+          const dueDate = new Date(t.due);
+          const today = new Date();
+          return dueDate.toDateString() === today.toDateString();
+        });
+        
+        const contextSpecificSuggestions = [];
+        
+        // Always pick a specific todo as the first recommendation
+        let chosenTodo = null;
+        let reason = '';
+        
+        if (overdueTodos.length > 0) {
+          chosenTodo = overdueTodos[0];
+          reason = `This task is overdue and needs immediate attention`;
+        } else if (todayTodos.length > 0) {
+          chosenTodo = todayTodos[0];
+          reason = `This task is due today and should be prioritized`;
+        } else if (activeTodos.length > 0) {
+          // Pick the first active todo or one with earliest due date
+          chosenTodo = activeTodos.sort((a, b) => {
+            if (!a.due && !b.due) return 0;
+            if (!a.due) return 1;
+            if (!b.due) return -1;
+            return new Date(a.due).getTime() - new Date(b.due).getTime();
+          })[0];
+          reason = chosenTodo.due 
+            ? `This task has the earliest due date`
+            : `This is the next task in your queue`;
+        }
+        
+        if (chosenTodo && chosenTodo.title) {
+          contextSpecificSuggestions.push(`Start with: "${chosenTodo.title}"`);
+          contextSpecificSuggestions.push(reason);
+          
+          // Add a third suggestion about the overall context
+          if (overdueTodos.length > 1) {
+            contextSpecificSuggestions.push(`After this, address your other ${overdueTodos.length - 1} overdue tasks`);
+          } else if (activeTodos.length > 1) {
+            contextSpecificSuggestions.push(`You have ${activeTodos.length - 1} other tasks in this context to tackle next`);
+          } else {
+            contextSpecificSuggestions.push(`Great job staying on top of this context!`);
+          }
+        }
+        
+        if (contextSpecificSuggestions.length > 0) {
+          return [...contextSpecificSuggestions, ...fallbackSuggestions].slice(0, 3);
+        }
+      }
+    } catch (error) {
+      logger.warn('Failed to generate context-specific fallback suggestions', { error });
+    }
+  }
+  
+  return fallbackSuggestions;
 }
 
 /**
@@ -225,28 +387,47 @@ async function generateNextActions(state: WorkflowState): Promise<string[]> {
     );
   }
 
-  // Suggest follow-up actions based on the original intent
-  const userIntent = state.executionPlan?.userIntent.toLowerCase() || '';
+  // Use LLM to generate intelligent next actions based on context
+  const claudeAI = getClaudeAI();
+  
+  const nextActionsPrompt = `Based on the execution results and user intent, suggest 2-3 practical next actions for the user.
 
-  if (userIntent.includes('clean') || userIntent.includes('organize')) {
-    nextActions.push('Set up regular cleanup reminders');
+EXECUTION CONTEXT:
+- User Request: ${state.userMessage}
+- Plan Intent: ${state.executionPlan?.userIntent}
+- Completed Steps: ${state.executionSteps.filter((s) => s.status === 'completed').length}
+- Failed Steps: ${state.executionSteps.filter((s) => s.status === 'failed').length}
+
+COMPLETED ACTIONS:
+${state.executionSteps.filter((s) => s.status === 'completed').map((step) => `- ${step.description}`).join('\n')}
+
+If the user was seeking a recommendation about what to work on next (e.g., asked about todos in a context), prioritize action-oriented suggestions like:
+- "Take action on the recommended task above"
+- "Set a timer for focused work"
+- "Mark the task as complete when finished"
+
+For other types of requests, suggest relevant follow-up actions based on what was accomplished.
+
+Provide 2-3 concise, actionable next steps in a JSON array of strings.
+Respond with ONLY a JSON array, no other text.`;
+
+  try {
+    const response = await claudeAI.generateResponse(state.userId, nextActionsPrompt);
+    const aiNextActions = JSON.parse(response.content);
+    
+    if (Array.isArray(aiNextActions) && aiNextActions.every((action) => typeof action === 'string')) {
+      return aiNextActions.slice(0, 3);
+    }
+  } catch (error) {
+    logger.warn('Failed to generate AI next actions', { error });
   }
 
-  if (userIntent.includes('project') || userIntent.includes('plan')) {
-    nextActions.push('Create milestone todos for project tracking');
-  }
-
-  if (userIntent.includes('overdue') || userIntent.includes('deadline')) {
-    nextActions.push('Set up due date notifications');
-  }
-
-  // If no specific next actions, suggest general ones
-  if (nextActions.length === 0) {
-    nextActions.push('Review your todo list and update priorities');
-    nextActions.push('Consider setting up recurring todos for routine tasks');
-  }
-
-  return nextActions.slice(0, 3); // Limit to 3 next actions
+  // Fallback next actions if AI generation fails
+  return [
+    'Take action on any recommendations provided above',
+    'Update your todo list based on your progress',
+    'Review your accomplishments and plan your next steps'
+  ];
 }
 
 /**

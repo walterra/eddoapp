@@ -169,16 +169,39 @@ export const executeStep: WorkflowNode = async (
   if (!dependencyCheck.satisfied) {
     logger.warn('Step dependencies not satisfied', {
       stepId: currentStep.id,
+      stepAction: currentStep.action,
       dependencies: currentStep.dependencies,
       missingDeps: dependencyCheck.missing,
-      completedSteps: state.executionSteps.map((s) => ({
+      allExecutionSteps: state.executionSteps.map((s) => ({
         id: s.id,
+        action: s.action,
         status: s.status,
+        result: s.result ? 'has result' : 'no result',
       })),
+      completedSteps: state.executionSteps
+        .filter((s) => s.status === 'completed')
+        .map((s) => s.id),
     });
 
     // Smart dependency resolution fallbacks
     let allowExecution = false;
+
+    // For analysis steps that depend on list_todos, allow execution if any list_todos completed
+    if (
+      currentStep.action === 'analysis' &&
+      state.executionSteps.some(
+        (s) => s.action === 'list_todos' && s.status === 'completed',
+      )
+    ) {
+      logger.info(
+        'Allowing analysis step to proceed after successful list_todos',
+        {
+          stepId: currentStep.id,
+          dependencies: currentStep.dependencies,
+        },
+      );
+      allowExecution = true;
+    }
 
     // For bulk operations, if previous list step completed, allow the operation to proceed
     if (
@@ -234,6 +257,36 @@ export const executeStep: WorkflowNode = async (
           },
         );
         allowExecution = true;
+      }
+    }
+
+    // For sequential steps with dependencies, check if the previous sequential step completed
+    // This is a more general fallback for any action type
+    if (currentStep.dependencies.length > 0 && !allowExecution) {
+      const currentStepNum = parseInt(currentStep.id.replace('step_', ''));
+
+      // Check if this step depends on the immediately previous step
+      if (currentStep.dependencies.includes(`step_${currentStepNum - 1}`)) {
+        // Check if the previous step in execution order completed successfully
+        const previousStepIndex = state.currentStepIndex - 1;
+        if (
+          previousStepIndex >= 0 &&
+          previousStepIndex < state.executionSteps.length
+        ) {
+          const previousStep = state.executionSteps[previousStepIndex];
+          if (previousStep && previousStep.status === 'completed') {
+            logger.info(
+              'Allowing step to proceed after previous sequential step completed',
+              {
+                stepId: currentStep.id,
+                previousStepId: previousStep.id,
+                previousStepStatus: previousStep.status,
+                dependencies: currentStep.dependencies,
+              },
+            );
+            allowExecution = true;
+          }
+        }
       }
     }
 
@@ -440,12 +493,12 @@ function getRiskDescription(step: ExecutionStep): string {
     Object.keys(step.parameters).length > 1
   ) {
     return 'will modify existing data';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } else if (
     action.includes('bulk') ||
     (step.parameters &&
-      (step.parameters as any).limit &&
-      (step.parameters as any).limit > 5)
+      'limit' in step.parameters &&
+      typeof step.parameters.limit === 'number' &&
+      step.parameters.limit > 5)
   ) {
     return 'will affect multiple items';
   } else {
@@ -524,8 +577,7 @@ async function executeStepAction(
         stepId: step.id,
         parameters: step.parameters,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const listResult = await mcpClient.listTodos(step.parameters as any);
+      const listResult = await mcpClient.listTodos(step.parameters as Parameters<typeof mcpClient.listTodos>[0]);
       logger.info('list_todos completed', {
         stepId: step.id,
         resultType: typeof listResult,
@@ -535,8 +587,7 @@ async function executeStepAction(
     }
 
     case 'create_todo':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return await mcpClient.createTodo(step.parameters as any);
+      return await mcpClient.createTodo(step.parameters as Parameters<typeof mcpClient.createTodo>[0]);
 
     case 'update_todo':
       return await executeBulkOrSingleUpdate(step, state);
@@ -544,20 +595,20 @@ async function executeStepAction(
     case 'delete_todo':
       return await executeBulkOrSingleDelete(step, state);
 
-    case 'toggle_completion':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return await mcpClient.toggleTodoCompletion(
-        (step.parameters as any).id,
-        (step.parameters as any).completed,
-      );
+    case 'toggle_completion': {
+      const params = step.parameters as { id: string; completed: boolean };
+      return await mcpClient.toggleTodoCompletion(params.id, params.completed);
+    }
 
-    case 'start_time_tracking':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return await mcpClient.startTimeTracking((step.parameters as any).id);
+    case 'start_time_tracking': {
+      const params = step.parameters as { id: string };
+      return await mcpClient.startTimeTracking(params.id);
+    }
 
-    case 'stop_time_tracking':
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return await mcpClient.stopTimeTracking((step.parameters as any).id);
+    case 'stop_time_tracking': {
+      const params = step.parameters as { id: string };
+      return await mcpClient.stopTimeTracking(params.id);
+    }
 
     case 'get_active_timers':
       return await mcpClient.getActiveTimeTracking();
@@ -576,12 +627,52 @@ async function executeAnalysisStep(
 ): Promise<string> {
   const claudeAI = getClaudeAI();
 
-  // Get current context for analysis
+  // Get current context for analysis - use same parameters as the associated list_todos step if available
   const mcpClient = getMCPClient();
-  const currentTodos = await mcpClient.listTodos({ limit: 50 });
+  
+  // Look for a related list_todos step to get the specific filtering parameters
+  let listTodosParams = { limit: 50 };
+  const recentListStep = state.executionSteps
+    .filter((s) => s.action === 'list_todos' && s.status === 'completed')
+    .pop();
+  
+  if (recentListStep && recentListStep.parameters) {
+    listTodosParams = { ...listTodosParams, ...recentListStep.parameters };
+  }
+  
+  const currentTodos = await mcpClient.listTodos(listTodosParams);
   const activeTodos = currentTodos.filter((todo) => !todo.completed);
+  
+  // Group todos by context for better analysis
+  const todosByContext = activeTodos.reduce((acc: Record<string, Array<typeof activeTodos[0]>>, todo) => {
+    if (!acc[todo.context]) acc[todo.context] = [];
+    acc[todo.context].push(todo);
+    return acc;
+  }, {});
+  
+  // Analyze due dates and priorities
+  const overdueTodos = activeTodos.filter((t) => t.due && new Date(t.due) < new Date());
+  const todayTodos = activeTodos.filter((t) => {
+    if (!t.due) return false;
+    const dueDate = new Date(t.due);
+    const today = new Date();
+    return dueDate.toDateString() === today.toDateString();
+  });
+  
+  // Build detailed context information
+  let contextDetails = '';
+  if (Object.keys(todosByContext).length > 0) {
+    contextDetails = `
+DETAILED BREAKDOWN:
+${Object.entries(todosByContext).map(([context, contextTodos]) => 
+  `${context.toUpperCase()} Context (${contextTodos.length} active todos):
+${contextTodos.slice(0, 3).map((todo) => 
+  `  - "${todo.title}"${todo.due ? ` (due: ${new Date(todo.due).toLocaleDateString()})` : ''}${todo.tags && Array.isArray(todo.tags) && todo.tags.length > 0 ? ` [${todo.tags.join(', ')}]` : ''}`
+).join('\n')}${contextTodos.length > 3 ? `\n  ... and ${contextTodos.length - 3} more todos` : ''}`
+).join('\n\n')}`;
+  }
 
-  const analysisPrompt = `Analyze the current todo state for the following request:
+  const analysisPrompt = `Analyze the current todo state for the following request and provide specific actionable insights:
   
 USER REQUEST: ${state.userMessage}
 STEP DESCRIPTION: ${step.description}
@@ -589,9 +680,26 @@ STEP DESCRIPTION: ${step.description}
 CURRENT STATE:
 - Total todos: ${currentTodos.length}
 - Active todos: ${activeTodos.length}
+- Overdue todos: ${overdueTodos.length}
+- Due today: ${todayTodos.length}
 - Contexts: ${[...new Set(currentTodos.map((t) => t.context))].join(', ')}
+${contextDetails}
 
-Provide a brief analysis of what was discovered and what this means for the execution plan.`;
+Based on the user's request, determine if they are seeking recommendations about what to work on next. If so, you MUST make a decisive recommendation by picking ONE specific todo as the primary next action and explaining why.
+
+Analyze the todos and provide a concrete recommendation based on:
+1. Due dates and urgency (overdue items first)
+2. Items due today
+3. Items with earlier due dates
+4. Logical workflow and dependencies
+5. Quick wins or high-impact tasks
+
+Structure your response as:
+"RECOMMENDATION: Start with '[specific todo title]' because [brief reason]. This task [additional context about urgency/importance]."
+
+Then provide brief additional context about the overall state of this context.
+
+Be decisive and specific - always pick one task to unblock the user.`;
 
   const response = await claudeAI.generateResponse(
     state.userId,
