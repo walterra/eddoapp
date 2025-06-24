@@ -40,35 +40,46 @@ export interface UpdateTodoParams extends Record<string, unknown> {
   link?: string | null;
 }
 
+export interface MCPClient {
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  isClientConnected: () => boolean;
+  listTools: () => Promise<MCPTool[]>;
+  createTodo: (params: CreateTodoParams) => Promise<string>;
+  listTodos: (params?: ListTodosParams) => Promise<TodoAlpha3[]>;
+  updateTodo: (params: UpdateTodoParams) => Promise<string>;
+  toggleTodoCompletion: (id: string, completed: boolean) => Promise<string>;
+  deleteTodo: (id: string) => Promise<string>;
+  startTimeTracking: (id: string) => Promise<string>;
+  stopTimeTracking: (id: string) => Promise<string>;
+  getActiveTimeTracking: () => Promise<TodoAlpha3[]>;
+  getServerInfo: (
+    section?: 'overview' | 'datamodel' | 'tools' | 'examples' | 'all',
+  ) => Promise<string>;
+}
+
 /**
- * MCP Client for interacting with the Eddo MCP server
+ * Creates an MCP client instance for interacting with the Eddo MCP server
  */
-export class MCPClient {
-  private client: Client | null = null;
-  private transport: StreamableHTTPClientTransport | null = null;
-  private isConnected = false;
-  private reconnectAttempts = 0;
-  private readonly maxReconnectAttempts = 5;
+export function createMCPClient(): MCPClient {
+  let client: Client | null = null;
+  let transport: StreamableHTTPClientTransport | null = null;
+  let isConnected = false;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
 
-  constructor() {
-    this.setupCleanup();
-  }
-
-  /**
-   * Connect to the MCP server
-   */
-  async connect(): Promise<void> {
+  const connect = async (): Promise<void> => {
     try {
       logger.info('Connecting to MCP server', {
         url: appConfig.MCP_SERVER_URL,
       });
 
       // Use StreamableHTTPClientTransport for FastMCP servers
-      this.transport = new StreamableHTTPClientTransport(
+      transport = new StreamableHTTPClientTransport(
         new URL(appConfig.MCP_SERVER_URL),
       );
 
-      this.client = new Client(
+      client = new Client(
         {
           name: 'telegram-bot',
           version: '1.0.0',
@@ -80,81 +91,69 @@ export class MCPClient {
         },
       );
 
-      await this.client.connect(this.transport);
-      this.isConnected = true;
-      this.reconnectAttempts = 0;
+      await client.connect(transport);
+      isConnected = true;
+      reconnectAttempts = 0;
 
       logger.info('Connected to MCP server successfully');
 
       // List available tools
-      const tools = await this.listTools();
+      const tools = await listTools();
       logger.info('Available MCP tools', { tools: tools.map((t) => t.name) });
     } catch (error) {
       logger.error('Failed to connect to MCP server', { error });
-      this.isConnected = false;
+      isConnected = false;
       throw error;
     }
-  }
+  };
 
-  /**
-   * Disconnect from the MCP server
-   */
-  async disconnect(): Promise<void> {
+  const disconnect = async (): Promise<void> => {
     try {
-      if (this.client) {
-        await this.client.close();
+      if (client) {
+        await client.close();
       }
-      if (this.transport) {
-        await this.transport.close();
+      if (transport) {
+        await transport.close();
       }
-      this.isConnected = false;
+      isConnected = false;
       logger.info('Disconnected from MCP server');
     } catch (error) {
       logger.error('Error during MCP disconnect', { error });
     }
-  }
+  };
 
-  /**
-   * Check if connected to MCP server
-   */
-  isClientConnected(): boolean {
-    return this.isConnected && this.client !== null;
-  }
+  const isClientConnected = (): boolean => {
+    return isConnected && client !== null;
+  };
 
-  /**
-   * Auto-reconnect with exponential backoff
-   */
-  private async attemptReconnect(): Promise<void> {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+  const attemptReconnect = async (): Promise<void> => {
+    if (reconnectAttempts >= maxReconnectAttempts) {
       logger.error('Max reconnection attempts reached');
       return;
     }
 
-    this.reconnectAttempts++;
-    const delay = Math.pow(2, this.reconnectAttempts) * 1000; // Exponential backoff
+    reconnectAttempts++;
+    const delay = Math.pow(2, reconnectAttempts) * 1000; // Exponential backoff
 
     logger.info('Attempting to reconnect to MCP server', {
-      attempt: this.reconnectAttempts,
+      attempt: reconnectAttempts,
       delay,
     });
 
     setTimeout(async () => {
       try {
-        await this.connect();
+        await connect();
       } catch (error) {
         logger.error('Reconnection attempt failed', { error });
-        await this.attemptReconnect();
+        await attemptReconnect();
       }
     }, delay);
-  }
+  };
 
-  /**
-   * Execute an MCP tool call with error handling and retry logic
-   */
-  private async callTool(
+  const callTool = async (
     name: string,
     arguments_: Record<string, unknown>,
-  ): Promise<string> {
+  ): Promise<string> => {
     const requestId = Math.random().toString(36).substring(2, 15);
     const startTime = Date.now();
 
@@ -166,12 +165,12 @@ export class MCPClient {
       timestamp: new Date().toISOString(),
     });
 
-    if (!this.isClientConnected()) {
+    if (!isClientConnected()) {
       logger.warn('MCP client not connected, attempting reconnection', {
         requestId,
         tool: name,
       });
-      await this.attemptReconnect();
+      await attemptReconnect();
       throw new Error('MCP server not available');
     }
 
@@ -182,7 +181,7 @@ export class MCPClient {
         arguments: arguments_,
       });
 
-      const response = await this.client!.callTool({
+      const response = await client!.callTool({
         name,
         arguments: arguments_,
       });
@@ -249,24 +248,21 @@ export class MCPClient {
 
       // Try to reconnect on connection errors
       if (error instanceof Error && error.message.includes('connection')) {
-        this.isConnected = false;
-        await this.attemptReconnect();
+        isConnected = false;
+        await attemptReconnect();
       }
 
       throw error;
     }
-  }
+  };
 
-  /**
-   * List available tools
-   */
-  async listTools(): Promise<MCPTool[]> {
-    if (!this.isClientConnected()) {
+  const listTools = async (): Promise<MCPTool[]> => {
+    if (!isClientConnected()) {
       throw new Error('MCP client not connected');
     }
 
     try {
-      const response = await this.client!.listTools();
+      const response = await client!.listTools();
       return response.tools.map((tool) => ({
         name: tool.name,
         description: tool.description || '',
@@ -276,68 +272,44 @@ export class MCPClient {
       logger.error('Failed to list MCP tools', { error });
       throw error;
     }
-  }
+  };
 
-  /**
-   * Create a new todo
-   */
-  async createTodo(params: CreateTodoParams): Promise<string> {
-    return this.callTool('createTodo', params);
-  }
+  const createTodo = async (params: CreateTodoParams): Promise<string> => {
+    return callTool('createTodo', params);
+  };
 
-  /**
-   * List todos with optional filters
-   */
-  async listTodos(params: ListTodosParams = {}): Promise<TodoAlpha3[]> {
-    const result = await this.callTool('listTodos', params);
+  const listTodos = async (params: ListTodosParams = {}): Promise<TodoAlpha3[]> => {
+    const result = await callTool('listTodos', params);
     try {
       return JSON.parse(result);
     } catch (error) {
       logger.error('Failed to parse listTodos response', { error, result });
       throw new Error('Invalid response format from MCP server');
     }
-  }
+  };
 
-  /**
-   * Update an existing todo
-   */
-  async updateTodo(params: UpdateTodoParams): Promise<string> {
-    return this.callTool('updateTodo', params);
-  }
+  const updateTodo = async (params: UpdateTodoParams): Promise<string> => {
+    return callTool('updateTodo', params);
+  };
 
-  /**
-   * Toggle todo completion status
-   */
-  async toggleTodoCompletion(id: string, completed: boolean): Promise<string> {
-    return this.callTool('toggleTodoCompletion', { id, completed });
-  }
+  const toggleTodoCompletion = async (id: string, completed: boolean): Promise<string> => {
+    return callTool('toggleTodoCompletion', { id, completed });
+  };
 
-  /**
-   * Delete a todo
-   */
-  async deleteTodo(id: string): Promise<string> {
-    return this.callTool('deleteTodo', { id });
-  }
+  const deleteTodo = async (id: string): Promise<string> => {
+    return callTool('deleteTodo', { id });
+  };
 
-  /**
-   * Start time tracking for a todo
-   */
-  async startTimeTracking(id: string): Promise<string> {
-    return this.callTool('startTimeTracking', { id });
-  }
+  const startTimeTracking = async (id: string): Promise<string> => {
+    return callTool('startTimeTracking', { id });
+  };
 
-  /**
-   * Stop time tracking for a todo
-   */
-  async stopTimeTracking(id: string): Promise<string> {
-    return this.callTool('stopTimeTracking', { id });
-  }
+  const stopTimeTracking = async (id: string): Promise<string> => {
+    return callTool('stopTimeTracking', { id });
+  };
 
-  /**
-   * Get todos with active time tracking
-   */
-  async getActiveTimeTracking(): Promise<TodoAlpha3[]> {
-    const result = await this.callTool('getActiveTimeTracking', {});
+  const getActiveTimeTracking = async (): Promise<TodoAlpha3[]> => {
+    const result = await callTool('getActiveTimeTracking', {});
     try {
       return JSON.parse(result);
     } catch (error) {
@@ -347,29 +319,41 @@ export class MCPClient {
       });
       throw new Error('Invalid response format from MCP server');
     }
-  }
+  };
 
-  /**
-   * Get server information
-   */
-  async getServerInfo(
+  const getServerInfo = async (
     section: 'overview' | 'datamodel' | 'tools' | 'examples' | 'all' = 'all',
-  ): Promise<string> {
-    return this.callTool('getServerInfo', { section });
-  }
+  ): Promise<string> => {
+    return callTool('getServerInfo', { section });
+  };
 
-  /**
-   * Setup cleanup handlers
-   */
-  private setupCleanup(): void {
+  const setupCleanup = (): void => {
     const cleanup = async () => {
-      await this.disconnect();
+      await disconnect();
     };
 
     process.on('SIGINT', cleanup);
     process.on('SIGTERM', cleanup);
     process.on('exit', cleanup);
-  }
+  };
+
+  setupCleanup();
+
+  return {
+    connect,
+    disconnect,
+    isClientConnected,
+    listTools,
+    createTodo,
+    listTodos,
+    updateTodo,
+    toggleTodoCompletion,
+    deleteTodo,
+    startTimeTracking,
+    stopTimeTracking,
+    getActiveTimeTracking,
+    getServerInfo,
+  };
 }
 
 // Singleton instance
@@ -380,7 +364,7 @@ let mcpClient: MCPClient | null = null;
  */
 export function getMCPClient(): MCPClient {
   if (!mcpClient) {
-    mcpClient = new MCPClient();
+    mcpClient = createMCPClient();
   }
   return mcpClient;
 }

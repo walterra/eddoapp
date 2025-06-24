@@ -6,10 +6,10 @@ import type {
 } from '../types/ai-types.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { IntentParser } from './intent-parser.js';
+import { createIntentParser } from './intent-parser.js';
 import { type Persona, getPersona } from './personas.js';
-import { ResponseGenerator } from './response-generator.js';
-import { SessionManager } from './session-manager.js';
+import { createResponseGenerator } from './response-generator.js';
+import { createSessionManager } from './session-manager.js';
 
 export type {
   AISession,
@@ -19,49 +19,51 @@ export type {
 } from '../types/ai-types.js';
 export { TodoIntentSchema, MultiTodoIntentSchema } from '../types/ai-types.js';
 
-/**
- * Claude AI client for natural language processing and conversation
- */
-export class ClaudeAI {
-  private sessionManager: SessionManager;
-  private intentParser: IntentParser;
-  private responseGenerator: ResponseGenerator;
-  private persona: Persona;
-
-  constructor() {
-    const apiKey = appConfig.ANTHROPIC_API_KEY;
-    this.persona = getPersona(appConfig.BOT_PERSONA_ID);
-    const mcpClient = getMCPClient();
-
-    this.sessionManager = new SessionManager();
-    this.intentParser = new IntentParser(apiKey);
-    this.responseGenerator = new ResponseGenerator(
-      apiKey,
-      mcpClient,
-      this.persona,
-    );
-  }
-
-  /**
-   * Parse user message to extract todo intent(s)
-   */
-  async parseUserIntent(
+export interface ClaudeAI {
+  parseUserIntent: (
     message: string,
     lastBotMessage?: string,
-  ): Promise<TodoIntent | MultiTodoIntent | null> {
-    return this.intentParser.parseUserIntent(message, lastBotMessage);
-  }
-
-  /**
-   * Generate a conversational response
-   */
-  async generateResponse(
+  ) => Promise<TodoIntent | MultiTodoIntent | null>;
+  generateResponse: (
     userId: string,
     message: string,
     context?: { mcpResponse?: string; action?: string },
-  ): Promise<AIResponse> {
-    this.sessionManager.cleanupOldSessions();
-    const session = this.sessionManager.getOrCreateSession(userId);
+  ) => Promise<AIResponse>;
+  generateAcknowledgment: (intent: TodoIntent | MultiTodoIntent) => string;
+  getCurrentPersona: () => Persona;
+  getSessionStats: () => { totalSessions: number; activeSessions: number };
+}
+
+/**
+ * Creates a Claude AI client instance for natural language processing and conversation
+ */
+export function createClaudeAI(): ClaudeAI {
+  const apiKey = appConfig.ANTHROPIC_API_KEY;
+  const persona = getPersona(appConfig.BOT_PERSONA_ID);
+  const mcpClient = getMCPClient();
+
+  const sessionManager = createSessionManager();
+  const intentParser = createIntentParser(apiKey);
+  const responseGenerator = createResponseGenerator(
+    apiKey,
+    mcpClient,
+    persona,
+  );
+
+  const parseUserIntent = async (
+    message: string,
+    lastBotMessage?: string,
+  ): Promise<TodoIntent | MultiTodoIntent | null> => {
+    return intentParser.parseUserIntent(message, lastBotMessage);
+  };
+
+  const generateResponse = async (
+    userId: string,
+    message: string,
+    context?: { mcpResponse?: string; action?: string },
+  ): Promise<AIResponse> => {
+    sessionManager.cleanupOldSessions();
+    const session = sessionManager.getOrCreateSession(userId);
 
     try {
       // Add user message to session context
@@ -76,14 +78,14 @@ export class ClaudeAI {
 
       if (context?.mcpResponse && context?.action) {
         // Handle response with MCP context
-        responseText = await this.handleMCPResponse(
+        responseText = await handleMCPResponse(
           session.context,
           context.mcpResponse,
           context.action,
         );
       } else {
         // Generate normal conversational response
-        responseText = await this.responseGenerator.generateResponse(
+        responseText = await responseGenerator.generateResponse(
           session.context,
         );
       }
@@ -111,20 +113,17 @@ export class ClaudeAI {
 
       // Fallback response
       return {
-        content: this.persona.fallbackMessage,
+        content: persona.fallbackMessage,
         sessionId: session.id,
       };
     }
-  }
+  };
 
-  /**
-   * Handle response generation with MCP context
-   */
-  private async handleMCPResponse(
+  const handleMCPResponse = async (
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     mcpResponse: string,
     action: string,
-  ): Promise<string> {
+  ): Promise<string> => {
     // For list actions, preserve the actual data
     if (action.includes('list') || action === 'summary') {
       const enhancedMessages = [
@@ -134,11 +133,11 @@ export class ClaudeAI {
           content: `IMPORTANT: The following MCP operation has been completed successfully. The user has seen progress updates. Based on the ACTUAL results below, provide a natural conversational summary of what was found. Do NOT make up or hallucinate any data - only refer to what is actually present in the results:\n\nMCP Results:\n${mcpResponse}`,
         },
       ];
-      return this.responseGenerator.generateResponse(enhancedMessages);
+      return responseGenerator.generateResponse(enhancedMessages);
     }
 
     // For non-list actions, clean the response
-    const cleanedResponse = this.cleanMCPResponse(mcpResponse, action);
+    const cleanedResponse = cleanMCPResponse(mcpResponse, action);
     const enhancedMessages = [
       ...messages,
       {
@@ -146,13 +145,10 @@ export class ClaudeAI {
         content: `IMPORTANT: All requested actions have been successfully executed and completed. The user has already seen the progress updates. DO NOT generate any tool calls, JSON objects, or technical commands. DO NOT suggest or plan future actions. Your role now is to provide ONLY a brief, natural conversational summary acknowledging what was accomplished: ${cleanedResponse}`,
       },
     ];
-    return this.responseGenerator.generateResponse(enhancedMessages);
-  }
+    return responseGenerator.generateResponse(enhancedMessages);
+  };
 
-  /**
-   * Clean MCP response for non-list actions
-   */
-  private cleanMCPResponse(mcpResponse: string, action: string): string {
+  const cleanMCPResponse = (mcpResponse: string, action: string): string => {
     try {
       // Remove JSON data and keep only meaningful summary information
       const lines = mcpResponse.split('\n');
@@ -178,41 +174,40 @@ export class ClaudeAI {
     } catch {
       return `Completed ${action}`;
     }
-  }
+  };
 
-  /**
-   * Generate a quick acknowledgment while processing
-   */
-  generateAcknowledgment(intent: TodoIntent | MultiTodoIntent): string {
+  const generateAcknowledgment = (intent: TodoIntent | MultiTodoIntent): string => {
     // Handle multi-intent
     if ('actions' in intent) {
       const actionCount = intent.actions.length;
       if (actionCount === 1) {
-        return this.generateAcknowledgment(intent.actions[0]);
+        return generateAcknowledgment(intent.actions[0]);
       }
-      return `${this.persona.acknowledgmentEmoji} Excellent! Let me handle those ${actionCount} tasks for you...`;
+      return `${persona.acknowledgmentEmoji} Excellent! Let me handle those ${actionCount} tasks for you...`;
     }
 
     // Handle single intent
     return (
-      this.persona.acknowledgments[intent.action] ||
-      `${this.persona.acknowledgmentEmoji} At your service! Let me handle that for you...`
+      persona.acknowledgments[intent.action] ||
+      `${persona.acknowledgmentEmoji} At your service! Let me handle that for you...`
     );
-  }
+  };
 
-  /**
-   * Get current persona information
-   */
-  getPersona(): Persona {
-    return this.persona;
-  }
+  const getCurrentPersona = (): Persona => {
+    return persona;
+  };
 
-  /**
-   * Get session statistics
-   */
-  getSessionStats(): { totalSessions: number; activeSessions: number } {
-    return this.sessionManager.getSessionStats();
-  }
+  const getSessionStats = (): { totalSessions: number; activeSessions: number } => {
+    return sessionManager.getSessionStats();
+  };
+
+  return {
+    parseUserIntent,
+    generateResponse,
+    generateAcknowledgment,
+    getCurrentPersona,
+    getSessionStats,
+  };
 }
 
 // Singleton instance
@@ -223,7 +218,7 @@ let claudeAI: ClaudeAI | null = null;
  */
 export function getClaudeAI(): ClaudeAI {
   if (!claudeAI) {
-    claudeAI = new ClaudeAI();
+    claudeAI = createClaudeAI();
   }
   return claudeAI;
 }

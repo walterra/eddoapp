@@ -12,7 +12,8 @@
       "mcp__eddo-server__updateTodo",
       "mcp__eddo-server__getActiveTimeTracking",
       "Bash(pnpm tsc:check:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm build)"
     ],
     "deny": []
   }

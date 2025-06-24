@@ -8,22 +8,28 @@ import {
 } from '../types/ai-types.js';
 import { logger } from '../utils/logger.js';
 
-export class IntentParser {
-  private client: Anthropic;
-
-  constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey });
-  }
-
-  async parseUserIntent(
+export interface IntentParser {
+  parseUserIntent: (
     message: string,
     lastBotMessage?: string,
-  ): Promise<TodoIntent | MultiTodoIntent | null> {
+  ) => Promise<TodoIntent | MultiTodoIntent | null>;
+}
+
+/**
+ * Creates an intent parser instance for extracting todo management intents from user messages
+ */
+export function createIntentParser(apiKey: string): IntentParser {
+  const client = new Anthropic({ apiKey });
+
+  const parseUserIntent = async (
+    message: string,
+    lastBotMessage?: string,
+  ): Promise<TodoIntent | MultiTodoIntent | null> => {
     try {
-      const response = await this.client.messages.create({
+      const response = await client.messages.create({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1000,
-        system: this.buildSystemPrompt(lastBotMessage),
+        system: buildSystemPrompt(lastBotMessage),
         messages: [
           {
             role: 'user',
@@ -81,9 +87,9 @@ export class IntentParser {
 
       return null;
     }
-  }
+  };
 
-  private buildSystemPrompt(lastBotMessage?: string): string {
+  const buildSystemPrompt = (lastBotMessage?: string): string => {
     return `Parse the user's message to extract todo management intent(s). Return JSON only.
 
 ${
@@ -156,5 +162,9 @@ Default context: private
 Default due: end of current day (23:59:59.999Z)
 
 If the message is not about todo management, return null.`;
-  }
+  };
+
+  return {
+    parseUserIntent,
+  };
 }

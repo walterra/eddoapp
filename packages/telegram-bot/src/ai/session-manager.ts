@@ -2,11 +2,22 @@ import type { AISession } from '../types/ai-types.js';
 
 const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour
 
-export class SessionManager {
-  private sessions = new Map<string, AISession>();
+export interface SessionManager {
+  getOrCreateSession: (userId: string) => AISession;
+  cleanupOldSessions: () => void;
+  getSessionStats: () => { totalSessions: number; activeSessions: number };
+  clearSession: (sessionId: string) => void;
+  clearAllSessions: () => void;
+}
 
-  getOrCreateSession(userId: string): AISession {
-    const existingSession = Array.from(this.sessions.values()).find(
+/**
+ * Creates a session manager instance for managing AI chat sessions
+ */
+export function createSessionManager(): SessionManager {
+  const sessions = new Map<string, AISession>();
+
+  const getOrCreateSession = (userId: string): AISession => {
+    const existingSession = Array.from(sessions.values()).find(
       (session) => session.userId === userId,
     );
 
@@ -23,39 +34,47 @@ export class SessionManager {
       lastActivity: new Date(),
     };
 
-    this.sessions.set(newSession.id, newSession);
+    sessions.set(newSession.id, newSession);
     return newSession;
-  }
+  };
 
-  cleanupOldSessions(): void {
+  const cleanupOldSessions = (): void => {
     const oneHourAgo = new Date(Date.now() - SESSION_TIMEOUT);
 
-    for (const [sessionId, session] of this.sessions.entries()) {
+    for (const [sessionId, session] of sessions.entries()) {
       if (session.lastActivity < oneHourAgo) {
-        this.sessions.delete(sessionId);
+        sessions.delete(sessionId);
       }
     }
-  }
+  };
 
-  getSessionStats(): { totalSessions: number; activeSessions: number } {
+  const getSessionStats = (): { totalSessions: number; activeSessions: number } => {
     const now = new Date();
     const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
 
-    const activeSessions = Array.from(this.sessions.values()).filter(
+    const activeSessions = Array.from(sessions.values()).filter(
       (session) => session.lastActivity > fifteenMinutesAgo,
     ).length;
 
     return {
-      totalSessions: this.sessions.size,
+      totalSessions: sessions.size,
       activeSessions,
     };
-  }
+  };
 
-  clearSession(sessionId: string): void {
-    this.sessions.delete(sessionId);
-  }
+  const clearSession = (sessionId: string): void => {
+    sessions.delete(sessionId);
+  };
 
-  clearAllSessions(): void {
-    this.sessions.clear();
-  }
+  const clearAllSessions = (): void => {
+    sessions.clear();
+  };
+
+  return {
+    getOrCreateSession,
+    cleanupOldSessions,
+    getSessionStats,
+    clearSession,
+    clearAllSessions,
+  };
 }

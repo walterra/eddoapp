@@ -12,7 +12,7 @@ export async function handleStart(ctx: BotContext): Promise<void> {
   logger.info('User started bot', { userId, firstName });
 
   const claude = getClaudeAI();
-  const persona = claude.getPersona();
+  const persona = claude.getCurrentPersona();
 
   const welcomeMessage = `
 ${persona.acknowledgmentEmoji} *Welcome to Eddo Bot, ${firstName}!*
@@ -45,7 +45,7 @@ ${persona.messages.closingMessage},
  */
 export async function handleHelp(ctx: BotContext): Promise<void> {
   const claude = getClaudeAI();
-  const persona = claude.getPersona();
+  const persona = claude.getCurrentPersona();
 
   const helpMessage = `
 ${persona.acknowledgmentEmoji} *Eddo Bot Commands & Usage*
@@ -89,7 +89,7 @@ Just chat naturally - I'll understand what you need! ${persona.acknowledgmentEmo
  */
 export async function handleStatus(ctx: BotContext): Promise<void> {
   const claude = getClaudeAI();
-  const persona = claude.getPersona();
+  const persona = claude.getCurrentPersona();
 
   const statusMessage = `
 ${persona.acknowledgmentEmoji} *Bot Status*

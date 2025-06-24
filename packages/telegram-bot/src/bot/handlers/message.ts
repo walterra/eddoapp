@@ -137,7 +137,7 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     }
   } catch (error) {
     logger.error('Error in message handler', { error, userId, messageText });
-    const persona = claude.getPersona();
+    const persona = claude.getCurrentPersona();
     const fallbackMessage = persona.fallbackMessage;
     await ctx.reply(fallbackMessage);
     ctx.session.lastBotMessage = fallbackMessage;
