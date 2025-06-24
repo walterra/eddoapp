@@ -176,7 +176,11 @@ export class MCPClient {
     }
 
     try {
-      logger.debug('Calling MCP tool', { requestId, name, arguments: arguments_ });
+      logger.debug('Calling MCP tool', {
+        requestId,
+        name,
+        arguments: arguments_,
+      });
 
       const response = await this.client!.callTool({
         name,

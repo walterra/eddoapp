@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
+
 import type { MCPClient } from '../mcp/client.js';
-import type { Persona } from './personas.js';
 import { logger } from '../utils/logger.js';
+import type { Persona } from './personas.js';
 
 export class ResponseGenerator {
   private client: Anthropic;
@@ -9,26 +10,29 @@ export class ResponseGenerator {
   constructor(
     apiKey: string,
     private mcpClient: MCPClient | null,
-    private persona: Persona
+    private persona: Persona,
   ) {
     this.client = new Anthropic({ apiKey });
   }
 
   async generateResponse(
     messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
-    systemPrompt?: string
+    systemPrompt?: string,
   ): Promise<string> {
     try {
       const system = systemPrompt || (await this.getEnhancedSystemPrompt());
-      
+
       // Filter out system messages from the messages array
-      const userAndAssistantMessages = messages.filter(msg => msg.role !== 'system');
-      
+      const userAndAssistantMessages = messages.filter(
+        (msg) => msg.role !== 'system',
+      );
+
       // Find the last system message if any
-      const systemMessages = messages.filter(msg => msg.role === 'system');
-      const finalSystemPrompt = systemMessages.length > 0 
-        ? `${system}\n\n${systemMessages[systemMessages.length - 1].content}`
-        : system;
+      const systemMessages = messages.filter((msg) => msg.role === 'system');
+      const finalSystemPrompt =
+        systemMessages.length > 0
+          ? `${system}\n\n${systemMessages[systemMessages.length - 1].content}`
+          : system;
 
       const response = await this.client.messages.create({
         model: 'claude-3-5-sonnet-20241022',

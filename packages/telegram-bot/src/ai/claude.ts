@@ -1,17 +1,22 @@
 import { getMCPClient } from '../mcp/client.js';
+import type {
+  AIResponse,
+  MultiTodoIntent,
+  TodoIntent,
+} from '../types/ai-types.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { type Persona, getPersona } from './personas.js';
-import { SessionManager } from './session-manager.js';
 import { IntentParser } from './intent-parser.js';
+import { type Persona, getPersona } from './personas.js';
 import { ResponseGenerator } from './response-generator.js';
-import type { 
-  AIResponse, 
-  TodoIntent, 
-  MultiTodoIntent 
-} from '../types/ai-types.js';
+import { SessionManager } from './session-manager.js';
 
-export type { AISession, AIResponse, TodoIntent, MultiTodoIntent } from '../types/ai-types.js';
+export type {
+  AISession,
+  AIResponse,
+  TodoIntent,
+  MultiTodoIntent,
+} from '../types/ai-types.js';
 export { TodoIntentSchema, MultiTodoIntentSchema } from '../types/ai-types.js';
 
 /**
@@ -27,10 +32,14 @@ export class ClaudeAI {
     const apiKey = appConfig.ANTHROPIC_API_KEY;
     this.persona = getPersona(appConfig.BOT_PERSONA_ID);
     const mcpClient = getMCPClient();
-    
+
     this.sessionManager = new SessionManager();
     this.intentParser = new IntentParser(apiKey);
-    this.responseGenerator = new ResponseGenerator(apiKey, mcpClient, this.persona);
+    this.responseGenerator = new ResponseGenerator(
+      apiKey,
+      mcpClient,
+      this.persona,
+    );
   }
 
   /**
@@ -64,17 +73,19 @@ export class ClaudeAI {
       }
 
       let responseText: string;
-      
+
       if (context?.mcpResponse && context?.action) {
         // Handle response with MCP context
         responseText = await this.handleMCPResponse(
           session.context,
           context.mcpResponse,
-          context.action
+          context.action,
         );
       } else {
         // Generate normal conversational response
-        responseText = await this.responseGenerator.generateResponse(session.context);
+        responseText = await this.responseGenerator.generateResponse(
+          session.context,
+        );
       }
 
       // Add assistant response to session context
@@ -112,7 +123,7 @@ export class ClaudeAI {
   private async handleMCPResponse(
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     mcpResponse: string,
-    action: string
+    action: string,
   ): Promise<string> {
     // For list actions, preserve the actual data
     if (action.includes('list') || action === 'summary') {
@@ -145,17 +156,19 @@ export class ClaudeAI {
     try {
       // Remove JSON data and keep only meaningful summary information
       const lines = mcpResponse.split('\n');
-      const meaningfulLines = lines.filter(line => {
+      const meaningfulLines = lines.filter((line) => {
         const trimmed = line.trim();
         // Skip JSON objects, action labels, and empty lines
-        return trimmed && 
-               !trimmed.startsWith('{') && 
-               !trimmed.startsWith('}') && 
-               !trimmed.startsWith('"') &&
-               !trimmed.startsWith('Action ') &&
-               !trimmed.includes(':\n');
+        return (
+          trimmed &&
+          !trimmed.startsWith('{') &&
+          !trimmed.startsWith('}') &&
+          !trimmed.startsWith('"') &&
+          !trimmed.startsWith('Action ') &&
+          !trimmed.includes(':\n')
+        );
       });
-      
+
       if (meaningfulLines.length > 0) {
         return meaningfulLines.join('. ');
       } else {

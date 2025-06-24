@@ -1,5 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { TodoIntentSchema, MultiTodoIntentSchema } from '../types/ai-types.js';
+
+import {
+  MultiTodoIntent,
+  MultiTodoIntentSchema,
+  TodoIntent,
+  TodoIntentSchema,
+} from '../types/ai-types.js';
 import { logger } from '../utils/logger.js';
 
 export class IntentParser {
@@ -12,7 +18,7 @@ export class IntentParser {
   async parseUserIntent(
     message: string,
     lastBotMessage?: string,
-  ): Promise<any> {
+  ): Promise<TodoIntent | MultiTodoIntent | null> {
     try {
       const response = await this.client.messages.create({
         model: 'claude-3-5-sonnet-20241022',
@@ -53,15 +59,21 @@ export class IntentParser {
         error.name === 'ZodError'
       ) {
         // Extract the specific validation issue for better error messaging
-        const zodError = error as { issues?: Array<{ message: string; received?: string; path?: string[] }> };
+        const zodError = error as {
+          issues?: Array<{
+            message: string;
+            received?: string;
+            path?: string[];
+          }>;
+        };
         const firstIssue = zodError.issues?.[0];
-        
+
         if (firstIssue?.received && firstIssue.path?.includes('action')) {
           throw new Error(
             `I tried to use "${firstIssue.received}" as an action, but that's not valid. I can only use: create, list, update, complete, delete, start_timer, stop_timer, get_summary. Please rephrase your request.`,
           );
         }
-        
+
         throw new Error(
           `I had trouble understanding your todo request format. ${firstIssue?.message || 'Please try rephrasing your request.'}`,
         );

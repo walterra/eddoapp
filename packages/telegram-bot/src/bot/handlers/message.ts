@@ -33,10 +33,14 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
       logger.error('Intent parsing failed', { error: parseError, messageText });
 
       // If the error message is user-friendly (from our enhanced error handling), send it directly
-      const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-      
+      const errorMessage =
+        parseError instanceof Error ? parseError.message : String(parseError);
+
       // Check if this is our user-friendly error message or a generic error
-      if (errorMessage.includes('I tried to use') || errorMessage.includes('I had trouble understanding')) {
+      if (
+        errorMessage.includes('I tried to use') ||
+        errorMessage.includes('I had trouble understanding')
+      ) {
         // This is a user-friendly message, send it directly
         await ctx.reply(errorMessage, { parse_mode: 'Markdown' });
         ctx.session.lastBotMessage = errorMessage;
@@ -79,9 +83,6 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     }
 
     // Process the todo intent with MCP
-    let mcpResponse = '';
-    let actionDescription = '';
-
     try {
       // Ensure MCP client is connected
       if (!mcpClient.isClientConnected()) {
@@ -89,12 +90,10 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
       }
 
       const result = await processToDoIntentWithUpdates(mcpClient, intent, ctx);
-      mcpResponse = result.response;
-      actionDescription = result.description;
 
       // Create a clean summary without technical details for the final response
       const cleanSummary = createCleanSummary(result, intent);
-      
+
       // Generate AI response with clean summary
       const aiResponse = await claude.generateResponse(
         userId.toString(),
@@ -107,13 +106,16 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     } catch (mcpError) {
       logger.error('MCP operation failed', { error: mcpError, intent });
 
-      const errorMessage = mcpError instanceof Error ? mcpError.message : String(mcpError);
-      
+      const errorMessage =
+        mcpError instanceof Error ? mcpError.message : String(mcpError);
+
       // Check if this is a user-friendly error message that should be sent directly
-      if (errorMessage.includes('Todo ID is required') || 
-          errorMessage.includes('Todo title is required') ||
-          errorMessage.includes('not found') ||
-          errorMessage.includes('already exists')) {
+      if (
+        errorMessage.includes('Todo ID is required') ||
+        errorMessage.includes('Todo title is required') ||
+        errorMessage.includes('not found') ||
+        errorMessage.includes('already exists')
+      ) {
         // This is a clear, actionable error message - send it directly with minimal wrapper
         const directMessage = `❌ ${errorMessage}`;
         await ctx.reply(directMessage, { parse_mode: 'Markdown' });
@@ -143,25 +145,6 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
 }
 
 /**
- * Process todo intent(s) using MCP client
- */
-async function processToDoIntent(
-  mcpClient: ReturnType<typeof getMCPClient>,
-  intent: TodoIntent | MultiTodoIntent,
-): Promise<{ response: string; description: string }> {
-  // Handle multi-intent
-  if ('actions' in intent) {
-    return await processMultipleActions(mcpClient, intent);
-  }
-
-  // Handle single intent
-  const response = await processSingleAction(mcpClient, intent);
-  const description = getSingleActionDescription(intent);
-
-  return { response, description };
-}
-
-/**
  * Process todo intent(s) with live updates to the chat
  */
 async function processToDoIntentWithUpdates(
@@ -186,7 +169,9 @@ async function processToDoIntentWithUpdates(
 /**
  * Get planned actions description for preview
  */
-function getPlannedActionsDescription(intent: TodoIntent | MultiTodoIntent): string | null {
+function getPlannedActionsDescription(
+  intent: TodoIntent | MultiTodoIntent,
+): string | null {
   if ('actions' in intent) {
     const actionsList = intent.actions
       .map((action, index) => {
@@ -195,11 +180,11 @@ function getPlannedActionsDescription(intent: TodoIntent | MultiTodoIntent): str
         if (action.title) details.push(`title: "${action.title}"`);
         if (action.context) details.push(`context: "${action.context}"`);
         if (action.due) details.push(`due: ${action.due.split('T')[0]}`);
-        
+
         return `${index + 1}. ${desc}${details.length > 0 ? ` (${details.join(', ')})` : ''}`;
       })
       .join('\n');
-    
+
     return actionsList;
   } else {
     const desc = getSingleActionDescription(intent);
@@ -207,7 +192,7 @@ function getPlannedActionsDescription(intent: TodoIntent | MultiTodoIntent): str
     if (intent.title) details.push(`title: "${intent.title}"`);
     if (intent.context) details.push(`context: "${intent.context}"`);
     if (intent.due) details.push(`due: ${intent.due.split('T')[0]}`);
-    
+
     return `1. ${desc}${details.length > 0 ? ` (${details.join(', ')})` : ''}`;
   }
 }
@@ -230,46 +215,59 @@ async function processMultipleActionsWithUpdates(
     try {
       // Check if this is a bulk delete action that needs expansion
       const expandedActions = await expandBulkActions(action, actionContext);
-      
+
       if (expandedActions.length > 1) {
         // Process multiple expanded actions (e.g., bulk delete)
-        await ctx.reply(`⚡ Processing bulk ${getSingleActionDescription(action)} for ${expandedActions.length} items...`);
-        
+        await ctx.reply(
+          `⚡ Processing bulk ${getSingleActionDescription(action)} for ${expandedActions.length} items...`,
+        );
+
         let successCount = 0;
         for (let j = 0; j < expandedActions.length; j++) {
           const expandedAction = expandedActions[j];
           try {
-            const response = await processSingleAction(mcpClient, expandedAction);
+            const response = await processSingleAction(
+              mcpClient,
+              expandedAction,
+            );
             const description = getSingleActionDescription(expandedAction);
-            
+
             results.push(`Action ${i + 1}.${j + 1}: ${response}`);
             descriptions.push(description);
             successCount++;
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            const errorMsg = errorMessage.includes('Todo ID is required') || 
-                            errorMessage.includes('Todo title is required') ||
-                            errorMessage.includes('not found') ||
-                            errorMessage.includes('already exists')
-              ? `❌ ${errorMessage}`
-              : `Action ${i + 1}.${j + 1} failed: ${errorMessage}`;
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+            const errorMsg =
+              errorMessage.includes('Todo ID is required') ||
+              errorMessage.includes('Todo title is required') ||
+              errorMessage.includes('not found') ||
+              errorMessage.includes('already exists')
+                ? `❌ ${errorMessage}`
+                : `Action ${i + 1}.${j + 1} failed: ${errorMessage}`;
             results.push(errorMsg);
           }
         }
-        
-        await ctx.reply(`✅ Bulk ${getSingleActionDescription(action)} completed: ${successCount}/${expandedActions.length} successful`);
-        descriptions.push(`bulk ${getSingleActionDescription(action)} (${expandedActions.length} items)`);
+
+        await ctx.reply(
+          `✅ Bulk ${getSingleActionDescription(action)} completed: ${successCount}/${expandedActions.length} successful`,
+        );
+        descriptions.push(
+          `bulk ${getSingleActionDescription(action)} (${expandedActions.length} items)`,
+        );
       } else {
         // Process single action
         const enhancedAction = expandedActions[0];
-        await ctx.reply(`⚡ Processing: ${getSingleActionDescription(enhancedAction)}...`);
-        
+        await ctx.reply(
+          `⚡ Processing: ${getSingleActionDescription(enhancedAction)}...`,
+        );
+
         const response = await processSingleAction(mcpClient, enhancedAction);
         const description = getSingleActionDescription(enhancedAction);
 
         results.push(`Action ${i + 1}: ${response}`);
         descriptions.push(description);
-        
+
         await ctx.reply(`✅ Completed: ${description}`);
 
         // Store result for potential use by subsequent actions
@@ -291,113 +289,22 @@ async function processMultipleActionsWithUpdates(
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       // For user-friendly errors, preserve the original message
-      const errorMsg = errorMessage.includes('Todo ID is required') || 
-                      errorMessage.includes('Todo title is required') ||
-                      errorMessage.includes('not found') ||
-                      errorMessage.includes('already exists')
-        ? `❌ ${errorMessage}`
-        : `Action ${i + 1} failed: ${errorMessage}`;
-        
+      const errorMsg =
+        errorMessage.includes('Todo ID is required') ||
+        errorMessage.includes('Todo title is required') ||
+        errorMessage.includes('not found') ||
+        errorMessage.includes('already exists')
+          ? `❌ ${errorMessage}`
+          : `Action ${i + 1} failed: ${errorMessage}`;
+
       results.push(errorMsg);
       descriptions.push(`failed ${getSingleActionDescription(action)}`);
-      
+
       await ctx.reply(errorMsg);
-
-      // If sequential processing required and an action fails, stop
-      if (multiIntent.requiresSequential) {
-        break;
-      }
-    }
-  }
-
-  const combinedResponse = results.join('\n\n');
-  const combinedDescription = `${descriptions.length} actions: ${descriptions.join(', ')}`;
-
-  return { response: combinedResponse, description: combinedDescription };
-}
-
-/**
- * Process multiple actions with dependency handling
- */
-async function processMultipleActions(
-  mcpClient: ReturnType<typeof getMCPClient>,
-  multiIntent: MultiTodoIntent,
-): Promise<{ response: string; description: string }> {
-  const results: string[] = [];
-  const descriptions: string[] = [];
-  const actionContext: Map<string, unknown> = new Map(); // Store results for dependent actions
-
-  for (let i = 0; i < multiIntent.actions.length; i++) {
-    const action = multiIntent.actions[i];
-
-    try {
-      // Check if this is a bulk delete action that needs expansion
-      const expandedActions = await expandBulkActions(action, actionContext);
-      
-      if (expandedActions.length > 1) {
-        // Process multiple expanded actions (e.g., bulk delete)
-        for (let j = 0; j < expandedActions.length; j++) {
-          const expandedAction = expandedActions[j];
-          try {
-            const response = await processSingleAction(mcpClient, expandedAction);
-            const description = getSingleActionDescription(expandedAction);
-            
-            results.push(`Action ${i + 1}.${j + 1}: ${response}`);
-            descriptions.push(description);
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            const errorMsg = errorMessage.includes('Todo ID is required') || 
-                            errorMessage.includes('Todo title is required') ||
-                            errorMessage.includes('not found') ||
-                            errorMessage.includes('already exists')
-              ? `❌ ${errorMessage}`
-              : `Action ${i + 1}.${j + 1} failed: ${errorMessage}`;
-            results.push(errorMsg);
-          }
-        }
-        descriptions.push(`bulk ${getSingleActionDescription(action)} (${expandedActions.length} items)`);
-      } else {
-        // Process single action
-        const enhancedAction = expandedActions[0];
-        const response = await processSingleAction(mcpClient, enhancedAction);
-        const description = getSingleActionDescription(enhancedAction);
-
-        results.push(`Action ${i + 1}: ${response}`);
-        descriptions.push(description);
-
-        // Store result for potential use by subsequent actions
-        actionContext.set(`action_${i}`, {
-          action: enhancedAction,
-          response,
-          index: i,
-        });
-
-        // For list actions, store the todos for subsequent actions
-        if (enhancedAction.action === 'list') {
-          try {
-            const listResult = JSON.parse(response.split(':\n')[1] || '[]');
-            actionContext.set('last_search_results', listResult);
-          } catch {
-            // Ignore JSON parse errors
-          }
-        }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      // For user-friendly errors, preserve the original message
-      const errorMsg = errorMessage.includes('Todo ID is required') || 
-                      errorMessage.includes('Todo title is required') ||
-                      errorMessage.includes('not found') ||
-                      errorMessage.includes('already exists')
-        ? `❌ ${errorMessage}`
-        : `Action ${i + 1} failed: ${errorMessage}`;
-        
-      results.push(errorMsg);
-      descriptions.push(`failed ${getSingleActionDescription(action)}`);
 
       // If sequential processing required and an action fails, stop
       if (multiIntent.requiresSequential) {
@@ -443,9 +350,8 @@ async function expandBulkActions(
 
       if (action.title) {
         const actionTitle = action.title.toLowerCase();
-        todosToDelete = todosToDelete.filter(
-          (todo: { title?: string }) =>
-            todo.title?.toLowerCase().includes(actionTitle),
+        todosToDelete = todosToDelete.filter((todo: { title?: string }) =>
+          todo.title?.toLowerCase().includes(actionTitle),
         );
       }
 
@@ -491,7 +397,11 @@ async function enhanceActionWithContext(
             todo.title?.toLowerCase().includes(actionTitle),
         );
         if (matchingTodo) {
-          return { ...action, todoId: matchingTodo._id, title: matchingTodo.title };
+          return {
+            ...action,
+            todoId: matchingTodo._id,
+            title: matchingTodo.title,
+          };
         }
       }
 
@@ -599,17 +509,24 @@ function getSingleActionDescription(intent: TodoIntent): string {
   };
 
   const baseDescription = descriptions[intent.action] || 'processing request';
-  
+
   // Add todo title if available and relevant
-  if (intent.title && ['create', 'update', 'complete', 'delete'].includes(intent.action)) {
+  if (
+    intent.title &&
+    ['create', 'update', 'complete', 'delete'].includes(intent.action)
+  ) {
     return `${baseDescription}: "${intent.title}"`;
   }
-  
+
   // Add context filter for list/delete operations
-  if (intent.context && ['list', 'delete'].includes(intent.action) && !intent.title) {
+  if (
+    intent.context &&
+    ['list', 'delete'].includes(intent.action) &&
+    !intent.title
+  ) {
     return `${baseDescription} (context: ${intent.context})`;
   }
-  
+
   return baseDescription;
 }
 
@@ -623,8 +540,8 @@ function createCleanSummary(
   // For multi-intent
   if ('actions' in intent) {
     const actionCount = intent.actions.length;
-    const actionTypes = [...new Set(intent.actions.map(a => a.action))];
-    
+    const actionTypes = [...new Set(intent.actions.map((a) => a.action))];
+
     // Extract success counts from bulk operations
     const bulkMatches = result.description.match(/(\d+)\/(\d+) successful/);
     if (bulkMatches) {
@@ -632,10 +549,10 @@ function createCleanSummary(
       const total = bulkMatches[2];
       return `Successfully completed ${successful}/${total} ${actionTypes.join(' and ')} operations`;
     }
-    
+
     return `Successfully completed ${actionCount} operations: ${actionTypes.join(', ')}`;
   }
-  
+
   // For single intent
   const action = intent.action;
   switch (action) {
@@ -647,11 +564,12 @@ function createCleanSummary(
       return `Successfully updated todo: "${intent.title}"`;
     case 'complete':
       return 'Successfully marked todo as complete';
-    case 'list':
+    case 'list': {
       // Extract the count from the response
       const countMatch = result.response.match(/Found (\d+) todos/);
       const count = countMatch ? countMatch[1] : 'some';
       return `Found ${count} todos matching your criteria`;
+    }
     case 'start_timer':
       return 'Successfully started time tracking';
     case 'stop_timer':

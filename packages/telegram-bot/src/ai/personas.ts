@@ -1,7 +1,6 @@
 /**
  * Persona system for the Telegram bot
  */
-
 import type { Persona } from './persona-types.js';
 import { butler } from './personas/butler.js';
 import { gtdCoach } from './personas/gtd-coach.js';
