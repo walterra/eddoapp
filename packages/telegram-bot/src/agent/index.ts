@@ -1,4 +1,5 @@
 import { BasicWorkflow } from './basic-workflow.js';
+import { SimpleLangGraphWorkflow } from './simple-langgraph-workflow.js';
 import { logger } from '../utils/logger.js';
 import type { BotContext } from '../bot/bot.js';
 import type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';
@@ -7,8 +8,9 @@ import type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';
  * Main agent orchestrator - single entry point for all agent workflows
  */
 export class EddoAgent {
-  private workflow: BasicWorkflow;
+  private workflow: SimpleLangGraphWorkflow | BasicWorkflow;
   private config: WorkflowConfig;
+  private useLangGraph: boolean;
 
   constructor(config: Partial<WorkflowConfig> = {}) {
     this.config = {
@@ -20,12 +22,22 @@ export class EddoAgent {
       ...config
     };
 
-    this.workflow = new BasicWorkflow();
+    // Use LangGraph by default, fall back to BasicWorkflow if there are issues
+    this.useLangGraph = process.env.USE_LANGGRAPH !== 'false';
     
-    logger.info('EddoAgent initialized', {
-      version: '1.0.0-poc',
-      config: this.config
-    });
+    try {
+      this.workflow = this.useLangGraph ? new SimpleLangGraphWorkflow() : new BasicWorkflow();
+      
+      logger.info('EddoAgent initialized', {
+        version: '1.0.0',
+        workflowType: this.useLangGraph ? 'SimpleLangGraph' : 'Basic',
+        config: this.config
+      });
+    } catch (error) {
+      logger.warn('Failed to initialize SimpleLangGraph workflow, falling back to BasicWorkflow', { error });
+      this.workflow = new BasicWorkflow();
+      this.useLangGraph = false;
+    }
   }
 
   /**
@@ -114,11 +126,13 @@ export class EddoAgent {
    */
   getStatus(): {
     version: string;
+    workflowType: string;
     config: WorkflowConfig;
     uptime: number;
   } {
     return {
-      version: '1.0.0-poc',
+      version: '1.0.0',
+      workflowType: this.useLangGraph ? 'SimpleLangGraph' : 'Basic',
       config: this.config,
       uptime: process.uptime()
     };
