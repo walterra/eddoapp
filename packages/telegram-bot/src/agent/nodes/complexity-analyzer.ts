@@ -128,8 +128,8 @@ AVAILABLE MCP ACTIONS FOR REFERENCE:
 - update_todo(id, fields) - Update existing todo fields
 - delete_todo(id) - Delete specific todo
 - toggle_completion(id, completed) - Mark todo as complete/incomplete
-- start_time_tracking(id) - Start timer for todo (requires todo ID, may need list_todos first to find ID)
-- stop_time_tracking(id) - Stop timer for todo
+- start_timer(id) - Start timer for todo (requires todo ID, may need list_todos first to find ID)
+- stop_timer(id) - Stop timer for todo
 - get_active_timers() - Get currently running timers
 
 USER TASK: "${userMessage}"

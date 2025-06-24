@@ -600,6 +600,7 @@ async function executeStepAction(
       return await mcpClient.toggleTodoCompletion(params.id, params.completed);
     }
 
+    case 'start_timer':
     case 'start_time_tracking': {
       const params = step.parameters as { id?: string; title?: string };
       
@@ -614,6 +615,7 @@ async function executeStepAction(
       }
     }
 
+    case 'stop_timer':
     case 'stop_time_tracking': {
       const params = step.parameters as { id: string };
       return await mcpClient.stopTimeTracking(params.id);
@@ -1218,19 +1220,74 @@ async function startTimeTrackingByTitle(
     // Create new todo and start timer
     logger.info('Creating new todo and starting timer', { title });
     
-    const createResult = await mcpClient.createTodo({ 
-      title,
-      context: 'private' // Default context, can be enhanced later
-    });
+    // Determine appropriate context - check if previous search specified a context
+    let context = 'private'; // Default
     
-    // Extract the ID from the create result (format might vary)
-    const idMatch = createResult.match(/[a-f0-9-]{36}|[a-f0-9]{24}/i);
-    if (!idMatch) {
-      throw new Error('Failed to extract todo ID from create result');
+    // Check if there was a context filter in the previous list step
+    const recentListStep = listSteps[listSteps.length - 1];
+    if (recentListStep && recentListStep.parameters && typeof recentListStep.parameters === 'object') {
+      const listParams = recentListStep.parameters as { context?: string };
+      if (listParams.context) {
+        context = listParams.context;
+        logger.info('Using context from previous search', { context });
+      }
     }
     
-    const newTodoId = idMatch[0];
-    logger.info('Created todo and starting timer', { todoId: newTodoId, title });
+    const createResult = await mcpClient.createTodo({ 
+      title,
+      context
+    });
+    
+    logger.info('Create result received', { createResult, title });
+    
+    // Extract the ID from the create result (try multiple patterns)
+    let newTodoId = null;
+    
+    // Try different ID patterns
+    const patterns = [
+      /[a-f0-9-]{36}/i,  // UUID with dashes
+      /[a-f0-9]{32}/i,   // UUID without dashes
+      /[a-f0-9]{24}/i,   // MongoDB ObjectId
+      /"id":\s*"([^"]+)"/i, // JSON with id field
+      /"_id":\s*"([^"]+)"/i, // JSON with _id field
+    ];
+    
+    for (const pattern of patterns) {
+      const match = createResult.match(pattern);
+      if (match) {
+        newTodoId = match[1] || match[0]; // Use capture group if available, otherwise full match
+        break;
+      }
+    }
+    
+    if (!newTodoId) {
+      // Fallback: try to find the todo by searching for it immediately after creation
+      logger.warn('Could not extract ID from create result, searching for newly created todo', { 
+        createResult, 
+        title 
+      });
+      
+      try {
+        await new Promise(resolve => setTimeout(resolve, 100)); // Brief delay for consistency
+        const searchResults = await mcpClient.listTodos({ limit: 10 });
+        const newTodo = searchResults.find((todo) => 
+          todo.title.toLowerCase() === title.toLowerCase()
+        );
+        
+        if (newTodo) {
+          newTodoId = newTodo._id;
+          logger.info('Found newly created todo via search', { todoId: newTodoId, title });
+        }
+      } catch (searchError) {
+        logger.error('Failed to find newly created todo', { searchError, title });
+      }
+    }
+    
+    if (!newTodoId) {
+      throw new Error(`Failed to get todo ID after creation. Create result: ${createResult}`);
+    }
+    
+    logger.info('Starting timer on newly created todo', { todoId: newTodoId, title });
     
     return await mcpClient.startTimeTracking(newTodoId);
   }
