@@ -1,1152 +1,362 @@
-# AI Agent Workflow Implementation Plan
+# AI Agent Workflow Implementation Guide
 
 ## Executive Summary
 
-This document outlines research findings on AI agentic workflows and provides a detailed implementation plan for enhancing the Eddo Telegram Bot with advanced planning, execution, and reflection capabilities. The goal is to transform the current simple intent-action pattern into a sophisticated agent that can handle complex, multi-step tasks autonomously.
+This document outlines a modern agentic workflow implementation for the Eddo Telegram Bot based on 2024 research and best practices. The goal is to transform the current simple intent-action pattern into a sophisticated agent that can handle complex, multi-step tasks autonomously using the **Intent → Plan → Execute → Reflect** pattern.
 
-## Research Findings: State of AI Agentic Workflows (2024)
+## Research Findings: Modern Agentic Workflows (2024)
 
-### LLM-Based Task Complexity Analysis
+### Core Workflow Pattern: Intent → Plan → Execute → Reflect
 
-**Why LLM-Based Analysis Over Pattern Matching?**
+Modern agentic workflows follow a proven four-stage pattern:
 
-Based on 2024 research, LLM-based complexity analysis significantly outperforms hardcoded pattern matching:
+1. **Intent Classification**: LLM analyzes user input to understand intent, context, and requirements
+2. **Plan Generation**: Task decomposition breaks complex tasks into manageable sub-tasks with execution strategy
+3. **Execution Loop**: Execute plan steps using tools, with progress tracking and error handling
+4. **Reflection & Validation**: Evaluate results, detect errors, make corrections, and generate summaries
 
-#### Advantages of LLM Analysis
-- ✅ **Dynamic Understanding**: Handles novel task formulations and edge cases
-- ✅ **Context Awareness**: Considers user history, current state, and task relationships  
-- ✅ **Natural Language Nuance**: Understands intent beyond surface keywords
-- ✅ **Adaptive Learning**: Can improve classifications based on execution outcomes
-- ✅ **Confidence Scoring**: Provides uncertainty measures for edge cases
+### Key Design Principles from 2024 Research
 
-#### Research-Backed Techniques
-- **ADaPT Method**: Achieved 28.3% success rate improvement through dynamic decomposition
-- **Chain-of-Thought**: Explicit reasoning improves classification reliability
-- **Few-Shot Learning**: 3-5 examples per category significantly improve accuracy
-- **Temperature Control**: Low (0.1-0.3) for consistent classification, higher (0.3-0.5) for creative planning
+#### 1. **"If you don't need an LLM, don't use an LLM"**
+Build opinionated flows where each agent has a specific purpose rather than one all-knowing agent with every tool.
 
-#### Implementation Pattern
+#### 2. **Structured Workflows Over Chaos**
+Use graph-based architectures (like LangGraphJS) with multiple-step processing, branching, and loops instead of uncontrolled agent behavior.
+
+#### 3. **Tool Organization Matters**
+Group tools by capability and responsibility. Agents perform better on focused tasks than when selecting from dozens of tools.
+
+#### 4. **External Feedback Over Self-Correction**
+2024 research shows LLMs cannot reliably self-correct without external feedback. Use MCP server responses and deterministic validation instead of LLM-generated critique.
+
+### Four Core Agentic Design Patterns
+
+#### 1. **Reflection Pattern**
+- AI system improves through self-feedback and iterative refinement
+- Uses external tools for validation (unit tests, web search, MCP responses)
+- Automates critical feedback and response improvement
+
+#### 2. **Tool Use Pattern**
+- LLM uses standardized functions for information gathering, actions, and data manipulation
+- Enhanced by Model Context Protocol (MCP) - "universal USB-C for AI"
+- Enables consistent tool integration across different domains
+
+#### 3. **Planning Pattern**
+- LLM autonomously decides sequence of steps for complex tasks
+- Task decomposition reduces cognitive load and improves reasoning
+- Central planner delegates subtasks to specialized worker agents
+
+#### 4. **Multi-Agent Collaboration**
+- Multiple specialized agents work together with clear division of labor
+- Shared state and handoff patterns for coordination
+- Hierarchical teams with supervisor agents managing specialists
+
+## LangGraphJS + MCP Integration Best Practices
+
+### LangGraphJS Architecture Benefits
+
+- **Graph-Based Control Flow**: Cyclic graphs with branching, loops, and multiple-step processing
+- **Stateful Workflows**: Built-in persistence with shared agent state across all nodes
+- **Human-in-the-Loop**: Seamless collaboration with approval workflows and state inspection
+- **Streaming Support**: Real-time feedback with token-by-token streaming and intermediate steps
+- **Error Recovery**: Durable execution that resumes from failure points
+
+### Model Context Protocol (MCP) Integration
+
+- **Standardized Communication**: Consistent JSON patterns for tool integration
+- **Multi-Server Support**: Coordinate multiple MCP servers (todo, calendar, files)
+- **Transport Flexibility**: Support for stdio, HTTP, and streamable HTTP protocols
+- **Authentication**: Built-in support for OAuth 2.0, API keys, and custom auth
+- **Content Block Standardization**: Consistent multimodal handling across tools
+
+### Enhanced Architecture with @langchain/mcp-adapters
+
 ```typescript
-// Two-stage analysis for reliability
-const complexity = await analyzeTaskComplexity(userMessage, context);
-if (complexity.confidence < 0.8) {
-  // Use conservative fallback or request clarification
-  const clarification = await requestTaskClarification(userMessage);
-  complexity = await analyzeTaskComplexity(clarification, context);
+// Modern MCP Integration Setup
+import { MultiServerMCPClient } from "@langchain/mcp-adapters";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+
+const client = new MultiServerMCPClient({
+  throwOnLoadError: false,
+  prefixToolNameWithServerName: true,
+  useStandardContentBlocks: true,
+  mcpServers: {
+    todo: {
+      transport: "streamable_http",
+      url: "http://localhost:3002/mcp",
+      timeout: 30000
+    },
+    calendar: {
+      transport: "stdio",
+      command: "npx",
+      args: ["-y", "@eddo/calendar-mcp-server"]
+    }
+  }
+});
+
+const tools = await client.get_tools();
+const agent = createReactAgent({ llm, tools });
+```
+
+## Proposed Implementation Architecture
+
+### Enhanced Workflow Components
+
+#### 1. **Intent Analyzer**
+```typescript
+interface TaskAnalysis {
+  classification: 'simple' | 'compound' | 'complex';
+  confidence: number;
+  reasoning: string;
+  requiresApproval: boolean;
+  suggestedSteps?: string[];
+  estimatedDuration: string;
+}
+
+async function analyzeTaskComplexity(
+  userMessage: string,
+  context: SessionContext
+): Promise<TaskAnalysis> {
+  // LLM-based analysis with few-shot examples
+  // Low temperature (0.1-0.3) for consistent classification
+  // Confidence scoring for edge case handling
 }
 ```
 
-### Core Design Patterns
-
-Based on extensive research, four primary agentic design patterns have emerged as industry standards:
-
-#### 1. **Planning Pattern**
-- **Definition**: Use LLM to autonomously decide on sequence of steps to accomplish larger tasks
-- **Benefits**: 
-  - Faster execution (sub-tasks don't require full LLM consultation)
-  - Cost savings (can use smaller models for execution steps)
-  - Better performance (explicit "thinking through" of complete task)
-- **Implementation**: Planner + Executor(s) architecture
-
-#### 2. **Tool Use Pattern**
-- **Definition**: LLM given functions it can request to call for gathering information, taking action, or manipulating data
-- **Key Requirements**: 
-  - Reliable external feedback mechanisms
-  - Proper error handling and validation
-  - Clear tool descriptions and schemas
-
-#### 3. **Reflection Pattern**
-- **Definition**: AI evaluates and refines its own outputs through feedback loops
-- **Critical Finding**: Self-correction works reliably only with external feedback (not self-generated)
-- **Best Practices**: Use deterministic feedback (like MCP responses, compilation errors) rather than LLM-generated critique
-
-#### 4. **Multi-Agent Collaboration**
-- **Definition**: Multiple specialized agents working together
-- **Patterns**: Shared scratchpad, agent supervisor, hierarchical teams
-
-### Key Research Insights
-
-#### ReAct vs Plan-and-Execute
-- **ReAct**: Iterative reasoning-action cycles, good for exploration
-- **Plan-and-Execute**: Complete plan upfront, better for complex multi-step tasks
-- **Recommendation**: Plan-and-Execute for Eddo bot due to structured todo operations
-
-#### Self-Correction Limitations (Critical 2024 Research)
-- **Finding**: LLMs cannot reliably self-correct without external feedback
-- **Implication**: Must rely on MCP server responses for validation and correction
-- **Safe Approach**: Use external tools and verification mechanisms
-
-#### Production Considerations
-- **Controlled Architecture**: Custom cognitive architectures outperform generic agents
-- **Error Recovery**: Essential for production reliability
-- **Human-in-the-Loop**: Critical for sensitive operations
-- **Cost Management**: Multi-round iterations can become expensive
-
-## Current Eddo Bot Architecture Analysis
-
-### Strengths
-- ✅ Functional factory pattern (clean, testable)
-- ✅ MCP integration for external tool use
-- ✅ Intent parsing with structured schemas
-- ✅ Error handling and fallback patterns
-- ✅ Session management for conversation context
-
-### Limitations
-- ❌ Single-shot intent processing (no multi-step planning)
-- ❌ No reflection or self-correction capabilities
-- ❌ Limited error recovery (fails fast rather than adapting)
-- ❌ No progress tracking for complex operations
-- ❌ No plan decomposition for complex requests
-
-### Current Flow
-```
-User Message → Intent Parse → Single MCP Action → Response Generation → User
-```
-
-## Proposed Agent Workflow Architecture
-
-### Enhanced Flow
-```
-User Message → Planning → Execution Loop → Reflection → Summary → User
-                  ↓         ↓              ↓
-               Multi-step → MCP Actions → Validation
-               Plan         with Progress  & Correction
-```
-
-### Core Components
-
-#### 1. **Enhanced Intent Analyzer**
+#### 2. **Plan Generator**
 ```typescript
-interface TaskPlan {
+interface ExecutionPlan {
   id: string;
   userIntent: string;
-  complexity: 'simple' | 'complex' | 'compound';
+  complexity: TaskAnalysis['classification'];
   steps: PlanStep[];
   requiresApproval: boolean;
-  estimatedDuration: number;
+  riskLevel: 'low' | 'medium' | 'high';
 }
 
 interface PlanStep {
   id: string;
-  action: MCPAction;
+  action: string;
+  parameters: Record<string, any>;
   description: string;
   dependencies: string[];
   validation: ValidationCriteria;
-  fallback?: PlanStep;
-}
-```
-
-#### 2. **Planning Engine**
-```typescript
-interface PlanningEngine {
-  analyzeTask: (userMessage: string, context: SessionContext) => Promise<TaskPlan>;
-  decomposePlan: (intent: ComplexIntent) => Promise<PlanStep[]>;
-  validatePlan: (plan: TaskPlan) => Promise<ValidationResult>;
-  optimizePlan: (plan: TaskPlan, constraints: ExecutionConstraints) => Promise<TaskPlan>;
+  fallbackAction?: string;
 }
 ```
 
 #### 3. **Execution Engine**
 ```typescript
-interface ExecutionEngine {
-  executePlan: (plan: TaskPlan, progressCallback: ProgressCallback) => Promise<ExecutionResult>;
-  executeStep: (step: PlanStep, context: ExecutionContext) => Promise<StepResult>;
-  handleError: (error: ExecutionError, step: PlanStep) => Promise<ErrorRecoveryAction>;
-  validateResult: (result: StepResult, criteria: ValidationCriteria) => Promise<boolean>;
+interface ExecutionResult {
+  planId: string;
+  completedSteps: ExecutionStep[];
+  failedSteps: ExecutionStep[];
+  finalResult: any;
+  totalDuration: number;
+  errors: ExecutionError[];
 }
-```
 
-#### 4. **Reflection & Correction Engine**
-```typescript
-interface ReflectionEngine {
-  analyzeExecution: (result: ExecutionResult, plan: TaskPlan) => Promise<ExecutionAnalysis>;
-  detectErrors: (stepResults: StepResult[]) => Promise<ErrorDiagnosis[]>;
-  generateCorrections: (errors: ErrorDiagnosis[]) => Promise<CorrectionPlan>;
-  validateFinalResult: (result: ExecutionResult, userIntent: string) => Promise<ValidationResult>;
-}
-```
-
-## Implementation Plan
-
-### Phase 1: Enhanced Intent Analysis (Week 1-2)
-
-#### Goals
-- Detect complex vs simple intents
-- Generate multi-step plans for complex operations
-- Implement approval flow for destructive operations
-
-#### Tasks
-1. **Create LLM-Based TaskComplexityAnalyzer**
-   ```typescript
-   interface TaskComplexityAnalysis {
-     classification: 'simple' | 'compound' | 'complex';
-     reasoning: string;
-     confidence: number;
-     suggestedSteps?: string[];
-     requiresApproval: boolean;
-   }
-
-   /**
-    * Uses LLM to analyze task complexity and planning requirements
-    */
-   async function analyzeTaskComplexity(
-     userMessage: string, 
-     context: SessionContext
-   ): Promise<TaskComplexityAnalysis> {
-     const prompt = buildComplexityAnalysisPrompt(userMessage, context);
-     const response = await claude.messages.create({
-       model: 'claude-3-5-sonnet-20241022',
-       max_tokens: 500,
-       temperature: 0.2, // Low for consistent classification
-       system: prompt,
-       messages: [{ role: 'user', content: userMessage }]
-     });
-     
-     return parseComplexityResponse(response);
-   }
-   ```
-
-2. **Implement Complexity Analysis Prompts**
-   ```typescript
-   function buildComplexityAnalysisPrompt(userMessage: string, context: SessionContext): string {
-     return `You are a task complexity analyzer for a todo management system. 
-
-   TASK CLASSIFICATION RULES:
-
-   **SIMPLE**: Single atomic action, no dependencies or planning needed
-   - Examples: "Add buy milk to shopping list", "Mark dentist appointment complete", "Show my work todos"
-   - Characteristics: One clear action, immediate execution possible, no coordination required
-
-   **COMPOUND**: 2-3 related steps with clear sequence and dependencies  
-   - Examples: "Schedule team meeting for next week", "Add grocery shopping and set reminder", "Update project status and notify team"
-   - Characteristics: Multiple related actions, some dependencies, manageable sequence
-
-   **COMPLEX**: Multi-step workflow requiring planning, analysis, or extensive coordination
-   - Examples: "Clean up my todo list", "Organize my tasks by priority", "Plan my weekly schedule", "Review overdue items and reschedule"
-   - Characteristics: Requires analysis/discovery, multiple decision points, user input/approval needed
-
-   CONTEXT:
-   - User has ${context.todoCount || 'unknown'} todos currently
-   - Last activity: ${context.lastActivity || 'none'}
-   - Common contexts: work, personal, shopping, health
-
-   USER TASK: "${userMessage}"
-
-   Respond in JSON format:
-   {
-     "classification": "simple|compound|complex",
-     "reasoning": "Brief explanation of why this classification",
-     "confidence": 0.0-1.0,
-     "suggestedSteps": ["step1", "step2", ...] (only for compound/complex),
-     "requiresApproval": boolean (true if destructive/bulk operations),
-     "estimatedSteps": number
-   }`;
-   }
-   ```
-
-3. **Implement Dynamic PlanDecomposer**
-   ```typescript
-   /**
-    * Dynamically decomposes complex tasks using LLM reasoning
-    */
-   async function decomposePlan(
-     taskAnalysis: TaskComplexityAnalysis,
-     userMessage: string,
-     context: SessionContext
-   ): Promise<PlanStep[]> {
-     if (taskAnalysis.classification === 'simple') {
-       return []; // No decomposition needed
-     }
-
-     const decompositionPrompt = `
-   You are an expert task planner for todo management. Break down this task into specific, executable steps.
-
-   AVAILABLE MCP ACTIONS:
-   - list_todos(filters?) - Get todos with optional filters (context, completed, dateRange)
-   - create_todo(title, description?, context?, due?, tags?) - Create new todo
-   - update_todo(id, fields) - Update existing todo fields
-   - delete_todo(id) - Delete specific todo
-   - toggle_completion(id, completed) - Mark todo as complete/incomplete
-   - start_time_tracking(id) - Start timer for todo
-   - stop_time_tracking(id) - Stop timer for todo
-   - get_active_timers() - Get currently running timers
-
-   USER TASK: "${userMessage}"
-   COMPLEXITY: ${taskAnalysis.classification}
-   INITIAL ANALYSIS: ${taskAnalysis.reasoning}
-
-   Create a step-by-step execution plan. Each step should:
-   1. Use exactly one MCP action
-   2. Have clear success criteria
-   3. Include error handling approach
-   4. Note if user approval is needed
-
-   Respond in JSON format:
-   {
-     "steps": [
-       {
-         "id": "step_1",
-         "action": "list_todos", 
-         "parameters": {"context": "work"},
-         "description": "Get all work todos to analyze",
-         "successCriteria": "Returns array of todos",
-         "requiresApproval": false,
-         "dependencies": [],
-         "fallbackAction": "show_error_message"
-       }
-     ],
-     "estimatedDuration": "2-3 minutes",
-     "riskLevel": "low|medium|high"
-   }`;
-
-     const response = await claude.messages.create({
-       model: 'claude-3-5-sonnet-20241022',
-       max_tokens: 1000,
-       temperature: 0.3, // Slightly higher for creative planning
-       system: decompositionPrompt,
-       messages: [{ role: 'user', content: userMessage }]
-     });
-
-     return parsePlanSteps(response);
-   }
-   ```
-
-3. **Add Plan Validation**
-   - Check for destructive operations
-   - Estimate execution time and cost
-   - Identify potential failure points
-
-#### Files to Modify
-- `src/ai/intent-parser.ts` - Enhanced intent analysis
-- `src/types/ai-types.ts` - New plan-related types
-- `src/ai/planning/` - New planning module
-
-### Phase 2: Execution Engine (Week 3-4)
-
-#### Goals
-- Execute multi-step plans with progress tracking
-- Implement robust error recovery
-- Add real-time user feedback
-
-#### Tasks
-1. **Create ExecutionOrchestrator**
-   ```typescript
-   // Manages step-by-step execution with dependency handling
-   // Provides real-time progress updates via Telegram
-   // Handles step failures with fallback strategies
-   ```
-
-2. **Implement Progress Tracking**
-   ```typescript
-   // Real-time updates: "🔄 Step 2/5: Analyzing completed todos..."
-   // Progress bars for long operations
-   // ETA calculations based on step complexity
-   ```
-
-3. **Add Error Recovery**
-   ```typescript
-   // Automatic retry with exponential backoff
-   // Alternative approach generation
-   // Graceful degradation for partial failures
-   ```
-
-#### Files to Modify
-- `src/ai/execution/` - New execution module
-- `src/bot/handlers/message.ts` - Enhanced message handling
-- `src/ai/claude.ts` - Integration with execution engine
-
-### Phase 3: Reflection & Validation (Week 5-6)
-
-#### Goals
-- Validate execution results against user intent
-- Detect and correct errors automatically
-- Generate meaningful summaries
-
-#### Tasks
-1. **Create ResultValidator**
-   ```typescript
-   // Compare execution results with original intent
-   // Detect common failure patterns
-   // Validate data consistency after operations
-   ```
-
-2. **Implement ErrorDetection**
-   ```typescript
-   // Parse MCP error responses
-   // Identify incomplete operations
-   // Detect data inconsistencies
-   ```
-
-3. **Add SummaryGenerator**
-   ```typescript
-   // Generate concise operation summaries
-   // Highlight important changes made
-   // Suggest follow-up actions
-   ```
-
-#### Files to Modify
-- `src/ai/reflection/` - New reflection module
-- `src/ai/validation/` - Result validation logic
-- `src/ai/summary/` - Summary generation
-
-### Phase 4: Advanced Features (Week 7-8)
-
-#### Goals
-- Human-in-the-loop for complex operations
-- Learning from user corrections
-- Performance optimization
-
-#### Tasks
-1. **Approval Workflows**
-   ```typescript
-   // Interactive approval for destructive operations
-   // Preview of planned changes
-   // Step-by-step confirmation options
-   ```
-
-2. **Learning System**
-   ```typescript
-   // Track user correction patterns
-   // Adapt planning based on user preferences
-   // Improve error detection over time
-   ```
-
-3. **Performance Optimization**
-   ```typescript
-   // Plan caching for similar operations
-   // Parallel execution where possible
-   // Cost optimization strategies
-   ```
-
-## Detailed Implementation Examples
-
-### Example 1: "Clean up my todo list"
-
-#### Current Behavior
-- Single intent parsing fails (too vague)
-- Generic response or error
-
-#### Enhanced Agent Behavior
-
-1. **Planning Phase**
-   ```typescript
-   const plan: TaskPlan = {
-     userIntent: "Clean up my todo list",
-     complexity: "complex",
-     steps: [
-       {
-         action: "list_todos",
-         description: "Analyze current todo list",
-         validation: { minItems: 0, expectArray: true }
-       },
-       {
-         action: "identify_completed",
-         description: "Find completed todos",
-         validation: { completedField: "completed" }
-       },
-       {
-         action: "confirm_deletions", 
-         description: "Ask user which items to delete",
-         validation: { requiresApproval: true }
-       },
-       {
-         action: "bulk_delete",
-         description: "Delete confirmed items",
-         validation: { expectSuccess: true }
-       },
-       {
-         action: "generate_summary",
-         description: "Show cleanup results",
-         validation: { summarizeChanges: true }
-       }
-     ]
-   };
-   ```
-
-2. **Execution Phase**
-   ```
-   🔄 Planning your todo cleanup...
-   
-   📋 **Cleanup Plan:**
-   1. Analyze current todos
-   2. Identify completed items  
-   3. Confirm deletions with you
-   4. Remove confirmed items
-   5. Show final summary
-   
-   ⚡ Step 1/5: Analyzing your todo list...
-   ✅ Found 23 todos (8 completed, 15 active)
-   
-   ⚡ Step 2/5: Identifying cleanup candidates...
-   ✅ Found 8 completed todos for deletion
-   
-   ❓ Step 3/5: Shall I delete these completed todos?
-   • ✅ Buy groceries (completed yesterday)
-   • ✅ Call dentist (completed 3 days ago)
-   • ✅ Review quarterly report (completed last week)
-   ...
-   
-   [Yes, delete all] [Let me choose] [Cancel cleanup]
-   ```
-
-3. **Reflection Phase**
-   ```
-   🎯 **Cleanup Complete!**
-   
-   **Summary:**
-   • Deleted: 8 completed todos
-   • Kept: 15 active todos
-   • Contexts: work (7), personal (8)
-   • Next due: "Team meeting prep" (tomorrow)
-   
-   **Suggestions:**
-   • 3 work todos are overdue - shall I help prioritize?
-   • Personal context has no due dates - add some deadlines?
-   ```
-
-### Example 2: "Show me overdue tasks and help me reschedule them"
-
-#### Enhanced Agent Behavior
-
-1. **Planning Phase**
-   ```typescript
-   const plan: TaskPlan = {
-     userIntent: "Show overdue tasks and help reschedule",
-     complexity: "compound", 
-     steps: [
-       { action: "list_overdue_todos", description: "Find overdue tasks" },
-       { action: "analyze_priorities", description: "Assess task importance" },
-       { action: "suggest_reschedule", description: "Propose new dates" },
-       { action: "confirm_updates", description: "Get user approval" },
-       { action: "bulk_update", description: "Apply new dates" },
-       { action: "set_reminders", description: "Configure alerts" }
-     ]
-   };
-   ```
-
-2. **Execution with User Interaction**
-   ```
-   🔍 Finding your overdue tasks...
-   ⚠️ Found 5 overdue todos
-   
-   📊 **Analysis & Suggestions:**
-   
-   **High Priority (Work):**
-   • "Quarterly review" - 3 days overdue
-     💡 Suggest: Tomorrow 2PM (2hr block)
-   
-   **Medium Priority:**  
-   • "Doctor appointment" - 1 day overdue
-     💡 Suggest: Next week (call today)
-   
-   **Low Priority:**
-   • "Organize photos" - 5 days overdue  
-     💡 Suggest: Weekend project
-   
-   🤔 **Smart Scheduling:**
-   I notice you have light days on Wed/Thu next week. 
-   Shall I propose a detailed reschedule plan?
-   
-   [Yes, create plan] [Let me choose manually] [Just show list]
-   ```
-
-## Technical Architecture
-
-### Directory Structure
-```
-src/ai/
-├── agent/                    # Core agent orchestration
-│   ├── agent-orchestrator.ts
-│   ├── task-analyzer.ts
-│   └── workflow-manager.ts
-├── planning/                 # Planning engine
-│   ├── plan-generator.ts
-│   ├── task-decomposer.ts
-│   ├── complexity-analyzer.ts
-│   └── plan-validator.ts
-├── execution/                # Execution engine
-│   ├── execution-engine.ts
-│   ├── step-executor.ts
-│   ├── progress-tracker.ts
-│   └── error-recovery.ts
-├── reflection/               # Reflection & validation
-│   ├── result-validator.ts
-│   ├── error-detector.ts
-│   ├── correction-generator.ts
-│   └── summary-generator.ts
-├── memory/                   # Context & learning
-│   ├── execution-memory.ts
-│   ├── user-preferences.ts
-│   └── pattern-learner.ts
-└── types/                    # Enhanced type definitions
-    ├── agent-types.ts
-    ├── planning-types.ts
-    ├── execution-types.ts
-    └── reflection-types.ts
-```
-
-### Integration Points
-
-#### Enhanced Message Handler
-```typescript
-export async function handleMessage(ctx: BotContext): Promise<void> {
-  const agent = getAgentOrchestrator();
-  
-  // Step 1: Analyze task complexity
-  const taskAnalysis = await agent.analyzeTask(messageText, ctx.session);
-  
-  if (taskAnalysis.complexity === 'simple') {
-    // Use existing single-step flow
-    return handleSimpleIntent(ctx, taskAnalysis);
+async function executePlan(
+  plan: ExecutionPlan,
+  callbacks: {
+    onProgress: (step: PlanStep, progress: number) => void;
+    onError: (error: Error, step: PlanStep) => void;
+    onValidation: (result: any, step: PlanStep) => boolean;
   }
-  
-  // Step 2: Generate execution plan
-  const plan = await agent.generatePlan(taskAnalysis);
-  
-  // Step 3: Get user approval for complex/destructive operations
-  if (plan.requiresApproval) {
-    await requestPlanApproval(ctx, plan);
-    return; // Wait for user response
-  }
-  
-  // Step 4: Execute plan with progress tracking
-  const result = await agent.executePlan(plan, {
-    onProgress: (step, progress) => updateProgress(ctx, step, progress),
-    onError: (error, step) => handleStepError(ctx, error, step),
-    onValidation: (result, step) => validateStepResult(result, step)
-  });
-  
-  // Step 5: Generate summary and suggestions
-  const summary = await agent.generateSummary(result, plan);
-  await ctx.reply(summary, { parse_mode: 'Markdown' });
-}
+): Promise<ExecutionResult>
 ```
+
+#### 4. **Reflection & Validation Engine**
+```typescript
+interface ReflectionResult {
+  success: boolean;
+  summary: string;
+  errors: ErrorDiagnosis[];
+  suggestions: string[];
+  corrections?: CorrectionPlan;
+}
+
+async function reflectOnExecution(
+  result: ExecutionResult,
+  originalIntent: string
+): Promise<ReflectionResult>
+```
+
+## Implementation Examples
+
+### Example 1: "Clean up my todo list" (Complex Task)
+
+**Planning Phase:**
+```
+🔄 Analyzing your request...
+📋 **Cleanup Plan:**
+1. Analyze current todo list structure
+2. Identify completed items and duplicates
+3. Confirm deletions with you
+4. Remove confirmed items
+5. Reorganize remaining todos
+6. Generate summary report
+
+⚠️ This will modify your todos. Proceed? [Yes] [Preview] [Cancel]
+```
+
+**Execution Phase:**
+```
+⚡ Step 1/6: Analyzing todo list...
+✅ Found 23 todos (8 completed, 3 duplicates, 12 active)
+
+⚡ Step 2/6: Identifying cleanup candidates...
+✅ Found 11 items for cleanup
+
+❓ Step 3/6: Confirm these deletions?
+• ✅ Buy groceries (completed yesterday)
+• ✅ Call dentist (completed 3 days ago)
+• 🔄 "Team meeting prep" (duplicate of "Prepare for team meeting")
+
+[Delete all] [Let me choose] [Cancel]
+```
+
+**Reflection Phase:**
+```
+🎯 **Cleanup Complete!**
+
+**Changes Made:**
+• Deleted: 8 completed todos
+• Merged: 3 duplicate todos
+• Kept: 12 active todos
+
+**Next Steps:**
+• 3 work todos are overdue - reschedule?
+• Add due dates to 5 personal todos?
+```
+
+### Example 2: "Schedule team meeting for next week" (Compound Task)
+
+**Planning Phase:**
+```typescript
+const plan: ExecutionPlan = {
+  userIntent: "Schedule team meeting for next week",
+  complexity: "compound",
+  steps: [
+    {
+      action: "check_calendar_availability",
+      description: "Find available time slots next week"
+    },
+    {
+      action: "create_todo_with_reminder",  
+      description: "Create meeting preparation todo"
+    },
+    {
+      action: "set_meeting_reminder",
+      description: "Configure meeting alerts"
+    }
+  ]
+};
+```
+
+## Technical Implementation Strategy
+
+### Phase 1: Enhanced Intent Analysis (1-2 weeks)
+1. **LLM-Based Task Complexity Analyzer**
+   - Few-shot prompting with classification examples
+   - Confidence scoring and fallback strategies
+   - Integration with existing intent parser
+
+2. **Dynamic Plan Generation**
+   - Context-aware step decomposition
+   - MCP tool mapping and validation
+   - Risk assessment and approval workflows
+
+### Phase 2: Execution Engine (2-3 weeks)
+1. **LangGraphJS Workflow Integration**
+   - Graph-based execution nodes
+   - State management and persistence
+   - Progress tracking and streaming updates
+
+2. **Enhanced MCP Integration**
+   - Migration to @langchain/mcp-adapters
+   - Multi-server coordination
+   - Robust error handling and fallbacks
+
+### Phase 3: Reflection & Learning (1-2 weeks)
+1. **Result Validation System**
+   - External feedback mechanisms
+   - Error detection and correction
+   - Summary generation and insights
+
+2. **Human-in-the-Loop Integration**
+   - Approval workflows for destructive operations
+   - Interactive plan modification
+   - Learning from user corrections
+
+## Best Practices and Guardrails
+
+### 1. **Error Handling**
+- Circuit breakers and graceful degradation
+- Exponential backoff for retries
+- Comprehensive error logging and alerting
+
+### 2. **Safety Measures**
+- Multi-level confirmation for destructive operations
+- Plan validation before execution
+- Rollback capabilities for data integrity
+
+### 3. **Performance Optimization**
+- Token budgets and execution limits
+- Parallel execution where safe
+- Caching for similar operations
+
+### 4. **Monitoring and Observability**
+- Execution tracing and debugging
+- Performance metrics and analytics
+- User satisfaction tracking
 
 ## Success Metrics
 
 ### Performance Metrics
 - **Task Success Rate**: % of multi-step operations completed successfully
-- **Error Recovery Rate**: % of failed steps that are automatically corrected
-- **User Satisfaction**: Feedback on plan quality and execution
+- **Error Recovery Rate**: % of failed steps automatically corrected
 - **Execution Speed**: Average time for complex operations
-
-### Quality Metrics  
-- **Plan Accuracy**: How well generated plans match user intent
-- **Summary Quality**: Usefulness of generated summaries
-- **Suggestion Relevance**: Quality of follow-up suggestions
-- **Error Detection**: Ability to identify and correct mistakes
-
-### Operational Metrics
 - **Cost Efficiency**: Token usage vs. task complexity
-- **Approval Rate**: % of plans approved by users
-- **Retry Rate**: Frequency of plan modifications needed
-- **Learning Rate**: Improvement in planning over time
 
-## Risk Mitigation
+### Quality Metrics
+- **Plan Accuracy**: How well generated plans match user intent
+- **Summary Quality**: Usefulness of generated summaries and insights
+- **User Satisfaction**: Feedback on plan quality and execution results
 
-### Technical Risks
-- **Complexity Explosion**: Mitigate with strict plan size limits and timeouts
-- **Error Cascades**: Implement circuit breakers and graceful degradation
-- **Cost Overruns**: Add token budgets and execution limits per user
-- **Performance Issues**: Use caching and parallel execution where safe
+## Migration Path from Current Implementation
 
-### User Experience Risks
-- **Over-automation**: Always provide human-in-the-loop for destructive operations
-- **Confusion**: Clear progress communication and approval workflows
-- **Loss of Control**: Easy cancellation and rollback mechanisms
-- **Inconsistent Behavior**: Comprehensive testing of edge cases
+### Current Limitations
+- Single-shot intent processing (no multi-step planning)
+- No reflection or self-correction capabilities
+- Limited error recovery (fails fast rather than adapting)
+- No progress tracking for complex operations
 
-### Data Safety Risks
-- **Accidental Deletions**: Multi-level confirmation for destructive operations
-- **Data Corruption**: Validation at each step with rollback capability
-- **Privacy Concerns**: Local processing where possible, clear data usage policies
+### Enhanced Flow
+```
+Current: User Message → Intent Parse → Single MCP Action → Response
+
+Enhanced: User Message → Intent Analysis → Plan Generation → 
+          Execution Loop → Reflection & Validation → Summary
+```
+
+### Integration Points
+- Enhance existing `handleMessage` in `src/bot/handlers/message.ts`
+- Extend `src/ai/intent-parser.ts` with complexity analysis
+- Add new modules: `src/ai/planning/`, `src/ai/execution/`, `src/ai/reflection/`
+- Upgrade MCP integration with `@langchain/mcp-adapters`
 
 ## Future Enhancements
 
-### Advanced Planning
-- **Context-Aware Planning**: Learn user patterns and preferences
-- **Cross-Session Planning**: Multi-day project management
-- **Resource Optimization**: Schedule based on user availability
+### Advanced Capabilities
+- **Cross-Domain Workflows**: Coordinate todos, calendar, and file operations
+- **Proactive Suggestions**: Anticipate user needs based on patterns
+- **Multi-Modal Integration**: Voice commands and visual planning
+- **Learning System**: Adapt planning based on user preferences and corrections
 
-### Enhanced Reflection
-- **Pattern Recognition**: Identify recurring user needs
-- **Proactive Suggestions**: Anticipate user intentions
-- **Continuous Improvement**: Learn from corrections and feedback
+### Ecosystem Integration
+- **Agent Marketplaces**: Deploy specialized task-specific agents
+- **Standards Compliance**: Support for emerging protocols (A2A, AGNTCY)
+- **Enterprise Features**: Role-based access, audit trails, compliance reporting
 
-### Multi-Modal Capabilities
-- **Voice Integration**: Voice commands for complex operations
-- **Visual Planning**: Flowchart generation for complex plans
-- **Document Integration**: Import/export todo lists from external sources
-
-## Enhanced MCP Integration with @langchain/mcp-adapters
-
-### Current Implementation Limitations
-
-Our current implementation uses direct MCP SDK integration, which has several limitations:
-
-- **Manual MCP Client Management**: We manually create and manage MCP client instances
-- **Custom Tool Wrapping**: We manually convert MCP tools to be compatible with LangGraph
-- **Error Handling Complexity**: Direct SDK usage requires extensive custom error handling
-- **Limited Multi-Server Support**: Difficult to integrate multiple MCP servers efficiently
-- **Tool Registration Overhead**: Manual registration and configuration of each MCP tool
-
-### Improved Architecture with @langchain/mcp-adapters
-
-The `@langchain/mcp-adapters` package provides a more sophisticated and maintainable approach:
-
-#### Key Benefits
-
-1. **Simplified Multi-Server Management**: Single client can manage multiple MCP servers
-2. **Automatic Tool Conversion**: MCP tools automatically become LangChain-compatible
-3. **Built-in Error Handling**: Robust error handling and retry mechanisms
-4. **Standardized Content Blocks**: Consistent tool output formatting
-5. **Transport Flexibility**: Support for stdio, HTTP, and SSE transports
-6. **Tool Naming Strategies**: Automatic tool prefixing and naming conventions
-
-#### Implementation Architecture
-
-```typescript
-// Enhanced MCP Integration Setup
-import { MultiServerMCPClient } from "@langchain/mcp-adapters";
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { ChatAnthropic } from "@langchain/anthropic";
-
-interface EnhancedMCPSetup {
-  client: MultiServerMCPClient;
-  tools: Tool[];
-  agent: RunnableSequence;
-}
-
-async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
-  // Configure multiple MCP servers with enhanced options
-  const client = new MultiServerMCPClient({
-    // Global configuration
-    throwOnLoadError: false, // Don't fail if one server is down
-    prefixToolNameWithServerName: true,
-    additionalToolNamePrefix: "eddo",
-    useStandardContentBlocks: true,
-    
-    // Server configurations
-    mcpServers: {
-      // Primary Eddo todo server
-      todo: {
-        transport: "streamable_http",
-        url: "http://localhost:3002/mcp",
-        timeout: 30000, // 30 second timeout
-        // Optional: authentication headers
-        headers: {
-          "Authorization": `Bearer ${process.env.MCP_API_KEY}`
-        }
-      },
-      
-      // Future: Calendar integration
-      calendar: {
-        transport: "stdio",
-        command: "npx",
-        args: ["-y", "@eddo/calendar-mcp-server"],
-        timeout: 15000 // 15 second timeout for stdio
-      },
-      
-      // Future: File management server
-      files: {
-        transport: "stdio", 
-        command: "python",
-        args: ["/path/to/file_server.py"],
-        timeout: 20000
-      }
-    },
-    
-    // Advanced configuration based on README best practices
-    outputHandling: {
-      // Map resource content to artifacts (not used as LLM context)
-      resourceContentToArtifact: true,
-      // Keep text and error content as main content
-      textContentToContent: true,
-      // Handle multimodal content properly
-      imageContentToContent: false
-    }
-  });
-
-  // Get all available tools across servers with error handling
-  let tools: Tool[] = [];
-  try {
-    tools = await client.get_tools();
-    console.log(`Loaded ${tools.length} tools from MCP servers`);
-  } catch (error) {
-    console.error('Failed to load some MCP tools:', error);
-    // Continue with partial tool set if some servers fail
-    tools = await client.get_tools({ ignoreErrors: true });
-  }
-  
-  // Create enhanced agent with all MCP tools
-  const llm = new ChatAnthropic({
-    model: "claude-3-5-sonnet-20241022",
-    temperature: 0
-  });
-  
-  const agent = createReactAgent({
-    llm,
-    tools,
-    // Enhanced system message for multi-server context
-    systemMessage: buildEnhancedSystemMessage(tools)
-  });
-
-  return { client, tools, agent };
-}
-```
-
-#### Enhanced Workflow Integration
-
-```typescript
-// Updated Workflow Node for MCP Adapters
-import { Tool } from "@langchain/core/tools";
-import { HumanMessage } from "@langchain/core/messages";
-
-interface EnhancedWorkflowState extends WorkflowState {
-  mcpTools: Tool[];
-  activeServers: string[];
-  toolResults: Record<string, any>;
-}
-
-/**
- * Enhanced step executor using LangChain MCP adapters
- */
-export const executeStepWithAdapters: WorkflowNode = async (
-  state: EnhancedWorkflowState
-): Promise<Partial<EnhancedWorkflowState>> => {
-  const currentStep = state.executionPlan!.steps[state.currentStepIndex];
-  
-  try {
-    // Find the appropriate tool from MCP adapters
-    const tool = state.mcpTools.find(t => 
-      t.name.includes(currentStep.action) || 
-      t.name.endsWith(`_${currentStep.action}`)
-    );
-    
-    if (!tool) {
-      throw new Error(`Tool not found for action: ${currentStep.action}`);
-    }
-    
-    // Execute using LangChain tool interface
-    const result = await tool.invoke(currentStep.parameters);
-    
-    // Store result with standardized format
-    const toolResults = {
-      ...state.toolResults,
-      [currentStep.id]: {
-        content: result.content || result,
-        artifact: result.artifact,
-        metadata: {
-          toolName: tool.name,
-          server: extractServerName(tool.name),
-          timestamp: Date.now()
-        }
-      }
-    };
-    
-    // Update step status
-    currentStep.status = 'completed';
-    currentStep.result = result;
-    currentStep.duration = Date.now() - (currentStep.timestamp || Date.now());
-
-    logger.info('Enhanced step completed', {
-      stepId: currentStep.id,
-      toolName: tool.name,
-      server: extractServerName(tool.name),
-      duration: currentStep.duration
-    });
-
-    return {
-      currentStepIndex: state.currentStepIndex + 1,
-      executionSteps: [...state.executionSteps, currentStep],
-      toolResults,
-      mcpResponses: [...state.mcpResponses, result]
-    };
-    
-  } catch (error) {
-    return handleEnhancedStepError(error, currentStep, state);
-  }
-};
-
-/**
- * Enhanced error handling with multi-server context
- */
-async function handleEnhancedStepError(
-  error: any,
-  step: ExecutionStep, 
-  state: EnhancedWorkflowState
-): Promise<Partial<EnhancedWorkflowState>> {
-  logger.error('Enhanced step execution failed', {
-    error,
-    stepId: step.id,
-    action: step.action,
-    availableTools: state.mcpTools.map(t => t.name),
-    activeServers: state.activeServers
-  });
-
-  // Try alternative tools from different servers
-  const alternativeTools = state.mcpTools.filter(tool => 
-    tool.description?.includes(step.action) ||
-    tool.name.includes('fallback') ||
-    tool.name.includes('backup')
-  );
-
-  if (alternativeTools.length > 0) {
-    logger.info('Attempting fallback with alternative tools', {
-      stepId: step.id,
-      alternatives: alternativeTools.map(t => t.name)
-    });
-    
-    // Try each alternative tool
-    for (const altTool of alternativeTools) {
-      try {
-        const fallbackResult = await altTool.invoke(step.parameters);
-        
-        step.status = 'completed';
-        step.result = fallbackResult;
-        step.metadata = { ...step.metadata, usedFallback: altTool.name };
-        
-        return {
-          currentStepIndex: state.currentStepIndex + 1,
-          executionSteps: [...state.executionSteps, step],
-          toolResults: {
-            ...state.toolResults,
-            [step.id]: fallbackResult
-          }
-        };
-      } catch (fallbackError) {
-        logger.warn('Fallback tool also failed', { 
-          tool: altTool.name, 
-          error: fallbackError 
-        });
-      }
-    }
-  }
-
-  // Mark step as failed if no alternatives worked
-  step.status = 'failed';
-  step.error = error instanceof Error ? error : new Error(String(error));
-  
-  return {
-    currentStepIndex: state.currentStepIndex + 1,
-    executionSteps: [...state.executionSteps, step],
-    error: step.error
-  };
-}
-```
-
-#### Multi-Server Planning Enhancement
-
-```typescript
-/**
- * Enhanced planner that leverages multiple MCP servers
- */
-async function generateEnhancedExecutionPlan(
-  userMessage: string,
-  availableTools: Tool[],
-  sessionContext: SessionContext
-): Promise<ExecutionPlan> {
-  
-  // Group tools by server capability
-  const toolsByCapability = categorizeToolsByCapability(availableTools);
-  
-  const prompt = `You are an execution planner with access to multiple specialized servers.
-
-AVAILABLE TOOL CATEGORIES:
-${Object.entries(toolsByCapability).map(([category, tools]) => 
-  `${category.toUpperCase()}:\n${tools.map(t => `  - ${t.name}: ${t.description}`).join('\n')}`
-).join('\n\n')}
-
-MULTI-SERVER COORDINATION RULES:
-1. Prefer tools from the same server for related operations (better consistency)
-2. Use cross-server tools when combining different domains (todo + calendar)
-3. Consider fallback tools from alternative servers for critical operations
-4. Optimize for minimal server round-trips when possible
-
-ENHANCED CAPABILITIES:
-- Cross-server data correlation (todo completion affects calendar)
-- Multi-domain workflow orchestration (todos, calendar, files)
-- Intelligent fallback and error recovery across servers
-- Resource sharing between different tool contexts
-
-USER REQUEST: "${userMessage}"
-
-Generate an execution plan that leverages the full multi-server ecosystem...`;
-
-  // Use enhanced Claude call with tool context
-  const response = await claude.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 2000,
-    temperature: 0.3,
-    system: prompt,
-    messages: [{ role: 'user', content: userMessage }]
-  });
-
-  return parseEnhancedExecutionPlan(response.content[0].text, availableTools);
-}
-
-/**
- * Categorize tools by their functional capability
- */
-function categorizeToolsByCapability(tools: Tool[]): Record<string, Tool[]> {
-  const categories: Record<string, Tool[]> = {
-    todo_management: [],
-    time_tracking: [],
-    calendar: [],
-    file_operations: [],
-    analysis: [],
-    notifications: [],
-    integration: []
-  };
-
-  for (const tool of tools) {
-    const name = tool.name.toLowerCase();
-    const desc = tool.description?.toLowerCase() || '';
-    
-    if (name.includes('todo') || name.includes('task')) {
-      categories.todo_management.push(tool);
-    } else if (name.includes('time') || name.includes('timer')) {
-      categories.time_tracking.push(tool);
-    } else if (name.includes('calendar') || name.includes('schedule')) {
-      categories.calendar.push(tool);
-    } else if (name.includes('file') || name.includes('document')) {
-      categories.file_operations.push(tool);
-    } else if (desc.includes('analy') || desc.includes('report')) {
-      categories.analysis.push(tool);
-    } else if (name.includes('notify') || name.includes('alert')) {
-      categories.notifications.push(tool);
-    } else {
-      categories.integration.push(tool);
-    }
-  }
-
-  return categories;
-}
-```
-
-### Migration Strategy
-
-#### Phase 1: Parallel Implementation (1-2 weeks)
-1. **Add @langchain/mcp-adapters dependency**
-   ```bash
-   pnpm add @langchain/mcp-adapters
-   ```
-
-2. **Create enhanced MCP setup alongside existing implementation**
-   ```typescript
-   // New file: src/mcp/enhanced-client.ts
-   export const enhancedMCPSetup = setupEnhancedMCPIntegration();
-   ```
-
-3. **Implement feature flag for gradual rollout**
-   ```typescript
-   const useEnhancedMCP = process.env.USE_ENHANCED_MCP === 'true';
-   ```
-
-4. **Add comprehensive configuration options**
-   ```typescript
-   // Support for different authentication methods
-   interface MCPServerConfig {
-     transport: 'stdio' | 'http' | 'streamable_http';
-     oauth2?: {
-       clientId: string;
-       clientSecret: string;
-       tokenUrl: string;
-       scope?: string;
-     };
-     apiKey?: string;
-     timeout?: number;
-     retries?: number;
-   }
-   ```
-
-#### Phase 2: Enhanced Workflow Integration (2-3 weeks)
-1. **Update workflow nodes to use LangChain tools**
-2. **Implement multi-server error handling**
-3. **Add cross-server coordination capabilities**
-4. **Enhanced logging and monitoring**
-
-#### Phase 3: Full Migration (1 week)
-1. **Remove direct MCP SDK usage**
-2. **Clean up legacy code**
-3. **Update tests and documentation**
-4. **Performance optimization**
-
-### Expected Benefits
-
-#### Technical Improvements
-- **50% reduction in MCP integration code** due to adapter abstractions
-- **Better error handling** with built-in retry and fallback mechanisms
-- **Improved maintainability** with standardized tool interfaces
-- **Enhanced testing** using LangChain's testing framework
-- **Flexible authentication** supporting OAuth 2.0, API keys, and custom auth
-- **Robust timeout handling** with configurable timeouts per server/operation
-
-#### Operational Benefits
-- **Multi-server orchestration** enables complex cross-domain workflows
-- **Automatic tool discovery** simplifies adding new MCP servers
-- **Standardized monitoring** across all MCP interactions
-- **Better performance** with connection pooling and optimization
-- **Graceful degradation** when some servers are unavailable
-- **Content block standardization** for consistent multimodal handling
-
-#### Future-Proofing
-- **Ecosystem compatibility** with LangChain tooling and patterns
-- **Community support** and ongoing development from LangChain team
-- **Standards compliance** with emerging MCP protocol updates
-- **Integration readiness** for additional LangChain features
-- **Transport flexibility** supporting stdio, HTTP, and SSE protocols
-- **Extensible architecture** for custom transport implementations
-
-### Monitoring and Observability
-
-```typescript
-// Enhanced monitoring with multi-server context
-interface EnhancedMCPMetrics {
-  serverHealth: Record<string, 'healthy' | 'degraded' | 'down'>;
-  toolLatency: Record<string, number>;
-  errorRates: Record<string, number>;
-  crossServerOperations: number;
-  fallbackUsage: Record<string, number>;
-  contentBlockMetrics: {
-    textBlocks: number;
-    imageBlocks: number;
-    resourceBlocks: number;
-    artifactBlocks: number;
-  };
-  authFailures: Record<string, number>;
-  timeoutErrors: Record<string, number>;
-}
-
-async function monitorEnhancedMCP(): Promise<EnhancedMCPMetrics> {
-  // Implement comprehensive monitoring across all connected servers
-  // Track performance, errors, and usage patterns
-  // Enable intelligent routing and load balancing
-  // Monitor authentication and timeout patterns
-  // Track content block usage for optimization
-}
-
-// Configuration monitoring for dynamic adjustment
-interface MCPConfigMonitoring {
-  serverConfigHealth: Record<string, boolean>;
-  transportPerformance: Record<string, number>;
-  authenticationStatus: Record<string, 'valid' | 'expired' | 'invalid'>;
-  timeoutAnalysis: {
-    averageResponseTime: Record<string, number>;
-    recommendedTimeouts: Record<string, number>;
-  };
-}
-```
-
-## Conclusion
-
-This implementation plan transforms the Eddo Telegram Bot from a simple intent-action system into a sophisticated AI agent capable of handling complex, multi-step tasks. By leveraging proven agentic patterns and focusing on reliable external feedback mechanisms, we can create a production-ready system that significantly enhances user productivity while maintaining safety and control.
-
-The enhanced MCP integration using `@langchain/mcp-adapters` provides a more robust, maintainable, and scalable foundation for multi-server workflows. This approach aligns with industry best practices and positions the system for future enhancements.
-
-The phased approach allows for incremental development and testing, ensuring each component works reliably before adding complexity. The emphasis on human-in-the-loop design and comprehensive error handling addresses the key limitations identified in current LLM self-correction research.
-
-**Next Steps**: 
-1. **Immediate**: Begin with Phase 1 implementation, focusing on enhanced intent analysis and plan generation
-2. **Short-term**: Implement @langchain/mcp-adapters integration for improved tool management
-3. **Long-term**: Develop multi-server orchestration capabilities for cross-domain workflows
+This modern agentic workflow architecture positions the Eddo Telegram Bot to handle complex, multi-step tasks while maintaining safety, transparency, and user control. The emphasis on external feedback, structured planning, and robust error handling addresses key limitations identified in current LLM agent research.
