@@ -617,8 +617,15 @@ async function executeStepAction(
 
     case 'stop_timer':
     case 'stop_time_tracking': {
-      const params = step.parameters as { id: string };
-      return await mcpClient.stopTimeTracking(params.id);
+      const params = step.parameters as { id?: string; title?: string };
+      
+      if (params.id) {
+        // Direct ID provided, stop timer immediately
+        return await mcpClient.stopTimeTracking(params.id);
+      } else {
+        // No ID provided, need to find active timers and stop them
+        return await stopActiveTimeTracking(params.title, state);
+      }
     }
 
     case 'get_active_timers':
@@ -1138,6 +1145,120 @@ function generateProgressBar(current: number, total: number): string {
 }
 
 /**
+ * Finds the best matching todo from a list using flexible matching strategies
+ */
+function findBestTodoMatch(
+  todos: Array<{ _id: string; title: string; description?: string; [key: string]: any }>,
+  searchTitle: string
+): typeof todos[0] | null {
+  if (!searchTitle || todos.length === 0) return null;
+  
+  const searchLower = searchTitle.toLowerCase().trim();
+  const searchWords = searchLower.split(/\s+/).filter(word => word.length > 2); // Only meaningful words
+  
+  logger.info('Searching for todo match', { 
+    searchTitle, 
+    searchWords,
+    availableTodos: todos.map(t => ({ id: t._id, title: t.title }))
+  });
+  
+  // Strategy 1: Exact match (case-insensitive)
+  let match = todos.find(todo => 
+    todo.title.toLowerCase().trim() === searchLower
+  );
+  if (match) {
+    logger.info('Found exact match', { todoTitle: match.title, searchTitle });
+    return match;
+  }
+  
+  // Strategy 2: Full substring match (either direction)
+  match = todos.find(todo => {
+    const todoLower = todo.title.toLowerCase();
+    return todoLower.includes(searchLower) || searchLower.includes(todoLower);
+  });
+  if (match) {
+    logger.info('Found substring match', { todoTitle: match.title, searchTitle });
+    return match;
+  }
+  
+  // Strategy 3: Key word matching - find todo with most overlapping meaningful words
+  let bestMatch = null;
+  let bestScore = 0;
+  
+  for (const todo of todos) {
+    const todoLower = todo.title.toLowerCase();
+    const todoWords = todoLower.split(/\s+/).filter(word => word.length > 2);
+    
+    // Calculate overlap score
+    let score = 0;
+    
+    // Bonus for exact word matches
+    for (const searchWord of searchWords) {
+      if (todoWords.some(todoWord => todoWord === searchWord)) {
+        score += 3; // High score for exact word match
+      } else if (todoWords.some(todoWord => todoWord.includes(searchWord) || searchWord.includes(todoWord))) {
+        score += 1; // Lower score for partial word match
+      }
+    }
+    
+    // Special keyword matching for common variations
+    const keywordMatches = [
+      // Faucet/tap variations
+      { search: ['faucet', 'tap'], todo: ['faucet', 'tap', 'plumbing'] },
+      // Kitchen/cooking variations  
+      { search: ['kitchen'], todo: ['kitchen', 'cooking'] },
+      // Repair/fix variations
+      { search: ['repair', 'fix'], todo: ['repair', 'fix', 'broken', 'leaky', 'leaking'] },
+      // Leaky variations
+      { search: ['leaky', 'leaking'], todo: ['leaky', 'leaking', 'dripping', 'broken'] }
+    ];
+    
+    for (const { search: searchKeys, todo: todoKeys } of keywordMatches) {
+      const hasSearchKey = searchKeys.some(key => searchLower.includes(key));
+      const hasTodoKey = todoKeys.some(key => todoLower.includes(key));
+      if (hasSearchKey && hasTodoKey) {
+        score += 2; // Bonus for semantic similarity
+      }
+    }
+    
+    // Check description field too
+    if (todo.description && typeof todo.description === 'string') {
+      const descLower = todo.description.toLowerCase();
+      for (const searchWord of searchWords) {
+        if (descLower.includes(searchWord)) {
+          score += 1; // Lower score for description match
+        }
+      }
+    }
+    
+    logger.info('Todo match scoring', {
+      todoTitle: todo.title,
+      todoWords,
+      searchWords,
+      score,
+      currentBest: bestScore
+    });
+    
+    if (score > bestScore && score >= 2) { // Minimum threshold
+      bestScore = score;
+      bestMatch = todo;
+    }
+  }
+  
+  if (bestMatch) {
+    logger.info('Found best match via scoring', { 
+      todoTitle: bestMatch.title, 
+      searchTitle, 
+      score: bestScore 
+    });
+    return bestMatch;
+  }
+  
+  logger.info('No suitable todo match found', { searchTitle, todoCount: todos.length });
+  return null;
+}
+
+/**
  * Starts time tracking for a todo by title - finds existing or creates new
  */
 async function startTimeTrackingByTitle(
@@ -1167,11 +1288,8 @@ async function startTimeTrackingByTitle(
         todos = listResult;
       }
       
-      // Find a todo that matches the title (case-insensitive partial match)
-      existingTodo = todos.find((todo) => 
-        todo.title.toLowerCase().includes(title.toLowerCase()) ||
-        title.toLowerCase().includes(todo.title.toLowerCase())
-      );
+      // Find a todo that matches the title with flexible matching
+      existingTodo = findBestTodoMatch(todos, title);
       
       if (existingTodo) {
         logger.info('Found existing todo in previous results', { 
@@ -1192,10 +1310,7 @@ async function startTimeTrackingByTitle(
     
     try {
       const searchResults = await mcpClient.listTodos({ limit: 50 });
-      existingTodo = searchResults.find((todo) => 
-        todo.title.toLowerCase().includes(title.toLowerCase()) ||
-        title.toLowerCase().includes(todo.title.toLowerCase())
-      );
+      existingTodo = findBestTodoMatch(searchResults, title);
       
       if (existingTodo) {
         logger.info('Found existing todo via search', { 
@@ -1245,11 +1360,14 @@ async function startTimeTrackingByTitle(
     
     // Try different ID patterns
     const patterns = [
+      /Todo created with ID:\s*([^\s\n]+)/i, // "Todo created with ID: ..." format
       /[a-f0-9-]{36}/i,  // UUID with dashes
       /[a-f0-9]{32}/i,   // UUID without dashes
       /[a-f0-9]{24}/i,   // MongoDB ObjectId
       /"id":\s*"([^"]+)"/i, // JSON with id field
       /"_id":\s*"([^"]+)"/i, // JSON with _id field
+      /ID:\s*([^\s\n]+)/i, // Generic "ID: ..." format
+      /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/i, // ISO timestamp format
     ];
     
     for (const pattern of patterns) {

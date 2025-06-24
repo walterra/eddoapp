@@ -160,14 +160,65 @@ async function describeStepChange(step: ExecutionStep): Promise<string | null> {
       // Single delete operation
       return `Deleted todo with ID: ${step.parameters.id || 'unknown'}`;
 
-    case 'toggle_completion':
-      return `${step.parameters.completed ? 'Completed' : 'Reopened'} todo with ID: ${step.parameters.id}`;
+    case 'toggle_completion': {
+      const params = step.parameters as { id?: string; completed?: boolean };
+      const action = params.completed ? 'Completed' : 'Reopened';
+      if (params.id) {
+        return `${action} todo with ID: ${params.id}`;
+      } else {
+        return `${action} todo`;
+      }
+    }
 
-    case 'start_time_tracking':
-      return `Started timer for todo with ID: ${step.parameters.id}`;
+    case 'start_timer':
+    case 'start_time_tracking': {
+      const params = step.parameters as { id?: string; title?: string };
+      
+      // Try to extract todo information from the result
+      let todoInfo = '';
+      if (step.result && typeof step.result === 'string') {
+        // Look for todo title in the result message
+        const titleMatch = step.result.match(/Started time tracking for:\s*(.+)/i);
+        if (titleMatch) {
+          todoInfo = `"${titleMatch[1]}"`;
+        }
+      }
+      
+      if (todoInfo) {
+        return `Started timer for task: ${todoInfo}`;
+      } else if (params.id) {
+        return `Started timer for todo with ID: ${params.id}`;
+      } else if (params.title) {
+        return `Started timer for task: "${params.title}"`;
+      } else {
+        return 'Started timer for todo';
+      }
+    }
 
-    case 'stop_time_tracking':
-      return `Stopped timer for todo with ID: ${step.parameters.id}`;
+    case 'stop_timer':
+    case 'stop_time_tracking': {
+      const params = step.parameters as { id?: string; title?: string };
+      
+      // Try to extract todo information from the result
+      let todoInfo = '';
+      if (step.result && typeof step.result === 'string') {
+        // Look for todo title in the result message
+        const titleMatch = step.result.match(/Stopped time tracking for:\s*(.+)/i);
+        if (titleMatch) {
+          todoInfo = `"${titleMatch[1]}"`;
+        }
+      }
+      
+      if (todoInfo) {
+        return `Stopped timer for task: ${todoInfo}`;
+      } else if (params.id) {
+        return `Stopped timer for todo with ID: ${params.id}`;
+      } else if (params.title) {
+        return `Stopped timer for task: "${params.title}"`;
+      } else {
+        return 'Stopped timer for todo';
+      }
+    }
 
     case 'list_todos':
       if (typeof step.result === 'object' && Array.isArray(step.result)) {

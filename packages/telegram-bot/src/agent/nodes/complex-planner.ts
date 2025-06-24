@@ -206,6 +206,67 @@ Respond with ONLY the JSON - no markdown formatting or explanations.`;
 }
 
 /**
+ * Resolves dependency references to actual step IDs
+ */
+function resolveDependencies(
+  dependencies: string[], 
+  allSteps: any[], 
+  currentStepIndex: number
+): string[] {
+  const resolvedDeps: string[] = [];
+  
+  for (const dep of dependencies) {
+    // Try different resolution strategies
+    let resolvedId: string | null = null;
+    
+    // Strategy 1: Direct step ID reference (e.g., "step_1")
+    if (dep.startsWith('step_')) {
+      resolvedId = dep;
+    }
+    
+    // Strategy 2: Numeric reference (e.g., "1" -> "step_1")
+    else if (/^\d+$/.test(dep)) {
+      const stepNum = parseInt(dep);
+      if (stepNum >= 1 && stepNum <= allSteps.length) {
+        resolvedId = `step_${stepNum}`;
+      }
+    }
+    
+    // Strategy 3: Action name reference - find step with matching action
+    else {
+      const matchingStepIndex = allSteps.findIndex((step, idx) => 
+        idx < currentStepIndex && step.action === dep
+      );
+      if (matchingStepIndex !== -1) {
+        resolvedId = `step_${matchingStepIndex + 1}`;
+      }
+    }
+    
+    // Strategy 4: Previous step if dependency is generic
+    if (!resolvedId && currentStepIndex > 0) {
+      resolvedId = `step_${currentStepIndex}`;
+    }
+    
+    if (resolvedId) {
+      resolvedDeps.push(resolvedId);
+      logger.info('Resolved dependency', { 
+        originalDep: dep, 
+        resolvedId, 
+        currentStepIndex: currentStepIndex + 1 
+      });
+    } else {
+      logger.warn('Could not resolve dependency', { 
+        dep, 
+        currentStepIndex: currentStepIndex + 1,
+        availableSteps: allSteps.map((s, i) => ({ id: `step_${i + 1}`, action: s.action }))
+      });
+    }
+  }
+  
+  return resolvedDeps;
+}
+
+/**
  * Parses the LLM response into an ExecutionPlan
  */
 function parseExecutionPlan(
@@ -232,6 +293,11 @@ function parseExecutionPlan(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const steps: ExecutionStep[] = parsed.steps.map(
       (step: any, index: number) => {
+        const originalDependencies = Array.isArray(step.dependencies) ? step.dependencies : [];
+        const resolvedDependencies = originalDependencies.length > 0 
+          ? resolveDependencies(originalDependencies, parsed.steps, index)
+          : [];
+          
         const stepObj = {
           id: `step_${index + 1}`,
           action: step.action || 'unknown',
@@ -239,21 +305,19 @@ function parseExecutionPlan(
           description: step.description || 'No description',
           successCriteria: step.successCriteria || 'Step completed',
           requiresApproval: Boolean(step.requiresApproval),
-          dependencies: Array.isArray(step.dependencies)
-            ? step.dependencies
-            : [],
+          dependencies: resolvedDependencies,
           fallbackAction: step.fallbackAction || 'Retry or skip step',
           status: 'pending' as const,
           timestamp: Date.now(),
           duration: undefined,
         };
-
+        
         logger.info('Generated step with dependencies', {
           stepId: stepObj.id,
           action: stepObj.action,
-          originalDependencies: step.dependencies,
-          processedDependencies: stepObj.dependencies,
           description: stepObj.description,
+          originalDependencies,
+          processedDependencies: resolvedDependencies
         });
 
         return stepObj;
