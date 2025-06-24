@@ -12,6 +12,8 @@ import type { TaskComplexityAnalysis as _TaskComplexityAnalysis, ExecutionSummar
  */
 export class SimpleLangGraphWorkflow {
   private app: unknown; // Use unknown to bypass strict typing issues
+  private activeContexts: Map<string, BotContext> = new Map(); // Store active contexts
+  private contextCleanupTimers: Map<string, NodeJS.Timeout> = new Map(); // Cleanup timers
 
   constructor() {
     // Create workflow using the patterns from LangGraph examples
@@ -48,20 +50,46 @@ export class SimpleLangGraphWorkflow {
     });
 
     try {
-      const initialState = {
-        messages: [new HumanMessage(userMessage)],
-        // Store additional context in custom fields
-        userId,
-        userMessage,
-        telegramContext,
-        sessionContext: {
-          startTime,
-          todoCount: 0,
-          commonContexts: ['work', 'personal', 'shopping', 'health']
+      // Store the telegram context in our instance map for retrieval later
+      const contextKey = `${userId}-${startTime}`;
+      this.activeContexts.set(contextKey, telegramContext);
+      
+      // Set a cleanup timer to prevent memory leaks (5 minute timeout)
+      const cleanupTimer = setTimeout(() => {
+        this.activeContexts.delete(contextKey);
+        this.contextCleanupTimers.delete(contextKey);
+        logger.warn('Cleaned up expired telegram context', { contextKey });
+      }, 5 * 60 * 1000);
+      this.contextCleanupTimers.set(contextKey, cleanupTimer);
+
+      // Store context in the message metadata to ensure it's preserved by LangGraph
+      const messageWithContext = new HumanMessage({
+        content: userMessage,
+        additional_kwargs: {
+          userId,
+          userMessage,
+          contextKey, // Store the key to retrieve the context later
+          sessionContext: {
+            startTime,
+            todoCount: 0,
+            commonContexts: ['work', 'personal', 'shopping', 'health']
+          }
         }
+      });
+
+      const initialState = {
+        messages: [messageWithContext]
       };
 
       const result = await (this.app as { invoke: (state: unknown) => Promise<Record<string, unknown>> }).invoke(initialState);
+
+      // Clean up the stored context and timer
+      this.activeContexts.delete(contextKey);
+      const timer = this.contextCleanupTimers.get(contextKey);
+      if (timer) {
+        clearTimeout(timer);
+        this.contextCleanupTimers.delete(contextKey);
+      }
 
       const duration = Date.now() - startTime;
       
@@ -81,6 +109,15 @@ export class SimpleLangGraphWorkflow {
       };
 
     } catch (error) {
+      // Clean up the stored context in error case too
+      const contextKey = `${userId}-${startTime}`;
+      this.activeContexts.delete(contextKey);
+      const timer = this.contextCleanupTimers.get(contextKey);
+      if (timer) {
+        clearTimeout(timer);
+        this.contextCleanupTimers.delete(contextKey);
+      }
+
       const duration = Date.now() - startTime;
       
       logger.error('SimpleLangGraph workflow failed', {
@@ -112,25 +149,40 @@ export class SimpleLangGraphWorkflow {
     // Extract data from state with proper type handling
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const messages = (state.messages as any[]) || [];
-    const userMessage = (state.userMessage as string) || 
-      (messages.length > 0 ? (messages[messages.length - 1]?.content as string) : '') || '';
-    const userId = (state.userId as string) || 'unknown';
-    const telegramContext = state.telegramContext as BotContext;
+    
+    if (messages.length === 0) {
+      throw new Error('No messages found in state');
+    }
+
+    const lastMessage = messages[messages.length - 1];
+    const userMessage = lastMessage?.content || '';
+    const messageMetadata = lastMessage?.additional_kwargs || {};
+    
+    const userId = messageMetadata.userId || 'unknown';
+    const contextKey = messageMetadata.contextKey;
+    
+    if (!contextKey) {
+      throw new Error('Context key is required');
+    }
+
+    // Retrieve the actual telegram context from our instance map
+    const telegramContext = this.activeContexts.get(contextKey);
     
     if (!telegramContext) {
-      throw new Error('Telegram context is required');
+      throw new Error('Telegram context not found - may have expired');
     }
 
     logger.info('Running SimpleLangGraph agent logic', { userId, messageLength: userMessage.length });
 
     try {
       // Step 1: Analyze complexity
+      const sessionContext = messageMetadata.sessionContext || {};
       const workflowState = {
         messages,
         userMessage,
         userId,
         telegramContext,
-        sessionContext: (state.sessionContext as Record<string, unknown>) || {},
+        sessionContext,
         currentStepIndex: 0,
         executionSteps: [],
         mcpResponses: [],
@@ -182,7 +234,23 @@ export class SimpleLangGraphWorkflow {
       logger.error('SimpleLangGraph agent logic failed', { error, userId });
       
       const errorMessage = '❌ Sorry, I encountered an error processing your request. Please try again.';
-      await telegramContext.reply(errorMessage);
+      
+      // Clean up context on error
+      const contextKey = messageMetadata.contextKey;
+      if (contextKey) {
+        this.activeContexts.delete(contextKey);
+        const timer = this.contextCleanupTimers.get(contextKey);
+        if (timer) {
+          clearTimeout(timer);
+          this.contextCleanupTimers.delete(contextKey);
+        }
+      }
+      
+      try {
+        await telegramContext.reply(errorMessage);
+      } catch (replyError) {
+        logger.error('Failed to send error reply', { replyError });
+      }
 
       return {
         ...state,
