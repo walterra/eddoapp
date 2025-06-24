@@ -296,7 +296,38 @@ If the message is not about todo management, return null.`,
       let systemMessage = await this.getEnhancedSystemPrompt();
 
       if (context?.mcpResponse && context?.action) {
-        systemMessage += `\n\nContext: You just performed "${context.action}" with this result: ${context.mcpResponse}. Now provide a helpful response to the user.`;
+        // For list actions, preserve the actual data so Claude can provide accurate information
+        if (context.action.includes('list') || context.action === 'summary') {
+          systemMessage += `\n\nIMPORTANT: The following MCP operation has been completed successfully. The user has seen progress updates. Based on the ACTUAL results below, provide a natural conversational summary of what was found. Do NOT make up or hallucinate any data - only refer to what is actually present in the results:\n\nMCP Results:\n${context.mcpResponse}`;
+        } else {
+          // For non-list actions, use existing cleaning logic
+          let cleanedResponse = context.mcpResponse;
+          try {
+            // Remove JSON data and keep only meaningful summary information
+            const lines = context.mcpResponse.split('\n');
+            const meaningfulLines = lines.filter(line => {
+              const trimmed = line.trim();
+              // Skip JSON objects, action labels, and empty lines
+              return trimmed && 
+                     !trimmed.startsWith('{') && 
+                     !trimmed.startsWith('}') && 
+                     !trimmed.startsWith('"') &&
+                     !trimmed.startsWith('Action ') &&
+                     !trimmed.includes(':\n');
+            });
+            
+            if (meaningfulLines.length > 0) {
+              cleanedResponse = meaningfulLines.join('. ');
+            } else {
+              // Extract just the action count/success info
+              cleanedResponse = `Completed ${context.action}`;
+            }
+          } catch {
+            cleanedResponse = `Completed ${context.action}`;
+          }
+          
+          systemMessage += `\n\nIMPORTANT: All requested actions have been successfully executed and completed. The user has already seen the progress updates. DO NOT generate any tool calls, JSON objects, or technical commands. DO NOT suggest or plan future actions. Your role now is to provide ONLY a brief, natural conversational summary acknowledging what was accomplished: ${cleanedResponse}`;
+        }
       }
 
       const response = await this.client.messages.create({

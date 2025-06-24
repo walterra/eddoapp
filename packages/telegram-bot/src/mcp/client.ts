@@ -155,19 +155,35 @@ export class MCPClient {
     name: string,
     arguments_: Record<string, unknown>,
   ): Promise<string> {
+    const requestId = Math.random().toString(36).substring(2, 15);
+    const startTime = Date.now();
+
+    // Log the start of each MCP request
+    logger.info('MCP request started', {
+      requestId,
+      tool: name,
+      arguments: arguments_,
+      timestamp: new Date().toISOString(),
+    });
+
     if (!this.isClientConnected()) {
-      logger.warn('MCP client not connected, attempting reconnection');
+      logger.warn('MCP client not connected, attempting reconnection', {
+        requestId,
+        tool: name,
+      });
       await this.attemptReconnect();
       throw new Error('MCP server not available');
     }
 
     try {
-      logger.debug('Calling MCP tool', { name, arguments: arguments_ });
+      logger.debug('Calling MCP tool', { requestId, name, arguments: arguments_ });
 
       const response = await this.client!.callTool({
         name,
         arguments: arguments_,
       });
+
+      const duration = Date.now() - startTime;
 
       if (response.isError) {
         const errorContent = Array.isArray(response.content)
@@ -179,6 +195,17 @@ export class MCPClient {
           'text' in errorContent
             ? String(errorContent.text)
             : 'Unknown error';
+
+        // Log the error response
+        logger.error('MCP request failed with server error', {
+          requestId,
+          tool: name,
+          arguments: arguments_,
+          duration,
+          error: errorText,
+          timestamp: new Date().toISOString(),
+        });
+
         throw new Error(`MCP tool error: ${errorText}`);
       }
 
@@ -190,14 +217,31 @@ export class MCPClient {
           ? String(content.text)
           : '';
 
-      logger.debug('MCP tool call successful', {
-        name,
-        result: result.substring(0, 200),
+      // Log successful completion
+      logger.info('MCP request completed successfully', {
+        requestId,
+        tool: name,
+        arguments: arguments_,
+        duration,
+        resultLength: result.length,
+        resultPreview: result.substring(0, 200),
+        timestamp: new Date().toISOString(),
       });
 
       return result;
     } catch (error) {
-      logger.error('MCP tool call failed', { name, error });
+      const duration = Date.now() - startTime;
+
+      // Log the error
+      logger.error('MCP request failed with client error', {
+        requestId,
+        tool: name,
+        arguments: arguments_,
+        duration,
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
 
       // Try to reconnect on connection errors
       if (error instanceof Error && error.message.includes('connection')) {
