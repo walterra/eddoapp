@@ -158,6 +158,19 @@ CRITICAL START_TIMER PATTERN: When user wants to work on a task by name (e.g., "
    c) The step executor will automatically handle finding the ID or creating the todo first
    d) Example: "Let's start with the leaky faucet" → step 1: list_todos({"title": "leaky faucet"}), step 2: start_timer({"title": "leaky faucet"})
 
+CRITICAL STOP_TIMER PATTERN: When user wants to stop time tracking (e.g., "stop timer", "stop tracking"), you can:
+   a) Use stop_timer({}) with empty parameters to stop the most recent active timer
+   b) Use stop_timer({"title": "task name"}) to stop a specific task's timer
+   c) The step executor will automatically find active timers and stop the appropriate one
+   d) Example: "stop timer" → stop_timer({}), "stop tracking the faucet" → stop_timer({"title": "faucet"})
+
+CRITICAL TOGGLE_COMPLETION PATTERN: When user wants to mark a task as done/complete (e.g., "mark as done", "complete task"), you can:
+   a) Use toggle_completion({"title": "task name", "completed": true}) to mark a specific task as complete
+   b) Use toggle_completion({"title": "task name", "completed": false}) to mark a task as incomplete
+   c) Use toggle_completion({"title": "task name"}) to toggle the current completion status
+   d) The step executor will automatically find the todo by title
+   e) Example: "mark the faucet task as done" → toggle_completion({"title": "faucet", "completed": true})
+
 SAFE OPERATIONS (no approval needed):
 - analysis - Data discovery and analysis steps
 - list_todos - Reading/listing existing todos

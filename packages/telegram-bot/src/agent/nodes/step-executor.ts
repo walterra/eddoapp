@@ -596,8 +596,17 @@ async function executeStepAction(
       return await executeBulkOrSingleDelete(step, state);
 
     case 'toggle_completion': {
-      const params = step.parameters as { id: string; completed: boolean };
-      return await mcpClient.toggleTodoCompletion(params.id, params.completed);
+      const params = step.parameters as { id?: string; completed?: boolean; title?: string };
+      
+      if (params.id && typeof params.completed === 'boolean') {
+        // Direct ID and completion status provided
+        return await mcpClient.toggleTodoCompletion(params.id, params.completed);
+      } else if (params.title) {
+        // Need to find the todo by title first, then toggle it
+        return await toggleTodoCompletionByTitle(params.title, params.completed, state);
+      } else {
+        throw new Error('Either (todoId and completed status) or title is required to toggle completion');
+      }
     }
 
     case 'start_timer':
@@ -1409,4 +1418,167 @@ async function startTimeTrackingByTitle(
     
     return await mcpClient.startTimeTracking(newTodoId);
   }
+}
+
+/**
+ * Stops active time tracking - finds active timers and stops them
+ */
+async function stopActiveTimeTracking(
+  specificTitle?: string,
+  state?: WorkflowState,
+): Promise<string> {
+  const mcpClient = getMCPClient();
+  
+  logger.info('Stopping active time tracking', { specificTitle });
+  
+  try {
+    // Get all active timers
+    const activeTimers = await mcpClient.getActiveTimeTracking();
+    
+    if (!activeTimers || activeTimers.length === 0) {
+      logger.info('No active timers found to stop');
+      return 'No active timers are currently running';
+    }
+    
+    logger.info('Found active timers', { 
+      count: activeTimers.length,
+      timers: activeTimers.map(t => ({ id: t._id, title: t.title }))
+    });
+    
+    let timerToStop = null;
+    
+    // If a specific title is provided, try to find a matching active timer
+    if (specificTitle) {
+      timerToStop = findBestTodoMatch(activeTimers, specificTitle);
+      
+      if (timerToStop) {
+        logger.info('Found specific timer to stop', { 
+          todoId: timerToStop._id, 
+          title: timerToStop.title,
+          searchTitle: specificTitle 
+        });
+      } else {
+        logger.warn('No active timer matches the specified title', { specificTitle });
+      }
+    }
+    
+    // If no specific timer found or no title provided, stop the most recent timer
+    if (!timerToStop) {
+      // Sort by _id (which are timestamps) to get the most recent
+      const sortedTimers = activeTimers.sort((a, b) => b._id.localeCompare(a._id));
+      timerToStop = sortedTimers[0];
+      
+      logger.info('Stopping most recent active timer', { 
+        todoId: timerToStop._id, 
+        title: timerToStop.title 
+      });
+    }
+    
+    // Stop the selected timer
+    const stopResult = await mcpClient.stopTimeTracking(timerToStop._id);
+    
+    logger.info('Successfully stopped timer', { 
+      todoId: timerToStop._id, 
+      title: timerToStop.title,
+      result: stopResult
+    });
+    
+    return stopResult;
+    
+  } catch (error) {
+    logger.error('Failed to stop active time tracking', { error, specificTitle });
+    throw error;
+  }
+}
+
+/**
+ * Toggles todo completion by title - finds existing todo and toggles completion status
+ */
+async function toggleTodoCompletionByTitle(
+  title: string,
+  completed: boolean | undefined,
+  state: WorkflowState,
+): Promise<string> {
+  const mcpClient = getMCPClient();
+  
+  logger.info('Toggling todo completion by title', { title, completed });
+  
+  // Look for previous list_todos results in this workflow that might contain the todo
+  const listSteps = state.executionSteps.filter(
+    (step) => step.action === 'list_todos' && step.status === 'completed'
+  );
+  
+  let existingTodo = null;
+  
+  // Check if we already have the todo from a previous list operation
+  for (const listStep of listSteps.reverse()) { // Start with most recent
+    const listResult = state.mcpResponses[state.executionSteps.indexOf(listStep)];
+    
+    try {
+      let todos: Array<{ _id: string; title: string; completed?: string | null; [key: string]: any }> = [];
+      if (typeof listResult === 'string') {
+        todos = JSON.parse(listResult);
+      } else if (Array.isArray(listResult)) {
+        todos = listResult;
+      }
+      
+      // Find a todo that matches the title with flexible matching
+      existingTodo = findBestTodoMatch(todos, title);
+      
+      if (existingTodo) {
+        logger.info('Found existing todo in previous results', { 
+          todoId: existingTodo._id, 
+          todoTitle: existingTodo.title,
+          searchTitle: title,
+          currentCompleted: existingTodo.completed
+        });
+        break;
+      }
+    } catch (error) {
+      logger.warn('Failed to parse previous list results', { error });
+    }
+  }
+  
+  // If not found in previous results, search explicitly
+  if (!existingTodo) {
+    logger.info('Todo not found in previous results, searching explicitly', { title });
+    
+    try {
+      const searchResults = await mcpClient.listTodos({ limit: 50 });
+      existingTodo = findBestTodoMatch(searchResults, title);
+      
+      if (existingTodo) {
+        logger.info('Found existing todo via search', { 
+          todoId: existingTodo._id, 
+          todoTitle: existingTodo.title,
+          searchTitle: title,
+          currentCompleted: existingTodo.completed
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to search for existing todos', { error });
+    }
+  }
+  
+  if (!existingTodo) {
+    throw new Error(`Could not find todo matching "${title}"`);
+  }
+  
+  // Determine completion status
+  let targetCompleted: boolean;
+  if (typeof completed === 'boolean') {
+    targetCompleted = completed;
+  } else {
+    // If no specific completion status provided, toggle current status
+    targetCompleted = !existingTodo.completed;
+  }
+  
+  logger.info('Toggling todo completion', { 
+    todoId: existingTodo._id, 
+    title: existingTodo.title,
+    currentCompleted: existingTodo.completed,
+    targetCompleted
+  });
+  
+  return await mcpClient.toggleTodoCompletion(existingTodo._id, targetCompleted);
 }
