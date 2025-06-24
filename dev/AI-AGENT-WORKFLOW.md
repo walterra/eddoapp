@@ -718,10 +718,10 @@ interface EnhancedMCPSetup {
 }
 
 async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
-  // Configure multiple MCP servers
+  // Configure multiple MCP servers with enhanced options
   const client = new MultiServerMCPClient({
     // Global configuration
-    throwOnLoadError: true,
+    throwOnLoadError: false, // Don't fail if one server is down
     prefixToolNameWithServerName: true,
     additionalToolNamePrefix: "eddo",
     useStandardContentBlocks: true,
@@ -732,6 +732,7 @@ async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
       todo: {
         transport: "streamable_http",
         url: "http://localhost:3002/mcp",
+        timeout: 30000, // 30 second timeout
         // Optional: authentication headers
         headers: {
           "Authorization": `Bearer ${process.env.MCP_API_KEY}`
@@ -742,28 +743,40 @@ async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
       calendar: {
         transport: "stdio",
         command: "npx",
-        args: ["-y", "@eddo/calendar-mcp-server"]
+        args: ["-y", "@eddo/calendar-mcp-server"],
+        timeout: 15000 // 15 second timeout for stdio
       },
       
       // Future: File management server
       files: {
         transport: "stdio", 
         command: "python",
-        args: ["/path/to/file_server.py"]
+        args: ["/path/to/file_server.py"],
+        timeout: 20000
       }
     },
     
-    // Advanced configuration
+    // Advanced configuration based on README best practices
     outputHandling: {
       // Map resource content to artifacts (not used as LLM context)
       resourceContentToArtifact: true,
       // Keep text and error content as main content
-      textContentToContent: true
+      textContentToContent: true,
+      // Handle multimodal content properly
+      imageContentToContent: false
     }
   });
 
-  // Get all available tools across servers
-  const tools = await client.get_tools();
+  // Get all available tools across servers with error handling
+  let tools: Tool[] = [];
+  try {
+    tools = await client.get_tools();
+    console.log(`Loaded ${tools.length} tools from MCP servers`);
+  } catch (error) {
+    console.error('Failed to load some MCP tools:', error);
+    // Continue with partial tool set if some servers fail
+    tools = await client.get_tools({ ignoreErrors: true });
+  }
   
   // Create enhanced agent with all MCP tools
   const llm = new ChatAnthropic({
@@ -1030,6 +1043,23 @@ function categorizeToolsByCapability(tools: Tool[]): Record<string, Tool[]> {
    const useEnhancedMCP = process.env.USE_ENHANCED_MCP === 'true';
    ```
 
+4. **Add comprehensive configuration options**
+   ```typescript
+   // Support for different authentication methods
+   interface MCPServerConfig {
+     transport: 'stdio' | 'http' | 'streamable_http';
+     oauth2?: {
+       clientId: string;
+       clientSecret: string;
+       tokenUrl: string;
+       scope?: string;
+     };
+     apiKey?: string;
+     timeout?: number;
+     retries?: number;
+   }
+   ```
+
 #### Phase 2: Enhanced Workflow Integration (2-3 weeks)
 1. **Update workflow nodes to use LangChain tools**
 2. **Implement multi-server error handling**
@@ -1049,18 +1079,24 @@ function categorizeToolsByCapability(tools: Tool[]): Record<string, Tool[]> {
 - **Better error handling** with built-in retry and fallback mechanisms
 - **Improved maintainability** with standardized tool interfaces
 - **Enhanced testing** using LangChain's testing framework
+- **Flexible authentication** supporting OAuth 2.0, API keys, and custom auth
+- **Robust timeout handling** with configurable timeouts per server/operation
 
 #### Operational Benefits
 - **Multi-server orchestration** enables complex cross-domain workflows
 - **Automatic tool discovery** simplifies adding new MCP servers
 - **Standardized monitoring** across all MCP interactions
 - **Better performance** with connection pooling and optimization
+- **Graceful degradation** when some servers are unavailable
+- **Content block standardization** for consistent multimodal handling
 
 #### Future-Proofing
 - **Ecosystem compatibility** with LangChain tooling and patterns
 - **Community support** and ongoing development from LangChain team
 - **Standards compliance** with emerging MCP protocol updates
 - **Integration readiness** for additional LangChain features
+- **Transport flexibility** supporting stdio, HTTP, and SSE protocols
+- **Extensible architecture** for custom transport implementations
 
 ### Monitoring and Observability
 
@@ -1072,12 +1108,33 @@ interface EnhancedMCPMetrics {
   errorRates: Record<string, number>;
   crossServerOperations: number;
   fallbackUsage: Record<string, number>;
+  contentBlockMetrics: {
+    textBlocks: number;
+    imageBlocks: number;
+    resourceBlocks: number;
+    artifactBlocks: number;
+  };
+  authFailures: Record<string, number>;
+  timeoutErrors: Record<string, number>;
 }
 
 async function monitorEnhancedMCP(): Promise<EnhancedMCPMetrics> {
   // Implement comprehensive monitoring across all connected servers
   // Track performance, errors, and usage patterns
   // Enable intelligent routing and load balancing
+  // Monitor authentication and timeout patterns
+  // Track content block usage for optimization
+}
+
+// Configuration monitoring for dynamic adjustment
+interface MCPConfigMonitoring {
+  serverConfigHealth: Record<string, boolean>;
+  transportPerformance: Record<string, number>;
+  authenticationStatus: Record<string, 'valid' | 'expired' | 'invalid'>;
+  timeoutAnalysis: {
+    averageResponseTime: Record<string, number>;
+    recommendedTimeouts: Record<string, number>;
+  };
 }
 ```
 
