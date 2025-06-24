@@ -117,20 +117,34 @@ AVAILABLE MCP ACTIONS:
 - stop_time_tracking(id) - Stop timer for todo
 - get_active_timers() - Get currently running timers
 
+CRITICAL DATE FORMAT REQUIREMENT:
+The 'due' field MUST be an ISO date string (e.g., "2025-06-24T09:00:00.000Z"), NOT human-readable text like "saturday" or "next week".
+
 PLANNING RULES:
 1. Break down the user's request into 2-8 logical steps
 2. Each step should be atomic and have clear success criteria
 3. Identify dependencies between steps (what must happen first)
-4. Mark steps that require user approval (destructive operations, bulk changes)
+4. IMPORTANT: Only mark DESTRUCTIVE steps as requiring approval (delete_todo, bulk operations). NEVER mark analysis or list_todos steps as requiring approval.
 5. Estimate realistic timeframes for each step
 6. Provide fallback actions for potential failures
 7. Consider the user's context and existing todos
+8. ALWAYS convert relative dates to ISO format:
+   - "saturday" → calculate the next Saturday and format as "2025-06-28T09:00:00.000Z"
+   - "next week" → calculate specific date and format as ISO string
+   - "tomorrow at 3pm" → "2025-06-25T15:00:00.000Z"
+
+SAFE OPERATIONS (no approval needed):
+- analysis - Data discovery and analysis steps
+- list_todos - Reading/listing existing todos
+- create_todo - Creating single new todos
 
 DESTRUCTIVE OPERATIONS requiring approval:
-- Deleting multiple todos
-- Bulk status changes
-- Modifying todos created by others
-- Operations affecting more than 5 items
+- delete_todo - Deleting any todos (especially multiple)
+- Bulk operations affecting multiple todos
+- update_todo operations on multiple todos
+- Operations affecting more than 3 items
+
+CURRENT DATE/TIME: ${new Date().toISOString()} (${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })})
 
 USER REQUEST: "${userMessage}"
 
