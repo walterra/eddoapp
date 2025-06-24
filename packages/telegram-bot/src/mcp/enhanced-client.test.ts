@@ -1,24 +1,46 @@
+import type { Tool } from '@langchain/core/tools';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   categorizeToolsByCapability,
   extractServerName,
-  useEnhancedMCP,
 } from './enhanced-client.js';
 
 describe('Enhanced MCP Client', () => {
   describe('categorizeToolsByCapability', () => {
     it('should categorize tools correctly', () => {
       const mockTools = [
-        { name: 'eddo_todo_listTodos', description: 'List all todos' },
-        { name: 'eddo_todo_createTodo', description: 'Create a new todo' },
-        { name: 'eddo_timer_startTimer', description: 'Start time tracking' },
-        { name: 'eddo_timer_stopTimer', description: 'Stop time tracking' },
+        {
+          name: 'eddo_todo_listTodos',
+          description: 'List all todos',
+          schema: {},
+          call: vi.fn(),
+        },
+        {
+          name: 'eddo_todo_createTodo',
+          description: 'Create a new todo',
+          schema: {},
+          call: vi.fn(),
+        },
+        {
+          name: 'eddo_timer_startTimer',
+          description: 'Start time tracking',
+          schema: {},
+          call: vi.fn(),
+        },
+        {
+          name: 'eddo_timer_stopTimer',
+          description: 'Stop time tracking',
+          schema: {},
+          call: vi.fn(),
+        },
         {
           name: 'eddo_analysis_generateReport',
           description: 'Generate analysis report',
+          schema: {},
+          call: vi.fn(),
         },
-      ];
+      ] as unknown as Tool[];
 
       const categories = categorizeToolsByCapability(mockTools);
 
@@ -29,25 +51,7 @@ describe('Enhanced MCP Client', () => {
     });
   });
 
-  describe('useEnhancedMCP', () => {
-    it('should return false by default', () => {
-      expect(useEnhancedMCP()).toBe(false);
-    });
-
-    it('should return true when environment variable is set', () => {
-      const originalEnv = process.env.USE_ENHANCED_MCP;
-      process.env.USE_ENHANCED_MCP = 'true';
-
-      expect(useEnhancedMCP()).toBe(true);
-
-      // Restore original environment
-      if (originalEnv !== undefined) {
-        process.env.USE_ENHANCED_MCP = originalEnv;
-      } else {
-        delete process.env.USE_ENHANCED_MCP;
-      }
-    });
-  });
+  // Feature flag test removed - enhanced MCP is now always enabled
 
   describe('extractServerName', () => {
     it('should extract server name from prefixed tool names', () => {

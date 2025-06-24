@@ -16,7 +16,8 @@
       "Bash(pnpm build)",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(pnpm test:*)"
     ],
     "deny": []
   }

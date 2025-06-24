@@ -223,7 +223,7 @@ Respond with ONLY the JSON - no markdown formatting or explanations.`;
  */
 function resolveDependencies(
   dependencies: string[],
-  allSteps: any[],
+  allSteps: Array<{ id: string; action: string }>,
   currentStepIndex: number,
 ): string[] {
   const resolvedDeps: string[] = [];
@@ -235,18 +235,14 @@ function resolveDependencies(
     // Strategy 1: Direct step ID reference (e.g., "step_1")
     if (dep.startsWith('step_')) {
       resolvedId = dep;
-    }
-
-    // Strategy 2: Numeric reference (e.g., "1" -> "step_1")
-    else if (/^\d+$/.test(dep)) {
+    } else if (/^\d+$/.test(dep)) {
+      // Strategy 2: Numeric reference (e.g., "1" -> "step_1")
       const stepNum = parseInt(dep);
       if (stepNum >= 1 && stepNum <= allSteps.length) {
         resolvedId = `step_${stepNum}`;
       }
-    }
-
-    // Strategy 3: Action name reference - find step with matching action
-    else {
+    } else {
+      // Strategy 3: Action name reference - find step with matching action
       const matchingStepIndex = allSteps.findIndex(
         (step, idx) => idx < currentStepIndex && step.action === dep,
       );
@@ -306,9 +302,19 @@ function parseExecutionPlan(
 
     // Generate unique IDs for plan and steps
     const planId = `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const steps: ExecutionStep[] = parsed.steps.map(
-      (step: any, index: number) => {
+      (
+        step: {
+          action?: string;
+          parameters?: Record<string, unknown>;
+          description?: string;
+          dependencies?: string[];
+          requiresApproval?: boolean;
+          fallbackAction?: string;
+          successCriteria?: string;
+        },
+        index: number,
+      ) => {
         const originalDependencies = Array.isArray(step.dependencies)
           ? step.dependencies
           : [];

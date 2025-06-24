@@ -1202,15 +1202,14 @@ function generateProgressBar(current: number, total: number): string {
 /**
  * Finds the best matching todo from a list using flexible matching strategies
  */
-function findBestTodoMatch(
-  todos: Array<{
+function findBestTodoMatch<
+  T extends {
     _id: string;
     title: string;
     description?: string;
-    [key: string]: any;
-  }>,
-  searchTitle: string,
-): (typeof todos)[0] | null {
+    completed?: string | null;
+  },
+>(todos: T[], searchTitle: string): T | null {
   if (!searchTitle || todos.length === 0) return null;
 
   const searchLower = searchTitle.toLowerCase().trim();
@@ -1395,7 +1394,15 @@ async function startTimeTrackingByTitle(
 
     try {
       const searchResults = await mcpClient.listTodos({ limit: 50 });
-      existingTodo = findBestTodoMatch(searchResults, title);
+      existingTodo = findBestTodoMatch(
+        searchResults as Array<{
+          _id: string;
+          title: string;
+          description?: string;
+          completed?: string | null;
+        }>,
+        title,
+      );
 
       if (existingTodo) {
         logger.info('Found existing todo via search', {
@@ -1519,7 +1526,7 @@ async function startTimeTrackingByTitle(
  */
 async function stopActiveTimeTracking(
   specificTitle?: string,
-  state?: WorkflowState,
+  _state?: WorkflowState,
 ): Promise<string> {
   const mcpClient = getMCPClient();
 
@@ -1543,7 +1550,15 @@ async function stopActiveTimeTracking(
 
     // If a specific title is provided, try to find a matching active timer
     if (specificTitle) {
-      timerToStop = findBestTodoMatch(activeTimers, specificTitle);
+      timerToStop = findBestTodoMatch(
+        activeTimers as Array<{
+          _id: string;
+          title: string;
+          description?: string;
+          completed?: string | null;
+        }>,
+        specificTitle,
+      );
 
       if (timerToStop) {
         logger.info('Found specific timer to stop', {
@@ -1621,7 +1636,7 @@ async function toggleTodoCompletionByTitle(
         _id: string;
         title: string;
         completed?: string | null;
-        [key: string]: any;
+        [key: string]: unknown;
       }> = [];
       if (typeof listResult === 'string') {
         todos = JSON.parse(listResult);
@@ -1654,7 +1669,15 @@ async function toggleTodoCompletionByTitle(
 
     try {
       const searchResults = await mcpClient.listTodos({ limit: 50 });
-      existingTodo = findBestTodoMatch(searchResults, title);
+      existingTodo = findBestTodoMatch(
+        searchResults as Array<{
+          _id: string;
+          title: string;
+          description?: string;
+          completed?: string | null;
+        }>,
+        title,
+      );
 
       if (existingTodo) {
         logger.info('Found existing todo via search', {

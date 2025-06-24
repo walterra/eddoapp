@@ -8,10 +8,7 @@ import {
 } from '@langchain/langgraph';
 
 import type { BotContext } from '../bot/bot.js';
-import {
-  setupEnhancedMCPIntegration,
-  useEnhancedMCP,
-} from '../mcp/enhanced-client.js';
+import { setupEnhancedMCPIntegration } from '../mcp/enhanced-client.js';
 import { logger } from '../utils/logger.js';
 import { planComplexTask } from './nodes/complex-planner.js';
 import { analyzeTaskComplexity } from './nodes/complexity-analyzer.js';
@@ -20,6 +17,7 @@ import { generateExecutionSummary } from './nodes/execution-summarizer.js';
 import { executeSimpleTask } from './nodes/simple-executor.js';
 import { executeStep } from './nodes/step-executor.js';
 import type {
+  WorkflowState,
   ExecutionSummary as _ExecutionSummary,
   TaskComplexityAnalysis as _TaskComplexityAnalysis,
 } from './types/workflow-types.js';
@@ -32,7 +30,9 @@ export class SimpleLangGraphWorkflow {
   private app: unknown; // Use unknown to bypass strict typing issues
   private activeContexts: Map<string, BotContext> = new Map(); // Store active contexts
   private contextCleanupTimers: Map<string, NodeJS.Timeout> = new Map(); // Cleanup timers
-  private enhancedMCPSetup: any = null; // Enhanced MCP setup for @langchain/mcp-adapters
+  private enhancedMCPSetup: Awaited<
+    ReturnType<typeof setupEnhancedMCPIntegration>
+  > | null = null; // Enhanced MCP setup for @langchain/mcp-adapters
 
   constructor() {
     // Create workflow using the patterns from LangGraph examples
@@ -52,10 +52,8 @@ export class SimpleLangGraphWorkflow {
 
     this.app = workflow.compile();
 
-    // Initialize enhanced MCP if feature flag is enabled
-    if (useEnhancedMCP()) {
-      this.initializeEnhancedMCP();
-    }
+    // Initialize enhanced MCP (always enabled)
+    this.initializeEnhancedMCP();
 
     logger.info('SimpleLangGraphWorkflow initialized successfully');
   }
@@ -129,17 +127,19 @@ export class SimpleLangGraphWorkflow {
       logger.info('SimpleLangGraph workflow completed successfully', {
         userId,
         duration,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        classification: (result as any).complexityAnalysis?.classification,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        hasResponse: !!(result as any).finalResponse,
+        classification: (
+          (result as Record<string, unknown>).complexityAnalysis as {
+            classification?: string;
+          }
+        )?.classification,
+        hasResponse: !!(result as Record<string, unknown>).finalResponse,
       });
 
       return {
         success: true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         finalResponse:
-          (result as any).finalResponse || 'Workflow completed successfully',
+          ((result as Record<string, unknown>).finalResponse as string) ||
+          'Workflow completed successfully',
       };
     } catch (error) {
       // Clean up the stored context in error case too
@@ -235,8 +235,9 @@ export class SimpleLangGraphWorkflow {
         // Continue execution loop
         while (!currentState.shouldExit && currentState.executionPlan) {
           // Use enhanced step executor if available and feature flag is enabled
-          const stepResult =
-            await this.executeStepWithEnhancedMCP(currentState);
+          const stepResult = await this.executeStepWithEnhancedMCP(
+            currentState as WorkflowState & Record<string, unknown>,
+          );
           currentState = { ...currentState, ...stepResult };
 
           // Handle approval requests - check if user has responded
@@ -434,8 +435,9 @@ export class SimpleLangGraphWorkflow {
         // Step 2.2: Execute steps one by one
         while (!currentState.shouldExit && currentState.executionPlan) {
           // Use enhanced step executor if available and feature flag is enabled
-          const stepResult =
-            await this.executeStepWithEnhancedMCP(currentState);
+          const stepResult = await this.executeStepWithEnhancedMCP(
+            currentState as WorkflowState & Record<string, unknown>,
+          );
           currentState = { ...currentState, ...stepResult };
 
           // Handle approval requests - check if user has responded
@@ -576,7 +578,7 @@ export class SimpleLangGraphWorkflow {
       this.enhancedMCPSetup = await setupEnhancedMCPIntegration();
       logger.info('Enhanced MCP integration initialized successfully', {
         toolCount: this.enhancedMCPSetup.tools.length,
-        tools: this.enhancedMCPSetup.tools.map((t: any) => t.name),
+        tools: this.enhancedMCPSetup.tools.map((t) => t.name),
       });
     } catch (error) {
       logger.error('Failed to initialize enhanced MCP integration', { error });
@@ -585,18 +587,20 @@ export class SimpleLangGraphWorkflow {
   }
 
   /**
-   * Execute step with enhanced MCP if available, fallback to regular executor
+   * Execute step with enhanced MCP, fallback to regular executor if needed
    */
-  private async executeStepWithEnhancedMCP(state: any): Promise<any> {
-    // If enhanced MCP is enabled and available, use it
-    if (useEnhancedMCP() && this.enhancedMCPSetup) {
+  private async executeStepWithEnhancedMCP(
+    state: WorkflowState & Record<string, unknown>,
+  ): Promise<Partial<WorkflowState & Record<string, unknown>>> {
+    // Always try enhanced MCP first if available
+    if (this.enhancedMCPSetup) {
       try {
         // Enhance the state with MCP tools and context
         const enhancedState = {
           ...state,
           mcpTools: this.enhancedMCPSetup.tools,
           activeServers: ['todo'], // Add more servers as they become available
-          toolResults: state.toolResults || {},
+          toolResults: (state.toolResults || {}) as Record<string, unknown>,
         };
 
         logger.info('Using enhanced MCP step executor', {
@@ -620,10 +624,9 @@ export class SimpleLangGraphWorkflow {
         return await executeStep(state);
       }
     } else {
-      // Use regular step executor
-      logger.info('Using regular step executor', {
+      // Use regular step executor if enhanced MCP not available
+      logger.info('Using regular step executor (enhanced MCP not available)', {
         userId: state.userId,
-        enhancedMCPEnabled: useEnhancedMCP(),
         enhancedMCPAvailable: !!this.enhancedMCPSetup,
       });
 

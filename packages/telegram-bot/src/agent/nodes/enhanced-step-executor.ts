@@ -1,4 +1,3 @@
-import { HumanMessage } from '@langchain/core/messages';
 import type { Tool } from '@langchain/core/tools';
 
 import { extractServerName } from '../../mcp/enhanced-client.js';
@@ -7,7 +6,6 @@ import { approvalManager } from '../approval-manager.js';
 import type {
   ApprovalRequest,
   ExecutionStep,
-  WorkflowNode,
   WorkflowState,
 } from '../types/workflow-types.js';
 
@@ -17,7 +15,7 @@ import type {
 interface EnhancedWorkflowState extends WorkflowState {
   mcpTools: Tool[];
   activeServers: string[];
-  toolResults: Record<string, any>;
+  toolResults: Record<string, unknown>;
 }
 
 /**
@@ -219,7 +217,7 @@ function findToolForAction(tools: Tool[], action: string): Tool | null {
  * Enhanced error handling with multi-server context and fallbacks
  */
 async function handleEnhancedStepError(
-  error: any,
+  error: unknown,
   step: ExecutionStep,
   state: EnhancedWorkflowState,
 ): Promise<Partial<EnhancedWorkflowState>> {

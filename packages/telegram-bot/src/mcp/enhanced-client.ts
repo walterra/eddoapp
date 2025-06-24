@@ -1,5 +1,4 @@
 import { ChatAnthropic } from '@langchain/anthropic';
-import type { RunnableSequence } from '@langchain/core/runnables';
 import type { Tool } from '@langchain/core/tools';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { MultiServerMCPClient } from '@langchain/mcp-adapters';
@@ -12,21 +11,21 @@ import { logger } from '../utils/logger.js';
  */
 interface EnhancedMCPSetup {
   client: MultiServerMCPClient;
-  tools: any[]; // MCP adapter tools
-  agent: any; // CompiledStateGraph from createReactAgent
+  tools: Tool[]; // MCP adapter tools
+  agent: unknown; // CompiledStateGraph from createReactAgent
 }
 
 /**
  * Tool categorization for better organization and routing
  */
 interface ToolCategories {
-  todo_management: any[];
-  time_tracking: any[];
-  calendar: any[];
-  file_operations: any[];
-  analysis: any[];
-  notifications: any[];
-  integration: any[];
+  todo_management: Tool[];
+  time_tracking: Tool[];
+  calendar: Tool[];
+  file_operations: Tool[];
+  analysis: Tool[];
+  notifications: Tool[];
+  integration: Tool[];
 }
 
 /**
@@ -49,7 +48,7 @@ export async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
       // Primary Eddo todo server
       todo: {
         transport: 'http',
-        url: appConfig.MCP_SERVER_URL || 'http://localhost:3002/mcp',
+        url: appConfig.MCP_SERVER_URL || 'http://localhost:3001/mcp',
         // Optional: authentication headers
         headers: process.env.MCP_API_KEY
           ? {
@@ -77,11 +76,11 @@ export async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
   logger.info('Initializing MCP client and loading tools');
 
   // Get all available tools across servers
-  const tools = await client.getTools();
+  const tools = (await client.getTools()) as Tool[];
 
   logger.info('Enhanced MCP tools loaded', {
     totalTools: tools.length,
-    toolNames: tools.map((t: any) => t.name),
+    toolNames: tools.map((t) => t.name),
   });
 
   // Create enhanced agent with all MCP tools
@@ -93,7 +92,7 @@ export async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
 
   const agent = createReactAgent({
     llm,
-    tools: tools as any[], // Type compatibility with LangChain tools
+    tools,
   });
 
   logger.info('Enhanced MCP integration setup complete');
@@ -104,7 +103,7 @@ export async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
 /**
  * Categorize tools by their functional capability for better routing
  */
-export function categorizeToolsByCapability(tools: any[]): ToolCategories {
+export function categorizeToolsByCapability(tools: Tool[]): ToolCategories {
   const categories: ToolCategories = {
     todo_management: [],
     time_tracking: [],
@@ -160,8 +159,9 @@ export function categorizeToolsByCapability(tools: any[]): ToolCategories {
 
 /**
  * Build enhanced system message for multi-server context
+ * @internal
  */
-function buildEnhancedSystemMessage(tools: any[]): string {
+function _buildEnhancedSystemMessage(tools: Tool[]): string {
   const toolsByCategory = categorizeToolsByCapability(tools);
 
   return `You are an enhanced AI assistant with access to multiple specialized servers through MCP (Model Context Protocol).
@@ -171,7 +171,7 @@ ${Object.entries(toolsByCategory)
   .map(
     ([category, categoryTools]) =>
       `${category.toUpperCase()}:
-${categoryTools.map((t: any) => `  - ${t.name}: ${t.description || 'No description'}`).join('\n')}`,
+${categoryTools.map((t: Tool) => `  - ${t.name}: ${t.description || 'No description'}`).join('\n')}`,
   )
   .join('\n\n')}
 
@@ -208,9 +208,4 @@ export function extractServerName(toolName: string): string {
   return 'unknown';
 }
 
-/**
- * Feature flag for enhanced MCP usage
- */
-export function useEnhancedMCP(): boolean {
-  return process.env.USE_ENHANCED_MCP === 'true';
-}
+// Feature flag removed - always use enhanced MCP with @langchain/mcp-adapters
