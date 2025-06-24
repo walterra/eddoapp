@@ -1,3 +1,4 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { getMCPClient } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
@@ -5,14 +6,7 @@ import { type Persona, getPersona } from './personas.js';
 import { SessionManager } from './session-manager.js';
 import { IntentParser } from './intent-parser.js';
 import { ResponseGenerator } from './response-generator.js';
-import type { 
-  AIResponse, 
-  TodoIntent, 
-  MultiTodoIntent 
-} from '../types/ai-types.js';
-
-export type { AISession, AIResponse, TodoIntent, MultiTodoIntent } from '../types/ai-types.js';
-export { TodoIntentSchema, MultiTodoIntentSchema } from '../types/ai-types.js';
+import type { AIResponse, TodoIntent, MultiTodoIntent } from '../types/ai-types.js';
 
 /**
  * Claude AI client for natural language processing and conversation
@@ -29,7 +23,7 @@ export class ClaudeAI {
     const mcpClient = getMCPClient();
     
     this.sessionManager = new SessionManager();
-    this.intentParser = new IntentParser(apiKey);
+    this.intentParser = new IntentParser(apiKey, mcpClient, this.persona);
     this.responseGenerator = new ResponseGenerator(apiKey, mcpClient, this.persona);
   }
 
@@ -40,7 +34,30 @@ export class ClaudeAI {
     message: string,
     lastBotMessage?: string,
   ): Promise<TodoIntent | MultiTodoIntent | null> {
-    return this.intentParser.parseUserIntent(message, lastBotMessage);
+    const context = lastBotMessage
+      ? `CONTEXT: The bot's last response was: "${lastBotMessage}"
+        
+        Consider this context when parsing the user's current message. If the user is responding with contextual phrases like "continue", "yes please", "do it", "proceed", "yes delete these todos", "confirm", "go ahead", etc., interpret their intent based on what the bot previously suggested or offered.`
+      : undefined;
+
+    const result = await this.intentParser.parseUserIntent(message, context);
+    
+    if (result.error) {
+      logger.error('Failed to parse user intent', { error: result.error, message });
+      
+      // Handle specific Zod validation errors
+      if (result.error.includes('Invalid action')) {
+        throw new Error(
+          `I tried to use an invalid action. I can only use: create, list, update, complete, delete, start_timer, stop_timer, get_summary. Please rephrase your request.`,
+        );
+      }
+      
+      throw new Error(
+        `I had trouble understanding your todo request format. ${result.error || 'Please try rephrasing your request.'}`,
+      );
+    }
+    
+    return result.parsed || null;
   }
 
   /**
@@ -55,12 +72,12 @@ export class ClaudeAI {
     const session = this.sessionManager.getOrCreateSession(userId);
 
     try {
-      // Add user message to session context
-      session.context.push({ role: 'user', content: message });
+      // Add user message to session
+      session.messages.push({ role: 'user', content: message });
 
-      // Keep only last 10 messages to manage context length
-      if (session.context.length > 10) {
-        session.context = session.context.slice(-10);
+      // Keep only last 10 messages
+      if (session.messages.length > 10) {
+        session.messages = session.messages.slice(-10);
       }
 
       let responseText: string;
@@ -68,28 +85,26 @@ export class ClaudeAI {
       if (context?.mcpResponse && context?.action) {
         // Handle response with MCP context
         responseText = await this.handleMCPResponse(
-          session.context,
+          session.messages,
           context.mcpResponse,
           context.action
         );
       } else {
         // Generate normal conversational response
-        responseText = await this.responseGenerator.generateResponse(session.context);
+        responseText = await this.responseGenerator.generateResponse(session.messages);
       }
 
-      // Add assistant response to session context
-      session.context.push({ role: 'assistant', content: responseText });
+      // Add assistant response to session
+      session.messages.push({ role: 'assistant', content: responseText });
 
       logger.info('Generated AI response', {
         userId,
-        sessionId: session.id,
         messageLength: message.length,
         responseLength: responseText.length,
       });
 
       return {
-        content: responseText,
-        sessionId: session.id,
+        response: responseText,
       };
     } catch (error) {
       logger.error('Failed to generate AI response', {
@@ -98,10 +113,8 @@ export class ClaudeAI {
         message,
       });
 
-      // Fallback response
       return {
-        content: this.persona.fallbackMessage,
-        sessionId: session.id,
+        response: this.persona.fallbackMessage,
       };
     }
   }
@@ -110,7 +123,7 @@ export class ClaudeAI {
    * Handle response generation with MCP context
    */
   private async handleMCPResponse(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    messages: any[],
     mcpResponse: string,
     action: string
   ): Promise<string> {
@@ -119,7 +132,7 @@ export class ClaudeAI {
       const enhancedMessages = [
         ...messages,
         {
-          role: 'system' as const,
+          role: 'system',
           content: `IMPORTANT: The following MCP operation has been completed successfully. The user has seen progress updates. Based on the ACTUAL results below, provide a natural conversational summary of what was found. Do NOT make up or hallucinate any data - only refer to what is actually present in the results:\n\nMCP Results:\n${mcpResponse}`,
         },
       ];
@@ -131,7 +144,7 @@ export class ClaudeAI {
     const enhancedMessages = [
       ...messages,
       {
-        role: 'system' as const,
+        role: 'system',
         content: `IMPORTANT: All requested actions have been successfully executed and completed. The user has already seen the progress updates. DO NOT generate any tool calls, JSON objects, or technical commands. DO NOT suggest or plan future actions. Your role now is to provide ONLY a brief, natural conversational summary acknowledging what was accomplished: ${cleanedResponse}`,
       },
     ];
@@ -143,11 +156,9 @@ export class ClaudeAI {
    */
   private cleanMCPResponse(mcpResponse: string, action: string): string {
     try {
-      // Remove JSON data and keep only meaningful summary information
       const lines = mcpResponse.split('\n');
       const meaningfulLines = lines.filter(line => {
         const trimmed = line.trim();
-        // Skip JSON objects, action labels, and empty lines
         return trimmed && 
                !trimmed.startsWith('{') && 
                !trimmed.startsWith('}') && 
@@ -158,10 +169,8 @@ export class ClaudeAI {
       
       if (meaningfulLines.length > 0) {
         return meaningfulLines.join('. ');
-      } else {
-        // Extract just the action count/success info
-        return `Completed ${action}`;
       }
+      return `Completed ${action}`;
     } catch {
       return `Completed ${action}`;
     }
