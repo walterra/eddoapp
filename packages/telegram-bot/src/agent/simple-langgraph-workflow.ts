@@ -272,7 +272,7 @@ export class SimpleLangGraphWorkflow {
             // Import and check approval manager for this user's responses
             const { approvalManager } = await import('./approval-manager.js');
             const globalRequests = approvalManager.getAllRequests(userId);
-            const globalResponse = globalRequests.find(req => 
+            const globalResponse = globalRequests.find((req) => 
               req.stepId === currentStep?.id && req.approved !== undefined
             );
             
@@ -301,12 +301,23 @@ export class SimpleLangGraphWorkflow {
                 userId,
                 stepId: currentStep?.id
               });
-              break;
+              
+              // Return early without summary - workflow is paused
+              return {
+                ...state,
+                awaitingApproval: true,
+                finalResponse: 'Workflow paused pending user approval. Use /approve or /deny to continue.',
+                complexityAnalysis: complexityResult.complexityAnalysis,
+                executionPlan: currentState.executionPlan,
+                executionSteps: currentState.executionSteps,
+                approvalRequests: currentState.approvalRequests,
+                messages: [...messages, new AIMessage('Workflow paused pending approval')],
+              };
             }
           }
         }
 
-        // Step 2.3: Generate execution summary
+        // Step 2.3: Generate execution summary (only if workflow completed)
         const summaryResult = await generateExecutionSummary(currentState);
         currentState = { ...currentState, ...summaryResult };
 

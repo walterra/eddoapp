@@ -140,12 +140,16 @@ export async function handleApprove(ctx: BotContext): Promise<void> {
   const approvedRequest = approvalManager.approveRequest(userId);
   
   if (approvedRequest) {
-    await ctx.reply(`✅ APPROVED: ${approvedRequest.stepId}\n\nThe workflow will continue execution.`);
+    await ctx.reply(`✅ APPROVED: ${approvedRequest.stepId}\n\nAttempting to continue workflow execution...`);
     logger.info('User approved request via command', {
       userId,
       requestId: approvedRequest.id,
       stepId: approvedRequest.stepId
     });
+
+    // TODO: Trigger workflow continuation
+    // For now, just inform user to rerun their command
+    await ctx.reply('💡 Please run your original command again (e.g., "delete all todos with context \\"host\\"") to continue with the approved operation.');
   } else {
     await ctx.reply('❌ Failed to approve request.');
   }

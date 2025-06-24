@@ -38,7 +38,36 @@ export const executeStep: WorkflowNode = async (state: WorkflowState): Promise<P
 
   // Check if step requires approval
   if (currentStep.requiresApproval && !state.awaitingApproval) {
-    return await requestApproval(state, currentStep);
+    // First check if there's already an approval for this step
+    const existingApproval = approvalManager.getAllRequests(state.userId).find((req) =>
+      req.stepId === currentStep.id && req.approved !== undefined
+    );
+    
+    if (existingApproval) {
+      logger.info('Found existing approval for step', {
+        stepId: currentStep.id,
+        approved: existingApproval.approved,
+        userId: state.userId
+      });
+      
+      if (!existingApproval.approved) {
+        // Step was denied, skip it
+        currentStep.status = 'skipped';
+        currentStep.error = new Error(`User denied approval: ${existingApproval.response || 'No reason provided'}`);
+        
+        await sendProgressUpdate(state, currentStep, 'skipped');
+        
+        return {
+          currentStepIndex: state.currentStepIndex + 1,
+          executionSteps: [...state.executionSteps, currentStep],
+          awaitingApproval: false
+        };
+      }
+      // Step was approved, continue execution below
+    } else {
+      // No existing approval, request it
+      return await requestApproval(state, currentStep);
+    }
   }
 
   // If we're waiting for approval but haven't received it, skip execution for now
