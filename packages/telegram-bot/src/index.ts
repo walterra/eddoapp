@@ -1,6 +1,6 @@
 import { createBot } from './bot/bot.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
-import { handleMessage } from './bot/handlers/message.js';
+import { handleMessageEnhanced } from './bot/handlers/enhanced-message.js';
 import { getMCPClient } from './mcp/client.js';
 import { appConfig } from './utils/config.js';
 import { logger } from './utils/logger.js';
@@ -37,8 +37,8 @@ async function main(): Promise<void> {
     bot.command('help', handleHelp);
     bot.command('status', handleStatus);
 
-    // Register message handler for general text
-    bot.on('message:text', handleMessage);
+    // Register enhanced message handler for general text with agent workflow
+    bot.on('message:text', handleMessageEnhanced);
 
     // Handle bot errors
     bot.catch((err) => {
