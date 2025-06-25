@@ -340,28 +340,53 @@ export class EnhancedLangGraphWorkflow {
 
     // Action-based mapping for common operations
     const actionMapping: Record<string, string[]> = {
-      list_todos: ['listTodos', 'eddo__todo__listTodos'],
-      create_todo: ['createTodo', 'eddo__todo__createTodo'],
-      update_todo: ['updateTodo', 'eddo__todo__updateTodo'],
-      delete_todo: ['deleteTodo', 'eddo__todo__deleteTodo'],
+      // Map from action names used in plans to actual MCP tool names
+      listTodos: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
+      createTodo: ['createTodo', 'eddo__todo__createTodo', 'eddo-mcp__createTodo'],
+      updateTodo: ['updateTodo', 'eddo__todo__updateTodo', 'eddo-mcp__updateTodo'],
+      deleteTodo: ['deleteTodo', 'eddo__todo__deleteTodo', 'eddo-mcp__deleteTodo'],
+      toggleTodoCompletion: [
+        'toggleTodoCompletion',
+        'eddo__todo__toggleTodoCompletion',
+        'eddo-mcp__toggleTodoCompletion',
+      ],
+      startTimeTracking: [
+        'startTimeTracking',
+        'eddo__todo__startTimeTracking',
+        'eddo-mcp__startTimeTracking',
+      ],
+      stopTimeTracking: ['stopTimeTracking', 'eddo__todo__stopTimeTracking', 'eddo-mcp__stopTimeTracking'],
+      getActiveTimeTracking: [
+        'getActiveTimeTracking',
+        'eddo__todo__getActiveTimeTracking',
+        'eddo-mcp__getActiveTimeTracking',
+      ],
+      // Legacy action names for backward compatibility
+      list_todos: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
+      create_todo: ['createTodo', 'eddo__todo__createTodo', 'eddo-mcp__createTodo'],
+      update_todo: ['updateTodo', 'eddo__todo__updateTodo', 'eddo-mcp__updateTodo'],
+      delete_todo: ['deleteTodo', 'eddo__todo__deleteTodo', 'eddo-mcp__deleteTodo'],
       toggle_completion: [
         'toggleTodoCompletion',
         'eddo__todo__toggleTodoCompletion',
+        'eddo-mcp__toggleTodoCompletion',
       ],
       start_time_tracking: [
         'startTimeTracking',
         'eddo__todo__startTimeTracking',
+        'eddo-mcp__startTimeTracking',
       ],
-      stop_time_tracking: ['stopTimeTracking', 'eddo__todo__stopTimeTracking'],
+      stop_time_tracking: ['stopTimeTracking', 'eddo__todo__stopTimeTracking', 'eddo-mcp__stopTimeTracking'],
       get_active_timers: [
         'getActiveTimeTracking',
         'eddo__todo__getActiveTimeTracking',
+        'eddo-mcp__getActiveTimeTracking',
       ],
-      daily_summary: ['listTodos', 'eddo__todo__listTodos'],
-      analysis: ['listTodos', 'eddo__todo__listTodos'],
+      daily_summary: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
+      analysis: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
       // Handle the legacy artificial actions by mapping them to real actions
-      execute_simple_task: ['listTodos', 'eddo__todo__listTodos'],
-      execute_fallback_task: ['listTodos', 'eddo__todo__listTodos'],
+      execute_simple_task: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
+      execute_fallback_task: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
     };
 
     const possibleNames = actionMapping[action] || [action];

@@ -70,22 +70,22 @@ User Intent: "${state.userIntent}"
 Task Analysis: ${JSON.stringify(state.taskAnalysis, null, 2)}
 
 Available MCP Actions:
-- list_todos: Get todos with filters (context, status, tags, due_date)
-  Parameters: { context?, status?, tags?, due_date?, limit? }
-- create_todo: Create new todo
-  Parameters: { title, description?, context?, due_date?, tags?, repeat? }
-- update_todo: Update existing todo
-  Parameters: { id, title?, description?, context?, due_date?, tags?, repeat? }
-- delete_todo: Delete todo by ID
+- listTodos: Get todos with filters
+  Parameters: { context?, completed?: boolean, dateFrom?, dateTo?, limit?: number }
+- createTodo: Create new todo
+  Parameters: { title, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
+- updateTodo: Update existing todo
+  Parameters: { id, title?, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
+- deleteTodo: Delete todo by ID
   Parameters: { id }
-- toggle_completion: Mark todo complete/incomplete
+- toggleTodoCompletion: Mark todo complete/incomplete
+  Parameters: { id, completed: boolean }
+- startTimeTracking: Start timer for todo
   Parameters: { id }
-- start_time_tracking: Start timer for todo
+- stopTimeTracking: Stop timer for todo
   Parameters: { id }
-- stop_time_tracking: Stop timer for todo
-  Parameters: { id }
-- get_time_summary: Get time tracking summary
-  Parameters: { context?, date_range? }
+- getActiveTimeTracking: Get todos with active time tracking
+  Parameters: {} (no parameters required)
 
 Guidelines:
 1. Break down the task into atomic, sequential steps
@@ -194,7 +194,7 @@ function createFallbackPlan(
     steps: [
       {
         id: uuidv4(),
-        action: 'list_todos',
+        action: 'listTodos',
         parameters: {},
         description: 'List existing todos to understand current state',
         dependencies: [],
@@ -203,7 +203,7 @@ function createFallbackPlan(
       },
       {
         id: uuidv4(),
-        action: 'list_todos',
+        action: 'listTodos',
         parameters: { completed: false },
         description: 'List current todos to provide context',
         dependencies: [],
@@ -318,10 +318,9 @@ function inferMCPActionFromIntent(userIntent: string): {
     intent.includes("what's my day")
   ) {
     return {
-      action: 'list_todos',
+      action: 'listTodos',
       parameters: {
         completed: false,
-        orderBy: 'due',
       },
       description: 'Get daily summary of pending todos',
     };
@@ -334,7 +333,7 @@ function inferMCPActionFromIntent(userIntent: string): {
     intent.includes("what's up")
   ) {
     return {
-      action: 'list_todos',
+      action: 'listTodos',
       parameters: { completed: false },
       description: 'Get current todo status',
     };
@@ -347,7 +346,7 @@ function inferMCPActionFromIntent(userIntent: string): {
     intent.includes('new todo')
   ) {
     return {
-      action: 'create_todo',
+      action: 'createTodo',
       parameters: { title: userIntent },
       description: 'Create new todo from user request',
     };
@@ -360,7 +359,7 @@ function inferMCPActionFromIntent(userIntent: string): {
     intent.includes('todos')
   ) {
     return {
-      action: 'list_todos',
+      action: 'listTodos',
       parameters: {},
       description: 'List todos',
     };
@@ -373,7 +372,7 @@ function inferMCPActionFromIntent(userIntent: string): {
     intent.includes('tracking')
   ) {
     return {
-      action: 'get_active_timers',
+      action: 'getActiveTimeTracking',
       parameters: {},
       description: 'Get active time tracking information',
     };
