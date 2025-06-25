@@ -257,6 +257,11 @@ export class EnhancedLangGraphWorkflow {
       // Execute the tool with the step parameters
       const result = await tool.invoke(currentStep.parameters);
 
+      // Validate tool execution result
+      if (!result || (typeof result === 'string' && result.includes('error'))) {
+        throw new Error(`Tool execution failed: ${result}`);
+      }
+
       // Update step with results
       const executedStep = {
         ...currentStep,
@@ -265,6 +270,13 @@ export class EnhancedLangGraphWorkflow {
         timestamp: Date.now(),
         duration: 0, // Will be calculated when step completes
       };
+
+      logger.info('Tool executed successfully', {
+        stepId: currentStep.id,
+        toolName: tool.name,
+        resultType: typeof result,
+        userId: state.userId,
+      });
 
       // Send progress update to user
       await telegramContext.reply(
@@ -325,81 +337,92 @@ export class EnhancedLangGraphWorkflow {
    */
   private findToolForAction(tools: Tool[], action: string): Tool | null {
     if (!tools || tools.length === 0) {
+      logger.error('No tools available for action', { action, toolCount: 0 });
       return null;
     }
 
-    // Direct name match (prefixed with server name)
-    let tool = tools.find(
-      (t) =>
-        t.name.includes(action) ||
-        t.name.endsWith(`_${action}`) ||
-        t.name.toLowerCase().includes(action.toLowerCase()),
-    );
+    logger.debug('Finding tool for action', {
+      action,
+      availableTools: tools.map((t) => t.name),
+    });
 
-    if (tool) return tool;
-
-    // Action-based mapping for common operations
+    // Action-based mapping for common operations - with exact tool name matching
     const actionMapping: Record<string, string[]> = {
-      // Map from action names used in plans to actual MCP tool names
-      listTodos: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
-      createTodo: ['createTodo', 'eddo__todo__createTodo', 'eddo-mcp__createTodo'],
-      updateTodo: ['updateTodo', 'eddo__todo__updateTodo', 'eddo-mcp__updateTodo'],
-      deleteTodo: ['deleteTodo', 'eddo__todo__deleteTodo', 'eddo-mcp__deleteTodo'],
-      toggleTodoCompletion: [
-        'toggleTodoCompletion',
-        'eddo__todo__toggleTodoCompletion',
-        'eddo-mcp__toggleTodoCompletion',
-      ],
-      startTimeTracking: [
-        'startTimeTracking',
-        'eddo__todo__startTimeTracking',
-        'eddo-mcp__startTimeTracking',
-      ],
-      stopTimeTracking: ['stopTimeTracking', 'eddo__todo__stopTimeTracking', 'eddo-mcp__stopTimeTracking'],
-      getActiveTimeTracking: [
-        'getActiveTimeTracking',
-        'eddo__todo__getActiveTimeTracking',
-        'eddo-mcp__getActiveTimeTracking',
-      ],
+      // Core CRUD operations
+      listTodos: ['listTodos'],
+      createTodo: ['createTodo'],
+      updateTodo: ['updateTodo'],
+      deleteTodo: ['deleteTodo'],
+      toggleTodoCompletion: ['toggleTodoCompletion'],
+
+      // Time tracking
+      startTimeTracking: ['startTimeTracking'],
+      stopTimeTracking: ['stopTimeTracking'],
+      getActiveTimeTracking: ['getActiveTimeTracking'],
+
       // Legacy action names for backward compatibility
-      list_todos: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
-      create_todo: ['createTodo', 'eddo__todo__createTodo', 'eddo-mcp__createTodo'],
-      update_todo: ['updateTodo', 'eddo__todo__updateTodo', 'eddo-mcp__updateTodo'],
-      delete_todo: ['deleteTodo', 'eddo__todo__deleteTodo', 'eddo-mcp__deleteTodo'],
-      toggle_completion: [
-        'toggleTodoCompletion',
-        'eddo__todo__toggleTodoCompletion',
-        'eddo-mcp__toggleTodoCompletion',
-      ],
-      start_time_tracking: [
-        'startTimeTracking',
-        'eddo__todo__startTimeTracking',
-        'eddo-mcp__startTimeTracking',
-      ],
-      stop_time_tracking: ['stopTimeTracking', 'eddo__todo__stopTimeTracking', 'eddo-mcp__stopTimeTracking'],
-      get_active_timers: [
-        'getActiveTimeTracking',
-        'eddo__todo__getActiveTimeTracking',
-        'eddo-mcp__getActiveTimeTracking',
-      ],
-      daily_summary: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
-      analysis: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
-      // Handle the legacy artificial actions by mapping them to real actions
-      execute_simple_task: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
-      execute_fallback_task: ['listTodos', 'eddo__todo__listTodos', 'eddo-mcp__listTodos'],
+      list_todos: ['listTodos'],
+      create_todo: ['createTodo'],
+      update_todo: ['updateTodo'],
+      delete_todo: ['deleteTodo'],
+      toggle_completion: ['toggleTodoCompletion'],
+      start_time_tracking: ['startTimeTracking'],
+      stop_time_tracking: ['stopTimeTracking'],
+      get_active_timers: ['getActiveTimeTracking'],
+
+      // Analysis and reporting actions
+      daily_summary: ['listTodos'],
+      analysis: ['listTodos'],
+
+      // Handle artificial actions by mapping them to real actions
+      execute_simple_task: ['listTodos'],
+      execute_fallback_task: ['listTodos'],
     };
 
     const possibleNames = actionMapping[action] || [action];
 
+    // First, try exact name matches with the tool base name
     for (const name of possibleNames) {
-      tool = tools.find(
+      const tool = tools.find((t) => {
+        // Check if tool name ends with the expected name (handles prefixing)
+        const toolBaseName =
+          t.name.split('__').pop() || t.name.split('_').pop() || t.name;
+        return toolBaseName === name || t.name === name;
+      });
+
+      if (tool) {
+        logger.debug('Found exact tool match', {
+          action,
+          toolName: tool.name,
+          searchName: name,
+        });
+        return tool;
+      }
+    }
+
+    // Fallback: fuzzy matching
+    for (const name of possibleNames) {
+      const tool = tools.find(
         (t) =>
           t.name.toLowerCase().includes(name.toLowerCase()) ||
           t.description?.toLowerCase().includes(name.toLowerCase()),
       );
-      if (tool) return tool;
+
+      if (tool) {
+        logger.debug('Found fuzzy tool match', {
+          action,
+          toolName: tool.name,
+          searchName: name,
+        });
+        return tool;
+      }
     }
 
+    logger.error('No tool found for action', {
+      action,
+      possibleNames,
+      availableTools: tools.map((t) => t.name),
+    });
     return null;
   }
 

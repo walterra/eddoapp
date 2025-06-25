@@ -1,5 +1,6 @@
 import { ChatAnthropic } from '@langchain/anthropic';
 
+import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import type {
   EnhancedWorkflowStateType,
@@ -84,14 +85,15 @@ async function generateReflection(
   model: ChatAnthropic,
 ): Promise<ReflectionResult> {
   // For simple tasks that are just data retrieval, skip the complex reflection
-  if (state.taskAnalysis?.classification === 'simple' && 
-      state.executionSteps.length === 1 &&
-      state.executionSteps[0].status === 'completed' &&
-      (state.executionSteps[0].action === 'list_todos' || 
-       state.executionSteps[0].action === 'listTodos' ||
-       state.executionSteps[0].action === 'get_active_timers' ||
-       state.executionSteps[0].action === 'getActiveTimeTracking')) {
-    
+  if (
+    state.taskAnalysis?.classification === 'simple' &&
+    state.executionSteps.length === 1 &&
+    state.executionSteps[0].status === 'completed' &&
+    (state.executionSteps[0].action === 'list_todos' ||
+      state.executionSteps[0].action === 'listTodos' ||
+      state.executionSteps[0].action === 'get_active_timers' ||
+      state.executionSteps[0].action === 'getActiveTimeTracking')
+  ) {
     // Return a simple reflection that doesn't overshadow the actual data
     const duration = Date.now() - (state.sessionStartTime || Date.now());
     return {
@@ -290,141 +292,22 @@ async function sendReflectionSummary(
   const context = telegramContextManager.get(state.telegramContextKey);
   if (!context) return;
 
-  // For simple data retrieval tasks, present the actual data instead of workflow metadata
-  if (state.taskAnalysis?.classification === 'simple' && 
-      state.executionSteps.length === 1 &&
-      state.executionSteps[0].status === 'completed' &&
-      (state.executionSteps[0].action === 'list_todos' || 
-       state.executionSteps[0].action === 'listTodos')) {
-    
-    // Get the actual todo data from the MCP response
-    const stepId = state.executionSteps[0].id;
-    let stepResult = state.executionSteps[0].result;
-    
-    logger.info('Looking for todo data in step result', {
-      userId: state.userId,
-      stepId,
-      hasStepResult: !!stepResult,
-      stepResultType: typeof stepResult,
-      toolResultsKeys: Object.keys(state.toolResults || {}),
-      mcpResponsesLength: state.mcpResponses?.length || 0,
-    });
-    
-    // Check toolResults if step result is not directly available
-    if (!stepResult && state.toolResults && state.toolResults[stepId]) {
-      const toolResult = state.toolResults[stepId];
-      if (typeof toolResult === 'object' && 'content' in toolResult) {
-        stepResult = (toolResult as any).content;
-      } else {
-        stepResult = toolResult;
-      }
-      logger.info('Found result in toolResults', {
-        userId: state.userId,
-        stepId,
-        resultType: typeof stepResult,
-      });
+  // For simple data retrieval tasks, generate contextual response using LLM
+  if (
+    state.taskAnalysis?.classification === 'simple' &&
+    state.executionSteps.length === 1 &&
+    state.executionSteps[0].status === 'completed' &&
+    (state.executionSteps[0].action === 'list_todos' ||
+      state.executionSteps[0].action === 'listTodos')
+  ) {
+    const contextualResponse = await generateContextualTodoResponse(
+      state,
+      context,
+    );
+    if (contextualResponse) {
+      return; // Response was sent successfully
     }
-    
-    // Check mcpResponses array
-    if (!stepResult && state.mcpResponses && state.mcpResponses.length > 0) {
-      stepResult = state.mcpResponses[0];
-      logger.info('Found result in mcpResponses', {
-        userId: state.userId,
-        resultType: typeof stepResult,
-      });
-    }
-    
-    if (stepResult) {
-      try {
-        let todos: Array<{
-          _id: string;
-          title: string;
-          context: string;
-          completed: string | null;
-          due?: string;
-          description?: string;
-          tags?: string[];
-        }> = [];
-        
-        // Handle different result formats
-        if (typeof stepResult === 'string') {
-          todos = JSON.parse(stepResult);
-        } else if (Array.isArray(stepResult)) {
-          todos = stepResult;
-        } else if (typeof stepResult === 'object' && 'content' in stepResult) {
-          const content = (stepResult as any).content;
-          if (typeof content === 'string') {
-            todos = JSON.parse(content);
-          } else if (Array.isArray(content)) {
-            todos = content;
-          }
-        }
-        
-        // Filter active todos only
-        const activeTodos = todos.filter(todo => !todo.completed);
-        
-        if (activeTodos.length === 0) {
-          await context.reply('📭 **No pending todos**\n\nYour todo list is empty! Time to add some tasks or enjoy your free time.', 
-            { parse_mode: 'Markdown' });
-          return;
-        }
-        
-        // Group todos by context
-        const todosByContext = activeTodos.reduce((acc: Record<string, typeof activeTodos>, todo) => {
-          const ctx = todo.context || 'uncategorized';
-          if (!acc[ctx]) acc[ctx] = [];
-          acc[ctx].push(todo);
-          return acc;
-        }, {});
-        
-        // Build the summary message
-        let message = `📋 **Daily Summary**\n\n`;
-        message += `You have **${activeTodos.length}** pending ${activeTodos.length === 1 ? 'task' : 'tasks'}:\n\n`;
-        
-        // Display todos by context
-        for (const [contextName, contextTodos] of Object.entries(todosByContext)) {
-          message += `**${contextName.charAt(0).toUpperCase() + contextName.slice(1)}** (${contextTodos.length}):\n`;
-          
-          contextTodos.forEach(todo => {
-            const dueInfo = todo.due ? ` - Due: ${new Date(todo.due).toLocaleDateString()}` : '';
-            const description = todo.description ? `\n   _${todo.description}_` : '';
-            const tags = todo.tags && todo.tags.length > 0 ? ` [${todo.tags.join(', ')}]` : '';
-            
-            message += `• ${todo.title}${dueInfo}${tags}${description}\n`;
-          });
-          
-          message += '\n';
-        }
-        
-        // Add quick stats
-        const overdueTodos = activeTodos.filter(todo => 
-          todo.due && new Date(todo.due) < new Date()
-        );
-        const todayTodos = activeTodos.filter(todo => {
-          if (!todo.due) return false;
-          const dueDate = new Date(todo.due);
-          const today = new Date();
-          return dueDate.toDateString() === today.toDateString();
-        });
-        
-        if (overdueTodos.length > 0) {
-          message += `⚠️ **${overdueTodos.length}** overdue ${overdueTodos.length === 1 ? 'task' : 'tasks'}\n`;
-        }
-        if (todayTodos.length > 0) {
-          message += `📅 **${todayTodos.length}** due today\n`;
-        }
-        
-        await context.reply(message, { parse_mode: 'Markdown' });
-        return;
-      } catch (error) {
-        logger.error('Failed to parse todo data for summary', {
-          error,
-          userId: state.userId,
-          stepResult,
-        });
-        // Fall back to default summary
-      }
-    }
+    // Fall through to default reflection if contextual response failed
   }
 
   // Default workflow summary for non-simple tasks
@@ -466,6 +349,154 @@ async function sendReflectionSummary(
       error,
       userId: state.userId,
     });
+  }
+}
+
+/**
+ * Generates a contextual response for todo-related queries using LLM
+ */
+async function generateContextualTodoResponse(
+  state: EnhancedWorkflowStateType,
+  context: any,
+): Promise<boolean> {
+  try {
+    // Extract todo data from MCP response
+    const stepId = state.executionSteps[0].id;
+    let stepResult = state.executionSteps[0].result;
+
+    // Check multiple locations for the result data
+    if (!stepResult && state.toolResults && state.toolResults[stepId]) {
+      const toolResult = state.toolResults[stepId];
+      if (typeof toolResult === 'object' && 'content' in toolResult) {
+        stepResult = (toolResult as any).content;
+      } else {
+        stepResult = toolResult;
+      }
+    }
+
+    if (!stepResult && state.mcpResponses && state.mcpResponses.length > 0) {
+      stepResult = state.mcpResponses[0];
+    }
+
+    if (!stepResult) {
+      logger.warn('No todo data found for contextual response', {
+        userId: state.userId,
+        stepId,
+      });
+      return false;
+    }
+
+    // Parse todo data
+    let todos: Array<{
+      _id: string;
+      title: string;
+      context: string;
+      completed: string | null;
+      due?: string;
+      description?: string;
+      tags?: string[];
+    }> = [];
+
+    if (typeof stepResult === 'string') {
+      todos = JSON.parse(stepResult);
+    } else if (Array.isArray(stepResult)) {
+      todos = stepResult;
+    } else if (typeof stepResult === 'object' && 'content' in stepResult) {
+      const content = (stepResult as any).content;
+      if (typeof content === 'string') {
+        todos = JSON.parse(content);
+      } else if (Array.isArray(content)) {
+        todos = content;
+      }
+    }
+
+    const activeTodos = todos.filter((todo) => !todo.completed);
+
+    // Handle empty todo list
+    if (activeTodos.length === 0) {
+      await context.reply(
+        '📭 **No pending todos**\n\nYour todo list is empty! Time to add some tasks or enjoy your free time.',
+        { parse_mode: 'Markdown' },
+      );
+      return true;
+    }
+
+    // Use LLM to generate contextual response
+    const model = new ChatAnthropic({
+      model: 'claude-3-5-sonnet-20241022',
+      apiKey: appConfig.ANTHROPIC_API_KEY,
+      temperature: 0.3,
+      maxTokens: 1000,
+    });
+
+    // Prepare todo data summary for LLM
+    const todoSummary = activeTodos
+      .map((todo) => {
+        const dueInfo = todo.due
+          ? ` (due: ${new Date(todo.due).toLocaleDateString()})`
+          : '';
+        const tagsInfo =
+          todo.tags && todo.tags.length > 0 ? ` [${todo.tags.join(', ')}]` : '';
+        const descInfo = todo.description ? ` - ${todo.description}` : '';
+        return `- "${todo.title}" (${todo.context})${dueInfo}${tagsInfo}${descInfo}`;
+      })
+      .join('\n');
+
+    const overdueTodos = activeTodos.filter(
+      (todo) => todo.due && new Date(todo.due) < new Date(),
+    );
+    const todayTodos = activeTodos.filter((todo) => {
+      if (!todo.due) return false;
+      const dueDate = new Date(todo.due);
+      const today = new Date();
+      return dueDate.toDateString() === today.toDateString();
+    });
+
+    const contextPrompt = `You are helping a user with their todo management. The user asked: "${state.userIntent}"
+
+Here are their current active todos:
+${todoSummary}
+
+Additional context:
+- Total active todos: ${activeTodos.length}
+- Overdue todos: ${overdueTodos.length}
+- Due today: ${todayTodos.length}
+- Contexts: ${[...new Set(activeTodos.map((t) => t.context))].join(', ')}
+
+Generate a helpful, conversational response that directly answers their question using this todo data. Format using Markdown with appropriate emojis. Be specific and actionable.
+
+Guidelines based on question type:
+- For "daily summary" or "overview": Provide organized overview grouped by context/priority
+- For "what should I pick up next" or "what to do": Recommend 1-2 specific todos with reasoning
+- For "urgent" or "priority": Focus on overdue and time-sensitive items
+- For context-specific questions: Filter and focus on relevant todos
+- For general status: Give brief summary with key insights
+
+Keep the response concise but informative. Always be encouraging and helpful.`;
+
+    const response = await model.invoke([
+      { role: 'user', content: contextPrompt },
+    ]);
+
+    const responseText = response.content as string;
+
+    await context.reply(responseText, { parse_mode: 'Markdown' });
+
+    logger.info('Generated contextual todo response', {
+      userId: state.userId,
+      userIntent: state.userIntent,
+      todoCount: activeTodos.length,
+      responseLength: responseText.length,
+    });
+
+    return true;
+  } catch (error) {
+    logger.error('Failed to generate contextual todo response', {
+      error,
+      userId: state.userId,
+      userIntent: state.userIntent,
+    });
+    return false;
   }
 }
 
