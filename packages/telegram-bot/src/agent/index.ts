@@ -1,6 +1,7 @@
 import type { BotContext } from '../bot/bot.js';
 import { logger } from '../utils/logger.js';
 import { BasicWorkflow } from './basic-workflow.js';
+import { EnhancedLangGraphWorkflow } from './enhanced-langgraph-workflow.js';
 import { SimpleLangGraphWorkflow } from './simple-langgraph-workflow.js';
 import type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';
 
@@ -8,9 +9,13 @@ import type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';
  * Main agent orchestrator - single entry point for all agent workflows
  */
 export class EddoAgent {
-  private workflow: SimpleLangGraphWorkflow | BasicWorkflow;
+  private workflow:
+    | EnhancedLangGraphWorkflow
+    | SimpleLangGraphWorkflow
+    | BasicWorkflow;
   private config: WorkflowConfig;
   private useLangGraph: boolean;
+  private useEnhancedWorkflow: boolean;
 
   constructor(config: Partial<WorkflowConfig> = {}) {
     this.config = {
@@ -22,26 +27,41 @@ export class EddoAgent {
       ...config,
     };
 
-    // Use LangGraph by default, fall back to BasicWorkflow if there are issues
+    // Use Enhanced LangGraph by default, with fallbacks
     this.useLangGraph = process.env.USE_LANGGRAPH !== 'false';
+    this.useEnhancedWorkflow = process.env.USE_ENHANCED_WORKFLOW !== 'false';
 
     try {
-      this.workflow = this.useLangGraph
-        ? new SimpleLangGraphWorkflow()
-        : new BasicWorkflow();
-
-      logger.info('EddoAgent initialized', {
-        version: '1.0.0',
-        workflowType: this.useLangGraph ? 'SimpleLangGraph' : 'Basic',
-        config: this.config,
-      });
+      if (this.useLangGraph && this.useEnhancedWorkflow) {
+        this.workflow = new EnhancedLangGraphWorkflow();
+        logger.info('EddoAgent initialized with Enhanced LangGraph workflow', {
+          version: '2.0.0',
+          workflowType: 'EnhancedLangGraph',
+          config: this.config,
+        });
+      } else if (this.useLangGraph) {
+        this.workflow = new SimpleLangGraphWorkflow();
+        logger.info('EddoAgent initialized with Simple LangGraph workflow', {
+          version: '1.0.0',
+          workflowType: 'SimpleLangGraph',
+          config: this.config,
+        });
+      } else {
+        this.workflow = new BasicWorkflow();
+        logger.info('EddoAgent initialized with Basic workflow', {
+          version: '1.0.0',
+          workflowType: 'Basic',
+          config: this.config,
+        });
+      }
     } catch (error) {
       logger.warn(
-        'Failed to initialize SimpleLangGraph workflow, falling back to BasicWorkflow',
+        'Failed to initialize enhanced/simple workflow, falling back to BasicWorkflow',
         { error },
       );
       this.workflow = new BasicWorkflow();
       this.useLangGraph = false;
+      this.useEnhancedWorkflow = false;
     }
   }
 
@@ -138,13 +158,34 @@ export class EddoAgent {
     workflowType: string;
     config: WorkflowConfig;
     uptime: number;
+    enhancedFeatures?: Record<string, unknown>;
   } {
-    return {
-      version: '1.0.0',
-      workflowType: this.useLangGraph ? 'SimpleLangGraph' : 'Basic',
+    const workflowType = this.useEnhancedWorkflow
+      ? 'EnhancedLangGraph'
+      : this.useLangGraph
+        ? 'SimpleLangGraph'
+        : 'Basic';
+
+    const version = this.useEnhancedWorkflow ? '2.0.0' : '1.0.0';
+
+    const status = {
+      version,
+      workflowType,
       config: this.config,
       uptime: process.uptime(),
     };
+
+    // Add enhanced features status if using enhanced workflow
+    if (this.useEnhancedWorkflow && 'getStatus' in this.workflow) {
+      return {
+        ...status,
+        enhancedFeatures: (
+          this.workflow as EnhancedLangGraphWorkflow
+        ).getStatus(),
+      };
+    }
+
+    return status;
   }
 }
 

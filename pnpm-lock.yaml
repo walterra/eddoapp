@@ -288,15 +288,15 @@ importers:
       '@langchain/mcp-adapters':
         specifier: ^0.5.2
         version: 0.5.2(@langchain/core@0.3.61)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.0.0
-        version: 1.13.0
       dotenv:
         specifier: ^16.3.1
         version: 16.5.0
       grammy:
         specifier: ^1.21.1
         version: 1.36.3
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
       winston:
         specifier: ^3.11.0
         version: 3.17.0
@@ -307,6 +307,9 @@ importers:
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.1
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
       eslint:
         specifier: ^9.0.0
         version: 9.29.0(jiti@1.21.7)
@@ -4104,6 +4107,10 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    hasBin: true
+
+  uuid@11.1.0:
+    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
 
   uuid@8.3.2:
@@ -8530,6 +8537,8 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   uuid@10.0.0: {}
+
+  uuid@11.1.0: {}
 
   uuid@8.3.2: {}
 
