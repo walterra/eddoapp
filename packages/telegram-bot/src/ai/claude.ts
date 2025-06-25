@@ -11,13 +11,6 @@ import { type Persona, getPersona } from './personas.js';
 import { createResponseGenerator } from './response-generator.js';
 import { createSessionManager } from './session-manager.js';
 
-export type {
-  AISession,
-  AIResponse,
-  TodoIntent,
-  MultiTodoIntent,
-} from '../types/ai-types.js';
-export { TodoIntentSchema, MultiTodoIntentSchema } from '../types/ai-types.js';
 
 export interface ClaudeAI {
   parseUserIntent: (

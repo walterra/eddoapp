@@ -22,9 +22,3 @@ export function getPersona(personaId: string): Persona {
   return personas[personaId] || personas.butler;
 }
 
-/**
- * Get all available persona IDs
- */
-export function getAvailablePersonaIds(): string[] {
-  return Object.keys(personas);
-}

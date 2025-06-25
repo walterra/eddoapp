@@ -2,18 +2,10 @@ import type { AISession } from '../types/ai-types.js';
 
 const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour
 
-export interface SessionManager {
-  getOrCreateSession: (userId: string) => AISession;
-  cleanupOldSessions: () => void;
-  getSessionStats: () => { totalSessions: number; activeSessions: number };
-  clearSession: (sessionId: string) => void;
-  clearAllSessions: () => void;
-}
-
 /**
  * Creates a session manager instance for managing AI chat sessions
  */
-export function createSessionManager(): SessionManager {
+export function createSessionManager() {
   const sessions = new Map<string, AISession>();
 
   const getOrCreateSession = (userId: string): AISession => {
@@ -65,19 +57,9 @@ export function createSessionManager(): SessionManager {
     };
   };
 
-  const clearSession = (sessionId: string): void => {
-    sessions.delete(sessionId);
-  };
-
-  const clearAllSessions = (): void => {
-    sessions.clear();
-  };
-
   return {
     getOrCreateSession,
     cleanupOldSessions,
     getSessionStats,
-    clearSession,
-    clearAllSessions,
   };
 }

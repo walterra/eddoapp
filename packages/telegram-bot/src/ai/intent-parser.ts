@@ -8,17 +8,10 @@ import {
 } from '../types/ai-types.js';
 import { logger } from '../utils/logger.js';
 
-export interface IntentParser {
-  parseUserIntent: (
-    message: string,
-    lastBotMessage?: string,
-  ) => Promise<TodoIntent | MultiTodoIntent | null>;
-}
-
 /**
  * Creates an intent parser instance for extracting todo management intents from user messages
  */
-export function createIntentParser(apiKey: string): IntentParser {
+export function createIntentParser(apiKey: string) {
   const client = new Anthropic({ apiKey });
 
   const parseUserIntent = async (

@@ -4,13 +4,6 @@ import type { MCPClient } from '../mcp/client.js';
 import { logger } from '../utils/logger.js';
 import type { Persona } from './personas.js';
 
-export interface ResponseGenerator {
-  generateResponse: (
-    messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
-    systemPrompt?: string,
-  ) => Promise<string>;
-}
-
 /**
  * Creates a response generator instance for generating AI responses
  */
@@ -18,7 +11,7 @@ export function createResponseGenerator(
   apiKey: string,
   mcpClient: MCPClient | null,
   persona: Persona,
-): ResponseGenerator {
+) {
   const client = new Anthropic({ apiKey });
 
   const generateResponse = async (
