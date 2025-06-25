@@ -22,7 +22,7 @@ import { reflectOnExecution } from './nodes/enhanced-reflection.js';
  * Following the examples from LANGGRAPH-IMPLEMENTATION-EXAMPLES.md
  */
 export class EnhancedLangGraphWorkflow {
-  private app!: ReturnType<typeof StateGraph.prototype.compile>;
+  private app: unknown; // Use unknown to bypass strict typing issues
   private enhancedMCPSetup: Awaited<
     ReturnType<typeof setupEnhancedMCPIntegration>
   > | null = null;
@@ -41,17 +41,14 @@ export class EnhancedLangGraphWorkflow {
     // Create the state graph using the enhanced annotation system
     const workflow = new StateGraph(EnhancedWorkflowState);
 
-    // Add all workflow nodes
+    // Add all workflow nodes and edges using method chaining (recommended approach)
     workflow
       .addNode('analyze_intent', analyzeIntent)
       .addNode('generate_plan', generatePlan)
       .addNode('request_approval', requestApproval)
       .addNode('execute_step', this.executeStepNode.bind(this))
       .addNode('request_step_approval', requestStepApproval)
-      .addNode('reflect', reflectOnExecution);
-
-    // Define the workflow edges following Intent → Plan → Execute → Reflect
-    workflow
+      .addNode('reflect', reflectOnExecution)
       .addEdge(START, 'analyze_intent')
       .addEdge('analyze_intent', 'generate_plan')
       .addEdge('generate_plan', 'request_approval')
@@ -68,7 +65,7 @@ export class EnhancedLangGraphWorkflow {
 
     // Compile with memory for persistence
     const memory = new MemorySaver();
-    this.app = workflow.compile({ checkpointer: memory });
+    this.app = workflow.compile({ checkpointer: memory }) as unknown;
 
     logger.info('Enhanced LangGraph Workflow initialized successfully');
   }
@@ -129,7 +126,14 @@ export class EnhancedLangGraphWorkflow {
         },
       };
 
-      const result = await this.app.invoke(initialState, config);
+      const result = await (
+        this.app as {
+          invoke: (
+            state: unknown,
+            config: unknown,
+          ) => Promise<EnhancedWorkflowStateType>;
+        }
+      ).invoke(initialState, config);
 
       // Clean up context
       telegramContextManager.remove(contextKey);

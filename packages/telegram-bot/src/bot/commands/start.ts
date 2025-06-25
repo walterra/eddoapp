@@ -95,18 +95,32 @@ Just chat naturally - I'll understand what you need! ${persona.acknowledgmentEmo
 export async function handleStatus(ctx: BotContext): Promise<void> {
   const claude = getClaudeAI();
   const persona = claude.getCurrentPersona();
+  const agent = getEddoAgent();
+  const agentStatus = agent.getStatus();
 
-  const statusMessage = `
-${persona.acknowledgmentEmoji} *Bot Status*
+  // Format date safely for Markdown
+  const lastActivity = ctx.session?.lastActivity
+    ? new Date(ctx.session.lastActivity)
+        .toISOString()
+        .slice(0, 19)
+        .replace('T', ' ')
+    : 'Unknown';
+
+  const statusMessage = `${persona.acknowledgmentEmoji} *Bot Status*
 
 ✅ Telegram Bot: Online
 🔄 Checking MCP Server connection...
 
 *Session Info:*
-• User ID: ${ctx.session.userId}
-• Last Activity: ${ctx.session.lastActivity.toLocaleString()}
-• Conversation Active: ${ctx.session.conversationId ? 'Yes' : 'No'}
+• User ID: ${ctx.session?.userId || 'Unknown'}
+• Last Activity: ${lastActivity}
+• Conversation Active: ${ctx.session?.conversationId ? 'Yes' : 'No'}
 • Current Persona: ${persona.name} (${persona.id})
+
+*Agent Info:*
+• Version: ${agentStatus.version}
+• Workflow: ${agentStatus.workflowType}
+• Uptime: ${Math.floor(agentStatus.uptime / 60)}m ${Math.floor(agentStatus.uptime % 60)}s
 
 *Capabilities:*
 • Natural Language Processing: ✅
@@ -114,8 +128,7 @@ ${persona.acknowledgmentEmoji} *Bot Status*
 • Time Tracking: ✅ (via MCP)
 • AI Assistant: ✅ (Claude)
 
-Everything is running smoothly! ${persona.acknowledgmentEmoji}
-`;
+Everything is running smoothly! ${persona.acknowledgmentEmoji}`;
 
   await ctx.reply(statusMessage, { parse_mode: 'Markdown' });
 }

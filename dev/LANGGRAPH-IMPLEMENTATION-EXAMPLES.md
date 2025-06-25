@@ -766,4 +766,102 @@ Use the Annotation pattern for type-safe state management across workflow nodes.
 ### 6. Testing Strategy
 Each node can be tested independently, making the workflow highly testable.
 
+## 7. TypeScript Method Chaining Best Practices
+
+### Issue: Edge Definition Type Errors
+
+When implementing LangGraph workflows in TypeScript, you may encounter type errors when using separate `addEdge()` calls:
+
+```typescript
+// ❌ This can cause TypeScript errors
+const workflow = new StateGraph(CustomState);
+workflow.addNode('node1', handler1);
+workflow.addNode('node2', handler2);
+workflow.addEdge(START, 'node1');  // Error: Argument type not assignable
+workflow.addEdge('node1', 'node2'); // Error: Argument type not assignable
+workflow.addEdge('node2', END);     // Error: Argument type not assignable
+```
+
+**Error Message:**
+```
+Argument of type '"node_name"' is not assignable to parameter of type '"__start__" | "__end__"'
+```
+
+### Solution: Method Chaining Pattern
+
+The recommended approach is to use method chaining, which provides better type checking:
+
+```typescript
+// ✅ Correct approach with method chaining
+const workflow = new StateGraph(CustomState)
+  .addNode('analyze_intent', analyzeIntent)
+  .addNode('generate_plan', generatePlan) 
+  .addNode('request_approval', requestApproval)
+  .addNode('execute_step', executeStep)
+  .addNode('reflect', reflectOnExecution)
+  .addEdge(START, 'analyze_intent')
+  .addEdge('analyze_intent', 'generate_plan')
+  .addEdge('generate_plan', 'request_approval')
+  .addConditionalEdges('request_approval', routeAfterApproval)
+  .addConditionalEdges('execute_step', routeAfterExecution)
+  .addEdge('reflect', END);
+```
+
+### Key Benefits of Method Chaining
+
+1. **Type Safety**: The fluent interface provides better TypeScript inference
+2. **Readability**: Clear declaration of the entire graph structure
+3. **Maintainability**: Easier to visualize the workflow flow
+4. **Error Prevention**: Reduces edge definition type mismatches
+
+### Alternative Workarounds (Not Recommended)
+
+If you must use separate calls, you can use type assertions:
+
+```typescript
+// ⚠️ Workaround but not recommended
+graph.addEdge(START, "node_name" as any);
+graph.addEdge("node_name" as any, END);
+```
+
+### Best Practice Implementation
+
+```typescript
+import { StateGraph, Annotation, START, END } from "@langchain/langgraph";
+
+const MyWorkflowState = Annotation.Root({
+  userInput: Annotation<string>(),
+  result: Annotation<any>()
+});
+
+// ✅ Complete workflow with method chaining
+const myWorkflow = new StateGraph(MyWorkflowState)
+  .addNode('process_input', processInputHandler)
+  .addNode('validate_result', validateResultHandler)
+  .addNode('finalize', finalizeHandler)
+  .addEdge(START, 'process_input')
+  .addEdge('process_input', 'validate_result')
+  .addConditionalEdges('validate_result', (state) => {
+    return state.result ? 'finalize' : 'process_input';
+  })
+  .addEdge('finalize', END);
+
+// Compile with proper type handling
+const app = myWorkflow.compile({ checkpointer: memory }) as unknown;
+```
+
+### Type Safety for Compiled Workflows
+
+When working with compiled workflows, use explicit typing for the invoke method:
+
+```typescript
+const result = await (
+  app as {
+    invoke: (state: unknown, config: unknown) => Promise<MyWorkflowStateType>;
+  }
+).invoke(initialState, config);
+```
+
+This pattern ensures type safety while working around LangGraph's TypeScript definition limitations.
+
 These examples provide concrete implementations that can be directly adapted for the Eddo Telegram Bot, following the patterns described in the AI-AGENT-WORKFLOW document while leveraging LangGraph's powerful orchestration capabilities.
