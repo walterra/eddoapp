@@ -13,6 +13,10 @@ export interface TaskAnalysis {
   suggestedSteps?: string[];
   riskLevel: 'low' | 'medium' | 'high';
   estimatedSteps: number;
+  extractedParameters?: {
+    action: string;
+    parameters: Record<string, unknown>;
+  };
 }
 
 /**

@@ -27,41 +27,81 @@ export async function analyzeIntent(
       maxTokens: 1000,
     });
 
-    const analysisPrompt = `Analyze the user's intent and classify the task complexity for a todo management system.
+    const analysisPrompt = `Analyze the user's intent and classify the task complexity for a todo management system with MCP integration.
 
 User Intent: "${state.userIntent}"
 
-Available MCP Actions:
-- list_todos: Get todos with optional filters (context, status, tags)
-- create_todo: Create new todo with title, description, context, due date, tags
-- update_todo: Update existing todo fields
-- delete_todo: Delete todo by ID
-- toggle_completion: Mark todo as complete/incomplete
-- start_time_tracking: Start timer for a todo
-- stop_time_tracking: Stop timer for a todo
-- get_time_summary: Get time tracking summaries
+Available MCP Actions with detailed parameter specifications:
+- listTodos: Get todos with optional filters
+  Parameters: { context?: string, completed?: boolean, dateFrom?: string, dateTo?: string, limit?: number }
+  
+- createTodo: Create new todo with semantic parameter extraction
+  Parameters: { 
+    title: string (required - extract the actual task name from user's message),
+    description?: string (optional detailed notes),
+    context?: string (extract from phrases like "work context", "for work", "personal", etc. Default: "private"),
+    due?: string (ISO format date if mentioned),
+    tags?: string[] (extract any mentioned tags or categories),
+    repeat?: number (days, if recurring task mentioned),
+    link?: string (any URLs mentioned)
+  }
+  
+- updateTodo: Update existing todo fields
+  Parameters: { id: string, title?: string, description?: string, context?: string, due?: string, tags?: string[], repeat?: number, link?: string }
+  
+- deleteTodo: Delete todo by ID
+  Parameters: { id: string }
+  
+- toggleTodoCompletion: Mark todo as complete/incomplete
+  Parameters: { id: string, completed: boolean }
+  
+- startTimeTracking: Start timer for a todo
+  Parameters: { id: string }
+  
+- stopTimeTracking: Stop timer for a todo
+  Parameters: { id: string }
+  
+- getActiveTimeTracking: Get todos with active time tracking
+  Parameters: {} (no parameters required)
 
-Classify the task as:
-- simple: Single atomic action (e.g., "mark todo complete", "list my work todos")
-- compound: 2-3 related steps (e.g., "create a todo and start tracking time")
-- complex: Multi-step workflow requiring planning (e.g., "organize my todos by priority and clean up completed ones")
+IMPORTANT: For createTodo actions, use semantic understanding to extract parameters:
+- Parse natural language to identify the actual task title vs. command words
+- Extract context from phrases like "work context", "for work", "in work", etc.
+- Don't include command words ("create", "add", "todo") in the title
+- Use chain-of-thought reasoning to understand user intent
+
+Examples of proper parameter extraction:
+- "create todo in 'work' context 'video call with team'" → title="video call with team", context="work"
+- "add 'buy groceries' for personal" → title="buy groceries", context="personal"
+- "new task: review code for work project" → title="review code for work project", context="work"
+
+Classify the task complexity:
+- simple: Single atomic action requiring one MCP call
+- compound: 2-3 related steps with dependencies
+- complex: Multi-step workflow requiring planning and coordination
 
 Consider these factors:
-1. Number of operations required
+1. Number of MCP operations required
 2. Dependencies between operations
 3. Risk of destructive actions (deletions, bulk updates)
 4. Need for user confirmation
-5. Complexity of data transformations
+5. Complexity of parameter extraction
+
+For simple createTodo tasks, include the extracted parameters in your response.
 
 Respond in JSON format:
 {
   "classification": "simple|compound|complex",
   "confidence": 0.0-1.0,
-  "reasoning": "Brief explanation of classification rationale",
+  "reasoning": "Brief explanation of classification rationale with parameter extraction logic",
   "requiresApproval": boolean,
   "suggestedSteps": ["step1", "step2", ...],
   "riskLevel": "low|medium|high",
-  "estimatedSteps": number
+  "estimatedSteps": number,
+  "extractedParameters": {
+    "action": "mcpActionName",
+    "parameters": { /* extracted MCP parameters for simple tasks */ }
+  }
 }`;
 
     const response = await model.invoke([
@@ -161,5 +201,11 @@ function validateTaskAnalysis(analysis: Partial<TaskAnalysis>): TaskAnalysis {
         ? analysis.riskLevel
         : 'low',
     estimatedSteps: Math.max(1, Math.min(20, analysis.estimatedSteps || 1)),
+    extractedParameters: analysis.extractedParameters
+      ? {
+          action: analysis.extractedParameters.action || 'listTodos',
+          parameters: analysis.extractedParameters.parameters || {},
+        }
+      : undefined,
   };
 }

@@ -25,10 +25,36 @@ export async function generatePlan(
   });
 
   try {
-    // Skip planning for simple tasks
+    // Skip planning for simple tasks - use extracted parameters from intent analysis
     if (state.taskAnalysis?.classification === 'simple') {
-      // Determine the appropriate MCP action based on user intent
-      const mcpAction = inferMCPActionFromIntent(state.userIntent || '');
+      let mcpAction: {
+        action: string;
+        parameters: Record<string, unknown>;
+        description: string;
+      };
+
+      // Use extracted parameters from intent analysis if available
+      if (state.taskAnalysis.extractedParameters) {
+        mcpAction = {
+          action: state.taskAnalysis.extractedParameters.action,
+          parameters: state.taskAnalysis.extractedParameters.parameters,
+          description: `Execute ${state.taskAnalysis.extractedParameters.action} with LLM-extracted parameters`,
+        };
+
+        logger.info('Using LLM-extracted parameters for simple plan', {
+          userId: state.userId,
+          action: mcpAction.action,
+          parameters: mcpAction.parameters,
+        });
+      } else {
+        // Fallback to basic inference if extraction failed
+        mcpAction = inferMCPActionFromIntent(state.userIntent || '');
+
+        logger.warn('Falling back to basic intent inference', {
+          userId: state.userId,
+          userIntent: state.userIntent,
+        });
+      }
 
       const simplePlan: ExecutionPlan = {
         id: uuidv4(),
@@ -49,10 +75,11 @@ export async function generatePlan(
         estimatedDuration: '< 1 minute',
       };
 
-      logger.info('Generated simple plan (no AI planning needed)', {
+      logger.info('Generated simple plan using enhanced intent analysis', {
         userId: state.userId,
         planId: simplePlan.id,
         action: mcpAction.action,
+        usedExtractedParams: !!state.taskAnalysis.extractedParameters,
       });
 
       return { executionPlan: simplePlan };
@@ -339,16 +366,27 @@ function inferMCPActionFromIntent(userIntent: string): {
     };
   }
 
-  // Create todo requests
+  // Create todo requests - basic fallback (LLM should handle parameter extraction)
   if (
     intent.includes('create') ||
     intent.includes('add') ||
     intent.includes('new todo')
   ) {
+    logger.warn(
+      'Using fallback createTodo - LLM parameter extraction should have handled this',
+      {
+        userIntent,
+      },
+    );
     return {
       action: 'createTodo',
-      parameters: { title: userIntent },
-      description: 'Create new todo from user request',
+      parameters: {
+        title: userIntent
+          .replace(/^(create|add|new)\s+(todo|task)\s*/i, '')
+          .trim(),
+        context: 'private',
+      },
+      description: 'Create new todo (fallback - parameter extraction bypassed)',
     };
   }
 
