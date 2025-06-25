@@ -17,7 +17,8 @@
       "Bash(grep:*)",
       "Bash(find:*)",
       "Bash(gh:*)",
-      "Bash(pnpm test:*)"
+      "Bash(pnpm test:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
