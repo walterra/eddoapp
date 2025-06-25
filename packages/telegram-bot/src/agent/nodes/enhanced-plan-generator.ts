@@ -27,15 +27,18 @@ export async function generatePlan(
   try {
     // Skip planning for simple tasks
     if (state.taskAnalysis?.classification === 'simple') {
+      // Determine the appropriate MCP action based on user intent
+      const mcpAction = inferMCPActionFromIntent(state.userIntent || '');
+
       const simplePlan: ExecutionPlan = {
         id: uuidv4(),
         userIntent: state.userIntent || '',
         steps: [
           {
             id: uuidv4(),
-            action: 'execute_simple_task',
-            parameters: { userIntent: state.userIntent },
-            description: 'Execute simple task directly',
+            action: mcpAction.action,
+            parameters: mcpAction.parameters,
+            description: mcpAction.description,
             dependencies: [],
             requiresApproval: false,
             riskLevel: 'low',
@@ -49,6 +52,7 @@ export async function generatePlan(
       logger.info('Generated simple plan (no AI planning needed)', {
         userId: state.userId,
         planId: simplePlan.id,
+        action: mcpAction.action,
       });
 
       return { executionPlan: simplePlan };
@@ -199,12 +203,12 @@ function createFallbackPlan(
       },
       {
         id: uuidv4(),
-        action: 'execute_fallback_task',
-        parameters: { userIntent },
-        description: 'Execute task using fallback method',
+        action: 'list_todos',
+        parameters: { completed: false },
+        description: 'List current todos to provide context',
         dependencies: [],
-        requiresApproval: taskAnalysis?.riskLevel === 'high',
-        riskLevel: taskAnalysis?.riskLevel || 'low',
+        requiresApproval: false,
+        riskLevel: 'low',
       },
     ],
     requiresApproval: taskAnalysis?.requiresApproval || false,
@@ -229,11 +233,12 @@ function validateAndEnhancePlan(
 
   // Ensure we have at least one step
   if (steps.length === 0) {
+    const fallbackAction = inferMCPActionFromIntent(userIntent);
     steps.push({
       id: uuidv4(),
-      action: 'execute_simple_task',
-      parameters: { userIntent },
-      description: 'Execute the requested task',
+      action: fallbackAction.action,
+      parameters: fallbackAction.parameters,
+      description: fallbackAction.description,
       dependencies: [],
       requiresApproval: false,
       riskLevel: 'low',
@@ -294,4 +299,90 @@ function estimateDuration(steps: PlanStep[]): string {
   if (stepCount <= 10) return '5-10 minutes';
 
   return '> 10 minutes';
+}
+
+/**
+ * Infers the appropriate MCP action and parameters from user intent
+ */
+function inferMCPActionFromIntent(userIntent: string): {
+  action: string;
+  parameters: Record<string, unknown>;
+  description: string;
+} {
+  const intent = userIntent.toLowerCase();
+
+  // Daily summary requests
+  if (
+    intent.includes('daily summary') ||
+    intent.includes('summary') ||
+    intent.includes("what's my day")
+  ) {
+    return {
+      action: 'list_todos',
+      parameters: {
+        completed: false,
+        orderBy: 'due',
+      },
+      description: 'Get daily summary of pending todos',
+    };
+  }
+
+  // Status/overview requests
+  if (
+    intent.includes('status') ||
+    intent.includes('overview') ||
+    intent.includes("what's up")
+  ) {
+    return {
+      action: 'list_todos',
+      parameters: { completed: false },
+      description: 'Get current todo status',
+    };
+  }
+
+  // Create todo requests
+  if (
+    intent.includes('create') ||
+    intent.includes('add') ||
+    intent.includes('new todo')
+  ) {
+    return {
+      action: 'create_todo',
+      parameters: { title: userIntent },
+      description: 'Create new todo from user request',
+    };
+  }
+
+  // List todos requests
+  if (
+    intent.includes('list') ||
+    intent.includes('show') ||
+    intent.includes('todos')
+  ) {
+    return {
+      action: 'list_todos',
+      parameters: {},
+      description: 'List todos',
+    };
+  }
+
+  // Time tracking requests
+  if (
+    intent.includes('timer') ||
+    intent.includes('time') ||
+    intent.includes('tracking')
+  ) {
+    return {
+      action: 'get_active_timers',
+      parameters: {},
+      description: 'Get active time tracking information',
+    };
+  }
+
+  // Default fallback - list todos to understand current state
+  return {
+    action: 'list_todos',
+    parameters: { completed: false },
+    description: 'List current todos to understand user context',
+  };
 }

@@ -1,3 +1,4 @@
+import type { Tool } from '@langchain/core/tools';
 import { END, MemorySaver, START, StateGraph } from '@langchain/langgraph';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,7 +17,6 @@ import {
 import { analyzeIntent } from './nodes/enhanced-intent-analyzer.js';
 import { generatePlan } from './nodes/enhanced-plan-generator.js';
 import { reflectOnExecution } from './nodes/enhanced-reflection.js';
-import type { Tool } from '@langchain/core/tools';
 
 /**
  * Enhanced LangGraph Workflow implementing Intent → Plan → Execute → Reflect pattern
@@ -212,7 +212,9 @@ export class EnhancedLangGraphWorkflow {
     }
 
     // Get the telegram context
-    const telegramContext = telegramContextManager.get(state.telegramContextKey);
+    const telegramContext = telegramContextManager.get(
+      state.telegramContextKey,
+    );
     if (!telegramContext) {
       logger.error('Telegram context not found', {
         userId: state.userId,
@@ -237,7 +239,10 @@ export class EnhancedLangGraphWorkflow {
 
     try {
       // Find the appropriate MCP tool for this action
-      const tool = this.findToolForAction(this.enhancedMCPSetup.tools, currentStep.action);
+      const tool = this.findToolForAction(
+        this.enhancedMCPSetup.tools,
+        currentStep.action,
+      );
 
       if (!tool) {
         throw new Error(`Tool not found for action: ${currentStep.action}`);
@@ -262,9 +267,12 @@ export class EnhancedLangGraphWorkflow {
       };
 
       // Send progress update to user
-      await telegramContext.reply(`✅ **Step ${state.currentStepIndex + 1}/${state.executionPlan.steps.length} Completed**\n${currentStep.description}`, {
-        parse_mode: 'Markdown',
-      });
+      await telegramContext.reply(
+        `✅ **Step ${state.currentStepIndex + 1}/${state.executionPlan.steps.length} Completed**\n${currentStep.description}`,
+        {
+          parse_mode: 'Markdown',
+        },
+      );
 
       return {
         executionSteps: [...state.executionSteps, executedStep],
@@ -297,9 +305,12 @@ export class EnhancedLangGraphWorkflow {
       };
 
       // Send error message to user
-      await telegramContext.reply(`❌ **Step ${state.currentStepIndex + 1}/${state.executionPlan.steps.length} Failed**\n${currentStep.description}\n⚠️ ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        parse_mode: 'Markdown',
-      });
+      await telegramContext.reply(
+        `❌ **Step ${state.currentStepIndex + 1}/${state.executionPlan.steps.length} Failed**\n${currentStep.description}\n⚠️ ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          parse_mode: 'Markdown',
+        },
+      );
 
       return {
         executionSteps: [...state.executionSteps, failedStep],
@@ -329,16 +340,28 @@ export class EnhancedLangGraphWorkflow {
 
     // Action-based mapping for common operations
     const actionMapping: Record<string, string[]> = {
-      list_todos: ['list', 'getTodos', 'listTodos'],
-      create_todo: ['create', 'createTodo', 'addTodo'],
-      update_todo: ['update', 'updateTodo', 'editTodo'],
-      delete_todo: ['delete', 'deleteTodo', 'removeTodo'],
-      toggle_completion: ['toggle', 'toggleCompletion', 'complete'],
-      start_time_tracking: ['startTimer', 'startTracking', 'startTime'],
-      stop_time_tracking: ['stopTimer', 'stopTracking', 'stopTime'],
-      get_active_timers: ['getTimers', 'activeTimers', 'listTimers'],
-      daily_summary: ['summary', 'getSummary', 'dailySummary'],
-      analysis: ['analyze', 'summary', 'report'],
+      list_todos: ['listTodos', 'eddo__todo__listTodos'],
+      create_todo: ['createTodo', 'eddo__todo__createTodo'],
+      update_todo: ['updateTodo', 'eddo__todo__updateTodo'],
+      delete_todo: ['deleteTodo', 'eddo__todo__deleteTodo'],
+      toggle_completion: [
+        'toggleTodoCompletion',
+        'eddo__todo__toggleTodoCompletion',
+      ],
+      start_time_tracking: [
+        'startTimeTracking',
+        'eddo__todo__startTimeTracking',
+      ],
+      stop_time_tracking: ['stopTimeTracking', 'eddo__todo__stopTimeTracking'],
+      get_active_timers: [
+        'getActiveTimeTracking',
+        'eddo__todo__getActiveTimeTracking',
+      ],
+      daily_summary: ['listTodos', 'eddo__todo__listTodos'],
+      analysis: ['listTodos', 'eddo__todo__listTodos'],
+      // Handle the legacy artificial actions by mapping them to real actions
+      execute_simple_task: ['listTodos', 'eddo__todo__listTodos'],
+      execute_fallback_task: ['listTodos', 'eddo__todo__listTodos'],
     };
 
     const possibleNames = actionMapping[action] || [action];

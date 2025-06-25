@@ -189,14 +189,23 @@ function findToolForAction(tools: Tool[], action: string): Tool | null {
 
   // Action-based mapping for common operations
   const actionMapping: Record<string, string[]> = {
-    list_todos: ['list', 'getTodos', 'listTodos'],
-    create_todo: ['create', 'createTodo', 'addTodo'],
-    update_todo: ['update', 'updateTodo', 'editTodo'],
-    delete_todo: ['delete', 'deleteTodo', 'removeTodo'],
-    toggle_completion: ['toggle', 'toggleCompletion', 'complete'],
-    start_time_tracking: ['startTimer', 'startTracking', 'startTime'],
-    stop_time_tracking: ['stopTimer', 'stopTracking', 'stopTime'],
-    get_active_timers: ['getTimers', 'activeTimers', 'listTimers'],
+    list_todos: ['listTodos', 'eddo__todo__listTodos'],
+    create_todo: ['createTodo', 'eddo__todo__createTodo'],
+    update_todo: ['updateTodo', 'eddo__todo__updateTodo'],
+    delete_todo: ['deleteTodo', 'eddo__todo__deleteTodo'],
+    toggle_completion: [
+      'toggleTodoCompletion',
+      'eddo__todo__toggleTodoCompletion',
+    ],
+    start_time_tracking: ['startTimeTracking', 'eddo__todo__startTimeTracking'],
+    stop_time_tracking: ['stopTimeTracking', 'eddo__todo__stopTimeTracking'],
+    get_active_timers: [
+      'getActiveTimeTracking',
+      'eddo__todo__getActiveTimeTracking',
+    ],
+    // Handle the legacy artificial actions by mapping them to real actions
+    execute_simple_task: ['listTodos', 'eddo__todo__listTodos'],
+    execute_fallback_task: ['listTodos', 'eddo__todo__listTodos'],
   };
 
   const possibleNames = actionMapping[action] || [action];

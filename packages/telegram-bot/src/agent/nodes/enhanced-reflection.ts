@@ -161,18 +161,18 @@ Focus on:
 
   try {
     const content = response.content as string;
-    
+
     // Extract JSON from response content - handle cases where AI adds text before/after JSON
     let jsonContent = content.trim();
-    
+
     // Find JSON boundaries
     const jsonStart = jsonContent.indexOf('{');
     const jsonEnd = jsonContent.lastIndexOf('}') + 1;
-    
+
     if (jsonStart !== -1 && jsonEnd > jsonStart) {
       jsonContent = jsonContent.slice(jsonStart, jsonEnd);
     }
-    
+
     const aiReflection = JSON.parse(jsonContent);
 
     // Validate and enhance the reflection
