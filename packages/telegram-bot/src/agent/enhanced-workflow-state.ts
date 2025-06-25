@@ -111,6 +111,14 @@ export const EnhancedWorkflowState = Annotation.Root({
     reducer: (prev, current) => ({ ...prev, ...current }),
     default: () => ({}),
   }),
+  mcpResponses: Annotation<unknown[]>({
+    reducer: (prev, current) => [...prev, ...current],
+    default: () => [],
+  }),
+  toolResults: Annotation<Record<string, unknown>>({
+    reducer: (prev, current) => ({ ...prev, ...current }),
+    default: () => ({}),
+  }),
 
   // Human-in-the-loop
   approvalRequests: Annotation<ApprovalRequest[]>({

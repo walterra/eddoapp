@@ -16,6 +16,7 @@ import {
 import { analyzeIntent } from './nodes/enhanced-intent-analyzer.js';
 import { generatePlan } from './nodes/enhanced-plan-generator.js';
 import { reflectOnExecution } from './nodes/enhanced-reflection.js';
+import type { Tool } from '@langchain/core/tools';
 
 /**
  * Enhanced LangGraph Workflow implementing Intent → Plan → Execute → Reflect pattern
@@ -210,34 +211,82 @@ export class EnhancedLangGraphWorkflow {
       };
     }
 
+    // Get the telegram context
+    const telegramContext = telegramContextManager.get(state.telegramContextKey);
+    if (!telegramContext) {
+      logger.error('Telegram context not found', {
+        userId: state.userId,
+        contextKey: state.telegramContextKey,
+      });
+      return {
+        error: new Error('Telegram context not available'),
+        finalResponse: 'Unable to execute steps - Telegram context unavailable',
+      };
+    }
+
     const currentStep = state.executionPlan.steps[state.currentStepIndex];
 
-    logger.info('Executing step', {
+    logger.info('Executing step with enhanced MCP integration', {
       userId: state.userId,
       stepId: currentStep.id,
       stepIndex: state.currentStepIndex,
       action: currentStep.action,
+      availableTools: this.enhancedMCPSetup.tools.length,
+      toolNames: this.enhancedMCPSetup.tools.map((t) => t.name),
     });
 
     try {
-      // For simple tasks, just mark as completed
+      // Find the appropriate MCP tool for this action
+      const tool = this.findToolForAction(this.enhancedMCPSetup.tools, currentStep.action);
+
+      if (!tool) {
+        throw new Error(`Tool not found for action: ${currentStep.action}`);
+      }
+
+      logger.info('Found MCP tool for step', {
+        stepId: currentStep.id,
+        toolName: tool.name,
+        userId: state.userId,
+      });
+
+      // Execute the tool with the step parameters
+      const result = await tool.invoke(currentStep.parameters);
+
+      // Update step with results
       const executedStep = {
         ...currentStep,
         status: 'completed' as const,
-        result: 'Step executed successfully',
+        result,
         timestamp: Date.now(),
+        duration: 0, // Will be calculated when step completes
       };
+
+      // Send progress update to user
+      await telegramContext.reply(`✅ **Step ${state.currentStepIndex + 1}/${state.executionPlan.steps.length} Completed**\n${currentStep.description}`, {
+        parse_mode: 'Markdown',
+      });
 
       return {
         executionSteps: [...state.executionSteps, executedStep],
         currentStepIndex: state.currentStepIndex + 1,
-        finalResult: 'Step execution completed',
+        mcpResponses: [...state.mcpResponses, result],
+        toolResults: {
+          ...state.toolResults,
+          [currentStep.id]: {
+            content: result,
+            metadata: {
+              toolName: tool.name,
+              timestamp: Date.now(),
+            },
+          },
+        },
       };
     } catch (error) {
       logger.error('Step execution failed', {
         error,
         userId: state.userId,
         stepId: currentStep.id,
+        action: currentStep.action,
       });
 
       const failedStep = {
@@ -247,12 +296,63 @@ export class EnhancedLangGraphWorkflow {
         timestamp: Date.now(),
       };
 
+      // Send error message to user
+      await telegramContext.reply(`❌ **Step ${state.currentStepIndex + 1}/${state.executionPlan.steps.length} Failed**\n${currentStep.description}\n⚠️ ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        parse_mode: 'Markdown',
+      });
+
       return {
         executionSteps: [...state.executionSteps, failedStep],
         currentStepIndex: state.currentStepIndex + 1,
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
+  }
+
+  /**
+   * Find appropriate MCP tool for a given action
+   */
+  private findToolForAction(tools: Tool[], action: string): Tool | null {
+    if (!tools || tools.length === 0) {
+      return null;
+    }
+
+    // Direct name match (prefixed with server name)
+    let tool = tools.find(
+      (t) =>
+        t.name.includes(action) ||
+        t.name.endsWith(`_${action}`) ||
+        t.name.toLowerCase().includes(action.toLowerCase()),
+    );
+
+    if (tool) return tool;
+
+    // Action-based mapping for common operations
+    const actionMapping: Record<string, string[]> = {
+      list_todos: ['list', 'getTodos', 'listTodos'],
+      create_todo: ['create', 'createTodo', 'addTodo'],
+      update_todo: ['update', 'updateTodo', 'editTodo'],
+      delete_todo: ['delete', 'deleteTodo', 'removeTodo'],
+      toggle_completion: ['toggle', 'toggleCompletion', 'complete'],
+      start_time_tracking: ['startTimer', 'startTracking', 'startTime'],
+      stop_time_tracking: ['stopTimer', 'stopTracking', 'stopTime'],
+      get_active_timers: ['getTimers', 'activeTimers', 'listTimers'],
+      daily_summary: ['summary', 'getSummary', 'dailySummary'],
+      analysis: ['analyze', 'summary', 'report'],
+    };
+
+    const possibleNames = actionMapping[action] || [action];
+
+    for (const name of possibleNames) {
+      tool = tools.find(
+        (t) =>
+          t.name.toLowerCase().includes(name.toLowerCase()) ||
+          t.description?.toLowerCase().includes(name.toLowerCase()),
+      );
+      if (tool) return tool;
+    }
+
+    return null;
   }
 
   /**
