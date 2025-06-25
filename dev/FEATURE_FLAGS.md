@@ -4,32 +4,6 @@ This document describes all feature flags and configuration toggles available in
 
 ## Environment Variable Feature Flags
 
-### Workflow Control
-
-#### `USE_LANGGRAPH`
-- **Type**: Boolean
-- **Default**: `true` (enabled unless explicitly set to `'false'`)
-- **Location**: `packages/telegram-bot/src/agent/index.ts:31`
-- **Purpose**: Controls whether to use LangGraph workflow instead of basic workflow
-- **Usage**: `process.env.USE_LANGGRAPH !== 'false'`
-- **Impact**: Determines the workflow engine used for processing user messages
-
-#### `USE_ENHANCED_WORKFLOW`
-- **Type**: Boolean
-- **Default**: `true` (enabled unless explicitly set to `'false'`)
-- **Location**: `packages/telegram-bot/src/agent/index.ts:32`
-- **Purpose**: Controls whether to use enhanced LangGraph workflow vs simple LangGraph workflow
-- **Usage**: `process.env.USE_ENHANCED_WORKFLOW !== 'false'`
-- **Impact**: Enables Intent → Plan → Execute → Reflect pattern in enhanced workflow
-
-#### `ENABLE_AGENT_WORKFLOW`
-- **Type**: Boolean
-- **Default**: `true` (enabled unless explicitly set to `'false'`)
-- **Location**: `packages/telegram-bot/src/bot/handlers/enhanced-message.ts:137`
-- **Purpose**: Controls whether to use agent workflow or fallback to original message handler
-- **Usage**: `process.env.ENABLE_AGENT_WORKFLOW !== 'false'`
-- **Impact**: Routes messages through agent workflow vs original handler
-
 ### Authentication
 
 #### `MCP_API_KEY`
@@ -128,15 +102,6 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram-bo
 ### Setting Feature Flags
 
 ```bash
-# Disable LangGraph workflow (use basic workflow)
-export USE_LANGGRAPH=false
-
-# Disable enhanced workflow (use simple LangGraph)
-export USE_ENHANCED_WORKFLOW=false
-
-# Disable agent workflow (use original message handler)
-export ENABLE_AGENT_WORKFLOW=false
-
 # Set MCP authentication
 export MCP_API_KEY=your-api-key-here
 
@@ -151,15 +116,6 @@ export BOT_PERSONA_ID=assistant
 ### Progressive Fallback Chain
 
 The system implements a progressive enhancement approach:
-
-1. **Enhanced Workflow** (if `USE_ENHANCED_WORKFLOW=true`)
-   - Intent → Plan → Execute → Reflect pattern
-   - Multi-server MCP support
-   - Advanced error handling
-
-2. **Simple LangGraph Workflow** (if `USE_LANGGRAPH=true` but enhanced disabled)
-   - Basic LangGraph implementation
-   - Single-step execution
 
 3. **Basic Workflow** (if LangGraph disabled)
    - Original message handler
