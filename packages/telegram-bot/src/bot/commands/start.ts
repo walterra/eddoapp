@@ -106,29 +106,33 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
         .replace('T', ' ')
     : 'Unknown';
 
+  // Escape special characters for Markdown
+  const escapeMarkdown = (text: string) =>
+    text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+
   const statusMessage = `${persona.acknowledgmentEmoji} *Bot Status*
 
 ✅ Telegram Bot: Online
-🔄 Checking MCP Server connection...
+🔄 Checking MCP Server connection\\.\\.\\.
 
 *Session Info:*
-• User ID: ${ctx.session?.userId || 'Unknown'}
-• Last Activity: ${lastActivity}
+• User ID: ${escapeMarkdown(ctx.session?.userId || 'Unknown')}
+• Last Activity: ${escapeMarkdown(lastActivity)}
 • Conversation Active: ${ctx.session?.conversationId ? 'Yes' : 'No'}
-• Current Persona: ${persona.name} (${persona.id})
+• Current Persona: ${escapeMarkdown(persona.name)} \\(${escapeMarkdown(persona.id)}\\)
 
 *Agent Info:*
-• Version: ${agentStatus.version}
-• Workflow: ${agentStatus.workflowType}
+• Version: ${escapeMarkdown(agentStatus.version)}
+• Workflow: ${escapeMarkdown(agentStatus.workflowType)}
 • Uptime: ${Math.floor(agentStatus.uptime / 60)}m ${Math.floor(agentStatus.uptime % 60)}s
 
 *Capabilities:*
 • Natural Language Processing: ✅
-• Todo Management: ✅ (via MCP)
-• Time Tracking: ✅ (via MCP)
-• AI Assistant: ✅ (Claude)
+• Todo Management: ✅ \\(via MCP\\)
+• Time Tracking: ✅ \\(via MCP\\)
+• AI Assistant: ✅ \\(Claude\\)
 
-Everything is running smoothly! ${persona.acknowledgmentEmoji}`;
+Everything is running smoothly\\! ${persona.acknowledgmentEmoji}`;
 
   await ctx.reply(statusMessage, { parse_mode: 'Markdown' });
 }
@@ -239,4 +243,28 @@ export async function handleDeny(ctx: BotContext): Promise<void> {
   } else {
     await ctx.reply('❌ Failed to deny request.');
   }
+}
+
+/**
+ * Handle the /summary command
+ */
+export async function handleSummary(ctx: BotContext): Promise<void> {
+  const claude = getClaudeAI();
+  const persona = claude.getCurrentPersona();
+
+  const summaryMessage = `${persona.acknowledgmentEmoji} *Daily Summary*
+
+This is a simple summary command\\. For AI\\-powered task summaries, try asking:
+• "What's my daily summary?"
+• "Show me today's completed tasks"
+• "Generate a weekly report"
+
+*Quick Stats:*
+• Command: /summary
+• Status: Processed directly
+• Agent: Not used for this simple command
+
+Use natural language for more advanced summaries\\! ${persona.acknowledgmentEmoji}`;
+
+  await ctx.reply(summaryMessage, { parse_mode: 'Markdown' });
 }

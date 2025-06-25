@@ -5,6 +5,7 @@ import {
   handleHelp,
   handleStart,
   handleStatus,
+  handleSummary,
 } from './bot/commands/start.js';
 import { handleMessageEnhanced } from './bot/handlers/enhanced-message.js';
 import { getMCPClient } from './mcp/client.js';
@@ -42,6 +43,7 @@ async function main(): Promise<void> {
     bot.command('start', handleStart);
     bot.command('help', handleHelp);
     bot.command('status', handleStatus);
+    bot.command('summary', handleSummary);
     bot.command('approve', handleApprove);
     bot.command('deny', handleDeny);
 
