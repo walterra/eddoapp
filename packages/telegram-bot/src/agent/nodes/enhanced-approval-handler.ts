@@ -2,6 +2,7 @@ import { Command, interrupt } from '@langchain/langgraph';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '../../utils/logger.js';
+import { enhancedApprovalManager } from '../enhanced-approval-manager.js';
 import type {
   ApprovalRequest,
   EnhancedWorkflowStateType,
@@ -57,8 +58,19 @@ export function requestApproval(
   // Send approval request to user via Telegram
   sendApprovalToUser(state, approvalRequest);
 
+  // Register with enhanced approval manager and use LangGraph interrupt
+  let approvalResult: { approved: boolean; feedback?: string } | undefined;
+  
+  enhancedApprovalManager.registerPendingApproval(
+    state.userId,
+    approvalRequest,
+    (result) => {
+      approvalResult = result;
+    }
+  );
+
   // Use LangGraph interrupt to pause execution and wait for human input
-  const approvalResult = interrupt({
+  const interruptResult = interrupt({
     question: 'Do you want to execute this plan?',
     plan: {
       id: state.executionPlan.id,
@@ -78,6 +90,15 @@ export function requestApproval(
         : undefined,
     approvalId: approvalRequest.id,
   });
+
+  // Use the approval result from the enhanced manager if available, otherwise use interrupt result
+  if (approvalResult) {
+    // Use the result from enhanced approval manager (set by command handlers)
+    approvalResult = approvalResult;
+  } else {
+    // Fall back to interrupt result (direct LangGraph response)
+    approvalResult = interruptResult;
+  }
 
   // Handle the approval result
   if (approvalResult?.approved) {
@@ -295,8 +316,19 @@ export function requestStepApproval(
   // Send step approval request to user
   sendApprovalToUser(state, approvalRequest);
 
+  // Register with enhanced approval manager and use LangGraph interrupt
+  let approvalResult: { approved: boolean; feedback?: string } | undefined;
+  
+  enhancedApprovalManager.registerPendingApproval(
+    state.userId,
+    approvalRequest,
+    (result) => {
+      approvalResult = result;
+    }
+  );
+
   // Use interrupt for step approval
-  const approvalResult = interrupt({
+  const interruptResult = interrupt({
     question: `Approve step ${state.currentStepIndex + 1}?`,
     step: {
       description: currentStep.description,
@@ -308,6 +340,15 @@ export function requestStepApproval(
     totalSteps: state.executionPlan.steps.length,
     approvalId: approvalRequest.id,
   });
+
+  // Use the approval result from the enhanced manager if available, otherwise use interrupt result
+  if (approvalResult) {
+    // Use the result from enhanced approval manager (set by command handlers)
+    approvalResult = approvalResult;
+  } else {
+    // Fall back to interrupt result (direct LangGraph response)
+    approvalResult = interruptResult;
+  }
 
   if (approvalResult?.approved) {
     const updatedRequest = {

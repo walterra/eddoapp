@@ -1,6 +1,5 @@
-import { approvalManager } from '../../agent/approval-manager.js';
+import { enhancedApprovalManager } from '../../agent/enhanced-approval-manager.js';
 import { getEddoAgent } from '../../agent/index.js';
-import { workflowStateManager } from '../../agent/workflow-state-manager.js';
 import { getClaudeAI } from '../../ai/claude.js';
 import { logger } from '../../utils/logger.js';
 import { BotContext } from '../bot.js';
@@ -148,7 +147,7 @@ export async function handleApprove(ctx: BotContext): Promise<void> {
     return;
   }
 
-  const pendingRequests = approvalManager.getPendingRequests(userId);
+  const pendingRequests = enhancedApprovalManager.getPendingRequests(userId);
 
   if (pendingRequests.length === 0) {
     await ctx.reply('ℹ️ No pending approval requests found.');
@@ -156,7 +155,7 @@ export async function handleApprove(ctx: BotContext): Promise<void> {
   }
 
   // Approve the most recent request
-  const approvedRequest = approvalManager.approveRequest(userId);
+  const approvedRequest = enhancedApprovalManager.approveRequest(userId);
 
   if (approvedRequest) {
     await ctx.reply(
@@ -168,43 +167,10 @@ export async function handleApprove(ctx: BotContext): Promise<void> {
       stepId: approvedRequest.stepId,
     });
 
-    // Check if there's a paused workflow to resume
-    if (workflowStateManager.hasPausedWorkflow(userId)) {
-      // Trigger workflow resumption by sending a special resume message
-      try {
-        const agent = getEddoAgent({
-          enableStreaming: true,
-          enableApprovals: true,
-          maxExecutionTime: 300000,
-        });
-
-        // Process a special resume message to trigger workflow continuation
-        const result = await agent.processMessage(
-          '__RESUME_WORKFLOW__', // Special internal message
-          userId,
-          ctx,
-        );
-
-        if (!result.success) {
-          logger.error('Failed to resume workflow after approval', {
-            userId,
-            error: result.finalState.error,
-          });
-          await ctx.reply(
-            '⚠️ Failed to resume workflow. Please try running your original command again.',
-          );
-        }
-      } catch (error) {
-        logger.error('Error during workflow resumption', { userId, error });
-        await ctx.reply(
-          '⚠️ Error resuming workflow. Please try running your original command again.',
-        );
-      }
-    } else {
-      await ctx.reply(
-        '💡 No paused workflow found. Please run your original command again if needed.',
-      );
-    }
+    // Enhanced workflow should automatically resume through LangGraph interrupt mechanism
+    await ctx.reply(
+      '✅ The workflow should resume automatically. If it doesn\'t, please run your original command again.',
+    );
   } else {
     await ctx.reply('❌ Failed to approve request.');
   }
@@ -221,7 +187,7 @@ export async function handleDeny(ctx: BotContext): Promise<void> {
     return;
   }
 
-  const pendingRequests = approvalManager.getPendingRequests(userId);
+  const pendingRequests = enhancedApprovalManager.getPendingRequests(userId);
 
   if (pendingRequests.length === 0) {
     await ctx.reply('ℹ️ No pending approval requests found.');
@@ -229,7 +195,7 @@ export async function handleDeny(ctx: BotContext): Promise<void> {
   }
 
   // Deny the most recent request
-  const deniedRequest = approvalManager.denyRequest(userId);
+  const deniedRequest = enhancedApprovalManager.denyRequest(userId);
 
   if (deniedRequest) {
     await ctx.reply(
