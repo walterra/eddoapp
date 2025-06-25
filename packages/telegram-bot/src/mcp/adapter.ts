@@ -2,6 +2,9 @@ import type { TodoAlpha3 } from '@eddo/shared';
 import type { Tool } from '@langchain/core/tools';
 import type { MultiServerMCPClient } from '@langchain/mcp-adapters';
 
+import { MCP_ACTION_CONFIG } from '../config/mcp-actions.config.js';
+import { ActionRegistry } from '../services/action-registry.js';
+import { McpToolDiscoveryService } from '../services/mcp-tool-discovery.js';
 import { logger } from '../utils/logger.js';
 import type {
   CreateTodoParams,
@@ -23,14 +26,30 @@ export class EnhancedMCPAdapter implements MCPClient {
     agent: unknown;
   } | null = null;
   private isConnected = false;
+  private discoveryService: McpToolDiscoveryService | null = null;
+  private actionRegistry: ActionRegistry | null = null;
 
   async connect(): Promise<void> {
     try {
       logger.info('Connecting enhanced MCP adapter');
       this.enhancedSetup = await setupEnhancedMCPIntegration();
+
+      // Initialize discovery service and action registry
+      this.discoveryService = new McpToolDiscoveryService(
+        this.enhancedSetup.client,
+      );
+      await this.discoveryService.discoverTools(this.enhancedSetup.tools);
+
+      this.actionRegistry = new ActionRegistry(
+        this.discoveryService,
+        MCP_ACTION_CONFIG.fallbackActions,
+      );
+      await this.actionRegistry.initialize();
+
       this.isConnected = true;
       logger.info('Enhanced MCP adapter connected successfully', {
         toolCount: this.enhancedSetup.tools.length,
+        actionCount: this.actionRegistry.getAvailableActions().length,
       });
     } catch (error) {
       logger.error('Failed to connect enhanced MCP adapter', { error });
@@ -45,6 +64,8 @@ export class EnhancedMCPAdapter implements MCPClient {
         // MultiServerMCPClient doesn't have explicit disconnect, but we'll clean up
         this.enhancedSetup = null;
       }
+      this.discoveryService = null;
+      this.actionRegistry = null;
       this.isConnected = false;
       logger.info('Enhanced MCP adapter disconnected');
     } catch (error) {
@@ -54,6 +75,13 @@ export class EnhancedMCPAdapter implements MCPClient {
 
   isClientConnected(): boolean {
     return this.isConnected && this.enhancedSetup !== null;
+  }
+
+  /**
+   * Get the action registry for dynamic action management
+   */
+  getActionRegistry(): ActionRegistry | null {
+    return this.actionRegistry;
   }
 
   async listTools(): Promise<MCPTool[]> {
@@ -69,13 +97,11 @@ export class EnhancedMCPAdapter implements MCPClient {
   }
 
   async createTodo(params: CreateTodoParams): Promise<string> {
-    const tool = this.findTool(['createTodo', 'create', 'addTodo']);
-    return await this.invokeTool(tool, params);
+    return await this.invokeAction('createTodo', params);
   }
 
   async listTodos(params?: ListTodosParams): Promise<TodoAlpha3[]> {
-    const tool = this.findTool(['listTodos', 'list', 'getTodos']);
-    const result = await this.invokeTool(tool, params || {});
+    const result = await this.invokeAction('listTodos', params || {});
 
     try {
       return JSON.parse(result);
@@ -89,53 +115,27 @@ export class EnhancedMCPAdapter implements MCPClient {
   }
 
   async updateTodo(params: UpdateTodoParams): Promise<string> {
-    const tool = this.findTool(['updateTodo', 'update', 'editTodo']);
-    return await this.invokeTool(tool, params);
+    return await this.invokeAction('updateTodo', params);
   }
 
   async toggleTodoCompletion(id: string, completed: boolean): Promise<string> {
-    const tool = this.findTool([
-      'toggleTodoCompletion',
-      'toggle',
-      'toggleCompletion',
-      'complete',
-    ]);
-    return await this.invokeTool(tool, { id, completed });
+    return await this.invokeAction('toggleTodoCompletion', { id, completed });
   }
 
   async deleteTodo(id: string): Promise<string> {
-    const tool = this.findTool(['deleteTodo', 'delete', 'removeTodo']);
-    return await this.invokeTool(tool, { id });
+    return await this.invokeAction('deleteTodo', { id });
   }
 
   async startTimeTracking(id: string): Promise<string> {
-    const tool = this.findTool([
-      'startTimeTracking',
-      'startTimer',
-      'startTracking',
-      'startTime',
-    ]);
-    return await this.invokeTool(tool, { id });
+    return await this.invokeAction('startTimeTracking', { id });
   }
 
   async stopTimeTracking(id: string): Promise<string> {
-    const tool = this.findTool([
-      'stopTimeTracking',
-      'stopTimer',
-      'stopTracking',
-      'stopTime',
-    ]);
-    return await this.invokeTool(tool, { id });
+    return await this.invokeAction('stopTimeTracking', { id });
   }
 
   async getActiveTimeTracking(): Promise<TodoAlpha3[]> {
-    const tool = this.findTool([
-      'getActiveTimeTracking',
-      'getTimers',
-      'activeTimers',
-      'listTimers',
-    ]);
-    const result = await this.invokeTool(tool, {});
+    const result = await this.invokeAction('getActiveTimeTracking', {});
 
     try {
       return JSON.parse(result);
@@ -151,39 +151,48 @@ export class EnhancedMCPAdapter implements MCPClient {
   async getServerInfo(
     section: 'overview' | 'datamodel' | 'tools' | 'examples' | 'all' = 'all',
   ): Promise<string> {
-    const tool = this.findTool(['getServerInfo', 'info', 'documentation']);
-    return await this.invokeTool(tool, { section });
+    return await this.invokeAction('getServerInfo', { section });
   }
 
   /**
-   * Find tool by trying multiple possible names
+   * Invoke an action using the ActionRegistry for dynamic resolution
    */
-  private findTool(possibleNames: string[]): Tool {
-    if (!this.isClientConnected() || !this.enhancedSetup) {
+  private async invokeAction(
+    actionName: string,
+    params: Record<string, unknown>,
+  ): Promise<string> {
+    if (
+      !this.isClientConnected() ||
+      !this.enhancedSetup ||
+      !this.actionRegistry
+    ) {
       throw new Error('Enhanced MCP adapter not connected');
     }
 
-    for (const name of possibleNames) {
-      // Try exact match first
-      let tool = this.enhancedSetup.tools.find(
-        (t: Tool) => t.name === name || t.name.endsWith(`_${name}`),
-      );
-
-      if (tool) return tool;
-
-      // Try fuzzy match
-      tool = this.enhancedSetup.tools.find(
-        (t: Tool) =>
-          t.name.toLowerCase().includes(name.toLowerCase()) ||
-          t.description?.toLowerCase().includes(name.toLowerCase()),
-      );
-
-      if (tool) return tool;
+    // Resolve the action name (handles aliases)
+    const resolvedActionName =
+      this.actionRegistry.resolveActionName(actionName);
+    if (!resolvedActionName) {
+      throw new Error(`Unknown action: ${actionName}`);
     }
 
-    throw new Error(
-      `Tool not found for any of: ${possibleNames.join(', ')}. Available tools: ${this.enhancedSetup?.tools.map((t: Tool) => t.name).join(', ') || 'none'}`,
+    // Get the tool name for this action
+    const toolName =
+      this.actionRegistry.getToolNameForAction(resolvedActionName);
+    if (!toolName) {
+      throw new Error(`No tool mapped for action: ${resolvedActionName}`);
+    }
+
+    // Find the tool
+    const tool = this.enhancedSetup.tools.find(
+      (t: Tool) => t.name === toolName,
     );
+    if (!tool) {
+      throw new Error(`Tool not found: ${toolName}`);
+    }
+
+    // Invoke the tool
+    return await this.invokeTool(tool, params);
   }
 
   /**

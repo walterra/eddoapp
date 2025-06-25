@@ -55,6 +55,7 @@ export interface MCPClient {
   getServerInfo: (
     section?: 'overview' | 'datamodel' | 'tools' | 'examples' | 'all',
   ) => Promise<string>;
+  getActionRegistry?: () => unknown | null;
 }
 
 /**

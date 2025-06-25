@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { BotContext } from '../bot/bot.js';
 import { getEnhancedMCPAdapter } from '../mcp/adapter.js';
 import { setupEnhancedMCPIntegration } from '../mcp/enhanced-client.js';
+import type { ActionRegistry } from '../services/action-registry.js';
 import { logger } from '../utils/logger.js';
 import {
   EnhancedWorkflowState,
@@ -28,6 +29,7 @@ export class EnhancedLangGraphWorkflow {
   private enhancedMCPSetup: Awaited<
     ReturnType<typeof setupEnhancedMCPIntegration>
   > | null = null;
+  private actionRegistry: ActionRegistry | null = null;
 
   constructor() {
     this.initializeWorkflow();
@@ -46,7 +48,7 @@ export class EnhancedLangGraphWorkflow {
     // Add all workflow nodes and edges using method chaining (recommended approach)
     workflow
       .addNode('analyze_intent', this.analyzeIntentNode.bind(this))
-      .addNode('generate_plan', generatePlan)
+      .addNode('generate_plan', this.generatePlanNode.bind(this))
       .addNode('request_approval', requestApproval)
       .addNode('execute_step', this.executeStepNode.bind(this))
       .addNode('request_step_approval', requestStepApproval)
@@ -192,7 +194,22 @@ export class EnhancedLangGraphWorkflow {
   ): Promise<Partial<EnhancedWorkflowStateType>> {
     // Get the MCPClient adapter (compatible with the analyzeIntent function)
     const mcpClient = getEnhancedMCPAdapter();
+
+    // Initialize ActionRegistry if not already done
+    if (!this.actionRegistry) {
+      this.actionRegistry = mcpClient.getActionRegistry?.() || null;
+    }
+
     return analyzeIntent(state, mcpClient);
+  }
+
+  /**
+   * Plan generation node wrapper that passes ActionRegistry
+   */
+  private async generatePlanNode(
+    state: EnhancedWorkflowStateType,
+  ): Promise<Partial<EnhancedWorkflowStateType>> {
+    return generatePlan(state, this.actionRegistry);
   }
 
   /**
@@ -358,40 +375,54 @@ export class EnhancedLangGraphWorkflow {
       availableTools: tools.map((t) => t.name),
     });
 
-    // Action-based mapping for common operations - with exact tool name matching
-    const actionMapping: Record<string, string[]> = {
-      // Core CRUD operations
-      listTodos: ['listTodos'],
-      createTodo: ['createTodo'],
-      updateTodo: ['updateTodo'],
-      deleteTodo: ['deleteTodo'],
-      toggleTodoCompletion: ['toggleTodoCompletion'],
+    let possibleNames: string[] = [action];
 
-      // Time tracking
-      startTimeTracking: ['startTimeTracking'],
-      stopTimeTracking: ['stopTimeTracking'],
-      getActiveTimeTracking: ['getActiveTimeTracking'],
+    // Use ActionRegistry for dynamic action resolution if available
+    if (this.actionRegistry && this.actionRegistry.isInitialized()) {
+      const resolvedAction = this.actionRegistry.resolveActionName(action);
+      if (resolvedAction) {
+        const toolName =
+          this.actionRegistry.getToolNameForAction(resolvedAction);
+        if (toolName) {
+          possibleNames = [toolName, resolvedAction, action];
+        }
+      }
+    } else {
+      // Fallback to hard-coded mapping if ActionRegistry is not available
+      const fallbackMapping: Record<string, string[]> = {
+        // Core CRUD operations
+        listTodos: ['listTodos'],
+        createTodo: ['createTodo'],
+        updateTodo: ['updateTodo'],
+        deleteTodo: ['deleteTodo'],
+        toggleTodoCompletion: ['toggleTodoCompletion'],
 
-      // Legacy action names for backward compatibility
-      list_todos: ['listTodos'],
-      create_todo: ['createTodo'],
-      update_todo: ['updateTodo'],
-      delete_todo: ['deleteTodo'],
-      toggle_completion: ['toggleTodoCompletion'],
-      start_time_tracking: ['startTimeTracking'],
-      stop_time_tracking: ['stopTimeTracking'],
-      get_active_timers: ['getActiveTimeTracking'],
+        // Time tracking
+        startTimeTracking: ['startTimeTracking'],
+        stopTimeTracking: ['stopTimeTracking'],
+        getActiveTimeTracking: ['getActiveTimeTracking'],
 
-      // Analysis and reporting actions
-      daily_summary: ['listTodos'],
-      analysis: ['listTodos'],
+        // Legacy action names for backward compatibility
+        list_todos: ['listTodos'],
+        create_todo: ['createTodo'],
+        update_todo: ['updateTodo'],
+        delete_todo: ['deleteTodo'],
+        toggle_completion: ['toggleTodoCompletion'],
+        start_time_tracking: ['startTimeTracking'],
+        stop_time_tracking: ['stopTimeTracking'],
+        get_active_timers: ['getActiveTimeTracking'],
 
-      // Handle artificial actions by mapping them to real actions
-      execute_simple_task: ['listTodos'],
-      execute_fallback_task: ['listTodos'],
-    };
+        // Analysis and reporting actions
+        daily_summary: ['listTodos'],
+        analysis: ['listTodos'],
 
-    const possibleNames = actionMapping[action] || [action];
+        // Handle artificial actions by mapping them to real actions
+        execute_simple_task: ['listTodos'],
+        execute_fallback_task: ['listTodos'],
+      };
+
+      possibleNames = fallbackMapping[action] || [action];
+    }
 
     // First, try exact name matches with the tool base name
     for (const name of possibleNames) {

@@ -1,6 +1,7 @@
 import type { Tool } from '@langchain/core/tools';
 
 import { extractServerName } from '../../mcp/enhanced-client.js';
+import type { ActionRegistry } from '../../services/action-registry.js';
 import { logger } from '../../utils/logger.js';
 import { approvalManager } from '../approval-manager.js';
 import type {
@@ -16,6 +17,7 @@ interface EnhancedWorkflowState extends WorkflowState {
   mcpTools: Tool[];
   activeServers: string[];
   toolResults: Record<string, unknown>;
+  actionRegistry?: ActionRegistry | null;
 }
 
 /**
@@ -119,7 +121,11 @@ export const executeStepWithAdapters = async (
 
   try {
     // Find the appropriate tool from MCP adapters
-    const tool = findToolForAction(state.mcpTools, currentStep.action);
+    const tool = findToolForAction(
+      state.mcpTools,
+      currentStep.action,
+      state.actionRegistry,
+    );
 
     if (!tool) {
       throw new Error(`Tool not found for action: ${currentStep.action}`);
@@ -184,7 +190,11 @@ export const executeStepWithAdapters = async (
 /**
  * Find appropriate tool for a given action with improved matching
  */
-function findToolForAction(tools: Tool[], action: string): Tool | null {
+function findToolForAction(
+  tools: Tool[],
+  action: string,
+  actionRegistry?: ActionRegistry | null,
+): Tool | null {
   if (!tools || tools.length === 0) {
     logger.error('No tools available for action', { action, toolCount: 0 });
     return null;
@@ -195,36 +205,49 @@ function findToolForAction(tools: Tool[], action: string): Tool | null {
     availableTools: tools.map((t) => t.name),
   });
 
-  // Action-based mapping for common operations - with exact tool name matching
-  const actionMapping: Record<string, string[]> = {
-    // Core CRUD operations
-    listTodos: ['listTodos'],
-    createTodo: ['createTodo'],
-    updateTodo: ['updateTodo'],
-    deleteTodo: ['deleteTodo'],
-    toggleTodoCompletion: ['toggleTodoCompletion'],
+  let possibleNames: string[] = [action];
 
-    // Time tracking
-    startTimeTracking: ['startTimeTracking'],
-    stopTimeTracking: ['stopTimeTracking'],
-    getActiveTimeTracking: ['getActiveTimeTracking'],
+  // Use ActionRegistry for dynamic action resolution if available
+  if (actionRegistry && actionRegistry.isInitialized()) {
+    const resolvedAction = actionRegistry.resolveActionName(action);
+    if (resolvedAction) {
+      const toolName = actionRegistry.getToolNameForAction(resolvedAction);
+      if (toolName) {
+        possibleNames = [toolName, resolvedAction, action];
+      }
+    }
+  } else {
+    // Fallback to hard-coded mapping if ActionRegistry is not available
+    const fallbackMapping: Record<string, string[]> = {
+      // Core CRUD operations
+      listTodos: ['listTodos'],
+      createTodo: ['createTodo'],
+      updateTodo: ['updateTodo'],
+      deleteTodo: ['deleteTodo'],
+      toggleTodoCompletion: ['toggleTodoCompletion'],
 
-    // Legacy action names for backward compatibility
-    list_todos: ['listTodos'],
-    create_todo: ['createTodo'],
-    update_todo: ['updateTodo'],
-    delete_todo: ['deleteTodo'],
-    toggle_completion: ['toggleTodoCompletion'],
-    start_time_tracking: ['startTimeTracking'],
-    stop_time_tracking: ['stopTimeTracking'],
-    get_active_timers: ['getActiveTimeTracking'],
+      // Time tracking
+      startTimeTracking: ['startTimeTracking'],
+      stopTimeTracking: ['stopTimeTracking'],
+      getActiveTimeTracking: ['getActiveTimeTracking'],
 
-    // Handle artificial actions by mapping them to real actions
-    execute_simple_task: ['listTodos'],
-    execute_fallback_task: ['listTodos'],
-  };
+      // Legacy action names for backward compatibility
+      list_todos: ['listTodos'],
+      create_todo: ['createTodo'],
+      update_todo: ['updateTodo'],
+      delete_todo: ['deleteTodo'],
+      toggle_completion: ['toggleTodoCompletion'],
+      start_time_tracking: ['startTimeTracking'],
+      stop_time_tracking: ['stopTimeTracking'],
+      get_active_timers: ['getActiveTimeTracking'],
 
-  const possibleNames = actionMapping[action] || [action];
+      // Handle artificial actions by mapping them to real actions
+      execute_simple_task: ['listTodos'],
+      execute_fallback_task: ['listTodos'],
+    };
+
+    possibleNames = fallbackMapping[action] || [action];
+  }
 
   // First, try exact name matches with the tool base name
   for (const name of possibleNames) {

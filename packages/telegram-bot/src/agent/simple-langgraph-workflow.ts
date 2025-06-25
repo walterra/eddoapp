@@ -416,7 +416,7 @@ export class SimpleLangGraphWorkflow {
         };
 
         // Step 2.1: Plan complex task
-        const planResult = await planComplexTask(currentState);
+        const planResult = await planComplexTask(null)(currentState);
         currentState = { ...currentState, ...planResult };
 
         if (planResult.error || planResult.shouldExit) {

@@ -1,72 +1,75 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+import type { ActionRegistry } from '../../services/action-registry.js';
 import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import type {
   ExecutionPlan,
   ExecutionStep,
-  WorkflowNode,
   WorkflowState,
 } from '../types/workflow-types.js';
 
 /**
  * Complex task planner node - generates detailed execution plans for multi-step workflows
  */
-export const planComplexTask: WorkflowNode = async (
-  state: WorkflowState,
-): Promise<Partial<WorkflowState>> => {
-  logger.info('Planning complex task', {
-    userId: state.userId,
-    message: state.userMessage,
-    classification: state.complexityAnalysis?.classification,
-  });
-
-  try {
-    const plan = await generateExecutionPlan(
-      state.userMessage,
-      state.complexityAnalysis,
-      state.sessionContext,
-    );
-
-    logger.info('Complex task plan generated', {
-      userId: state.userId,
-      planId: plan.id,
-      totalSteps: plan.steps.length,
-      estimatedDuration: plan.estimatedDuration,
-      requiresApproval: plan.requiresApproval,
-    });
-
-    // Send plan preview to user
-    const planPreview = generatePlanPreview(plan);
-    await state.telegramContext.reply(planPreview, { parse_mode: 'Markdown' });
-
-    return {
-      executionPlan: plan,
-      currentStepIndex: 0,
-      sessionContext: {
-        ...state.sessionContext,
-        lastPlanId: plan.id,
-      },
-    };
-  } catch (error) {
-    logger.error('Failed to plan complex task', {
-      error,
+export const planComplexTask =
+  (actionRegistry?: ActionRegistry | null) =>
+  async (state: WorkflowState): Promise<Partial<WorkflowState>> => {
+    logger.info('Planning complex task', {
       userId: state.userId,
       message: state.userMessage,
+      classification: state.complexityAnalysis?.classification,
     });
 
-    // Fallback to simple execution
-    const fallbackMessage = `❌ **Planning Failed**\n\nI couldn't create a detailed plan for your request. Let me try a simpler approach or please break down your request into smaller steps.`;
-    await state.telegramContext.reply(fallbackMessage, {
-      parse_mode: 'Markdown',
-    });
+    try {
+      const plan = await generateExecutionPlan(
+        state.userMessage,
+        state.complexityAnalysis,
+        state.sessionContext,
+        actionRegistry,
+      );
 
-    return {
-      error: error instanceof Error ? error : new Error(String(error)),
-      shouldExit: true,
-    };
-  }
-};
+      logger.info('Complex task plan generated', {
+        userId: state.userId,
+        planId: plan.id,
+        totalSteps: plan.steps.length,
+        estimatedDuration: plan.estimatedDuration,
+        requiresApproval: plan.requiresApproval,
+      });
+
+      // Send plan preview to user
+      const planPreview = generatePlanPreview(plan);
+      await state.telegramContext.reply(planPreview, {
+        parse_mode: 'Markdown',
+      });
+
+      return {
+        executionPlan: plan,
+        currentStepIndex: 0,
+        sessionContext: {
+          ...state.sessionContext,
+          lastPlanId: plan.id,
+        },
+      };
+    } catch (error) {
+      logger.error('Failed to plan complex task', {
+        error,
+        userId: state.userId,
+        message: state.userMessage,
+      });
+
+      // Fallback to simple execution
+      const fallbackMessage = `❌ **Planning Failed**\n\nI couldn't create a detailed plan for your request. Let me try a simpler approach or please break down your request into smaller steps.`;
+      await state.telegramContext.reply(fallbackMessage, {
+        parse_mode: 'Markdown',
+      });
+
+      return {
+        error: error instanceof Error ? error : new Error(String(error)),
+        shouldExit: true,
+      };
+    }
+  };
 
 /**
  * Generates a detailed execution plan using Claude
@@ -75,6 +78,7 @@ async function generateExecutionPlan(
   userMessage: string,
   complexityAnalysis: WorkflowState['complexityAnalysis'],
   sessionContext: WorkflowState['sessionContext'],
+  actionRegistry?: ActionRegistry | null,
 ): Promise<ExecutionPlan> {
   const client = new Anthropic({ apiKey: appConfig.ANTHROPIC_API_KEY });
 
@@ -82,6 +86,7 @@ async function generateExecutionPlan(
     userMessage,
     complexityAnalysis,
     sessionContext,
+    actionRegistry,
   );
 
   const response = await client.messages.create({
@@ -101,12 +106,44 @@ async function generateExecutionPlan(
 }
 
 /**
+ * Generate dynamic action list for complex planning prompts using snake_case
+ */
+function generateActionListForComplexPlanning(
+  actionRegistry: ActionRegistry | null,
+): string {
+  if (!actionRegistry || !actionRegistry.isInitialized()) {
+    // Fallback to hard-coded actions if registry is not available
+    return `- list_todos(filters?) - Get todos with filters (context, completed, dateRange)
+- create_todo(title, description?, context?, due?, tags?) - Create new todo
+- update_todo(id, fields) - Update existing todo fields
+- delete_todo(id) - Delete specific todo
+- toggle_completion(id, completed) - Mark todo as complete/incomplete
+- start_time_tracking(id) - Start timer for todo
+- stop_time_tracking(id) - Stop timer for todo
+- get_active_timers() - Get currently running timers`;
+  }
+
+  // Generate dynamic list from ActionRegistry using snake_case format
+  const actions = actionRegistry.getAvailableActions();
+  return actions
+    .map((action) => {
+      const metadata = actionRegistry.getActionMetadata(action);
+      const snakeCaseAction = action
+        .replace(/([a-z])([A-Z])/g, '$1_$2')
+        .toLowerCase();
+      return `- ${snakeCaseAction}() - ${metadata?.description || 'No description available'}`;
+    })
+    .join('\n');
+}
+
+/**
  * Builds the system prompt for execution planning
  */
 function buildPlanningPrompt(
   userMessage: string,
   complexityAnalysis: WorkflowState['complexityAnalysis'],
   sessionContext: WorkflowState['sessionContext'],
+  actionRegistry?: ActionRegistry | null,
 ): string {
   return `You are an execution planner for a todo management system with MCP server integration.
 
@@ -122,14 +159,7 @@ CONTEXT:
 - Last activity: ${sessionContext.lastActivity || 'none'}
 
 AVAILABLE MCP ACTIONS:
-- list_todos(filters?) - Get todos with filters (context, completed, dateRange)
-- create_todo(title, description?, context?, due?, tags?) - Create new todo
-- update_todo(id, fields) - Update existing todo fields
-- delete_todo(id) - Delete specific todo
-- toggle_completion(id, completed) - Mark todo as complete/incomplete
-- start_time_tracking(id) - Start timer for todo
-- stop_time_tracking(id) - Stop timer for todo
-- get_active_timers() - Get currently running timers
+${generateActionListForComplexPlanning(actionRegistry || null)}
 
 CRITICAL DATE FORMAT REQUIREMENT:
 The 'due' field MUST be an ISO date string (e.g., "2025-06-24T09:00:00.000Z"), NOT human-readable text like "saturday" or "next week".

@@ -1,6 +1,7 @@
 import { ChatAnthropic } from '@langchain/anthropic';
 import { v4 as uuidv4 } from 'uuid';
 
+import type { ActionRegistry } from '../../services/action-registry.js';
 import { logger } from '../../utils/logger.js';
 import type {
   EnhancedWorkflowStateType,
@@ -10,11 +11,48 @@ import type {
 } from '../enhanced-workflow-state.js';
 
 /**
+ * Generate dynamic action list for planning prompts
+ */
+function generateActionListForPrompt(
+  actionRegistry: ActionRegistry | null,
+): string {
+  if (!actionRegistry || !actionRegistry.isInitialized()) {
+    // Fallback to hard-coded actions if registry is not available
+    return `- listTodos: Get todos with filters
+  Parameters: { context?, completed?: boolean, dateFrom?, dateTo?, limit?: number }
+- createTodo: Create new todo
+  Parameters: { title, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
+- updateTodo: Update existing todo
+  Parameters: { id, title?, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
+- deleteTodo: Delete todo by ID
+  Parameters: { id }
+- toggleTodoCompletion: Mark todo complete/incomplete
+  Parameters: { id, completed: boolean }
+- startTimeTracking: Start timer for todo
+  Parameters: { id }
+- stopTimeTracking: Stop timer for todo
+  Parameters: { id }
+- getActiveTimeTracking: Get todos with active time tracking
+  Parameters: {} (no parameters required)`;
+  }
+
+  // Generate dynamic list from ActionRegistry
+  const actions = actionRegistry.getAvailableActions();
+  return actions
+    .map((action) => {
+      const metadata = actionRegistry.getActionMetadata(action);
+      return `- ${action}: ${metadata?.description || 'No description available'}`;
+    })
+    .join('\n');
+}
+
+/**
  * Plan Generation Node - Phase 2 of Intent → Plan → Execute → Reflect
  * Creates detailed execution plans for compound and complex tasks
  */
 export async function generatePlan(
   state: EnhancedWorkflowStateType,
+  actionRegistry?: ActionRegistry | null,
 ): Promise<Partial<EnhancedWorkflowStateType>> {
   const startTime = Date.now();
 
@@ -91,28 +129,15 @@ export async function generatePlan(
       maxTokens: 2000,
     });
 
+    const actionList = generateActionListForPrompt(actionRegistry || null);
+
     const planningPrompt = `Create a detailed execution plan for this todo management task.
 
 User Intent: "${state.userIntent}"
 Task Analysis: ${JSON.stringify(state.taskAnalysis, null, 2)}
 
 Available MCP Actions:
-- listTodos: Get todos with filters
-  Parameters: { context?, completed?: boolean, dateFrom?, dateTo?, limit?: number }
-- createTodo: Create new todo
-  Parameters: { title, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
-- updateTodo: Update existing todo
-  Parameters: { id, title?, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
-- deleteTodo: Delete todo by ID
-  Parameters: { id }
-- toggleTodoCompletion: Mark todo complete/incomplete
-  Parameters: { id, completed: boolean }
-- startTimeTracking: Start timer for todo
-  Parameters: { id }
-- stopTimeTracking: Stop timer for todo
-  Parameters: { id }
-- getActiveTimeTracking: Get todos with active time tracking
-  Parameters: {} (no parameters required)
+${actionList}
 
 Guidelines:
 1. Break down the task into atomic, sequential steps
