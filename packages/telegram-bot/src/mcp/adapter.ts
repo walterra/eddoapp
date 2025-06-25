@@ -2,7 +2,6 @@ import type { TodoAlpha3 } from '@eddo/shared';
 import type { Tool } from '@langchain/core/tools';
 import type { MultiServerMCPClient } from '@langchain/mcp-adapters';
 
-import { MCP_ACTION_CONFIG } from '../config/mcp-actions.config.js';
 import { ActionRegistry } from '../services/action-registry.js';
 import { McpToolDiscoveryService } from '../services/mcp-tool-discovery.js';
 import { logger } from '../utils/logger.js';
@@ -40,10 +39,7 @@ export class EnhancedMCPAdapter implements MCPClient {
       );
       await this.discoveryService.discoverTools(this.enhancedSetup.tools);
 
-      this.actionRegistry = new ActionRegistry(
-        this.discoveryService,
-        MCP_ACTION_CONFIG.fallbackActions,
-      );
+      this.actionRegistry = new ActionRegistry(this.discoveryService);
       await this.actionRegistry.initialize();
 
       this.isConnected = true;

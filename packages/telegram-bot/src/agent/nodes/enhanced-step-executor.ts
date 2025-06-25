@@ -217,36 +217,8 @@ function findToolForAction(
       }
     }
   } else {
-    // Fallback to hard-coded mapping if ActionRegistry is not available
-    const fallbackMapping: Record<string, string[]> = {
-      // Core CRUD operations
-      listTodos: ['listTodos'],
-      createTodo: ['createTodo'],
-      updateTodo: ['updateTodo'],
-      deleteTodo: ['deleteTodo'],
-      toggleTodoCompletion: ['toggleTodoCompletion'],
-
-      // Time tracking
-      startTimeTracking: ['startTimeTracking'],
-      stopTimeTracking: ['stopTimeTracking'],
-      getActiveTimeTracking: ['getActiveTimeTracking'],
-
-      // Legacy action names for backward compatibility
-      list_todos: ['listTodos'],
-      create_todo: ['createTodo'],
-      update_todo: ['updateTodo'],
-      delete_todo: ['deleteTodo'],
-      toggle_completion: ['toggleTodoCompletion'],
-      start_time_tracking: ['startTimeTracking'],
-      stop_time_tracking: ['stopTimeTracking'],
-      get_active_timers: ['getActiveTimeTracking'],
-
-      // Handle artificial actions by mapping them to real actions
-      execute_simple_task: ['listTodos'],
-      execute_fallback_task: ['listTodos'],
-    };
-
-    possibleNames = fallbackMapping[action] || [action];
+    // No ActionRegistry available - use action name directly
+    possibleNames = [action];
   }
 
   // First, try exact name matches with the tool base name
@@ -311,69 +283,6 @@ async function handleEnhancedStepError(
     userId: state.userId,
   });
 
-  // Try alternative tools from different servers
-  const alternativeTools =
-    state.mcpTools?.filter(
-      (tool) =>
-        tool.description?.includes(step.action) ||
-        tool.name.includes('fallback') ||
-        tool.name.includes('backup') ||
-        // Try similar actions
-        (step.action === 'list_todos' && tool.name.includes('list')) ||
-        (step.action === 'create_todo' && tool.name.includes('create')) ||
-        (step.action.includes('timer') && tool.name.includes('timer')),
-    ) || [];
-
-  if (alternativeTools.length > 0) {
-    logger.info('Attempting fallback with alternative tools', {
-      stepId: step.id,
-      alternatives: alternativeTools.map((t) => t.name),
-      userId: state.userId,
-    });
-
-    // Try each alternative tool
-    for (const altTool of alternativeTools) {
-      try {
-        const fallbackResult = await altTool.invoke(step.parameters);
-
-        step.status = 'completed';
-        step.result = fallbackResult;
-        step.metadata = { ...step.metadata, usedFallback: altTool.name };
-
-        logger.info('Fallback tool succeeded', {
-          stepId: step.id,
-          fallbackTool: altTool.name,
-          userId: state.userId,
-        });
-
-        await sendEnhancedProgressUpdate(state, step, 'completed');
-
-        return {
-          currentStepIndex: state.currentStepIndex + 1,
-          executionSteps: [...state.executionSteps, step],
-          toolResults: {
-            ...state.toolResults,
-            [step.id]: {
-              content: fallbackResult,
-              metadata: {
-                toolName: altTool.name,
-                server: extractServerName(altTool.name),
-                timestamp: Date.now(),
-                wasFallback: true,
-              },
-            },
-          },
-          awaitingApproval: false,
-        };
-      } catch (fallbackError) {
-        logger.warn('Fallback tool also failed', {
-          tool: altTool.name,
-          error: fallbackError,
-          userId: state.userId,
-        });
-      }
-    }
-  }
 
   // Mark step as failed if no alternatives worked
   step.status = 'failed';

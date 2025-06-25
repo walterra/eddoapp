@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { type ActionMetadata, ActionRegistry } from './action-registry.js';
+import { ActionRegistry } from './action-registry.js';
 import type { McpTool, McpToolDiscoveryService } from './mcp-tool-discovery.js';
 
 // Mock discovery service
@@ -52,29 +52,6 @@ describe('ActionRegistry', () => {
       expect(actionRegistry.getAvailableActions()).toContain('listTodos');
     });
 
-    it('should use fallback actions when no tools discovered', async () => {
-      const fallbackActions = new Map<string, ActionMetadata>([
-        [
-          'testAction',
-          {
-            name: 'testAction',
-            aliases: ['test_action'],
-            category: 'crud',
-            description: 'Test action',
-          },
-        ],
-      ]);
-
-      actionRegistry = new ActionRegistry(
-        mockDiscoveryService as unknown as McpToolDiscoveryService,
-        fallbackActions,
-      );
-
-      mockDiscoveryService.setTools([]);
-      await actionRegistry.initialize();
-
-      expect(actionRegistry.getAvailableActions()).toContain('testAction');
-    });
   });
 
   describe('action resolution', () => {

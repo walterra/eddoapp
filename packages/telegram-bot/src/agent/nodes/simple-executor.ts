@@ -120,82 +120,8 @@ export const executeSimpleTask: WorkflowNode = async (
  * Executes a single MCP action (extracted from existing message handler logic)
  */
 async function executeSingleMCPAction(
-  mcpClient: ReturnType<typeof getMCPClient>,
-  intent: TodoIntent,
+  _mcpClient: ReturnType<typeof getMCPClient>,
+  _intent: TodoIntent,
 ): Promise<string> {
-  // Ensure MCP client is connected
-  if (!mcpClient.isClientConnected()) {
-    await mcpClient.connect();
-  }
-
-  switch (intent.action) {
-    case 'create': {
-      if (!intent.title) {
-        throw new Error('Todo title is required');
-      }
-      return await mcpClient.createTodo({
-        title: intent.title,
-        description: intent.description,
-        context: intent.context || 'private',
-        due: intent.due,
-        tags: intent.tags,
-      });
-    }
-
-    case 'list': {
-      const todos = await mcpClient.listTodos(intent.filters || {});
-      return `Found ${todos.length} todos:\n${JSON.stringify(todos, null, 2)}`;
-    }
-
-    case 'update': {
-      if (!intent.todoId) {
-        throw new Error('Todo ID is required for updates');
-      }
-      return await mcpClient.updateTodo({
-        id: intent.todoId,
-        title: intent.title,
-        description: intent.description,
-        context: intent.context,
-        due: intent.due,
-        tags: intent.tags,
-      });
-    }
-
-    case 'complete': {
-      if (!intent.todoId) {
-        throw new Error('Todo ID is required to mark as complete');
-      }
-      return await mcpClient.toggleTodoCompletion(intent.todoId, true);
-    }
-
-    case 'delete': {
-      if (!intent.todoId) {
-        throw new Error('Todo ID is required for deletion');
-      }
-      return await mcpClient.deleteTodo(intent.todoId);
-    }
-
-    case 'start_timer': {
-      if (!intent.todoId) {
-        throw new Error('Todo ID is required to start timer');
-      }
-      return await mcpClient.startTimeTracking(intent.todoId);
-    }
-
-    case 'stop_timer': {
-      if (!intent.todoId) {
-        throw new Error('Todo ID is required to stop timer');
-      }
-      return await mcpClient.stopTimeTracking(intent.todoId);
-    }
-
-    case 'get_summary': {
-      const activeTodos = await mcpClient.getActiveTimeTracking();
-      const recentTodos = await mcpClient.listTodos({ limit: 10 });
-      return `Active timers: ${activeTodos.length}\nRecent todos: ${recentTodos.length}`;
-    }
-
-    default:
-      throw new Error(`Unsupported action: ${intent.action}`);
-  }
+  throw new Error('Simple action execution not supported without ActionRegistry');
 }

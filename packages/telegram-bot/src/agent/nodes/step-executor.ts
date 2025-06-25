@@ -351,35 +351,6 @@ export const executeStep: WorkflowNode = async (
 
     await sendProgressUpdate(state, currentStep, 'failed');
 
-    // Try fallback action if available
-    if (
-      currentStep.fallbackAction &&
-      currentStep.fallbackAction !== currentStep.action
-    ) {
-      logger.info('Attempting fallback action', {
-        stepId: currentStep.id,
-        fallbackAction: currentStep.fallbackAction,
-      });
-
-      try {
-        const fallbackResult = await executeFallbackAction(currentStep, state);
-        currentStep.status = 'completed';
-        currentStep.result = fallbackResult;
-
-        await sendProgressUpdate(state, currentStep, 'recovered');
-
-        return {
-          currentStepIndex: state.currentStepIndex + 1,
-          executionSteps: [...state.executionSteps, currentStep],
-          mcpResponses: [...state.mcpResponses, fallbackResult],
-        };
-      } catch (fallbackError) {
-        logger.error('Fallback action also failed', {
-          error: fallbackError,
-          stepId: currentStep.id,
-        });
-      }
-    }
 
     // Decide whether to continue or abort
     const shouldContinue = decideContinueOnFailure(
@@ -781,27 +752,6 @@ Be decisive and specific - always pick one task to unblock the user.`;
   return response.content;
 }
 
-/**
- * Executes fallback action when main action fails
- */
-async function executeFallbackAction(
-  step: ExecutionStep,
-  state: WorkflowState,
-): Promise<unknown> {
-  logger.info('Executing fallback action', {
-    stepId: step.id,
-    fallbackAction: step.fallbackAction,
-  });
-
-  // Create a modified step with the fallback action
-  const fallbackStep: ExecutionStep = {
-    ...step,
-    action: step.fallbackAction || 'analysis',
-    description: `Fallback: ${step.fallbackAction}`,
-  };
-
-  return await executeStepAction(fallbackStep, state);
-}
 
 /**
  * Decides whether to continue execution after a step failure

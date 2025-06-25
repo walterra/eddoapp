@@ -20,10 +20,7 @@ export class ActionRegistry {
   private aliasToActionMap: Map<string, string> = new Map();
   private initialized = false;
 
-  constructor(
-    private readonly discoveryService: McpToolDiscoveryService,
-    private readonly fallbackActions?: Map<string, ActionMetadata>,
-  ) {}
+  constructor(private readonly discoveryService: McpToolDiscoveryService) {}
 
   /**
    * Initialize the registry with discovered tools
@@ -54,13 +51,6 @@ export class ActionRegistry {
         this.registerAction(actionName, metadata);
       }
 
-      // Register fallback actions if no tools were discovered
-      if (this.registry.size === 0 && this.fallbackActions) {
-        logger.warn('No tools discovered, using fallback actions');
-        for (const [name, metadata] of this.fallbackActions) {
-          this.registerAction(name, metadata);
-        }
-      }
 
       this.initialized = true;
       logger.info('ActionRegistry initialized', {

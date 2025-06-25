@@ -1,4 +1,3 @@
-import type { ActionMetadata } from '../services/action-registry.js';
 
 /**
  * Configuration for MCP actions including legacy mappings and fallbacks
@@ -63,84 +62,6 @@ export const MCP_ACTION_CONFIG = {
     ],
   },
 
-  /**
-   * Fallback actions when MCP server is not available
-   * These are used to maintain functionality even without server connection
-   */
-  fallbackActions: new Map<string, ActionMetadata>([
-    [
-      'listTodos',
-      {
-        name: 'listTodos',
-        aliases: ['list_todos', 'getTodos', 'list'],
-        category: 'crud',
-        description: 'List todos with optional filtering',
-      },
-    ],
-    [
-      'createTodo',
-      {
-        name: 'createTodo',
-        aliases: ['create_todo', 'addTodo', 'create'],
-        category: 'crud',
-        description: 'Create a new todo item',
-      },
-    ],
-    [
-      'updateTodo',
-      {
-        name: 'updateTodo',
-        aliases: ['update_todo', 'editTodo', 'update'],
-        category: 'crud',
-        description: 'Update an existing todo',
-      },
-    ],
-    [
-      'deleteTodo',
-      {
-        name: 'deleteTodo',
-        aliases: ['delete_todo', 'removeTodo', 'delete'],
-        category: 'crud',
-        description: 'Delete a todo',
-      },
-    ],
-    [
-      'toggleTodoCompletion',
-      {
-        name: 'toggleTodoCompletion',
-        aliases: ['toggle_completion', 'toggleCompletion', 'completeTodo'],
-        category: 'crud',
-        description: 'Toggle todo completion status',
-      },
-    ],
-    [
-      'startTimeTracking',
-      {
-        name: 'startTimeTracking',
-        aliases: ['start_time_tracking', 'startTimer'],
-        category: 'time-tracking',
-        description: 'Start time tracking for a todo',
-      },
-    ],
-    [
-      'stopTimeTracking',
-      {
-        name: 'stopTimeTracking',
-        aliases: ['stop_time_tracking', 'stopTimer'],
-        category: 'time-tracking',
-        description: 'Stop time tracking for a todo',
-      },
-    ],
-    [
-      'getActiveTimeTracking',
-      {
-        name: 'getActiveTimeTracking',
-        aliases: ['get_active_timers', 'activeTimers'],
-        category: 'time-tracking',
-        description: 'Get todos with active time tracking',
-      },
-    ],
-  ]),
 
   /**
    * Action categories for better organization in prompts

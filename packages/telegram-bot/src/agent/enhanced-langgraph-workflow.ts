@@ -196,8 +196,8 @@ export class EnhancedLangGraphWorkflow {
     const mcpClient = getEnhancedMCPAdapter();
 
     // Initialize ActionRegistry if not already done
-    if (!this.actionRegistry) {
-      this.actionRegistry = mcpClient.getActionRegistry?.() || null;
+    if (!this.actionRegistry && mcpClient.getActionRegistry) {
+      this.actionRegistry = mcpClient.getActionRegistry();
     }
 
     return analyzeIntent(state, mcpClient);
