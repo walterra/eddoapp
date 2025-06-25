@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { Tool } from '@langchain/core/tools';
 
 import { McpToolDiscoveryService } from './mcp-tool-discovery.js';
 
@@ -36,7 +37,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_timer_startTracking', 'Start time tracking'),
       ];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools).toHaveLength(3);
       expect(discoveredTools[0]).toMatchObject({
@@ -50,7 +51,7 @@ describe('McpToolDiscoveryService', () => {
     it('should handle tools without descriptions', async () => {
       const mockTools: MockTool[] = [createMockTool('eddo_todo_createTodo', '')];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools[0]).toMatchObject({
         name: 'eddo_todo_createTodo',
@@ -68,10 +69,10 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_todo_listTodos', 'List todos'),
       ];
 
-      await discoveryService.discoverTools(firstTools as unknown[]);
+      await discoveryService.discoverTools(firstTools as Tool[]);
       expect(discoveryService.getAvailableTools()).toHaveLength(1);
 
-      await discoveryService.discoverTools(secondTools as unknown[]);
+      await discoveryService.discoverTools(secondTools as Tool[]);
       expect(discoveryService.getAvailableTools()).toHaveLength(1);
       expect(discoveryService.getAvailableTools()[0].name).toBe(
         'eddo_todo_listTodos',
@@ -86,7 +87,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_task_updateTask', 'Update task'),
       ];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools[0].category).toBe('todo_management');
       expect(discoveredTools[1].category).toBe('todo_management');
@@ -98,7 +99,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_todo_trackTime', 'Track time'),
       ];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools[0].category).toBe('time_tracking');
       expect(discoveredTools[1].category).toBe('time_tracking');
@@ -110,7 +111,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_slack_sendMessage', 'Send Slack message'),
       ];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools[0].category).toBe('integration');
       expect(discoveredTools[1].category).toBe('integration');
@@ -121,7 +122,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_unknown_doSomething', 'Do something'),
       ];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools[0].category).toBe('utility');
     });
@@ -135,7 +136,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_github_createIssue', 'Create issue'),
       ];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools[0].server).toBe('todo');
       expect(discoveredTools[1].server).toBe('timer');
@@ -148,7 +149,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('simple_action', 'Simple action'),
       ];
 
-      const discoveredTools = await discoveryService.discoverTools(mockTools as unknown[]);
+      const discoveredTools = await discoveryService.discoverTools(mockTools as Tool[]);
 
       expect(discoveredTools[0].server).toBeUndefined();
       expect(discoveredTools[1].server).toBeUndefined();
@@ -163,7 +164,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_timer_startTimer', 'Start timer'),
       ];
 
-      await discoveryService.discoverTools(mockTools as unknown[]);
+      await discoveryService.discoverTools(mockTools as Tool[]);
     });
 
     it('should get tool by exact name', async () => {
@@ -222,7 +223,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_todo_createTodo', 'Create todo'),
       ];
 
-      await discoveryService.discoverTools(mockTools as unknown[]);
+      await discoveryService.discoverTools(mockTools as Tool[]);
       expect(discoveryService.isCacheValid()).toBe(true);
     });
 
@@ -231,7 +232,7 @@ describe('McpToolDiscoveryService', () => {
         createMockTool('eddo_todo_createTodo', 'Create todo'),
       ];
 
-      await discoveryService.discoverTools(mockTools as unknown[]);
+      await discoveryService.discoverTools(mockTools as Tool[]);
       expect(discoveryService.getAvailableTools()).toHaveLength(1);
 
       discoveryService.clearCache();
