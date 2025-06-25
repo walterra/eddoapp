@@ -3,6 +3,7 @@ import { END, MemorySaver, START, StateGraph } from '@langchain/langgraph';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { BotContext } from '../bot/bot.js';
+import { getEnhancedMCPAdapter } from '../mcp/adapter.js';
 import { setupEnhancedMCPIntegration } from '../mcp/enhanced-client.js';
 import { logger } from '../utils/logger.js';
 import {
@@ -44,7 +45,7 @@ export class EnhancedLangGraphWorkflow {
 
     // Add all workflow nodes and edges using method chaining (recommended approach)
     workflow
-      .addNode('analyze_intent', analyzeIntent)
+      .addNode('analyze_intent', this.analyzeIntentNode.bind(this))
       .addNode('generate_plan', generatePlan)
       .addNode('request_approval', requestApproval)
       .addNode('execute_step', this.executeStepNode.bind(this))
@@ -181,6 +182,17 @@ export class EnhancedLangGraphWorkflow {
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
+  }
+
+  /**
+   * Intent analysis node wrapper that passes MCP client
+   */
+  private async analyzeIntentNode(
+    state: EnhancedWorkflowStateType,
+  ): Promise<Partial<EnhancedWorkflowStateType>> {
+    // Get the MCPClient adapter (compatible with the analyzeIntent function)
+    const mcpClient = getEnhancedMCPAdapter();
+    return analyzeIntent(state, mcpClient);
   }
 
   /**

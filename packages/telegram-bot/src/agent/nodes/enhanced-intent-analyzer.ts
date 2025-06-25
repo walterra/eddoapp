@@ -1,5 +1,7 @@
 import { ChatAnthropic } from '@langchain/anthropic';
 
+import type { MCPClient } from '../../mcp/client.js';
+import { createMCPInfoService } from '../../mcp/info-service.js';
 import { logger } from '../../utils/logger.js';
 import type {
   EnhancedWorkflowStateType,
@@ -12,6 +14,7 @@ import type {
  */
 export async function analyzeIntent(
   state: EnhancedWorkflowStateType,
+  mcpClient?: MCPClient | null,
 ): Promise<Partial<EnhancedWorkflowStateType>> {
   const startTime = Date.now();
 
@@ -27,53 +30,19 @@ export async function analyzeIntent(
       maxTokens: 1000,
     });
 
+    // Get dynamic MCP info
+    const mcpInfoService = createMCPInfoService();
+    const mcpInfo = mcpClient
+      ? await mcpInfoService.formatMCPInfoForIntentAnalysis(
+          await mcpInfoService.getMCPToolsInfo(mcpClient),
+        )
+      : await mcpInfoService.formatMCPInfoForIntentAnalysis([]);
+
     const analysisPrompt = `Analyze the user's intent and classify the task complexity for a todo management system with MCP integration.
 
 User Intent: "${state.userIntent}"
 
-Available MCP Actions with detailed parameter specifications:
-- listTodos: Get todos with optional filters
-  Parameters: { context?: string, completed?: boolean, dateFrom?: string, dateTo?: string, limit?: number }
-  
-- createTodo: Create new todo with semantic parameter extraction
-  Parameters: { 
-    title: string (required - extract the actual task name from user's message),
-    description?: string (optional detailed notes),
-    context?: string (extract from phrases like "work context", "for work", "personal", etc. Default: "private"),
-    due?: string (ISO format date if mentioned),
-    tags?: string[] (extract any mentioned tags or categories),
-    repeat?: number (days, if recurring task mentioned),
-    link?: string (any URLs mentioned)
-  }
-  
-- updateTodo: Update existing todo fields
-  Parameters: { id: string, title?: string, description?: string, context?: string, due?: string, tags?: string[], repeat?: number, link?: string }
-  
-- deleteTodo: Delete todo by ID
-  Parameters: { id: string }
-  
-- toggleTodoCompletion: Mark todo as complete/incomplete
-  Parameters: { id: string, completed: boolean }
-  
-- startTimeTracking: Start timer for a todo
-  Parameters: { id: string }
-  
-- stopTimeTracking: Stop timer for a todo
-  Parameters: { id: string }
-  
-- getActiveTimeTracking: Get todos with active time tracking
-  Parameters: {} (no parameters required)
-
-IMPORTANT: For createTodo actions, use semantic understanding to extract parameters:
-- Parse natural language to identify the actual task title vs. command words
-- Extract context from phrases like "work context", "for work", "in work", etc.
-- Don't include command words ("create", "add", "todo") in the title
-- Use chain-of-thought reasoning to understand user intent
-
-Examples of proper parameter extraction:
-- "create todo in 'work' context 'video call with team'" → title="video call with team", context="work"
-- "add 'buy groceries' for personal" → title="buy groceries", context="personal"
-- "new task: review code for work project" → title="review code for work project", context="work"
+${mcpInfo}
 
 Classify the task complexity:
 - simple: Single atomic action requiring one MCP call
