@@ -1,9 +1,13 @@
-import { dotenvLoad } from 'dotenv-mono';
 import { z } from 'zod';
 
-// Load environment variables from the project root
-// dotenv-mono automatically searches up the directory tree for .env files
-dotenvLoad();
+// Only load dotenv-mono in Node.js environments
+// In the browser, environment variables are injected by the build tool (Vite)
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  // Use dynamic import without top-level await for browser compatibility
+  import('dotenv-mono').then(({ dotenvLoad }) => {
+    dotenvLoad();
+  });
+}
 
 /**
  * Environment configuration schema with validation and defaults
