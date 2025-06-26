@@ -219,10 +219,23 @@ Once your bot is running, start a conversation:
 ### Key Components
 
 - **Bot Framework**: Grammy for Telegram API
-- **AI Processing**: Anthropic Claude for natural language understanding
-- **MCP Client**: Connects to the Eddo MCP server for todo operations
-- **Session Management**: Maintains conversation context
+- **AI Processing**: Anthropic Claude for natural language understanding  
+- **Agent Architecture**: Simple loop-based agent (replaced LangGraph for simplicity)
+- **MCP Client**: Uses official @modelcontextprotocol/sdk for server communication
+- **Tool Discovery**: Dynamic tool detection from MCP server
 - **Error Handling**: Graceful degradation and retry logic
+
+### Agent Architecture Details
+
+The bot implements a simple agent loop that prioritizes clarity and AI-driven decisions:
+
+1. **Receives user input** and creates conversation context
+2. **Consults Claude AI** with system prompt containing available tool descriptions
+3. **Parses tool calls** from AI responses using structured format (`TOOL_CALL: {...}`)
+4. **Executes MCP tools** when requested and feeds results back to AI
+5. **Returns final response** to user when AI decides no more tools are needed
+
+This architecture replaces complex workflow frameworks (like LangGraph) with a minimal loop that trusts the LLM to orchestrate its own workflow, following the principle that "agents are just for loops with LLM calls".
 
 ## Configuration
 
@@ -238,18 +251,13 @@ Once your bot is running, start a conversation:
 
 ### MCP Server Connection
 
-The bot connects to the MCP server using HTTP streaming transport. The server requires:
+The bot connects to the MCP server using the official @modelcontextprotocol/sdk with HTTP streaming transport. The server requires:
 
 - No authentication (uses CouchDB auth internally)
 - Running on `http://localhost:3001/mcp`
 - FastMCP server with httpStream transport
 
-To test the connection:
-
-```bash
-# Build and test MCP connection
-pnpm build && node test-mcp.js
-```
+The MCP client automatically discovers available tools on startup and provides them to the Claude AI for natural language tool selection.
 
 ## Deployment
 
@@ -377,23 +385,26 @@ If you're still having issues:
 ### Phase 1: Core Infrastructure ✅
 
 - [x] Grammy bot framework
-- [x] MCP client integration
+- [x] MCP client integration (using official SDK)
 - [x] Claude AI integration
+- [x] Simple agent loop architecture
+- [x] Dynamic tool discovery
 - [x] Basic message handling
 
-### Phase 2: Advanced Features (In Progress)
+### Phase 2: Current Features ✅
 
-- [ ] Enhanced intent recognition
-- [ ] Time tracking improvements
+- [x] Natural language todo management
+- [x] Tool-based MCP server integration  
+- [x] Comprehensive logging and debugging
+- [x] Error handling and recovery
+- [x] User-friendly typing indicators
+
+### Phase 3: Future Enhancements
+
+- [ ] Enhanced conversation memory
 - [ ] Smart notifications
 - [ ] Batch operations
-
-### Phase 3: Polish & Deployment
-
-- [ ] Comprehensive testing
 - [ ] Docker deployment
-- [ ] Performance optimization
-- [ ] Documentation
 
 ## Contributing
 
