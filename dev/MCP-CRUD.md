@@ -189,8 +189,8 @@ interface TodoAlpha3 {
 
 ## Notes
 
-- The MCP server connects to CouchDB at `http://admin:password@localhost:5984`
-- Database name: `todos-dev`
+- The MCP server connects to CouchDB using environment configuration (default: `http://admin:password@localhost:5984`)
+- Database name is configurable via `COUCHDB_DB_NAME` environment variable (default: `todos-dev`)
 - All operations include comprehensive error handling and input validation via Zod schemas
 - Time tracking supports multiple concurrent categories per todo
 - Repeating todos automatically create new instances when completed

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "./src/mcp-server.ts",
+  "main": "dist/mcp-server.js",
   "dependencies": {
     "@eddo/shared": "workspace:*",
     "fastmcp": "^3.4.0",
@@ -16,7 +16,8 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "dev": "tsx src/mcp-server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "tsx watch src/mcp-server.ts",
+    "start": "node dist/mcp-server.js"
   }
 }

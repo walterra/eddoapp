@@ -1,5 +1,5 @@
-// Import the TodoAlpha3 type
-import { type TodoAlpha3 } from '@eddo/shared';
+// Import the TodoAlpha3 type and environment configuration
+import { type TodoAlpha3, getCouchDbConfig } from '@eddo/shared';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 import { z } from 'zod';
@@ -14,9 +14,10 @@ const server = new FastMCP({
     'Eddo Todo MCP Server - Manages GTD-style todos with time tracking. Creates, updates, lists todos with contexts ("work", "private"), due dates, tags, and repeat intervals. Supports time tracking start/stop and completion status. Uses CouchDB backend with TodoAlpha3 schema. Default context is "private", default due is end of current day. Use getServerInfo tool for complete documentation and examples.',
 });
 
-// Initialize nano connection to CouchDB
-const couch = nano('http://admin:password@localhost:5984');
-const db = couch.db.use('todos-dev');
+// Initialize nano connection to CouchDB using environment configuration
+const couchDbConfig = getCouchDbConfig();
+const couch = nano(couchDbConfig.url);
+const db = couch.db.use(couchDbConfig.dbName);
 
 // Create indexes for efficient querying
 async function createIndexes() {
@@ -722,4 +723,12 @@ export async function startMcpServer() {
     console.error('❌ Failed to start MCP server:', error);
     throw error;
   }
+}
+
+// Auto-start the server when this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startMcpServer().catch((error) => {
+    console.error('Failed to start MCP server:', error);
+    process.exit(1);
+  });
 }
