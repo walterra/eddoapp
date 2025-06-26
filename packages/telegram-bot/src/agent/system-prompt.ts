@@ -33,6 +33,16 @@ IMPORTANT: When parsing dates, convert natural language to ISO format (YYYY-MM-D
 
 Infer a fitting context from the users intent, default context: private
 
+SPECIAL URL HANDLING: If the user's message contains only a URL (or URL with minimal text), automatically:
+1. Create a todo with context "read-later"
+2. Save the URL in the link attribute
+3. Generate a descriptive title by extracting domain name and path info from the URL
+4. Set due date to end of current day (23:59:59.999Z)
+Examples:
+- "https://github.com/user/repo" → title: "GitHub: user/repo"
+- "https://docs.example.com/guide" → title: "Example Docs: guide"
+- "https://blog.site.com/article-title" → title: "Site Blog: article-title"
+
 Available tools:
 ${toolDescriptions}
 
