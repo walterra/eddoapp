@@ -1,8 +1,15 @@
 // Import the TodoAlpha3 type and environment configuration
-import { type TodoAlpha3, getCouchDbConfig } from '@eddo/shared';
+import { type TodoAlpha3, getCouchDbConfig, validateEnv } from '@eddo/shared';
+import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 import { z } from 'zod';
+
+// Load environment variables
+dotenvLoad();
+
+// Validate environment
+const env = validateEnv(process.env);
 
 const server = new FastMCP({
   name: 'eddo-mcp',
@@ -15,7 +22,7 @@ const server = new FastMCP({
 });
 
 // Initialize nano connection to CouchDB using environment configuration
-const couchDbConfig = getCouchDbConfig();
+const couchDbConfig = getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
 const db = couch.db.use(couchDbConfig.dbName);
 

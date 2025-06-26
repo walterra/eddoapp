@@ -1,18 +1,9 @@
 import { z } from 'zod';
 
-// Only load dotenv-mono in Node.js environments
-// In the browser, environment variables are injected by the build tool (Vite)
-if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-  // Use dynamic import without top-level await for browser compatibility
-  import('dotenv-mono').then(({ dotenvLoad }) => {
-    dotenvLoad();
-  });
-}
-
 /**
  * Environment configuration schema with validation and defaults
  */
-const envSchema = z.object({
+export const envSchema = z.object({
   // Node environment
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   
@@ -42,29 +33,37 @@ const envSchema = z.object({
 });
 
 /**
- * Parsed and validated environment configuration
- */
-export const env = envSchema.parse(process.env);
-
-/**
  * Type definition for the environment configuration
  */
 export type Env = z.infer<typeof envSchema>;
 
 /**
+ * Validate and parse environment configuration
+ */
+export function validateEnv(env: unknown): Env {
+  return envSchema.parse(env);
+}
+
+/**
  * Get the full CouchDB database URL
  */
-export function getCouchDbUrl(): string {
+export function getCouchDbUrl(env: Env): string {
   return `${env.COUCHDB_URL}/${env.COUCHDB_DB_NAME}`;
 }
 
 /**
  * Get CouchDB connection configuration
  */
-export function getCouchDbConfig() {
+export function getCouchDbConfig(env: Env) {
   return {
     url: env.COUCHDB_URL,
     dbName: env.COUCHDB_DB_NAME,
-    fullUrl: getCouchDbUrl(),
+    fullUrl: getCouchDbUrl(env),
   };
 }
+
+// For backward compatibility in client code that expects these exports
+// Client will provide its own env via Vite, server/telegram-bot will load via dotenv-mono
+export const env = typeof process !== 'undefined' && process.env 
+  ? validateEnv(process.env) 
+  : {} as Env;

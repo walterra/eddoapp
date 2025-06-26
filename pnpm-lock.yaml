@@ -17,9 +17,6 @@ importers:
       date-fns:
         specifier: ^2.29.3
         version: 2.30.0
-      dotenv-mono:
-        specifier: ^1.3.14
-        version: 1.3.14
       events:
         specifier: ^3.3.0
         version: 3.3.0
@@ -96,6 +93,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.12
         version: 10.4.21(postcss@8.5.6)
+      dotenv-mono:
+        specifier: ^1.3.14
+        version: 1.3.14
       eslint:
         specifier: ^9.29.0
         version: 9.29.0(jiti@2.4.2)
@@ -235,6 +235,9 @@ importers:
       '@eddo/shared':
         specifier: workspace:*
         version: link:../shared
+      dotenv-mono:
+        specifier: ^1.3.14
+        version: 1.3.14
       fastmcp:
         specifier: ^3.4.0
         version: 3.4.0
@@ -297,9 +300,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.13.1
         version: 1.13.1
-      dotenv:
-        specifier: ^16.3.1
-        version: 16.5.0
+      dotenv-mono:
+        specifier: ^1.3.14
+        version: 1.3.14
       fastmcp:
         specifier: ^3.4.0
         version: 3.4.0
