@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Test script for MCP server getServerInfo tool
+ * Test script for MCP server CRUD operations
+ * Supports all tools listed in dev/MCP-CRUD.md
  * Uses the official MCP SDK like the telegram bot
  */
 
@@ -10,10 +11,10 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 
 const MCP_URL = 'http://localhost:3002/mcp';
 
-async function testMcpServer(section = 'all') {
-  console.log('🚀 Testing MCP getServerInfo tool');
+async function testMcpTool(toolName, args = {}) {
+  console.log(`🚀 Testing MCP tool: ${toolName}`);
   console.log(`📡 Server URL: ${MCP_URL}`);
-  console.log(`📋 Section: ${section}`);
+  console.log(`📋 Arguments:`, JSON.stringify(args, null, 2));
   console.log('');
 
   let client;
@@ -44,13 +45,18 @@ async function testMcpServer(section = 'all') {
     console.log('🔍 Discovering available tools...');
     const toolsResponse = await client.listTools();
     console.log(`📋 Found ${toolsResponse.tools.length} tools`);
+    
+    // List available tools
+    console.log('Available tools:');
+    toolsResponse.tools.forEach(tool => {
+      console.log(`  - ${tool.name}: ${tool.description}`);
+    });
+    console.log('');
 
-    console.log(`📞 Calling getServerInfo with section: ${section}`);
+    console.log(`📞 Calling ${toolName}...`);
     const result = await client.callTool({
-      name: 'getServerInfo',
-      arguments: {
-        section,
-      },
+      name: toolName,
+      arguments: args,
     });
 
     console.log('✅ Tool call successful!');
@@ -62,7 +68,7 @@ async function testMcpServer(section = 'all') {
         if (content.type === 'text') {
           console.log(content.text);
         } else {
-          console.log(`Content ${index + 1}:`, content);
+          console.log(`Content ${index + 1}:`, JSON.stringify(content, null, 2));
         }
       });
     } else {
@@ -89,9 +95,64 @@ async function testMcpServer(section = 'all') {
   }
 }
 
+function parseJsonArg(jsonString) {
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('❌ Invalid JSON argument:', jsonString);
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
+}
+
+function showUsage() {
+  console.log(`
+🔧 MCP CRUD Test Script Usage:
+
+  pnpm test:mcp <toolName> [jsonArgs]
+
+📋 Available tools (from dev/MCP-CRUD.md):
+
+CREATE:
+  pnpm test:mcp createTodo '{"title": "Test Todo", "context": "work", "due": "2025-06-20"}'
+
+READ:
+  pnpm test:mcp listTodos '{}'
+  pnpm test:mcp listTodos '{"context": "work"}'
+  pnpm test:mcp listTodos '{"completed": false}'
+  pnpm test:mcp getActiveTimeTracking '{}'
+
+UPDATE:
+  pnpm test:mcp updateTodo '{"id": "2025-06-18T10:30:00.000Z", "updates": {"title": "New Title"}}'
+  pnpm test:mcp toggleTodoCompletion '{"id": "2025-06-18T10:30:00.000Z"}'
+
+DELETE:
+  pnpm test:mcp deleteTodo '{"id": "2025-06-18T10:30:00.000Z"}'
+
+TIME TRACKING:
+  pnpm test:mcp startTimeTracking '{"id": "2025-06-18T10:30:00.000Z", "category": "development"}'
+  pnpm test:mcp stopTimeTracking '{"id": "2025-06-18T10:30:00.000Z", "category": "development"}'
+
+OTHER:
+  pnpm test:mcp getServerInfo '{"section": "all"}'
+
+Examples from dev/MCP-CRUD.md are directly supported.
+`);
+}
+
 async function main() {
-  const section = process.argv[2] || 'all';
-  await testMcpServer(section);
+  const toolName = process.argv[2];
+  const jsonArgsString = process.argv[3];
+
+  if (!toolName) {
+    showUsage();
+    process.exit(0);
+  }
+
+  // Parse JSON arguments if provided
+  const args = jsonArgsString ? parseJsonArg(jsonArgsString) : {};
+
+  await testMcpTool(toolName, args);
 }
 
 // Handle command line usage
