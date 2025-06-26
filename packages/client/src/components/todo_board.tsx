@@ -51,7 +51,9 @@ const designDocViews = {
   byTimeTrackingActive: {
     map: `function (doc) {
       Object.entries(doc.active).forEach((d) => {
-        emit(d[1], {});
+        if (d[1] === null) {
+          emit(null, { id: doc._id });
+        }
       });
     }`,
   },
