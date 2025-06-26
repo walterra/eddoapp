@@ -67,10 +67,10 @@ pnpm test:mcp:integration
 pnpm test:mcp:integration:watch
 
 # Run specific test suite
-pnpm test:integration --run suites/crud-lifecycle.test.ts
+pnpm test:mcp:integration --run suites/crud-lifecycle.test.ts
 
 # Run with UI (if vitest UI installed)
-pnpm test:integration:ui
+pnpm test:mcp:integration:ui
 ```
 
 ### From Root Directory
