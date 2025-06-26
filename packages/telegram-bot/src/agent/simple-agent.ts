@@ -1,7 +1,7 @@
 import { claudeService } from '../ai/claude.js';
+import { getPersona } from '../ai/personas.js';
 import type { BotContext } from '../bot/bot.js';
 import { setupMCPIntegration } from '../mcp/client.js';
-import { getPersona } from '../ai/personas.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
@@ -127,15 +127,15 @@ export class SimpleAgent {
       iteration++;
       const iterationId = `iter_${Date.now()}_${iteration}`;
 
-      logger.info('🔄 Agent Loop Iteration', { 
+      logger.info('🔄 Agent Loop Iteration', {
         iterationId,
-        iteration, 
+        iteration,
         maxIterations,
         currentState: {
           historyEntries: state.history.length,
           toolResultsCount: state.toolResults.length,
-          done: state.done
-        }
+          done: state.done,
+        },
       });
 
       const systemPrompt = this.buildSystemPrompt();
@@ -147,7 +147,7 @@ export class SimpleAgent {
         iterationId,
         systemPromptPreview: systemPrompt.substring(0, 200) + '...',
         conversationPreview: conversationHistory.substring(0, 300) + '...',
-        availableTools: this.mcpClient?.tools.map((t) => t.name) || []
+        availableTools: this.mcpClient?.tools.map((t) => t.name) || [],
       });
 
       // Show typing before LLM call
@@ -168,17 +168,17 @@ export class SimpleAgent {
       const toolCall = this.parseToolCall(llmResponse);
 
       if (toolCall) {
-        logger.info('🔧 Agent Decision: Tool Call', { 
+        logger.info('🔧 Agent Decision: Tool Call', {
           iterationId,
           toolName: toolCall.name,
           parameters: toolCall.parameters,
-          reasoning: 'LLM decided to use a tool based on the current context'
+          reasoning: 'LLM decided to use a tool based on the current context',
         });
 
         try {
           // Show appropriate action during tool execution
           await this.showAction(telegramContext, toolCall.name);
-          
+
           const toolResult = await this.executeTool(toolCall, telegramContext);
           state.toolResults.push({
             toolName: toolCall.name,
@@ -189,7 +189,7 @@ export class SimpleAgent {
           logger.info('✅ Tool Execution Success', {
             iterationId,
             toolName: toolCall.name,
-            resultPreview: JSON.stringify(toolResult).substring(0, 200) + '...'
+            resultPreview: JSON.stringify(toolResult).substring(0, 200) + '...',
           });
 
           // Add tool result to conversation history
@@ -215,9 +215,9 @@ export class SimpleAgent {
         logger.info('🏁 Agent Decision: Complete', {
           iterationId,
           reasoning: 'LLM provided final response without tool call',
-          responsePreview: llmResponse.substring(0, 200) + '...'
+          responsePreview: llmResponse.substring(0, 200) + '...',
         });
-        
+
         // No tool call, agent is done
         state.done = true;
         state.output = llmResponse;
@@ -240,7 +240,7 @@ export class SimpleAgent {
 
   private buildSystemPrompt(): string {
     const persona = getPersona(appConfig.BOT_PERSONA_ID);
-    
+
     const toolDescriptions =
       this.mcpClient?.tools
         .map((tool) => `- ${tool.name}: ${tool.description}`)
@@ -252,12 +252,38 @@ export class SimpleAgent {
 
 Current date and time: ${currentDateTime}
 
-When interpreting dates from user messages, use this current date/time as reference for relative dates like "tomorrow", "next week", "in 3 days", etc. Convert natural language dates to ISO format.
+IMPORTANT: When parsing dates, convert natural language to ISO format (YYYY-MM-DDTHH:mm:ss.sssZ):
+- "tomorrow" → next day at 23:59:59.999Z
+- "June 20th" or "June 20" → current/next year-06-20T23:59:59.999Z
+- "next Friday" → calculate from current date
+- "in 3 days" → current date + 3 days at 23:59:59.999Z
+- "2025-06-25" → 2025-06-25T23:59:59.999Z
+- If no time specified, default to 23:59:59.999Z
+
+Infer a fitting context from the users intent, default context: private
 
 Available tools:
 ${toolDescriptions}
 
 To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
+
+IMPORTANT: For "start working" requests (phrases like "let's start with", "begin with", "work on", "tackle"):
+1. First search for existing todos with that title/description using list tool
+2. If found → use start_timer on the existing todo
+3. If not found → create the todo first, then start_timer
+
+Consider sequential operations when multiple actions are needed. For example:
+- "Find my grocery shopping todo and mark it complete" → first list, then complete
+- "Delete all health todos" → first list to find them, then delete
+- "Start working on budget spreadsheet" → first search for existing, then start timer or create+timer
+
+CONTEXT AWARENESS: Pay attention to the conversation history. If you previously:
+- Listed todos and suggested an action, interpret user confirmations ("yes", "confirm", "go ahead", "do it") as approval to proceed
+- Offered to create multiple todos, interpret "yes please" as confirmation to create them
+- Suggested deletion of items, interpret "yes delete these" as confirmation to delete
+- Asked for clarification, interpret the user's response in that context
+
+When the user responds with short confirmations, refer back to what you previously suggested and execute that action.
 
 If you don't need to use any tools, provide a direct response to help the user.
 
@@ -283,7 +309,7 @@ Always respond in character according to your personality described above.`;
     telegramContext: BotContext,
   ): Promise<unknown> {
     await this.ensureMCPInitialized();
-    
+
     if (!this.mcpClient) {
       throw new Error('MCP client not initialized');
     }
@@ -316,17 +342,28 @@ Always respond in character according to your personality described above.`;
     }
   }
 
-  private async showAction(telegramContext: BotContext, toolName: string): Promise<void> {
+  private async showAction(
+    telegramContext: BotContext,
+    toolName: string,
+  ): Promise<void> {
     try {
       // Choose appropriate action based on tool type
       let action: 'typing' | 'upload_document' | 'find_location' = 'typing';
-      
-      if (toolName.includes('search') || toolName.includes('find') || toolName.includes('list')) {
+
+      if (
+        toolName.includes('search') ||
+        toolName.includes('find') ||
+        toolName.includes('list')
+      ) {
         action = 'find_location'; // Shows "searching" indicator
-      } else if (toolName.includes('create') || toolName.includes('generate') || toolName.includes('export')) {
+      } else if (
+        toolName.includes('create') ||
+        toolName.includes('generate') ||
+        toolName.includes('export')
+      ) {
         action = 'upload_document'; // Shows "uploading" indicator
       }
-      
+
       await telegramContext.replyWithChatAction(action);
     } catch (error) {
       logger.debug('Failed to show action indicator', { error });

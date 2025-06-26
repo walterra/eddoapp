@@ -34,7 +34,7 @@ export class SimpleClaudeService implements ClaudeService {
   ): Promise<string> {
     try {
       const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       logger.info('🤖 LLM Request', {
         requestId,
         model: appConfig.LLM_MODEL || 'claude-3-haiku-20240307',

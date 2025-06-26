@@ -1,7 +1,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { logger } from '../utils/logger.js';
+
 import { appConfig } from '../utils/config.js';
+import { logger } from '../utils/logger.js';
 
 export interface MCPTool {
   name: string;
@@ -42,7 +43,10 @@ export interface UpdateTodoParams extends Record<string, unknown> {
 export interface MCPClient {
   client: Client;
   tools: MCPTool[];
-  invoke: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
+  invoke: (
+    toolName: string,
+    params: Record<string, unknown>,
+  ) => Promise<unknown>;
   close: () => Promise<void>;
 }
 
@@ -50,14 +54,16 @@ export interface MCPClient {
  * MCP integration that connects to the Eddo MCP server
  */
 export async function setupMCPIntegration(): Promise<MCPClient> {
-  logger.info('Setting up MCP integration', { serverUrl: appConfig.MCP_SERVER_URL });
+  logger.info('Setting up MCP integration', {
+    serverUrl: appConfig.MCP_SERVER_URL,
+  });
 
   try {
     // Create StreamableHTTP transport
     const transport = new StreamableHTTPClientTransport(
-      new URL(appConfig.MCP_SERVER_URL)
+      new URL(appConfig.MCP_SERVER_URL),
     );
-    
+
     // Create MCP client
     const client = new Client(
       {
@@ -68,7 +74,7 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
         capabilities: {
           tools: {},
         },
-      }
+      },
     );
 
     // Connect to the MCP server
@@ -90,19 +96,29 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
     });
 
     // Tool invocation function
-    const invoke = async (toolName: string, params: Record<string, unknown>) => {
+    const invoke = async (
+      toolName: string,
+      params: Record<string, unknown>,
+    ) => {
       logger.info('Invoking MCP tool', { toolName, params });
-      
+
       try {
         const result = await client.callTool({
           name: toolName,
           arguments: params,
         });
-        
-        logger.info('MCP tool invoked successfully', { toolName, result: result.content });
+
+        logger.info('MCP tool invoked successfully', {
+          toolName,
+          result: result.content,
+        });
         return result.content;
       } catch (error) {
-        logger.error('MCP tool invocation failed', { toolName, params, error: String(error) });
+        logger.error('MCP tool invocation failed', {
+          toolName,
+          params,
+          error: String(error),
+        });
         throw error;
       }
     };
