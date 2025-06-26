@@ -12,6 +12,7 @@
     "pnpm": ">=7.1.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.1",
     "d3-array": "^3.0.3",
     "date-fns": "^2.29.3",
     "events": "^3.3.0",
@@ -78,7 +79,8 @@
     "test": "npm-run-all --parallel tsc:check vitest:run lint lint:format",
     "tsc:check": "tsc --build",
     "vitest:run": "vitest run",
-    "knip": "knip"
+    "knip": "knip",
+    "test:mcp": "node scripts/test-mcp.js"
   },
   "browserslist": [
     ">0.2%",

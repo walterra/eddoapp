@@ -6,11 +6,12 @@ import {
   getRepeatTodo,
 } from '@eddo/shared';
 import { Checkbox } from 'flowbite-react';
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { usePouchDb } from '../pouch_db';
 import { FormattedMessage } from './formatted_message';
+import { TagDisplay } from './tag_display';
 import { TodoEditModal } from './todo_edit_modal';
 
 interface TodoListElementProps {
@@ -109,22 +110,24 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     (d) => d === null,
   );
 
-  const activeDuration = getActiveDuration(todo.active, activeDate);
-
-  function updateActiveCounter() {
-    setTimeout(() => {
-      if (active) {
-        setActiveCounter((state) => state + 1);
-        updateActiveCounter();
-      } else {
-        setActiveCounter(0);
-      }
-    }, 1000);
-  }
+  const activeDuration = useMemo(() => {
+    // Force recalculation when activeCounter changes
+    const duration = getActiveDuration(todo.active, activeDate);
+    return duration;
+  }, [active, activeDate, activeCounter]);
 
   useEffect(() => {
     if (active) {
-      updateActiveCounter();
+      const interval = setInterval(() => {
+        setActiveCounter((state) => state + 1);
+      }, 1000);
+
+      return () => {
+        clearInterval(interval);
+        setActiveCounter(0);
+      };
+    } else {
+      setActiveCounter(0);
     }
   }, [active]);
 
@@ -186,6 +189,11 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                   <FormattedMessage message={todo.title} />
                 )}
               </span>
+              {todo.tags.length > 0 && (
+                <div className="mt-1">
+                  <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
+                </div>
+              )}
             </div>
           </div>
         </div>

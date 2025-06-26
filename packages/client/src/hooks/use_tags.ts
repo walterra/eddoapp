@@ -1,0 +1,79 @@
+/**
+ * React hook for tag management and autocomplete
+ */
+import { type Todo } from '@eddo/shared';
+import { useEffect, useState } from 'react';
+
+import { usePouchDb } from '../pouch_db';
+
+export interface TagsState {
+  /** All unique tags from existing todos */
+  allTags: string[];
+  /** Whether tags are currently being loaded */
+  isLoading: boolean;
+  /** Error if tags failed to load */
+  error: Error | null;
+}
+
+/**
+ * Hook for fetching all existing tags for autocomplete
+ */
+export const useTags = (): TagsState => {
+  const { safeDb, changes } = usePouchDb();
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const todos = await safeDb.safeAllDocs<Todo>();
+
+        const tagSet = new Set<string>();
+
+        todos.forEach((todo) => {
+          if (todo.tags && Array.isArray(todo.tags)) {
+            todo.tags.forEach((tag) => {
+              if (tag.trim()) {
+                tagSet.add(tag.trim());
+              }
+            });
+          }
+        });
+
+        setAllTags(Array.from(tagSet).sort());
+      } catch (err) {
+        console.error('Failed to fetch tags:', err);
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTags();
+
+    // Listen for database changes to update tags
+    const changesListener = changes({
+      live: true,
+      since: 'now',
+      include_docs: true,
+    });
+
+    changesListener.on('change', () => {
+      fetchTags();
+    });
+
+    return () => {
+      changesListener.cancel();
+    };
+  }, [safeDb, changes]);
+
+  return {
+    allTags,
+    isLoading,
+    error,
+  };
+};

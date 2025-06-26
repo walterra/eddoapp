@@ -24,14 +24,23 @@ function HealthMonitor() {
 
 export function Eddo() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   return (
     <PouchDbContext.Provider value={pouchDbContextValue}>
       <DevSync />
       <HealthMonitor />
       <PageWrapper>
-        <AddTodo currentDate={currentDate} setCurrentDate={setCurrentDate} />
-        <TodoBoard currentDate={currentDate} />
+        <AddTodo 
+          currentDate={currentDate} 
+          selectedTags={selectedTags}
+          setCurrentDate={setCurrentDate}
+          setSelectedTags={setSelectedTags}
+        />
+        <TodoBoard 
+          currentDate={currentDate}
+          selectedTags={selectedTags}
+        />
       </PageWrapper>
     </PouchDbContext.Provider>
   );
