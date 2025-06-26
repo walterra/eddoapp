@@ -1,9 +1,3 @@
-import type { BaseMessage } from '@langchain/core/messages';
-
-import type {
-  DynamicMultiTodoIntent,
-  DynamicTodoIntent,
-} from '../../ai/dynamic-intent-parser.js';
 import type { BotContext } from '../../bot/bot.js';
 
 /**
@@ -100,13 +94,12 @@ export interface ExecutionSummary {
  */
 export interface WorkflowState {
   // Input and conversation
-  messages: BaseMessage[];
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   userMessage: string;
   userId: string;
 
   // Analysis results
   complexityAnalysis?: TaskComplexityAnalysis;
-  originalIntent?: DynamicTodoIntent | DynamicMultiTodoIntent;
 
   // Planning
   executionPlan?: ExecutionPlan;

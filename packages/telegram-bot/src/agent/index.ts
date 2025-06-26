@@ -1,13 +1,13 @@
 import type { BotContext } from '../bot/bot.js';
 import { logger } from '../utils/logger.js';
-import { EnhancedLangGraphWorkflow } from './enhanced-langgraph-workflow.js';
+import { SimpleAgent } from './simple-agent.js';
 import type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';
 
 /**
  * Main agent orchestrator - single entry point for all agent workflows
  */
 export class EddoAgent {
-  private workflow: EnhancedLangGraphWorkflow;
+  private workflow: SimpleAgent;
   private config: WorkflowConfig;
 
   constructor(config: Partial<WorkflowConfig> = {}) {
@@ -20,10 +20,10 @@ export class EddoAgent {
       ...config,
     };
 
-    this.workflow = new EnhancedLangGraphWorkflow();
-    logger.info('EddoAgent initialized with Enhanced LangGraph workflow', {
-      version: '2.0.0',
-      workflowType: 'EnhancedLangGraph',
+    this.workflow = new SimpleAgent();
+    logger.info('EddoAgent initialized with Simple Agent workflow', {
+      version: '3.0.0',
+      workflowType: 'SimpleAgent',
       config: this.config,
     });
   }
@@ -121,14 +121,14 @@ export class EddoAgent {
     workflowType: string;
     config: WorkflowConfig;
     uptime: number;
-    enhancedFeatures: Record<string, unknown>;
+    simpleFeatures: Record<string, unknown>;
   } {
     return {
-      version: '2.0.0',
-      workflowType: 'EnhancedLangGraph',
+      version: '3.0.0',
+      workflowType: 'SimpleAgent',
       config: this.config,
       uptime: process.uptime(),
-      enhancedFeatures: this.workflow.getStatus(),
+      simpleFeatures: this.workflow.getStatus(),
     };
   }
 }

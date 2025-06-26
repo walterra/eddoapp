@@ -1,6 +1,4 @@
-import { enhancedApprovalManager } from '../../agent/enhanced-approval-manager.js';
 import { getEddoAgent } from '../../agent/index.js';
-import { getClaudeAI } from '../../ai/claude.js';
 import { logger } from '../../utils/logger.js';
 import { BotContext } from '../bot.js';
 
@@ -13,13 +11,10 @@ export async function handleStart(ctx: BotContext): Promise<void> {
 
   logger.info('User started bot', { userId, firstName });
 
-  const claude = await getClaudeAI();
-  const persona = claude.getCurrentPersona();
-
   const welcomeMessage = `
-${persona.acknowledgmentEmoji} *Welcome to Eddo Bot, ${firstName}!*
+🤖 *Welcome to Eddo Bot, ${firstName}!*
 
-I'm ${persona.name}, your ${persona.messages.roleDescription}, here to help you ${persona.messages.welcomeContent}.
+I'm your GTD-focused assistant, here to help you manage tasks and stay productive.
 
 *What I can help you with:*
 • 📝 Create and manage todos with natural language
@@ -35,8 +30,7 @@ I'm ${persona.name}, your ${persona.messages.roleDescription}, here to help you 
 
 Type /help to see all available commands, or just start chatting with me naturally!
 
-${persona.messages.closingMessage},
-*${persona.name}* ${persona.acknowledgmentEmoji}
+*Your AI Assistant* 🤖
 `;
 
   await ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
@@ -46,19 +40,13 @@ ${persona.messages.closingMessage},
  * Handle the /help command
  */
 export async function handleHelp(ctx: BotContext): Promise<void> {
-  const claude = await getClaudeAI();
-  const persona = claude.getCurrentPersona();
-
   const helpMessage = `
-${persona.acknowledgmentEmoji} *Eddo Bot Commands & Usage*
+🤖 *Eddo Bot Commands & Usage*
 
 *Basic Commands:*
 /start - Welcome message and introduction
 /help - Show this help message
-/status - Check bot and MCP server status
-/approve - Approve pending workflow step
-/deny - Deny pending workflow step
-/summary - Get today's task summary
+/status - Check bot status
 
 *Natural Language Examples:*
 • "Add 'review quarterly reports' to work context for Friday"
@@ -82,7 +70,7 @@ ${persona.acknowledgmentEmoji} *Eddo Bot Commands & Usage*
 
 *Contexts:* work, personal, home, shopping, health, learning
 
-Just chat naturally - I'll understand what you need! ${persona.acknowledgmentEmoji}
+Just chat naturally - I'll understand what you need! 🤖
 `;
 
   await ctx.reply(helpMessage, { parse_mode: 'Markdown' });
@@ -92,8 +80,6 @@ Just chat naturally - I'll understand what you need! ${persona.acknowledgmentEmo
  * Handle the /status command
  */
 export async function handleStatus(ctx: BotContext): Promise<void> {
-  const claude = await getClaudeAI();
-  const persona = claude.getCurrentPersona();
   const agent = getEddoAgent();
   const agentStatus = agent.getStatus();
 
@@ -109,21 +95,21 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
   const escapeMarkdown = (text: string) =>
     text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
-  const statusMessage = `${persona.acknowledgmentEmoji} *Bot Status*
+  const statusMessage = `🤖 *Bot Status*
 
 ✅ Telegram Bot: Online
-🔄 Checking MCP Server connection\\.\\.\\.
+🔄 Agent: ${escapeMarkdown(agentStatus.workflowType)}
 
 *Session Info:*
 • User ID: ${escapeMarkdown(ctx.session?.userId || 'Unknown')}
 • Last Activity: ${escapeMarkdown(lastActivity)}
 • Conversation Active: ${ctx.session?.conversationId ? 'Yes' : 'No'}
-• Current Persona: ${escapeMarkdown(persona.name)} \\(${escapeMarkdown(persona.id)}\\)
 
 *Agent Info:*
 • Version: ${escapeMarkdown(agentStatus.version)}
 • Workflow: ${escapeMarkdown(agentStatus.workflowType)}
 • Uptime: ${Math.floor(agentStatus.uptime / 60)}m ${Math.floor(agentStatus.uptime % 60)}s
+• MCP Tools: ${agentStatus.simpleFeatures?.mcpToolsAvailable || 0}
 
 *Capabilities:*
 • Natural Language Processing: ✅
@@ -131,106 +117,7 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
 • Time Tracking: ✅ \\(via MCP\\)
 • AI Assistant: ✅ \\(Claude\\)
 
-Everything is running smoothly\\! ${persona.acknowledgmentEmoji}`;
+Everything is running smoothly\\! 🤖`;
 
   await ctx.reply(statusMessage, { parse_mode: 'Markdown' });
-}
-
-/**
- * Handle the /approve command
- */
-export async function handleApprove(ctx: BotContext): Promise<void> {
-  const userId = ctx.from?.id?.toString();
-
-  if (!userId) {
-    await ctx.reply('❌ Unable to identify user for approval.');
-    return;
-  }
-
-  const pendingRequests = enhancedApprovalManager.getPendingRequests(userId);
-
-  if (pendingRequests.length === 0) {
-    await ctx.reply('ℹ️ No pending approval requests found.');
-    return;
-  }
-
-  // Approve the most recent request
-  const approvedRequest = enhancedApprovalManager.approveRequest(userId);
-
-  if (approvedRequest) {
-    await ctx.reply(
-      `✅ APPROVED: ${approvedRequest.stepId}\n\nContinuing workflow execution...`,
-    );
-    logger.info('User approved request via command', {
-      userId,
-      requestId: approvedRequest.id,
-      stepId: approvedRequest.stepId,
-    });
-
-    // Enhanced workflow should automatically resume through LangGraph interrupt mechanism
-    await ctx.reply(
-      "✅ The workflow should resume automatically. If it doesn't, please run your original command again.",
-    );
-  } else {
-    await ctx.reply('❌ Failed to approve request.');
-  }
-}
-
-/**
- * Handle the /deny command
- */
-export async function handleDeny(ctx: BotContext): Promise<void> {
-  const userId = ctx.from?.id?.toString();
-
-  if (!userId) {
-    await ctx.reply('❌ Unable to identify user for denial.');
-    return;
-  }
-
-  const pendingRequests = enhancedApprovalManager.getPendingRequests(userId);
-
-  if (pendingRequests.length === 0) {
-    await ctx.reply('ℹ️ No pending approval requests found.');
-    return;
-  }
-
-  // Deny the most recent request
-  const deniedRequest = enhancedApprovalManager.denyRequest(userId);
-
-  if (deniedRequest) {
-    await ctx.reply(
-      `❌ DENIED: ${deniedRequest.stepId}\n\nThe step has been skipped.`,
-    );
-    logger.info('User denied request via command', {
-      userId,
-      requestId: deniedRequest.id,
-      stepId: deniedRequest.stepId,
-    });
-  } else {
-    await ctx.reply('❌ Failed to deny request.');
-  }
-}
-
-/**
- * Handle the /summary command
- */
-export async function handleSummary(ctx: BotContext): Promise<void> {
-  const claude = await getClaudeAI();
-  const persona = claude.getCurrentPersona();
-
-  const summaryMessage = `${persona.acknowledgmentEmoji} *Daily Summary*
-
-This is a simple summary command\\. For AI\\-powered task summaries, try asking:
-• "What's my daily summary?"
-• "Show me today's completed tasks"
-• "Generate a weekly report"
-
-*Quick Stats:*
-• Command: /summary
-• Status: Processed directly
-• Agent: Not used for this simple command
-
-Use natural language for more advanced summaries\\! ${persona.acknowledgmentEmoji}`;
-
-  await ctx.reply(summaryMessage, { parse_mode: 'Markdown' });
 }

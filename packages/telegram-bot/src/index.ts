@@ -1,14 +1,7 @@
 import { createBot } from './bot/bot.js';
-import {
-  handleApprove,
-  handleDeny,
-  handleHelp,
-  handleStart,
-  handleStatus,
-  handleSummary,
-} from './bot/commands/start.js';
+import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
-import { getMCPClient } from './mcp/client.js';
+import { setupMCPIntegration } from './mcp/client.js';
 import { appConfig } from './utils/config.js';
 import { logger } from './utils/logger.js';
 
@@ -22,19 +15,10 @@ async function main(): Promise<void> {
   });
 
   try {
-    // Initialize MCP client
-    logger.info('Initializing MCP client...');
-    const mcpClient = getMCPClient();
-
-    try {
-      await mcpClient.connect();
-      logger.info('✅ MCP client connected successfully');
-    } catch (mcpError) {
-      logger.warn('⚠️ MCP client connection failed, will retry as needed', {
-        error: mcpError,
-      });
-      // Continue starting the bot even if MCP is not immediately available
-    }
+    // Initialize MCP integration
+    logger.info('Initializing MCP integration...');
+    await setupMCPIntegration();
+    logger.info('✅ MCP integration initialized successfully');
 
     // Create bot instance
     const bot = createBot();
@@ -43,9 +27,6 @@ async function main(): Promise<void> {
     bot.command('start', handleStart);
     bot.command('help', handleHelp);
     bot.command('status', handleStatus);
-    bot.command('summary', handleSummary);
-    bot.command('approve', handleApprove);
-    bot.command('deny', handleDeny);
 
     // Register message handler for general text with agent workflow
     bot.on('message:text', handleMessage);

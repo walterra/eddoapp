@@ -1,0 +1,251 @@
+import { claudeService } from '../ai/claude.js';
+import type { BotContext } from '../bot/bot.js';
+import { setupMCPIntegration } from '../mcp/client.js';
+import { logger } from '../utils/logger.js';
+
+interface AgentState {
+  input: string;
+  history: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: number;
+  }>;
+  done: boolean;
+  output?: string;
+  toolResults: Array<{ toolName: string; result: unknown; timestamp: number }>;
+}
+
+interface ToolCall {
+  name: string;
+  parameters: Record<string, unknown>;
+}
+
+export class SimpleAgent {
+  private mcpClient: Awaited<ReturnType<typeof setupMCPIntegration>> | null =
+    null;
+
+  constructor() {
+    this.initializeMCP();
+  }
+
+  private async initializeMCP(): Promise<void> {
+    try {
+      this.mcpClient = await setupMCPIntegration();
+      logger.info('MCP integration initialized', {
+        toolCount: this.mcpClient?.tools.length || 0,
+      });
+    } catch (error) {
+      logger.error('Failed to initialize MCP integration', { error });
+    }
+  }
+
+  async execute(
+    userMessage: string,
+    userId: string,
+    telegramContext: BotContext,
+  ): Promise<{ success: boolean; finalResponse?: string; error?: Error }> {
+    const startTime = Date.now();
+
+    logger.info('Starting simple agent execution', {
+      userId,
+      messageLength: userMessage.length,
+    });
+
+    try {
+      const result = await this.agentLoop(userMessage, telegramContext);
+
+      const duration = Date.now() - startTime;
+      logger.info('Simple agent completed successfully', {
+        userId,
+        duration,
+        responseLength: result.length,
+      });
+
+      return {
+        success: true,
+        finalResponse: result,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('Simple agent failed', {
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        duration,
+      });
+
+      try {
+        await telegramContext.reply(
+          '❌ Sorry, I encountered an error processing your request. Please try again.',
+        );
+      } catch (replyError) {
+        logger.error('Failed to send error message to user', { replyError });
+      }
+
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
+    }
+  }
+
+  private async agentLoop(
+    userInput: string,
+    telegramContext: BotContext,
+  ): Promise<string> {
+    const state: AgentState = {
+      input: userInput,
+      history: [
+        {
+          role: 'user',
+          content: userInput,
+          timestamp: Date.now(),
+        },
+      ],
+      done: false,
+      toolResults: [],
+    };
+
+    const maxIterations = 10;
+    let iteration = 0;
+
+    while (!state.done && iteration < maxIterations) {
+      iteration++;
+
+      logger.debug('Agent loop iteration', { iteration, maxIterations });
+
+      const systemPrompt = this.buildSystemPrompt();
+      const conversationHistory = state.history
+        .map((msg) => `${msg.role}: ${msg.content}`)
+        .join('\n');
+
+      const llmResponse = await claudeService.generateResponse(
+        conversationHistory,
+        systemPrompt,
+      );
+
+      state.history.push({
+        role: 'assistant',
+        content: llmResponse,
+        timestamp: Date.now(),
+      });
+
+      // Check if LLM wants to use a tool
+      const toolCall = this.parseToolCall(llmResponse);
+
+      if (toolCall) {
+        logger.debug('Tool call detected', { toolName: toolCall.name });
+
+        try {
+          const toolResult = await this.executeTool(toolCall, telegramContext);
+          state.toolResults.push({
+            toolName: toolCall.name,
+            result: toolResult,
+            timestamp: Date.now(),
+          });
+
+          // Add tool result to conversation history
+          state.history.push({
+            role: 'user',
+            content: `Tool "${toolCall.name}" executed successfully. Result: ${JSON.stringify(toolResult)}`,
+            timestamp: Date.now(),
+          });
+        } catch (error) {
+          logger.error('Tool execution failed', {
+            toolName: toolCall.name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+
+          state.history.push({
+            role: 'user',
+            content: `Tool "${toolCall.name}" failed: ${error instanceof Error ? error.message : String(error)}`,
+            timestamp: Date.now(),
+          });
+        }
+      } else {
+        // No tool call, agent is done
+        state.done = true;
+        state.output = llmResponse;
+      }
+    }
+
+    if (iteration >= maxIterations) {
+      logger.warn('Agent loop reached max iterations', { maxIterations });
+      return (
+        state.history[state.history.length - 1]?.content ||
+        'Process completed but exceeded maximum iterations.'
+      );
+    }
+
+    return state.output || 'Process completed successfully.';
+  }
+
+  private buildSystemPrompt(): string {
+    const toolDescriptions =
+      this.mcpClient?.tools
+        .map((tool) => `- ${tool.name}: ${tool.description}`)
+        .join('\n') || 'No tools available';
+
+    return `You are a helpful GTD-focused assistant. You can help manage todos, track time, and organize tasks.
+
+Available tools:
+${toolDescriptions}
+
+To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
+
+If you don't need to use any tools, provide a direct response to help the user.
+
+Be concise and helpful. Focus on productivity and task management.`;
+  }
+
+  private parseToolCall(response: string): ToolCall | null {
+    const toolCallMatch = response.match(/TOOL_CALL:\s*({.*})/);
+    if (!toolCallMatch) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(toolCallMatch[1]) as ToolCall;
+    } catch (error) {
+      logger.error('Failed to parse tool call', { response, error });
+      return null;
+    }
+  }
+
+  private async executeTool(
+    toolCall: ToolCall,
+    telegramContext: BotContext,
+  ): Promise<unknown> {
+    if (!this.mcpClient) {
+      throw new Error('MCP client not initialized');
+    }
+
+    const tool = this.mcpClient.tools.find((t) => t.name === toolCall.name);
+    if (!tool) {
+      throw new Error(`Tool not found: ${toolCall.name}`);
+    }
+
+    logger.info('Executing tool', {
+      toolName: tool.name,
+      parameters: toolCall.parameters,
+    });
+
+    const result = await tool.invoke(toolCall.parameters);
+
+    // Send progress update to user for certain tools
+    if (toolCall.name.includes('create') || toolCall.name.includes('update')) {
+      await telegramContext.reply(`✅ ${toolCall.name} completed successfully`);
+    }
+
+    return result;
+  }
+
+  getStatus(): {
+    version: string;
+    mcpToolsAvailable: number;
+  } {
+    return {
+      version: '3.0.0-simple',
+      mcpToolsAvailable: this.mcpClient?.tools.length || 0,
+    };
+  }
+}
