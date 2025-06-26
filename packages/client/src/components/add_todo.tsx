@@ -5,16 +5,22 @@ import { type FC, useState } from 'react';
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { useTags } from '../hooks/use_tags';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorMessage } from './database_error_message';
+import { TagFilter } from './tag_filter';
+import { TagInput } from './tag_input';
 
 interface AddTodoProps {
   currentDate: Date;
   setCurrentDate: (date: Date) => void;
+  selectedTags: string[];
+  setSelectedTags: (tags: string[]) => void;
 }
 
-export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
+export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate, selectedTags, setSelectedTags }) => {
   const { safeDb } = usePouchDb();
+  const { allTags } = useTags();
 
   const [todoContext, setTodoContext] = useState(CONTEXT_DEFAULT);
   const [todoDue, setTodoDue] = useState(
@@ -22,6 +28,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
   );
   const [todoLink, setTodoLink] = useState('');
   const [todoTitle, setTodoTitle] = useState('');
+  const [todoTags, setTodoTags] = useState<string[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,6 +47,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
     context: string,
     dueDate: string,
     link: string,
+    tags: string[],
   ) {
     // sanity check if due date is parsable
     const due = `${dueDate}T23:59:59.999Z`;
@@ -66,7 +74,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
       due,
       link: link !== '' ? link : null,
       repeat: null,
-      tags: [],
+      tags,
       title,
       version: 'alpha3',
     };
@@ -81,6 +89,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
       setTodoTitle('');
       setTodoContext(CONTEXT_DEFAULT);
       setTodoLink('');
+      setTodoTags([]);
       setTodoDue(new Date().toISOString().split('T')[0]);
     } catch (err) {
       console.error('Failed to create todo:', err);
@@ -93,7 +102,7 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
   function addTodoHandler(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (todoTitle !== '') {
-      addTodo(todoTitle, todoContext, todoDue, todoLink);
+      addTodo(todoTitle, todoContext, todoDue, todoLink, todoTags);
     }
   }
 
@@ -132,6 +141,14 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
             />
           </div>
           <div className="pr-3">
+            <TagInput
+              onChange={setTodoTags}
+              placeholder="tags"
+              suggestions={allTags}
+              tags={todoTags}
+            />
+          </div>
+          <div className="pr-3">
             <TextInput
               aria-label="Due date"
               onChange={(e) => setTodoDue(e.target.value)}
@@ -147,6 +164,11 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
           </div>
         </div>
         <div className="hidden items-center space-x-0 space-y-3 sm:flex sm:space-x-3 sm:space-y-0">
+          <TagFilter
+            availableTags={allTags}
+            onTagsChange={setSelectedTags}
+            selectedTags={selectedTags}
+          />
           <Button className="p-0" onClick={previousWeekClickHandler} size="xs">
             <RiArrowLeftSLine size="2em" />
           </Button>{' '}

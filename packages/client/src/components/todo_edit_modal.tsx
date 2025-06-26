@@ -9,7 +9,9 @@ import {
 import { Button, Checkbox, Label, Modal, TextInput } from 'flowbite-react';
 import { type FC, useEffect, useState } from 'react';
 
+import { useTags } from '../hooks/use_tags';
 import { usePouchDb } from '../pouch_db';
+import { TagInput } from './tag_input';
 
 interface TodoEditModalProps {
   onClose: () => void;
@@ -23,6 +25,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
   todo,
 }) => {
   const { safeDb } = usePouchDb();
+  const { allTags } = useTags();
 
   const [editedTodo, setEditedTodo] = useState(todo);
   const [error, setError] = useState<DatabaseError | null>(null);
@@ -200,6 +203,22 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
               placeholder="url"
               type="text"
               value={editedTodo.link ?? ''}
+            />
+          </div>
+          <div>
+            <div className="mb-2 block">
+              <Label htmlFor="eddoTodoTags" value="Tags" />
+            </div>
+            <TagInput
+              onChange={(tags) =>
+                setEditedTodo((editedTodo) => ({
+                  ...editedTodo,
+                  tags,
+                }))
+              }
+              placeholder="Add tags..."
+              suggestions={allTags}
+              tags={editedTodo.tags}
             />
           </div>
           <div>

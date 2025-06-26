@@ -219,7 +219,7 @@ Once your bot is running, start a conversation:
 ### Key Components
 
 - **Bot Framework**: Grammy for Telegram API
-- **AI Processing**: Anthropic Claude for natural language understanding  
+- **AI Processing**: Anthropic Claude for natural language understanding
 - **Agent Architecture**: Simple loop-based agent (replaced LangGraph for simplicity)
 - **MCP Client**: Uses official @modelcontextprotocol/sdk for server communication
 - **Tool Discovery**: Dynamic tool detection from MCP server
@@ -394,7 +394,7 @@ If you're still having issues:
 ### Phase 2: Current Features ✅
 
 - [x] Natural language todo management
-- [x] Tool-based MCP server integration  
+- [x] Tool-based MCP server integration
 - [x] Comprehensive logging and debugging
 - [x] Error handling and recovery
 - [x] User-friendly typing indicators
