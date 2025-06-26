@@ -186,7 +186,7 @@ IMPORTANT: When parsing dates, convert natural language to ISO format (YYYY-MM-D
 - "2025-06-25" → 2025-06-25T23:59:59.999Z
 - If no time specified, default to 23:59:59.999Z
 
-Current date for reference: ${new Date().toISOString()}
+Current date and time for reference: ${new Date().toISOString()}
 
 Examples:
 Single actions:

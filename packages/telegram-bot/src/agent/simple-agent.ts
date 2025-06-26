@@ -246,7 +246,13 @@ export class SimpleAgent {
         .map((tool) => `- ${tool.name}: ${tool.description}`)
         .join('\n') || 'No tools available';
 
+    const currentDateTime = new Date().toISOString();
+
     return `${persona.personalityPrompt}
+
+Current date and time: ${currentDateTime}
+
+When interpreting dates from user messages, use this current date/time as reference for relative dates like "tomorrow", "next week", "in 3 days", etc. Convert natural language dates to ISO format.
 
 Available tools:
 ${toolDescriptions}
