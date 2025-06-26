@@ -26,6 +26,9 @@ const ConfigSchema = z.object({
 
   // Bot Persona Configuration
   BOT_PERSONA_ID: z.string().default('butler'),
+
+  // LLM Configuration
+  LLM_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
 });
 
 type Config = z.infer<typeof ConfigSchema>;

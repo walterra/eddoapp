@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 import type { MCPClient } from '../mcp/client.js';
+import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import { PersonaPromptBuilder } from './persona-prompt-builder.js';
 import type { Persona } from './personas.js';
@@ -35,7 +36,7 @@ export function createResponseGenerator(
           : system;
 
       const response = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: appConfig.LLM_MODEL,
         max_tokens: 1000,
         system: finalSystemPrompt,
         messages: userAndAssistantMessages as Anthropic.MessageParam[],

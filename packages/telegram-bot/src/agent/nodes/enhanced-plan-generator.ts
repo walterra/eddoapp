@@ -2,6 +2,7 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { ActionRegistry } from '../../services/action-registry.js';
+import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import type {
   EnhancedWorkflowStateType,
@@ -141,7 +142,7 @@ export async function generatePlan(
     }
 
     const model = new ChatAnthropic({
-      model: 'claude-3-5-sonnet-20241022',
+      model: appConfig.LLM_MODEL,
       temperature: 0.3,
       maxTokens: 2000,
     });

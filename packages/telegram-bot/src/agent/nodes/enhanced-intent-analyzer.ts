@@ -2,6 +2,7 @@ import { ChatAnthropic } from '@langchain/anthropic';
 
 import type { MCPClient } from '../../mcp/client.js';
 import { createMCPInfoService } from '../../mcp/info-service.js';
+import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import type {
   EnhancedWorkflowStateType,
@@ -25,7 +26,7 @@ export async function analyzeIntent(
 
   try {
     const model = new ChatAnthropic({
-      model: 'claude-3-5-sonnet-20241022',
+      model: appConfig.LLM_MODEL,
       temperature: 0.2,
       maxTokens: 1000,
     });

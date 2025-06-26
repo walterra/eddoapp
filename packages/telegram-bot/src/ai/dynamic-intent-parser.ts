@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 
 import type { ActionRegistry } from '../services/action-registry.js';
+import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -47,7 +48,7 @@ export function createDynamicIntentParser(
       const actionList = actionRegistry.getActionListForPrompt('snake_case');
 
       const response = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: appConfig.LLM_MODEL,
         max_tokens: 1000,
         system: buildDynamicSystemPrompt(
           lastBotMessage,

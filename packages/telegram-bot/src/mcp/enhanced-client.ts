@@ -95,7 +95,7 @@ export async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
 
   // Create enhanced agent with all MCP tools
   const llm = new ChatAnthropic({
-    model: 'claude-3-5-sonnet-20241022',
+    model: appConfig.LLM_MODEL,
     apiKey: appConfig.ANTHROPIC_API_KEY,
     temperature: 0,
   });

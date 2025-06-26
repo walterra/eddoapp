@@ -26,7 +26,7 @@ export async function reflectOnExecution(
 
   try {
     const model = new ChatAnthropic({
-      model: 'claude-3-5-sonnet-20241022',
+      model: appConfig.LLM_MODEL,
       temperature: 0.2,
       maxTokens: 1500,
     });

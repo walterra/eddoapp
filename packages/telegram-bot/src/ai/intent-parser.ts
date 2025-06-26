@@ -6,6 +6,7 @@ import {
   TodoIntent,
   TodoIntentSchema,
 } from '../types/ai-types.js';
+import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -20,7 +21,7 @@ export function createIntentParser(apiKey: string) {
   ): Promise<TodoIntent | MultiTodoIntent | null> => {
     try {
       const response = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: appConfig.LLM_MODEL,
         max_tokens: 1000,
         system: buildSystemPrompt(lastBotMessage),
         messages: [
