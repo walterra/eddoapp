@@ -702,18 +702,28 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
 // Export the server instance and start function
 export const mcpServer = server;
 
-export async function startMcpServer() {
+export async function stopMcpServer() {
   try {
-    console.log('🔧 Initializing Eddo MCP server...');
+    await server.stop();
+    console.log('✅ Eddo MCP server stopped');
+  } catch (error) {
+    console.error('❌ Failed to stop MCP server:', error);
+    throw error;
+  }
+}
+
+export async function startMcpServer(port: number = 3001) {
+  try {
+    console.log(`🔧 Initializing Eddo MCP server on port ${port}...`);
 
     // Create indexes before starting the server
     await createIndexes();
 
-    // Start the server on a different port than Vite
+    // Start the server on the specified port
     await server.start({
       transportType: 'httpStream',
       httpStream: {
-        port: 3001, // Different from Vite dev server (5173)
+        port: port,
         // corsOptions: {
         //   origin: 'http://localhost:5173', // Allow Vite dev server
         //   credentials: true,
@@ -721,8 +731,8 @@ export async function startMcpServer() {
       },
     });
 
-    console.log('🚀 Eddo MCP server running on port 3001');
-    console.log('📡 Connect with: http://localhost:3001/mcp');
+    console.log(`🚀 Eddo MCP server running on port ${port}`);
+    console.log(`📡 Connect with: http://localhost:${port}/mcp`);
     console.log(
       '📋 Available tools: createTodo, listTodos, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo',
     );

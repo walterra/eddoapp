@@ -81,7 +81,9 @@
     "tsc:check": "tsc --build",
     "vitest:run": "vitest run",
     "knip": "knip",
-    "test:mcp": "node scripts/test-mcp.js"
+    "test:mcp": "node scripts/test-mcp.js",
+    "test:mcp:integration": "pnpm --filter @eddo/server test:integration",
+    "test:mcp:integration:watch": "pnpm --filter @eddo/server test:integration:watch"
   },
   "browserslist": [
     ">0.2%",

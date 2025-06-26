@@ -12,13 +12,18 @@
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.1",
     "@types/node": "^24.0.3",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/mcp-server.ts",
-    "start": "node dist/mcp-server.js"
+    "start": "node dist/mcp-server.js",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:watch": "vitest --config vitest.integration.config.ts",
+    "test:integration:ui": "vitest --config vitest.integration.config.ts --ui"
   }
 }
