@@ -23,19 +23,26 @@ interface ToolCall {
 export class SimpleAgent {
   private mcpClient: Awaited<ReturnType<typeof setupMCPIntegration>> | null =
     null;
+  private mcpInitialized = false;
 
   constructor() {
-    this.initializeMCP();
+    // MCP initialization will be handled on first use
   }
 
-  private async initializeMCP(): Promise<void> {
+  private async ensureMCPInitialized(): Promise<void> {
+    if (this.mcpInitialized) {
+      return;
+    }
+
     try {
       this.mcpClient = await setupMCPIntegration();
+      this.mcpInitialized = true;
       logger.info('MCP integration initialized', {
         toolCount: this.mcpClient?.tools.length || 0,
       });
     } catch (error) {
       logger.error('Failed to initialize MCP integration', { error });
+      this.mcpInitialized = true; // Mark as attempted to avoid retry loops
     }
   }
 
@@ -92,6 +99,9 @@ export class SimpleAgent {
     userInput: string,
     telegramContext: BotContext,
   ): Promise<string> {
+    // Ensure MCP is initialized before starting the agent loop
+    await this.ensureMCPInitialized();
+
     const state: AgentState = {
       input: userInput,
       history: [
@@ -132,7 +142,7 @@ export class SimpleAgent {
         iterationId,
         systemPromptPreview: systemPrompt.substring(0, 200) + '...',
         conversationPreview: conversationHistory.substring(0, 300) + '...',
-        availableTools: this.mcpClient?.tools.map(t => t.name) || []
+        availableTools: this.mcpClient?.tools.map((t) => t.name) || []
       });
 
       const llmResponse = await claudeService.generateResponse(
@@ -250,6 +260,8 @@ Be concise and helpful. Focus on productivity and task management.`;
     toolCall: ToolCall,
     telegramContext: BotContext,
   ): Promise<unknown> {
+    await this.ensureMCPInitialized();
+    
     if (!this.mcpClient) {
       throw new Error('MCP client not initialized');
     }
@@ -274,10 +286,11 @@ Be concise and helpful. Focus on productivity and task management.`;
     return result;
   }
 
-  getStatus(): {
+  async getStatus(): Promise<{
     version: string;
     mcpToolsAvailable: number;
-  } {
+  }> {
+    await this.ensureMCPInitialized();
     return {
       version: '3.0.0-simple',
       mcpToolsAvailable: this.mcpClient?.tools.length || 0,

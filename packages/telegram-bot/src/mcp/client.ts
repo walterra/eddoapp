@@ -78,9 +78,9 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
     // Discover available tools
     const toolsResponse = await client.listTools();
 
-    const tools: MCPTool[] = toolsResponse.tools.map((tool: any) => ({
+    const tools: MCPTool[] = toolsResponse.tools.map((tool) => ({
       name: tool.name,
-      description: tool.description,
+      description: tool.description || 'No description available',
       inputSchema: tool.inputSchema,
     }));
 

@@ -68,7 +68,7 @@ export function createIntentParser(apiKey: string) {
         logger.info('✅ Intent Parsed: Multi-Todo', {
           requestId,
           actionCount: result.actions.length,
-          actions: result.actions.map(a => a.action),
+          actions: result.actions.map((a) => a.action),
           requiresSequential: result.requiresSequential,
         });
       } catch {

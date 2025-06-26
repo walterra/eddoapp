@@ -116,19 +116,19 @@ export class EddoAgent {
   /**
    * Gets agent status and statistics
    */
-  getStatus(): {
+  async getStatus(): Promise<{
     version: string;
     workflowType: string;
     config: WorkflowConfig;
     uptime: number;
     simpleFeatures: Record<string, unknown>;
-  } {
+  }> {
     return {
       version: '3.0.0',
       workflowType: 'SimpleAgent',
       config: this.config,
       uptime: process.uptime(),
-      simpleFeatures: this.workflow.getStatus(),
+      simpleFeatures: await this.workflow.getStatus(),
     };
   }
 }

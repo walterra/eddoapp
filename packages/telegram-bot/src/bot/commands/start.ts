@@ -81,7 +81,7 @@ Just chat naturally - I'll understand what you need! 🤖
  */
 export async function handleStatus(ctx: BotContext): Promise<void> {
   const agent = getEddoAgent();
-  const agentStatus = agent.getStatus();
+  const agentStatus = await agent.getStatus();
 
   // Format date safely for Markdown
   const lastActivity = ctx.session?.lastActivity
