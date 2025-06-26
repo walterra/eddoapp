@@ -47,8 +47,9 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
         stepsExecuted: result.finalState.executionSteps.length,
       });
 
-      // Update session with the last bot message
+      // Send the final response to the user
       if (result.finalState.finalResponse) {
+        await ctx.reply(result.finalState.finalResponse, { parse_mode: 'Markdown' });
         ctx.session.lastBotMessage = result.finalState.finalResponse;
       }
     } else {
