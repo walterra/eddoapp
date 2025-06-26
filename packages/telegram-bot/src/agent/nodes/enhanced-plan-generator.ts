@@ -17,32 +17,45 @@ function generateActionListForPrompt(
   actionRegistry: ActionRegistry | null,
 ): string {
   if (!actionRegistry || !actionRegistry.isInitialized()) {
-    // Fallback to hard-coded actions if registry is not available
-    return `- listTodos: Get todos with filters
-  Parameters: { context?, completed?: boolean, dateFrom?, dateTo?, limit?: number }
-- createTodo: Create new todo
-  Parameters: { title, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
-- updateTodo: Update existing todo
-  Parameters: { id, title?, description?, context?, due?, tags?: string[], repeat?: number, link?: string }
-- deleteTodo: Delete todo by ID
-  Parameters: { id }
-- toggleTodoCompletion: Mark todo complete/incomplete
-  Parameters: { id, completed: boolean }
-- startTimeTracking: Start timer for todo
-  Parameters: { id }
-- stopTimeTracking: Stop timer for todo
-  Parameters: { id }
-- getActiveTimeTracking: Get todos with active time tracking
-  Parameters: {} (no parameters required)`;
+    logger.warn('ActionRegistry not available for prompt generation, using minimal fallback');
+    // Minimal fallback when registry is not available
+    return `- listTodos: Get todos with optional filters
+- createTodo: Create new todo with title and optional properties
+- updateTodo: Update existing todo by ID
+- toggleTodoCompletion: Mark todo as completed or incomplete
+- startTimeTracking: Start time tracking for a todo
+- stopTimeTracking: Stop active time tracking`;
   }
 
-  // Generate dynamic list from ActionRegistry
+  // Generate dynamic list from ActionRegistry with proper parameter schemas
   const actions = actionRegistry.getAvailableActions();
+  logger.debug('Generating action list from registry', { actionCount: actions.length });
+  
   return actions
     .map((action) => {
       const metadata = actionRegistry.getActionMetadata(action);
-      return `- ${action}: ${metadata?.description || 'No description available'}`;
+      if (!metadata) return null;
+      
+      // Get tool name to understand parameters
+      const toolName = actionRegistry.getToolNameForAction(action);
+      let paramInfo = '';
+      
+      // Add basic parameter guidance based on action type
+      if (action.toLowerCase().includes('list')) {
+        paramInfo = ' (optional: context, completed, dateFrom, dateTo, limit)';
+      } else if (action.toLowerCase().includes('create')) {
+        paramInfo = ' (required: title; optional: description, context, due, tags, repeat, link)';
+      } else if (action.toLowerCase().includes('update')) {
+        paramInfo = ' (required: id; optional: title, description, context, due, tags, repeat, link)';
+      } else if (action.toLowerCase().includes('delete') || action.toLowerCase().includes('toggle')) {
+        paramInfo = ' (required: id)';
+      } else if (action.toLowerCase().includes('tracking')) {
+        paramInfo = ' (required: id for start/stop; none for getActive)';
+      }
+      
+      return `- ${action}: ${metadata.description || 'No description'}${paramInfo}`;
     })
+    .filter(Boolean)
     .join('\n');
 }
 
@@ -85,12 +98,16 @@ export async function generatePlan(
           parameters: mcpAction.parameters,
         });
       } else {
-        // Fallback to basic inference if extraction failed
-        mcpAction = inferMCPActionFromIntent(state.userIntent || '');
+        // Fallback to dynamic inference using ActionRegistry if extraction failed
+        mcpAction = inferMCPActionFromIntentDynamic(
+          state.userIntent || '',
+          actionRegistry,
+        );
 
-        logger.warn('Falling back to basic intent inference', {
+        logger.warn('Falling back to dynamic intent inference', {
           userId: state.userId,
           userIntent: state.userIntent,
+          hasActionRegistry: !!actionRegistry,
         });
       }
 
@@ -187,7 +204,7 @@ Create a step-by-step plan in JSON format:
     }
 
     // Validate and enhance the plan
-    const plan = validateAndEnhancePlan(planData, state.userIntent || '');
+    const plan = validateAndEnhancePlan(planData, state.userIntent || '', actionRegistry);
 
     const duration = Date.now() - startTime;
 
@@ -275,6 +292,7 @@ function createFallbackPlan(
 function validateAndEnhancePlan(
   planData: Partial<ExecutionPlan>,
   userIntent: string,
+  actionRegistry?: ActionRegistry | null,
 ): ExecutionPlan {
   const planId = planData.id || uuidv4();
 
@@ -285,7 +303,10 @@ function validateAndEnhancePlan(
 
   // Ensure we have at least one step
   if (steps.length === 0) {
-    const fallbackAction = inferMCPActionFromIntent(userIntent);
+    const fallbackAction = inferMCPActionFromIntentDynamic(
+      userIntent,
+      actionRegistry,
+    );
     steps.push({
       id: uuidv4(),
       action: fallbackAction.action,
@@ -354,7 +375,108 @@ function estimateDuration(steps: PlanStep[]): string {
 }
 
 /**
- * Infers the appropriate MCP action and parameters from user intent
+ * Dynamically infers MCP action using ActionRegistry instead of hard-coded patterns
+ */
+function inferMCPActionFromIntentDynamic(
+  userIntent: string,
+  actionRegistry?: ActionRegistry | null,
+): {
+  action: string;
+  parameters: Record<string, unknown>;
+  description: string;
+} {
+  const intent = userIntent.toLowerCase();
+
+  if (!actionRegistry || !actionRegistry.isInitialized()) {
+    logger.warn('ActionRegistry not available, using basic fallback', {
+      userIntent: userIntent.substring(0, 50),
+    });
+    
+    // Very basic fallback when ActionRegistry is not available
+    if (intent.includes('list') || intent.includes('show') || intent.includes('summary')) {
+      return {
+        action: 'listTodos',
+        parameters: { completed: false },
+        description: 'List incomplete todos',
+      };
+    }
+    
+    if (intent.includes('create') || intent.includes('add')) {
+      return {
+        action: 'createTodo',
+        parameters: { title: userIntent.replace(/create|add|new|todo/gi, '').trim() || 'New todo' },
+        description: 'Create new todo',
+      };
+    }
+    
+    // Default fallback
+    return {
+      action: 'listTodos',
+      parameters: {},
+      description: 'Default action: list todos',
+    };
+  }
+
+  // Use ActionRegistry to dynamically resolve intent patterns
+  const availableActions = actionRegistry.getAvailableActions();
+  logger.debug('Available actions from registry', { availableActions });
+
+  // Look for action patterns in user intent
+  for (const action of availableActions) {
+    const metadata = actionRegistry.getActionMetadata(action);
+    if (!metadata) continue;
+
+    // Check if any aliases match the intent
+    const allNames = [action, ...metadata.aliases];
+    for (const name of allNames) {
+      const normalizedName = name.toLowerCase().replace(/[_-]/g, ' ');
+      if (intent.includes(normalizedName)) {
+        logger.debug('Found matching action via registry', {
+          userIntent: intent,
+          matchedAction: action,
+          matchedName: name,
+        });
+
+        // Infer basic parameters based on action type
+        let parameters: Record<string, unknown> = {};
+        if (action.toLowerCase().includes('list')) {
+          parameters = { completed: false };
+        } else if (action.toLowerCase().includes('create')) {
+          parameters = { 
+            title: userIntent.replace(/create|add|new|todo/gi, '').trim() || 'New todo' 
+          };
+        }
+
+        return {
+          action,
+          parameters,
+          description: metadata.description || `Execute ${action}`,
+        };
+      }
+    }
+  }
+
+  // If no specific action found, default to list
+  const listAction = availableActions.find(a => a.toLowerCase().includes('list'));
+  if (listAction) {
+    return {
+      action: listAction,
+      parameters: { completed: false },
+      description: 'Default: List todos',
+    };
+  }
+
+  // Ultimate fallback
+  return {
+    action: 'listTodos',
+    parameters: {},
+    description: 'Fallback action',
+  };
+}
+
+/**
+ * @deprecated Use inferMCPActionFromIntentDynamic instead
+ * Legacy hard-coded inference function - kept for compatibility
  */
 function inferMCPActionFromIntent(userIntent: string): {
   action: string;

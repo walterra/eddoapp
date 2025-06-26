@@ -60,13 +60,13 @@ export function requestApproval(
 
   // Register with enhanced approval manager and use LangGraph interrupt
   let approvalResult: { approved: boolean; feedback?: string } | undefined;
-  
+
   enhancedApprovalManager.registerPendingApproval(
     state.userId,
     approvalRequest,
     (result) => {
       approvalResult = result;
-    }
+    },
   );
 
   // Use LangGraph interrupt to pause execution and wait for human input
@@ -318,13 +318,13 @@ export function requestStepApproval(
 
   // Register with enhanced approval manager and use LangGraph interrupt
   let approvalResult: { approved: boolean; feedback?: string } | undefined;
-  
+
   enhancedApprovalManager.registerPendingApproval(
     state.userId,
     approvalRequest,
     (result) => {
       approvalResult = result;
-    }
+    },
   );
 
   // Use interrupt for step approval

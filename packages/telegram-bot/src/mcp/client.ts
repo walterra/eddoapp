@@ -1,9 +1,9 @@
 import type { TodoAlpha3 } from '@eddo/shared';
 
+import type { ActionRegistry } from '../services/action-registry.js';
 // Note: This file now re-exports the enhanced MCP adapter for backward compatibility
 // The old @modelcontextprotocol/sdk implementation has been replaced with @langchain/mcp-adapters
 import { getEnhancedMCPAdapter } from './adapter.js';
-import type { ActionRegistry } from '../services/action-registry.js';
 
 export interface MCPTool {
   name: string;

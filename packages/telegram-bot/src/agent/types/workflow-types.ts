@@ -1,7 +1,10 @@
 import type { BaseMessage } from '@langchain/core/messages';
 
+import type {
+  DynamicMultiTodoIntent,
+  DynamicTodoIntent,
+} from '../../ai/dynamic-intent-parser.js';
 import type { BotContext } from '../../bot/bot.js';
-import type { MultiTodoIntent, TodoIntent } from '../../types/ai-types.js';
 
 /**
  * Task complexity levels for routing decisions
@@ -103,7 +106,7 @@ export interface WorkflowState {
 
   // Analysis results
   complexityAnalysis?: TaskComplexityAnalysis;
-  originalIntent?: TodoIntent | MultiTodoIntent;
+  originalIntent?: DynamicTodoIntent | DynamicMultiTodoIntent;
 
   // Planning
   executionPlan?: ExecutionPlan;

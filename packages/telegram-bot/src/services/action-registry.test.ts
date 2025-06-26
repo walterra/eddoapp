@@ -4,7 +4,8 @@ import { ActionRegistry } from './action-registry.js';
 import type { McpTool, McpToolDiscoveryService } from './mcp-tool-discovery.js';
 
 // Mock discovery service
-class MockDiscoveryService implements Pick<McpToolDiscoveryService, 'getAvailableTools'> {
+class MockDiscoveryService
+  implements Pick<McpToolDiscoveryService, 'getAvailableTools'> {
   private tools: McpTool[] = [];
 
   setTools(tools: McpTool[]): void {
@@ -51,7 +52,6 @@ describe('ActionRegistry', () => {
       expect(actionRegistry.getAvailableActions()).toContain('createTodo');
       expect(actionRegistry.getAvailableActions()).toContain('listTodos');
     });
-
   });
 
   describe('action resolution', () => {

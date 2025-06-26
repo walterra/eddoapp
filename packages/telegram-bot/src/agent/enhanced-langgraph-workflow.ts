@@ -226,6 +226,17 @@ export class EnhancedLangGraphWorkflow {
       };
     }
 
+    // Ensure ActionRegistry is available for tool resolution
+    if (!this.actionRegistry) {
+      const mcpClient = getEnhancedMCPAdapter();
+      if (mcpClient.getActionRegistry) {
+        this.actionRegistry = mcpClient.getActionRegistry();
+        logger.debug('ActionRegistry initialized in executeStepNode', {
+          isInitialized: this.actionRegistry?.isInitialized(),
+        });
+      }
+    }
+
     if (
       !state.executionPlan ||
       state.currentStepIndex >= state.executionPlan.steps.length
@@ -380,48 +391,32 @@ export class EnhancedLangGraphWorkflow {
     // Use ActionRegistry for dynamic action resolution if available
     if (this.actionRegistry && this.actionRegistry.isInitialized()) {
       const resolvedAction = this.actionRegistry.resolveActionName(action);
+      logger.debug('ActionRegistry resolution attempt', {
+        action,
+        resolvedAction,
+        registryInitialized: this.actionRegistry.isInitialized(),
+      });
+      
       if (resolvedAction) {
         const toolName =
           this.actionRegistry.getToolNameForAction(resolvedAction);
         if (toolName) {
           possibleNames = [toolName, resolvedAction, action];
+          logger.debug('Using ActionRegistry resolved names', {
+            action,
+            possibleNames,
+          });
         }
       }
     } else {
-      // Fallback to hard-coded mapping if ActionRegistry is not available
-      const fallbackMapping: Record<string, string[]> = {
-        // Core CRUD operations
-        listTodos: ['listTodos'],
-        createTodo: ['createTodo'],
-        updateTodo: ['updateTodo'],
-        deleteTodo: ['deleteTodo'],
-        toggleTodoCompletion: ['toggleTodoCompletion'],
-
-        // Time tracking
-        startTimeTracking: ['startTimeTracking'],
-        stopTimeTracking: ['stopTimeTracking'],
-        getActiveTimeTracking: ['getActiveTimeTracking'],
-
-        // Legacy action names for backward compatibility
-        list_todos: ['listTodos'],
-        create_todo: ['createTodo'],
-        update_todo: ['updateTodo'],
-        delete_todo: ['deleteTodo'],
-        toggle_completion: ['toggleTodoCompletion'],
-        start_time_tracking: ['startTimeTracking'],
-        stop_time_tracking: ['stopTimeTracking'],
-        get_active_timers: ['getActiveTimeTracking'],
-
-        // Analysis and reporting actions
-        daily_summary: ['listTodos'],
-        analysis: ['listTodos'],
-
-        // Handle artificial actions by mapping them to real actions
-        execute_simple_task: ['listTodos'],
-        execute_fallback_task: ['listTodos'],
-      };
-
-      possibleNames = fallbackMapping[action] || [action];
+      logger.debug('ActionRegistry not available, using fallback mapping', {
+        hasRegistry: !!this.actionRegistry,
+        isInitialized: this.actionRegistry?.isInitialized(),
+      });
+      
+      // Generate dynamic fallback mapping from available tools if ActionRegistry not available
+      const fallbackMapping = this.generateDynamicFallbackMapping(tools, action);
+      possibleNames = fallbackMapping;
     }
 
     // First, try exact name matches with the tool base name
@@ -467,6 +462,70 @@ export class EnhancedLangGraphWorkflow {
       availableTools: tools.map((t) => t.name),
     });
     return null;
+  }
+
+  /**
+   * Generate dynamic fallback mapping from available tools
+   */
+  private generateDynamicFallbackMapping(
+    tools: Tool[],
+    action: string,
+  ): string[] {
+    // Extract available tool base names
+    const toolBaseNames = tools.map((t) => {
+      const baseName = t.name.split('__').pop() || t.name.split('_').pop() || t.name;
+      return baseName;
+    });
+
+    logger.debug('Generating dynamic fallback mapping', {
+      action,
+      availableToolBaseNames: toolBaseNames,
+    });
+
+    // Common action variations to try
+    const variations: string[] = [action];
+
+    // Add camelCase/snake_case variations
+    const camelCase = action.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const snakeCase = action.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+    
+    variations.push(camelCase, snakeCase);
+
+    // Add common action mappings based on patterns
+    const lowerAction = action.toLowerCase();
+    
+    if (lowerAction.includes('list') || lowerAction.includes('get') || lowerAction.includes('summary')) {
+      const listTool = toolBaseNames.find(name => name.toLowerCase().includes('list'));
+      if (listTool) variations.push(listTool);
+    }
+    
+    if (lowerAction.includes('create') || lowerAction.includes('add')) {
+      const createTool = toolBaseNames.find(name => name.toLowerCase().includes('create'));
+      if (createTool) variations.push(createTool);
+    }
+    
+    if (lowerAction.includes('update') || lowerAction.includes('edit')) {
+      const updateTool = toolBaseNames.find(name => name.toLowerCase().includes('update'));
+      if (updateTool) variations.push(updateTool);
+    }
+    
+    if (lowerAction.includes('delete') || lowerAction.includes('remove')) {
+      const deleteTool = toolBaseNames.find(name => name.toLowerCase().includes('delete'));
+      if (deleteTool) variations.push(deleteTool);
+    }
+    
+    if (lowerAction.includes('toggle') || lowerAction.includes('complete')) {
+      const toggleTool = toolBaseNames.find(name => name.toLowerCase().includes('toggle'));
+      if (toggleTool) variations.push(toggleTool);
+    }
+    
+    if (lowerAction.includes('time') || lowerAction.includes('track')) {
+      const timeTool = toolBaseNames.find(name => name.toLowerCase().includes('time') || name.toLowerCase().includes('track'));
+      if (timeTool) variations.push(timeTool);
+    }
+
+    // Remove duplicates and return
+    return [...new Set(variations)];
   }
 
   /**

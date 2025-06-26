@@ -21,4 +21,3 @@ export const personas: Record<string, Persona> = {
 export function getPersona(personaId: string): Persona {
   return personas[personaId] || personas.butler;
 }
-

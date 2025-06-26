@@ -51,7 +51,6 @@ export class ActionRegistry {
         this.registerAction(actionName, metadata);
       }
 
-
       this.initialized = true;
       logger.info('ActionRegistry initialized', {
         actionCount: this.registry.size,
@@ -172,7 +171,7 @@ export class ActionRegistry {
   }
 
   /**
-   * Generate aliases for an action
+   * Generate aliases for an action dynamically based on patterns
    */
   private generateAliases(actionName: string, toolName: string): string[] {
     const aliases: string[] = [];
@@ -180,43 +179,55 @@ export class ActionRegistry {
     // Add snake_case version
     aliases.push(this.toSnakeCase(actionName));
 
-    // Add specific aliases based on action name
-    switch (actionName) {
-      case 'createTodo':
-        aliases.push('create_todo', 'addTodo', 'add_todo', 'create');
-        break;
-      case 'listTodos':
-        aliases.push('list_todos', 'getTodos', 'get_todos', 'list');
-        break;
-      case 'updateTodo':
-        aliases.push('update_todo', 'editTodo', 'edit_todo', 'update');
-        break;
-      case 'deleteTodo':
-        aliases.push('delete_todo', 'removeTodo', 'remove_todo', 'delete');
-        break;
-      case 'toggleTodoCompletion':
-        aliases.push(
-          'toggle_completion',
-          'toggleCompletion',
-          'toggle_todo_completion',
-          'complete_todo',
-          'completeTodo',
-        );
-        break;
-      case 'startTimeTracking':
-        aliases.push('start_time_tracking', 'startTimer', 'start_timer');
-        break;
-      case 'stopTimeTracking':
-        aliases.push('stop_time_tracking', 'stopTimer', 'stop_timer');
-        break;
-      case 'getActiveTimeTracking':
-        aliases.push(
-          'get_active_timers',
-          'getActiveTimers',
-          'active_timers',
-          'activeTimers',
-        );
-        break;
+    // Generate aliases based on action name patterns (dynamic approach)
+    const lowerAction = actionName.toLowerCase();
+    
+    // Create/Add patterns
+    if (lowerAction.includes('create') || lowerAction.includes('add')) {
+      aliases.push('create', 'add');
+      if (lowerAction.includes('todo')) {
+        aliases.push('create_todo', 'add_todo');
+      }
+    }
+    
+    // List/Get patterns
+    if (lowerAction.includes('list') || lowerAction.includes('get')) {
+      aliases.push('list', 'get');
+      if (lowerAction.includes('todo')) {
+        aliases.push('list_todos', 'get_todos');
+      }
+    }
+    
+    // Update/Edit patterns
+    if (lowerAction.includes('update') || lowerAction.includes('edit')) {
+      aliases.push('update', 'edit');
+      if (lowerAction.includes('todo')) {
+        aliases.push('update_todo', 'edit_todo');
+      }
+    }
+    
+    // Delete/Remove patterns
+    if (lowerAction.includes('delete') || lowerAction.includes('remove')) {
+      aliases.push('delete', 'remove');
+      if (lowerAction.includes('todo')) {
+        aliases.push('delete_todo', 'remove_todo');
+      }
+    }
+    
+    // Complete/Toggle patterns
+    if (lowerAction.includes('complete') || lowerAction.includes('toggle')) {
+      aliases.push('complete');
+      if (lowerAction.includes('toggle')) {
+        aliases.push('toggle');
+      }
+    }
+    
+    // Timer/Tracking patterns
+    if (lowerAction.includes('start') && (lowerAction.includes('time') || lowerAction.includes('track') || lowerAction.includes('timer'))) {
+      aliases.push('start_timer', 'start_tracking');
+    }
+    if (lowerAction.includes('stop') && (lowerAction.includes('time') || lowerAction.includes('track') || lowerAction.includes('timer'))) {
+      aliases.push('stop_timer', 'stop_tracking');
     }
 
     // Add the full tool name as an alias
@@ -224,8 +235,8 @@ export class ActionRegistry {
       aliases.push(toolName);
     }
 
-    // Remove duplicates
-    return [...new Set(aliases)];
+    // Remove duplicates and the original action name (it will be added separately)
+    return [...new Set(aliases.filter(alias => alias !== actionName))];
   }
 
   /**

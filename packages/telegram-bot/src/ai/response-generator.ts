@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 import type { MCPClient } from '../mcp/client.js';
 import { logger } from '../utils/logger.js';
+import { PersonaPromptBuilder } from './persona-prompt-builder.js';
 import type { Persona } from './personas.js';
 
 /**
@@ -58,13 +59,28 @@ export function createResponseGenerator(
   const getEnhancedSystemPrompt = async (): Promise<string> => {
     try {
       if (!mcpClient || !mcpClient.isClientConnected()) {
-        return persona.systemPrompt;
+        // Use persona prompt builder with empty tools if no MCP client
+        return await PersonaPromptBuilder.buildSystemPrompt(persona, []);
       }
 
-      // Get comprehensive MCP server documentation
+      // Get MCP tools information for dynamic prompt building
+      const mcpToolsRaw = await mcpClient.listTools();
+      const mcpTools = mcpToolsRaw.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: (tool.inputSchema as Record<string, unknown>) || {},
+      }));
+
+      // Use PersonaPromptBuilder to combine personality with MCP capabilities
+      const basePrompt = await PersonaPromptBuilder.buildSystemPrompt(
+        persona,
+        mcpTools,
+      );
+
+      // Get comprehensive MCP server documentation for additional context
       const serverInfo = await mcpClient.getServerInfo('all');
 
-      return `${persona.systemPrompt}
+      return `${basePrompt}
 
 ## MCP Server Documentation
 ${serverInfo}
@@ -74,7 +90,8 @@ Use this documentation to understand the exact capabilities and parameters for e
       logger.warn('Failed to get MCP server info for enhanced prompt', {
         error,
       });
-      return persona.systemPrompt;
+      // Fallback to persona prompt builder with empty tools
+      return await PersonaPromptBuilder.buildSystemPrompt(persona, []);
     }
   };
 

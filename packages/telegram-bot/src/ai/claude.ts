@@ -1,30 +1,33 @@
 import { getMCPClient } from '../mcp/client.js';
-import type {
-  AIResponse,
-  MultiTodoIntent,
-  TodoIntent,
-} from '../types/ai-types.js';
+import { ActionRegistry } from '../services/action-registry.js';
+import { McpToolDiscoveryService } from '../services/mcp-tool-discovery.js';
+import type { AIResponse } from '../types/ai-types.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { createIntentParser } from './intent-parser.js';
+import { DynamicAcknowledmentService } from './dynamic-acknowledgment.js';
+import type {
+  DynamicMultiTodoIntent,
+  DynamicTodoIntent,
+} from './dynamic-intent-parser.js';
+import { createDynamicIntentParser } from './dynamic-intent-parser.js';
 import { type Persona, getPersona } from './personas.js';
 import { createResponseGenerator } from './response-generator.js';
 import { createSessionManager } from './session-manager.js';
-
 
 export interface ClaudeAI {
   parseUserIntent: (
     message: string,
     lastBotMessage?: string,
-  ) => Promise<TodoIntent | MultiTodoIntent | null>;
+  ) => Promise<DynamicTodoIntent | DynamicMultiTodoIntent | null>;
   generateResponse: (
     userId: string,
     message: string,
     context?: { mcpResponse?: string; action?: string },
   ) => Promise<AIResponse>;
-  generateAcknowledgment: (intent: TodoIntent | MultiTodoIntent) => string;
+  generateAcknowledgment: (intent: DynamicTodoIntent | DynamicMultiTodoIntent) => string;
   getCurrentPersona: () => Persona;
   getSessionStats: () => { totalSessions: number; activeSessions: number };
+  initialize: () => Promise<void>;
 }
 
 /**
@@ -35,14 +38,53 @@ export function createClaudeAI(): ClaudeAI {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
   const mcpClient = getMCPClient();
 
+  // Create dynamic services
+  const discoveryService = new McpToolDiscoveryService();
+  const actionRegistry = new ActionRegistry(discoveryService);
+  let acknowledgmentService: DynamicAcknowledmentService;
+  let intentParser: ReturnType<typeof createDynamicIntentParser>;
+  
   const sessionManager = createSessionManager();
-  const intentParser = createIntentParser(apiKey);
   const responseGenerator = createResponseGenerator(apiKey, mcpClient, persona);
+
+  // Initialize dynamic services
+  const initialize = async (): Promise<void> => {
+    try {
+      logger.info('Initializing Claude AI with dynamic action discovery');
+      
+      // Get MCP tools and convert to Tool format for discovery service
+      const mcpTools = await mcpClient.listTools();
+      const toolsForDiscovery = mcpTools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        schema: tool.inputSchema,
+        call: async () => {}, // Placeholder - not used by discovery service
+      }));
+      await discoveryService.discoverTools(toolsForDiscovery as any);
+      
+      // Initialize action registry with discovered tools
+      await actionRegistry.initialize();
+      
+      // Create dynamic services after initialization
+      acknowledgmentService = new DynamicAcknowledmentService(persona, actionRegistry);
+      intentParser = createDynamicIntentParser(apiKey, actionRegistry);
+      
+      logger.info('Claude AI initialized with dynamic actions', {
+        actionCount: actionRegistry.getAvailableActions().length,
+      });
+    } catch (error) {
+      logger.error('Failed to initialize Claude AI', { error });
+      throw error;
+    }
+  };
 
   const parseUserIntent = async (
     message: string,
     lastBotMessage?: string,
-  ): Promise<TodoIntent | MultiTodoIntent | null> => {
+  ): Promise<DynamicTodoIntent | DynamicMultiTodoIntent | null> => {
+    if (!intentParser) {
+      throw new Error('Claude AI not initialized. Call initialize() first.');
+    }
     return intentParser.parseUserIntent(message, lastBotMessage);
   };
 
@@ -102,7 +144,7 @@ export function createClaudeAI(): ClaudeAI {
 
       // Fallback response
       return {
-        content: persona.fallbackMessage,
+        content: persona.acknowledgmentTemplates.fallback,
         sessionId: session.id,
       };
     }
@@ -166,22 +208,12 @@ export function createClaudeAI(): ClaudeAI {
   };
 
   const generateAcknowledgment = (
-    intent: TodoIntent | MultiTodoIntent,
+    intent: DynamicTodoIntent | DynamicMultiTodoIntent,
   ): string => {
-    // Handle multi-intent
-    if ('actions' in intent) {
-      const actionCount = intent.actions.length;
-      if (actionCount === 1) {
-        return generateAcknowledgment(intent.actions[0]);
-      }
-      return `${persona.acknowledgmentEmoji} Excellent! Let me handle those ${actionCount} tasks for you...`;
+    if (!acknowledgmentService) {
+      throw new Error('Claude AI not initialized. Call initialize() first.');
     }
-
-    // Handle single intent
-    return (
-      persona.acknowledgments[intent.action] ||
-      `${persona.acknowledgmentEmoji} At your service! Let me handle that for you...`
-    );
+    return acknowledgmentService.generateAcknowledgment(intent);
   };
 
   const getCurrentPersona = (): Persona => {
@@ -201,6 +233,7 @@ export function createClaudeAI(): ClaudeAI {
     generateAcknowledgment,
     getCurrentPersona,
     getSessionStats,
+    initialize,
   };
 }
 
@@ -210,9 +243,10 @@ let claudeAI: ClaudeAI | null = null;
 /**
  * Get the singleton Claude AI instance
  */
-export function getClaudeAI(): ClaudeAI {
+export async function getClaudeAI(): Promise<ClaudeAI> {
   if (!claudeAI) {
     claudeAI = createClaudeAI();
+    await claudeAI.initialize();
   }
   return claudeAI;
 }

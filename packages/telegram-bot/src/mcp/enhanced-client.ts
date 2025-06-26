@@ -48,7 +48,7 @@ export async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
       // Primary Eddo todo server
       todo: {
         transport: 'http',
-        url: appConfig.MCP_SERVER_URL || 'http://localhost:3001/mcp',
+        url: appConfig.MCP_SERVER_URL || 'http://localhost:3001',
         // Optional: authentication headers
         headers: process.env.MCP_API_KEY
           ? {
@@ -76,12 +76,22 @@ export async function setupEnhancedMCPIntegration(): Promise<EnhancedMCPSetup> {
   logger.info('Initializing MCP client and loading tools');
 
   // Get all available tools across servers
-  const tools = (await client.getTools()) as Tool[];
+  let tools: Tool[];
+  try {
+    tools = (await client.getTools()) as Tool[];
 
-  logger.info('Enhanced MCP tools loaded', {
-    totalTools: tools.length,
-    toolNames: tools.map((t) => t.name),
-  });
+    logger.info('Enhanced MCP tools loaded', {
+      totalTools: tools.length,
+      toolNames: tools.map((t) => t.name),
+    });
+
+    if (tools.length === 0) {
+      logger.warn('No MCP tools loaded - this may indicate connection issues');
+    }
+  } catch (toolLoadError) {
+    logger.error('Failed to load MCP tools', { error: toolLoadError });
+    throw new Error(`MCP tool loading failed: ${toolLoadError}`);
+  }
 
   // Create enhanced agent with all MCP tools
   const llm = new ChatAnthropic({

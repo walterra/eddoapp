@@ -13,7 +13,7 @@ export async function handleStart(ctx: BotContext): Promise<void> {
 
   logger.info('User started bot', { userId, firstName });
 
-  const claude = getClaudeAI();
+  const claude = await getClaudeAI();
   const persona = claude.getCurrentPersona();
 
   const welcomeMessage = `
@@ -46,7 +46,7 @@ ${persona.messages.closingMessage},
  * Handle the /help command
  */
 export async function handleHelp(ctx: BotContext): Promise<void> {
-  const claude = getClaudeAI();
+  const claude = await getClaudeAI();
   const persona = claude.getCurrentPersona();
 
   const helpMessage = `
@@ -92,7 +92,7 @@ Just chat naturally - I'll understand what you need! ${persona.acknowledgmentEmo
  * Handle the /status command
  */
 export async function handleStatus(ctx: BotContext): Promise<void> {
-  const claude = getClaudeAI();
+  const claude = await getClaudeAI();
   const persona = claude.getCurrentPersona();
   const agent = getEddoAgent();
   const agentStatus = agent.getStatus();
@@ -169,7 +169,7 @@ export async function handleApprove(ctx: BotContext): Promise<void> {
 
     // Enhanced workflow should automatically resume through LangGraph interrupt mechanism
     await ctx.reply(
-      '✅ The workflow should resume automatically. If it doesn\'t, please run your original command again.',
+      "✅ The workflow should resume automatically. If it doesn't, please run your original command again.",
     );
   } else {
     await ctx.reply('❌ Failed to approve request.');
@@ -215,7 +215,7 @@ export async function handleDeny(ctx: BotContext): Promise<void> {
  * Handle the /summary command
  */
 export async function handleSummary(ctx: BotContext): Promise<void> {
-  const claude = getClaudeAI();
+  const claude = await getClaudeAI();
   const persona = claude.getCurrentPersona();
 
   const summaryMessage = `${persona.acknowledgmentEmoji} *Daily Summary*
