@@ -110,13 +110,30 @@ export class SimpleAgent {
 
     while (!state.done && iteration < maxIterations) {
       iteration++;
+      const iterationId = `iter_${Date.now()}_${iteration}`;
 
-      logger.debug('Agent loop iteration', { iteration, maxIterations });
+      logger.info('🔄 Agent Loop Iteration', { 
+        iterationId,
+        iteration, 
+        maxIterations,
+        currentState: {
+          historyEntries: state.history.length,
+          toolResultsCount: state.toolResults.length,
+          done: state.done
+        }
+      });
 
       const systemPrompt = this.buildSystemPrompt();
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
         .join('\n');
+
+      logger.info('📤 Sending to LLM', {
+        iterationId,
+        systemPromptPreview: systemPrompt.substring(0, 200) + '...',
+        conversationPreview: conversationHistory.substring(0, 300) + '...',
+        availableTools: this.mcpClient?.tools.map(t => t.name) || []
+      });
 
       const llmResponse = await claudeService.generateResponse(
         conversationHistory,
@@ -133,7 +150,12 @@ export class SimpleAgent {
       const toolCall = this.parseToolCall(llmResponse);
 
       if (toolCall) {
-        logger.debug('Tool call detected', { toolName: toolCall.name });
+        logger.info('🔧 Agent Decision: Tool Call', { 
+          iterationId,
+          toolName: toolCall.name,
+          parameters: toolCall.parameters,
+          reasoning: 'LLM decided to use a tool based on the current context'
+        });
 
         try {
           const toolResult = await this.executeTool(toolCall, telegramContext);
@@ -143,6 +165,12 @@ export class SimpleAgent {
             timestamp: Date.now(),
           });
 
+          logger.info('✅ Tool Execution Success', {
+            iterationId,
+            toolName: toolCall.name,
+            resultPreview: JSON.stringify(toolResult).substring(0, 200) + '...'
+          });
+
           // Add tool result to conversation history
           state.history.push({
             role: 'user',
@@ -150,7 +178,8 @@ export class SimpleAgent {
             timestamp: Date.now(),
           });
         } catch (error) {
-          logger.error('Tool execution failed', {
+          logger.error('❌ Tool Execution Failed', {
+            iterationId,
             toolName: toolCall.name,
             error: error instanceof Error ? error.message : String(error),
           });
@@ -162,6 +191,12 @@ export class SimpleAgent {
           });
         }
       } else {
+        logger.info('🏁 Agent Decision: Complete', {
+          iterationId,
+          reasoning: 'LLM provided final response without tool call',
+          responsePreview: llmResponse.substring(0, 200) + '...'
+        });
+        
         // No tool call, agent is done
         state.done = true;
         state.output = llmResponse;

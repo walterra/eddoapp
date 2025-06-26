@@ -19,11 +19,22 @@ export function createIntentParser(apiKey: string) {
     message: string,
     lastBotMessage?: string,
   ): Promise<TodoIntent | MultiTodoIntent | null> => {
+    const requestId = `intent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
+      const systemPrompt = buildSystemPrompt(lastBotMessage);
+      
+      logger.info('🎯 Intent Parsing Request', {
+        requestId,
+        userMessage: message,
+        lastBotMessage: lastBotMessage || 'none',
+        systemPromptLength: systemPrompt.length,
+      });
+
       const response = await client.messages.create({
         model: appConfig.LLM_MODEL,
         max_tokens: 1000,
-        system: buildSystemPrompt(lastBotMessage),
+        system: systemPrompt,
         messages: [
           {
             role: 'user',
@@ -34,22 +45,50 @@ export function createIntentParser(apiKey: string) {
 
       const content = response.content[0];
       if (content.type !== 'text') {
+        logger.warn('Intent parsing returned non-text response', { requestId });
         return null;
       }
 
+      logger.info('🎯 Intent Parsing Response', {
+        requestId,
+        rawResponse: content.text,
+        usage: response.usage,
+      });
+
       const parsed = JSON.parse(content.text);
       if (parsed === null) {
+        logger.info('Intent parsing returned null (non-todo message)', { requestId });
         return null;
       }
 
       // Try to parse as multi-intent first, then fall back to single intent
+      let result: TodoIntent | MultiTodoIntent;
       try {
-        return MultiTodoIntentSchema.parse(parsed);
+        result = MultiTodoIntentSchema.parse(parsed);
+        logger.info('✅ Intent Parsed: Multi-Todo', {
+          requestId,
+          actionCount: result.actions.length,
+          actions: result.actions.map(a => a.action),
+          requiresSequential: result.requiresSequential,
+        });
       } catch {
-        return TodoIntentSchema.parse(parsed);
+        result = TodoIntentSchema.parse(parsed);
+        logger.info('✅ Intent Parsed: Single Todo', {
+          requestId,
+          action: result.action,
+          title: result.title,
+          context: result.context,
+        });
       }
+      
+      return result;
     } catch (error) {
-      logger.error('Failed to parse user intent', { error, message });
+      logger.error('❌ Intent Parsing Failed', { 
+        requestId,
+        error: error instanceof Error ? error.message : String(error),
+        message,
+        lastBotMessage 
+      });
 
       // If it's a Zod validation error, it means Claude tried to parse a todo request but used invalid values
       if (
@@ -67,6 +106,12 @@ export function createIntentParser(apiKey: string) {
           }>;
         };
         const firstIssue = zodError.issues?.[0];
+
+        logger.error('🔍 Intent Parsing Validation Error', {
+          requestId,
+          zodIssues: zodError.issues,
+          firstIssue,
+        });
 
         if (firstIssue?.received && firstIssue.path?.includes('action')) {
           throw new Error(

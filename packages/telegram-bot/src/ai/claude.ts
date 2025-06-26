@@ -33,7 +33,13 @@ export class SimpleClaudeService implements ClaudeService {
     systemPrompt: string,
   ): Promise<string> {
     try {
-      logger.debug('Generating Claude response', {
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      logger.info('🤖 LLM Request', {
+        requestId,
+        model: appConfig.LLM_MODEL || 'claude-3-haiku-20240307',
+        systemPrompt,
+        conversationHistory,
         historyLength: conversationHistory.length,
         systemPromptLength: systemPrompt.length,
       });
@@ -55,8 +61,11 @@ export class SimpleClaudeService implements ClaudeService {
         throw new Error('Unexpected response type from Claude');
       }
 
-      logger.debug('Claude response generated', {
+      logger.info('🤖 LLM Response', {
+        requestId,
+        response: content.text,
         responseLength: content.text.length,
+        usage: response.usage,
       });
 
       return content.text;
