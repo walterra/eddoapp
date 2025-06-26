@@ -27,7 +27,7 @@ This is a GTD-inspired todo and time tracking application built as a monorepo wi
 - **client**: React/TypeScript frontend with PouchDB for offline-first storage
 - **server**: MCP (Model Context Protocol) server for external integrations
 - **shared**: Common types, utilities, and data models across packages
-- **telegram-bot**: Telegram bot with AI agent capabilities using LangGraph and Anthropic Claude
+- **telegram-bot**: Telegram bot with AI agent capabilities using Anthropic Claude
 
 ### Key Architectural Patterns
 
@@ -73,7 +73,7 @@ interface TodoAlpha3 {
   - `utils/`: Utility functions with co-located tests
 - `packages/server/src/`: MCP server implementation
 - `packages/telegram-bot/src/`: Telegram bot with AI agent
-  - `agent/`: LangGraph workflow implementation
+  - `agent/`: Simple agent loop implementation
   - `ai/`: Claude integration and persona management
   - `bot/`: Telegram bot handlers and commands
   - `mcp/`: MCP client integration
@@ -98,3 +98,63 @@ interface TodoAlpha3 {
 
 - Use CC (Conventional Commit) prefixes for commit messages
 - Do not add "Generated with" or "Co-authored" sections to commit messages
+
+## AI Agent Development Guidelines
+
+When working on AI agent code (especially in the telegram-bot package), follow these principles:
+
+### Core Philosophy: Simplicity First
+- **Agents are just "for loops with LLM calls"** - avoid over-engineering
+- Prefer minimal recursive loops over complex state machines
+- Trust the LLM to orchestrate its own workflow rather than imposing rigid patterns
+
+### Implementation Patterns
+1. **Simple Agent Loop Structure**:
+   ```typescript
+   async function agentLoop(userInput: string, context: BotContext) {
+     let state = { input: userInput, history: [] };
+     while (!state.done) {
+       const llmResponse = await processWithLLM(state);
+       if (llmResponse.needsTool) {
+         state = await executeTool(llmResponse.tool, state);
+       } else {
+         state.done = true;
+       }
+       state.history.push(llmResponse);
+     }
+     return state.output;
+   }
+   ```
+
+2. **Avoid Complex Abstractions**:
+   - NO: Graph-based workflows, state machines, rigid node systems
+   - YES: Simple loops, direct tool calls, minimal state
+
+3. **Tool Integration**:
+   - Fetch MCP tool definitions dynamically from server
+   - Pass tool descriptions directly to LLM in system prompt
+   - Let the LLM select tools based on descriptions, not complex routing
+
+4. **State Management**:
+   - Keep state minimal: current input, history, context
+   - Store conversation history in simple data structures (Map, Array)
+   - Avoid complex state objects with 20+ fields
+
+5. **Error Handling**:
+   - Use simple try-catch blocks
+   - Let the LLM interpret and learn from errors
+   - Provide environmental feedback, not pre-programmed error flows
+
+### What to Avoid
+- ❌ LangGraph or similar workflow frameworks
+- ❌ Pre-defined workflow patterns (Intent → Plan → Execute → Reflect)
+- ❌ Complex approval/routing nodes
+- ❌ Over-engineered state management
+- ❌ Hardcoded tool mappings or action registries
+
+### What to Embrace
+- ✅ Direct LLM API calls with minimal abstraction
+- ✅ Dynamic tool discovery from MCP servers
+- ✅ Environmental feedback loops
+- ✅ Trust in LLM's ability to self-organize
+- ✅ Code that reads like a simple script, not a framework
