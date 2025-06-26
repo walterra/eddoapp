@@ -4,8 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
-- Build: `pnpm build`
-- Dev server: `pnpm dev`
+### Root Level
+- Build all packages: `pnpm build`
+- Dev server (client): `pnpm dev`
 - Lint: `pnpm lint`
 - Format check: `pnpm lint:format`
 - Format fix: `pnpm format`
@@ -13,9 +14,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
 
+### Package-Specific
+- Client dev: `pnpm dev:client`
+- Server dev: `pnpm dev:server`
+- Telegram bot dev: `pnpm dev:telegram-bot`
+- Build specific package: `pnpm build:client|server|shared|telegram-bot`
+
 ## Architecture Overview
 
-This is a GTD-inspired todo and time tracking application built with React, TypeScript, and PouchDB.
+This is a GTD-inspired todo and time tracking application built as a monorepo with multiple packages:
+
+- **client**: React/TypeScript frontend with PouchDB for offline-first storage
+- **server**: MCP (Model Context Protocol) server for external integrations
+- **shared**: Common types, utilities, and data models across packages
+- **telegram-bot**: Telegram bot with AI agent capabilities using LangGraph and Anthropic Claude
 
 ### Key Architectural Patterns
 
@@ -50,12 +62,21 @@ interface TodoAlpha3 {
 }
 ```
 
-### Key Directories
+### Package Structure
 
-- `/src/api/versions/`: Data model versions and migration functions
-- `/src/components/`: React components (flat structure)
-- `/src/types/`: TypeScript definitions
-- `/src/utils/`: Utility functions with co-located tests
+- `packages/client/src/`: React frontend application
+  - `components/`: React components (flat structure)
+  - `hooks/`: Custom React hooks
+- `packages/shared/src/`: Shared code across packages
+  - `api/versions/`: Data model versions and migration functions
+  - `types/`: TypeScript definitions
+  - `utils/`: Utility functions with co-located tests
+- `packages/server/src/`: MCP server implementation
+- `packages/telegram-bot/src/`: Telegram bot with AI agent
+  - `agent/`: LangGraph workflow implementation
+  - `ai/`: Claude integration and persona management
+  - `bot/`: Telegram bot handlers and commands
+  - `mcp/`: MCP client integration
 
 ## Code Style
 
