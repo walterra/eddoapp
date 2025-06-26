@@ -24,6 +24,9 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
   });
 
   try {
+    // Show typing indicator while processing
+    await ctx.replyWithChatAction('typing');
+
     // Get the agent instance
     const agent = getEddoAgent({
       enableStreaming: true,

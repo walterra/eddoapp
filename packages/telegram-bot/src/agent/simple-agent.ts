@@ -104,6 +104,9 @@ export class SimpleAgent {
     // Ensure MCP is initialized before starting the agent loop
     await this.ensureMCPInitialized();
 
+    // Start periodic typing for long operations
+    const typingInterval = this.startPeriodicTyping(telegramContext);
+
     const state: AgentState = {
       input: userInput,
       history: [
@@ -147,6 +150,9 @@ export class SimpleAgent {
         availableTools: this.mcpClient?.tools.map((t) => t.name) || []
       });
 
+      // Show typing before LLM call
+      await this.showTyping(telegramContext);
+
       const llmResponse = await claudeService.generateResponse(
         conversationHistory,
         systemPrompt,
@@ -170,6 +176,9 @@ export class SimpleAgent {
         });
 
         try {
+          // Show appropriate action during tool execution
+          await this.showAction(telegramContext, toolCall.name);
+          
           const toolResult = await this.executeTool(toolCall, telegramContext);
           state.toolResults.push({
             toolName: toolCall.name,
@@ -214,6 +223,9 @@ export class SimpleAgent {
         state.output = llmResponse;
       }
     }
+
+    // Stop periodic typing when done
+    this.stopPeriodicTyping(typingInterval);
 
     if (iteration >= maxIterations) {
       logger.warn('Agent loop reached max iterations', { maxIterations });
@@ -288,6 +300,42 @@ Always respond in character according to your personality described above.`;
     }
 
     return result;
+  }
+
+  private async showTyping(telegramContext: BotContext): Promise<void> {
+    try {
+      await telegramContext.replyWithChatAction('typing');
+    } catch (error) {
+      logger.debug('Failed to show typing indicator', { error });
+    }
+  }
+
+  private async showAction(telegramContext: BotContext, toolName: string): Promise<void> {
+    try {
+      // Choose appropriate action based on tool type
+      let action: 'typing' | 'upload_document' | 'find_location' = 'typing';
+      
+      if (toolName.includes('search') || toolName.includes('find') || toolName.includes('list')) {
+        action = 'find_location'; // Shows "searching" indicator
+      } else if (toolName.includes('create') || toolName.includes('generate') || toolName.includes('export')) {
+        action = 'upload_document'; // Shows "uploading" indicator
+      }
+      
+      await telegramContext.replyWithChatAction(action);
+    } catch (error) {
+      logger.debug('Failed to show action indicator', { error });
+    }
+  }
+
+  private startPeriodicTyping(telegramContext: BotContext): NodeJS.Timeout {
+    // Telegram chat actions last ~5 seconds, so refresh every 4 seconds
+    return setInterval(async () => {
+      await this.showTyping(telegramContext);
+    }, 4000);
+  }
+
+  private stopPeriodicTyping(interval: NodeJS.Timeout): void {
+    clearInterval(interval);
   }
 
   async getStatus(): Promise<{
