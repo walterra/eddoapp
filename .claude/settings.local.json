@@ -10,7 +10,15 @@
       "mcp__eddo-server__listTodos",
       "mcp__eddo-server__startTimeTracking",
       "mcp__eddo-server__updateTodo",
-      "mcp__eddo-server__getActiveTimeTracking"
+      "mcp__eddo-server__getActiveTimeTracking",
+      "Bash(pnpm tsc:check:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm build)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(gh:*)",
+      "Bash(pnpm test:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

@@ -46,6 +46,7 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react": "^7.37.5",
     "jsdom": "^26.1.0",
+    "knip": "^5.61.2",
     "npm-run-all": "^4.1.5",
     "postcss": "^8.4.16",
     "pouchdb": "^9.0.0",
@@ -66,15 +67,18 @@
     "build:client": "pnpm --filter @eddo/client build",
     "build:server": "pnpm --filter @eddo/server build",
     "build:shared": "pnpm --filter @eddo/shared build",
+    "build:telegram-bot": "pnpm --filter @eddo/telegram-bot build",
     "dev": "vite",
     "dev:client": "pnpm --filter @eddo/client dev",
     "dev:server": "pnpm --filter @eddo/server dev",
+    "dev:telegram-bot": "pnpm --filter @eddo/telegram-bot dev",
     "format": "prettier --write ./packages",
     "lint:format": "prettier --cache --check ./packages",
     "lint": "eslint --cache ./packages --ignore-pattern '**/dist/**'",
     "test": "npm-run-all --parallel tsc:check vitest:run lint lint:format",
     "tsc:check": "tsc --build",
-    "vitest:run": "vitest run"
+    "vitest:run": "vitest run",
+    "knip": "knip"
   },
   "browserslist": [
     ">0.2%",
