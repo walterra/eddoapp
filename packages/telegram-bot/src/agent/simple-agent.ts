@@ -1,6 +1,8 @@
 import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import { setupMCPIntegration } from '../mcp/client.js';
+import { getPersona } from '../ai/personas.js';
+import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
 interface AgentState {
@@ -225,12 +227,14 @@ export class SimpleAgent {
   }
 
   private buildSystemPrompt(): string {
+    const persona = getPersona(appConfig.BOT_PERSONA_ID);
+    
     const toolDescriptions =
       this.mcpClient?.tools
         .map((tool) => `- ${tool.name}: ${tool.description}`)
         .join('\n') || 'No tools available';
 
-    return `You are a helpful GTD-focused assistant. You can help manage todos, track time, and organize tasks.
+    return `${persona.personalityPrompt}
 
 Available tools:
 ${toolDescriptions}
@@ -239,7 +243,7 @@ To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}
 
 If you don't need to use any tools, provide a direct response to help the user.
 
-Be concise and helpful. Focus on productivity and task management.`;
+Always respond in character according to your personality described above.`;
   }
 
   private parseToolCall(response: string): ToolCall | null {

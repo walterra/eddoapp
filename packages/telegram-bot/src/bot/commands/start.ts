@@ -1,4 +1,6 @@
 import { getEddoAgent } from '../../agent/index.js';
+import { getPersona } from '../../ai/personas.js';
+import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import { BotContext } from '../bot.js';
 
@@ -8,13 +10,13 @@ import { BotContext } from '../bot.js';
 export async function handleStart(ctx: BotContext): Promise<void> {
   const userId = ctx.from?.id;
   const firstName = ctx.from?.first_name || 'there';
+  const persona = getPersona(appConfig.BOT_PERSONA_ID);
 
-  logger.info('User started bot', { userId, firstName });
+  logger.info('User started bot', { userId, firstName, persona: persona.id });
 
-  const welcomeMessage = `
-🤖 *Welcome to Eddo Bot, ${firstName}!*
+  const welcomeMessage = `${persona.acknowledgmentEmoji} *Welcome to Eddo Bot, ${firstName}!*
 
-I'm your GTD-focused assistant, here to help you manage tasks and stay productive.
+${persona.messages.welcomeContent}
 
 *What I can help you with:*
 • 📝 Create and manage todos with natural language
@@ -30,7 +32,7 @@ I'm your GTD-focused assistant, here to help you manage tasks and stay productiv
 
 Type /help to see all available commands, or just start chatting with me naturally!
 
-*Your AI Assistant* 🤖
+${persona.messages.closingMessage}
 `;
 
   await ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
