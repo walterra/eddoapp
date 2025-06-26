@@ -26,3 +26,19 @@ Notebook             |  Eddo
 - Run `pnpm dev` to give it a try as is on your local machine.
 - Run `pnpm build` to create a production build which you can deploy/use to your liking.
 
+## Configuration
+
+### AI Model Configuration
+
+The application supports configurable AI models via the `LLM_MODEL` environment variable. Current available models:
+
+**Claude 4 Models (May 2025):**
+- `claude-opus-4-20250514` or `claude-opus-4-0` (most capable)
+- `claude-sonnet-4-20250514` or `claude-sonnet-4-0` (balanced performance)
+
+**Claude 3.7 Models:**
+- `claude-3-7-sonnet-20250219`
+
+**Claude 3.5 Models:**
+- `claude-3-5-haiku-20241022` (fastest)
+
