@@ -1,15 +1,13 @@
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { logger } from '../utils/logger.js';
-
-interface SimpleTool {
-  name: string;
-  description: string;
-  invoke: (params: Record<string, unknown>) => Promise<unknown>;
-}
+import { appConfig } from '../utils/config.js';
 
 export interface MCPTool {
   name: string;
   description: string;
   inputSchema: object;
+  invoke?: (params: Record<string, unknown>) => Promise<unknown>;
 }
 
 export interface CreateTodoParams extends Record<string, unknown> {
@@ -42,79 +40,82 @@ export interface UpdateTodoParams extends Record<string, unknown> {
 }
 
 export interface MCPClient {
-  tools: SimpleTool[];
+  client: Client;
+  tools: MCPTool[];
+  invoke: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
+  close: () => Promise<void>;
 }
 
 /**
- * Simple MCP integration that provides direct tool access
+ * MCP integration that connects to the Eddo MCP server
  */
 export async function setupMCPIntegration(): Promise<MCPClient> {
-  logger.info('Setting up simple MCP integration');
+  logger.info('Setting up MCP integration', { serverUrl: appConfig.MCP_SERVER_URL });
 
-  // Mock tools for now - in a real implementation, these would connect to the MCP server
-  const tools: SimpleTool[] = [
-    {
-      name: 'createTodo',
-      description: 'Create a new todo item',
-      invoke: async (params: Record<string, unknown>) => {
-        logger.info('Creating todo', { params });
-        return 'Todo created successfully';
+  try {
+    // Create StreamableHTTP transport
+    const transport = new StreamableHTTPClientTransport(
+      new URL(appConfig.MCP_SERVER_URL)
+    );
+    
+    // Create MCP client
+    const client = new Client(
+      {
+        name: 'eddo-telegram-bot',
+        version: '1.0.0',
       },
-    },
-    {
-      name: 'listTodos',
-      description: 'List todos with optional filters',
-      invoke: async (params: Record<string, unknown>) => {
-        logger.info('Listing todos', { params });
-        return [];
-      },
-    },
-    {
-      name: 'updateTodo',
-      description: 'Update an existing todo',
-      invoke: async (params: Record<string, unknown>) => {
-        logger.info('Updating todo', { params });
-        return 'Todo updated successfully';
-      },
-    },
-    {
-      name: 'toggleTodoCompletion',
-      description: 'Mark a todo as completed or incomplete',
-      invoke: async (params: Record<string, unknown>) => {
-        logger.info('Toggling todo completion', { params });
-        return 'Todo completion toggled successfully';
-      },
-    },
-    {
-      name: 'deleteTodo',
-      description: 'Delete a todo permanently',
-      invoke: async (params: Record<string, unknown>) => {
-        logger.info('Deleting todo', { params });
-        return 'Todo deleted successfully';
-      },
-    },
-    {
-      name: 'startTimeTracking',
-      description: 'Start tracking time for a todo',
-      invoke: async (params: Record<string, unknown>) => {
-        logger.info('Starting time tracking', { params });
-        return 'Time tracking started';
-      },
-    },
-    {
-      name: 'stopTimeTracking',
-      description: 'Stop tracking time for a todo',
-      invoke: async (params: Record<string, unknown>) => {
-        logger.info('Stopping time tracking', { params });
-        return 'Time tracking stopped';
-      },
-    },
-  ];
+      {
+        capabilities: {
+          tools: {},
+        },
+      }
+    );
 
-  logger.info('Simple MCP integration setup complete', {
-    toolCount: tools.length,
-    toolNames: tools.map((t) => t.name),
-  });
+    // Connect to the MCP server
+    await client.connect(transport);
+    logger.info('Connected to MCP server successfully');
 
-  return { tools };
+    // Discover available tools
+    const toolsResponse = await client.listTools();
+
+    const tools: MCPTool[] = toolsResponse.tools.map((tool: any) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    }));
+
+    logger.info('MCP tools discovered', {
+      toolCount: tools.length,
+      toolNames: tools.map((t) => t.name),
+    });
+
+    // Tool invocation function
+    const invoke = async (toolName: string, params: Record<string, unknown>) => {
+      logger.info('Invoking MCP tool', { toolName, params });
+      
+      try {
+        const result = await client.callTool({
+          name: toolName,
+          arguments: params,
+        });
+        
+        logger.info('MCP tool invoked successfully', { toolName, result: result.content });
+        return result.content;
+      } catch (error) {
+        logger.error('MCP tool invocation failed', { toolName, params, error: String(error) });
+        throw error;
+      }
+    };
+
+    // Close function
+    const close = async () => {
+      logger.info('Closing MCP connection');
+      await client.close();
+    };
+
+    return { client, tools, invoke, close };
+  } catch (error) {
+    logger.error('Failed to setup MCP integration', { error: String(error) });
+    throw error;
+  }
 }

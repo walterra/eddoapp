@@ -13,7 +13,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.2",
     "@eddo/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.13.1",
     "dotenv": "^16.3.1",
+    "fastmcp": "^3.4.0",
     "grammy": "^1.21.1",
     "uuid": "^11.1.0",
     "winston": "^3.11.0",

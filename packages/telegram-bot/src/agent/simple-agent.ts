@@ -264,7 +264,7 @@ Be concise and helpful. Focus on productivity and task management.`;
       parameters: toolCall.parameters,
     });
 
-    const result = await tool.invoke(toolCall.parameters);
+    const result = await this.mcpClient.invoke(tool.name, toolCall.parameters);
 
     // Send progress update to user for certain tools
     if (toolCall.name.includes('create') || toolCall.name.includes('update')) {
