@@ -237,7 +237,6 @@ export class SimpleAgent {
     return state.output || 'Process completed successfully.';
   }
 
-
   private parseToolCall(response: string): ToolCall | null {
     const toolCallMatch = response.match(/TOOL_CALL:\s*({.*})/);
     if (!toolCallMatch) {

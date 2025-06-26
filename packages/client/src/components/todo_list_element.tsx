@@ -11,6 +11,7 @@ import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { usePouchDb } from '../pouch_db';
 import { FormattedMessage } from './formatted_message';
+import { TagDisplay } from './tag_display';
 import { TodoEditModal } from './todo_edit_modal';
 
 interface TodoListElementProps {
@@ -188,6 +189,11 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                   <FormattedMessage message={todo.title} />
                 )}
               </span>
+              {todo.tags.length > 0 && (
+                <div className="mt-1">
+                  <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
+                </div>
+              )}
             </div>
           </div>
         </div>

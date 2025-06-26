@@ -1,14 +1,13 @@
 import { getPersona } from '../ai/personas.js';
-import { appConfig } from '../utils/config.js';
 import type { MCPTool } from '../mcp/client.js';
+import { appConfig } from '../utils/config.js';
 
 export function buildSystemPrompt(tools: MCPTool[]): string {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
 
   const toolDescriptions =
-    tools
-      .map((tool) => `- ${tool.name}: ${tool.description}`)
-      .join('\n') || 'No tools available';
+    tools.map((tool) => `- ${tool.name}: ${tool.description}`).join('\n') ||
+    'No tools available';
 
   const currentDateTime = new Date().toISOString();
 

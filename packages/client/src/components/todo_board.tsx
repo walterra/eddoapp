@@ -20,10 +20,12 @@ import {
 } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { useTags } from '../hooks/use_tags';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
 import { FormattedMessage } from './formatted_message';
+import { TagFilter } from './tag_filter';
 import { TodoListElement } from './todo_list_element';
 
 interface TodoBoardProps {
@@ -61,6 +63,7 @@ const designDocViews = {
 
 export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   const { safeDb, changes } = usePouchDb();
+  const { allTags } = useTags();
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
   ]);
@@ -69,6 +72,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // avoid multiple fetches
   const isFetching = useRef(false);
@@ -253,10 +257,22 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     );
   });
 
+  const filteredTodos = useMemo(() => {
+    if (selectedTags.length === 0) {
+      return todos;
+    }
+
+    return todos.filter((todo) => {
+      return selectedTags.some((selectedTag) =>
+        todo.tags.includes(selectedTag),
+      );
+    });
+  }, [todos, selectedTags]);
+
   const groupedByContextByDate = useMemo(() => {
     const grouped = Array.from(
       group(
-        [...todos, ...filteredActivities],
+        [...filteredTodos, ...filteredActivities],
         (d) => {
           if (isLatestVersion(d)) {
             return d.context ?? CONTEXT_DEFAULT;
@@ -276,7 +292,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     );
     grouped.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
     return grouped;
-  }, [todos]);
+  }, [filteredTodos, filteredActivities]);
 
   const durationByContext = useMemo(() => {
     return Object.fromEntries(
@@ -330,6 +346,16 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
           />
         </div>
       )}
+
+      {/* Tag Filter */}
+      <div className="px-4 py-2">
+        <TagFilter
+          availableTags={allTags}
+          onTagsChange={setSelectedTags}
+          selectedTags={selectedTags}
+        />
+      </div>
+
       <div className="mt-2 flex flex-col">
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
