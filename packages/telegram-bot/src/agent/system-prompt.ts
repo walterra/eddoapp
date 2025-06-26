@@ -1,8 +1,8 @@
 import { getPersona } from '../ai/personas.js';
 import { appConfig } from '../utils/config.js';
-import type { ToolDefinition } from '../mcp/client.js';
+import type { MCPTool } from '../mcp/client.js';
 
-export function buildSystemPrompt(tools: ToolDefinition[]): string {
+export function buildSystemPrompt(tools: MCPTool[]): string {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
 
   const toolDescriptions =
