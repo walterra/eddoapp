@@ -8,14 +8,17 @@ import { CONTEXT_DEFAULT } from '../constants';
 import { useTags } from '../hooks/use_tags';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorMessage } from './database_error_message';
+import { TagFilter } from './tag_filter';
 import { TagInput } from './tag_input';
 
 interface AddTodoProps {
   currentDate: Date;
   setCurrentDate: (date: Date) => void;
+  selectedTags: string[];
+  setSelectedTags: (tags: string[]) => void;
 }
 
-export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
+export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate, selectedTags, setSelectedTags }) => {
   const { safeDb } = usePouchDb();
   const { allTags } = useTags();
 
@@ -161,6 +164,11 @@ export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate }) => {
           </div>
         </div>
         <div className="hidden items-center space-x-0 space-y-3 sm:flex sm:space-x-3 sm:space-y-0">
+          <TagFilter
+            availableTags={allTags}
+            onTagsChange={setSelectedTags}
+            selectedTags={selectedTags}
+          />
           <Button className="p-0" onClick={previousWeekClickHandler} size="xs">
             <RiArrowLeftSLine size="2em" />
           </Button>{' '}

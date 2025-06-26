@@ -48,6 +48,34 @@ async function createIndexes() {
       type: 'json',
     });
 
+    // Create design document for tag statistics
+    const tagStatsDesignDoc = {
+      _id: '_design/tags',
+      views: {
+        by_tag: {
+          map: `function(doc) {
+            if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
+              for (var i = 0; i < doc.tags.length; i++) {
+                emit(doc.tags[i], 1);
+              }
+            }
+          }`,
+          reduce: '_count'
+        }
+      }
+    };
+
+    try {
+      await db.insert(tagStatsDesignDoc);
+      console.log('✅ Tag statistics design document created');
+    } catch (designError: any) {
+      if (designError.statusCode === 409) {
+        console.log('ℹ️  Tag statistics design document already exists');
+      } else {
+        console.error('❌ Error creating tag statistics design document:', designError);
+      }
+    }
+
     console.log('✅ CouchDB indexes created successfully');
   } catch (error: unknown) {
     if (
@@ -529,12 +557,46 @@ server.addTool({
     'Get comprehensive information about the Eddo MCP server, including data model, available tools, and usage examples',
   parameters: z.object({
     section: z
-      .enum(['overview', 'datamodel', 'tools', 'examples', 'all'])
+      .enum(['overview', 'datamodel', 'tools', 'examples', 'tagstats', 'all'])
       .default('all')
       .describe('Specific section of documentation to retrieve'),
   }),
   execute: async (args, { log }) => {
     log.debug('Retrieving server info', { section: args.section });
+    
+    // Get tag statistics if needed
+    let tagStatsSection = '';
+    if (args.section === 'tagstats' || args.section === 'all') {
+      try {
+        // Use the design document view to get tag statistics
+        const result = await db.view('tags', 'by_tag', {
+          group: true,
+          reduce: true
+        });
+        
+        // Sort by count (descending) and get top 10
+        const sortedTags = result.rows
+          .sort((a: any, b: any) => b.value - a.value)
+          .slice(0, 10);
+        
+        const tagList = sortedTags.length > 0 
+          ? sortedTags.map((row: any) => `- **${row.key}**: ${row.value} uses`).join('\n')
+          : '- No tags found';
+        
+        tagStatsSection = `# Top Used Tags
+
+The most frequently used tags across all todos:
+
+${tagList}
+
+*Showing top 10 most used tags*`;
+      } catch (error) {
+        tagStatsSection = `# Top Used Tags
+
+Error retrieving tag statistics: ${error}`;
+      }
+    }
+
     const sections: Record<string, string> = {
       overview: `# Eddo MCP Server Overview
 
@@ -614,6 +676,8 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
     "id": "2025-06-19T10:30:00.000Z"
   }
 }`,
+
+      tagstats: tagStatsSection,
     };
 
     if (args.section === 'all') {
@@ -622,7 +686,7 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
 
     return (
       sections[args.section] ||
-      'Invalid section. Choose from: overview, datamodel, tools, examples, all'
+      'Invalid section. Choose from: overview, datamodel, tools, examples, tagstats, all'
     );
   },
 });

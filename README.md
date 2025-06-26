@@ -42,3 +42,29 @@ The application supports configurable AI models via the `LLM_MODEL` environment 
 **Claude 3.5 Models:**
 - `claude-3-5-haiku-20241022` (fastest)
 
+## MCP Server Testing
+
+The application includes an MCP (Model Context Protocol) server that provides programmatic access to the todo system. You can test the server's functionality using the included test script.
+
+### Testing the MCP Server
+
+**Prerequisites:**
+- Start the MCP server: `pnpm dev:server`
+- The server runs on port 3002 by default
+
+**Test all server information (including tag statistics):**
+```bash
+pnpm test:mcp
+```
+
+**Test specific sections:**
+```bash
+pnpm test:mcp tagstats    # Top used tags across all todos
+pnpm test:mcp overview    # Server overview and basic info
+pnpm test:mcp datamodel   # TodoAlpha3 schema documentation
+pnpm test:mcp tools       # Available MCP tools
+pnpm test:mcp examples    # Usage examples
+```
+
+The test script handles MCP session initialization and provides formatted output of the server's capabilities and statistics.
+
