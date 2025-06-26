@@ -252,6 +252,13 @@ export class SimpleAgent {
 
 Current date and time: ${currentDateTime}
 
+COMMUNICATION STYLE: You are communicating via Telegram chat. Keep responses CONCISE and BRIEF:
+- Use 1-2 short sentences maximum for confirmations
+- Avoid lengthy explanations unless specifically asked
+- Use bullet points sparingly
+- Get straight to the point
+- Mobile-friendly message length
+
 IMPORTANT: When parsing dates, convert natural language to ISO format (YYYY-MM-DDTHH:mm:ss.sssZ):
 - "tomorrow" → next day at 23:59:59.999Z
 - "June 20th" or "June 20" → current/next year-06-20T23:59:59.999Z
