@@ -201,7 +201,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
           )}
           {!activityOnly && (
             <>
-              {(!timeTrackingActive || active) && (
+              {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
                 <button
                   className="rounded-lg py-0 pl-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
                   disabled={isUpdating}

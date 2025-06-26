@@ -1,0 +1,90 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/**/*.js"
+      ],
+      "project": [
+        "**/*.js"
+      ],
+      "ignore": [
+        "packages/**",
+        "dist/**",
+        "node_modules/**",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ]
+    },
+    "packages/client": {
+      "entry": [
+      ],
+      "project": [
+        "src/**/*.ts",
+        "src/**/*.tsx"
+      ],
+      "ignore": [
+        "dist/**",
+        "node_modules/**",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ]
+    },
+    "packages/server": {
+      "entry": [
+      ],
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignore": [
+        "dist/**",
+        "node_modules/**",
+        "**/*.test.ts"
+      ]
+    },
+    "packages/shared": {
+      "entry": [
+      ],
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignore": [
+        "dist/**",
+        "node_modules/**",
+        "**/*.test.ts",
+        "src/utils/__mocks__/**"
+      ]
+    },
+    "packages/telegram-bot": {
+      "entry": [
+      ],
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignore": [
+        "dist/**",
+        "node_modules/**",
+        "**/*.test.ts",
+        "*.log"
+      ]
+    }
+  },
+  "ignore": [
+    "dev/**",
+    "docs/**",
+    "img/**",
+    "**/*.md",
+    "**/*.json",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.config.js",
+    "**/*.config.cjs",
+    "**/*.config.ts"
+  ],
+  "ignoreDependencies": [
+  ],
+  "includeEntryExports": true,
+  "exclude": [
+    "duplicates"
+  ]
+}

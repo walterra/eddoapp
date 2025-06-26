@@ -20,7 +20,8 @@
   "references": [
     { "path": "./packages/shared" },
     { "path": "./packages/client" },
-    { "path": "./packages/server" }
+    { "path": "./packages/server" },
+    { "path": "./packages/telegram-bot" }
   ],
   "ts-node": {
     "transpileOnly": true,

@@ -1,0 +1,41 @@
+{
+  "name": "@eddo/telegram-bot",
+  "version": "0.1.0",
+  "description": "Telegram bot with MCP server integration for Eddo app",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.2",
+    "@eddo/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.13.1",
+    "dotenv": "^16.3.1",
+    "fastmcp": "^3.4.0",
+    "grammy": "^1.21.1",
+    "uuid": "^11.1.0",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "mcp",
+    "todo",
+    "assistant"
+  ],
+  "author": "Eddo App",
+  "license": "MIT"
+}
