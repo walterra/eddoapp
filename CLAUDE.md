@@ -158,3 +158,43 @@ When working on AI agent code (especially in the telegram-bot package), follow t
 - ✅ Environmental feedback loops
 - ✅ Trust in LLM's ability to self-organize
 - ✅ Code that reads like a simple script, not a framework
+
+## MCP Client Usage
+
+When connecting to MCP servers, use the standard `@modelcontextprotocol/sdk` with these patterns:
+
+### Basic Client Setup
+```typescript
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+const transport = new StreamableHTTPClientTransport(new URL(serverUrl));
+const client = new Client({
+  name: 'app-name',
+  version: '1.0.0',
+}, {
+  capabilities: { tools: {} }
+});
+
+await client.connect(transport);
+```
+
+### Tool Discovery and Invocation
+```typescript
+// Discover tools
+const toolsResponse = await client.listTools();
+const tools = toolsResponse.tools.map(tool => ({
+  name: tool.name,
+  description: tool.description,
+  inputSchema: tool.inputSchema,
+}));
+
+// Invoke tools
+const result = await client.callTool({
+  name: toolName,
+  arguments: params,
+});
+```
+
+### Alternative: FastMCP
+FastMCP is primarily a **server** framework but demonstrates proper client usage. For clients, stick to the standard SDK patterns shown above rather than FastMCP abstractions.
