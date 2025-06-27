@@ -40,6 +40,55 @@ function getLatestBackupFile(database: string): string {
   return path.join(BACKUP_DIR, files[0]);
 }
 
+async function recreateDatabase(): Promise<void> {
+  try {
+    const url = new URL(env.COUCHDB_URL);
+    const baseUrl = `${url.protocol}//${url.host}`;
+    const credentials = url.username && url.password 
+      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+      : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (credentials) {
+      headers['Authorization'] = `Basic ${credentials}`;
+    }
+
+    console.log(`Recreating database: ${couchConfig.dbName}`);
+
+    // Delete existing database
+    const deleteResponse = await fetch(`${baseUrl}/${couchConfig.dbName}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (deleteResponse.status === 404) {
+      console.log('Database does not exist, creating new one...');
+    } else if (!deleteResponse.ok) {
+      throw new Error(`Failed to delete database: ${deleteResponse.statusText}`);
+    } else {
+      console.log('Existing database deleted');
+    }
+
+    // Create new database
+    const createResponse = await fetch(`${baseUrl}/${couchConfig.dbName}`, {
+      method: 'PUT',
+      headers,
+    });
+
+    if (!createResponse.ok) {
+      throw new Error(`Failed to create database: ${createResponse.statusText}`);
+    }
+
+    console.log('New empty database created');
+    
+  } catch (error) {
+    throw new Error(`Failed to recreate database: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function restore(backupFile?: string): Promise<void> {
   try {
     const restoreFile = backupFile || getLatestBackupFile(couchConfig.dbName);
@@ -51,6 +100,9 @@ async function restore(backupFile?: string): Promise<void> {
     console.log(`Starting restore of ${couchConfig.dbName} database...`);
     console.log(`Source: ${restoreFile}`);
     console.log(`Destination: ${couchConfig.fullUrl}`);
+
+    // Recreate the database to ensure it's empty
+    await recreateDatabase();
 
     const readStream = fs.createReadStream(restoreFile);
     

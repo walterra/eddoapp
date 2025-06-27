@@ -309,9 +309,9 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
     return;
   }
 
-  // Create target database if it doesn't exist
+  // Recreate target database to ensure it's empty (required by @cloudant/couchbackup)
   try {
-    const spinner = ora('Checking/creating target database...').start();
+    const spinner = ora('Recreating target database...').start();
     const url = new URL(env.COUCHDB_URL);
     const baseUrl = `${url.protocol}//${url.host}`;
     const credentials = url.username && url.password 
@@ -326,30 +326,33 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
       headers['Authorization'] = `Basic ${credentials}`;
     }
 
-    // Check if database exists
-    const checkResponse = await fetch(`${baseUrl}/${config.database}`, {
-      method: 'HEAD',
+    // Delete existing database
+    const deleteResponse = await fetch(`${baseUrl}/${config.database}`, {
+      method: 'DELETE',
       headers,
     });
 
-    if (checkResponse.status === 404) {
-      // Database doesn't exist, create it
-      const createResponse = await fetch(`${baseUrl}/${config.database}`, {
-        method: 'PUT',
-        headers,
-      });
-
-      if (!createResponse.ok) {
-        throw new Error(`Failed to create database: ${createResponse.statusText}`);
-      }
-      spinner.succeed(chalk.green(`Created target database: ${config.database}`));
-    } else if (checkResponse.ok) {
-      spinner.succeed(chalk.green(`Target database exists: ${config.database}`));
+    if (deleteResponse.status === 404) {
+      spinner.text = 'Database does not exist, creating new one...';
+    } else if (!deleteResponse.ok) {
+      throw new Error(`Failed to delete database: ${deleteResponse.statusText}`);
     } else {
-      throw new Error(`Failed to check database: ${checkResponse.statusText}`);
+      spinner.text = 'Existing database deleted, creating new one...';
     }
+
+    // Create new database
+    const createResponse = await fetch(`${baseUrl}/${config.database}`, {
+      method: 'PUT',
+      headers,
+    });
+
+    if (!createResponse.ok) {
+      throw new Error(`Failed to create database: ${createResponse.statusText}`);
+    }
+
+    spinner.succeed(chalk.green(`Recreated empty target database: ${config.database}`));
   } catch (error) {
-    console.error(chalk.red('Failed to create/check target database:'), error instanceof Error ? error.message : String(error));
+    console.error(chalk.red('Failed to recreate target database:'), error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 
