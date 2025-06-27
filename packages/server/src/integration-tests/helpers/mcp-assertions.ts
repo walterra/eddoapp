@@ -68,16 +68,22 @@ export class MCPAssertions {
     expect(todo).toMatchObject({
       _id: expect.any(String),
       active: expect.any(Object),
-      completed: expect.any(String) || null,
       context: expect.any(String),
       description: expect.any(String),
       due: expect.any(String),
-      link: expect.any(String) || null,
-      repeat: expect.any(Number) || null,
       tags: expect.any(Array),
       title: expect.any(String),
       version: 'alpha3',
     });
+
+    // Validate completed can be string or null
+    expect(todo.completed === null || typeof todo.completed === 'string').toBe(true);
+    
+    // Validate link can be string or null
+    expect(todo.link === null || typeof todo.link === 'string').toBe(true);
+    
+    // Validate repeat can be number or null
+    expect(todo.repeat === null || typeof todo.repeat === 'number').toBe(true);
 
     // Validate _id is ISO timestamp format
     expect(() => new Date(todo._id)).not.toThrow();
