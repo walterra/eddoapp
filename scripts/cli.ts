@@ -33,8 +33,8 @@ const SCRIPTS: Record<string, ScriptInfo> = {
   restore: {
     name: 'restore',
     description: 'Restore CouchDB database from backup',
-    file: 'restore.ts',
-    hasInteractive: false,
+    file: 'restore-interactive.ts',
+    hasInteractive: true,
   },
   'verify-backup': {
     name: 'verify-backup',

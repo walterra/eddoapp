@@ -74,9 +74,10 @@ export async function getAvailableDatabases(env: Env): Promise<string[]> {
     // Parse the CouchDB URL to extract credentials and base URL
     const url = new URL(env.COUCHDB_URL);
     const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
+    const credentials =
+      url.username && url.password
+        ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+        : null;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -95,9 +96,9 @@ export async function getAvailableDatabases(env: Env): Promise<string[]> {
     }
 
     const databases: string[] = await response.json();
-    
+
     // Filter out system databases (those starting with _)
-    return databases.filter(db => !db.startsWith('_'));
+    return databases.filter((db) => !db.startsWith('_'));
   } catch (error) {
     console.error('Error fetching available databases:', error);
     return [];

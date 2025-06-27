@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { restore as couchrestore } from '@cloudant/couchbackup';
+import couchbackup from '@cloudant/couchbackup';
 import { validateEnv, getCouchDbConfig } from '@eddo/shared/config';
 
 // Environment configuration using shared validation
@@ -61,9 +61,9 @@ async function restore(backupFile?: string): Promise<void> {
     };
 
     await new Promise<void>((resolve, reject) => {
-      couchrestore(
-        couchConfig.fullUrl,
+      couchbackup.restore(
         readStream,
+        couchConfig.fullUrl,
         options,
         (err: Error | null, data?: unknown) => {
           if (err) {

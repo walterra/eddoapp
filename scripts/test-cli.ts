@@ -81,15 +81,28 @@ async function testCLIHelp(): Promise<void> {
   const { spawn } = await import('child_process');
   
   console.log(chalk.cyan('Testing backup-interactive --help:'));
-  const helpProcess = spawn('tsx', ['scripts/backup-interactive.ts', '--help'], {
+  const backupHelpProcess = spawn('tsx', ['scripts/backup-interactive.ts', '--help'], {
     stdio: 'inherit',
   });
   
-  helpProcess.on('close', (code) => {
+  backupHelpProcess.on('close', (code) => {
     if (code === 0) {
-      console.log(chalk.green('✅ Help command works'));
+      console.log(chalk.green('✅ Backup help command works'));
     } else {
-      console.error(chalk.red('❌ Help command failed'));
+      console.error(chalk.red('❌ Backup help command failed'));
+    }
+  });
+
+  console.log(chalk.cyan('\nTesting restore-interactive --help:'));
+  const restoreHelpProcess = spawn('tsx', ['scripts/restore-interactive.ts', '--help'], {
+    stdio: 'inherit',
+  });
+  
+  restoreHelpProcess.on('close', (code) => {
+    if (code === 0) {
+      console.log(chalk.green('✅ Restore help command works'));
+    } else {
+      console.error(chalk.red('❌ Restore help command failed'));
     }
   });
 }
