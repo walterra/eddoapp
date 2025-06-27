@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-/* eslint-env node */
+#!/usr/bin/env tsx
 
 /**
  * Mock data population script for CouchDB
@@ -7,20 +6,50 @@
  */
 
 import fetch from 'node-fetch';
+import { validateEnv, getCouchDbConfig } from '@eddo/shared/config';
+import type { TodoAlpha3 } from '@eddo/shared/types/todo';
 
-// Configuration - matches project's environment variables
-const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@localhost:5984';
-const COUCHDB_DB_NAME = process.env.COUCHDB_DB_NAME || 'todos-dev';
+// Environment configuration using shared validation
+const env = validateEnv(process.env);
+const couchConfig = getCouchDbConfig(env);
+
+// GTD Contexts for a Starfleet officer
+type StarfleetContext = 
+  | 'bridge'      // Bridge duties and command responsibilities  
+  | 'engineering' // Technical tasks and system maintenance
+  | 'away-team'   // Away missions and exploration
+  | 'personal'    // Personal development and relationships
+  | 'starfleet'   // Starfleet administration and protocols
+  | 'science'     // Research and analysis tasks
+  | 'diplomatic'  // Diplomatic and first contact duties
+  | 'training';   // Crew training and development
+
+interface TodoTemplate {
+  title: string;
+  context: StarfleetContext;
+  due: string;
+}
+
+interface BulkDocsRequest {
+  docs: TodoAlpha3[];
+}
+
+interface BulkDocsResponse {
+  id: string;
+  rev?: string;
+  error?: string;
+  reason?: string;
+}
 
 // Generate mock todo data for a Starfleet officer's typical week
-function generateStarfleetTodos() {
-  const todos = [];
+function generateStarfleetTodos(): TodoAlpha3[] {
+  const todos: TodoAlpha3[] = [];
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - now.getDay()); // Start of current week
 
   // Helper to create dates relative to week start
-  const getDate = (daysFromStart, hours = 9, minutes = 0) => {
+  const getDate = (daysFromStart: number, hours = 9, minutes = 0): string => {
     const date = new Date(weekStart);
     date.setDate(weekStart.getDate() + daysFromStart);
     date.setHours(hours, minutes, 0, 0);
@@ -28,7 +57,7 @@ function generateStarfleetTodos() {
   };
 
   // Generate diverse todos across the week
-  const todoData = [
+  const todoData: TodoTemplate[] = [
     // Monday - Week Planning & Bridge Duties
     { title: 'Review weekly mission objectives', context: 'bridge', due: getDate(0, 8, 0) },
     { title: 'Conduct senior staff briefing', context: 'bridge', due: getDate(0, 9, 0) },
@@ -36,7 +65,7 @@ function generateStarfleetTodos() {
     { title: 'Submit crew performance evaluations', context: 'starfleet', due: getDate(0, 16, 0) },
     { title: 'Review diplomatic protocols for Risa conference', context: 'diplomatic', due: getDate(0, 19, 0) },
 
-    // Tuesday - Engineering & System Maintenance
+    // Tuesday - Engineering & System Maintenance  
     { title: 'Inspect warp core containment field', context: 'engineering', due: getDate(1, 10, 0) },
     { title: 'Calibrate deflector array sensors', context: 'engineering', due: getDate(1, 14, 30) },
     { title: 'Approve engineering staff rotation schedule', context: 'starfleet', due: getDate(1, 11, 0) },
@@ -83,8 +112,8 @@ function generateStarfleetTodos() {
   // Convert to TodoAlpha3 format
   todoData.forEach((todo) => {
     const createdTime = new Date(now.getTime() - (Math.random() * 7 * 24 * 60 * 60 * 1000)); // Random time in past week
-
-    const todoAlpha3 = {
+    
+    const todoAlpha3: TodoAlpha3 = {
       _id: createdTime.toISOString(),
       version: 'alpha3',
       title: todo.title,
@@ -105,15 +134,15 @@ function generateStarfleetTodos() {
 }
 
 // Generate appropriate tags based on todo content and context
-function generateTagsForTodo(todo) {
-  const tags = [];
-
+function generateTagsForTodo(todo: TodoTemplate): string[] {
+  const tags: string[] = [];
+  
   // Context-based tags
   switch (todo.context) {
     case 'bridge':
       tags.push('command', 'duty-shift');
       break;
-    case 'engineering':
+    case 'engineering':  
       tags.push('technical', 'maintenance');
       break;
     case 'away-team':
@@ -162,16 +191,16 @@ function generateTagsForTodo(todo) {
 }
 
 // Check if database exists, create if not
-async function ensureDatabase() {
+async function ensureDatabase(): Promise<void> {
   try {
-    const response = await fetch(`${COUCHDB_URL}/${COUCHDB_DB_NAME}`);
+    const response = await fetch(couchConfig.fullUrl);
     if (response.status === 404) {
-      console.log(`Creating database: ${COUCHDB_DB_NAME}`);
-      const createResponse = await fetch(`${COUCHDB_URL}/${COUCHDB_DB_NAME}`, {
+      console.log(`Creating database: ${couchConfig.dbName}`);
+      const createResponse = await fetch(couchConfig.fullUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
-
+      
       if (!createResponse.ok) {
         throw new Error(`Failed to create database: ${createResponse.statusText}`);
       }
@@ -179,39 +208,39 @@ async function ensureDatabase() {
       throw new Error(`Database check failed: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('Database setup error:', error.message);
+    console.error('Database setup error:', error instanceof Error ? error.message : String(error));
     throw error;
   }
 }
 
 // Populate database with mock data
-async function populateMockData() {
+async function populateMockData(): Promise<void> {
   const dryRun = process.argv.includes('--dry-run');
-
+  
   try {
-    console.log(`Connecting to CouchDB at ${COUCHDB_URL}`);
-    console.log(`Target database: ${COUCHDB_DB_NAME}`);
-
+    console.log(`Connecting to CouchDB at ${couchConfig.url}`);
+    console.log(`Target database: ${couchConfig.dbName}`);
+    
     if (dryRun) {
       console.log('🧪 DRY RUN MODE - No data will be inserted');
     } else {
       await ensureDatabase();
     }
-
+    
     const todos = generateStarfleetTodos();
     console.log(`Generated ${todos.length} Starfleet officer todos`);
-
+    
     // Show context distribution
-    const contextCounts = {};
+    const contextCounts: Record<string, number> = {};
     todos.forEach((todo) => {
       contextCounts[todo.context] = (contextCounts[todo.context] || 0) + 1;
     });
-
+    
     console.log('Todo distribution by context:');
     Object.entries(contextCounts).forEach(([context, count]) => {
       console.log(`  ${context}: ${count}`);
     });
-
+    
     if (dryRun) {
       // Show sample todos in dry run
       console.log('\n📝 Sample todos that would be created:');
@@ -225,44 +254,44 @@ async function populateMockData() {
       console.log('\n🖖 Run without --dry-run to actually insert data');
     } else {
       // Bulk insert todos
-      const bulkDoc = {
+      const bulkDoc: BulkDocsRequest = {
         docs: todos
       };
-
-      const response = await fetch(`${COUCHDB_URL}/${COUCHDB_DB_NAME}/_bulk_docs`, {
+      
+      const response = await fetch(`${couchConfig.fullUrl}/_bulk_docs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bulkDoc)
       });
-
+      
       if (!response.ok) {
         throw new Error(`Bulk insert failed: ${response.statusText}`);
       }
-
-      const result = await response.json();
-
+      
+      const result = await response.json() as BulkDocsResponse[];
+      
       // Check for errors
       const errors = result.filter((doc) => doc.error);
       if (errors.length > 0) {
         console.warn(`${errors.length} documents failed to insert:`);
         errors.forEach((error) => console.warn(`  ${error.id}: ${error.error}`));
       }
-
+      
       const successful = result.length - errors.length;
       console.log(`✅ Successfully inserted ${successful} todos`);
       console.log(`📅 Date range: ${new Date().toLocaleDateString()} week`);
       console.log(`🖖 Ready for a productive week in Starfleet!`);
     }
-
+    
   } catch (error) {
-    console.error('Mock data population failed:', error.message);
+    console.error('Mock data population failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
 
 // Run population if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  populateMockData();
+  populateMockData().catch(console.error);
 }
 
 export { populateMockData };

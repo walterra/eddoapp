@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-/* eslint-env node */
+#!/usr/bin/env tsx
 
 /**
  * Basic backup script using @cloudant/couchbackup
@@ -9,13 +8,22 @@
 import fs from 'fs';
 import path from 'path';
 import couchbackup from '@cloudant/couchbackup';
+import { validateEnv, getCouchDbConfig } from '@eddo/shared/config';
 
-// Configuration
-const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@localhost:5984';
-const COUCHDB_DB_NAME = process.env.COUCHDB_DB_NAME || 'todos-dev';
+// Environment configuration using shared validation
+const env = validateEnv(process.env);
+const couchConfig = getCouchDbConfig(env);
+
+// Additional backup-specific configuration
 const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
 
-async function backup() {
+interface BackupOptions {
+  parallelism?: number;
+  requestTimeout?: number;
+  logfile?: string;
+}
+
+async function backup(): Promise<void> {
   try {
     // Ensure backup directory exists
     if (!fs.existsSync(BACKUP_DIR)) {
@@ -24,28 +32,30 @@ async function backup() {
 
     // Generate backup filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(BACKUP_DIR, `${COUCHDB_DB_NAME}-${timestamp}.json`);
+    const backupFile = path.join(BACKUP_DIR, `${couchConfig.dbName}-${timestamp}.json`);
 
-    console.log(`Starting backup of ${COUCHDB_DB_NAME} database...`);
-    console.log(`Source: ${COUCHDB_URL}/${COUCHDB_DB_NAME}`);
+    console.log(`Starting backup of ${couchConfig.dbName} database...`);
+    console.log(`Source: ${couchConfig.fullUrl}`);
     console.log(`Destination: ${backupFile}`);
 
     const writeStream = fs.createWriteStream(backupFile);
     
-    await new Promise((resolve, reject) => {
+    const options: BackupOptions = {
+      parallelism: 5,
+      requestTimeout: 60000,
+      logfile: `${backupFile}.log`
+    };
+
+    await new Promise<void>((resolve, reject) => {
       couchbackup.backup(
-        `${COUCHDB_URL}/${COUCHDB_DB_NAME}`,
+        couchConfig.fullUrl,
         writeStream,
-        {
-          parallelism: 5,
-          requestTimeout: 60000,
-          logfile: `${backupFile}.log`
-        },
-        (err, data) => {
+        options,
+        (err: Error | null, data?: unknown) => {
           if (err) {
             reject(err);
           } else {
-            resolve(data);
+            resolve();
           }
         }
       );
@@ -58,14 +68,14 @@ async function backup() {
     console.log(`Backup size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
     
   } catch (error) {
-    console.error('Backup failed:', error.message);
+    console.error('Backup failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
 
 // Run backup if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  backup();
+  backup().catch(console.error);
 }
 
 export { backup };

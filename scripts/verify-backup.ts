@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-/* eslint-env node */
+#!/usr/bin/env tsx
 
 /**
  * Backup verification script
@@ -9,11 +8,25 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+import type { TodoAlpha3 } from '@eddo/shared/types/todo';
 
 // Configuration
 const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
 
-function validateBackupFile(filePath) {
+interface ValidationResult {
+  totalDocuments: number;
+  validDocuments: number;
+  errors: string[];
+  isValid: boolean;
+}
+
+interface BackupDocument {
+  _id?: string;
+  version?: string;
+  [key: string]: unknown;
+}
+
+function validateBackupFile(filePath: string): Promise<ValidationResult> {
   console.log(`Validating backup file: ${filePath}`);
   
   const stats = fs.statSync(filePath);
@@ -32,13 +45,13 @@ function validateBackupFile(filePath) {
     
     let documentCount = 0;
     let validDocuments = 0;
-    const errors = [];
+    const errors: string[] = [];
     
-    rl.on('line', (line) => {
+    rl.on('line', (line: string) => {
       documentCount++;
       
       try {
-        const doc = JSON.parse(line);
+        const doc = JSON.parse(line) as BackupDocument;
         
         // Basic validation
         if (!doc._id) {
@@ -47,15 +60,30 @@ function validateBackupFile(filePath) {
           errors.push(`Line ${documentCount}: Invalid version field: ${doc.version}`);
         } else {
           validDocuments++;
+          
+          // Additional validation for TodoAlpha3 documents
+          if (doc.version === 'alpha3') {
+            const todo = doc as Partial<TodoAlpha3>;
+            if (!todo.title) {
+              errors.push(`Line ${documentCount}: TodoAlpha3 missing title field`);
+            }
+            if (!todo.context) {
+              errors.push(`Line ${documentCount}: TodoAlpha3 missing context field`);
+            }
+            if (!todo.due) {
+              errors.push(`Line ${documentCount}: TodoAlpha3 missing due field`);
+            }
+          }
         }
         
       } catch (parseError) {
-        errors.push(`Line ${documentCount}: Invalid JSON - ${parseError.message}`);
+        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+        errors.push(`Line ${documentCount}: Invalid JSON - ${errorMessage}`);
       }
     });
     
     rl.on('close', () => {
-      const result = {
+      const result: ValidationResult = {
         totalDocuments: documentCount,
         validDocuments,
         errors,
@@ -74,13 +102,13 @@ function validateBackupFile(filePath) {
       resolve(result);
     });
     
-    rl.on('error', (error) => {
+    rl.on('error', (error: Error) => {
       reject(error);
     });
   });
 }
 
-async function verifyBackup(backupFile = null) {
+async function verifyBackup(backupFile?: string): Promise<boolean> {
   try {
     if (backupFile) {
       // Verify specific file
@@ -132,18 +160,18 @@ async function verifyBackup(backupFile = null) {
     }
     
   } catch (error) {
-    console.error('Backup verification failed:', error.message);
+    console.error('Backup verification failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-const backupFile = args.length > 0 ? args[0] : null;
+const backupFile = args.length > 0 ? args[0] : undefined;
 
 // Run verification if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  verifyBackup(backupFile);
+  verifyBackup(backupFile).catch(console.error);
 }
 
 export { verifyBackup };
