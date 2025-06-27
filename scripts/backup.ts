@@ -39,7 +39,7 @@ async function backup(): Promise<void> {
     console.log(`Destination: ${backupFile}`);
 
     const writeStream = fs.createWriteStream(backupFile);
-    
+
     const options: BackupOptions = {
       parallelism: 5,
       requestTimeout: 60000,
@@ -62,11 +62,11 @@ async function backup(): Promise<void> {
     });
 
     console.log(`Backup completed successfully: ${backupFile}`);
-    
+
     // Display backup file size
     const stats = fs.statSync(backupFile);
     console.log(`Backup size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
-    
+
   } catch (error) {
     console.error('Backup failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);

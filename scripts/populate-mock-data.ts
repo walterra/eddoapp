@@ -190,15 +190,39 @@ function generateTagsForTodo(todo: TodoTemplate): string[] {
   return tags;
 }
 
+// Extract credentials and create proper headers
+function getAuthHeaders(): Record<string, string> {
+  const url = new URL(couchConfig.url);
+  if (url.username && url.password) {
+    const auth = Buffer.from(`${url.username}:${url.password}`).toString('base64');
+    return {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json'
+    };
+  }
+  return { 'Content-Type': 'application/json' };
+}
+
+// Get clean URL without credentials
+function getCleanUrl(): string {
+  const url = new URL(couchConfig.url);
+  url.username = '';
+  url.password = '';
+  return `${url.origin}/${couchConfig.dbName}`;
+}
+
 // Check if database exists, create if not
 async function ensureDatabase(): Promise<void> {
   try {
-    const response = await fetch(couchConfig.fullUrl);
+    const cleanUrl = getCleanUrl();
+    const headers = getAuthHeaders();
+    
+    const response = await fetch(cleanUrl, { headers });
     if (response.status === 404) {
       console.log(`Creating database: ${couchConfig.dbName}`);
-      const createResponse = await fetch(couchConfig.fullUrl, {
+      const createResponse = await fetch(cleanUrl, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
+        headers
       });
       
       if (!createResponse.ok) {
@@ -258,9 +282,12 @@ async function populateMockData(): Promise<void> {
         docs: todos
       };
       
-      const response = await fetch(`${couchConfig.fullUrl}/_bulk_docs`, {
+      const cleanUrl = getCleanUrl();
+      const headers = getAuthHeaders();
+      
+      const response = await fetch(`${cleanUrl}/_bulk_docs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(bulkDoc)
       });
       
