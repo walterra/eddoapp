@@ -3,20 +3,27 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "./src/mcp-server.ts",
+  "main": "dist/mcp-server.js",
   "dependencies": {
     "@eddo/shared": "workspace:*",
+    "dotenv-mono": "^1.3.14",
     "fastmcp": "^3.4.0",
     "nano": "^10.1.4",
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.1",
     "@types/node": "^24.0.3",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "scripts": {
-    "dev": "tsx src/mcp-server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "tsx watch src/mcp-server.ts",
+    "start": "node dist/mcp-server.js",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:watch": "vitest --config vitest.integration.config.ts",
+    "test:integration:ui": "vitest --config vitest.integration.config.ts --ui"
   }
 }

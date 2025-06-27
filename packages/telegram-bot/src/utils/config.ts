@@ -1,42 +1,33 @@
-import { config } from 'dotenv';
+import { validateEnv, type Env } from '@eddo/shared';
+import { dotenvLoad } from 'dotenv-mono';
 import { z } from 'zod';
 
 // Load environment variables
-config();
+dotenvLoad();
 
-const ConfigSchema = z.object({
-  // Telegram Configuration
+// Extend the shared environment schema with telegram-specific required fields
+const TelegramConfigSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1, 'Telegram bot token is required'),
-
-  // Anthropic API Configuration
   ANTHROPIC_API_KEY: z.string().min(1, 'Anthropic API key is required'),
-
-  // MCP Server Configuration
-  MCP_SERVER_URL: z.string().url().default('http://localhost:3001'),
-
-  // Application Configuration
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
-  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
-
-  // Claude Code SDK Configuration
-  CLAUDE_CODE_WORKING_DIR: z.string().default('./bot_workspace'),
-  CLAUDE_CODE_SESSION_TIMEOUT: z.coerce.number().default(3600),
-
-  // Bot Persona Configuration
-  BOT_PERSONA_ID: z.string().default('butler'),
-
-  // LLM Configuration
-  LLM_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
 });
 
-type Config = z.infer<typeof ConfigSchema>;
+// Type for telegram-specific config
+type TelegramConfig = z.infer<typeof TelegramConfigSchema>;
+
+// Combined configuration type
+type Config = Env & TelegramConfig;
 
 let appConfig: Config;
 
 try {
-  appConfig = ConfigSchema.parse(process.env);
+  // Validate shared environment
+  const sharedEnv = validateEnv(process.env);
+  
+  // Validate telegram-specific required fields
+  const telegramFields = TelegramConfigSchema.parse(process.env);
+  
+  // Combine configurations
+  appConfig = { ...sharedEnv, ...telegramFields };
 } catch (error) {
   console.error('Configuration validation failed:', error);
   process.exit(1);

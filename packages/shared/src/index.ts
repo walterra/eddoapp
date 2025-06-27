@@ -23,3 +23,6 @@ export * from './utils/get_active_record_for_todos';
 export * from './utils/get_formatted_duration';
 export * from './utils/get_repeat_todo';
 export * from './utils/shuffle';
+
+// Configuration
+export * from './config';
