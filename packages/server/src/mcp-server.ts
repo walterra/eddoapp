@@ -68,9 +68,9 @@ async function createIndexes() {
               }
             }
           }`,
-          reduce: '_count'
-        }
-      }
+          reduce: '_count',
+        },
+      },
     };
 
     try {
@@ -80,7 +80,10 @@ async function createIndexes() {
       if (designError.statusCode === 409) {
         console.log('ℹ️  Tag statistics design document already exists');
       } else {
-        console.error('❌ Error creating tag statistics design document:', designError);
+        console.error(
+          '❌ Error creating tag statistics design document:',
+          designError,
+        );
       }
     }
 
@@ -571,7 +574,7 @@ server.addTool({
   }),
   execute: async (args, { log }) => {
     log.debug('Retrieving server info', { section: args.section });
-    
+
     // Get tag statistics if needed
     let tagStatsSection = '';
     if (args.section === 'tagstats' || args.section === 'all') {
@@ -579,18 +582,21 @@ server.addTool({
         // Use the design document view to get tag statistics
         const result = await db.view('tags', 'by_tag', {
           group: true,
-          reduce: true
+          reduce: true,
         });
-        
+
         // Sort by count (descending) and get top 10
         const sortedTags = result.rows
           .sort((a: any, b: any) => b.value - a.value)
           .slice(0, 10);
-        
-        const tagList = sortedTags.length > 0 
-          ? sortedTags.map((row: any) => `- **${row.key}**: ${row.value} uses`).join('\n')
-          : '- No tags found';
-        
+
+        const tagList =
+          sortedTags.length > 0
+            ? sortedTags
+                .map((row: any) => `- **${row.key}**: ${row.value} uses`)
+                .join('\n')
+            : '- No tags found';
+
         tagStatsSection = `# Top Used Tags
 
 The most frequently used tags across all todos:

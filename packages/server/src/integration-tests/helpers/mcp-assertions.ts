@@ -1,8 +1,8 @@
 /**
  * Custom assertion helpers for MCP integration tests
  */
-
 import { expect } from 'vitest';
+
 import type { MCPTestServer } from '../setup/test-server.js';
 
 export interface TodoAlpha3 {
@@ -27,7 +27,7 @@ export class MCPAssertions {
    */
   async expectToolExists(toolName: string): Promise<void> {
     const tools = await this.testServer.listAvailableTools();
-    const tool = tools.find(t => t.name === toolName);
+    const tool = tools.find((t) => t.name === toolName);
     expect(tool, `Tool '${toolName}' should exist`).toBeDefined();
   }
 
@@ -36,17 +36,22 @@ export class MCPAssertions {
    */
   async expectToolsExist(toolNames: string[]): Promise<void> {
     const tools = await this.testServer.listAvailableTools();
-    const availableToolNames = tools.map(t => t.name);
-    
+    const availableToolNames = tools.map((t) => t.name);
+
     for (const toolName of toolNames) {
-      expect(availableToolNames, `Tool '${toolName}' should exist`).toContain(toolName);
+      expect(availableToolNames, `Tool '${toolName}' should exist`).toContain(
+        toolName,
+      );
     }
   }
 
   /**
    * Call a tool and expect it to succeed
    */
-  async expectToolCallSuccess<T = any>(toolName: string, args: any = {}): Promise<T> {
+  async expectToolCallSuccess<T = any>(
+    toolName: string,
+    args: any = {},
+  ): Promise<T> {
     const result = await this.testServer.callTool(toolName, args);
     expect(result).toBeDefined();
     return result as T;
@@ -55,7 +60,11 @@ export class MCPAssertions {
   /**
    * Call a tool and expect it to fail with specific error
    */
-  async expectToolCallError(toolName: string, args: any = {}, expectedErrorPattern?: string | RegExp): Promise<void> {
+  async expectToolCallError(
+    toolName: string,
+    args: any = {},
+    expectedErrorPattern?: string | RegExp,
+  ): Promise<void> {
     try {
       const result = await this.testServer.callTool(toolName, args);
       // If we get a string result that indicates an error, that's expected
@@ -71,11 +80,14 @@ export class MCPAssertions {
         return;
       }
       // If we got a successful result when expecting an error, fail the test
-      throw new Error(`Expected tool call to fail but it succeeded with result: ${JSON.stringify(result)}`);
+      throw new Error(
+        `Expected tool call to fail but it succeeded with result: ${JSON.stringify(result)}`,
+      );
     } catch (error) {
       // If it throws an error (as expected), verify the error message if pattern provided
       if (expectedErrorPattern) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         if (typeof expectedErrorPattern === 'string') {
           expect(errorMessage).toContain(expectedErrorPattern);
         } else {
@@ -103,11 +115,13 @@ export class MCPAssertions {
     });
 
     // Validate completed can be string or null
-    expect(todo.completed === null || typeof todo.completed === 'string').toBe(true);
-    
+    expect(todo.completed === null || typeof todo.completed === 'string').toBe(
+      true,
+    );
+
     // Validate link can be string or null
     expect(todo.link === null || typeof todo.link === 'string').toBe(true);
-    
+
     // Validate repeat can be number or null
     expect(todo.repeat === null || typeof todo.repeat === 'number').toBe(true);
 
@@ -141,7 +155,10 @@ export class MCPAssertions {
   /**
    * Assert that a todo has specific properties
    */
-  expectTodoProperties(todo: TodoAlpha3, expectedProperties: Partial<TodoAlpha3>): void {
+  expectTodoProperties(
+    todo: TodoAlpha3,
+    expectedProperties: Partial<TodoAlpha3>,
+  ): void {
     for (const [key, value] of Object.entries(expectedProperties)) {
       if (key === 'tags' && Array.isArray(value)) {
         expect(todo.tags).toEqual(expect.arrayContaining(value));
@@ -154,9 +171,12 @@ export class MCPAssertions {
   /**
    * Assert that todos are filtered correctly by context
    */
-  expectTodosFilteredByContext(todos: TodoAlpha3[], expectedContext: string): void {
+  expectTodosFilteredByContext(
+    todos: TodoAlpha3[],
+    expectedContext: string,
+  ): void {
     this.expectValidTodos(todos);
-    todos.forEach(todo => {
+    todos.forEach((todo) => {
       expect(todo.context).toBe(expectedContext);
     });
   }
@@ -164,9 +184,12 @@ export class MCPAssertions {
   /**
    * Assert that todos are filtered correctly by completion status
    */
-  expectTodosFilteredByCompletion(todos: TodoAlpha3[], expectedCompleted: boolean): void {
+  expectTodosFilteredByCompletion(
+    todos: TodoAlpha3[],
+    expectedCompleted: boolean,
+  ): void {
     this.expectValidTodos(todos);
-    todos.forEach(todo => {
+    todos.forEach((todo) => {
       if (expectedCompleted) {
         expect(todo.completed).not.toBeNull();
       } else {
@@ -178,12 +201,16 @@ export class MCPAssertions {
   /**
    * Assert that todos are within a date range
    */
-  expectTodosInDateRange(todos: TodoAlpha3[], startDate: string, endDate: string): void {
+  expectTodosInDateRange(
+    todos: TodoAlpha3[],
+    startDate: string,
+    endDate: string,
+  ): void {
     this.expectValidTodos(todos);
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
-    todos.forEach(todo => {
+
+    todos.forEach((todo) => {
       const todoDate = new Date(todo.due);
       expect(todoDate >= start && todoDate <= end).toBe(true);
     });
@@ -194,7 +221,7 @@ export class MCPAssertions {
    */
   expectActiveTimeTracking(todo: TodoAlpha3, categories: string[]): void {
     this.expectValidTodo(todo);
-    
+
     for (const category of categories) {
       expect(todo.active).toHaveProperty(category);
       expect(todo.active[category]).not.toBeNull();
@@ -209,7 +236,7 @@ export class MCPAssertions {
    */
   expectInactiveTimeTracking(todo: TodoAlpha3, categories: string[]): void {
     this.expectValidTodo(todo);
-    
+
     for (const category of categories) {
       if (todo.active.hasOwnProperty(category)) {
         expect(todo.active[category]).toBeNull();
@@ -222,10 +249,12 @@ export class MCPAssertions {
    */
   expectHasActiveTimeTracking(todo: TodoAlpha3): void {
     this.expectValidTodo(todo);
-    
-    const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
+
+    const activeEntries = Object.entries(todo.active).filter(
+      ([_, end]) => end === null,
+    );
     expect(activeEntries.length).toBeGreaterThan(0);
-    
+
     // Verify the timestamp key is valid
     activeEntries.forEach(([timestamp, _]) => {
       expect(() => new Date(timestamp)).not.toThrow();
@@ -237,8 +266,10 @@ export class MCPAssertions {
    */
   expectHasNoActiveTimeTracking(todo: TodoAlpha3): void {
     this.expectValidTodo(todo);
-    
-    const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
+
+    const activeEntries = Object.entries(todo.active).filter(
+      ([_, end]) => end === null,
+    );
     expect(activeEntries).toHaveLength(0);
   }
 
@@ -248,7 +279,7 @@ export class MCPAssertions {
   expectValidServerInfo(serverInfo: any, expectedSections?: string[]): void {
     expect(serverInfo).toBeDefined();
     expect(typeof serverInfo).toBe('object');
-    
+
     if (expectedSections) {
       for (const section of expectedSections) {
         expect(serverInfo).toHaveProperty(section);
@@ -262,7 +293,7 @@ export class MCPAssertions {
   expectValidTagStats(tagStats: any): void {
     expect(tagStats).toBeDefined();
     expect(typeof tagStats).toBe('object');
-    
+
     // Each tag should have a count
     for (const [tag, count] of Object.entries(tagStats)) {
       expect(typeof tag).toBe('string');
@@ -283,7 +314,7 @@ export class MCPAssertions {
    */
   expectTodosSortedByCreation(todos: TodoAlpha3[]): void {
     if (todos.length <= 1) return;
-    
+
     for (let i = 1; i < todos.length; i++) {
       const prev = new Date(todos[i - 1]._id);
       const curr = new Date(todos[i]._id);
