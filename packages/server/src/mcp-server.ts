@@ -1,8 +1,15 @@
-// Import the TodoAlpha3 type
-import { type TodoAlpha3 } from '@eddo/shared';
+// Import the TodoAlpha3 type and environment configuration
+import { type TodoAlpha3, getCouchDbConfig, validateEnv } from '@eddo/shared';
+import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 import { z } from 'zod';
+
+// Load environment variables
+dotenvLoad();
+
+// Validate environment
+const env = validateEnv(process.env);
 
 const server = new FastMCP({
   name: 'eddo-mcp',
@@ -14,9 +21,10 @@ const server = new FastMCP({
     'Eddo Todo MCP Server - Manages GTD-style todos with time tracking. Creates, updates, lists todos with contexts ("work", "private"), due dates, tags, and repeat intervals. Supports time tracking start/stop and completion status. Uses CouchDB backend with TodoAlpha3 schema. Default context is "private", default due is end of current day. Use getServerInfo tool for complete documentation and examples.',
 });
 
-// Initialize nano connection to CouchDB
-const couch = nano('http://admin:password@localhost:5984');
-const db = couch.db.use('todos-dev');
+// Initialize nano connection to CouchDB using environment configuration
+const couchDbConfig = getCouchDbConfig(env);
+const couch = nano(couchDbConfig.url);
+const db = couch.db.use(couchDbConfig.dbName);
 
 // Create indexes for efficient querying
 async function createIndexes() {
@@ -694,18 +702,28 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
 // Export the server instance and start function
 export const mcpServer = server;
 
-export async function startMcpServer() {
+export async function stopMcpServer() {
   try {
-    console.log('🔧 Initializing Eddo MCP server...');
+    await server.stop();
+    console.log('✅ Eddo MCP server stopped');
+  } catch (error) {
+    console.error('❌ Failed to stop MCP server:', error);
+    throw error;
+  }
+}
+
+export async function startMcpServer(port: number = 3001) {
+  try {
+    console.log(`🔧 Initializing Eddo MCP server on port ${port}...`);
 
     // Create indexes before starting the server
     await createIndexes();
 
-    // Start the server on a different port than Vite
+    // Start the server on the specified port
     await server.start({
       transportType: 'httpStream',
       httpStream: {
-        port: 3001, // Different from Vite dev server (5173)
+        port: port,
         // corsOptions: {
         //   origin: 'http://localhost:5173', // Allow Vite dev server
         //   credentials: true,
@@ -713,8 +731,8 @@ export async function startMcpServer() {
       },
     });
 
-    console.log('🚀 Eddo MCP server running on port 3001');
-    console.log('📡 Connect with: http://localhost:3001/mcp');
+    console.log(`🚀 Eddo MCP server running on port ${port}`);
+    console.log(`📡 Connect with: http://localhost:${port}/mcp`);
     console.log(
       '📋 Available tools: createTodo, listTodos, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo',
     );
@@ -722,4 +740,12 @@ export async function startMcpServer() {
     console.error('❌ Failed to start MCP server:', error);
     throw error;
   }
+}
+
+// Auto-start the server when this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startMcpServer().catch((error) => {
+    console.error('Failed to start MCP server:', error);
+    process.exit(1);
+  });
 }
