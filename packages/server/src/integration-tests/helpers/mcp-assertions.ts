@@ -192,6 +192,31 @@ export class MCPAssertions {
   }
 
   /**
+   * Assert that a todo has active time tracking (timestamp-based)
+   */
+  expectHasActiveTimeTracking(todo: TodoAlpha3): void {
+    this.expectValidTodo(todo);
+    
+    const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
+    expect(activeEntries.length).toBeGreaterThan(0);
+    
+    // Verify the timestamp key is valid
+    activeEntries.forEach(([timestamp, _]) => {
+      expect(() => new Date(timestamp)).not.toThrow();
+    });
+  }
+
+  /**
+   * Assert that a todo has no active time tracking
+   */
+  expectHasNoActiveTimeTracking(todo: TodoAlpha3): void {
+    this.expectValidTodo(todo);
+    
+    const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
+    expect(activeEntries).toHaveLength(0);
+  }
+
+  /**
    * Assert that server info contains expected sections
    */
   expectValidServerInfo(serverInfo: any, expectedSections?: string[]): void {

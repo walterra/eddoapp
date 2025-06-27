@@ -30,71 +30,95 @@ describe('MCP Time Tracking Integration', () => {
     it('should start and stop time tracking for single category', async () => {
       // Create a todo for time tracking
       const todoData = createTestTodoData.withTimeTracking();
-      const createdTodo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData);
+      await assert.expectToolCallSuccess('createTodo', todoData);
+      
+      // Get the created todo
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const createdTodo = allTodos[0]; // Most recent todo
+      assert.expectValidTodo(createdTodo);
 
       // Initially no active time tracking
       expect(Object.keys(createdTodo.active)).toHaveLength(0);
 
       // Start time tracking
-      const category = 'development';
-      const todoWithTracking = await assert.expectToolCallSuccess<TodoAlpha3>(
+      await assert.expectToolCallSuccess(
         'startTimeTracking',
-        { id: createdTodo._id, category }
+        { id: createdTodo._id }
       );
 
-      assert.expectActiveTimeTracking(todoWithTracking, [category]);
+      // Get updated todo and verify tracking started
+      const todosAfterStart = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todoWithTracking = todosAfterStart.find(t => t._id === createdTodo._id)!;
+      assert.expectHasActiveTimeTracking(todoWithTracking);
 
-      // Stop time tracking
-      const todoAfterStop = await assert.expectToolCallSuccess<TodoAlpha3>(
+      // Stop time tracking  
+      await assert.expectToolCallSuccess(
         'stopTimeTracking',
-        { id: createdTodo._id, category }
+        { id: createdTodo._id }
       );
 
-      assert.expectInactiveTimeTracking(todoAfterStop, [category]);
+      // Get updated todo and verify tracking stopped
+      const todosAfterStop = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todoAfterStop = todosAfterStop.find(t => t._id === createdTodo._id)!;
+      assert.expectHasNoActiveTimeTracking(todoAfterStop);
     });
 
     it('should handle multiple concurrent tracking categories', async () => {
       // Create todo
       const todoData = createTestTodoData.withTimeTracking();
-      const createdTodo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData);
+      await assert.expectToolCallSuccess('createTodo', todoData);
+      
+      // Get the created todo
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const createdTodo = allTodos[0]; // Most recent todo
+      assert.expectValidTodo(createdTodo);
 
-      const categories = ['development', 'research', 'testing'];
-
-      // Start tracking for all categories
+      // Start multiple tracking sessions  
       let currentTodo = createdTodo;
-      for (const category of categories) {
-        currentTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
-          'startTimeTracking',
-          { id: currentTodo._id, category }
-        );
-      }
-
-      // All categories should be active
-      assert.expectActiveTimeTracking(currentTodo, categories);
-
-      // Stop tracking for middle category
-      const todoAfterPartialStop = await assert.expectToolCallSuccess<TodoAlpha3>(
-        'stopTimeTracking',
-        { id: currentTodo._id, category: 'research' }
+      
+      // Start first session
+      await assert.expectToolCallSuccess(
+        'startTimeTracking',
+        { id: currentTodo._id }
       );
-
-      // Research should be inactive, others still active
-      assert.expectInactiveTimeTracking(todoAfterPartialStop, ['research']);
-      assert.expectActiveTimeTracking(todoAfterPartialStop, ['development', 'testing']);
-
-      // Stop all remaining
-      for (const category of ['development', 'testing']) {
-        await assert.expectToolCallSuccess('stopTimeTracking', {
-          id: currentTodo._id,
-          category,
-        });
-      }
+      
+      // Get updated todo and verify tracking started
+      let updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      currentTodo = updatedTodos.find(t => t._id === createdTodo._id)!;
+      assert.expectHasActiveTimeTracking(currentTodo);
+      
+      // Stop first session
+      await assert.expectToolCallSuccess(
+        'stopTimeTracking', 
+        { id: currentTodo._id }
+      );
+      
+      // Get updated todo and verify tracking stopped
+      updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      currentTodo = updatedTodos.find(t => t._id === createdTodo._id)!;
+      assert.expectHasNoActiveTimeTracking(currentTodo);
+      
+      // Start second session
+      await assert.expectToolCallSuccess(
+        'startTimeTracking',
+        { id: currentTodo._id }
+      );
+      
+      // Get updated todo and verify tracking started again
+      updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      currentTodo = updatedTodos.find(t => t._id === createdTodo._id)!;
+      assert.expectHasActiveTimeTracking(currentTodo);
+      
+      // Stop second session
+      await assert.expectToolCallSuccess('stopTimeTracking', {
+        id: currentTodo._id,
+      });
 
       // Get final state
       const finalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
       const finalTodo = finalTodos.find(t => t._id === createdTodo._id)!;
       
-      assert.expectInactiveTimeTracking(finalTodo, categories);
+      assert.expectHasNoActiveTimeTracking(finalTodo);
     });
 
     it('should query active time tracking sessions', async () => {
@@ -103,19 +127,29 @@ describe('MCP Time Tracking Integration', () => {
       const todoData2 = createTestTodoData.withContext('private');
       const todoData3 = createTestTodoData.basic();
 
-      const todo1 = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData1);
-      const todo2 = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData2);
-      const todo3 = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData3);
+      await assert.expectToolCallSuccess('createTodo', todoData1);
+      await assert.expectToolCallSuccess('createTodo', todoData2);
+      await assert.expectToolCallSuccess('createTodo', todoData3);
+      
+      // Get the created todos
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      assert.expectValidTodos(allTodos);
+      assert.expectTodoCount(allTodos, 3);
+      
+      // Sort by creation time (newest first)
+      allTodos.sort((a, b) => new Date(b._id).getTime() - new Date(a._id).getTime());
+      
+      const todo3 = allTodos[0]; // Most recent (basic todo)
+      const todo2 = allTodos[1]; // Second most recent (private context)
+      const todo1 = allTodos[2]; // Third most recent (work context)
 
       // Start tracking on first two todos
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: todo1._id,
-        category: 'focus',
       });
       
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: todo2._id,
-        category: 'creative',
       });
 
       // Third todo has no active tracking
@@ -139,22 +173,24 @@ describe('MCP Time Tracking Integration', () => {
       const trackedTodo1 = activeTracking.find(t => t._id === todo1._id)!;
       const trackedTodo2 = activeTracking.find(t => t._id === todo2._id)!;
       
-      assert.expectActiveTimeTracking(trackedTodo1, ['focus']);
-      assert.expectActiveTimeTracking(trackedTodo2, ['creative']);
+      assert.expectHasActiveTimeTracking(trackedTodo1);
+      assert.expectHasActiveTimeTracking(trackedTodo2);
     });
   });
 
   describe('Time Tracking Edge Cases', () => {
     it('should prevent duplicate time tracking starts', async () => {
       const todoData = createTestTodoData.withTimeTracking();
-      const createdTodo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData);
-
-      const category = 'development';
+      await assert.expectToolCallSuccess('createTodo', todoData);
+      
+      // Get the created todo
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const createdTodo = allTodos[0]; // Most recent todo
+      assert.expectValidTodo(createdTodo);
 
       // Start tracking
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: createdTodo._id,
-        category,
       });
 
       // Starting again should either be idempotent or throw error
@@ -162,7 +198,6 @@ describe('MCP Time Tracking Integration', () => {
       try {
         await assert.expectToolCallSuccess('startTimeTracking', {
           id: createdTodo._id,
-          category,
         });
       } catch (error) {
         // Error is acceptable for duplicate start
@@ -172,13 +207,17 @@ describe('MCP Time Tracking Integration', () => {
 
     it('should handle stopping non-active tracking gracefully', async () => {
       const todoData = createTestTodoData.withTimeTracking();
-      const createdTodo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData);
+      await assert.expectToolCallSuccess('createTodo', todoData);
+      
+      // Get the created todo
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const createdTodo = allTodos[0]; // Most recent todo
+      assert.expectValidTodo(createdTodo);
 
       // Try to stop tracking that was never started
       try {
         await assert.expectToolCallSuccess('stopTimeTracking', {
           id: createdTodo._id,
-          category: 'never-started',
         });
       } catch (error) {
         // Error is acceptable for stopping non-active tracking
@@ -188,46 +227,69 @@ describe('MCP Time Tracking Integration', () => {
 
     it('should handle time tracking with completed todos', async () => {
       const todoData = createTestTodoData.withTimeTracking();
-      const createdTodo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData);
+      await assert.expectToolCallSuccess('createTodo', todoData);
+      
+      // Get the created todo
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const createdTodo = allTodos[0]; // Most recent todo
+      assert.expectValidTodo(createdTodo);
 
       // Start time tracking
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: createdTodo._id,
-        category: 'work',
       });
 
       // Complete the todo while tracking is active
-      const completedTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
+      await assert.expectToolCallSuccess(
         'toggleTodoCompletion',
+        { id: createdTodo._id, completed: true }
+      );
+      
+      // Get updated todo
+      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const completedTodo = todosAfterCompletion.find(t => t._id === createdTodo._id)!;
+
+      // Time tracking should persist through completion
+      assert.expectHasActiveTimeTracking(completedTodo);
+
+      // Should still be able to stop tracking
+      await assert.expectToolCallSuccess(
+        'stopTimeTracking',
         { id: createdTodo._id }
       );
 
-      // Time tracking should persist through completion
-      assert.expectActiveTimeTracking(completedTodo, ['work']);
-
-      // Should still be able to stop tracking
-      const todoAfterStop = await assert.expectToolCallSuccess<TodoAlpha3>(
-        'stopTimeTracking',
-        { id: createdTodo._id, category: 'work' }
-      );
-
-      assert.expectInactiveTimeTracking(todoAfterStop, ['work']);
+      // Get updated todo and verify tracking stopped
+      const todosAfterStop = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todoAfterStop = todosAfterStop.find(t => t._id === createdTodo._id)!;
+      assert.expectHasNoActiveTimeTracking(todoAfterStop);
     });
 
     it('should maintain time tracking data integrity', async () => {
       const todoData = createTestTodoData.withTimeTracking();
-      const createdTodo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', todoData);
+      await assert.expectToolCallSuccess('createTodo', todoData);
+      
+      // Get the created todo
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const createdTodo = allTodos[0]; // Most recent todo
+      assert.expectValidTodo(createdTodo);
 
       const startTime = new Date().toISOString();
       
       // Start tracking
-      const todoWithTracking = await assert.expectToolCallSuccess<TodoAlpha3>(
+      await assert.expectToolCallSuccess(
         'startTimeTracking',
-        { id: createdTodo._id, category: 'integrity-test' }
+        { id: createdTodo._id }
       );
 
+      // Get updated todo and verify timestamp
+      const todosAfterStart = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todoWithTracking = todosAfterStart.find(t => t._id === createdTodo._id)!;
+      
       // Verify timestamp is reasonable (within last few seconds)
-      const trackingStartTime = new Date(todoWithTracking.active['integrity-test']!);
+      const activeEntries = Object.entries(todoWithTracking.active).filter(([_, end]) => end === null);
+      expect(activeEntries).toHaveLength(1);
+      
+      const trackingStartTime = new Date(activeEntries[0][0]);
       const now = new Date();
       const timeDiff = now.getTime() - trackingStartTime.getTime();
       
@@ -235,42 +297,61 @@ describe('MCP Time Tracking Integration', () => {
       expect(timeDiff).toBeLessThan(10000); // Less than 10 seconds
 
       // Update other fields while tracking is active
-      const updatedTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
+      await assert.expectToolCallSuccess(
         'updateTodo',
         {
           id: createdTodo._id,
-          updates: { title: 'Updated while tracking' },
+          title: 'Updated while tracking',
         }
       );
+      
+      // Get updated todo
+      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const updatedTodo = todosAfterUpdate.find(t => t._id === createdTodo._id)!;
 
       // Time tracking data should be preserved
-      assert.expectActiveTimeTracking(updatedTodo, ['integrity-test']);
-      expect(updatedTodo.active['integrity-test']).toBe(todoWithTracking.active['integrity-test']);
+      assert.expectHasActiveTimeTracking(updatedTodo);
+      
+      // Verify the active session is preserved
+      const originalActive = Object.entries(todoWithTracking.active).find(([_, end]) => end === null);
+      const updatedActive = Object.entries(updatedTodo.active).find(([_, end]) => end === null);
+      expect(originalActive).toBeDefined();
+      expect(updatedActive).toBeDefined(); 
+      expect(originalActive![0]).toBe(updatedActive![0]);
+      
+      // Verify title was updated
+      expect(updatedTodo.title).toBe('Updated while tracking');
     });
   });
 
   describe('Time Tracking with Filtering', () => {
     it('should filter active tracking by context', async () => {
       // Create todos in different contexts
-      const workTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
+      await assert.expectToolCallSuccess(
         'createTodo',
         createTestTodoData.withContext('work')
       );
       
-      const privateTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
+      await assert.expectToolCallSuccess(
         'createTodo',
         createTestTodoData.withContext('private')
       );
+      
+      // Get the created todos
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      assert.expectValidTodos(allTodos);
+      assert.expectTodoCount(allTodos, 2);
+      
+      const workTodo = allTodos.find(t => t.context === 'work')!;
+      const privateTodo = allTodos.find(t => t.context === 'private')!;
 
       // Start tracking on both
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: workTodo._id,
-        category: 'focus',
       });
       
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: privateTodo._id,
-        category: 'focus',
       });
 
       // Query active tracking (should get both)
@@ -299,8 +380,8 @@ describe('MCP Time Tracking Integration', () => {
       const workTodoWithTracking = workTodos.find(t => t._id === workTodo._id)!;
       const privateTodoWithTracking = privateTodos.find(t => t._id === privateTodo._id)!;
       
-      assert.expectActiveTimeTracking(workTodoWithTracking, ['focus']);
-      assert.expectActiveTimeTracking(privateTodoWithTracking, ['focus']);
+      assert.expectHasActiveTimeTracking(workTodoWithTracking);
+      assert.expectHasActiveTimeTracking(privateTodoWithTracking);
     });
   });
 });
