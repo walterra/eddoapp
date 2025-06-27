@@ -11,8 +11,8 @@ import path from 'path';
 import { restore as couchrestore } from '@cloudant/couchbackup';
 
 // Configuration
-const COUCH_URL = process.env.COUCH_URL || 'http://localhost:5984';
-const DATABASE = process.env.DATABASE || 'todos';
+const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@localhost:5984';
+const COUCHDB_DB_NAME = process.env.COUCHDB_DB_NAME || 'todos-dev';
 const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
 
 function getLatestBackupFile(database) {
@@ -34,21 +34,21 @@ function getLatestBackupFile(database) {
 
 async function restore(backupFile = null) {
   try {
-    const restoreFile = backupFile || getLatestBackupFile(DATABASE);
+    const restoreFile = backupFile || getLatestBackupFile(COUCHDB_DB_NAME);
     
     if (!fs.existsSync(restoreFile)) {
       throw new Error(`Backup file does not exist: ${restoreFile}`);
     }
 
-    console.log(`Starting restore of ${DATABASE} database...`);
+    console.log(`Starting restore of ${COUCHDB_DB_NAME} database...`);
     console.log(`Source: ${restoreFile}`);
-    console.log(`Destination: ${COUCH_URL}/${DATABASE}`);
+    console.log(`Destination: ${COUCHDB_URL}/${COUCHDB_DB_NAME}`);
 
     const readStream = fs.createReadStream(restoreFile);
     
     await new Promise((resolve, reject) => {
       couchrestore(
-        `${COUCH_URL}/${DATABASE}`,
+        `${COUCHDB_URL}/${COUCHDB_DB_NAME}`,
         readStream,
         {
           parallelism: 5,

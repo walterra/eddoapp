@@ -11,8 +11,8 @@ import path from 'path';
 import couchbackup from '@cloudant/couchbackup';
 
 // Configuration
-const COUCH_URL = process.env.COUCH_URL || 'http://localhost:5984';
-const DATABASE = process.env.DATABASE || 'todos';
+const COUCHDB_URL = process.env.COUCHDB_URL || 'http://admin:password@localhost:5984';
+const COUCHDB_DB_NAME = process.env.COUCHDB_DB_NAME || 'todos-dev';
 const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
 
 async function backup() {
@@ -24,17 +24,17 @@ async function backup() {
 
     // Generate backup filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(BACKUP_DIR, `${DATABASE}-${timestamp}.json`);
+    const backupFile = path.join(BACKUP_DIR, `${COUCHDB_DB_NAME}-${timestamp}.json`);
 
-    console.log(`Starting backup of ${DATABASE} database...`);
-    console.log(`Source: ${COUCH_URL}/${DATABASE}`);
+    console.log(`Starting backup of ${COUCHDB_DB_NAME} database...`);
+    console.log(`Source: ${COUCHDB_URL}/${COUCHDB_DB_NAME}`);
     console.log(`Destination: ${backupFile}`);
 
     const writeStream = fs.createWriteStream(backupFile);
     
     await new Promise((resolve, reject) => {
       couchbackup.backup(
-        `${COUCH_URL}/${DATABASE}`,
+        `${COUCHDB_URL}/${COUCHDB_DB_NAME}`,
         writeStream,
         {
           parallelism: 5,

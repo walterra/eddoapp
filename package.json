@@ -50,6 +50,7 @@
     "eslint-plugin-react": "^7.37.5",
     "jsdom": "^26.1.0",
     "knip": "^5.61.2",
+    "node-fetch": "^3.3.2",
     "npm-run-all": "^4.1.5",
     "postcss": "^8.4.16",
     "pouchdb": "^9.0.0",
@@ -87,7 +88,9 @@
     "test:mcp:integration:watch": "pnpm --filter @eddo/server test:integration:watch",
     "backup": "node scripts/backup.js",
     "restore": "node scripts/restore.js",
-    "backup:verify": "node scripts/verify-backup.js"
+    "backup:verify": "node scripts/verify-backup.js",
+    "populate-mock-data": "node scripts/populate-mock-data.js",
+    "populate-mock-data:dry-run": "node scripts/populate-mock-data.js --dry-run"
   },
   "browserslist": [
     ">0.2%",
