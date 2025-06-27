@@ -40,7 +40,7 @@ function getLatestBackupFile(database: string): string {
   return path.join(BACKUP_DIR, files[0]);
 }
 
-async function recreateDatabase(): Promise<void> {
+async function recreateDatabase(dbName: string): Promise<void> {
   try {
     const url = new URL(env.COUCHDB_URL);
     const baseUrl = `${url.protocol}//${url.host}`;
@@ -56,10 +56,10 @@ async function recreateDatabase(): Promise<void> {
       headers['Authorization'] = `Basic ${credentials}`;
     }
 
-    console.log(`Recreating database: ${couchConfig.dbName}`);
+    console.log(`Recreating database: ${dbName}`);
 
     // Delete existing database
-    const deleteResponse = await fetch(`${baseUrl}/${couchConfig.dbName}`, {
+    const deleteResponse = await fetch(`${baseUrl}/${dbName}`, {
       method: 'DELETE',
       headers,
     });
@@ -73,7 +73,7 @@ async function recreateDatabase(): Promise<void> {
     }
 
     // Create new database
-    const createResponse = await fetch(`${baseUrl}/${couchConfig.dbName}`, {
+    const createResponse = await fetch(`${baseUrl}/${dbName}`, {
       method: 'PUT',
       headers,
     });
@@ -89,20 +89,24 @@ async function recreateDatabase(): Promise<void> {
   }
 }
 
-async function restore(backupFile?: string): Promise<void> {
+async function restore(backupFile?: string, database?: string): Promise<void> {
   try {
-    const restoreFile = backupFile || getLatestBackupFile(couchConfig.dbName);
+    const dbName = database || couchConfig.dbName;
+    const restoreFile = backupFile || getLatestBackupFile(dbName);
     
     if (!fs.existsSync(restoreFile)) {
       throw new Error(`Backup file does not exist: ${restoreFile}`);
     }
 
-    console.log(`Starting restore of ${couchConfig.dbName} database...`);
+    // Build the full database URL
+    const dbUrl = couchConfig.url + '/' + dbName;
+
+    console.log(`Starting restore of ${dbName} database...`);
     console.log(`Source: ${restoreFile}`);
-    console.log(`Destination: ${couchConfig.fullUrl}`);
+    console.log(`Destination: ${dbUrl}`);
 
     // Recreate the database to ensure it's empty
-    await recreateDatabase();
+    await recreateDatabase(dbName);
 
     const readStream = fs.createReadStream(restoreFile);
     
@@ -115,7 +119,7 @@ async function restore(backupFile?: string): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       couchbackup.restore(
         readStream,
-        couchConfig.fullUrl,
+        dbUrl,
         options,
         (err: Error | null, data?: unknown) => {
           if (err) {
@@ -136,12 +140,46 @@ async function restore(backupFile?: string): Promise<void> {
 }
 
 // Parse command line arguments
-const args = process.argv.slice(2);
-const backupFile = args.length > 0 ? args[0] : undefined;
+function parseArgs() {
+  const args = process.argv.slice(2);
+  let backupFile: string | undefined;
+  let database: string | undefined;
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--database' || arg === '-d') {
+      database = args[i + 1];
+      i++; // Skip next argument as it's the value
+    } else if (arg === '--help' || arg === '-h') {
+      console.log(`
+Usage: restore.ts [backup-file] [options]
+
+Arguments:
+  backup-file       Path to backup file (optional, uses latest if not specified)
+
+Options:
+  -d, --database    Target database name (default: ${couchConfig.dbName})
+  -h, --help        Show this help message
+
+Examples:
+  pnpm tsx scripts/restore.ts
+  pnpm tsx scripts/restore.ts backups/todos-dev-2025-06-27T14-12-05-618Z.json
+  pnpm tsx scripts/restore.ts --database my-other-db
+  pnpm tsx scripts/restore.ts backups/backup.json --database my-other-db
+      `);
+      process.exit(0);
+    } else if (!backupFile && !arg.startsWith('-')) {
+      backupFile = arg;
+    }
+  }
+  
+  return { backupFile, database };
+}
 
 // Run restore if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  restore(backupFile).catch(console.error);
+  const { backupFile, database } = parseArgs();
+  restore(backupFile, database).catch(console.error);
 }
 
 export { restore };
