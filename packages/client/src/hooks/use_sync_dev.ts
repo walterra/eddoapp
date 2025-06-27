@@ -1,7 +1,7 @@
 import PouchDB from 'pouchdb-browser';
 import { useEffect } from 'react';
 
-import { getCouchDbUrl } from '@eddo/shared';
+import { getCouchDbUrl, validateEnv } from '@eddo/shared';
 import { usePouchDb } from '../pouch_db';
 
 export const useSyncDev = () => {
@@ -9,7 +9,8 @@ export const useSyncDev = () => {
 
   useEffect(() => {
     // Development only - no auth needed
-    const remoteDb = new PouchDB(getCouchDbUrl());
+    const env = validateEnv(process.env);
+    const remoteDb = new PouchDB(getCouchDbUrl(env));
 
     const syncHandler = sync(remoteDb, {
       live: true,
