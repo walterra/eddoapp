@@ -7,6 +7,30 @@
 
 import chalk from 'chalk';
 import { getBackupConfig } from './backup-interactive.js';
+import { validateEnv, getAvailableDatabases } from '@eddo/shared/config';
+
+async function testDatabaseDiscovery(): Promise<void> {
+  console.log(chalk.blue('\n🧪 Testing Database Discovery\n'));
+
+  try {
+    const env = validateEnv(process.env);
+    console.log(chalk.cyan('Discovering available databases...'));
+    
+    const databases = await getAvailableDatabases(env);
+    
+    if (databases.length === 0) {
+      console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
+      console.log(chalk.gray('Make sure CouchDB is running and accessible'));
+    } else {
+      console.log(chalk.green(`✅ Found ${databases.length} database(s):`));
+      databases.forEach((db, index) => {
+        console.log(`   ${index + 1}. ${chalk.cyan(db)}`);
+      });
+    }
+  } catch (error) {
+    console.error(chalk.red('❌ Database discovery test failed:'), error);
+  }
+}
 
 async function testConfigGeneration(): Promise<void> {
   console.log(chalk.blue('\n🧪 Testing CLI Configuration Generation\n'));
@@ -72,12 +96,17 @@ async function testCLIHelp(): Promise<void> {
 
 // Parse command line arguments for test selection
 const args = process.argv.slice(2);
+const testDatabase = args.includes('--database') || args.length === 0;
 const testConfig = args.includes('--config') || args.length === 0;
 const testHelp = args.includes('--help-test') || args.length === 0;
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(chalk.blue('🚀 CLI Testing Suite'));
-  console.log(chalk.gray('Options: --config, --help-test, --no-interactive\n'));
+  console.log(chalk.gray('Options: --database, --config, --help-test, --no-interactive\n'));
+  
+  if (testDatabase) {
+    await testDatabaseDiscovery();
+  }
   
   if (testConfig) {
     await testConfigGeneration();

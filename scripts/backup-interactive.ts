@@ -12,7 +12,7 @@ import prompts from 'prompts';
 import ora from 'ora';
 import chalk from 'chalk';
 import couchbackup from '@cloudant/couchbackup';
-import { validateEnv, getCouchDbConfig } from '@eddo/shared/config';
+import { validateEnv, getCouchDbConfig, getAvailableDatabases } from '@eddo/shared/config';
 
 interface BackupConfig {
   database?: string;
@@ -53,12 +53,54 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
   const questions: prompts.PromptObject[] = [];
   
   if (!options.database) {
-    questions.push({
-      type: 'text',
-      name: 'database',
-      message: 'Database name to backup:',
-      initial: defaults.database,
-    });
+    // Discover available databases
+    const spinner = ora('Discovering available databases...').start();
+    const availableDatabases = await getAvailableDatabases(env);
+    spinner.stop();
+
+    if (availableDatabases.length === 0) {
+      console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
+      console.log(chalk.gray('Falling back to manual input...'));
+      
+      questions.push({
+        type: 'text',
+        name: 'database',
+        message: 'Database name to backup:',
+        initial: defaults.database,
+      });
+    } else {
+      console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
+      
+      // Add option to enter custom database name
+      const databaseChoices = [
+        ...availableDatabases.map(db => ({
+          title: db,
+          value: db,
+          description: db === defaults.database ? '(current default)' : '',
+        })),
+        {
+          title: '📝 Enter custom database name',
+          value: '__custom__',
+          description: 'Manually type a database name',
+        },
+      ];
+
+      questions.push({
+        type: 'select',
+        name: 'database',
+        message: 'Select database to backup:',
+        choices: databaseChoices,
+        initial: availableDatabases.findIndex(db => db === defaults.database),
+      });
+
+      // If user selects custom, ask for manual input
+      questions.push({
+        type: (prev: string) => prev === '__custom__' ? 'text' : null,
+        name: 'customDatabase',
+        message: 'Enter database name:',
+        initial: defaults.database,
+      });
+    }
   }
 
   if (options.backupDir === undefined) {
@@ -97,6 +139,12 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
       process.exit(0);
     },
   });
+
+  // Handle custom database selection
+  if (answers.database === '__custom__' && answers.customDatabase) {
+    answers.database = answers.customDatabase;
+  }
+  delete answers.customDatabase;
 
   return { ...defaults, ...options, ...answers };
 }

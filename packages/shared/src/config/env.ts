@@ -66,6 +66,44 @@ export function getCouchDbConfig(env: Env) {
   };
 }
 
+/**
+ * Discover available databases on the CouchDB server
+ */
+export async function getAvailableDatabases(env: Env): Promise<string[]> {
+  try {
+    // Parse the CouchDB URL to extract credentials and base URL
+    const url = new URL(env.COUCHDB_URL);
+    const baseUrl = `${url.protocol}//${url.host}`;
+    const credentials = url.username && url.password 
+      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+      : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (credentials) {
+      headers['Authorization'] = `Basic ${credentials}`;
+    }
+
+    const response = await fetch(`${baseUrl}/_all_dbs`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch databases: ${response.statusText}`);
+    }
+
+    const databases: string[] = await response.json();
+    
+    // Filter out system databases (those starting with _)
+    return databases.filter(db => !db.startsWith('_'));
+  } catch (error) {
+    console.error('Error fetching available databases:', error);
+    return [];
+  }
+}
+
 // For backward compatibility in client code that expects these exports
 // Client will provide its own env via Vite, server/telegram-bot will load via dotenv-mono
 export const env =
