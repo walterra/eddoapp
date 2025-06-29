@@ -41,8 +41,8 @@ afterAll(async () => {
 declare global {
   namespace Vi {
     interface AsymmetricMatchersContaining {
-      toBeValidTodo(): any;
-      toBeValidTodoArray(): any;
+      toBeValidTodo(): unknown;
+      toBeValidTodoArray(): unknown;
     }
   }
 }

@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs';
+import { getBackupConfig } from './backup-interactive.js';
 
 // Mock dependencies
 vi.mock('@eddo/shared/config', () => ({
@@ -18,6 +19,7 @@ vi.mock('@eddo/shared/config', () => ({
     dbName: 'eddo-test',
     fullUrl: 'http://admin:password@localhost:5984/eddo-test',
   })),
+  getAvailableDatabases: vi.fn(() => Promise.resolve(['eddo-test', 'test-db'])),
 }));
 
 vi.mock('prompts', () => ({

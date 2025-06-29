@@ -48,9 +48,9 @@ export class MCPAssertions {
   /**
    * Call a tool and expect it to succeed
    */
-  async expectToolCallSuccess<T = any>(
+  async expectToolCallSuccess<T = unknown>(
     toolName: string,
-    args: any = {},
+    args: Record<string, unknown> = {},
   ): Promise<T> {
     const result = await this.testServer.callTool(toolName, args);
     expect(result).toBeDefined();
@@ -62,7 +62,7 @@ export class MCPAssertions {
    */
   async expectToolCallError(
     toolName: string,
-    args: any = {},
+    args: Record<string, unknown> = {},
     expectedErrorPattern?: string | RegExp,
   ): Promise<void> {
     try {
@@ -102,7 +102,7 @@ export class MCPAssertions {
   /**
    * Assert that a todo has valid Alpha3 structure
    */
-  expectValidTodo(todo: any): asserts todo is TodoAlpha3 {
+  expectValidTodo(todo: unknown): asserts todo is TodoAlpha3 {
     expect(todo).toMatchObject({
       _id: expect.any(String),
       active: expect.any(Object),
@@ -114,34 +114,41 @@ export class MCPAssertions {
       version: 'alpha3',
     });
 
+    // Type guard to ensure todo is object-like
+    if (!todo || typeof todo !== 'object') {
+      throw new Error('Todo must be an object');
+    }
+
+    const todoObj = todo as Record<string, unknown>;
+
     // Validate completed can be string or null
-    expect(todo.completed === null || typeof todo.completed === 'string').toBe(
+    expect(todoObj.completed === null || typeof todoObj.completed === 'string').toBe(
       true,
     );
 
     // Validate link can be string or null
-    expect(todo.link === null || typeof todo.link === 'string').toBe(true);
+    expect(todoObj.link === null || typeof todoObj.link === 'string').toBe(true);
 
     // Validate repeat can be number or null
-    expect(todo.repeat === null || typeof todo.repeat === 'number').toBe(true);
+    expect(todoObj.repeat === null || typeof todoObj.repeat === 'number').toBe(true);
 
     // Validate _id is ISO timestamp format
-    expect(() => new Date(todo._id)).not.toThrow();
+    expect(() => new Date(todoObj._id as string)).not.toThrow();
 
     // Validate due date format
-    expect(() => new Date(todo.due)).not.toThrow();
+    expect(() => new Date(todoObj.due as string)).not.toThrow();
 
     // Validate tags are strings
-    expect(todo.tags.every((tag: any) => typeof tag === 'string')).toBe(true);
+    expect((todoObj.tags as unknown[]).every((tag: unknown) => typeof tag === 'string')).toBe(true);
 
     // Validate context is valid
-    expect(['work', 'private', 'personal']).toContain(todo.context);
+    expect(['work', 'private', 'personal']).toContain(todoObj.context);
   }
 
   /**
    * Assert that a list of todos are all valid
    */
-  expectValidTodos(todos: any[]): asserts todos is TodoAlpha3[] {
+  expectValidTodos(todos: unknown[]): asserts todos is TodoAlpha3[] {
     expect(todos).toBeInstanceOf(Array);
     todos.forEach((todo, index) => {
       try {
@@ -238,7 +245,7 @@ export class MCPAssertions {
     this.expectValidTodo(todo);
 
     for (const category of categories) {
-      if (todo.active.hasOwnProperty(category)) {
+      if (Object.prototype.hasOwnProperty.call(todo.active, category)) {
         expect(todo.active[category]).toBeNull();
       }
     }
@@ -276,7 +283,7 @@ export class MCPAssertions {
   /**
    * Assert that server info contains expected sections
    */
-  expectValidServerInfo(serverInfo: any, expectedSections?: string[]): void {
+  expectValidServerInfo(serverInfo: unknown, expectedSections?: string[]): void {
     expect(serverInfo).toBeDefined();
     expect(typeof serverInfo).toBe('object');
 
@@ -290,12 +297,16 @@ export class MCPAssertions {
   /**
    * Assert that tag statistics are valid
    */
-  expectValidTagStats(tagStats: any): void {
+  expectValidTagStats(tagStats: unknown): void {
     expect(tagStats).toBeDefined();
     expect(typeof tagStats).toBe('object');
 
+    if (!tagStats || typeof tagStats !== 'object') {
+      throw new Error('Tag stats must be an object');
+    }
+
     // Each tag should have a count
-    for (const [tag, count] of Object.entries(tagStats)) {
+    for (const [tag, count] of Object.entries(tagStats as Record<string, unknown>)) {
       expect(typeof tag).toBe('string');
       expect(typeof count).toBe('number');
       expect(count).toBeGreaterThan(0);

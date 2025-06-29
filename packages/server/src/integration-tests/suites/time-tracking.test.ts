@@ -321,7 +321,7 @@ describe('MCP Time Tracking Integration', () => {
       const createdTodo = allTodos[0]; // Most recent todo
       assert.expectValidTodo(createdTodo);
 
-      const startTime = new Date().toISOString();
+      const _startTime = new Date().toISOString();
 
       // Start tracking
       await assert.expectToolCallSuccess('startTimeTracking', {

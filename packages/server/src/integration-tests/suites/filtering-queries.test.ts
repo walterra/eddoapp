@@ -29,22 +29,22 @@ describe('MCP Query and Filtering Integration', () => {
   describe('Context Filtering', () => {
     it('should filter todos by context correctly', async () => {
       // Create todos in different contexts
-      const workTodo1 = await assert.expectToolCallSuccess<TodoAlpha3>(
+      const _workTodo1 = await assert.expectToolCallSuccess<TodoAlpha3>(
         'createTodo',
         createTestTodoData.withContext('work'),
       );
 
-      const workTodo2 = await assert.expectToolCallSuccess<TodoAlpha3>(
+      const _workTodo2 = await assert.expectToolCallSuccess<TodoAlpha3>(
         'createTodo',
         { ...createTestTodoData.withContext('work'), title: 'Work Todo 2' },
       );
 
-      const privateTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
+      const _privateTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
         'createTodo',
         createTestTodoData.withContext('private'),
       );
 
-      const personalTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
+      const _personalTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
         'createTodo',
         createTestTodoData.withContext('personal'),
       );
@@ -94,7 +94,7 @@ describe('MCP Query and Filtering Integration', () => {
         'createTodo',
         createTestTodoData.basic(),
       );
-      const todo1Id = todo1Response.match(/Todo created with ID: (.+)$/)?.[1];
+      const _todo1Id = todo1Response.match(/Todo created with ID: (.+)$/)?.[1];
 
       const todo2Response = await assert.expectToolCallSuccess<string>(
         'createTodo',
@@ -106,7 +106,7 @@ describe('MCP Query and Filtering Integration', () => {
         'createTodo',
         { ...createTestTodoData.basic(), title: 'Third Todo' },
       );
-      const todo3Id = todo3Response.match(/Todo created with ID: (.+)$/)?.[1];
+      const _todo3Id = todo3Response.match(/Todo created with ID: (.+)$/)?.[1];
 
       // Complete one todo
       await assert.expectToolCallSuccess('toggleTodoCompletion', {

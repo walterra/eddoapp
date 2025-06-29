@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData } from '../__fixtures__/todo-factory.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
-import type { TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type { TodoAlpha3 as _TodoAlpha3 } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 // Helper function to parse tag statistics from markdown response
@@ -308,7 +308,7 @@ describe('MCP Analytics Integration', () => {
       for (let i = 0; i < todoCount; i++) {
         // Select 1-3 random tags
         const numTags = Math.floor(Math.random() * 3) + 1;
-        const selectedTags = [];
+        const selectedTags: string[] = [];
 
         for (let j = 0; j < numTags; j++) {
           const randomTag = tagPool[Math.floor(Math.random() * tagPool.length)];

@@ -76,8 +76,8 @@ async function createIndexes() {
     try {
       await db.insert(tagStatsDesignDoc);
       console.log('✅ Tag statistics design document created');
-    } catch (designError: any) {
-      if (designError.statusCode === 409) {
+    } catch (designError: unknown) {
+      if (designError && typeof designError === 'object' && 'statusCode' in designError && designError.statusCode === 409) {
         console.log('ℹ️  Tag statistics design document already exists');
       } else {
         console.error(
@@ -587,13 +587,13 @@ server.addTool({
 
         // Sort by count (descending) and get top 10
         const sortedTags = result.rows
-          .sort((a: any, b: any) => b.value - a.value)
+          .sort((a, b) => (typeof a.value === 'number' && typeof b.value === 'number') ? b.value - a.value : 0)
           .slice(0, 10);
 
         const tagList =
           sortedTags.length > 0
             ? sortedTags
-                .map((row: any) => `- **${row.key}**: ${row.value} uses`)
+                .map((row) => `- **${row.key}**: ${row.value} uses`)
                 .join('\n')
             : '- No tags found';
 
@@ -729,7 +729,7 @@ export async function startMcpServer(port: number = 3001) {
     await server.start({
       transportType: 'httpStream',
       httpStream: {
-        port: port,
+        port,
         // corsOptions: {
         //   origin: 'http://localhost:5173', // Allow Vite dev server
         //   credentials: true,

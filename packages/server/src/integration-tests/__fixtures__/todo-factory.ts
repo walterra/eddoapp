@@ -2,7 +2,7 @@
  * Test data factories for creating consistent test todos
  */
 
-export interface TestTodoData {
+export interface TestTodoData extends Record<string, unknown> {
   title: string;
   context: string;
   due: string;

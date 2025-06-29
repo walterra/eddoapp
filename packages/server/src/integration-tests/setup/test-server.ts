@@ -84,18 +84,18 @@ export class MCPTestServer {
   }
 
   async listAvailableTools(): Promise<
-    Array<{ name: string; description: string; inputSchema: any }>
+    Array<{ name: string; description: string; inputSchema: unknown }>
   > {
     const client = this.getClient();
     const response = await client.listTools();
     return response.tools.map((tool) => ({
       name: tool.name,
-      description: tool.description,
+      description: tool.description || '',
       inputSchema: tool.inputSchema,
     }));
   }
 
-  async callTool(name: string, args: any = {}): Promise<any> {
+  async callTool(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
     const client = this.getClient();
     const result = await client.callTool({
       name,
@@ -103,8 +103,8 @@ export class MCPTestServer {
     });
 
     // Extract text content from response
-    if (result.content && result.content.length > 0) {
-      const textContent = result.content.find((c) => c.type === 'text');
+    if (result.content && Array.isArray(result.content) && result.content.length > 0) {
+      const textContent = result.content.find((c: { type: string }) => c.type === 'text');
       if (textContent) {
         try {
           return JSON.parse(textContent.text);
