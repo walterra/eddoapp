@@ -80,7 +80,12 @@ export class TestMCPServerInstance {
         await couch.db.destroy(couchDbConfig.dbName);
         console.log(`🗑️  Cleared test database: ${couchDbConfig.dbName}`);
       } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'statusCode' in error &&
+          error.statusCode === 404
+        ) {
           console.log(
             `ℹ️  Test database doesn't exist: ${couchDbConfig.dbName}`,
           );

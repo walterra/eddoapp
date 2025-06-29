@@ -77,7 +77,12 @@ async function createIndexes() {
       await db.insert(tagStatsDesignDoc);
       console.log('✅ Tag statistics design document created');
     } catch (designError: unknown) {
-      if (designError && typeof designError === 'object' && 'statusCode' in designError && designError.statusCode === 409) {
+      if (
+        designError &&
+        typeof designError === 'object' &&
+        'statusCode' in designError &&
+        designError.statusCode === 409
+      ) {
         console.log('ℹ️  Tag statistics design document already exists');
       } else {
         console.error(
@@ -587,7 +592,11 @@ server.addTool({
 
         // Sort by count (descending) and get top 10
         const sortedTags = result.rows
-          .sort((a, b) => (typeof a.value === 'number' && typeof b.value === 'number') ? b.value - a.value : 0)
+          .sort((a, b) =>
+            typeof a.value === 'number' && typeof b.value === 'number'
+              ? b.value - a.value
+              : 0,
+          )
           .slice(0, 10);
 
         const tagList =

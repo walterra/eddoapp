@@ -28,7 +28,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Step 1: Create a backup (dry run)
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['BACKUP_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-workflow-db', '--backup-dir', mockBackupDir])
+      .spawn('tsx', [BACKUP_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-workflow-db', '--backup-dir', mockBackupDir])
       .stdout(/Dry run mode/)
       .stdout(/Database: test-workflow-db/)
       .code(0);
@@ -57,7 +57,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Step 2: Restore from the backup (dry run)
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-workflow-db-restored', '--backup-file', mockBackupFile, '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-workflow-db-restored', '--backup-file', mockBackupFile, '--force-overwrite'])
       .stdout(/Dry run mode/)
       .stdout(/Target Database: test-workflow-db-restored/)
       .code(0);
@@ -76,7 +76,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Step 1: Backup with custom parameters
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['BACKUP_SCRIPT', '--dry-run', '--no-interactive', '--database', 'custom-params-db', '--backup-dir', mockBackupDir, '--parallelism', customParallelism.toString(), '--timeout', customTimeout.toString()])
+      .spawn('tsx', [BACKUP_SCRIPT, '--dry-run', '--no-interactive', '--database', 'custom-params-db', '--backup-dir', mockBackupDir, '--parallelism', customParallelism.toString(), '--timeout', customTimeout.toString()])
       .stdout(/Parallelism: 4/)
       .stdout(/Timeout: 45000ms/)
       .code(0);
@@ -89,7 +89,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Step 2: Restore with matching custom parameters
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'custom-params-db-restored', '--backup-file', mockBackupFile, '--parallelism', customParallelism.toString(), '--timeout', customTimeout.toString(), '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'custom-params-db-restored', '--backup-file', mockBackupFile, '--parallelism', customParallelism.toString(), '--timeout', customTimeout.toString(), '--force-overwrite'])
       .stdout(/Parallelism: 4/)
       .stdout(/Timeout: 45000ms/)
       .code(0);
@@ -103,7 +103,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Try to restore from invalid backup file
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', invalidBackupFile, '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', invalidBackupFile, '--force-overwrite'])
       .stdout(/Dry run mode/)
       .code(0);
 
@@ -132,7 +132,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Backup dry run should work
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['BACKUP_SCRIPT', '--dry-run', '--no-interactive', '--database', database, '--backup-dir', mockBackupDir])
+      .spawn('tsx', [BACKUP_SCRIPT, '--dry-run', '--no-interactive', '--database', database, '--backup-dir', mockBackupDir])
       .stdout(/Existing backups:/)
       .stdout(new RegExp(backupFiles[0]))
       .code(0);
@@ -141,7 +141,7 @@ describe('Backup-Restore Workflow E2E', () => {
     const latestBackupFile = path.join(mockBackupDir, backupFiles[2]);
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', `${database}-restored`, '--backup-file', latestBackupFile, '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', `${database}-restored`, '--backup-file', latestBackupFile, '--force-overwrite'])
       .stdout(/Dry run mode/)
       .code(0);
   }, 45000);
@@ -153,7 +153,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Test backup with subdirectory
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['BACKUP_SCRIPT', '--dry-run', '--no-interactive', '--database', 'subdir-test-db', '--backup-dir', subdirBackupDir])
+      .spawn('tsx', [BACKUP_SCRIPT, '--dry-run', '--no-interactive', '--database', 'subdir-test-db', '--backup-dir', subdirBackupDir])
       .stdout(/Dry run mode/)
       .code(0);
 
@@ -167,7 +167,7 @@ describe('Backup-Restore Workflow E2E', () => {
     // Test restore from subdirectory
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'subdir-test-db-restored', '--backup-file', mockBackupFile, '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'subdir-test-db-restored', '--backup-file', mockBackupFile, '--force-overwrite'])
       .stdout(/Dry run mode/)
       .code(0);
   }, 45000);

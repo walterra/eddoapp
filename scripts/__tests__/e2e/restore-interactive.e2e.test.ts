@@ -62,7 +62,7 @@ describe('Restore Interactive E2E', () => {
   it('should handle dry run mode', async () => {
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--force-overwrite'])
       .stdout(/Dry run mode/)
       .code(0);
   }, 30000);
@@ -70,7 +70,7 @@ describe('Restore Interactive E2E', () => {
   it('should show help information', async () => {
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--help'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--help'])
       .stdout(/Interactive CouchDB restore tool/)
       .stdout(/Options:/)
       .code(0);
@@ -81,7 +81,7 @@ describe('Restore Interactive E2E', () => {
     
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', nonExistentFile])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', nonExistentFile])
       .stderr(/does not exist/)
       .code(1);
   }, 30000);
@@ -89,7 +89,7 @@ describe('Restore Interactive E2E', () => {
   it('should show configuration summary in dry run', async () => {
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--parallelism', '3', '--timeout', '25000', '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--parallelism', '3', '--timeout', '25000', '--force-overwrite'])
       .stdout(/Restore Configuration:/)
       .stdout(/Target Database: test-db/)
       .stdout(/Parallelism: 3/)
@@ -100,7 +100,7 @@ describe('Restore Interactive E2E', () => {
   it('should handle user cancellation without force overwrite', async () => {
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile])
+      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile])
       .stdout(/Restore cancelled - force overwrite not confirmed/)
       .code(0);
   }, 30000);
@@ -111,7 +111,7 @@ describe('Restore Interactive E2E', () => {
     
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--backup-dir', customBackupDir, '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--backup-dir', customBackupDir, '--force-overwrite'])
       .stdout(/Dry run mode/)
       .code(0);
   }, 30000);
@@ -127,7 +127,7 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(env)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT'])
+      .spawn('tsx', [RESTORE_SCRIPT])
       .stdin(/Select target database for restore:/, '\x03') // Ctrl+C to cancel
       .stderr(/cancelled|interrupt/i)
       .code(130); // Standard exit code for SIGINT
@@ -136,7 +136,7 @@ describe('Restore Interactive E2E', () => {
   it('should validate parallelism parameter range', async () => {
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--parallelism', '8', '--force-overwrite'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', 'test-db', '--backup-file', mockBackupFile, '--parallelism', '8', '--force-overwrite'])
       .stdout(/Parallelism: 8/)
       .code(0);
   }, 30000);
@@ -144,7 +144,7 @@ describe('Restore Interactive E2E', () => {
   it('should handle missing backup file parameter in non-interactive mode', async () => {
     await runner()
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--no-interactive', '--database', 'test-db'])
+      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', 'test-db'])
       .stderr(/does not exist/)
       .code(1);
   }, 30000);
@@ -192,7 +192,7 @@ describe('Restore Interactive E2E - File Discovery', () => {
     await runner()
       .env(env)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--backup-dir', mockBackupDir])
+      .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', mockBackupDir])
       .stdin(/Select target database for restore:/, '\x03') // Cancel after discovery
       .stderr(/cancelled|interrupt/i)
       .code(130);
@@ -211,7 +211,7 @@ describe('Restore Interactive E2E - File Discovery', () => {
     await runner()
       .env(env)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', ['RESTORE_SCRIPT', '--backup-dir', emptyBackupDir])
+      .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', emptyBackupDir])
       .stdin(/Path to backup file:/, '\x03') // Cancel when prompted for manual file path
       .stderr(/cancelled|interrupt/i)
       .code(130);
