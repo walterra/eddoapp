@@ -384,12 +384,10 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
       logfile: `${config.backupFile}.restore.log`,
     };
 
-    let documentsProcessed = 0;
-
     // Update spinner with progress
     const updateProgress = setInterval(() => {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      spinner.text = `Restoring... (${documentsProcessed} documents processed, ${elapsed}s)`;
+      spinner.text = `Restoring... (${elapsed}s elapsed)`;
     }, 1000);
 
     await new Promise<void>((resolve, reject) => {
@@ -407,10 +405,8 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
         }
       );
 
-      // Track progress if possible
-      readStream.on('data', () => {
-        documentsProcessed += 1;
-      });
+      // Note: The readStream 'data' event won't give us accurate document count
+      // as it's raw file chunks, not individual documents
     });
 
     spinner.succeed(chalk.green('Restore completed successfully!'));
