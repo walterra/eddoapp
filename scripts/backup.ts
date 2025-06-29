@@ -6,33 +6,30 @@
  */
 
 import fs from 'fs';
-import path from 'path';
 import couchbackup from '@cloudant/couchbackup';
 import { validateEnv, getCouchDbConfig } from '@eddo/shared/config';
+import { 
+  ensureBackupDir, 
+  generateBackupFilename, 
+  formatFileSize,
+  createBackupOptions,
+  DEFAULT_CONFIG
+} from './backup-utils.js';
 
 // Environment configuration using shared validation
 const env = validateEnv(process.env);
 const couchConfig = getCouchDbConfig(env);
 
 // Additional backup-specific configuration
-const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
-
-interface BackupOptions {
-  parallelism?: number;
-  requestTimeout?: number;
-  logfile?: string;
-}
+const BACKUP_DIR = process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir;
 
 async function backup(): Promise<void> {
   try {
     // Ensure backup directory exists
-    if (!fs.existsSync(BACKUP_DIR)) {
-      fs.mkdirSync(BACKUP_DIR, { recursive: true });
-    }
+    ensureBackupDir(BACKUP_DIR);
 
     // Generate backup filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(BACKUP_DIR, `${couchConfig.dbName}-${timestamp}.json`);
+    const backupFile = generateBackupFilename(couchConfig.dbName, BACKUP_DIR);
 
     console.log(`Starting backup of ${couchConfig.dbName} database...`);
     console.log(`Source: ${couchConfig.fullUrl}`);
@@ -40,11 +37,9 @@ async function backup(): Promise<void> {
 
     const writeStream = fs.createWriteStream(backupFile);
 
-    const options: BackupOptions = {
-      parallelism: 5,
-      requestTimeout: 60000,
+    const options = createBackupOptions({
       logfile: `${backupFile}.log`
-    };
+    });
 
     await new Promise<void>((resolve, reject) => {
       couchbackup.backup(
@@ -65,7 +60,7 @@ async function backup(): Promise<void> {
 
     // Display backup file size
     const stats = fs.statSync(backupFile);
-    console.log(`Backup size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`Backup size: ${formatFileSize(stats.size)}`);
 
   } catch (error) {
     console.error('Backup failed:', error instanceof Error ? error.message : String(error));

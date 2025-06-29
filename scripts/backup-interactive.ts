@@ -13,6 +13,16 @@ import ora from 'ora';
 import chalk from 'chalk';
 import couchbackup from '@cloudant/couchbackup';
 import { validateEnv, getCouchDbConfig, getAvailableDatabases } from '@eddo/shared/config';
+import { 
+  ensureBackupDir, 
+  generateBackupFilename, 
+  formatFileSize,
+  formatDuration,
+  createBackupOptions,
+  getAllBackupFiles,
+  DEFAULT_CONFIG,
+  type BackupOptions
+} from './backup-utils.js';
 
 interface BackupConfig {
   database?: string;
@@ -20,12 +30,6 @@ interface BackupConfig {
   parallelism: number;
   timeout: number;
   dryRun: boolean;
-}
-
-interface BackupOptions {
-  parallelism?: number;
-  requestTimeout?: number;
-  logfile?: string;
 }
 
 async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupConfig> {
@@ -36,9 +40,9 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
   // Default values
   const defaults: BackupConfig = {
     database: couchConfig.dbName,
-    backupDir: process.env.BACKUP_DIR || './backups',
-    parallelism: 5,
-    timeout: 60000,
+    backupDir: DEFAULT_CONFIG.backupDir,
+    parallelism: DEFAULT_CONFIG.parallelism,
+    timeout: DEFAULT_CONFIG.timeout,
     dryRun: false,
   };
 
@@ -150,14 +154,10 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
 }
 
 async function listExistingBackups(backupDir: string, database: string): Promise<string[]> {
-  if (!fs.existsSync(backupDir)) {
-    return [];
-  }
-
-  return fs.readdirSync(backupDir)
-    .filter((file) => file.startsWith(`${database}-`) && file.endsWith('.json'))
-    .sort()
-    .reverse();
+  const allBackups = getAllBackupFiles(backupDir);
+  return allBackups
+    .filter(backup => backup.database === database)
+    .map(backup => path.basename(backup.path));
 }
 
 async function performBackup(config: BackupConfig): Promise<void> {
@@ -173,8 +173,7 @@ async function performBackup(config: BackupConfig): Promise<void> {
     console.log(chalk.gray('\nExisting backups:'));
     existingBackups.slice(0, 5).forEach((file) => {
       const stats = fs.statSync(path.join(config.backupDir, file));
-      const size = (stats.size / 1024 / 1024).toFixed(2);
-      console.log(chalk.gray(`  • ${file} (${size} MB)`));
+      console.log(chalk.gray(`  • ${file} (${formatFileSize(stats.size)})`));
     });
     if (existingBackups.length > 5) {
       console.log(chalk.gray(`  ... and ${existingBackups.length - 5} more`));
@@ -182,8 +181,7 @@ async function performBackup(config: BackupConfig): Promise<void> {
   }
 
   // Generate backup filename
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupFile = path.join(config.backupDir, `${config.database}-${timestamp}.json`);
+  const backupFile = generateBackupFilename(config.database!, config.backupDir);
 
   console.log('\n' + chalk.bold('Backup Configuration:'));
   console.log(`  Database: ${chalk.cyan(config.database)}`);
@@ -211,9 +209,7 @@ async function performBackup(config: BackupConfig): Promise<void> {
   }
 
   // Ensure backup directory exists
-  if (!fs.existsSync(config.backupDir)) {
-    fs.mkdirSync(config.backupDir, { recursive: true });
-  }
+  ensureBackupDir(config.backupDir);
 
   // Start backup with progress indicator
   const spinner = ora('Starting backup...').start();
@@ -222,11 +218,11 @@ async function performBackup(config: BackupConfig): Promise<void> {
     const startTime = Date.now();
     const writeStream = fs.createWriteStream(backupFile);
     
-    const options: BackupOptions = {
+    const options = createBackupOptions({
       parallelism: config.parallelism,
       requestTimeout: config.timeout,
       logfile: `${backupFile}.log`,
-    };
+    });
 
     let documentsProcessed = 0;
     let lastUpdate = Date.now();
@@ -266,7 +262,7 @@ async function performBackup(config: BackupConfig): Promise<void> {
     
     console.log('\n' + chalk.bold('Backup Summary:'));
     console.log(`  File: ${chalk.cyan(backupFile)}`);
-    console.log(`  Size: ${chalk.cyan((stats.size / 1024 / 1024).toFixed(2) + ' MB')}`);
+    console.log(`  Size: ${chalk.cyan(formatFileSize(stats.size))}`);
     console.log(`  Documents: ${chalk.cyan(documentsProcessed)}`);
     console.log(`  Duration: ${chalk.cyan(duration + 's')}`);
     
@@ -290,9 +286,9 @@ program
   .description('Interactive CouchDB backup tool')
   .version('1.0.0')
   .option('-d, --database <name>', 'database name to backup')
-  .option('-b, --backup-dir <path>', 'backup directory', process.env.BACKUP_DIR || './backups')
-  .option('-p, --parallelism <number>', 'number of parallel connections', parseInt, 5)
-  .option('-t, --timeout <ms>', 'request timeout in milliseconds', parseInt, 60000)
+  .option('-b, --backup-dir <path>', 'backup directory', DEFAULT_CONFIG.backupDir)
+  .option('-p, --parallelism <number>', 'number of parallel connections', parseInt, DEFAULT_CONFIG.parallelism)
+  .option('-t, --timeout <ms>', 'request timeout in milliseconds', parseInt, DEFAULT_CONFIG.timeout)
   .option('--dry-run', 'show what would be done without performing backup')
   .option('--no-interactive', 'disable interactive prompts')
   .action(async (options) => {

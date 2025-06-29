@@ -13,6 +13,18 @@ import ora from 'ora';
 import chalk from 'chalk';
 import couchbackup from '@cloudant/couchbackup';
 import { validateEnv, getCouchDbConfig, getAvailableDatabases } from '@eddo/shared/config';
+import { 
+  getAllBackupFiles,
+  checkDatabaseExists,
+  recreateDatabase,
+  formatFileSize,
+  formatDuration,
+  parseBackupFilename,
+  createRestoreOptions,
+  DEFAULT_CONFIG,
+  type RestoreOptions,
+  type BackupFileInfo as BackupFileInfoBase
+} from './backup-utils.js';
 
 interface RestoreConfig {
   database?: string;
@@ -24,63 +36,30 @@ interface RestoreConfig {
   forceOverwrite: boolean;
 }
 
-interface RestoreOptions {
-  parallelism?: number;
-  requestTimeout?: number;
-  logfile?: string;
-}
-
-interface BackupFileInfo {
+interface BackupFileInfo extends BackupFileInfoBase {
   filename: string;
   fullPath: string;
-  database: string;
-  timestamp: string;
-  size: string;
   age: string;
 }
 
-function parseBackupFilename(filename: string): { database: string; timestamp: string } | null {
-  // Match pattern: database-YYYY-MM-DDTHH-mm-ss-sssZ.json
-  const match = filename.match(/^(.+)-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)\.json$/);
-  if (match) {
-    return {
-      database: match[1],
-      timestamp: match[2],
-    };
-  }
-  return null;
-}
 
 function getBackupFiles(backupDir: string): BackupFileInfo[] {
-  if (!fs.existsSync(backupDir)) {
-    return [];
-  }
-
-  const files = fs.readdirSync(backupDir)
-    .filter(file => file.endsWith('.json') && !file.endsWith('.log'))
-    .map(filename => {
-      const fullPath = path.join(backupDir, filename);
-      const stats = fs.statSync(fullPath);
-      const parsed = parseBackupFilename(filename);
-      
-      if (!parsed) return null;
-
-      const size = (stats.size / 1024 / 1024).toFixed(2);
-      const age = getRelativeTime(stats.mtime);
-
-      return {
-        filename,
-        fullPath,
-        database: parsed.database,
-        timestamp: parsed.timestamp,
-        size: `${size} MB`,
-        age,
-      };
-    })
-    .filter((item): item is BackupFileInfo => item !== null)
-    .sort((a, b) => b.timestamp.localeCompare(a.timestamp)); // Most recent first
-
-  return files;
+  const allBackups = getAllBackupFiles(backupDir);
+  
+  return allBackups.map(backup => {
+    const stats = fs.statSync(backup.path);
+    const age = getRelativeTime(stats.mtime);
+    
+    return {
+      filename: path.basename(backup.path),
+      fullPath: backup.path,
+      path: backup.path,
+      database: backup.database,
+      timestamp: backup.timestamp,
+      size: backup.size,
+      age,
+    };
+  });
 }
 
 function getRelativeTime(date: Date): string {
@@ -107,9 +86,9 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
   // Default values
   const defaults: RestoreConfig = {
     database: couchConfig.dbName,
-    backupDir: process.env.BACKUP_DIR || './backups',
-    parallelism: 5,
-    timeout: 60000,
+    backupDir: DEFAULT_CONFIG.backupDir,
+    parallelism: DEFAULT_CONFIG.parallelism,
+    timeout: DEFAULT_CONFIG.timeout,
     dryRun: false,
     forceOverwrite: false,
   };
@@ -293,7 +272,7 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
   
   console.log('\n' + chalk.bold('Restore Configuration:'));
   console.log(`  Backup File: ${chalk.cyan(config.backupFile)}`);
-  console.log(`  File Size: ${chalk.cyan((backupStats.size / 1024 / 1024).toFixed(2) + ' MB')}`);
+  console.log(`  File Size: ${chalk.cyan(formatFileSize(backupStats.size))}`);
   console.log(`  Target Database: ${chalk.cyan(config.database)}`);
   console.log(`  Destination: ${chalk.cyan(dbUrl)}`);
   console.log(`  Parallelism: ${chalk.cyan(config.parallelism)}`);
@@ -312,44 +291,7 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
   // Recreate target database to ensure it's empty (required by @cloudant/couchbackup)
   try {
     const spinner = ora('Recreating target database...').start();
-    const url = new URL(env.COUCHDB_URL);
-    const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (credentials) {
-      headers['Authorization'] = `Basic ${credentials}`;
-    }
-
-    // Delete existing database
-    const deleteResponse = await fetch(`${baseUrl}/${config.database}`, {
-      method: 'DELETE',
-      headers,
-    });
-
-    if (deleteResponse.status === 404) {
-      spinner.text = 'Database does not exist, creating new one...';
-    } else if (!deleteResponse.ok) {
-      throw new Error(`Failed to delete database: ${deleteResponse.statusText}`);
-    } else {
-      spinner.text = 'Existing database deleted, creating new one...';
-    }
-
-    // Create new database
-    const createResponse = await fetch(`${baseUrl}/${config.database}`, {
-      method: 'PUT',
-      headers,
-    });
-
-    if (!createResponse.ok) {
-      throw new Error(`Failed to create database: ${createResponse.statusText}`);
-    }
-
+    await recreateDatabase(config.database!, env.COUCHDB_URL);
     spinner.succeed(chalk.green(`Recreated empty target database: ${config.database}`));
   } catch (error) {
     console.error(chalk.red('Failed to recreate target database:'), error instanceof Error ? error.message : String(error));
@@ -378,11 +320,11 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
     const startTime = Date.now();
     const readStream = fs.createReadStream(config.backupFile);
     
-    const options: RestoreOptions = {
+    const options = createRestoreOptions({
       parallelism: config.parallelism,
       requestTimeout: config.timeout,
       logfile: `${config.backupFile}.restore.log`,
-    };
+    });
 
     // Update spinner with progress
     const updateProgress = setInterval(() => {
@@ -412,12 +354,12 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
     spinner.succeed(chalk.green('Restore completed successfully!'));
 
     // Display restore statistics
-    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    const duration = Date.now() - startTime;
     
     console.log('\n' + chalk.bold('Restore Summary:'));
     console.log(`  Source: ${chalk.cyan(config.backupFile)}`);
     console.log(`  Target: ${chalk.cyan(config.database)}`);
-    console.log(`  Duration: ${chalk.cyan(duration + 's')}`);
+    console.log(`  Duration: ${chalk.cyan(formatDuration(duration))}`);
     
     // Log file info
     if (fs.existsSync(`${config.backupFile}.restore.log`)) {
@@ -440,9 +382,9 @@ program
   .version('1.0.0')
   .option('-d, --database <name>', 'target database name for restore')
   .option('-f, --backup-file <path>', 'backup file to restore from')
-  .option('-b, --backup-dir <path>', 'backup directory to search', process.env.BACKUP_DIR || './backups')
-  .option('-p, --parallelism <number>', 'number of parallel connections', parseInt, 5)
-  .option('-t, --timeout <ms>', 'request timeout in milliseconds', parseInt, 60000)
+  .option('-b, --backup-dir <path>', 'backup directory to search', DEFAULT_CONFIG.backupDir)
+  .option('-p, --parallelism <number>', 'number of parallel connections', parseInt, DEFAULT_CONFIG.parallelism)
+  .option('-t, --timeout <ms>', 'request timeout in milliseconds', parseInt, DEFAULT_CONFIG.timeout)
   .option('--dry-run', 'show what would be done without performing restore')
   .option('--force-overwrite', 'skip overwrite confirmation prompts')
   .option('--no-interactive', 'disable interactive prompts')

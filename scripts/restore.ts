@@ -6,137 +6,39 @@
  */
 
 import fs from 'fs';
-import path from 'path';
 import couchbackup from '@cloudant/couchbackup';
 import { validateEnv, getCouchDbConfig } from '@eddo/shared/config';
+import { 
+  getLatestBackupFile,
+  checkDatabaseExists,
+  recreateDatabase,
+  formatFileSize,
+  createRestoreOptions,
+  DEFAULT_CONFIG,
+  type RestoreOptions
+} from './backup-utils.js';
 
 // Environment configuration using shared validation
 const env = validateEnv(process.env);
 const couchConfig = getCouchDbConfig(env);
 
 // Additional restore-specific configuration
-const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
+const BACKUP_DIR = process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir;
 
-interface RestoreOptions {
-  parallelism?: number;
-  requestTimeout?: number;
-  logfile?: string;
-}
 
-function getLatestBackupFile(database: string): string {
-  if (!fs.existsSync(BACKUP_DIR)) {
-    throw new Error(`Backup directory does not exist: ${BACKUP_DIR}`);
-  }
 
-  const files = fs.readdirSync(BACKUP_DIR)
-    .filter((file) => file.startsWith(`${database}-`) && file.endsWith('.json'))
-    .sort()
-    .reverse();
-
-  if (files.length === 0) {
-    throw new Error(`No backup files found for database: ${database}`);
-  }
-
-  return path.join(BACKUP_DIR, files[0]);
-}
-
-async function checkDatabaseExists(dbName: string): Promise<{ exists: boolean; docCount: number }> {
-  try {
-    const url = new URL(env.COUCHDB_URL);
-    const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (credentials) {
-      headers['Authorization'] = `Basic ${credentials}`;
-    }
-
-    const response = await fetch(`${baseUrl}/${dbName}`, {
-      method: 'GET',
-      headers,
-    });
-
-    if (response.status === 404) {
-      return { exists: false, docCount: 0 };
-    }
-
-    if (!response.ok) {
-      throw new Error(`Failed to check database: ${response.statusText}`);
-    }
-
-    const dbInfo = await response.json();
-    return { exists: true, docCount: dbInfo.doc_count || 0 };
-    
-  } catch (error) {
-    throw new Error(`Failed to check database: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-async function recreateDatabase(dbName: string): Promise<void> {
-  try {
-    const url = new URL(env.COUCHDB_URL);
-    const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (credentials) {
-      headers['Authorization'] = `Basic ${credentials}`;
-    }
-
-    console.log(`Recreating database: ${dbName}`);
-
-    // Delete existing database
-    const deleteResponse = await fetch(`${baseUrl}/${dbName}`, {
-      method: 'DELETE',
-      headers,
-    });
-
-    if (deleteResponse.status === 404) {
-      console.log('Database does not exist, creating new one...');
-    } else if (!deleteResponse.ok) {
-      throw new Error(`Failed to delete database: ${deleteResponse.statusText}`);
-    } else {
-      console.log('Existing database deleted');
-    }
-
-    // Create new database
-    const createResponse = await fetch(`${baseUrl}/${dbName}`, {
-      method: 'PUT',
-      headers,
-    });
-
-    if (!createResponse.ok) {
-      throw new Error(`Failed to create database: ${createResponse.statusText}`);
-    }
-
-    console.log('New empty database created');
-    
-  } catch (error) {
-    throw new Error(`Failed to recreate database: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
 
 async function restore(backupFile?: string, database?: string, force: boolean = false): Promise<void> {
   try {
     const dbName = database || couchConfig.dbName;
-    const restoreFile = backupFile || getLatestBackupFile(dbName);
+    const restoreFile = backupFile || getLatestBackupFile(dbName, BACKUP_DIR);
     
     if (!fs.existsSync(restoreFile)) {
       throw new Error(`Backup file does not exist: ${restoreFile}`);
     }
 
     // Check if database exists and has documents
-    const { exists, docCount } = await checkDatabaseExists(dbName);
+    const { exists, docCount } = await checkDatabaseExists(dbName, env.COUCHDB_URL);
     
     if (exists && docCount > 0 && !force) {
       console.error(`Error: Database '${dbName}' already exists and contains ${docCount} documents.`);
@@ -159,19 +61,17 @@ async function restore(backupFile?: string, database?: string, force: boolean = 
     }
 
     // Recreate the database to ensure it's empty
-    await recreateDatabase(dbName);
+    await recreateDatabase(dbName, env.COUCHDB_URL);
 
     const readStream = fs.createReadStream(restoreFile);
     
-    const options: RestoreOptions = {
-      parallelism: 5,
-      requestTimeout: 60000,
+    const options = createRestoreOptions({
       logfile: `${restoreFile}.restore.log`
-    };
+    });
 
     // Log file stats for debugging
     const fileStats = fs.statSync(restoreFile);
-    console.log(`Backup file size: ${(fileStats.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`Backup file size: ${formatFileSize(fileStats.size)}`);
 
     await new Promise<void>((resolve, reject) => {
       couchbackup.restore(
