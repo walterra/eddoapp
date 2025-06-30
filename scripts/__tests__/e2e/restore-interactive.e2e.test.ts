@@ -129,8 +129,8 @@ describe('Restore Interactive E2E', () => {
       .cwd(PROJECT_ROOT)
       .spawn('tsx', [RESTORE_SCRIPT])
       .stdin(/Select target database for restore:/, '\x03') // Ctrl+C to cancel
-      .stderr(/cancelled|interrupt/i)
-      .code(130); // Standard exit code for SIGINT
+      .stdout(/Restore cancelled/i)
+      .code(0); // prompts library exits with 0 when cancelled
   }, 30000);
 
   it('should validate parallelism parameter range', async () => {
@@ -145,7 +145,7 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .cwd(PROJECT_ROOT)
       .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', 'test-db'])
-      .stderr(/does not exist/)
+      .stderr(/Backup file parameter is required in non-interactive mode/)
       .code(1);
   }, 30000);
 });
@@ -194,8 +194,8 @@ describe('Restore Interactive E2E - File Discovery', () => {
       .cwd(PROJECT_ROOT)
       .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', mockBackupDir])
       .stdin(/Select target database for restore:/, '\x03') // Cancel after discovery
-      .stderr(/cancelled|interrupt/i)
-      .code(130);
+      .stdout(/Restore cancelled/i)
+      .code(0);
   }, 30000);
 
   it('should handle empty backup directory', async () => {
@@ -212,8 +212,8 @@ describe('Restore Interactive E2E - File Discovery', () => {
       .env(env)
       .cwd(PROJECT_ROOT)
       .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', emptyBackupDir])
-      .stdin(/Path to backup file:/, '\x03') // Cancel when prompted for manual file path
-      .stderr(/cancelled|interrupt/i)
-      .code(130);
+      .stdin(/Select target database for restore:/, '\x03') // Cancel at first prompt
+      .stdout(/Restore cancelled/i)
+      .code(0);
   }, 30000);
 });

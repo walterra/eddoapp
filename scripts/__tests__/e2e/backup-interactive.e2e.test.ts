@@ -61,8 +61,8 @@ describe('Backup Interactive E2E', () => {
       .cwd(PROJECT_ROOT)
       .spawn('tsx', [BACKUP_SCRIPT])
       .stdin(/Select database to backup:/, '\x03') // Ctrl+C to cancel
-      .stderr(/cancelled|interrupt/i)
-      .code(130); // Standard exit code for SIGINT
+      .stdout(/Backup cancelled/i)
+      .code(0); // prompts library exits with 0 when cancelled
   }, 30000);
 
   it('should accept custom backup directory', async () => {
