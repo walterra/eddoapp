@@ -30,9 +30,14 @@ export default defineConfig({
     // Environment variables for tests
     env: {
       NODE_ENV: 'test',
-      MCP_TEST_URL: 'http://localhost:3003/mcp',
-      COUCHDB_DB_NAME: 'todos-test',
+      MCP_TEST_PORT: process.env.MCP_TEST_PORT || '3003',
+      COUCHDB_TEST_DB_NAME: 'todos-test',
+      // Allow custom test database URL
+      COUCHDB_TEST_URL: process.env.COUCHDB_TEST_URL,
     },
+
+    // Enable debugging to see what's happening
+    logLevel: 'verbose',
   },
 
   resolve: {

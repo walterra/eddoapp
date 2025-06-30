@@ -2,18 +2,21 @@
  * Test MCP Server Instance
  * Manages MCP server lifecycle for integration tests
  */
-import { getCouchDbConfig, validateEnv } from '@eddo/shared';
+import { getTestCouchDbConfig, validateEnv } from '@eddo/shared';
 import nano from 'nano';
 
-import { startMcpServer, stopMcpServer } from '../../mcp-server.js';
+import { spawn, ChildProcess } from 'child_process';
+import path from 'path';
 
 export class TestMCPServerInstance {
   private port: number;
   private serverStartPromise: Promise<void> | null = null;
   private isServerRunning: boolean = false;
+  private serverProcess: ChildProcess | null = null;
 
-  constructor(port: number = 3003) {
-    this.port = port;
+  constructor(port?: number) {
+    // Use environment variable or fallback to a random port to avoid conflicts
+    this.port = port || Number(process.env.MCP_TEST_PORT) || 3003 + Math.floor(Math.random() * 1000);
   }
 
   async start(): Promise<void> {
@@ -35,16 +38,57 @@ export class TestMCPServerInstance {
 
       // Set test environment variables before starting
       process.env.NODE_ENV = 'test';
-      process.env.COUCHDB_DB_NAME = 'todos-test';
+      process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
 
       const env = validateEnv(process.env);
-      console.log(`📦 Using test database: ${env.COUCHDB_DB_NAME}`);
+      console.log(`📦 Using test database: ${env.COUCHDB_TEST_DB_NAME}`);
 
-      // Clear and setup test database before starting server
-      await this.clearTestDatabase();
+      // Start the MCP server using the dedicated test script
+      this.serverProcess = spawn('pnpm', ['--filter', '@eddo/server', 'start:test'], {
+        env: {
+          ...process.env,
+          NODE_ENV: 'test',
+          COUCHDB_TEST_DB_NAME: 'todos-test',
+          MCP_TEST_PORT: this.port.toString(),
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: process.cwd(),
+      });
 
-      // Start the MCP server directly with test port
-      await startMcpServer(this.port);
+      // Wait for server to be ready
+      await new Promise<void>((resolve, reject) => {
+        let serverOutput = '';
+        const timeout = setTimeout(() => {
+          reject(new Error('Server startup timeout'));
+        }, 30000);
+
+        this.serverProcess!.stdout?.on('data', (data) => {
+          const output = data.toString();
+          serverOutput += output;
+          console.log(`[MCP Server] ${output.trim()}`);
+          
+          if (output.includes('🚀 Eddo MCP server running')) {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+
+        this.serverProcess!.stderr?.on('data', (data) => {
+          console.error(`[MCP Server Error] ${data.toString().trim()}`);
+        });
+
+        this.serverProcess!.on('error', (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        });
+
+        this.serverProcess!.on('exit', (code) => {
+          if (code !== 0) {
+            clearTimeout(timeout);
+            reject(new Error(`Server exited with code ${code}`));
+          }
+        });
+      });
 
       this.isServerRunning = true;
       console.log(`🚀 Test MCP server ready on port ${this.port}`);
@@ -56,9 +100,30 @@ export class TestMCPServerInstance {
   }
 
   async stop(): Promise<void> {
-    if (this.isServerRunning) {
+    if (this.isServerRunning && this.serverProcess) {
       try {
-        await stopMcpServer();
+        // Kill the server process
+        this.serverProcess.kill('SIGTERM');
+        
+        // Wait for process to exit
+        await new Promise<void>((resolve) => {
+          if (!this.serverProcess) {
+            resolve();
+            return;
+          }
+          
+          const timeout = setTimeout(() => {
+            // Force kill if it doesn't stop gracefully
+            this.serverProcess?.kill('SIGKILL');
+            resolve();
+          }, 5000);
+          
+          this.serverProcess.on('exit', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+        });
+        
         console.log('✅ Test MCP server stopped');
       } catch (error) {
         console.warn('Warning: Error stopping test MCP server:', error);
@@ -67,12 +132,13 @@ export class TestMCPServerInstance {
 
     this.isServerRunning = false;
     this.serverStartPromise = null;
+    this.serverProcess = null;
   }
 
   async clearTestDatabase(): Promise<void> {
     try {
       const env = validateEnv(process.env);
-      const couchDbConfig = getCouchDbConfig(env);
+      const couchDbConfig = getTestCouchDbConfig(env);
       const couch = nano(couchDbConfig.url);
 
       // Try to delete the test database
@@ -121,7 +187,8 @@ let globalTestServer: TestMCPServerInstance | null = null;
 
 export async function getGlobalTestServer(): Promise<TestMCPServerInstance> {
   if (!globalTestServer) {
-    globalTestServer = new TestMCPServerInstance(3003);
+    const env = validateEnv(process.env);
+    globalTestServer = new TestMCPServerInstance(env.MCP_TEST_PORT);
     await globalTestServer.start();
   }
   return globalTestServer;

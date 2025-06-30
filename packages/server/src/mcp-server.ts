@@ -1,5 +1,5 @@
 // Import the TodoAlpha3 type and environment configuration
-import { type TodoAlpha3, getCouchDbConfig, validateEnv } from '@eddo/shared';
+import { type TodoAlpha3, getCouchDbConfig, getTestCouchDbConfig, validateEnv } from '@eddo/shared';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
@@ -22,7 +22,8 @@ const server = new FastMCP({
 });
 
 // Initialize nano connection to CouchDB using environment configuration
-const couchDbConfig = getCouchDbConfig(env);
+// Use test configuration in test environment
+const couchDbConfig = env.NODE_ENV === 'test' ? getTestCouchDbConfig(env) : getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
 const db = couch.db.use(couchDbConfig.dbName);
 
@@ -731,6 +732,32 @@ export async function startMcpServer(port: number = 3001) {
   try {
     console.log(`🔧 Initializing Eddo MCP server on port ${port}...`);
 
+    // Ensure the database exists (create if needed)
+    try {
+      // First check if database exists
+      await couch.db.get(couchDbConfig.dbName);
+      console.log(`ℹ️  Database already exists: ${couchDbConfig.dbName}`);
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        error.statusCode === 404
+      ) {
+        // Database doesn't exist, create it
+        try {
+          await couch.db.create(couchDbConfig.dbName);
+          console.log(`✅ Created database: ${couchDbConfig.dbName}`);
+        } catch (createError: unknown) {
+          console.error('Failed to create database:', createError);
+          throw createError;
+        }
+      } else {
+        console.warn('Warning: Failed to check database existence:', error);
+        throw error;
+      }
+    }
+
     // Create indexes before starting the server
     await createIndexes();
 
@@ -759,7 +786,9 @@ export async function startMcpServer(port: number = 3001) {
 
 // Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startMcpServer().catch((error) => {
+  // Use custom port from environment in test mode
+  const port = env.NODE_ENV === 'test' && env.MCP_TEST_PORT ? env.MCP_TEST_PORT : 3001;
+  startMcpServer(port).catch((error) => {
     console.error('Failed to start MCP server:', error);
     process.exit(1);
   });

@@ -18,11 +18,13 @@ export class MCPTestServer {
   private config: Required<MCPTestServerConfig>;
 
   constructor(config: MCPTestServerConfig = {}) {
+    // Use dynamic port from environment or fall back to default
+    const testPort = process.env.MCP_TEST_PORT || '3003';
     this.config = {
       serverUrl:
         config.serverUrl ||
         process.env.MCP_TEST_URL ||
-        'http://localhost:3003/mcp',
+        `http://localhost:${testPort}/mcp`,
       clientName: config.clientName || 'integration-test-client',
       clientVersion: config.clientVersion || '1.0.0',
       timeout: config.timeout || 30000,

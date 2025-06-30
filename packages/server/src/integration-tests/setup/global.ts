@@ -1,18 +1,15 @@
 /**
  * Global test setup for MCP integration tests
+ * Note: Server is started externally via npm-run-all before tests run
  */
 import { afterAll, beforeAll } from 'vitest';
-
-import {
-  getGlobalTestServer,
-  stopGlobalTestServer,
-} from './test-mcp-server.js';
 
 // Global test configuration
 beforeAll(async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
   process.env.COUCHDB_DB_NAME = 'todos-test';
+  process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
   // Increase timeout for integration tests
   globalThis.setTimeout =
@@ -21,21 +18,18 @@ beforeAll(async () => {
       return setTimeout(cb, ms);
     });
 
-  console.log('🚀 Starting MCP Integration Test Suite');
+  console.log('🚀 MCP Integration Test Suite - Server should already be running');
 
-  // Start the test MCP server
-  const testServer = await getGlobalTestServer();
-  console.log('📡 Test MCP Server URL:', testServer.getUrl());
-
-  // Update the test URL environment variable for individual tests
-  process.env.MCP_TEST_URL = testServer.getUrl();
-}, 60000); // 60 second timeout for server startup
+  // Clear the test database before running tests
+  const { TestMCPServerInstance } = await import('./test-mcp-server.js');
+  const tempInstance = new TestMCPServerInstance();
+  await tempInstance.clearTestDatabase();
+  console.log('✅ Test database cleared and ready');
+}, 30000); // 30 second timeout
 
 afterAll(async () => {
-  console.log('🛑 Stopping test MCP server...');
-  await stopGlobalTestServer();
   console.log('✅ MCP Integration Tests Complete');
-}, 30000); // 30 second timeout for cleanup
+}, 5000); // 5 second timeout for cleanup
 
 // Extend Vitest's expect with custom matchers if needed
 declare global {
