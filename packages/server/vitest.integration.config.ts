@@ -1,9 +1,8 @@
 /**
  * Vitest configuration for MCP integration tests
  */
-
-import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -16,7 +15,7 @@ export default defineConfig({
     reporters: ['verbose'],
     environment: 'node',
     globals: true,
-    
+
     // Run tests sequentially to avoid database conflicts
     pool: 'forks',
     poolOptions: {
@@ -24,10 +23,10 @@ export default defineConfig({
         singleFork: true,
       },
     },
-    
+
     // Retry failed tests once
     retry: 1,
-    
+
     // Environment variables for tests
     env: {
       NODE_ENV: 'test',
@@ -35,13 +34,13 @@ export default defineConfig({
       COUCHDB_DB_NAME: 'todos-test',
     },
   },
-  
+
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
     },
   },
-  
+
   esbuild: {
     target: 'node18',
   },

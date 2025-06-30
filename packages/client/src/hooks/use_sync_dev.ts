@@ -1,7 +1,7 @@
+import { getCouchDbUrl, validateEnv } from '@eddo/shared';
 import PouchDB from 'pouchdb-browser';
 import { useEffect } from 'react';
 
-import { getCouchDbUrl, validateEnv } from '@eddo/shared';
 import { usePouchDb } from '../pouch_db';
 
 export const useSyncDev = () => {

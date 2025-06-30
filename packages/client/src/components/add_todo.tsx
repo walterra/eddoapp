@@ -18,7 +18,12 @@ interface AddTodoProps {
   setSelectedTags: (tags: string[]) => void;
 }
 
-export const AddTodo: FC<AddTodoProps> = ({ currentDate, setCurrentDate, selectedTags, setSelectedTags }) => {
+export const AddTodo: FC<AddTodoProps> = ({
+  currentDate,
+  setCurrentDate,
+  selectedTags,
+  setSelectedTags,
+}) => {
   const { safeDb } = usePouchDb();
   const { allTags } = useTags();
 
