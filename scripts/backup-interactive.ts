@@ -160,7 +160,7 @@ async function listExistingBackups(backupDir: string, database: string): Promise
     .map(backup => path.basename(backup.path));
 }
 
-async function performBackup(config: BackupConfig): Promise<void> {
+async function performBackup(config: BackupConfig, isInteractive: boolean = true): Promise<void> {
   const env = validateEnv(process.env);
   const couchConfig = getCouchDbConfig(env);
   
@@ -190,26 +190,29 @@ async function performBackup(config: BackupConfig): Promise<void> {
   console.log(`  Parallelism: ${chalk.cyan(config.parallelism)}`);
   console.log(`  Timeout: ${chalk.cyan(config.timeout + 'ms')}`);
 
+  // Ensure backup directory exists (even in dry run mode for validation)
+  ensureBackupDir(config.backupDir);
+
   if (config.dryRun) {
     console.log(chalk.yellow('\n⚠️  Dry run mode - no backup will be performed'));
     return;
   }
 
-  // Confirm before proceeding
-  const { confirm } = await prompts({
-    type: 'confirm',
-    name: 'confirm',
-    message: 'Proceed with backup?',
-    initial: true,
-  });
+  // Confirm before proceeding (only in interactive mode)
+  if (isInteractive) {
+    const { confirm } = await prompts({
+      type: 'confirm',
+      name: 'confirm',
+      message: 'Proceed with backup?',
+      initial: true,
+    });
 
-  if (!confirm) {
-    console.log(chalk.red('\nBackup cancelled.'));
-    return;
+    if (!confirm) {
+      console.log(chalk.red('\nBackup cancelled.'));
+      return;
+    }
   }
 
-  // Ensure backup directory exists
-  ensureBackupDir(config.backupDir);
 
   // Start backup with progress indicator
   const spinner = ora('Starting backup...').start();
@@ -287,23 +290,32 @@ program
   .version('1.0.0')
   .option('-d, --database <name>', 'database name to backup')
   .option('-b, --backup-dir <path>', 'backup directory', DEFAULT_CONFIG.backupDir)
-  .option('-p, --parallelism <number>', 'number of parallel connections', parseInt, DEFAULT_CONFIG.parallelism)
-  .option('-t, --timeout <ms>', 'request timeout in milliseconds', parseInt, DEFAULT_CONFIG.timeout)
+  .option('-p, --parallelism <number>', 'number of parallel connections', (val) => parseInt(val, 10), DEFAULT_CONFIG.parallelism)
+  .option('-t, --timeout <ms>', 'request timeout in milliseconds', (val) => parseInt(val, 10), DEFAULT_CONFIG.timeout)
   .option('--dry-run', 'show what would be done without performing backup')
   .option('--no-interactive', 'disable interactive prompts')
   .action(async (options) => {
     try {
-      const config = options.interactive 
-        ? await getBackupConfig(options)
-        : { 
-            database: options.database || getCouchDbConfig(validateEnv(process.env)).dbName,
-            backupDir: options.backupDir,
-            parallelism: options.parallelism,
-            timeout: options.timeout,
-            dryRun: options.dryRun || false,
-          };
+      let config: BackupConfig;
       
-      await performBackup(config);
+      if (options.interactive) {
+        config = await getBackupConfig(options);
+      } else {
+        // In non-interactive mode, require explicit database parameter
+        if (!options.database) {
+          throw new Error('Database parameter is required in non-interactive mode. Use --database <name> or run without --no-interactive');
+        }
+        
+        config = { 
+          database: options.database,
+          backupDir: options.backupDir || DEFAULT_CONFIG.backupDir,
+          parallelism: options.parallelism ?? DEFAULT_CONFIG.parallelism,
+          timeout: options.timeout ?? DEFAULT_CONFIG.timeout,
+          dryRun: options.dryRun || false,
+        };
+      }
+      
+      await performBackup(config, options.interactive);
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
       process.exit(1);

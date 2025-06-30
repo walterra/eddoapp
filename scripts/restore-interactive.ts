@@ -383,24 +383,33 @@ program
   .option('-d, --database <name>', 'target database name for restore')
   .option('-f, --backup-file <path>', 'backup file to restore from')
   .option('-b, --backup-dir <path>', 'backup directory to search', DEFAULT_CONFIG.backupDir)
-  .option('-p, --parallelism <number>', 'number of parallel connections', parseInt, DEFAULT_CONFIG.parallelism)
-  .option('-t, --timeout <ms>', 'request timeout in milliseconds', parseInt, DEFAULT_CONFIG.timeout)
+  .option('-p, --parallelism <number>', 'number of parallel connections', (val) => parseInt(val, 10), DEFAULT_CONFIG.parallelism)
+  .option('-t, --timeout <ms>', 'request timeout in milliseconds', (val) => parseInt(val, 10), DEFAULT_CONFIG.timeout)
   .option('--dry-run', 'show what would be done without performing restore')
   .option('--force-overwrite', 'skip overwrite confirmation prompts')
   .option('--no-interactive', 'disable interactive prompts')
   .action(async (options) => {
     try {
-      const config = options.interactive 
-        ? await getRestoreConfig(options)
-        : { 
-            database: options.database || getCouchDbConfig(validateEnv(process.env)).dbName,
-            backupFile: options.backupFile,
-            backupDir: options.backupDir,
-            parallelism: options.parallelism,
-            timeout: options.timeout,
-            dryRun: options.dryRun || false,
-            forceOverwrite: options.forceOverwrite || false,
-          };
+      let config: RestoreConfig;
+      
+      if (options.interactive) {
+        config = await getRestoreConfig(options);
+      } else {
+        // In non-interactive mode, require explicit backup file parameter
+        if (!options.backupFile) {
+          throw new Error('Backup file parameter is required in non-interactive mode. Use --backup-file <path> or run without --no-interactive');
+        }
+        
+        config = { 
+          database: options.database || getCouchDbConfig(validateEnv(process.env)).dbName,
+          backupFile: options.backupFile,
+          backupDir: options.backupDir || DEFAULT_CONFIG.backupDir,
+          parallelism: options.parallelism ?? DEFAULT_CONFIG.parallelism,
+          timeout: options.timeout ?? DEFAULT_CONFIG.timeout,
+          dryRun: options.dryRun || false,
+          forceOverwrite: options.forceOverwrite || false,
+        };
+      }
       
       await performRestore(config, options.interactive);
     } catch (error) {
