@@ -14,6 +14,21 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x]
+    
+    services:
+      couchdb:
+        image: couchdb:3
+        ports:
+          - 5984:5984
+        env:
+          COUCHDB_USER: admin
+          COUCHDB_PASSWORD: testpassword
+        options: >-
+          --health-cmd "curl -f http://localhost:5984/"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -24,4 +39,8 @@ jobs:
         with:
           version: 8
       - run: pnpm install
-      - run: pnpm test
+      - name: Run tests
+        env:
+          COUCH_URL: http://admin:testpassword@localhost:5984
+          CI: true
+        run: pnpm test:ci
