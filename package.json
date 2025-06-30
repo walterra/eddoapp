@@ -78,7 +78,7 @@
     "build:server": "pnpm --filter @eddo/server build",
     "build:shared": "pnpm --filter @eddo/shared build",
     "build:telegram-bot": "pnpm --filter @eddo/telegram-bot build",
-    "dev": "vite",
+    "dev": "npm-run-all --parallel dev:client dev:server",
     "dev:client": "pnpm --filter @eddo/client dev",
     "dev:server": "pnpm --filter @eddo/server dev",
     "dev:telegram-bot": "pnpm --filter @eddo/telegram-bot dev",
