@@ -39,30 +39,29 @@ const server = new FastMCP<UserSession>({
     logLevel: 'info',
   },
   instructions:
-    'Eddo Todo MCP Server with API key authentication. Pass X-User-ID header as API key for user-specific database access. Each user gets an isolated database.',
+    'Eddo Todo MCP Server with API key authentication. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.',
   
   // Authentication function - runs for each request
   authenticate: (request) => {
-    // In test mode, use X-User-ID as the API key for user isolation
-    const apiKey = request.headers['x-user-id'] as string;
+    // Extract API key from X-API-Key header
+    const apiKey = request.headers['x-api-key'] as string;
     
-    console.log(`Auth request with API key (user ID): ${apiKey || 'none'}`);
+    console.log(`Auth request with API key: ${apiKey ? '[REDACTED]' : 'none'}`);
     
-    // In test mode, we allow any non-empty API key
+    // In test mode, we allow any non-empty API key for database isolation
     if (env.NODE_ENV === 'test') {
       if (!apiKey) {
-        // Use default database for unauthenticated requests
-        return {
-          userId: 'default',
-          dbName: couchDbConfig.dbName,
-        };
+        throw new Response(null, {
+          status: 401,
+          statusText: 'API key required for test isolation',
+        });
       }
       
-      // Generate user-specific database name
-      const dbName = `${couchDbConfig.dbName}_user_${apiKey}`;
+      // Generate user-specific database name using API key
+      const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
       
       return {
-        userId: apiKey,
+        userId: apiKey, // Use API key as user identifier
         dbName,
       };
     }
@@ -76,8 +75,8 @@ const server = new FastMCP<UserSession>({
     }
     
     // Here you would validate the API key against your auth system
-    // For now, just use it as the user ID
-    const dbName = `${couchDbConfig.dbName}_user_${apiKey}`;
+    // For now, use the API key as the user identifier
+    const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
     
     return {
       userId: apiKey,
@@ -635,8 +634,8 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
       examples: `# Usage Examples
 
 ## Authentication
-Pass X-User-ID header to authenticate as a specific user:
-curl -H "X-User-ID: user123" http://localhost:3001/mcp
+Pass X-API-Key header to authenticate:
+curl -H "X-API-Key: your-api-key-here" http://localhost:3001/mcp
 
 ## Create a simple todo
 {

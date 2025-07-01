@@ -18,7 +18,7 @@ export class MCPTestServer {
   private transport: StreamableHTTPClientTransport | null = null;
   private config: Required<MCPTestServerConfig>;
   private testLock: TestLock;
-  private testUserId: string;
+  private testApiKey: string;
 
   constructor(config: MCPTestServerConfig = {}) {
     // Use dynamic port from environment or fall back to default
@@ -36,8 +36,8 @@ export class MCPTestServer {
     
     this.testLock = new TestLock();
     
-    // Generate unique test user ID for complete isolation
-    this.testUserId = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate unique test API key for complete isolation
+    this.testApiKey = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   async start(): Promise<void> {
@@ -45,12 +45,14 @@ export class MCPTestServer {
       throw new Error('Test server already started');
     }
 
-    // Create transport with user ID header for test isolation
+    // Create transport with API key header for test isolation
     this.transport = new StreamableHTTPClientTransport(
       new URL(this.config.serverUrl),
       {
-        headers: {
-          'X-User-ID': this.testUserId,
+        requestInit: {
+          headers: {
+            'X-API-Key': this.testApiKey,
+          },
         },
       },
     );
@@ -179,11 +181,33 @@ export class MCPTestServer {
   }
 
   async resetTestData(): Promise<void> {
-    // With per-user databases via X-User-ID header, each test gets complete isolation
-    console.log(`🔄 Test using isolated database for user: ${this.testUserId}`);
+    // With per-API-key databases via X-API-Key header, each test gets complete isolation
+    console.log(`🔄 Test using isolated database for API key: ${this.testApiKey}`);
     
-    // The user-specific database is automatically created by the auth server
-    // No cleanup needed - each test has its own database!
+    // Set up the database schema for this test's isolated database
+    await this.setupTestDatabase();
+  }
+
+  private async setupTestDatabase(): Promise<void> {
+    try {
+      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/shared');
+      const { DatabaseSetup } = await import('./database-setup.js');
+      
+      const env = validateEnv(process.env);
+      const couchDbConfig = getTestCouchDbConfig(env);
+      
+      // Generate the same database name that the auth server will use
+      const testDbName = `${couchDbConfig.dbName}_api_${this.testApiKey}`;
+      
+      // Set up the database with proper indexes and design documents
+      const dbSetup = new DatabaseSetup(testDbName);
+      await dbSetup.setupDatabase();
+      
+      console.log(`✅ Test database initialized: ${testDbName}`);
+    } catch (error) {
+      console.error('❌ Failed to set up test database:', error);
+      throw error;
+    }
   }
 
   private async clearAllDocuments(): Promise<void> {
