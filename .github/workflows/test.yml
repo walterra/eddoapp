@@ -39,6 +39,7 @@ jobs:
         with:
           version: 8
       - run: pnpm install
+      - run: pnpm build
       - name: Run tests
         env:
           COUCHDB_URL: http://admin:testpassword@localhost:5984
