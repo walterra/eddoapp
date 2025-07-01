@@ -267,6 +267,11 @@ server.addTool({
       return JSON.stringify(response.docs, null, 2);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
+      // If database doesn't exist, return empty array instead of throwing error
+      if (message.includes('Database does not exist') || message.includes('no_db_file')) {
+        context.log.info('Database does not exist, returning empty array');
+        return JSON.stringify([], null, 2);
+      }
       throw new Error(`Failed to list todos: ${message}`);
     }
   },
@@ -668,7 +673,7 @@ Error retrieving tag statistics: ${error}`;
     }
 
     const sections: Record<string, string> = {
-      overview: `# Eddo MCP Server with Authentication Overview
+      overview: `# Eddo MCP Server Overview
 
 The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD-inspired todo and time tracking application with per-user authentication.
 

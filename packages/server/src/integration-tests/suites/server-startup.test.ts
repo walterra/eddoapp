@@ -49,7 +49,7 @@ describe('MCP Server Startup Integration', () => {
     it('should be using isolated test environment', async () => {
       // Verify test environment variables are set correctly
       expect(process.env.NODE_ENV).toBe('test');
-      expect(process.env.COUCHDB_DB_NAME).toBe('todos-test');
+      // Database names are now dynamically generated per API key for complete isolation
     });
 
     it('should start with empty test database', async () => {
