@@ -39,9 +39,8 @@ async function runIntegrationTests() {
       }
     });
 
-    // Wait for server to be ready
-    console.log('⏳ Waiting for server to be ready...');
-    await setTimeout(8000);
+    // Server readiness is now handled by polling in the test infrastructure
+    console.log('⏳ Server started, tests will poll for readiness...');
 
     // Run the tests
     console.log('🧪 Running integration tests...');

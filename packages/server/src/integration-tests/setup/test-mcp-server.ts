@@ -8,18 +8,33 @@ import nano from 'nano';
 
 // import path from 'path'; // Removed unused import
 
+export interface ServerPollingConfig {
+  maxAttempts?: number;
+  pollIntervalMs?: number;
+  startupTimeoutMs?: number;
+}
+
 export class TestMCPServerInstance {
   private port: number;
   private serverStartPromise: Promise<void> | null = null;
   private isServerRunning: boolean = false;
   private serverProcess: ChildProcess | null = null;
+  private pollingConfig: Required<ServerPollingConfig>;
+  private serverReady: boolean = false;
+  private serverError: Error | null = null;
 
-  constructor(port?: number) {
+  constructor(port?: number, pollingConfig?: ServerPollingConfig) {
     // Use environment variable or fallback to a random port to avoid conflicts
     this.port =
       port ||
       Number(process.env.MCP_TEST_PORT) ||
       3003 + Math.floor(Math.random() * 1000);
+    
+    this.pollingConfig = {
+      maxAttempts: pollingConfig?.maxAttempts ?? 30,
+      pollIntervalMs: pollingConfig?.pollIntervalMs ?? 1000,
+      startupTimeoutMs: pollingConfig?.startupTimeoutMs ?? 30000,
+    };
   }
 
   async start(): Promise<void> {
@@ -62,38 +77,36 @@ export class TestMCPServerInstance {
         },
       );
 
-      // Wait for server to be ready
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Server startup timeout'));
-        }, 30000);
+      // Reset state flags
+      this.serverReady = false;
+      this.serverError = null;
 
-        this.serverProcess!.stdout?.on('data', (data) => {
-          const output = data.toString();
-          console.log(`[MCP Server] ${output.trim()}`);
+      // Set up process event handlers
+      this.serverProcess!.stdout?.on('data', (data) => {
+        const output = data.toString();
+        console.log(`[MCP Server] ${output.trim()}`);
 
-          if (output.includes('🚀 Eddo MCP server running')) {
-            clearTimeout(timeout);
-            resolve();
-          }
-        });
-
-        this.serverProcess!.stderr?.on('data', (data) => {
-          console.error(`[MCP Server Error] ${data.toString().trim()}`);
-        });
-
-        this.serverProcess!.on('error', (error) => {
-          clearTimeout(timeout);
-          reject(error);
-        });
-
-        this.serverProcess!.on('exit', (code) => {
-          if (code !== 0) {
-            clearTimeout(timeout);
-            reject(new Error(`Server exited with code ${code}`));
-          }
-        });
+        if (output.includes('🚀 Eddo MCP server running')) {
+          this.serverReady = true;
+        }
       });
+
+      this.serverProcess!.stderr?.on('data', (data) => {
+        console.error(`[MCP Server Error] ${data.toString().trim()}`);
+      });
+
+      this.serverProcess!.on('error', (error) => {
+        this.serverError = error;
+      });
+
+      this.serverProcess!.on('exit', (code) => {
+        if (code !== 0) {
+          this.serverError = new Error(`Server exited with code ${code}`);
+        }
+      });
+
+      // Poll for server readiness
+      await this.pollForServerReady();
 
       this.isServerRunning = true;
       console.log(`🚀 Test MCP server ready on port ${this.port}`);
@@ -185,6 +198,94 @@ export class TestMCPServerInstance {
   isRunning(): boolean {
     return this.isServerRunning;
   }
+
+  private async pollForServerReady(): Promise<void> {
+    const startTime = Date.now();
+    let attempts = 0;
+
+    while (attempts < this.pollingConfig.maxAttempts) {
+      attempts++;
+
+      // Check if server reported ready via stdout
+      if (this.serverReady) {
+        console.log(`✅ Server reported ready after ${attempts} attempts`);
+        return;
+      }
+
+      // Check for errors
+      if (this.serverError) {
+        throw this.serverError;
+      }
+
+      // Check if process is still alive
+      if (this.serverProcess?.exitCode !== null) {
+        throw new Error(
+          `Server process exited unexpectedly with code ${this.serverProcess.exitCode}`,
+        );
+      }
+
+      // Try HTTP health check if server might be ready
+      if (attempts > 2) {
+        try {
+          const healthCheckUrl = `http://localhost:${this.port}/mcp`;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(
+            () => controller.abort(),
+            this.pollingConfig.pollIntervalMs,
+          );
+
+          const response = await fetch(healthCheckUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': 'test-health-check',
+            },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'initialize',
+              params: {
+                protocolVersion: '0.1.0',
+                capabilities: {},
+                clientInfo: {
+                  name: 'health-check',
+                  version: '1.0.0',
+                },
+              },
+              id: 1,
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            console.log(
+              `✅ Server HTTP endpoint ready after ${attempts} attempts`,
+            );
+            return;
+          }
+        } catch (error) {
+          // Server not ready yet, continue polling
+        }
+      }
+
+      // Check overall timeout
+      if (Date.now() - startTime > this.pollingConfig.startupTimeoutMs) {
+        throw new Error(
+          `Server startup timeout after ${this.pollingConfig.startupTimeoutMs}ms`,
+        );
+      }
+
+      // Wait before next attempt
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.pollingConfig.pollIntervalMs),
+      );
+    }
+
+    throw new Error(
+      `Server failed to start after ${attempts} attempts (${Date.now() - startTime}ms)`,
+    );
+  }
 }
 
 // Global test server instance
@@ -193,7 +294,11 @@ let globalTestServer: TestMCPServerInstance | null = null;
 export async function getGlobalTestServer(): Promise<TestMCPServerInstance> {
   if (!globalTestServer) {
     const env = validateEnv(process.env);
-    globalTestServer = new TestMCPServerInstance(env.MCP_TEST_PORT);
+    globalTestServer = new TestMCPServerInstance(env.MCP_TEST_PORT, {
+      maxAttempts: 20,
+      pollIntervalMs: 500,
+      startupTimeoutMs: 20000,
+    });
     await globalTestServer.start();
   }
   return globalTestServer;

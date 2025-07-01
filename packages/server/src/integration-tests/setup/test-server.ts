@@ -259,8 +259,8 @@ export class MCPTestServer {
 
 
   async waitForServer(
-    maxAttempts: number = 10,
-    delayMs: number = 1000,
+    maxAttempts: number = 20,
+    delayMs: number = 500,
   ): Promise<void> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
