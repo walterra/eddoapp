@@ -40,6 +40,13 @@ jobs:
           version: 8
       - run: pnpm install
       - run: pnpm build
+      - name: Wait for CouchDB
+        run: |
+          until curl -f http://admin:testpassword@localhost:5984/; do
+            echo "Waiting for CouchDB..."
+            sleep 2
+          done
+          echo "CouchDB is ready!"
       - name: Run tests
         env:
           COUCHDB_URL: http://admin:testpassword@localhost:5984
