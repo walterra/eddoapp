@@ -52,6 +52,7 @@
     "eslint-import-resolver-typescript": "^4.4.3",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react": "^7.37.5",
+    "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "knip": "^5.61.2",
     "node-fetch": "^3.3.2",
@@ -103,7 +104,8 @@
     "restore:interactive": "tsx scripts/restore-interactive.ts",
     "backup:verify": "tsx scripts/verify-backup.ts",
     "populate-mock-data": "tsx scripts/populate-mock-data.ts",
-    "populate-mock-data:dry-run": "tsx scripts/populate-mock-data.ts --dry-run"
+    "populate-mock-data:dry-run": "tsx scripts/populate-mock-data.ts --dry-run",
+    "prepare": "husky"
   },
   "browserslist": [
     ">0.2%",
