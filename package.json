@@ -87,7 +87,7 @@
     "lint": "eslint --cache ./packages --ignore-pattern '**/dist/**'",
     "test": "pnpm test:unit",
     "test:unit": "vitest run packages/client/src packages/shared/src/utils packages/shared/src/api scripts/backup-interactive.test.ts",
-    "test:integration": "npm-run-all --parallel test:integration:server test:integration:wait-and-run",
+    "test:integration": "npm-run-all --parallel --race test:integration:server test:integration:wait-and-run",
     "test:integration:server": "COUCHDB_TEST_DB_NAME=todos-test MCP_TEST_PORT=3003 NODE_ENV=test pnpm --filter @eddo/server start:test",
     "test:integration:wait-and-run": "sleep 8 && vitest run packages/server/src/integration-tests",
     "test:e2e": "vitest run scripts/__tests__/e2e",
