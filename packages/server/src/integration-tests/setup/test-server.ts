@@ -4,6 +4,7 @@
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
 import { TestLock } from './test-lock.js';
 
 export interface MCPTestServerConfig {
@@ -23,7 +24,7 @@ export class MCPTestServer {
   constructor(config: MCPTestServerConfig = {}) {
     // Use dynamic port from environment or fall back to default
     const testPort = process.env.MCP_TEST_PORT || '3003';
-    
+
     this.config = {
       serverUrl:
         config.serverUrl ||
@@ -33,9 +34,9 @@ export class MCPTestServer {
       clientVersion: config.clientVersion || '1.0.0',
       timeout: config.timeout || 30000,
     };
-    
+
     this.testLock = new TestLock();
-    
+
     // Generate unique test API key for complete isolation
     this.testApiKey = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
@@ -101,7 +102,6 @@ export class MCPTestServer {
     return this.client;
   }
 
-
   async listAvailableTools(): Promise<
     Array<{ name: string; description: string; inputSchema: unknown }>
   > {
@@ -153,20 +153,26 @@ export class MCPTestServer {
 
     // Only these tools return JSON - all others return plain text
     const JSON_RETURNING_TOOLS = ['listTodos', 'getActiveTimeTracking'];
-    
+
     if (JSON_RETURNING_TOOLS.includes(toolName)) {
       // Try to parse as JSON for tools that should return JSON
       try {
         const parsed = JSON.parse(text);
-        
+
         // Ensure list tools return arrays
         if (Array.isArray(parsed)) {
           return parsed;
-        } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.docs)) {
+        } else if (
+          parsed &&
+          typeof parsed === 'object' &&
+          Array.isArray(parsed.docs)
+        ) {
           // Handle CouchDB-style response format
           return parsed.docs;
         } else {
-          console.warn(`⚠️  Tool ${toolName} returned non-array JSON: ${typeof parsed}`);
+          console.warn(
+            `⚠️  Tool ${toolName} returned non-array JSON: ${typeof parsed}`,
+          );
           return [];
         }
       } catch (parseError) {
@@ -182,27 +188,31 @@ export class MCPTestServer {
 
   async resetTestData(): Promise<void> {
     // With per-API-key databases via X-API-Key header, each test gets complete isolation
-    console.log(`🔄 Test using isolated database for API key: ${this.testApiKey}`);
-    
+    console.log(
+      `🔄 Test using isolated database for API key: ${this.testApiKey}`,
+    );
+
     // Set up the database schema for this test's isolated database
     await this.setupTestDatabase();
   }
 
   private async setupTestDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/shared');
+      const { validateEnv, getTestCouchDbConfig } = await import(
+        '@eddo/shared'
+      );
       const { DatabaseSetup } = await import('./database-setup.js');
-      
+
       const env = validateEnv(process.env);
       const couchDbConfig = getTestCouchDbConfig(env);
-      
+
       // Generate the same database name that the auth server will use
       const testDbName = `${couchDbConfig.dbName}_api_${this.testApiKey}`;
-      
+
       // Set up the database with proper indexes and design documents
       const dbSetup = new DatabaseSetup(testDbName);
       await dbSetup.setupDatabase();
-      
+
       console.log(`✅ Test database initialized: ${testDbName}`);
     } catch (error) {
       console.error('❌ Failed to set up test database:', error);
@@ -212,36 +222,40 @@ export class MCPTestServer {
 
   private async clearAllDocuments(): Promise<void> {
     // Always use direct database cleanup for reliability
-    console.log('🔧 Using direct database cleanup for bulletproof test isolation');
+    console.log(
+      '🔧 Using direct database cleanup for bulletproof test isolation',
+    );
     await this.forceCleanupDatabase();
   }
 
   private async forceCleanupDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/shared');
+      const { validateEnv, getTestCouchDbConfig } = await import(
+        '@eddo/shared'
+      );
       const nano = await import('nano');
-      
+
       const env = validateEnv(process.env);
       const couchDbConfig = getTestCouchDbConfig(env);
       const couch = nano.default(couchDbConfig.url);
       const db = couch.db.use(couchDbConfig.dbName);
-      
+
       // Get all documents excluding design documents
       const allDocs = await db.list({ include_docs: false });
       const todoIds = allDocs.rows
-        .filter(row => !row.id.startsWith('_design/'))
-        .map(row => ({ id: row.id, rev: row.value.rev }));
-      
+        .filter((row) => !row.id.startsWith('_design/'))
+        .map((row) => ({ id: row.id, rev: row.value.rev }));
+
       if (todoIds.length > 0) {
         console.log(`🔧 Force deleting ${todoIds.length} remaining documents`);
-        
+
         // Bulk delete all non-design documents
-        const docsToDelete = todoIds.map(doc => ({
+        const docsToDelete = todoIds.map((doc) => ({
           _id: doc.id,
           _rev: doc.rev,
           _deleted: true,
         }));
-        
+
         await db.bulk({ docs: docsToDelete });
         console.log('✅ Force cleanup completed');
       }
@@ -251,12 +265,10 @@ export class MCPTestServer {
     }
   }
 
-
   private async waitForServerToRecognizeCleanDatabase(): Promise<void> {
     // Brief wait to allow server to recognize the database reset
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
-
 
   async waitForServer(
     maxAttempts: number = 20,

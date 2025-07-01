@@ -3,8 +3,8 @@
  * Ensures true sequential execution of integration tests
  */
 import { promises as fs } from 'fs';
-import { join } from 'path';
 import { tmpdir } from 'os';
+import { join } from 'path';
 
 const LOCK_FILE = join(tmpdir(), 'eddo-integration-test.lock');
 const LOCK_TIMEOUT = 60000; // 60 seconds max wait
@@ -20,9 +20,9 @@ export class TestLock {
 
   async acquire(): Promise<void> {
     console.log(`🔒 [${this.testId}] Acquiring test lock...`);
-    
+
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < LOCK_TIMEOUT) {
       try {
         // Try to create lock file exclusively
@@ -30,25 +30,34 @@ export class TestLock {
         this.lockAcquired = true;
         console.log(`✅ [${this.testId}] Test lock acquired`);
         return;
-      } catch (error: any) {
-        if (error.code === 'EEXIST') {
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === 'EEXIST'
+        ) {
           // Lock file exists, check if it's stale
           try {
             const lockContent = await fs.readFile(LOCK_FILE, 'utf8');
             const lockStats = await fs.stat(LOCK_FILE);
             const lockAge = Date.now() - lockStats.mtime.getTime();
-            
+
             // If lock is older than 30 seconds, consider it stale
             if (lockAge > 30000) {
-              console.warn(`⚠️  [${this.testId}] Removing stale lock (${lockAge}ms old)`);
+              console.warn(
+                `⚠️  [${this.testId}] Removing stale lock (${lockAge}ms old)`,
+              );
               await fs.unlink(LOCK_FILE);
               continue;
             }
-            
+
             // Wait and retry
-            console.log(`⏳ [${this.testId}] Waiting for lock held by: ${lockContent}`);
-            await new Promise(resolve => setTimeout(resolve, 100));
-          } catch (readError) {
+            console.log(
+              `⏳ [${this.testId}] Waiting for lock held by: ${lockContent}`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          } catch (_readError) {
             // Lock file disappeared, retry
             continue;
           }
@@ -57,7 +66,7 @@ export class TestLock {
         }
       }
     }
-    
+
     throw new Error(`Failed to acquire test lock within ${LOCK_TIMEOUT}ms`);
   }
 
@@ -73,14 +82,21 @@ export class TestLock {
         await fs.unlink(LOCK_FILE);
         console.log(`🔓 [${this.testId}] Test lock released`);
       } else {
-        console.warn(`⚠️  [${this.testId}] Lock ownership changed, not releasing`);
+        console.warn(
+          `⚠️  [${this.testId}] Lock ownership changed, not releasing`,
+        );
       }
-    } catch (error: any) {
-      if (error.code !== 'ENOENT') {
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code !== 'ENOENT'
+      ) {
         console.error(`❌ [${this.testId}] Failed to release lock:`, error);
       }
     }
-    
+
     this.lockAcquired = false;
   }
 }

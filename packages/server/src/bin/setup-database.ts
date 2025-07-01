@@ -1,5 +1,4 @@
 #!/usr/bin/env tsx
-
 /**
  * Standalone Database Setup Service
  * Handles database creation, indexes, and design documents
@@ -7,6 +6,7 @@
  */
 import { validateEnv } from '@eddo/shared';
 import { dotenvLoad } from 'dotenv-mono';
+
 import { DatabaseSetup } from '../integration-tests/setup/database-setup.js';
 
 dotenvLoad();
@@ -15,7 +15,7 @@ async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
   const env = validateEnv(process.env);
-  
+
   console.log('🗄️  Eddo Database Setup Service');
   console.log(`📋 Command: ${command || 'setup'}`);
   console.log(`🌍 Environment: ${env.NODE_ENV || 'development'}`);
@@ -25,7 +25,9 @@ async function main() {
   try {
     switch (command) {
       case 'setup':
-        console.log('🚀 Setting up database with indexes and design documents...');
+        console.log(
+          '🚀 Setting up database with indexes and design documents...',
+        );
         await dbSetup.setupDatabase();
         console.log('✅ Database setup complete');
         break;
@@ -88,4 +90,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 export { main as setupDatabase };
-

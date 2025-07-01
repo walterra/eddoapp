@@ -12,7 +12,6 @@ import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 import { z } from 'zod';
-import type { IncomingMessage } from 'http';
 
 // Load environment variables
 dotenvLoad();
@@ -40,14 +39,14 @@ const server = new FastMCP<UserSession>({
   },
   instructions:
     'Eddo Todo MCP Server with API key authentication. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.',
-  
+
   // Authentication function - runs for each request
   authenticate: (request) => {
     // Extract API key from X-API-Key header
     const apiKey = request.headers['x-api-key'] as string;
-    
+
     console.log(`Auth request with API key: ${apiKey ? '[REDACTED]' : 'none'}`);
-    
+
     // In test mode, we allow any non-empty API key for database isolation
     if (env.NODE_ENV === 'test') {
       if (!apiKey) {
@@ -56,16 +55,16 @@ const server = new FastMCP<UserSession>({
           statusText: 'API key required for test isolation',
         });
       }
-      
+
       // Generate user-specific database name using API key
       const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
-      
-      return {
+
+      return Promise.resolve({
         userId: apiKey, // Use API key as user identifier
         dbName,
-      };
+      });
     }
-    
+
     // In production mode, require valid API key
     if (!apiKey) {
       throw new Response(null, {
@@ -73,20 +72,22 @@ const server = new FastMCP<UserSession>({
         statusText: 'API key required',
       });
     }
-    
+
     // Here you would validate the API key against your auth system
     // For now, use the API key as the user identifier
     const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
-    
-    return {
+
+    return Promise.resolve({
       userId: apiKey,
       dbName,
-    };
+    });
   },
 });
 
 // Helper to get user's database from context
-function getUserDb(context: { session?: UserSession }): nano.DocumentScope<TodoAlpha3> {
+function getUserDb(context: {
+  session?: UserSession;
+}): nano.DocumentScope<TodoAlpha3> {
   if (!context.session) {
     throw new Error('No user session available');
   }
@@ -153,26 +154,33 @@ server.addTool({
     if (context.session?.userId && context.session.userId !== 'default') {
       try {
         await couch.db.get(context.session.dbName);
-      } catch (error: any) {
-        if (error.statusCode === 404) {
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'statusCode' in error &&
+          error.statusCode === 404
+        ) {
           await couch.db.create(context.session.dbName);
-          console.log(`Created database for user ${context.session.userId}: ${context.session.dbName}`);
+          console.log(
+            `Created database for user ${context.session.userId}: ${context.session.dbName}`,
+          );
         }
       }
     }
-    
+
     const db = getUserDb(context);
-    
-    context.log.info('Creating todo for user', { 
+
+    context.log.info('Creating todo for user', {
       userId: context.session?.userId,
-      title: args.title 
+      title: args.title,
     });
-    
+
     const now = new Date().toISOString();
     const dueDate =
       args.due || new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
-    
-    const newTodo: TodoAlpha3 = {
+
+    const newTodo: Omit<TodoAlpha3, '_rev'> = {
       _id: now,
       title: args.title,
       description: args.description,
@@ -185,9 +193,9 @@ server.addTool({
       link: args.link,
       version: 'alpha3',
     };
-    
+
     try {
-      await db.insert(newTodo);
+      await db.insert(newTodo as TodoAlpha3);
       return `Todo created with ID: ${newTodo._id}`;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -199,7 +207,8 @@ server.addTool({
 // List Todos Tool
 server.addTool({
   name: 'listTodos',
-  description: 'List todos with optional filters from the authenticated user\'s database',
+  description:
+    "List todos with optional filters from the authenticated user's database",
   parameters: z.object({
     context: z
       .string()
@@ -226,49 +235,62 @@ server.addTool({
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
-    context.log.info('Listing todos for user', { 
+
+    context.log.info('Listing todos for user', {
       userId: context.session?.userId,
-      filters: args 
+      filters: args,
     });
-    
+
     try {
       // Build query selector
-      const selector: any = { version: 'alpha3' };
-      
+      const selector: Record<string, unknown> = { version: 'alpha3' };
+
       if (args.context) {
         selector.context = args.context;
       }
-      
+
       if (args.completed !== undefined) {
         selector.completed = args.completed ? { $ne: null } : null;
       }
-      
+
       if (args.dateFrom || args.dateTo) {
         selector.due = {};
-        if (args.dateFrom) selector.due.$gte = args.dateFrom;
-        if (args.dateTo) selector.due.$lte = args.dateTo;
+        if (args.dateFrom) {
+          (selector.due as Record<string, unknown>)['$gte'] = args.dateFrom;
+        }
+        if (args.dateTo) {
+          (selector.due as Record<string, unknown>)['$lte'] = args.dateTo;
+        }
       }
-      
+
       // Build query
-      const query: any = {
+      const query: {
+        selector: Record<string, unknown>;
+        sort: Array<Record<string, string>>;
+        limit?: number;
+      } = {
         selector,
         sort: [{ due: 'asc' }],
       };
-      
+
       if (args.limit && args.limit > 0) {
         query.limit = args.limit;
       } else {
         query.limit = 50; // Default limit
       }
-      
-      const response = await db.find(query);
-      context.log.info('Todos retrieved successfully', { count: response.docs.length });
+
+      const response = await db.find(query as nano.MangoQuery);
+      context.log.info('Todos retrieved successfully', {
+        count: response.docs.length,
+      });
       return JSON.stringify(response.docs, null, 2);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       // If database doesn't exist, return empty array instead of throwing error
-      if (message.includes('Database does not exist') || message.includes('no_db_file')) {
+      if (
+        message.includes('Database does not exist') ||
+        message.includes('no_db_file')
+      ) {
         context.log.info('Database does not exist, returning empty array');
         return JSON.stringify([], null, 2);
       }
@@ -286,7 +308,7 @@ server.addTool({
     if (!context.session) {
       return JSON.stringify({ userId: 'anonymous', dbName: 'default' });
     }
-    
+
     return JSON.stringify({
       userId: context.session.userId,
       dbName: context.session.dbName,
@@ -326,10 +348,10 @@ server.addTool({
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
-    context.log.info('Updating todo for user', { 
+
+    context.log.info('Updating todo for user', {
       userId: context.session?.userId,
-      todoId: args.id 
+      todoId: args.id,
     });
 
     try {
@@ -376,7 +398,7 @@ server.addTool({
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
+
     context.log.info('Toggling todo completion for user', {
       userId: context.session?.userId,
       todoId: args.id,
@@ -451,12 +473,12 @@ server.addTool({
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
-    context.log.info('Deleting todo for user', { 
+
+    context.log.info('Deleting todo for user', {
       userId: context.session?.userId,
-      todoId: args.id 
+      todoId: args.id,
     });
-    
+
     try {
       const todo = (await db.get(args.id)) as TodoAlpha3;
       context.log.debug('Retrieved todo for deletion', { title: todo.title });
@@ -465,7 +487,10 @@ server.addTool({
       context.log.info('Todo deleted successfully', { title: todo.title });
       return `Todo deleted: ${todo.title}`;
     } catch (error) {
-      context.log.error('Failed to delete todo', { id: args.id, error: String(error) });
+      context.log.error('Failed to delete todo', {
+        id: args.id,
+        error: String(error),
+      });
       throw error;
     }
   },
@@ -484,10 +509,10 @@ server.addTool({
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
-    context.log.info('Starting time tracking for user', { 
+
+    context.log.info('Starting time tracking for user', {
       userId: context.session?.userId,
-      todoId: args.id 
+      todoId: args.id,
     });
 
     try {
@@ -528,15 +553,17 @@ server.addTool({
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
-    context.log.info('Stopping time tracking for user', { 
+
+    context.log.info('Stopping time tracking for user', {
       userId: context.session?.userId,
-      todoId: args.id 
+      todoId: args.id,
     });
 
     try {
       const todo = (await db.get(args.id)) as TodoAlpha3;
-      context.log.debug('Retrieved todo for time tracking stop', { title: todo.title });
+      context.log.debug('Retrieved todo for time tracking stop', {
+        title: todo.title,
+      });
 
       const now = new Date().toISOString();
 
@@ -581,9 +608,9 @@ server.addTool({
     ),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
-    context.log.info('Retrieving active time tracking todos for user', { 
-      userId: context.session?.userId 
+
+    context.log.info('Retrieving active time tracking todos for user', {
+      userId: context.session?.userId,
     });
 
     try {
@@ -625,10 +652,10 @@ server.addTool({
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
-    
-    context.log.debug('Retrieving server info for user', { 
+
+    context.log.debug('Retrieving server info for user', {
       userId: context.session?.userId,
-      section: args.section 
+      section: args.section,
     });
 
     // Get tag statistics if needed
@@ -793,14 +820,17 @@ export async function startMcpServer(port: number = 3001) {
     // Verify database connection (database setup is handled externally)
     // Note: We can't test specific user databases here since they're created on-demand
     try {
-      const defaultDbName = env.NODE_ENV === 'test' ? 
-        getTestCouchDbConfig(env).dbName : 
-        getCouchDbConfig(env).dbName;
+      const defaultDbName =
+        env.NODE_ENV === 'test'
+          ? getTestCouchDbConfig(env).dbName
+          : getCouchDbConfig(env).dbName;
       const defaultDb = couch.db.use(defaultDbName);
       const info = await defaultDb.info();
       console.log(`✅ Connected to CouchDB (verified with ${info.db_name})`);
     } catch (error: unknown) {
-      console.error('❌ Failed to connect to database. Ensure CouchDB is running.');
+      console.error(
+        '❌ Failed to connect to database. Ensure CouchDB is running.',
+      );
       throw error;
     }
 

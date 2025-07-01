@@ -14,7 +14,7 @@ beforeAll(async () => {
   // Check if test port is available
   const { ensurePortAvailable } = await import('./port-check.js');
   const testPort = parseInt(process.env.MCP_TEST_PORT || '3003', 10);
-  
+
   try {
     await ensurePortAvailable(testPort);
   } catch (error) {
@@ -37,17 +37,17 @@ beforeAll(async () => {
   console.log('🏗️  Setting up shared test database infrastructure...');
   const { DatabaseSetup } = await import('./database-setup.js');
   const dbSetup = new DatabaseSetup();
-  
+
   // Reset database completely to ensure clean start
   await dbSetup.resetDatabase();
-  
+
   // Additional cleanup to ensure no test data remains
   const { MCPTestServer } = await import('./test-server.js');
   const cleanupServer = new MCPTestServer();
   await cleanupServer.waitForServer();
   await cleanupServer.resetTestData();
   await cleanupServer.stop();
-  
+
   console.log('✅ Test database infrastructure ready and verified clean');
 }, 30000); // 30 second timeout
 

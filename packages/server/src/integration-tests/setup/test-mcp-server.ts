@@ -29,7 +29,7 @@ export class TestMCPServerInstance {
       port ||
       Number(process.env.MCP_TEST_PORT) ||
       3003 + Math.floor(Math.random() * 1000);
-    
+
     this.pollingConfig = {
       maxAttempts: pollingConfig?.maxAttempts ?? 30,
       pollIntervalMs: pollingConfig?.pollIntervalMs ?? 1000,
@@ -220,7 +220,7 @@ export class TestMCPServerInstance {
       // Check if process is still alive
       if (this.serverProcess?.exitCode !== null) {
         throw new Error(
-          `Server process exited unexpectedly with code ${this.serverProcess.exitCode}`,
+          `Server process exited unexpectedly with code ${this.serverProcess?.exitCode}`,
         );
       }
 
@@ -264,7 +264,7 @@ export class TestMCPServerInstance {
             );
             return;
           }
-        } catch (error) {
+        } catch (_error) {
           // Server not ready yet, continue polling
         }
       }

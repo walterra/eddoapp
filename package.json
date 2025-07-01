@@ -90,7 +90,7 @@
     "test:integration": "node scripts/run-integration-tests.js",
     "test:e2e": "vitest run scripts/__tests__/e2e",
     "test:all": "npm-run-all --parallel tsc:check test:unit test:integration test:e2e lint lint:format",
-    "test:ci": "npm-run-all --parallel tsc:check test:unit test:integration lint lint:format",
+    "test:ci": "pnpm build && npm-run-all --parallel tsc:check test:unit test:integration lint lint:format",
     "tsc:check": "tsc --build",
     "vitest:run": "vitest run",
     "knip": "knip",
