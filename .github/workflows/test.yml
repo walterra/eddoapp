@@ -47,6 +47,10 @@ jobs:
             sleep 2
           done
           echo "CouchDB is ready!"
+      - name: Setup test database
+        run: |
+          curl -X PUT http://admin:testpassword@localhost:5984/todos-test
+          echo "Test database created!"
       - name: Run tests
         env:
           COUCHDB_URL: http://admin:testpassword@localhost:5984
