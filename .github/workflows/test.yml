@@ -41,6 +41,7 @@ jobs:
       - run: pnpm install
       - name: Run tests
         env:
-          COUCH_URL: http://admin:testpassword@localhost:5984
+          COUCHDB_URL: http://admin:testpassword@localhost:5984
+          COUCHDB_TEST_URL: http://admin:testpassword@localhost:5984
           CI: true
         run: pnpm test:ci
