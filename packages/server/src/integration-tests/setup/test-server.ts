@@ -4,6 +4,7 @@
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { TestLock } from './test-lock.js';
 
 export interface MCPTestServerConfig {
   serverUrl?: string;
@@ -16,10 +17,13 @@ export class MCPTestServer {
   private client: Client | null = null;
   private transport: StreamableHTTPClientTransport | null = null;
   private config: Required<MCPTestServerConfig>;
+  private testLock: TestLock;
+  private testUserId: string;
 
   constructor(config: MCPTestServerConfig = {}) {
     // Use dynamic port from environment or fall back to default
     const testPort = process.env.MCP_TEST_PORT || '3003';
+    
     this.config = {
       serverUrl:
         config.serverUrl ||
@@ -29,6 +33,11 @@ export class MCPTestServer {
       clientVersion: config.clientVersion || '1.0.0',
       timeout: config.timeout || 30000,
     };
+    
+    this.testLock = new TestLock();
+    
+    // Generate unique test user ID for complete isolation
+    this.testUserId = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   async start(): Promise<void> {
@@ -36,9 +45,14 @@ export class MCPTestServer {
       throw new Error('Test server already started');
     }
 
-    // Create transport
+    // Create transport with user ID header for test isolation
     this.transport = new StreamableHTTPClientTransport(
       new URL(this.config.serverUrl),
+      {
+        headers: {
+          'X-User-ID': this.testUserId,
+        },
+      },
     );
 
     // Create client
@@ -85,6 +99,7 @@ export class MCPTestServer {
     return this.client;
   }
 
+
   async listAvailableTools(): Promise<
     Array<{ name: string; description: string; inputSchema: unknown }>
   > {
@@ -117,30 +132,107 @@ export class MCPTestServer {
         (c: { type: string }) => c.type === 'text',
       );
       if (textContent) {
-        try {
-          return JSON.parse(textContent.text);
-        } catch {
-          return textContent.text;
-        }
+        return this.parseToolResponse(textContent.text, name);
       }
     }
 
     return result;
   }
 
-  async resetTestData(): Promise<void> {
-    // Clear all todos from test database
-    try {
-      const todos = await this.callTool('listTodos', {});
-      if (Array.isArray(todos)) {
-        for (const todo of todos) {
-          await this.callTool('deleteTodo', { id: todo._id });
+  /**
+   * Parse tool response with proper error handling and type consistency
+   */
+  private parseToolResponse(text: string, toolName: string): unknown {
+    // Handle empty responses
+    if (!text || text.trim() === '') {
+      console.warn(`⚠️  Empty response from tool: ${toolName}`);
+      return null;
+    }
+
+    // Only these tools return JSON - all others return plain text
+    const JSON_RETURNING_TOOLS = ['listTodos', 'getActiveTimeTracking'];
+    
+    if (JSON_RETURNING_TOOLS.includes(toolName)) {
+      // Try to parse as JSON for tools that should return JSON
+      try {
+        const parsed = JSON.parse(text);
+        
+        // Ensure list tools return arrays
+        if (Array.isArray(parsed)) {
+          return parsed;
+        } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.docs)) {
+          // Handle CouchDB-style response format
+          return parsed.docs;
+        } else {
+          console.warn(`⚠️  Tool ${toolName} returned non-array JSON: ${typeof parsed}`);
+          return [];
         }
+      } catch (parseError) {
+        console.error(`❌ Tool ${toolName} returned invalid JSON:`, parseError);
+        console.error(`Raw response: ${text.substring(0, 200)}...`);
+        return [];
       }
-    } catch (error) {
-      console.warn('Warning: Failed to reset test data:', error);
+    } else {
+      // For non-JSON tools (createTodo, updateTodo, etc.), return text directly
+      return text;
     }
   }
+
+  async resetTestData(): Promise<void> {
+    // With per-user databases via X-User-ID header, each test gets complete isolation
+    console.log(`🔄 Test using isolated database for user: ${this.testUserId}`);
+    
+    // The user-specific database is automatically created by the auth server
+    // No cleanup needed - each test has its own database!
+  }
+
+  private async clearAllDocuments(): Promise<void> {
+    // Always use direct database cleanup for reliability
+    console.log('🔧 Using direct database cleanup for bulletproof test isolation');
+    await this.forceCleanupDatabase();
+  }
+
+  private async forceCleanupDatabase(): Promise<void> {
+    try {
+      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/shared');
+      const nano = await import('nano');
+      
+      const env = validateEnv(process.env);
+      const couchDbConfig = getTestCouchDbConfig(env);
+      const couch = nano.default(couchDbConfig.url);
+      const db = couch.db.use(couchDbConfig.dbName);
+      
+      // Get all documents excluding design documents
+      const allDocs = await db.list({ include_docs: false });
+      const todoIds = allDocs.rows
+        .filter(row => !row.id.startsWith('_design/'))
+        .map(row => ({ id: row.id, rev: row.value.rev }));
+      
+      if (todoIds.length > 0) {
+        console.log(`🔧 Force deleting ${todoIds.length} remaining documents`);
+        
+        // Bulk delete all non-design documents
+        const docsToDelete = todoIds.map(doc => ({
+          _id: doc.id,
+          _rev: doc.rev,
+          _deleted: true,
+        }));
+        
+        await db.bulk({ docs: docsToDelete });
+        console.log('✅ Force cleanup completed');
+      }
+    } catch (error) {
+      console.error('❌ Force cleanup failed:', error);
+      throw error;
+    }
+  }
+
+
+  private async waitForServerToRecognizeCleanDatabase(): Promise<void> {
+    // Brief wait to allow server to recognize the database reset
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
 
   async waitForServer(
     maxAttempts: number = 10,

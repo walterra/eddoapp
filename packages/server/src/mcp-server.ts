@@ -1,5 +1,10 @@
 // Import the TodoAlpha3 type and environment configuration
-import { type TodoAlpha3, getCouchDbConfig, getTestCouchDbConfig, validateEnv } from '@eddo/shared';
+import {
+  type TodoAlpha3,
+  getCouchDbConfig,
+  getTestCouchDbConfig,
+  validateEnv,
+} from '@eddo/shared';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
@@ -23,90 +28,13 @@ const server = new FastMCP({
 
 // Initialize nano connection to CouchDB using environment configuration
 // Use test configuration in test environment
-const couchDbConfig = env.NODE_ENV === 'test' ? getTestCouchDbConfig(env) : getCouchDbConfig(env);
+const couchDbConfig =
+  env.NODE_ENV === 'test' ? getTestCouchDbConfig(env) : getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
 const db = couch.db.use(couchDbConfig.dbName);
 
-// Create indexes for efficient querying
-async function createIndexes() {
-  try {
-    // Index for sorting by due date
-    await db.createIndex({
-      index: {
-        fields: ['version', 'due'],
-      },
-      name: 'version-due-index',
-      type: 'json',
-    });
-
-    // Index for context and due date
-    await db.createIndex({
-      index: {
-        fields: ['version', 'context', 'due'],
-      },
-      name: 'version-context-due-index',
-      type: 'json',
-    });
-
-    // Index for completed status and due date
-    await db.createIndex({
-      index: {
-        fields: ['version', 'completed', 'due'],
-      },
-      name: 'version-completed-due-index',
-      type: 'json',
-    });
-
-    // Create design document for tag statistics
-    const tagStatsDesignDoc = {
-      _id: '_design/tags',
-      views: {
-        by_tag: {
-          map: `function(doc) {
-            if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
-              for (var i = 0; i < doc.tags.length; i++) {
-                emit(doc.tags[i], 1);
-              }
-            }
-          }`,
-          reduce: '_count',
-        },
-      },
-    };
-
-    try {
-      await db.insert(tagStatsDesignDoc);
-      console.log('✅ Tag statistics design document created');
-    } catch (designError: unknown) {
-      if (
-        designError &&
-        typeof designError === 'object' &&
-        'statusCode' in designError &&
-        designError.statusCode === 409
-      ) {
-        console.log('ℹ️  Tag statistics design document already exists');
-      } else {
-        console.error(
-          '❌ Error creating tag statistics design document:',
-          designError,
-        );
-      }
-    }
-
-    console.log('✅ CouchDB indexes created successfully');
-  } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 409
-    ) {
-      console.log('ℹ️  Indexes already exist');
-    } else {
-      console.error('❌ Error creating indexes:', error);
-    }
-  }
-}
+// Note: Database setup (indexes, design documents) is handled by a separate database service
+// The MCP server assumes the database is already properly configured
 
 // Create Todo Tool
 server.addTool({
@@ -586,6 +514,7 @@ server.addTool({
     if (args.section === 'tagstats' || args.section === 'all') {
       try {
         // Use the design document view to get tag statistics
+        // Force view refresh by not using stale parameter (default behavior)
         const result = await db.view('tags', 'by_tag', {
           group: true,
           reduce: true,
@@ -732,34 +661,14 @@ export async function startMcpServer(port: number = 3001) {
   try {
     console.log(`🔧 Initializing Eddo MCP server on port ${port}...`);
 
-    // Ensure the database exists (create if needed)
+    // Verify database connection (database setup is handled externally)
     try {
-      // First check if database exists
-      await couch.db.get(couchDbConfig.dbName);
-      console.log(`ℹ️  Database already exists: ${couchDbConfig.dbName}`);
+      const info = await db.info();
+      console.log(`✅ Connected to database: ${info.db_name} (${info.doc_count} docs)`);
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
-        // Database doesn't exist, create it
-        try {
-          await couch.db.create(couchDbConfig.dbName);
-          console.log(`✅ Created database: ${couchDbConfig.dbName}`);
-        } catch (createError: unknown) {
-          console.error('Failed to create database:', createError);
-          throw createError;
-        }
-      } else {
-        console.warn('Warning: Failed to check database existence:', error);
-        throw error;
-      }
+      console.error('❌ Failed to connect to database. Ensure database is set up before starting server.');
+      throw error;
     }
-
-    // Create indexes before starting the server
-    await createIndexes();
 
     // Start the server on the specified port
     await server.start({
@@ -787,7 +696,8 @@ export async function startMcpServer(port: number = 3001) {
 // Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   // Use custom port from environment in test mode
-  const port = env.NODE_ENV === 'test' && env.MCP_TEST_PORT ? env.MCP_TEST_PORT : 3001;
+  const port =
+    env.NODE_ENV === 'test' && env.MCP_TEST_PORT ? env.MCP_TEST_PORT : 3001;
   startMcpServer(port).catch((error) => {
     console.error('Failed to start MCP server:', error);
     process.exit(1);

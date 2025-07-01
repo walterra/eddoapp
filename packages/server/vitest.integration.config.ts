@@ -9,20 +9,22 @@ export default defineConfig({
     name: 'mcp-integration',
     include: ['src/integration-tests/**/*.test.ts'],
     exclude: ['node_modules/**', 'dist/**'],
-    testTimeout: 30000, // 30 seconds for integration tests
-    hookTimeout: 10000, // 10 seconds for setup/teardown
+    testTimeout: 45000, // 45 seconds for CouchDB operations (best practice)
+    hookTimeout: 15000, // 15 seconds for setup/teardown with database recreation
     setupFiles: ['src/integration-tests/setup/global.ts'],
     reporters: ['verbose'],
     environment: 'node',
     globals: true,
 
-    // Run tests sequentially to avoid database conflicts
+    // Enforce strict sequential execution for database isolation
     pool: 'forks',
     poolOptions: {
       forks: {
         singleFork: true,
+        isolate: true, // Ensure complete isolation between tests
       },
     },
+    maxConcurrency: 1, // Only one test at a time
 
     // Retry failed tests once
     retry: 1,

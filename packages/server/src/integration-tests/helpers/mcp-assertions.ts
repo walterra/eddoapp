@@ -330,6 +330,17 @@ export class MCPAssertions {
    * Assert that a todo list has specific length
    */
   expectTodoCount(todos: TodoAlpha3[], expectedCount: number): void {
+    if (todos.length !== expectedCount) {
+      console.error(
+        `❌ Todo count mismatch. Expected: ${expectedCount}, Actual: ${todos.length}`,
+      );
+      console.error('Found todos:');
+      todos.forEach((todo, index) => {
+        console.error(
+          `  ${index + 1}. ${todo.title} (id: ${todo._id}, context: ${todo.context})`,
+        );
+      });
+    }
     expect(todos).toHaveLength(expectedCount);
   }
 
