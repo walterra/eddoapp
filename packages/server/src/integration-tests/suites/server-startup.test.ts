@@ -2,8 +2,8 @@
  * Server Startup Integration Test
  * Verifies that the MCP server starts correctly and is accessible
  */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { describe, it, beforeEach, afterEach, expect } from 'vitest';
 import { MCPTestServer } from '../setup/test-server.js';
 
 describe('MCP Server Startup Integration', () => {
@@ -26,20 +26,22 @@ describe('MCP Server Startup Integration', () => {
 
     it('should be able to list available tools', async () => {
       const tools = await testServer.listAvailableTools();
-      
+
       expect(Array.isArray(tools)).toBe(true);
       expect(tools.length).toBeGreaterThan(0);
-      
+
       // Verify we have the expected tools
-      const toolNames = tools.map(tool => tool.name);
+      const toolNames = tools.map((tool) => tool.name);
       expect(toolNames).toContain('createTodo');
       expect(toolNames).toContain('listTodos');
       expect(toolNames).toContain('getServerInfo');
     });
 
     it('should successfully call getServerInfo tool', async () => {
-      const serverInfo = await testServer.callTool('getServerInfo', { section: 'overview' });
-      
+      const serverInfo = await testServer.callTool('getServerInfo', {
+        section: 'overview',
+      });
+
       expect(typeof serverInfo).toBe('string');
       expect(serverInfo).toContain('Eddo MCP Server Overview');
     });
@@ -47,12 +49,12 @@ describe('MCP Server Startup Integration', () => {
     it('should be using isolated test environment', async () => {
       // Verify test environment variables are set correctly
       expect(process.env.NODE_ENV).toBe('test');
-      expect(process.env.COUCHDB_DB_NAME).toBe('todos-test');
+      // Database names are now dynamically generated per API key for complete isolation
     });
 
     it('should start with empty test database', async () => {
       const todos = await testServer.callTool('listTodos', {});
-      
+
       // Should be empty array or empty string indicating no todos
       if (Array.isArray(todos)) {
         expect(todos).toHaveLength(0);

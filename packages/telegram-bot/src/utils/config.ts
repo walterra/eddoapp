@@ -1,4 +1,4 @@
-import { validateEnv, type Env } from '@eddo/shared';
+import { type Env, validateEnv } from '@eddo/shared';
 import { dotenvLoad } from 'dotenv-mono';
 import { z } from 'zod';
 
@@ -22,10 +22,10 @@ let appConfig: Config;
 try {
   // Validate shared environment
   const sharedEnv = validateEnv(process.env);
-  
+
   // Validate telegram-specific required fields
   const telegramFields = TelegramConfigSchema.parse(process.env);
-  
+
   // Combine configurations
   appConfig = { ...sharedEnv, ...telegramFields };
 } catch (error) {

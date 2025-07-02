@@ -10,7 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Lint: `pnpm lint`
 - Format check: `pnpm lint:format`
 - Format fix: `pnpm format`
-- Full test suite: `pnpm test`
+- Unit tests (default): `pnpm test`
+- Unit tests only: `pnpm test:unit`
+- Integration tests: `pnpm test:integration`
+- E2E tests: `pnpm test:e2e`
+- Full test suite: `pnpm test:all`
+- CI test suite: `pnpm test:ci`
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
 
@@ -93,6 +98,8 @@ interface TodoAlpha3 {
 - Use TailwindCSS for styling
 - Use try/catch for error handling with console.error
 - Use Prettier for formatting with existing config
+- **Always run the proper scripts for linting and formatting before manually fixing code style issues**
+- TypeScript: do not use `any`.
 
 ## Git Rules
 
@@ -198,3 +205,8 @@ const result = await client.callTool({
 
 ### Alternative: FastMCP
 FastMCP is primarily a **server** framework but demonstrates proper client usage. For clients, stick to the standard SDK patterns shown above rather than FastMCP abstractions.
+
+## Testing Guidelines
+
+- When asked to fix tests, never touch the actual implementation.
+- When asked to fix a bug, never touch the tests that surfaced the bug.

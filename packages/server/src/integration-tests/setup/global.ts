@@ -1,43 +1,66 @@
 /**
  * Global test setup for MCP integration tests
+ * Note: Server is started externally via npm-run-all before tests run
  */
-
-import { beforeAll, afterAll } from 'vitest';
-import { getGlobalTestServer, stopGlobalTestServer } from './test-mcp-server.js';
+import { afterAll, beforeAll } from 'vitest';
 
 // Global test configuration
 beforeAll(async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
-  process.env.COUCHDB_DB_NAME = 'todos-test';
-  
-  // Increase timeout for integration tests
-  globalThis.setTimeout = globalThis.setTimeout || ((cb: () => void, ms: number) => {
-    return setTimeout(cb, ms);
-  });
+  process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
+  process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
-  console.log('🚀 Starting MCP Integration Test Suite');
-  
-  // Start the test MCP server
-  const testServer = await getGlobalTestServer();
-  console.log('📡 Test MCP Server URL:', testServer.getUrl());
-  
-  // Update the test URL environment variable for individual tests
-  process.env.MCP_TEST_URL = testServer.getUrl();
-}, 60000); // 60 second timeout for server startup
+  // Check if test port is available
+  const { ensurePortAvailable } = await import('./port-check.js');
+  const testPort = parseInt(process.env.MCP_TEST_PORT || '3003', 10);
+
+  try {
+    await ensurePortAvailable(testPort);
+  } catch (error) {
+    console.error(`\n❌ ${error}\n`);
+    process.exit(1);
+  }
+
+  // Increase timeout for integration tests
+  globalThis.setTimeout =
+    globalThis.setTimeout ||
+    ((cb: () => void, ms: number) => {
+      return setTimeout(cb, ms);
+    });
+
+  console.log(
+    '🚀 MCP Integration Test Suite - Server should already be running',
+  );
+
+  // Set up test database infrastructure once (indexes, design documents)
+  console.log('🏗️  Setting up shared test database infrastructure...');
+  const { DatabaseSetup } = await import('./database-setup.js');
+  const dbSetup = new DatabaseSetup();
+
+  // Reset database completely to ensure clean start
+  await dbSetup.resetDatabase();
+
+  // Additional cleanup to ensure no test data remains
+  const { MCPTestServer } = await import('./test-server.js');
+  const cleanupServer = new MCPTestServer();
+  await cleanupServer.waitForServer();
+  await cleanupServer.resetTestData();
+  await cleanupServer.stop();
+
+  console.log('✅ Test database infrastructure ready and verified clean');
+}, 30000); // 30 second timeout
 
 afterAll(async () => {
-  console.log('🛑 Stopping test MCP server...');
-  await stopGlobalTestServer();
   console.log('✅ MCP Integration Tests Complete');
-}, 30000); // 30 second timeout for cleanup
+}, 5000); // 5 second timeout for cleanup
 
 // Extend Vitest's expect with custom matchers if needed
 declare global {
   namespace Vi {
     interface AsymmetricMatchersContaining {
-      toBeValidTodo(): any;
-      toBeValidTodoArray(): any;
+      toBeValidTodo(): unknown;
+      toBeValidTodoArray(): unknown;
     }
   }
 }

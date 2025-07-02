@@ -31,16 +31,13 @@ export function Eddo() {
       <DevSync />
       <HealthMonitor />
       <PageWrapper>
-        <AddTodo 
-          currentDate={currentDate} 
+        <AddTodo
+          currentDate={currentDate}
           selectedTags={selectedTags}
           setCurrentDate={setCurrentDate}
           setSelectedTags={setSelectedTags}
         />
-        <TodoBoard 
-          currentDate={currentDate}
-          selectedTags={selectedTags}
-        />
+        <TodoBoard currentDate={currentDate} selectedTags={selectedTags} />
       </PageWrapper>
     </PouchDbContext.Provider>
   );

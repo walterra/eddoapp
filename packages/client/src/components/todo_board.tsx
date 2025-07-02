@@ -60,7 +60,10 @@ const designDocViews = {
   },
 };
 
-export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => {
+export const TodoBoard: FC<TodoBoardProps> = ({
+  currentDate,
+  selectedTags,
+}) => {
   const { safeDb, changes } = usePouchDb();
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
@@ -343,7 +346,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
           />
         </div>
       )}
-
 
       <div className="mt-2 flex flex-col">
         <div className="overflow-x-auto">

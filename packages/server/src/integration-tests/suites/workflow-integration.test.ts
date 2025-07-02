@@ -2,12 +2,12 @@
  * Complete Workflow Integration Tests
  * Tests realistic end-to-end workflows based on MCP-CRUD.md scenarios
  */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { describe, it, beforeEach, afterEach, expect } from 'vitest';
-import { MCPTestServer } from '../setup/test-server.js';
+import { createTestTodoData as _createTestTodoData } from '../__fixtures__/todo-factory.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
-import { createTestTodoData } from '../__fixtures__/todo-factory.js';
 import type { TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import { MCPTestServer } from '../setup/test-server.js';
 
 describe('MCP Complete Workflow Integration', () => {
   let testServer: MCPTestServer;
@@ -17,7 +17,7 @@ describe('MCP Complete Workflow Integration', () => {
     testServer = new MCPTestServer();
     await testServer.waitForServer();
     assert = createMCPAssertions(testServer);
-    
+
     // Reset test data
     await testServer.resetTestData();
   });
@@ -45,17 +45,22 @@ describe('MCP Complete Workflow Integration', () => {
       });
 
       // 2. READ: Verify creation and list todos
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
       assert.expectTodoCount(allTodos, 2);
-      
+
       // Sort by creation time (newest first)
-      allTodos.sort((a, b) => new Date(b._id).getTime() - new Date(a._id).getTime());
+      allTodos.sort(
+        (a, b) => new Date(b._id).getTime() - new Date(a._id).getTime(),
+      );
       const privateTodo = allTodos[0]; // Most recent (private)
       const workTodo = allTodos[1]; // Second most recent (work)
 
       const workTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { context: 'work' }
+        { context: 'work' },
       );
       assert.expectTodoCount(workTodos, 1);
       assert.expectTodosFilteredByContext(workTodos, 'work');
@@ -66,10 +71,13 @@ describe('MCP Complete Workflow Integration', () => {
         description: 'Updated via MCP workflow test',
         tags: ['integration', 'workflow', 'updated'],
       });
-      
+
       // Get updated todo
-      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
-      const updatedTodo = todosAfterUpdate.find(t => t._id === workTodo._id)!;
+      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
+      const updatedTodo = todosAfterUpdate.find((t) => t._id === workTodo._id)!;
 
       assert.expectTodoProperties(updatedTodo, {
         description: 'Updated via MCP workflow test',
@@ -77,57 +85,67 @@ describe('MCP Complete Workflow Integration', () => {
       expect(updatedTodo.tags).toContain('updated');
 
       // 4. TIME TRACKING: Start and manage time tracking
-      await assert.expectToolCallSuccess(
-        'startTimeTracking',
-        { id: workTodo._id }
-      );
-      
+      await assert.expectToolCallSuccess('startTimeTracking', {
+        id: workTodo._id,
+      });
+
       // Get updated todo and verify tracking started
-      const todosAfterStartTracking = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
-      const todoWithTracking = todosAfterStartTracking.find(t => t._id === workTodo._id)!;
+      const todosAfterStartTracking = await assert.expectToolCallSuccess<
+        TodoAlpha3[]
+      >('listTodos', {});
+      const todoWithTracking = todosAfterStartTracking.find(
+        (t) => t._id === workTodo._id,
+      )!;
       assert.expectHasActiveTimeTracking(todoWithTracking);
 
       // Check active time tracking query
       const activeTracking = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'getActiveTimeTracking',
-        {}
+        {},
       );
       assert.expectTodoCount(activeTracking, 1);
       expect(activeTracking[0]._id).toBe(workTodo._id);
 
       // Stop time tracking
-      await assert.expectToolCallSuccess(
-        'stopTimeTracking',
-        { id: workTodo._id }
-      );
-      
+      await assert.expectToolCallSuccess('stopTimeTracking', {
+        id: workTodo._id,
+      });
+
       // Get updated todo and verify tracking stopped
-      const todosAfterStopTracking = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
-      const todoAfterStop = todosAfterStopTracking.find(t => t._id === workTodo._id)!;
+      const todosAfterStopTracking = await assert.expectToolCallSuccess<
+        TodoAlpha3[]
+      >('listTodos', {});
+      const todoAfterStop = todosAfterStopTracking.find(
+        (t) => t._id === workTodo._id,
+      )!;
       assert.expectHasNoActiveTimeTracking(todoAfterStop);
 
       // 5. COMPLETION: Toggle completion status
-      await assert.expectToolCallSuccess(
-        'toggleTodoCompletion',
-        { id: workTodo._id, completed: true }
-      );
-      
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: workTodo._id,
+        completed: true,
+      });
+
       // Get updated todo and verify completion
-      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
-      const completedTodo = todosAfterCompletion.find(t => t._id === workTodo._id)!;
+      const todosAfterCompletion = await assert.expectToolCallSuccess<
+        TodoAlpha3[]
+      >('listTodos', {});
+      const completedTodo = todosAfterCompletion.find(
+        (t) => t._id === workTodo._id,
+      )!;
       expect(completedTodo.completed).not.toBeNull();
 
       // Verify completion filtering
       const completedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: true }
+        { completed: true },
       );
       assert.expectTodoCount(completedTodos, 1);
       assert.expectTodosFilteredByCompletion(completedTodos, true);
 
       const activeTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: false }
+        { completed: false },
       );
       assert.expectTodoCount(activeTodos, 1);
       expect(activeTodos[0]._id).toBe(privateTodo._id);
@@ -135,7 +153,7 @@ describe('MCP Complete Workflow Integration', () => {
       // 6. ANALYTICS: Check tag statistics
       const tagStatsMarkdown = await assert.expectToolCallSuccess<string>(
         'getServerInfo',
-        { section: 'tagstats' }
+        { section: 'tagstats' },
       );
 
       // Parse tag statistics from markdown format
@@ -149,13 +167,16 @@ describe('MCP Complete Workflow Integration', () => {
       await assert.expectToolCallSuccess('deleteTodo', { id: privateTodo._id });
 
       // 8. VERIFY DELETION: Confirm todos are removed
-      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
       assert.expectTodoCount(finalTodos, 0);
 
       // Tag stats should be updated after deletion
       const finalTagStatsMarkdown = await assert.expectToolCallSuccess<string>(
         'getServerInfo',
-        { section: 'tagstats' }
+        { section: 'tagstats' },
       );
 
       // After deletion, should show no tags found
@@ -177,7 +198,7 @@ describe('MCP Complete Workflow Integration', () => {
       // Each user creates their todos
       for (const user of users) {
         userTodos[user.prefix] = [];
-        
+
         for (let i = 1; i <= 3; i++) {
           await assert.expectToolCallSuccess('createTodo', {
             title: `${user.prefix} Todo ${i}`,
@@ -186,14 +207,16 @@ describe('MCP Complete Workflow Integration', () => {
             tags: [user.prefix.toLowerCase(), `task-${i}`],
           });
         }
-        
+
         // Get the todos for this user
         const contextTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
           'listTodos',
-          { context: user.context }
+          { context: user.context },
         );
         // Sort by creation time (newest first) and take the 3 most recent
-        contextTodos.sort((a, b) => new Date(b._id).getTime() - new Date(a._id).getTime());
+        contextTodos.sort(
+          (a, b) => new Date(b._id).getTime() - new Date(a._id).getTime(),
+        );
         userTodos[user.prefix] = contextTodos.slice(0, 3);
       }
 
@@ -201,9 +224,9 @@ describe('MCP Complete Workflow Integration', () => {
       for (const user of users) {
         const contextTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
           'listTodos',
-          { context: user.context }
+          { context: user.context },
         );
-        
+
         assert.expectTodoCount(contextTodos, 3);
         assert.expectTodosFilteredByContext(contextTodos, user.context);
       }
@@ -218,7 +241,7 @@ describe('MCP Complete Workflow Integration', () => {
         id: user1Todo._id,
         description: 'User1 updated this',
       });
-      
+
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: user1Todo._id,
       });
@@ -237,13 +260,13 @@ describe('MCP Complete Workflow Integration', () => {
       // Verify operations didn't interfere
       const activeTracking = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'getActiveTimeTracking',
-        {}
+        {},
       );
       assert.expectTodoCount(activeTracking, 2);
 
       const completedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: true }
+        { completed: true },
       );
       assert.expectTodoCount(completedTodos, 1);
       expect(completedTodos[0]._id).toBe(user2Todo._id);
@@ -251,7 +274,7 @@ describe('MCP Complete Workflow Integration', () => {
       // Tag statistics should include all users
       const tagStatsMarkdown = await assert.expectToolCallSuccess<string>(
         'getServerInfo',
-        { section: 'tagstats' }
+        { section: 'tagstats' },
       );
 
       // Check that user tags appear in the statistics
@@ -306,17 +329,22 @@ describe('MCP Complete Workflow Integration', () => {
       for (const todoData of projectTodos) {
         await assert.expectToolCallSuccess('createTodo', todoData);
       }
-      
+
       // Get all created todos
-      const allProjectTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allProjectTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
       // Sort by creation time (newest first)
-      allProjectTodos.sort((a, b) => new Date(b._id).getTime() - new Date(a._id).getTime());
+      allProjectTodos.sort(
+        (a, b) => new Date(b._id).getTime() - new Date(a._id).getTime(),
+      );
       // Reverse to get oldest first (creation order)
       const createdTodos = allProjectTodos.reverse();
 
       // Sprint 1: Focus on planning and design
       const sprint1Tasks = createdTodos.slice(0, 2);
-      
+
       // Start time tracking for planning
       await assert.expectToolCallSuccess('startTimeTracking', {
         id: sprint1Tasks[0]._id,
@@ -341,24 +369,24 @@ describe('MCP Complete Workflow Integration', () => {
       // Sprint 1 review: Check progress
       const completedSprint1 = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: true }
+        { completed: true },
       );
       assert.expectTodoCount(completedSprint1, 1);
 
       const activeSprint1 = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: false }
+        { completed: false },
       );
       assert.expectTodoCount(activeSprint1, 4);
 
       // Sprint 2: Development phase
       const developmentTasks = createdTodos.slice(2, 4);
-      
+
       // Complete design and start backend development
       await assert.expectToolCallSuccess('stopTimeTracking', {
         id: sprint1Tasks[1]._id,
       });
-      
+
       await assert.expectToolCallSuccess('toggleTodoCompletion', {
         id: sprint1Tasks[1]._id,
         completed: true,
@@ -372,7 +400,7 @@ describe('MCP Complete Workflow Integration', () => {
       // Project analytics
       const projectStatsMarkdown = await assert.expectToolCallSuccess<string>(
         'getServerInfo',
-        { section: 'tagstats' }
+        { section: 'tagstats' },
       );
 
       // Check that project tags appear in the statistics
@@ -385,12 +413,12 @@ describe('MCP Complete Workflow Integration', () => {
       // Filter project tasks by development status
       const completedTasks = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: true }
+        { completed: true },
       );
-      
+
       const inProgressTasks = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'getActiveTimeTracking',
-        {}
+        {},
       );
 
       // Project status verification
@@ -399,8 +427,11 @@ describe('MCP Complete Workflow Integration', () => {
 
       // Simulate project completion
       // Get current todo states
-      const currentTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
-      
+      const currentTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
+
       for (const todo of currentTodos) {
         if (todo.completed === null) {
           await assert.expectToolCallSuccess('toggleTodoCompletion', {
@@ -413,13 +444,13 @@ describe('MCP Complete Workflow Integration', () => {
       // Final project status
       const finalCompleted = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: true }
+        { completed: true },
       );
       assert.expectTodoCount(finalCompleted, 5);
 
       const finalActive = await assert.expectToolCallSuccess<TodoAlpha3[]>(
         'listTodos',
-        { completed: false }
+        { completed: false },
       );
       assert.expectTodoCount(finalActive, 0);
     });
@@ -433,14 +464,17 @@ describe('MCP Complete Workflow Integration', () => {
         context: 'work',
         due: '2025-06-25',
       });
-      
+
       // Get the created todo
-      const createdTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const createdTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
       const validTodo = createdTodos[0];
 
       // Try operations with invalid IDs and recover
       const invalidId = 'invalid-id-format';
-      
+
       // These should fail gracefully
       await assert.expectToolCallError('updateTodo', {
         id: invalidId,
@@ -456,10 +490,15 @@ describe('MCP Complete Workflow Integration', () => {
         id: validTodo._id,
         description: 'Updated after error recovery',
       });
-      
+
       // Get updated todo and verify
-      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
-      const updatedTodo = todosAfterUpdate.find(t => t._id === validTodo._id)!;
+      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
+      const updatedTodo = todosAfterUpdate.find(
+        (t) => t._id === validTodo._id,
+      )!;
       expect(updatedTodo.description).toBe('Updated after error recovery');
 
       // Try to complete non-existent todo then complete valid one
@@ -468,18 +507,25 @@ describe('MCP Complete Workflow Integration', () => {
         completed: true,
       });
 
-      await assert.expectToolCallSuccess(
-        'toggleTodoCompletion',
-        { id: validTodo._id, completed: true }
-      );
-      
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: validTodo._id,
+        completed: true,
+      });
+
       // Get updated todo and verify completion
-      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
-      const completedTodo = todosAfterCompletion.find(t => t._id === validTodo._id)!;
+      const todosAfterCompletion = await assert.expectToolCallSuccess<
+        TodoAlpha3[]
+      >('listTodos', {});
+      const completedTodo = todosAfterCompletion.find(
+        (t) => t._id === validTodo._id,
+      )!;
       expect(completedTodo.completed).not.toBeNull();
 
       // System should remain in consistent state
-      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {},
+      );
       assert.expectTodoCount(finalTodos, 1);
       assert.expectValidTodos(finalTodos);
     });
