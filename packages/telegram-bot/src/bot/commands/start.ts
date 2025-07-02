@@ -1,5 +1,6 @@
 import { getEddoAgent } from '../../agent/index.js';
 import { getPersona } from '../../ai/personas.js';
+import { getConnectionInfo } from '../../mcp/client.js';
 import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import { BotContext } from '../bot.js';
@@ -84,6 +85,7 @@ Just chat naturally - I'll understand what you need! 🤖
 export async function handleStatus(ctx: BotContext): Promise<void> {
   const agent = getEddoAgent();
   const agentStatus = await agent.getStatus();
+  const connectionInfo = getConnectionInfo();
 
   // Format date safely for Markdown
   const lastActivity = ctx.session?.lastActivity
@@ -97,10 +99,31 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
   const escapeMarkdown = (text: string) =>
     text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
+  // Format connection metrics
+  const mcpStatusLine = `🔌 MCP Server: ${escapeMarkdown(connectionInfo.state)}`;
+  let mcpMetrics = '';
+
+  if (connectionInfo.metrics) {
+    const metrics = connectionInfo.metrics;
+    const uptimeHours = Math.floor(metrics.totalUptime / 3600000);
+    const uptimeMinutes = Math.floor((metrics.totalUptime % 3600000) / 60000);
+
+    mcpMetrics = `
+*MCP Connection Metrics:*
+• Connection State: ${escapeMarkdown(connectionInfo.state)}
+• Connect Attempts: ${metrics.connectAttempts}
+• Successful Connections: ${metrics.successfulConnections}
+• Failed Connections: ${metrics.failedConnections}
+• Total Uptime: ${uptimeHours}h ${uptimeMinutes}m
+${metrics.lastConnectionTime ? `• Last Connected: ${escapeMarkdown(metrics.lastConnectionTime.toISOString().slice(0, 19).replace('T', ' '))}` : ''}
+${metrics.lastDisconnectionTime ? `• Last Disconnected: ${escapeMarkdown(metrics.lastDisconnectionTime.toISOString().slice(0, 19).replace('T', ' '))}` : ''}`;
+  }
+
   const statusMessage = `🤖 *Bot Status*
 
 ✅ Telegram Bot: Online
 🔄 Agent: ${escapeMarkdown(agentStatus.workflowType)}
+${mcpStatusLine}
 
 *Session Info:*
 • User ID: ${escapeMarkdown(ctx.session?.userId || 'Unknown')}
@@ -112,6 +135,7 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
 • Workflow: ${escapeMarkdown(agentStatus.workflowType)}
 • Uptime: ${Math.floor(agentStatus.uptime / 60)}m ${Math.floor(agentStatus.uptime % 60)}s
 • MCP Tools: ${agentStatus.simpleFeatures?.mcpToolsAvailable || 0}
+${mcpMetrics}
 
 *Capabilities:*
 • Natural Language Processing: ✅
