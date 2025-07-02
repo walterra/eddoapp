@@ -57,7 +57,8 @@ const server = new FastMCP<UserSession>({
       }
 
       // Generate user-specific database name using API key
-      const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
+      // Use the base database name (not the effective name) to avoid double API key suffix
+      const dbName = `${env.COUCHDB_DB_NAME}_api_${apiKey}`;
 
       return Promise.resolve({
         userId: apiKey, // Use API key as user identifier
@@ -75,7 +76,8 @@ const server = new FastMCP<UserSession>({
 
     // Here you would validate the API key against your auth system
     // For now, use the API key as the user identifier
-    const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
+    // Use the base database name (not the effective name) to avoid double API key suffix
+    const dbName = `${env.COUCHDB_DB_NAME}_api_${apiKey}`;
 
     return Promise.resolve({
       userId: apiKey,
