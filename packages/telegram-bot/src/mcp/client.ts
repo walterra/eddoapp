@@ -2,7 +2,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { ConnectionState, MCPConnectionManager, type ConnectionMetrics as _ConnectionMetrics } from './connection-manager.js';
+import {
+  ConnectionState,
+  MCPConnectionManager,
+  type ConnectionMetrics as _ConnectionMetrics,
+} from './connection-manager.js';
 
 export interface MCPTool {
   name: string;

@@ -18,12 +18,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - CI test suite: `pnpm test:ci`
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
+- MCP server test: `pnpm test:mcp`
+- Check unused dependencies: `pnpm knip`
 
 ### Package-Specific
 - Client dev: `pnpm dev:client`
 - Server dev: `pnpm dev:server`
 - Telegram bot dev: `pnpm dev:telegram-bot`
 - Build specific package: `pnpm build:client|server|shared|telegram-bot`
+
+### Backup & Restore
+- Interactive backup: `pnpm backup:interactive`
+- Interactive restore: `pnpm restore:interactive`
+- Direct backup: `pnpm backup -- --database <db-name> --output ./backups/`
+- Direct restore: `pnpm restore -- --input ./backups/<file>.json --database <db-name>`
+- Verify backup: `pnpm backup:verify`
+
+### CLI & Mock Data
+- CLI interface: `pnpm cli`
+- Test CLI: `pnpm cli:test`
+- Populate mock data: `pnpm populate-mock-data`
+- Populate mock data (dry run): `pnpm populate-mock-data:dry-run`
 
 ## Architecture Overview
 
@@ -210,3 +225,26 @@ FastMCP is primarily a **server** framework but demonstrates proper client usage
 
 - When asked to fix tests, never touch the actual implementation.
 - When asked to fix a bug, never touch the tests that surfaced the bug.
+
+## Environment Variables
+
+### CouchDB Configuration
+```bash
+# Required
+COUCHDB_HOST=localhost
+COUCHDB_PORT=5984
+COUCHDB_PROTOCOL=http
+
+# Authentication (choose one method)
+# Method 1: Username/Password
+COUCHDB_USERNAME=your-username
+COUCHDB_PASSWORD=your-password
+
+# Method 2: Admin credentials  
+COUCHDB_ADMIN_USERNAME=admin
+COUCHDB_ADMIN_PASSWORD=admin-password
+```
+
+### AI Model Configuration
+- `LLM_MODEL`: Set to configure AI model (e.g., `claude-sonnet-4-0`, `claude-opus-4-0`, `claude-3-5-haiku-20241022`)
+- MCP server runs on port 3002 by default
