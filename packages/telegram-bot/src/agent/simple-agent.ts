@@ -137,6 +137,13 @@ export class SimpleAgent {
         },
       });
 
+      // Send iteration update to Telegram
+      try {
+        await telegramContext.reply(`🔄 Processing step ${iteration}...`);
+      } catch (error) {
+        logger.debug('Failed to send iteration update', { error });
+      }
+
       const systemPrompt = buildSystemPrompt(this.mcpClient?.tools || []);
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
@@ -174,6 +181,13 @@ export class SimpleAgent {
           reasoning: 'LLM decided to use a tool based on the current context',
         });
 
+        // Send tool execution update to Telegram
+        try {
+          await telegramContext.reply(`🔧 Using tool: ${toolCall.name}...`);
+        } catch (error) {
+          logger.debug('Failed to send tool execution update', { error });
+        }
+
         try {
           // Show appropriate action during tool execution
           await this.showAction(telegramContext, toolCall.name);
@@ -191,6 +205,15 @@ export class SimpleAgent {
             resultPreview: JSON.stringify(toolResult).substring(0, 200) + '...',
           });
 
+          // Send tool success update to Telegram
+          try {
+            await telegramContext.reply(
+              `✅ Tool ${toolCall.name} completed successfully`,
+            );
+          } catch (error) {
+            logger.debug('Failed to send tool success update', { error });
+          }
+
           // Add tool result to conversation history
           state.history.push({
             role: 'user',
@@ -204,6 +227,15 @@ export class SimpleAgent {
             error: error instanceof Error ? error.message : String(error),
           });
 
+          // Send tool failure update to Telegram
+          try {
+            await telegramContext.reply(
+              `❌ Tool ${toolCall.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          } catch (replyError) {
+            logger.debug('Failed to send tool failure update', { replyError });
+          }
+
           state.history.push({
             role: 'user',
             content: `Tool "${toolCall.name}" failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -216,6 +248,15 @@ export class SimpleAgent {
           reasoning: 'LLM provided final response without tool call',
           responsePreview: llmResponse.substring(0, 200) + '...',
         });
+
+        // Send completion update to Telegram
+        try {
+          await telegramContext.reply(
+            '🏁 Processing complete, preparing response...',
+          );
+        } catch (error) {
+          logger.debug('Failed to send completion update', { error });
+        }
 
         // No tool call, agent is done
         state.done = true;
@@ -253,7 +294,7 @@ export class SimpleAgent {
 
   private async executeTool(
     toolCall: ToolCall,
-    telegramContext: BotContext,
+    _telegramContext: BotContext,
   ): Promise<unknown> {
     await this.ensureMCPInitialized();
 
@@ -272,11 +313,6 @@ export class SimpleAgent {
     });
 
     const result = await this.mcpClient.invoke(tool.name, toolCall.parameters);
-
-    // Send progress update to user for certain tools
-    if (toolCall.name.includes('create') || toolCall.name.includes('update')) {
-      await telegramContext.reply(`✅ ${toolCall.name} completed successfully`);
-    }
 
     return result;
   }
