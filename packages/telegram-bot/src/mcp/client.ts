@@ -59,9 +59,16 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
   });
 
   try {
-    // Create StreamableHTTP transport
+    // Create StreamableHTTP transport with API key header
     const transport = new StreamableHTTPClientTransport(
       new URL(appConfig.MCP_SERVER_URL),
+      {
+        requestInit: {
+          headers: {
+            'X-API-Key': appConfig.MCP_API_KEY,
+          },
+        },
+      },
     );
 
     // Create MCP client
