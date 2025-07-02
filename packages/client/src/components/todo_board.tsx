@@ -21,6 +21,7 @@ import {
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { ensureDesignDocuments } from '../database_setup';
+import { useDatabaseChanges } from '../hooks/use_database_changes';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
@@ -36,7 +37,8 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   currentDate,
   selectedTags,
 }) => {
-  const { safeDb, changes, rawDb } = usePouchDb();
+  const { safeDb, rawDb } = usePouchDb();
+  const { changeCount } = useDatabaseChanges();
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
   ]);
@@ -86,20 +88,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   useEffect(() => {
     if (!isInitialized) return;
 
-    const listener = changes({
-      live: true,
-      since: 'now',
-    }).on('change', () => {
-      fetchTodos();
-      fetchTimeTrackingActive();
-    });
-
+    fetchTodos();
     fetchTimeTrackingActive();
-
-    return () => {
-      listener.cancel();
-    };
-  }, [currentDate, isInitialized]);
+  }, [currentDate, isInitialized, changeCount]);
 
   const fetchTimeTrackingActive = useCallback(async () => {
     try {
