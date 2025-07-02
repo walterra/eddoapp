@@ -51,9 +51,23 @@ jobs:
         run: |
           curl -X PUT http://admin:testpassword@localhost:5984/todos-test
           echo "Test database created!"
-      - name: Run tests
+      - name: TypeScript check
+        run: pnpm tsc:check
+      - name: Run unit tests
+        run: pnpm test:unit
+      - name: Run integration tests
         env:
           COUCHDB_URL: http://admin:testpassword@localhost:5984
           COUCHDB_TEST_URL: http://admin:testpassword@localhost:5984
           CI: true
-        run: pnpm test:ci
+        run: pnpm test:integration
+      - name: Run e2e tests
+        env:
+          COUCHDB_URL: http://admin:testpassword@localhost:5984
+          COUCHDB_TEST_URL: http://admin:testpassword@localhost:5984
+          CI: true
+        run: pnpm test:e2e
+      - name: Lint
+        run: pnpm lint
+      - name: Format check
+        run: pnpm lint:format
