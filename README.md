@@ -68,3 +68,100 @@ pnpm test:mcp examples    # Usage examples
 
 The test script handles MCP session initialization and provides formatted output of the server's capabilities and statistics.
 
+### MCP Server Features
+
+The MCP server provides:
+
+- **Structured JSON responses**: All responses include execution metrics, error handling, and recovery suggestions
+- **API key authentication**: Per-user database isolation using X-API-Key headers
+- **Error handling**: Error recovery with actionable suggestions
+- **Performance metrics**: Execution time tracking and performance insights
+- **Auto-database creation**: Automatic database creation when needed
+
+## Backup & Restore
+
+The application includes backup and restore functionality for CouchDB databases, supporting both interactive and command-line usage.
+
+### Prerequisites
+
+- CouchDB server running and accessible
+- Environment variables configured (see Configuration section below)
+
+### Interactive Backup
+
+Create backups using an interactive CLI interface:
+
+```bash
+pnpm backup:interactive
+```
+
+The interactive backup tool will:
+- Discover available databases automatically
+- Allow you to select which database to backup
+- Show progress indicators and statistics
+- Save backups to the `backups/` directory with timestamped filenames
+
+### Interactive Restore
+
+Restore databases using an interactive CLI interface:
+
+```bash
+pnpm restore:interactive
+```
+
+The interactive restore tool will:
+- Show available backup files with metadata
+- Allow you to select which backup to restore
+- Create the target database if it doesn't exist
+- Provide progress indicators and confirmation prompts
+
+### Command Line Backup & Restore
+
+**Direct backup with arguments:**
+```bash
+pnpm backup -- --database todos-dev --output ./backups/
+```
+
+**Direct restore with arguments:**
+```bash
+pnpm restore -- --input ./backups/backup-file.json --database todos-dev
+```
+
+### Backup Verification
+
+Verify the integrity of backup files:
+
+```bash
+pnpm backup:verify
+```
+
+### Configuration
+
+Set the following environment variables for CouchDB access:
+
+```bash
+# Required
+COUCHDB_HOST=localhost
+COUCHDB_PORT=5984
+COUCHDB_PROTOCOL=http
+
+# Authentication (choose one method)
+# Method 1: Username/Password
+COUCHDB_USERNAME=your-username
+COUCHDB_PASSWORD=your-password
+
+# Method 2: Admin credentials  
+COUCHDB_ADMIN_USERNAME=admin
+COUCHDB_ADMIN_PASSWORD=admin-password
+```
+
+### Backup Features
+
+- **Automatic database discovery**: Lists all available databases
+- **Progress tracking**: Real-time progress indicators with file size and duration
+- **Timestamped filenames**: Automatic backup file naming with ISO timestamps
+- **Verification**: Built-in backup integrity checking
+- **Parallel processing**: Configurable parallelism for faster backups
+- **Error handling**: Error recovery and user-friendly messages
+- **Force restore**: Option to recreate databases before restore for clean state
+

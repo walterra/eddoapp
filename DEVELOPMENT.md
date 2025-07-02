@@ -39,3 +39,34 @@ pnpm build
 ## Contributing
 
 When contributing to this repository, please ensure you follow the coding standards and development workflow documented in [Development Workflow](docs/04_development-workflow.md).
+
+## Test Infrastructure
+
+The project includes testing infrastructure:
+
+**Unit Tests:**
+```bash
+pnpm test:unit
+```
+
+**Integration Tests:** 
+```bash
+pnpm test:integration
+```
+
+**End-to-End Tests:**
+```bash
+pnpm test:e2e
+```
+
+**All Tests:**
+```bash
+pnpm test:all
+```
+
+## CI/CD Features
+
+- **Pre-commit hooks**: Automatic TypeScript checking, linting, and formatting via Husky
+- **GitHub Actions**: Automated testing with CouchDB service container
+- **Database isolation**: Per-user database isolation with API key authentication for MCP server
+- **Test optimization**: Separate unit/integration/e2e test commands for faster feedback
