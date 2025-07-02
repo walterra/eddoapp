@@ -90,23 +90,23 @@ describe('MCP Query and Filtering Integration', () => {
   describe('Completion Status Filtering', () => {
     it('should filter by completion status', async () => {
       // Create multiple todos
-      const todo1Response = await assert.expectToolCallSuccess<string>(
+      const todo1Response = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.basic(),
       );
-      const _todo1Id = todo1Response.match(/Todo created with ID: (.+)$/)?.[1];
+      const _todo1Id = todo1Response.data.id;
 
-      const todo2Response = await assert.expectToolCallSuccess<string>(
+      const todo2Response = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.forCompletion(),
       );
-      const todo2Id = todo2Response.match(/Todo created with ID: (.+)$/)?.[1];
+      const todo2Id = todo2Response.data.id;
 
-      const todo3Response = await assert.expectToolCallSuccess<string>(
+      const todo3Response = await assert.expectToolCallSuccess<any>(
         'createTodo',
         { ...createTestTodoData.basic(), title: 'Third Todo' },
       );
-      const _todo3Id = todo3Response.match(/Todo created with ID: (.+)$/)?.[1];
+      const _todo3Id = todo3Response.data.id;
 
       // Complete one todo
       await assert.expectToolCallSuccess('toggleTodoCompletion', {
@@ -137,21 +137,17 @@ describe('MCP Query and Filtering Integration', () => {
 
     it('should handle mixed completion states with context filtering', async () => {
       // Create todos in same context with different completion states
-      const workTodo1Response = await assert.expectToolCallSuccess<string>(
+      const workTodo1Response = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.withContext('work'),
       );
-      const workTodo1Id = workTodo1Response.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const workTodo1Id = workTodo1Response.data.id;
 
-      const workTodo2Response = await assert.expectToolCallSuccess<string>(
+      const workTodo2Response = await assert.expectToolCallSuccess<any>(
         'createTodo',
         { ...createTestTodoData.withContext('work'), title: 'Work Todo 2' },
       );
-      const workTodo2Id = workTodo2Response.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const workTodo2Id = workTodo2Response.data.id;
 
       // Complete one work todo
       await assert.expectToolCallSuccess('toggleTodoCompletion', {
@@ -187,35 +183,29 @@ describe('MCP Query and Filtering Integration', () => {
       const dateRange = testDates.range(1, 7); // Tomorrow to next week
 
       // Create todos with different due dates
-      const todayResponse = await assert.expectToolCallSuccess<string>(
+      const todayResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.withDueDate(testDates.today()),
       );
-      const todayTodoId = todayResponse.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const todayTodoId = todayResponse.data.id;
 
-      const tomorrowResponse = await assert.expectToolCallSuccess<string>(
+      const tomorrowResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.withDueDate(testDates.tomorrow()),
       );
-      const tomorrowTodoId = tomorrowResponse.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const tomorrowTodoId = tomorrowResponse.data.id;
 
-      const nextWeekResponse = await assert.expectToolCallSuccess<string>(
+      const nextWeekResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.withDueDate(testDates.nextWeek()),
       );
-      const nextWeekTodoId = nextWeekResponse.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const nextWeekTodoId = nextWeekResponse.data.id;
 
-      const pastResponse = await assert.expectToolCallSuccess<string>(
+      const pastResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.withDueDate(testDates.yesterday()),
       );
-      const pastTodoId = pastResponse.match(/Todo created with ID: (.+)$/)?.[1];
+      const pastTodoId = pastResponse.data.id;
 
       // Filter by date range (tomorrow to next week)
       const rangeFiltered = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -249,13 +239,11 @@ describe('MCP Query and Filtering Integration', () => {
         'createTodo',
         createTestTodoData.withDueDate(testDates.today()),
       );
-      const targetResponse = await assert.expectToolCallSuccess<string>(
+      const targetResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         createTestTodoData.withDueDate(targetDate),
       );
-      const targetTodoId = targetResponse.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const targetTodoId = targetResponse.data.id;
       await assert.expectToolCallSuccess(
         'createTodo',
         createTestTodoData.withDueDate(testDates.nextWeek()),
@@ -348,25 +336,21 @@ describe('MCP Query and Filtering Integration', () => {
       // Create test data matrix
       // Work context, active, tomorrow
       const workActiveTomorrowResponse =
-        await assert.expectToolCallSuccess<string>('createTodo', {
+        await assert.expectToolCallSuccess<any>('createTodo', {
           ...createTestTodoData.withContext('work'),
           due: targetDate,
           title: 'Work Active Tomorrow',
         });
-      const workActiveTomorrowId = workActiveTomorrowResponse.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const workActiveTomorrowId = workActiveTomorrowResponse.data.id;
 
       // Work context, completed, tomorrow
       const workCompletedTomorrowResponse =
-        await assert.expectToolCallSuccess<string>('createTodo', {
+        await assert.expectToolCallSuccess<any>('createTodo', {
           ...createTestTodoData.withContext('work'),
           due: targetDate,
           title: 'Work Completed Tomorrow',
         });
-      const workCompletedTomorrowId = workCompletedTomorrowResponse.match(
-        /Todo created with ID: (.+)$/,
-      )?.[1];
+      const workCompletedTomorrowId = workCompletedTomorrowResponse.data.id;
       await assert.expectToolCallSuccess('toggleTodoCompletion', {
         id: workCompletedTomorrowId,
         completed: true,

@@ -195,11 +195,41 @@ server.addTool({
     };
 
     try {
+      const startTime = Date.now();
       await db.insert(newTodo as TodoAlpha3);
-      return `Todo created with ID: ${newTodo._id}`;
+      const executionTime = Date.now() - startTime;
+
+      return JSON.stringify({
+        summary: "Todo created successfully",
+        data: {
+          id: newTodo._id,
+          title: newTodo.title,
+          context: newTodo.context,
+          due: newTodo.due
+        },
+        next_actions: ["listTodos", "startTimeTracking"],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: "create",
+          timestamp: new Date().toISOString()
+        }
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to create todo: ${message}`);
+      return JSON.stringify({
+        summary: "Failed to create todo",
+        error: message,
+        recovery_suggestions: [
+          "Check if database connection is active",
+          "Verify todo data format",
+          "Try again with different title or ID"
+        ],
+        metadata: {
+          operation: "create",
+          timestamp: new Date().toISOString(),
+          error_type: "database_error"
+        }
+      });
     }
   },
 });
@@ -279,22 +309,69 @@ server.addTool({
         query.limit = 50; // Default limit
       }
 
+      const startTime = Date.now();
       const response = await db.find(query as nano.MangoQuery);
+      const executionTime = Date.now() - startTime;
+      
       context.log.info('Todos retrieved successfully', {
         count: response.docs.length,
       });
-      return JSON.stringify(response.docs, null, 2);
+      
+      return JSON.stringify({
+        summary: `Found ${response.docs.length} matching todos`,
+        data: response.docs,
+        pagination: {
+          count: response.docs.length,
+          limit: args.limit || 50,
+          has_more: response.docs.length === (args.limit || 50)
+        },
+        next_actions: response.docs.length > 0 ? ["updateTodo", "toggleTodoCompletion", "startTimeTracking"] : ["createTodo"],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: "list",
+          timestamp: new Date().toISOString(),
+          filters_applied: Object.keys(args).filter((k) => args[k as keyof typeof args] !== undefined)
+        }
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      // If database doesn't exist, return empty array instead of throwing error
+      // If database doesn't exist, return empty result instead of throwing error
       if (
         message.includes('Database does not exist') ||
         message.includes('no_db_file')
       ) {
-        context.log.info('Database does not exist, returning empty array');
-        return JSON.stringify([], null, 2);
+        context.log.info('Database does not exist, returning empty result');
+        return JSON.stringify({
+          summary: "No todos found - database not initialized",
+          data: [],
+          pagination: {
+            count: 0,
+            limit: args.limit || 50,
+            has_more: false
+          },
+          next_actions: ["createTodo"],
+          metadata: {
+            operation: "list",
+            timestamp: new Date().toISOString(),
+            database_status: "not_initialized"
+          }
+        });
       }
-      throw new Error(`Failed to list todos: ${message}`);
+      
+      return JSON.stringify({
+        summary: "Failed to list todos",
+        error: message,
+        recovery_suggestions: [
+          "Check database connection",
+          "Verify authentication credentials",
+          "Try with simpler filter criteria"
+        ],
+        metadata: {
+          operation: "list",
+          timestamp: new Date().toISOString(),
+          error_type: "database_error"
+        }
+      });
     }
   },
 });
@@ -306,12 +383,34 @@ server.addTool({
   parameters: z.object({}),
   execute: async (_, context) => {
     if (!context.session) {
-      return JSON.stringify({ userId: 'anonymous', dbName: 'default' });
+      return JSON.stringify({
+        summary: "Anonymous user session",
+        data: {
+          userId: 'anonymous',
+          dbName: 'default',
+          authenticated: false
+        },
+        next_actions: ["getServerInfo"],
+        metadata: {
+          operation: "user_info",
+          timestamp: new Date().toISOString(),
+          auth_status: "anonymous"
+        }
+      });
     }
 
     return JSON.stringify({
-      userId: context.session.userId,
-      dbName: context.session.dbName,
+      summary: "User information retrieved",
+      data: {
+        userId: context.session.userId,
+        dbName: context.session.dbName,
+        authenticated: true
+      },
+      next_actions: ["listTodos", "createTodo", "getServerInfo"],
+      metadata: {
+        operation: "user_info",
+        timestamp: new Date().toISOString()
+      }
     });
   },
 });
@@ -369,15 +468,45 @@ server.addTool({
         link: args.link !== undefined ? args.link : todo.link,
       };
 
+      const startTime = Date.now();
       const result = await db.insert(updated);
+      const executionTime = Date.now() - startTime;
+      
       context.log.info('Todo updated successfully', {
         id: result.id,
         title: updated.title,
       });
-      return `Todo updated: ${result.id}`;
+      
+      return JSON.stringify({
+        summary: "Todo updated successfully",
+        data: {
+          id: result.id,
+          title: updated.title,
+          changes_made: Object.keys(args).filter((k) => args[k as keyof typeof args] !== undefined && k !== 'id')
+        },
+        next_actions: ["listTodos", "toggleTodoCompletion", "startTimeTracking"],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: "update",
+          timestamp: new Date().toISOString()
+        }
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to update todo: ${message}`);
+      return JSON.stringify({
+        summary: "Failed to update todo",
+        error: message,
+        recovery_suggestions: [
+          "Verify the todo ID exists using listTodos",
+          "Check if database connection is active",
+          "Ensure update data is valid"
+        ],
+        metadata: {
+          operation: "update",
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found') ? "not_found" : "database_error"
+        }
+      });
     }
   },
 });
@@ -433,29 +562,79 @@ server.addTool({
           };
           delete (newTodo as Record<string, unknown>)._rev;
 
+          const startTime = Date.now();
           await db.insert(newTodo);
           await db.insert(todo);
+          const executionTime = Date.now() - startTime;
+          
           context.log.info('Todo completed and repeated', {
             original: todo.title,
             newDue: newDueDate.toISOString(),
           });
-          return `Todo completed and repeated for ${newDueDate.toISOString()}`;
+          
+          return JSON.stringify({
+            summary: "Todo completed and repeated",
+            data: {
+              original_id: todo._id,
+              original_title: todo.title,
+              new_todo_id: newTodo._id,
+              new_due_date: newDueDate.toISOString(),
+              repeat_interval: todo.repeat
+            },
+            next_actions: ["listTodos", "startTimeTracking"],
+            metadata: {
+              execution_time: `${executionTime.toFixed(2)}ms`,
+              operation: "complete_and_repeat",
+              timestamp: new Date().toISOString()
+            }
+          });
         }
       } else if (!args.completed) {
         todo.completed = null;
         context.log.info('Marking todo as uncompleted', { title: todo.title });
       }
 
+      const startTime = Date.now();
       await db.insert(todo);
+      const executionTime = Date.now() - startTime;
+      
       const status = args.completed ? 'completed' : 'uncompleted';
       context.log.info('Todo completion toggled successfully', {
         title: todo.title,
         status,
       });
-      return `Todo ${status}: ${todo.title}`;
+      
+      return JSON.stringify({
+        summary: `Todo ${status} successfully`,
+        data: {
+          id: todo._id,
+          title: todo.title,
+          status,
+          completed_at: todo.completed
+        },
+        next_actions: args.completed ? ["listTodos", "createTodo"] : ["startTimeTracking", "updateTodo"],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: "toggle_completion",
+          timestamp: new Date().toISOString()
+        }
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to toggle todo completion: ${message}`);
+      return JSON.stringify({
+        summary: "Failed to toggle todo completion",
+        error: message,
+        recovery_suggestions: [
+          "Verify the todo ID exists using listTodos",
+          "Check if database connection is active",
+          "Try refreshing the todo data"
+        ],
+        metadata: {
+          operation: "toggle_completion",
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found') ? "not_found" : "database_error"
+        }
+      });
     }
   },
 });
@@ -483,15 +662,47 @@ server.addTool({
       const todo = (await db.get(args.id)) as TodoAlpha3;
       context.log.debug('Retrieved todo for deletion', { title: todo.title });
 
+      const startTime = Date.now();
       await db.destroy(todo._id, todo._rev!);
+      const executionTime = Date.now() - startTime;
+      
       context.log.info('Todo deleted successfully', { title: todo.title });
-      return `Todo deleted: ${todo.title}`;
+      
+      return JSON.stringify({
+        summary: "Todo deleted successfully",
+        data: {
+          id: todo._id,
+          title: todo.title,
+          deleted_at: new Date().toISOString()
+        },
+        next_actions: ["listTodos", "createTodo"],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: "delete",
+          timestamp: new Date().toISOString()
+        }
+      });
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       context.log.error('Failed to delete todo', {
         id: args.id,
-        error: String(error),
+        error: message,
       });
-      throw error;
+      
+      return JSON.stringify({
+        summary: "Failed to delete todo",
+        error: message,
+        recovery_suggestions: [
+          "Verify the todo ID exists using listTodos",
+          "Check if database connection is active",
+          "Ensure you have permission to delete this todo"
+        ],
+        metadata: {
+          operation: "delete",
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found') ? "not_found" : "database_error"
+        }
+      });
     }
   },
 });
@@ -522,20 +733,53 @@ server.addTool({
       });
 
       const now = new Date().toISOString();
+      const startTime = Date.now();
       todo.active[now] = null;
 
       await db.insert(todo);
+      const executionTime = Date.now() - startTime;
+      
       context.log.info('Time tracking started successfully', {
         title: todo.title,
         startTime: now,
       });
-      return `Started time tracking for: ${todo.title}`;
+      
+      return JSON.stringify({
+        summary: "Time tracking started",
+        data: {
+          id: todo._id,
+          title: todo.title,
+          started_at: now,
+          active_sessions: Object.keys(todo.active).length
+        },
+        next_actions: ["stopTimeTracking", "getActiveTimeTracking"],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: "start_time_tracking",
+          timestamp: new Date().toISOString()
+        }
+      });
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       context.log.error('Failed to start time tracking', {
         id: args.id,
-        error: String(error),
+        error: message,
       });
-      throw error;
+      
+      return JSON.stringify({
+        summary: "Failed to start time tracking",
+        error: message,
+        recovery_suggestions: [
+          "Verify the todo ID exists using listTodos",
+          "Check if database connection is active",
+          "Stop any existing time tracking first"
+        ],
+        metadata: {
+          operation: "start_time_tracking",
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found') ? "not_found" : "database_error"
+        }
+      });
     }
   },
 });
@@ -566,6 +810,7 @@ server.addTool({
       });
 
       const now = new Date().toISOString();
+      const operationStartTime = Date.now();
 
       // Find the active tracking session (value is null)
       const activeSession = Object.entries(todo.active).find(
@@ -577,22 +822,74 @@ server.addTool({
         todo.active[startTime] = now;
         await db.insert(todo);
 
+        const executionTime = Date.now() - operationStartTime;
+        
         context.log.info('Time tracking stopped successfully', {
           title: todo.title,
           startTime,
           endTime: now,
         });
-        return `Stopped time tracking for: ${todo.title}`;
+        
+        const duration = new Date(now).getTime() - new Date(startTime).getTime();
+        
+        return JSON.stringify({
+          summary: "Time tracking stopped",
+          data: {
+            id: todo._id,
+            title: todo.title,
+            session: {
+              started_at: startTime,
+              ended_at: now,
+              duration_ms: duration,
+              duration_formatted: `${Math.floor(duration / 60000)}m ${Math.floor((duration % 60000) / 1000)}s`
+            }
+          },
+          next_actions: ["getActiveTimeTracking", "listTodos", "startTimeTracking"],
+          metadata: {
+            execution_time: `${executionTime.toFixed(2)}ms`,
+            operation: "stop_time_tracking",
+            timestamp: new Date().toISOString()
+          }
+        });
       }
 
       context.log.warn('No active time tracking found', { title: todo.title });
-      return `No active time tracking found for: ${todo.title}`;
+      
+      return JSON.stringify({
+        summary: "No active time tracking found",
+        data: {
+          id: todo._id,
+          title: todo.title,
+          active_sessions: 0
+        },
+        next_actions: ["startTimeTracking", "getActiveTimeTracking"],
+        metadata: {
+          operation: "stop_time_tracking",
+          timestamp: new Date().toISOString(),
+          result: "no_active_session"
+        }
+      });
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       context.log.error('Failed to stop time tracking', {
         id: args.id,
-        error: String(error),
+        error: message,
       });
-      throw error;
+      
+      return JSON.stringify({
+        summary: "Failed to stop time tracking",
+        error: message,
+        recovery_suggestions: [
+          "Verify the todo ID exists using listTodos",
+          "Check if there's active time tracking with getActiveTimeTracking",
+          "Check if database connection is active"
+        ],
+        metadata: {
+          operation: "stop_time_tracking",
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found') ? "not_found" : "database_error"
+        }
+      });
     }
   },
 });
@@ -614,6 +911,7 @@ server.addTool({
     });
 
     try {
+      const startTime = Date.now();
       const result = await db.find({
         selector: {
           version: 'alpha3',
@@ -626,15 +924,46 @@ server.addTool({
         return Object.values(typedTodo.active).some((end) => end === null);
       });
 
+      const executionTime = Date.now() - startTime;
+      
       context.log.info('Active time tracking todos retrieved', {
         count: activeTodos.length,
       });
-      return JSON.stringify(activeTodos, null, 2);
-    } catch (error) {
-      context.log.error('Failed to retrieve active time tracking todos', {
-        error: String(error),
+      
+      return JSON.stringify({
+        summary: `Found ${activeTodos.length} todos with active time tracking`,
+        data: activeTodos.map((todo) => ({
+          ...todo,
+          active_session_count: Object.values(todo.active).filter((end) => end === null).length
+        })),
+        next_actions: activeTodos.length > 0 ? ["stopTimeTracking"] : ["startTimeTracking", "listTodos"],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: "get_active_time_tracking",
+          timestamp: new Date().toISOString(),
+          active_count: activeTodos.length
+        }
       });
-      throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      context.log.error('Failed to retrieve active time tracking todos', {
+        error: message,
+      });
+      
+      return JSON.stringify({
+        summary: "Failed to retrieve active time tracking",
+        error: message,
+        recovery_suggestions: [
+          "Check if database connection is active",
+          "Try listing todos first with listTodos",
+          "Verify database initialization"
+        ],
+        metadata: {
+          operation: "get_active_time_tracking",
+          timestamp: new Date().toISOString(),
+          error_type: "database_error"
+        }
+      });
     }
   },
 });

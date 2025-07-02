@@ -151,38 +151,54 @@ export class MCPTestServer {
       return null;
     }
 
-    // Only these tools return JSON - all others return plain text
-    const JSON_RETURNING_TOOLS = ['listTodos', 'getActiveTimeTracking'];
-
-    if (JSON_RETURNING_TOOLS.includes(toolName)) {
-      // Try to parse as JSON for tools that should return JSON
-      try {
-        const parsed = JSON.parse(text);
-
-        // Ensure list tools return arrays
-        if (Array.isArray(parsed)) {
-          return parsed;
-        } else if (
-          parsed &&
-          typeof parsed === 'object' &&
-          Array.isArray(parsed.docs)
-        ) {
-          // Handle CouchDB-style response format
-          return parsed.docs;
+    // All tools now return JSON responses with the new structured format
+    try {
+      const parsed = JSON.parse(text);
+      
+      // Handle the new structured response format
+      if (parsed && typeof parsed === 'object') {
+        // Special handling for tools that return lists
+        const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
+        
+        if (LIST_TOOLS.includes(toolName)) {
+          // Extract data array from structured response
+          if (parsed.data && Array.isArray(parsed.data)) {
+            return parsed.data;
+          } else if (Array.isArray(parsed)) {
+            // Backwards compatibility - if already an array
+            return parsed;
+          } else {
+            console.warn(
+              `⚠️  Tool ${toolName} returned unexpected format: ${typeof parsed}`,
+            );
+            return [];
+          }
+        } else if (toolName === 'getUserInfo') {
+          // getUserInfo returns the data object directly
+          return parsed.data || parsed;
+        } else if (toolName === 'getServerInfo') {
+          // getServerInfo returns plain text, not JSON
+          return text;
         } else {
-          console.warn(
-            `⚠️  Tool ${toolName} returned non-array JSON: ${typeof parsed}`,
-          );
-          return [];
+          // For other tools (createTodo, updateTodo, etc.), return the full response
+          // Tests will need to check the response.summary or response.data fields
+          return parsed;
         }
-      } catch (parseError) {
-        console.error(`❌ Tool ${toolName} returned invalid JSON:`, parseError);
-        console.error(`Raw response: ${text.substring(0, 200)}...`);
-        return [];
       }
-    } else {
-      // For non-JSON tools (createTodo, updateTodo, etc.), return text directly
-      return text;
+      
+      return parsed;
+    } catch (parseError) {
+      // If JSON parsing fails, check if it's a plain text response (like getServerInfo)
+      if (toolName === 'getServerInfo') {
+        return text;
+      }
+      
+      console.error(`❌ Tool ${toolName} returned invalid JSON:`, parseError);
+      console.error(`Raw response: ${text.substring(0, 200)}...`);
+      
+      // Return appropriate default based on tool type
+      const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
+      return LIST_TOOLS.includes(toolName) ? [] : text;
     }
   }
 

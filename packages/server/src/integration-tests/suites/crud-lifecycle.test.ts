@@ -33,15 +33,17 @@ describe('MCP CRUD Lifecycle Integration', () => {
     it('should complete full create → read → update → delete cycle', async () => {
       // 1. CREATE: Create a basic todo
       const todoData = createTestTodoData.basic();
-      const createResponse = await assert.expectToolCallSuccess<string>(
+      const createResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         todoData,
       );
 
-      expect(createResponse).toContain('Todo created with ID:');
+      expect(createResponse.summary).toBe('Todo created successfully');
+      expect(createResponse.data).toBeDefined();
+      expect(createResponse.data.id).toBeDefined();
 
       // Extract the ID from the response
-      const createdId = createResponse.replace('Todo created with ID: ', '');
+      const createdId = createResponse.data.id;
 
       // 2. READ: Verify todo exists
       const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -68,12 +70,13 @@ describe('MCP CRUD Lifecycle Integration', () => {
         tags: ['updated', 'integration-test'],
       };
 
-      const updateResponse = await assert.expectToolCallSuccess<string>(
+      const updateResponse = await assert.expectToolCallSuccess<any>(
         'updateTodo',
         { id: createdTodo!._id, ...updates },
       );
 
-      expect(updateResponse).toContain('Todo updated:');
+      expect(updateResponse.summary).toBe('Todo updated successfully');
+      expect(updateResponse.data.id).toBe(createdTodo!._id);
 
       // Verify the update worked by listing todos again
       const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -86,11 +89,12 @@ describe('MCP CRUD Lifecycle Integration', () => {
       assert.expectTodoProperties(updatedTodo!, updates);
 
       // 4. DELETE: Remove the todo
-      const deleteResponse = await assert.expectToolCallSuccess<string>(
+      const deleteResponse = await assert.expectToolCallSuccess<any>(
         'deleteTodo',
         { id: createdTodo!._id },
       );
-      expect(deleteResponse).toContain('Todo deleted:');
+      expect(deleteResponse.summary).toBe('Todo deleted successfully');
+      expect(deleteResponse.data.id).toBe(createdTodo!._id);
 
       // 5. VERIFY DELETION: Todo should no longer exist
       const todosAfterDelete = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -103,11 +107,11 @@ describe('MCP CRUD Lifecycle Integration', () => {
     it('should handle todo completion toggling', async () => {
       // Create todo
       const todoData = createTestTodoData.forCompletion();
-      const createResponse = await assert.expectToolCallSuccess<string>(
+      const createResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         todoData,
       );
-      const createdId = createResponse.replace('Todo created with ID: ', '');
+      const createdId = createResponse.data.id;
 
       // Get the created todo
       const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -119,12 +123,13 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(createdTodo!.completed).toBeNull();
 
       // Toggle to completed
-      const completionResponse = await assert.expectToolCallSuccess<string>(
+      const completionResponse = await assert.expectToolCallSuccess<any>(
         'toggleTodoCompletion',
         { id: createdTodo!._id, completed: true },
       );
 
-      expect(completionResponse).toContain('Todo completed:');
+      expect(completionResponse.summary).toBe('Todo completed successfully');
+      expect(completionResponse.data.status).toBe('completed');
 
       // Verify completion
       const todosAfterCompletion = await assert.expectToolCallSuccess<
@@ -139,12 +144,13 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(new Date(completedTodo!.completed!)).toBeInstanceOf(Date);
 
       // Toggle back to incomplete
-      const incompleteResponse = await assert.expectToolCallSuccess<string>(
+      const incompleteResponse = await assert.expectToolCallSuccess<any>(
         'toggleTodoCompletion',
         { id: createdTodo!._id, completed: false },
       );
 
-      expect(incompleteResponse).toContain('Todo uncompleted:');
+      expect(incompleteResponse.summary).toBe('Todo uncompleted successfully');
+      expect(incompleteResponse.data.status).toBe('uncompleted');
 
       // Verify incompletion
       const todosAfterIncompletion = await assert.expectToolCallSuccess<
@@ -160,11 +166,11 @@ describe('MCP CRUD Lifecycle Integration', () => {
     it('should handle repeating todos on completion', async () => {
       // Create repeating todo
       const todoData = createTestTodoData.repeating();
-      const createResponse = await assert.expectToolCallSuccess<string>(
+      const createResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         todoData,
       );
-      const createdId = createResponse.replace('Todo created with ID: ', '');
+      const createdId = createResponse.data.id;
 
       // Get the created todo
       const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -176,11 +182,12 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(createdTodo!.repeat).toBe(1);
 
       // Complete the repeating todo
-      const completionResponse = await assert.expectToolCallSuccess<string>(
+      const completionResponse = await assert.expectToolCallSuccess<any>(
         'toggleTodoCompletion',
         { id: createdTodo!._id, completed: true },
       );
-      expect(completionResponse).toContain('Todo completed and repeated for');
+      expect(completionResponse.summary).toBe('Todo completed and repeated');
+      expect(completionResponse.data.new_todo_id).toBeDefined();
 
       // Should create a new todo for next occurrence
       const todosAfterCompletion = await assert.expectToolCallSuccess<
@@ -214,11 +221,11 @@ describe('MCP CRUD Lifecycle Integration', () => {
       const createdIds: string[] = [];
 
       for (const todoData of batchData) {
-        const createResponse = await assert.expectToolCallSuccess<string>(
+        const createResponse = await assert.expectToolCallSuccess<any>(
           'createTodo',
           todoData,
         );
-        const createdId = createResponse.replace('Todo created with ID: ', '');
+        const createdId = createResponse.data.id;
         createdIds.push(createdId);
       }
 
@@ -231,7 +238,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
 
       // Update multiple todos
       for (let i = 0; i < 3; i++) {
-        await assert.expectToolCallSuccess<string>('updateTodo', {
+        await assert.expectToolCallSuccess<any>('updateTodo', {
           id: createdIds[i],
           description: `Updated description ${i + 1}`,
         });
@@ -239,7 +246,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
 
       // Complete some todos
       for (let i = 0; i < 2; i++) {
-        await assert.expectToolCallSuccess<string>('toggleTodoCompletion', {
+        await assert.expectToolCallSuccess<any>('toggleTodoCompletion', {
           id: createdIds[i],
           completed: true,
         });
@@ -260,7 +267,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
 
       // Clean up remaining todos
       for (const id of createdIds) {
-        await assert.expectToolCallSuccess<string>('deleteTodo', { id });
+        await assert.expectToolCallSuccess<any>('deleteTodo', { id });
       }
     });
   });
@@ -269,11 +276,11 @@ describe('MCP CRUD Lifecycle Integration', () => {
     it('should maintain data integrity across operations', async () => {
       // Create todo with all fields
       const todoData = createTestTodoData.complete();
-      const createResponse = await assert.expectToolCallSuccess<string>(
+      const createResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         todoData,
       );
-      const createdId = createResponse.replace('Todo created with ID: ', '');
+      const createdId = createResponse.data.id;
 
       // Get the created todo
       const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -297,12 +304,12 @@ describe('MCP CRUD Lifecycle Integration', () => {
 
       // Update partial fields and verify others remain unchanged
       const updates = { title: 'New Title Only' };
-      const updateResponse = await assert.expectToolCallSuccess<string>(
+      const updateResponse = await assert.expectToolCallSuccess<any>(
         'updateTodo',
         { id: createdTodo!._id, ...updates },
       );
 
-      expect(updateResponse).toContain('Todo updated:');
+      expect(updateResponse.summary).toBe('Todo updated successfully');
 
       // Get the updated todo
       const updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
@@ -334,83 +341,92 @@ describe('MCP CRUD Lifecycle Integration', () => {
       );
 
       // Missing context should succeed with default 'private' context
-      const missingContextResponse = await assert.expectToolCallSuccess<string>(
+      const missingContextResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         invalidTestData.missingContext,
       );
-      expect(missingContextResponse).toContain('Todo created with ID:');
+      expect(missingContextResponse.summary).toBe('Todo created successfully');
+      expect(missingContextResponse.data.id).toBeDefined();
 
       // Missing due should succeed with default due date
-      const missingDueResponse = await assert.expectToolCallSuccess<string>(
+      const missingDueResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         invalidTestData.missingDue,
       );
-      expect(missingDueResponse).toContain('Todo created with ID:');
+      expect(missingDueResponse.summary).toBe('Todo created successfully');
+      expect(missingDueResponse.data.id).toBeDefined();
 
       // The server appears to accept any string for context, date, and repeat validation
       // So we'll test that these succeed but note they should ideally be validated
-      const invalidContextResponse = await assert.expectToolCallSuccess<string>(
+      const invalidContextResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         invalidTestData.invalidContext,
       );
-      expect(invalidContextResponse).toContain('Todo created with ID:');
+      expect(invalidContextResponse.summary).toBe('Todo created successfully');
+      expect(invalidContextResponse.data.id).toBeDefined();
 
-      const invalidDateResponse = await assert.expectToolCallSuccess<string>(
+      const invalidDateResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         invalidTestData.invalidDate,
       );
-      expect(invalidDateResponse).toContain('Todo created with ID:');
+      expect(invalidDateResponse.summary).toBe('Todo created successfully');
+      expect(invalidDateResponse.data.id).toBeDefined();
 
-      const invalidRepeatResponse = await assert.expectToolCallSuccess<string>(
+      const invalidRepeatResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         invalidTestData.invalidRepeat,
       );
-      expect(invalidRepeatResponse).toContain('Todo created with ID:');
+      expect(invalidRepeatResponse.summary).toBe('Todo created successfully');
+      expect(invalidRepeatResponse.data.id).toBeDefined();
     });
 
     it('should reject operations on non-existent todos', async () => {
       const nonExistentId = '2025-01-01T00:00:00.000Z';
 
-      // These operations should return error messages, not throw exceptions
-      const updateResponse = await assert.expectToolCallSuccess<string>(
+      // These operations should return error responses, not throw exceptions
+      const updateResponse = await assert.expectToolCallSuccess<any>(
         'updateTodo',
         {
           id: nonExistentId,
           title: 'Should fail',
         },
       );
-      expect(updateResponse).toContain('execution failed');
+      expect(updateResponse.summary).toContain('Failed to');
+      expect(updateResponse.error).toBeDefined();
 
-      const toggleResponse = await assert.expectToolCallSuccess<string>(
+      const toggleResponse = await assert.expectToolCallSuccess<any>(
         'toggleTodoCompletion',
         {
           id: nonExistentId,
           completed: true,
         },
       );
-      expect(toggleResponse).toContain('execution failed');
+      expect(toggleResponse.summary).toContain('Failed to');
+      expect(toggleResponse.error).toBeDefined();
 
-      const deleteResponse = await assert.expectToolCallSuccess<string>(
+      const deleteResponse = await assert.expectToolCallSuccess<any>(
         'deleteTodo',
         {
           id: nonExistentId,
         },
       );
-      expect(deleteResponse).toContain('execution failed');
+      expect(deleteResponse.summary).toContain('Failed to');
+      expect(deleteResponse.error).toBeDefined();
     });
 
     it('should reject invalid todo IDs', async () => {
       const invalidIds = ['invalid-id', '', 'not-a-timestamp', '123'];
 
       for (const invalidId of invalidIds) {
-        const response = await assert.expectToolCallSuccess<string>(
+        const response = await assert.expectToolCallSuccess<any>(
           'updateTodo',
           {
             id: invalidId,
             title: 'Should fail',
           },
         );
-        expect(response).toContain('execution failed');
+        expect(response.summary).toContain('Failed to');
+        expect(response.error).toBeDefined();
       }
     });
   });

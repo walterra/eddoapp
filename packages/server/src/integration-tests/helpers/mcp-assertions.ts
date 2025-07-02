@@ -67,7 +67,20 @@ export class MCPAssertions {
   ): Promise<void> {
     try {
       const result = await this.testServer.callTool(toolName, args);
-      // If we get a string result that indicates an error, that's expected
+      // If we get a structured error response, that's expected
+      if (result && typeof result === 'object' && 'error' in result) {
+        // This is an expected error condition in the new format
+        if (expectedErrorPattern) {
+          const errorText = result.error || result.summary || JSON.stringify(result);
+          if (typeof expectedErrorPattern === 'string') {
+            expect(errorText).toContain(expectedErrorPattern);
+          } else {
+            expect(errorText).toMatch(expectedErrorPattern);
+          }
+        }
+        return;
+      }
+      // Legacy: If we get a string result that indicates an error, that's expected
       if (typeof result === 'string' && result.includes('failed')) {
         // This is an expected error condition
         if (expectedErrorPattern) {

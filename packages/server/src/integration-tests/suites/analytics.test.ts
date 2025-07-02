@@ -158,14 +158,14 @@ describe('MCP Analytics Integration', () => {
 
     it('should update tag statistics when todos are modified', async () => {
       // Create todo with initial tags
-      const createResponse = await assert.expectToolCallSuccess<string>(
+      const createResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         {
           ...createTestTodoData.withTags(['initial', 'tag']),
           title: 'Modifiable Todo',
         },
       );
-      const todoId = createResponse.replace('Todo created with ID: ', '');
+      const todoId = createResponse.data.id;
 
       // Check initial stats
       let tagStatsResponse = await assert.expectToolCallSuccess<string>(
@@ -198,16 +198,16 @@ describe('MCP Analytics Integration', () => {
 
     it('should update tag statistics when todos are deleted', async () => {
       // Create todos with tags
-      const createResponse1 = await assert.expectToolCallSuccess<string>(
+      const createResponse1 = await assert.expectToolCallSuccess<any>(
         'createTodo',
         {
           ...createTestTodoData.withTags(['delete-test', 'common']),
           title: 'Todo to Delete',
         },
       );
-      const todoId1 = createResponse1.replace('Todo created with ID: ', '');
+      const todoId1 = createResponse1.data.id;
 
-      await assert.expectToolCallSuccess<string>('createTodo', {
+      await assert.expectToolCallSuccess<any>('createTodo', {
         ...createTestTodoData.withTags(['keep-test', 'common']),
         title: 'Todo to Keep',
       });
@@ -240,14 +240,14 @@ describe('MCP Analytics Integration', () => {
 
     it('should handle tag statistics with completion status changes', async () => {
       // Create todo with tags
-      const createResponse = await assert.expectToolCallSuccess<string>(
+      const createResponse = await assert.expectToolCallSuccess<any>(
         'createTodo',
         {
           ...createTestTodoData.withTags(['completion-test']),
           title: 'Completion Test',
         },
       );
-      const todoId = createResponse.replace('Todo created with ID: ', '');
+      const todoId = createResponse.data.id;
 
       // Check initial stats
       let tagStatsResponse = await assert.expectToolCallSuccess<string>(
