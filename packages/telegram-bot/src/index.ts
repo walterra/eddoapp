@@ -1,7 +1,7 @@
 import { createBot } from './bot/bot.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
-import { setupMCPIntegration } from './mcp/client.js';
+import { getMCPClient, setupMCPIntegration } from './mcp/client.js';
 import { appConfig } from './utils/config.js';
 import { logger } from './utils/logger.js';
 
@@ -15,10 +15,13 @@ async function main(): Promise<void> {
   });
 
   try {
-    // Initialize MCP integration
+    // Initialize MCP integration (eager initialization at startup)
     logger.info('Initializing MCP integration...');
-    await setupMCPIntegration();
-    logger.info('✅ MCP integration initialized successfully');
+    const mcpClient = await setupMCPIntegration();
+    logger.info('✅ MCP integration initialized successfully', {
+      toolsAvailable: mcpClient.tools.length,
+      toolNames: mcpClient.tools.map((t) => t.name),
+    });
 
     // Create bot instance
     const bot = createBot();
@@ -52,13 +55,31 @@ async function main(): Promise<void> {
 }
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   logger.info('Received SIGINT, shutting down gracefully...');
+  const mcpClient = getMCPClient();
+  if (mcpClient) {
+    try {
+      await mcpClient.close();
+      logger.info('MCP connection closed successfully');
+    } catch (error) {
+      logger.error('Error closing MCP connection', { error });
+    }
+  }
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('Received SIGTERM, shutting down gracefully...');
+  const mcpClient = getMCPClient();
+  if (mcpClient) {
+    try {
+      await mcpClient.close();
+      logger.info('MCP connection closed successfully');
+    } catch (error) {
+      logger.error('Error closing MCP connection', { error });
+    }
+  }
   process.exit(0);
 });
 

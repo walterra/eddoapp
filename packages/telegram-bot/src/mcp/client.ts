@@ -50,10 +50,20 @@ export interface MCPClient {
   close: () => Promise<void>;
 }
 
+// Singleton instance to ensure we only create one MCP connection
+let mcpClientInstance: MCPClient | null = null;
+
 /**
  * MCP integration that connects to the Eddo MCP server
+ * Returns singleton instance to avoid multiple connections
  */
 export async function setupMCPIntegration(): Promise<MCPClient> {
+  // Return existing instance if already initialized
+  if (mcpClientInstance) {
+    logger.info('Returning existing MCP client instance');
+    return mcpClientInstance;
+  }
+
   logger.info('Setting up MCP integration', {
     serverUrl: appConfig.MCP_SERVER_URL,
   });
@@ -87,6 +97,13 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
     // Connect to the MCP server
     await client.connect(transport);
     logger.info('Connected to MCP server successfully');
+
+    // Note: The @modelcontextprotocol/sdk v1.13.1 handles the MCP handshake
+    // automatically during the connect() call. The initialize/initialized
+    // methods mentioned in the MCP spec are handled internally by the SDK.
+    logger.info(
+      'MCP connection established, handshake completed automatically by SDK',
+    );
 
     // Discover available tools
     const toolsResponse = await client.listTools();
@@ -134,11 +151,50 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
     const close = async () => {
       logger.info('Closing MCP connection');
       await client.close();
+      // Clear singleton instance on close
+      mcpClientInstance = null;
     };
 
-    return { client, tools, invoke, close };
+    // Store singleton instance
+    mcpClientInstance = { client, tools, invoke, close };
+
+    return mcpClientInstance;
   } catch (error) {
-    logger.error('Failed to setup MCP integration', { error: String(error) });
+    logger.error('Failed to setup MCP integration', {
+      error: String(error),
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      stack: error instanceof Error ? error.stack : undefined,
+      phase: 'setup',
+    });
+
+    // Provide more specific error messages based on failure type
+    if (error instanceof Error) {
+      if (
+        error.message.includes('connect') ||
+        error.message.includes('ECONNREFUSED')
+      ) {
+        throw new Error(
+          `Failed to connect to MCP server at ${appConfig.MCP_SERVER_URL}: ${error.message}`,
+        );
+      } else if (error.message.includes('listTools')) {
+        throw new Error(`Failed to discover MCP tools: ${error.message}`);
+      } else if (
+        error.message.includes('401') ||
+        error.message.includes('403')
+      ) {
+        throw new Error(
+          `MCP authentication failed. Check your API key: ${error.message}`,
+        );
+      }
+    }
+
     throw error;
   }
+}
+
+/**
+ * Get the current MCP client instance if initialized
+ */
+export function getMCPClient(): MCPClient | null {
+  return mcpClientInstance;
 }
