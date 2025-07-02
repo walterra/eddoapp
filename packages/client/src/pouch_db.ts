@@ -2,8 +2,8 @@ import {
   DatabaseHealthMonitor,
   SafeDbOperations,
   createSafeDbOperations,
-  validateEnv,
   getEffectiveDbName,
+  validateEnv,
 } from '@eddo/shared';
 import PouchDB from 'pouchdb-browser';
 import { createContext, useContext } from 'react';

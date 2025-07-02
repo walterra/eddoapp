@@ -93,9 +93,7 @@ export const DatabaseHealthIndicator: React.FC<
                 <span className="font-mono text-gray-800">{databaseName}</span>
               </div>
             )}
-            <div>
-              Last: {formatTimestamp(healthCheck.timestamp)}
-            </div>
+            <div>Last: {formatTimestamp(healthCheck.timestamp)}</div>
             {healthCheck.metrics.storageQuota && (
               <div>
                 <span className="text-gray-600">Storage: </span>

@@ -59,7 +59,9 @@ export function validateEnv(env: unknown): Env {
  */
 export function getEffectiveDbName(env: Env): string {
   const baseName = env.COUCHDB_DB_NAME;
-  return env.COUCHDB_API_KEY ? `${baseName}_api_${env.COUCHDB_API_KEY}` : baseName;
+  return env.COUCHDB_API_KEY
+    ? `${baseName}_api_${env.COUCHDB_API_KEY}`
+    : baseName;
 }
 
 /**

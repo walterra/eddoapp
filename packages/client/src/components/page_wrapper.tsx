@@ -1,4 +1,4 @@
-import { validateEnv, getEffectiveDbName } from '@eddo/shared';
+import { getEffectiveDbName, validateEnv } from '@eddo/shared';
 import { type FC } from 'react';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
@@ -10,7 +10,7 @@ interface PageWrapperProps {
 
 export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
   const { healthCheck } = useDatabaseHealth();
-  
+
   // Get the database name for display
   const env = validateEnv(process.env);
   const databaseName = getEffectiveDbName(env);
@@ -30,9 +30,9 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
             <div className="prose">
               <h1>Eddo</h1>
             </div>
-            <DatabaseHealthIndicator 
+            <DatabaseHealthIndicator
               databaseName={databaseName}
-              healthCheck={healthCheck} 
+              healthCheck={healthCheck}
               showDetails={true}
             />
           </div>
