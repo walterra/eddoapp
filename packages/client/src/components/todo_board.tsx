@@ -9,7 +9,7 @@ import {
 } from '@eddo/shared';
 import { group } from 'd3-array';
 import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
-import { isEqual, uniqBy } from 'lodash-es';
+import { uniqBy } from 'lodash-es';
 import {
   type FC,
   useCallback,
@@ -20,6 +20,7 @@ import {
 } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { ensureDesignDocuments } from '../database_setup';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
@@ -31,40 +32,11 @@ interface TodoBoardProps {
   selectedTags: string[];
 }
 
-const designDocId = '_design/todos';
-const designDocViews = {
-  byActive: {
-    map: `function (doc) {
-      if (doc.active) {
-        Object.entries(doc.active).forEach(([from, to]) => {
-          emit(from, { doc, from, id: doc._id, to });
-        });
-      }
-    }`,
-  },
-  byDueDate: {
-    map: `function (doc) {
-      if (doc.due) {
-        emit(doc.due, doc);
-      }
-    }`,
-  },
-  byTimeTrackingActive: {
-    map: `function (doc) {
-      Object.entries(doc.active).forEach((d) => {
-        if (d[1] === null) {
-          emit(null, { id: doc._id });
-        }
-      });
-    }`,
-  },
-};
-
 export const TodoBoard: FC<TodoBoardProps> = ({
   currentDate,
   selectedTags,
 }) => {
-  const { safeDb, changes } = usePouchDb();
+  const { safeDb, changes, rawDb } = usePouchDb();
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
   ]);
@@ -97,30 +69,13 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     // async iife
     (async () => {
       setError(null);
-      let designDoc;
 
       try {
-        // Attempt to get the design document from the database
-        designDoc = await safeDb.safeGet<
-          PouchDB.Core.GetMeta & {
-            views?: typeof designDocViews;
-          }
-        >(designDocId);
-
-        // Check if design doc has all views
-        if (!designDoc || !isEqual(designDoc.views, designDocViews)) {
-          // Save the design document to your database
-          await safeDb.safePut({
-            _id: '_design/todos',
-            _rev: designDoc?._rev,
-            views: designDocViews,
-          });
-        }
-
-        // You can then proceed with your logic, e.g., update or query it
+        // Ensure all design documents are created/updated
+        await ensureDesignDocuments(safeDb, rawDb);
         setIsInitialized(true);
       } catch (err) {
-        console.error('Error initializing design document:', err);
+        console.error('Error initializing design documents:', err);
         setError(err as DatabaseError);
         // Still try to initialize to avoid blocking the app
         setIsInitialized(true);

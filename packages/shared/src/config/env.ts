@@ -15,6 +15,7 @@ export const envSchema = z.object({
   // CouchDB Configuration
   COUCHDB_URL: z.string().default('http://admin:password@localhost:5984'),
   COUCHDB_DB_NAME: z.string().default('todos-dev'),
+  COUCHDB_API_KEY: z.string().optional(),
 
   // MCP Server Configuration
   MCP_SERVER_URL: z.string().default('http://localhost:3001/mcp'),
@@ -54,10 +55,20 @@ export function validateEnv(env: unknown): Env {
 }
 
 /**
+ * Get the effective database name (with API key suffix if provided)
+ */
+export function getEffectiveDbName(env: Env): string {
+  const baseName = env.COUCHDB_DB_NAME;
+  return env.COUCHDB_API_KEY
+    ? `${baseName}_api_${env.COUCHDB_API_KEY}`
+    : baseName;
+}
+
+/**
  * Get the full CouchDB database URL
  */
 export function getCouchDbUrl(env: Env): string {
-  return `${env.COUCHDB_URL}/${env.COUCHDB_DB_NAME}`;
+  return `${env.COUCHDB_URL}/${getEffectiveDbName(env)}`;
 }
 
 /**
@@ -66,7 +77,7 @@ export function getCouchDbUrl(env: Env): string {
 export function getCouchDbConfig(env: Env) {
   return {
     url: env.COUCHDB_URL,
-    dbName: env.COUCHDB_DB_NAME,
+    dbName: getEffectiveDbName(env),
     fullUrl: getCouchDbUrl(env),
   };
 }

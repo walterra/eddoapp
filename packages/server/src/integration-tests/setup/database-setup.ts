@@ -127,24 +127,47 @@ export class DatabaseSetup {
   async createIndexes(): Promise<void> {
     console.log(`🔍 Creating indexes for: ${this.dbName}`);
 
+    // Try a very simple index first to test if indexing works at all
+    const simpleIndex = {
+      index: { fields: ['due'] },
+      name: 'simple-due-index',
+      type: 'json' as const,
+    };
+
+    try {
+      await this.db.createIndex(simpleIndex);
+      console.log(`✅ Created simple index: ${simpleIndex.name}`);
+    } catch (error) {
+      console.error(`❌ Failed to create simple index:`, error);
+    }
+
     const indexes: Array<{
       index: { fields: string[] };
       name: string;
       type: 'json' | 'text';
     }> = [
+      // Primary index for basic queries with sort
       {
         index: { fields: ['version', 'due'] },
         name: 'version-due-index',
         type: 'json',
       },
+      // Index for context filtering with sort
       {
         index: { fields: ['version', 'context', 'due'] },
         name: 'version-context-due-index',
         type: 'json',
       },
+      // Index for completion filtering with sort
       {
         index: { fields: ['version', 'completed', 'due'] },
         name: 'version-completed-due-index',
+        type: 'json',
+      },
+      // Index for both context and completion filtering with sort
+      {
+        index: { fields: ['version', 'context', 'completed', 'due'] },
+        name: 'version-context-completed-due-index',
         type: 'json',
       },
     ];
