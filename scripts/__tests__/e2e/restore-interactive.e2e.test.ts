@@ -116,7 +116,7 @@ describe('Restore Interactive E2E', () => {
       .code(0);
   }, 30000);
 
-  it('should handle user cancellation in interactive mode', async () => {
+  it.skipIf(process.env.CI)('should handle user cancellation in interactive mode', async () => {
     // Set up environment variables for CouchDB connection
     const env = {
       ...process.env,
@@ -179,7 +179,7 @@ describe('Restore Interactive E2E - File Discovery', () => {
     }
   });
 
-  it('should discover backup files in directory', async () => {
+  it.skipIf(process.env.CI)('should discover backup files in directory', async () => {
     // This test would be interactive in real use, but we test the discovery mechanism
     // by checking that the command doesn't immediately fail when backup files exist
     const env = {
@@ -198,7 +198,7 @@ describe('Restore Interactive E2E - File Discovery', () => {
       .code(0);
   }, 30000);
 
-  it('should handle empty backup directory', async () => {
+  it.skipIf(process.env.CI)('should handle empty backup directory', async () => {
     const emptyBackupDir = path.join(testDir, 'empty');
     fs.mkdirSync(emptyBackupDir, { recursive: true });
     

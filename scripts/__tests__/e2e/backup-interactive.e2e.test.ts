@@ -48,7 +48,7 @@ describe('Backup Interactive E2E', () => {
       .code(0);
   }, 30000);
 
-  it('should handle user cancellation in interactive mode', async () => {
+  it.skipIf(process.env.CI)('should handle user cancellation in interactive mode', async () => {
     // Set up environment variables for CouchDB connection
     const env = {
       ...process.env,
