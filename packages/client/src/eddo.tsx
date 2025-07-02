@@ -6,6 +6,7 @@ import { TodoBoard } from './components/todo_board';
 import { useDatabaseHealth } from './hooks/use_database_health';
 import { useSyncDev } from './hooks/use_sync_dev';
 import { PouchDbContext, pouchDbContextValue } from './pouch_db';
+import { DatabaseChangesProvider } from './hooks/use_database_changes';
 
 function DevSync() {
   useSyncDev();
@@ -28,17 +29,19 @@ export function Eddo() {
 
   return (
     <PouchDbContext.Provider value={pouchDbContextValue}>
-      <DevSync />
-      <HealthMonitor />
-      <PageWrapper>
-        <AddTodo
-          currentDate={currentDate}
-          selectedTags={selectedTags}
-          setCurrentDate={setCurrentDate}
-          setSelectedTags={setSelectedTags}
-        />
-        <TodoBoard currentDate={currentDate} selectedTags={selectedTags} />
-      </PageWrapper>
+      <DatabaseChangesProvider>
+        <DevSync />
+        <HealthMonitor />
+        <PageWrapper>
+          <AddTodo
+            currentDate={currentDate}
+            selectedTags={selectedTags}
+            setCurrentDate={setCurrentDate}
+            setSelectedTags={setSelectedTags}
+          />
+          <TodoBoard currentDate={currentDate} selectedTags={selectedTags} />
+        </PageWrapper>
+      </DatabaseChangesProvider>
     </PouchDbContext.Provider>
   );
 }

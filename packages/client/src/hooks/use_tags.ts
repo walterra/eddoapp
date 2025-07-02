@@ -5,6 +5,7 @@ import { type Todo } from '@eddo/shared';
 import { useEffect, useState } from 'react';
 
 import { usePouchDb } from '../pouch_db';
+import { useDatabaseChanges } from './use_database_changes';
 
 export interface TagsState {
   /** All unique tags from existing todos */
@@ -19,7 +20,8 @@ export interface TagsState {
  * Hook for fetching all existing tags for autocomplete
  */
 export const useTags = (): TagsState => {
-  const { safeDb, changes } = usePouchDb();
+  const { safeDb } = usePouchDb();
+  const { changeCount } = useDatabaseChanges();
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -54,22 +56,7 @@ export const useTags = (): TagsState => {
     };
 
     fetchTags();
-
-    // Listen for database changes to update tags
-    const changesListener = changes({
-      live: true,
-      since: 'now',
-      include_docs: true,
-    });
-
-    changesListener.on('change', () => {
-      fetchTags();
-    });
-
-    return () => {
-      changesListener.cancel();
-    };
-  }, [safeDb, changes]);
+  }, [safeDb, changeCount]); // Re-fetch when database changes
 
   return {
     allTags,
