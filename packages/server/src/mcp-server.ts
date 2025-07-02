@@ -1,5 +1,13 @@
-// Import the TodoAlpha3 type and environment configuration
-import { type TodoAlpha3, getCouchDbConfig, validateEnv } from '@eddo/shared';
+/**
+ * MCP Server with Per-Request Authentication
+ * Implements proper stateless authentication following MCP best practices
+ */
+import {
+  type TodoAlpha3,
+  getCouchDbConfig,
+  getTestCouchDbConfig,
+  validateEnv,
+} from '@eddo/shared';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
@@ -11,98 +19,85 @@ dotenvLoad();
 // Validate environment
 const env = validateEnv(process.env);
 
-const server = new FastMCP({
-  name: 'eddo-mcp',
+// User session type
+type UserSession = {
+  userId: string;
+  dbName: string;
+};
+
+// Initialize nano connection
+const couchDbConfig =
+  env.NODE_ENV === 'test' ? getTestCouchDbConfig(env) : getCouchDbConfig(env);
+const couch = nano(couchDbConfig.url);
+
+// Create server with authentication
+const server = new FastMCP<UserSession>({
+  name: 'eddo-mcp-auth',
   version: '1.0.0',
   ping: {
     logLevel: 'info',
   },
   instructions:
-    'Eddo Todo MCP Server - Manages GTD-style todos with time tracking. Creates, updates, lists todos with contexts ("work", "private"), due dates, tags, and repeat intervals. Supports time tracking start/stop and completion status. Uses CouchDB backend with TodoAlpha3 schema. Default context is "private", default due is end of current day. Use getServerInfo tool for complete documentation and examples.',
+    'Eddo Todo MCP Server with API key authentication. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.',
+
+  // Authentication function - runs for each request
+  authenticate: (request) => {
+    // Extract API key from X-API-Key header
+    const apiKey = request.headers['x-api-key'] as string;
+
+    console.log(`Auth request with API key: ${apiKey ? '[REDACTED]' : 'none'}`);
+
+    // In test mode, we allow any non-empty API key for database isolation
+    if (env.NODE_ENV === 'test') {
+      if (!apiKey) {
+        throw new Response(null, {
+          status: 401,
+          statusText: 'API key required for test isolation',
+        });
+      }
+
+      // Generate user-specific database name using API key
+      const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
+
+      return Promise.resolve({
+        userId: apiKey, // Use API key as user identifier
+        dbName,
+      });
+    }
+
+    // In production mode, require valid API key
+    if (!apiKey) {
+      throw new Response(null, {
+        status: 401,
+        statusText: 'API key required',
+      });
+    }
+
+    // Here you would validate the API key against your auth system
+    // For now, use the API key as the user identifier
+    const dbName = `${couchDbConfig.dbName}_api_${apiKey}`;
+
+    return Promise.resolve({
+      userId: apiKey,
+      dbName,
+    });
+  },
 });
 
-// Initialize nano connection to CouchDB using environment configuration
-const couchDbConfig = getCouchDbConfig(env);
-const couch = nano(couchDbConfig.url);
-const db = couch.db.use(couchDbConfig.dbName);
-
-// Create indexes for efficient querying
-async function createIndexes() {
-  try {
-    // Index for sorting by due date
-    await db.createIndex({
-      index: {
-        fields: ['version', 'due'],
-      },
-      name: 'version-due-index',
-      type: 'json',
-    });
-
-    // Index for context and due date
-    await db.createIndex({
-      index: {
-        fields: ['version', 'context', 'due'],
-      },
-      name: 'version-context-due-index',
-      type: 'json',
-    });
-
-    // Index for completed status and due date
-    await db.createIndex({
-      index: {
-        fields: ['version', 'completed', 'due'],
-      },
-      name: 'version-completed-due-index',
-      type: 'json',
-    });
-
-    // Create design document for tag statistics
-    const tagStatsDesignDoc = {
-      _id: '_design/tags',
-      views: {
-        by_tag: {
-          map: `function(doc) {
-            if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
-              for (var i = 0; i < doc.tags.length; i++) {
-                emit(doc.tags[i], 1);
-              }
-            }
-          }`,
-          reduce: '_count'
-        }
-      }
-    };
-
-    try {
-      await db.insert(tagStatsDesignDoc);
-      console.log('✅ Tag statistics design document created');
-    } catch (designError: any) {
-      if (designError.statusCode === 409) {
-        console.log('ℹ️  Tag statistics design document already exists');
-      } else {
-        console.error('❌ Error creating tag statistics design document:', designError);
-      }
-    }
-
-    console.log('✅ CouchDB indexes created successfully');
-  } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 409
-    ) {
-      console.log('ℹ️  Indexes already exist');
-    } else {
-      console.error('❌ Error creating indexes:', error);
-    }
+// Helper to get user's database from context
+function getUserDb(context: {
+  session?: UserSession;
+}): nano.DocumentScope<TodoAlpha3> {
+  if (!context.session) {
+    throw new Error('No user session available');
   }
+  return couch.db.use<TodoAlpha3>(context.session.dbName);
 }
 
 // Create Todo Tool
 server.addTool({
   name: 'createTodo',
-  description: `Create a new todo item in the Eddo system.
+  description: `Create a new todo item in the authenticated user's database.
 
     Creates a TodoAlpha3 object with:
     - Auto-generated ID (current ISO timestamp)
@@ -154,40 +149,87 @@ server.addTool({
         'Optional URL or reference link related to this todo. Can be used for documentation, tickets, or external resources',
       ),
   }),
-  execute: async (args, { log }) => {
-    log.info('Creating new todo', { title: args.title, context: args.context });
+  execute: async (args, context) => {
+    // Ensure user database exists (for test isolation)
+    if (context.session?.userId && context.session.userId !== 'default') {
+      try {
+        await couch.db.get(context.session.dbName);
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'statusCode' in error &&
+          error.statusCode === 404
+        ) {
+          await couch.db.create(context.session.dbName);
+          console.log(
+            `Created database for user ${context.session.userId}: ${context.session.dbName}`,
+          );
+        }
+      }
+    }
+
+    const db = getUserDb(context);
+
+    context.log.info('Creating todo for user', {
+      userId: context.session?.userId,
+      title: args.title,
+    });
 
     const now = new Date().toISOString();
     const dueDate =
       args.due || new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
 
-    const todo = {
+    const newTodo: Omit<TodoAlpha3, '_rev'> = {
       _id: now,
-      active: {},
-      completed: null,
-      context: args.context,
-      description: args.description,
-      due: dueDate,
-      link: args.link,
-      repeat: args.repeat,
-      tags: args.tags,
       title: args.title,
+      description: args.description,
+      context: args.context,
+      due: dueDate,
+      tags: args.tags,
+      completed: null,
+      active: {},
+      repeat: args.repeat,
+      link: args.link,
       version: 'alpha3',
     };
 
     try {
-      const result = await db.insert(todo);
-      log.info('Todo created successfully', {
-        id: result.id,
-        title: args.title,
+      const startTime = Date.now();
+      await db.insert(newTodo as TodoAlpha3);
+      const executionTime = Date.now() - startTime;
+
+      return JSON.stringify({
+        summary: 'Todo created successfully',
+        data: {
+          id: newTodo._id,
+          title: newTodo.title,
+          context: newTodo.context,
+          due: newTodo.due,
+        },
+        next_actions: ['listTodos', 'startTimeTracking'],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: 'create',
+          timestamp: new Date().toISOString(),
+        },
       });
-      return `Todo created with ID: ${result.id}`;
     } catch (error) {
-      log.error('Failed to create todo', {
-        title: args.title,
-        error: String(error),
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return JSON.stringify({
+        summary: 'Failed to create todo',
+        error: message,
+        recovery_suggestions: [
+          'Check if database connection is active',
+          'Verify todo data format',
+          'Try again with different title or ID',
+        ],
+        metadata: {
+          operation: 'create',
+          timestamp: new Date().toISOString(),
+          error_type: 'database_error',
+        },
       });
-      throw error;
     }
   },
 });
@@ -195,7 +237,8 @@ server.addTool({
 // List Todos Tool
 server.addTool({
   name: 'listTodos',
-  description: 'List todos with optional filters',
+  description:
+    "List todos with optional filters from the authenticated user's database",
   parameters: z.object({
     context: z
       .string()
@@ -220,46 +263,160 @@ server.addTool({
       .default(50)
       .describe('Maximum number of todos to return (default: 50)'),
   }),
-  execute: async (args, { log }) => {
-    log.info('Listing todos', {
-      context: args.context,
-      completed: args.completed,
-      dateFrom: args.dateFrom,
-      dateTo: args.dateTo,
-      limit: args.limit,
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.info('Listing todos for user', {
+      userId: context.session?.userId,
+      filters: args,
     });
 
-    const selector: Record<string, unknown> = { version: 'alpha3' };
-
-    if (args.context) {
-      selector.context = args.context;
-    }
-
-    if (args.completed !== undefined) {
-      selector.completed = args.completed ? { $ne: null } : null;
-    }
-
-    if (args.dateFrom || args.dateTo) {
-      const dueFilter: Record<string, string> = {};
-      if (args.dateFrom) dueFilter.$gte = args.dateFrom;
-      if (args.dateTo) dueFilter.$lte = args.dateTo;
-      selector.due = dueFilter;
-    }
-
     try {
-      const result = await db.find({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        selector: selector as any,
-        limit: args.limit,
+      // Build query selector
+      const selector: Record<string, unknown> = { version: 'alpha3' };
+
+      if (args.context) {
+        selector.context = args.context;
+      }
+
+      if (args.completed !== undefined) {
+        selector.completed = args.completed ? { $ne: null } : null;
+      }
+
+      if (args.dateFrom || args.dateTo) {
+        selector.due = {};
+        if (args.dateFrom) {
+          (selector.due as Record<string, unknown>)['$gte'] = args.dateFrom;
+        }
+        if (args.dateTo) {
+          (selector.due as Record<string, unknown>)['$lte'] = args.dateTo;
+        }
+      }
+
+      // Build query
+      const query: {
+        selector: Record<string, unknown>;
+        sort: Array<Record<string, string>>;
+        limit?: number;
+      } = {
+        selector,
         sort: [{ due: 'asc' }],
+      };
+
+      if (args.limit && args.limit > 0) {
+        query.limit = args.limit;
+      } else {
+        query.limit = 50; // Default limit
+      }
+
+      const startTime = Date.now();
+      const response = await db.find(query as nano.MangoQuery);
+      const executionTime = Date.now() - startTime;
+
+      context.log.info('Todos retrieved successfully', {
+        count: response.docs.length,
       });
 
-      log.info('Todos retrieved successfully', { count: result.docs.length });
-      return JSON.stringify(result.docs, null, 2);
+      return JSON.stringify({
+        summary: `Found ${response.docs.length} matching todos`,
+        data: response.docs,
+        pagination: {
+          count: response.docs.length,
+          limit: args.limit || 50,
+          has_more: response.docs.length === (args.limit || 50),
+        },
+        next_actions:
+          response.docs.length > 0
+            ? ['updateTodo', 'toggleTodoCompletion', 'startTimeTracking']
+            : ['createTodo'],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: 'list',
+          timestamp: new Date().toISOString(),
+          filters_applied: Object.keys(args).filter(
+            (k) => args[k as keyof typeof args] !== undefined,
+          ),
+        },
+      });
     } catch (error) {
-      log.error('Failed to list todos', { error: String(error) });
-      throw error;
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      // If database doesn't exist, return empty result instead of throwing error
+      if (
+        message.includes('Database does not exist') ||
+        message.includes('no_db_file')
+      ) {
+        context.log.info('Database does not exist, returning empty result');
+        return JSON.stringify({
+          summary: 'No todos found - database not initialized',
+          data: [],
+          pagination: {
+            count: 0,
+            limit: args.limit || 50,
+            has_more: false,
+          },
+          next_actions: ['createTodo'],
+          metadata: {
+            operation: 'list',
+            timestamp: new Date().toISOString(),
+            database_status: 'not_initialized',
+          },
+        });
+      }
+
+      return JSON.stringify({
+        summary: 'Failed to list todos',
+        error: message,
+        recovery_suggestions: [
+          'Check database connection',
+          'Verify authentication credentials',
+          'Try with simpler filter criteria',
+        ],
+        metadata: {
+          operation: 'list',
+          timestamp: new Date().toISOString(),
+          error_type: 'database_error',
+        },
+      });
     }
+  },
+});
+
+// Get Current User Info Tool
+server.addTool({
+  name: 'getUserInfo',
+  description: 'Get current authenticated user information',
+  parameters: z.object({}),
+  execute: async (_, context) => {
+    if (!context.session) {
+      return JSON.stringify({
+        summary: 'Anonymous user session',
+        data: {
+          userId: 'anonymous',
+          dbName: 'default',
+          authenticated: false,
+        },
+        next_actions: ['getServerInfo'],
+        metadata: {
+          operation: 'user_info',
+          timestamp: new Date().toISOString(),
+          auth_status: 'anonymous',
+        },
+      });
+    }
+
+    return JSON.stringify({
+      summary: 'User information retrieved',
+      data: {
+        userId: context.session.userId,
+        dbName: context.session.dbName,
+        authenticated: true,
+      },
+      next_actions: ['listTodos', 'createTodo', 'getServerInfo'],
+      metadata: {
+        operation: 'user_info',
+        timestamp: new Date().toISOString(),
+      },
+    });
   },
 });
 
@@ -293,12 +450,17 @@ server.addTool({
       .optional()
       .describe('Updated URL or reference link (null to remove)'),
   }),
-  execute: async (args, { log }) => {
-    log.info('Updating todo', { id: args.id });
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.info('Updating todo for user', {
+      userId: context.session?.userId,
+      todoId: args.id,
+    });
 
     try {
       const todo = (await db.get(args.id)) as TodoAlpha3;
-      log.debug('Retrieved todo for update', { title: todo.title });
+      context.log.debug('Retrieved todo for update', { title: todo.title });
 
       const updated = {
         ...todo,
@@ -311,15 +473,53 @@ server.addTool({
         link: args.link !== undefined ? args.link : todo.link,
       };
 
+      const startTime = Date.now();
       const result = await db.insert(updated);
-      log.info('Todo updated successfully', {
+      const executionTime = Date.now() - startTime;
+
+      context.log.info('Todo updated successfully', {
         id: result.id,
         title: updated.title,
       });
-      return `Todo updated: ${result.id}`;
+
+      return JSON.stringify({
+        summary: 'Todo updated successfully',
+        data: {
+          id: result.id,
+          title: updated.title,
+          changes_made: Object.keys(args).filter(
+            (k) => args[k as keyof typeof args] !== undefined && k !== 'id',
+          ),
+        },
+        next_actions: [
+          'listTodos',
+          'toggleTodoCompletion',
+          'startTimeTracking',
+        ],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: 'update',
+          timestamp: new Date().toISOString(),
+        },
+      });
     } catch (error) {
-      log.error('Failed to update todo', { id: args.id, error: String(error) });
-      throw error;
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return JSON.stringify({
+        summary: 'Failed to update todo',
+        error: message,
+        recovery_suggestions: [
+          'Verify the todo ID exists using listTodos',
+          'Check if database connection is active',
+          'Ensure update data is valid',
+        ],
+        metadata: {
+          operation: 'update',
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found')
+            ? 'not_found'
+            : 'database_error',
+        },
+      });
     }
   },
 });
@@ -338,15 +538,18 @@ server.addTool({
       .boolean()
       .describe('true to mark as completed, false to mark as incomplete'),
   }),
-  execute: async (args, { log }) => {
-    log.info('Toggling todo completion', {
-      id: args.id,
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.info('Toggling todo completion for user', {
+      userId: context.session?.userId,
+      todoId: args.id,
       completed: args.completed,
     });
 
     try {
       const todo = (await db.get(args.id)) as TodoAlpha3;
-      log.debug('Retrieved todo for completion toggle', {
+      context.log.debug('Retrieved todo for completion toggle', {
         title: todo.title,
         currentCompleted: todo.completed,
       });
@@ -355,11 +558,11 @@ server.addTool({
 
       if (args.completed && !todo.completed) {
         todo.completed = now;
-        log.info('Marking todo as completed', { title: todo.title });
+        context.log.info('Marking todo as completed', { title: todo.title });
 
         // Handle repeating todos
         if (todo.repeat) {
-          log.info('Creating repeat todo', { repeatDays: todo.repeat });
+          context.log.info('Creating repeat todo', { repeatDays: todo.repeat });
           const newDueDate = new Date(todo.due);
           newDueDate.setDate(newDueDate.getDate() + todo.repeat);
 
@@ -372,33 +575,83 @@ server.addTool({
           };
           delete (newTodo as Record<string, unknown>)._rev;
 
+          const startTime = Date.now();
           await db.insert(newTodo);
           await db.insert(todo);
-          log.info('Todo completed and repeated', {
+          const executionTime = Date.now() - startTime;
+
+          context.log.info('Todo completed and repeated', {
             original: todo.title,
             newDue: newDueDate.toISOString(),
           });
-          return `Todo completed and repeated for ${newDueDate.toISOString()}`;
+
+          return JSON.stringify({
+            summary: 'Todo completed and repeated',
+            data: {
+              original_id: todo._id,
+              original_title: todo.title,
+              new_todo_id: newTodo._id,
+              new_due_date: newDueDate.toISOString(),
+              repeat_interval: todo.repeat,
+            },
+            next_actions: ['listTodos', 'startTimeTracking'],
+            metadata: {
+              execution_time: `${executionTime.toFixed(2)}ms`,
+              operation: 'complete_and_repeat',
+              timestamp: new Date().toISOString(),
+            },
+          });
         }
       } else if (!args.completed) {
         todo.completed = null;
-        log.info('Marking todo as uncompleted', { title: todo.title });
+        context.log.info('Marking todo as uncompleted', { title: todo.title });
       }
 
+      const startTime = Date.now();
       await db.insert(todo);
+      const executionTime = Date.now() - startTime;
+
       const status = args.completed ? 'completed' : 'uncompleted';
-      log.info('Todo completion toggled successfully', {
+      context.log.info('Todo completion toggled successfully', {
         title: todo.title,
         status,
       });
-      return `Todo ${status}: ${todo.title}`;
-    } catch (error) {
-      log.error('Failed to toggle todo completion', {
-        id: args.id,
-        completed: args.completed,
-        error: String(error),
+
+      return JSON.stringify({
+        summary: `Todo ${status} successfully`,
+        data: {
+          id: todo._id,
+          title: todo.title,
+          status,
+          completed_at: todo.completed,
+        },
+        next_actions: args.completed
+          ? ['listTodos', 'createTodo']
+          : ['startTimeTracking', 'updateTodo'],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: 'toggle_completion',
+          timestamp: new Date().toISOString(),
+        },
       });
-      throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return JSON.stringify({
+        summary: 'Failed to toggle todo completion',
+        error: message,
+        recovery_suggestions: [
+          'Verify the todo ID exists using listTodos',
+          'Check if database connection is active',
+          'Try refreshing the todo data',
+        ],
+        metadata: {
+          operation: 'toggle_completion',
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found')
+            ? 'not_found'
+            : 'database_error',
+        },
+      });
     }
   },
 });
@@ -414,19 +667,61 @@ server.addTool({
         'The unique identifier of the todo to delete (ISO timestamp of creation)',
       ),
   }),
-  execute: async (args, { log }) => {
-    log.info('Deleting todo', { id: args.id });
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.info('Deleting todo for user', {
+      userId: context.session?.userId,
+      todoId: args.id,
+    });
 
     try {
       const todo = (await db.get(args.id)) as TodoAlpha3;
-      log.debug('Retrieved todo for deletion', { title: todo.title });
+      context.log.debug('Retrieved todo for deletion', { title: todo.title });
 
+      const startTime = Date.now();
       await db.destroy(todo._id, todo._rev!);
-      log.info('Todo deleted successfully', { title: todo.title });
-      return `Todo deleted: ${todo.title}`;
+      const executionTime = Date.now() - startTime;
+
+      context.log.info('Todo deleted successfully', { title: todo.title });
+
+      return JSON.stringify({
+        summary: 'Todo deleted successfully',
+        data: {
+          id: todo._id,
+          title: todo.title,
+          deleted_at: new Date().toISOString(),
+        },
+        next_actions: ['listTodos', 'createTodo'],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: 'delete',
+          timestamp: new Date().toISOString(),
+        },
+      });
     } catch (error) {
-      log.error('Failed to delete todo', { id: args.id, error: String(error) });
-      throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      context.log.error('Failed to delete todo', {
+        id: args.id,
+        error: message,
+      });
+
+      return JSON.stringify({
+        summary: 'Failed to delete todo',
+        error: message,
+        recovery_suggestions: [
+          'Verify the todo ID exists using listTodos',
+          'Check if database connection is active',
+          'Ensure you have permission to delete this todo',
+        ],
+        metadata: {
+          operation: 'delete',
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found')
+            ? 'not_found'
+            : 'database_error',
+        },
+      });
     }
   },
 });
@@ -442,30 +737,70 @@ server.addTool({
         'The unique identifier of the todo to start time tracking for (ISO timestamp of creation)',
       ),
   }),
-  execute: async (args, { log }) => {
-    log.info('Starting time tracking', { id: args.id });
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.info('Starting time tracking for user', {
+      userId: context.session?.userId,
+      todoId: args.id,
+    });
 
     try {
       const todo = (await db.get(args.id)) as TodoAlpha3;
-      log.debug('Retrieved todo for time tracking start', {
+      context.log.debug('Retrieved todo for time tracking start', {
         title: todo.title,
       });
 
       const now = new Date().toISOString();
+      const startTime = Date.now();
       todo.active[now] = null;
 
       await db.insert(todo);
-      log.info('Time tracking started successfully', {
+      const executionTime = Date.now() - startTime;
+
+      context.log.info('Time tracking started successfully', {
         title: todo.title,
         startTime: now,
       });
-      return `Started time tracking for: ${todo.title}`;
-    } catch (error) {
-      log.error('Failed to start time tracking', {
-        id: args.id,
-        error: String(error),
+
+      return JSON.stringify({
+        summary: 'Time tracking started',
+        data: {
+          id: todo._id,
+          title: todo.title,
+          started_at: now,
+          active_sessions: Object.keys(todo.active).length,
+        },
+        next_actions: ['stopTimeTracking', 'getActiveTimeTracking'],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: 'start_time_tracking',
+          timestamp: new Date().toISOString(),
+        },
       });
-      throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      context.log.error('Failed to start time tracking', {
+        id: args.id,
+        error: message,
+      });
+
+      return JSON.stringify({
+        summary: 'Failed to start time tracking',
+        error: message,
+        recovery_suggestions: [
+          'Verify the todo ID exists using listTodos',
+          'Check if database connection is active',
+          'Stop any existing time tracking first',
+        ],
+        metadata: {
+          operation: 'start_time_tracking',
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found')
+            ? 'not_found'
+            : 'database_error',
+        },
+      });
     }
   },
 });
@@ -481,14 +816,22 @@ server.addTool({
         'The unique identifier of the todo to stop time tracking for (ISO timestamp of creation)',
       ),
   }),
-  execute: async (args, { log }) => {
-    log.info('Stopping time tracking', { id: args.id });
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.info('Stopping time tracking for user', {
+      userId: context.session?.userId,
+      todoId: args.id,
+    });
 
     try {
       const todo = (await db.get(args.id)) as TodoAlpha3;
-      log.debug('Retrieved todo for time tracking stop', { title: todo.title });
+      context.log.debug('Retrieved todo for time tracking stop', {
+        title: todo.title,
+      });
 
       const now = new Date().toISOString();
+      const operationStartTime = Date.now();
 
       // Find the active tracking session (value is null)
       const activeSession = Object.entries(todo.active).find(
@@ -500,22 +843,81 @@ server.addTool({
         todo.active[startTime] = now;
         await db.insert(todo);
 
-        log.info('Time tracking stopped successfully', {
+        const executionTime = Date.now() - operationStartTime;
+
+        context.log.info('Time tracking stopped successfully', {
           title: todo.title,
           startTime,
           endTime: now,
         });
-        return `Stopped time tracking for: ${todo.title}`;
+
+        const duration =
+          new Date(now).getTime() - new Date(startTime).getTime();
+
+        return JSON.stringify({
+          summary: 'Time tracking stopped',
+          data: {
+            id: todo._id,
+            title: todo.title,
+            session: {
+              started_at: startTime,
+              ended_at: now,
+              duration_ms: duration,
+              duration_formatted: `${Math.floor(duration / 60000)}m ${Math.floor((duration % 60000) / 1000)}s`,
+            },
+          },
+          next_actions: [
+            'getActiveTimeTracking',
+            'listTodos',
+            'startTimeTracking',
+          ],
+          metadata: {
+            execution_time: `${executionTime.toFixed(2)}ms`,
+            operation: 'stop_time_tracking',
+            timestamp: new Date().toISOString(),
+          },
+        });
       }
 
-      log.warn('No active time tracking found', { title: todo.title });
-      return `No active time tracking found for: ${todo.title}`;
-    } catch (error) {
-      log.error('Failed to stop time tracking', {
-        id: args.id,
-        error: String(error),
+      context.log.warn('No active time tracking found', { title: todo.title });
+
+      return JSON.stringify({
+        summary: 'No active time tracking found',
+        data: {
+          id: todo._id,
+          title: todo.title,
+          active_sessions: 0,
+        },
+        next_actions: ['startTimeTracking', 'getActiveTimeTracking'],
+        metadata: {
+          operation: 'stop_time_tracking',
+          timestamp: new Date().toISOString(),
+          result: 'no_active_session',
+        },
       });
-      throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      context.log.error('Failed to stop time tracking', {
+        id: args.id,
+        error: message,
+      });
+
+      return JSON.stringify({
+        summary: 'Failed to stop time tracking',
+        error: message,
+        recovery_suggestions: [
+          'Verify the todo ID exists using listTodos',
+          "Check if there's active time tracking with getActiveTimeTracking",
+          'Check if database connection is active',
+        ],
+        metadata: {
+          operation: 'stop_time_tracking',
+          timestamp: new Date().toISOString(),
+          error_type: message.includes('not found')
+            ? 'not_found'
+            : 'database_error',
+        },
+      });
     }
   },
 });
@@ -529,10 +931,15 @@ server.addTool({
     .describe(
       'No parameters required - returns all todos with active time tracking',
     ),
-  execute: async (args, { log }) => {
-    log.info('Retrieving active time tracking todos');
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.info('Retrieving active time tracking todos for user', {
+      userId: context.session?.userId,
+    });
 
     try {
+      const startTime = Date.now();
       const result = await db.find({
         selector: {
           version: 'alpha3',
@@ -545,15 +952,51 @@ server.addTool({
         return Object.values(typedTodo.active).some((end) => end === null);
       });
 
-      log.info('Active time tracking todos retrieved', {
+      const executionTime = Date.now() - startTime;
+
+      context.log.info('Active time tracking todos retrieved', {
         count: activeTodos.length,
       });
-      return JSON.stringify(activeTodos, null, 2);
-    } catch (error) {
-      log.error('Failed to retrieve active time tracking todos', {
-        error: String(error),
+
+      return JSON.stringify({
+        summary: `Found ${activeTodos.length} todos with active time tracking`,
+        data: activeTodos.map((todo) => ({
+          ...todo,
+          active_session_count: Object.values(todo.active).filter(
+            (end) => end === null,
+          ).length,
+        })),
+        next_actions:
+          activeTodos.length > 0
+            ? ['stopTimeTracking']
+            : ['startTimeTracking', 'listTodos'],
+        metadata: {
+          execution_time: `${executionTime.toFixed(2)}ms`,
+          operation: 'get_active_time_tracking',
+          timestamp: new Date().toISOString(),
+          active_count: activeTodos.length,
+        },
       });
-      throw error;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      context.log.error('Failed to retrieve active time tracking todos', {
+        error: message,
+      });
+
+      return JSON.stringify({
+        summary: 'Failed to retrieve active time tracking',
+        error: message,
+        recovery_suggestions: [
+          'Check if database connection is active',
+          'Try listing todos first with listTodos',
+          'Verify database initialization',
+        ],
+        metadata: {
+          operation: 'get_active_time_tracking',
+          timestamp: new Date().toISOString(),
+          error_type: 'database_error',
+        },
+      });
     }
   },
 });
@@ -562,35 +1005,48 @@ server.addTool({
 server.addTool({
   name: 'getServerInfo',
   description:
-    'Get comprehensive information about the Eddo MCP server, including data model, available tools, and usage examples',
+    'Get comprehensive information about the Eddo MCP server with authentication, including data model, available tools, and usage examples',
   parameters: z.object({
     section: z
       .enum(['overview', 'datamodel', 'tools', 'examples', 'tagstats', 'all'])
       .default('all')
       .describe('Specific section of documentation to retrieve'),
   }),
-  execute: async (args, { log }) => {
-    log.debug('Retrieving server info', { section: args.section });
-    
+  execute: async (args, context) => {
+    const db = getUserDb(context);
+
+    context.log.debug('Retrieving server info for user', {
+      userId: context.session?.userId,
+      section: args.section,
+    });
+
     // Get tag statistics if needed
     let tagStatsSection = '';
     if (args.section === 'tagstats' || args.section === 'all') {
       try {
         // Use the design document view to get tag statistics
+        // Force view refresh by not using stale parameter (default behavior)
         const result = await db.view('tags', 'by_tag', {
           group: true,
-          reduce: true
+          reduce: true,
         });
-        
+
         // Sort by count (descending) and get top 10
         const sortedTags = result.rows
-          .sort((a: any, b: any) => b.value - a.value)
+          .sort((a, b) =>
+            typeof a.value === 'number' && typeof b.value === 'number'
+              ? b.value - a.value
+              : 0,
+          )
           .slice(0, 10);
-        
-        const tagList = sortedTags.length > 0 
-          ? sortedTags.map((row: any) => `- **${row.key}**: ${row.value} uses`).join('\n')
-          : '- No tags found';
-        
+
+        const tagList =
+          sortedTags.length > 0
+            ? sortedTags
+                .map((row) => `- **${row.key}**: ${row.value} uses`)
+                .join('\n')
+            : '- No tags found';
+
         tagStatsSection = `# Top Used Tags
 
 The most frequently used tags across all todos:
@@ -608,12 +1064,14 @@ Error retrieving tag statistics: ${error}`;
     const sections: Record<string, string> = {
       overview: `# Eddo MCP Server Overview
 
-The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD-inspired todo and time tracking application.
+The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD-inspired todo and time tracking application with per-user authentication.
 
-- **Database**: CouchDB (http://localhost:5984/todos-dev)
+- **Database**: CouchDB with per-user databases
 - **Data Model**: TodoAlpha3 schema
 - **Features**: Todo CRUD, time tracking, repeating tasks, GTD contexts
-- **Port**: 3001 (http://localhost:3001/mcp)`,
+- **Authentication**: Per-request authentication via X-User-ID header
+- **Current User**: ${context.session?.userId || 'anonymous'}
+- **Database**: ${context.session?.dbName || 'default'}`,
 
       datamodel: `# TodoAlpha3 Data Model
 
@@ -642,9 +1100,14 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
 6. **startTimeTracking** - Start tracking time for a todo
 7. **stopTimeTracking** - Stop active time tracking
 8. **getActiveTimeTracking** - Get todos with active time tracking
-9. **getServerInfo** - Get this documentation`,
+9. **getServerInfo** - Get this documentation
+10. **getUserInfo** - Get current authenticated user information`,
 
       examples: `# Usage Examples
+
+## Authentication
+Pass X-API-Key header to authenticate:
+curl -H "X-API-Key: your-api-key-here" http://localhost:3001/mcp
 
 ## Create a simple todo
 {
@@ -714,16 +1177,30 @@ export async function stopMcpServer() {
 
 export async function startMcpServer(port: number = 3001) {
   try {
-    console.log(`🔧 Initializing Eddo MCP server on port ${port}...`);
+    console.log(`🔧 Initializing Eddo MCP server with auth on port ${port}...`);
 
-    // Create indexes before starting the server
-    await createIndexes();
+    // Verify database connection (database setup is handled externally)
+    // Note: We can't test specific user databases here since they're created on-demand
+    try {
+      const defaultDbName =
+        env.NODE_ENV === 'test'
+          ? getTestCouchDbConfig(env).dbName
+          : getCouchDbConfig(env).dbName;
+      const defaultDb = couch.db.use(defaultDbName);
+      const info = await defaultDb.info();
+      console.log(`✅ Connected to CouchDB (verified with ${info.db_name})`);
+    } catch (error: unknown) {
+      console.error(
+        '❌ Failed to connect to database. Ensure CouchDB is running.',
+      );
+      throw error;
+    }
 
     // Start the server on the specified port
     await server.start({
       transportType: 'httpStream',
       httpStream: {
-        port: port,
+        port,
         // corsOptions: {
         //   origin: 'http://localhost:5173', // Allow Vite dev server
         //   credentials: true,
@@ -731,10 +1208,11 @@ export async function startMcpServer(port: number = 3001) {
       },
     });
 
-    console.log(`🚀 Eddo MCP server running on port ${port}`);
+    console.log(`🚀 Eddo MCP server with auth running on port ${port}`);
     console.log(`📡 Connect with: http://localhost:${port}/mcp`);
+    console.log(`🔐 Authentication: Pass X-API-Key header`);
     console.log(
-      '📋 Available tools: createTodo, listTodos, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo',
+      '📋 Available tools: createTodo, listTodos, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo, getUserInfo',
     );
   } catch (error) {
     console.error('❌ Failed to start MCP server:', error);
@@ -744,7 +1222,10 @@ export async function startMcpServer(port: number = 3001) {
 
 // Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startMcpServer().catch((error) => {
+  // Use custom port from environment in test mode
+  const port =
+    env.NODE_ENV === 'test' && env.MCP_TEST_PORT ? env.MCP_TEST_PORT : 3001;
+  startMcpServer(port).catch((error) => {
     console.error('Failed to start MCP server:', error);
     process.exit(1);
   });

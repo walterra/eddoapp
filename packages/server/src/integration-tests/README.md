@@ -20,18 +20,21 @@ packages/server/src/integration-tests/
 ## Test Suites
 
 ### 1. CRUD Lifecycle Tests (`crud-lifecycle.test.ts`)
+
 - Complete create → read → update → delete workflows
 - Todo completion toggling and repeat functionality
 - Batch operations and data consistency validation
 - Error handling for invalid inputs and operations
 
 ### 2. Time Tracking Tests (`time-tracking.test.ts`)
+
 - Start/stop time tracking for single and multiple categories
 - Active time tracking queries and filtering
 - Edge cases and error recovery
 - Time tracking data integrity across operations
 
 ### 3. Filtering and Query Tests (`filtering-queries.test.ts`)
+
 - Context-based filtering
 - Completion status filtering
 - Date range queries
@@ -39,12 +42,14 @@ packages/server/src/integration-tests/
 - Limit and pagination functionality
 
 ### 4. Analytics Tests (`analytics.test.ts`)
+
 - Server information queries
 - Tag statistics accuracy and updates
 - Performance with large datasets
 - Real-world analytics scenarios
 
 ### 5. Complete Workflow Tests (`workflow-integration.test.ts`)
+
 - End-to-end workflows based on MCP-CRUD.md
 - Multi-user simulation scenarios
 - Project management workflows
@@ -53,6 +58,7 @@ packages/server/src/integration-tests/
 ## Running Tests
 
 ### Prerequisites
+
 1. MCP server running on `http://localhost:3002/mcp`
 2. CouchDB accessible and configured
 3. Node.js 18+ and pnpm installed
@@ -86,15 +92,18 @@ pnpm test:mcp:integration:watch
 ## Test Configuration
 
 ### Environment Variables
+
 - `MCP_TEST_URL`: MCP server URL (default: `http://localhost:3002/mcp`)
 - `NODE_ENV`: Set to `test` automatically
 
 ### Timeouts
+
 - Test timeout: 30 seconds
 - Hook timeout: 10 seconds
 - Connection timeout: 30 seconds
 
 ### Test Isolation
+
 - Each test suite runs with fresh data
 - Tests run sequentially to avoid database conflicts
 - Automatic cleanup after each test
@@ -102,21 +111,27 @@ pnpm test:mcp:integration:watch
 ## Test Architecture
 
 ### Test Server Harness (`setup/test-server.ts`)
+
 Provides a reusable MCP client connection for tests:
+
 - Automatic connection management
 - Server health checking
 - Test data reset functionality
 - Tool discovery and invocation
 
 ### Custom Assertions (`helpers/mcp-assertions.ts`)
+
 Domain-specific assertions for MCP testing:
+
 - Todo structure validation
 - Filtering result verification
 - Time tracking state checks
 - Server info and analytics validation
 
 ### Test Data Factories (`__fixtures__/todo-factory.ts`)
+
 Consistent test data generation:
+
 - Basic todo templates
 - Complex todos with all fields
 - Batch todo generation
@@ -125,10 +140,12 @@ Consistent test data generation:
 ## Writing New Tests
 
 ### Basic Test Structure
+
 ```typescript
-import { describe, it, beforeEach, afterEach } from 'vitest';
-import { MCPTestServer } from '../setup/test-server.js';
+import { afterEach, beforeEach, describe, it } from 'vitest';
+
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
+import { MCPTestServer } from '../setup/test-server.js';
 
 describe('New Test Suite', () => {
   let testServer: MCPTestServer;
@@ -152,6 +169,7 @@ describe('New Test Suite', () => {
 ```
 
 ### Best Practices
+
 1. **Use meaningful test names** that describe the expected behavior
 2. **Test both happy path and error cases** for comprehensive coverage
 3. **Use custom assertions** for domain-specific validations
@@ -161,11 +179,13 @@ describe('New Test Suite', () => {
 ## Debugging Tests
 
 ### Common Issues
+
 1. **Connection timeouts**: Ensure MCP server is running and accessible
 2. **Database conflicts**: Tests may interfere if run in parallel
 3. **Test data pollution**: Use `resetTestData()` to clean up between tests
 
 ### Debug Strategies
+
 1. **Run single test**: Use `--run suites/specific.test.ts` to isolate issues
 2. **Enable verbose output**: Tests use verbose reporter by default
 3. **Check server logs**: Monitor MCP server output during test runs
@@ -174,11 +194,13 @@ describe('New Test Suite', () => {
 ## Performance Considerations
 
 ### Test Execution Time
+
 - Individual tests: < 5 seconds
 - Full suite: < 5 minutes
 - Database operations are the primary bottleneck
 
 ### Optimization Strategies
+
 1. **Sequential execution** prevents database conflicts
 2. **Efficient cleanup** using bulk delete operations
 3. **Connection reuse** within test suites
@@ -187,18 +209,19 @@ describe('New Test Suite', () => {
 ## Integration with CI/CD
 
 ### GitHub Actions Example
+
 ```yaml
 - name: Run MCP Integration Tests
   run: |
     # Start MCP server
     pnpm dev:server &
-    
+
     # Wait for server to be ready
     sleep 10
-    
+
     # Run integration tests
     pnpm test:mcp:integration
-    
+
     # Cleanup
     pkill -f mcp-server
 ```
@@ -206,13 +229,16 @@ describe('New Test Suite', () => {
 ## Maintenance
 
 ### Regular Tasks
+
 1. **Update test data** when schema changes
 2. **Add tests for new features** as they're implemented
 3. **Review test performance** and optimize slow tests
 4. **Update documentation** when test structure changes
 
 ### Schema Evolution
+
 When the todo schema changes:
+
 1. Update `TodoAlpha3` interface in `mcp-assertions.ts`
 2. Update test data factories in `todo-factory.ts`
 3. Update validation assertions as needed

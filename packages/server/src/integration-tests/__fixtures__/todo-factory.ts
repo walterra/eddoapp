@@ -2,7 +2,7 @@
  * Test data factories for creating consistent test todos
  */
 
-export interface TestTodoData {
+export interface TestTodoData extends Record<string, unknown> {
   title: string;
   context: string;
   due: string;
@@ -105,11 +105,16 @@ export const createTestTodoData = {
   /**
    * Creates multiple todos for batch testing
    */
-  batch: (count: number, baseTitle: string = 'Batch Test Todo'): TestTodoData[] => {
+  batch: (
+    count: number,
+    baseTitle: string = 'Batch Test Todo',
+  ): TestTodoData[] => {
     return Array.from({ length: count }, (_, i) => ({
       title: `${baseTitle} ${i + 1}`,
       context: i % 2 === 0 ? 'work' : 'private',
-      due: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      due: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
       description: `Batch test todo number ${i + 1}`,
       tags: ['batch', `item-${i + 1}`],
     }));

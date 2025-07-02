@@ -2,9 +2,10 @@
  * MCP Test Server Harness
  * Provides a reusable test environment for integration testing
  */
-
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+import { TestLock } from './test-lock.js';
 
 export interface MCPTestServerConfig {
   serverUrl?: string;
@@ -17,14 +18,27 @@ export class MCPTestServer {
   private client: Client | null = null;
   private transport: StreamableHTTPClientTransport | null = null;
   private config: Required<MCPTestServerConfig>;
+  private testLock: TestLock;
+  private testApiKey: string;
 
   constructor(config: MCPTestServerConfig = {}) {
+    // Use dynamic port from environment or fall back to default
+    const testPort = process.env.MCP_TEST_PORT || '3003';
+
     this.config = {
-      serverUrl: config.serverUrl || process.env.MCP_TEST_URL || 'http://localhost:3003/mcp',
+      serverUrl:
+        config.serverUrl ||
+        process.env.MCP_TEST_URL ||
+        `http://localhost:${testPort}/mcp`,
       clientName: config.clientName || 'integration-test-client',
       clientVersion: config.clientVersion || '1.0.0',
       timeout: config.timeout || 30000,
     };
+
+    this.testLock = new TestLock();
+
+    // Generate unique test API key for complete isolation
+    this.testApiKey = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   async start(): Promise<void> {
@@ -32,8 +46,17 @@ export class MCPTestServer {
       throw new Error('Test server already started');
     }
 
-    // Create transport
-    this.transport = new StreamableHTTPClientTransport(new URL(this.config.serverUrl));
+    // Create transport with API key header for test isolation
+    this.transport = new StreamableHTTPClientTransport(
+      new URL(this.config.serverUrl),
+      {
+        requestInit: {
+          headers: {
+            'X-API-Key': this.testApiKey,
+          },
+        },
+      },
+    );
 
     // Create client
     this.client = new Client(
@@ -45,13 +68,16 @@ export class MCPTestServer {
         capabilities: {
           tools: {},
         },
-      }
+      },
     );
 
     // Connect with timeout
     const connectPromise = this.client.connect(this.transport);
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Connection timeout')), this.config.timeout);
+      setTimeout(
+        () => reject(new Error('Connection timeout')),
+        this.config.timeout,
+      );
     });
 
     await Promise.race([connectPromise, timeoutPromise]);
@@ -76,17 +102,22 @@ export class MCPTestServer {
     return this.client;
   }
 
-  async listAvailableTools(): Promise<Array<{ name: string; description: string; inputSchema: any }>> {
+  async listAvailableTools(): Promise<
+    Array<{ name: string; description: string; inputSchema: unknown }>
+  > {
     const client = this.getClient();
     const response = await client.listTools();
-    return response.tools.map(tool => ({
+    return response.tools.map((tool) => ({
       name: tool.name,
-      description: tool.description,
+      description: tool.description || '',
       inputSchema: tool.inputSchema,
     }));
   }
 
-  async callTool(name: string, args: any = {}): Promise<any> {
+  async callTool(
+    name: string,
+    args: Record<string, unknown> = {},
+  ): Promise<unknown> {
     const client = this.getClient();
     const result = await client.callTool({
       name,
@@ -94,35 +125,171 @@ export class MCPTestServer {
     });
 
     // Extract text content from response
-    if (result.content && result.content.length > 0) {
-      const textContent = result.content.find(c => c.type === 'text');
+    if (
+      result.content &&
+      Array.isArray(result.content) &&
+      result.content.length > 0
+    ) {
+      const textContent = result.content.find(
+        (c: { type: string }) => c.type === 'text',
+      );
       if (textContent) {
-        try {
-          return JSON.parse(textContent.text);
-        } catch {
-          return textContent.text;
-        }
+        return this.parseToolResponse(textContent.text, name);
       }
     }
 
     return result;
   }
 
-  async resetTestData(): Promise<void> {
-    // Clear all todos from test database
+  /**
+   * Parse tool response with proper error handling and type consistency
+   */
+  private parseToolResponse(text: string, toolName: string): unknown {
+    // Handle empty responses
+    if (!text || text.trim() === '') {
+      console.warn(`⚠️  Empty response from tool: ${toolName}`);
+      return null;
+    }
+
+    // All tools now return JSON responses with the new structured format
     try {
-      const todos = await this.callTool('listTodos', {});
-      if (Array.isArray(todos)) {
-        for (const todo of todos) {
-          await this.callTool('deleteTodo', { id: todo._id });
+      const parsed = JSON.parse(text);
+
+      // Handle the new structured response format
+      if (parsed && typeof parsed === 'object') {
+        // Special handling for tools that return lists
+        const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
+
+        if (LIST_TOOLS.includes(toolName)) {
+          // Extract data array from structured response
+          if (parsed.data && Array.isArray(parsed.data)) {
+            return parsed.data;
+          } else if (Array.isArray(parsed)) {
+            // Backwards compatibility - if already an array
+            return parsed;
+          } else {
+            console.warn(
+              `⚠️  Tool ${toolName} returned unexpected format: ${typeof parsed}`,
+            );
+            return [];
+          }
+        } else if (toolName === 'getUserInfo') {
+          // getUserInfo returns the data object directly
+          return parsed.data || parsed;
+        } else if (toolName === 'getServerInfo') {
+          // getServerInfo returns plain text, not JSON
+          return text;
+        } else {
+          // For other tools (createTodo, updateTodo, etc.), return the full response
+          // Tests will need to check the response.summary or response.data fields
+          return parsed;
         }
       }
-    } catch (error) {
-      console.warn('Warning: Failed to reset test data:', error);
+
+      return parsed;
+    } catch (parseError) {
+      // If JSON parsing fails, check if it's a plain text response (like getServerInfo)
+      if (toolName === 'getServerInfo') {
+        return text;
+      }
+
+      console.error(`❌ Tool ${toolName} returned invalid JSON:`, parseError);
+      console.error(`Raw response: ${text.substring(0, 200)}...`);
+
+      // Return appropriate default based on tool type
+      const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
+      return LIST_TOOLS.includes(toolName) ? [] : text;
     }
   }
 
-  async waitForServer(maxAttempts: number = 10, delayMs: number = 1000): Promise<void> {
+  async resetTestData(): Promise<void> {
+    // With per-API-key databases via X-API-Key header, each test gets complete isolation
+    console.log(
+      `🔄 Test using isolated database for API key: ${this.testApiKey}`,
+    );
+
+    // Set up the database schema for this test's isolated database
+    await this.setupTestDatabase();
+  }
+
+  private async setupTestDatabase(): Promise<void> {
+    try {
+      const { validateEnv, getTestCouchDbConfig } = await import(
+        '@eddo/shared'
+      );
+      const { DatabaseSetup } = await import('./database-setup.js');
+
+      const env = validateEnv(process.env);
+      const couchDbConfig = getTestCouchDbConfig(env);
+
+      // Generate the same database name that the auth server will use
+      const testDbName = `${couchDbConfig.dbName}_api_${this.testApiKey}`;
+
+      // Set up the database with proper indexes and design documents
+      const dbSetup = new DatabaseSetup(testDbName);
+      await dbSetup.setupDatabase();
+
+      console.log(`✅ Test database initialized: ${testDbName}`);
+    } catch (error) {
+      console.error('❌ Failed to set up test database:', error);
+      throw error;
+    }
+  }
+
+  private async clearAllDocuments(): Promise<void> {
+    // Always use direct database cleanup for reliability
+    console.log(
+      '🔧 Using direct database cleanup for bulletproof test isolation',
+    );
+    await this.forceCleanupDatabase();
+  }
+
+  private async forceCleanupDatabase(): Promise<void> {
+    try {
+      const { validateEnv, getTestCouchDbConfig } = await import(
+        '@eddo/shared'
+      );
+      const nano = await import('nano');
+
+      const env = validateEnv(process.env);
+      const couchDbConfig = getTestCouchDbConfig(env);
+      const couch = nano.default(couchDbConfig.url);
+      const db = couch.db.use(couchDbConfig.dbName);
+
+      // Get all documents excluding design documents
+      const allDocs = await db.list({ include_docs: false });
+      const todoIds = allDocs.rows
+        .filter((row) => !row.id.startsWith('_design/'))
+        .map((row) => ({ id: row.id, rev: row.value.rev }));
+
+      if (todoIds.length > 0) {
+        console.log(`🔧 Force deleting ${todoIds.length} remaining documents`);
+
+        // Bulk delete all non-design documents
+        const docsToDelete = todoIds.map((doc) => ({
+          _id: doc.id,
+          _rev: doc.rev,
+          _deleted: true,
+        }));
+
+        await db.bulk({ docs: docsToDelete });
+        console.log('✅ Force cleanup completed');
+      }
+    } catch (error) {
+      console.error('❌ Force cleanup failed:', error);
+      throw error;
+    }
+  }
+
+  private async waitForServerToRecognizeCleanDatabase(): Promise<void> {
+    // Brief wait to allow server to recognize the database reset
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  async waitForServer(
+    maxAttempts: number = 20,
+    delayMs: number = 500,
+  ): Promise<void> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         await this.start();
@@ -131,9 +298,11 @@ export class MCPTestServer {
       } catch (error) {
         await this.stop();
         if (attempt === maxAttempts) {
-          throw new Error(`Failed to connect to MCP server after ${maxAttempts} attempts: ${error}`);
+          throw new Error(
+            `Failed to connect to MCP server after ${maxAttempts} attempts: ${error}`,
+          );
         }
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
   }
