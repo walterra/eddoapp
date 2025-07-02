@@ -58,7 +58,11 @@ const server = new FastMCP<UserSession>({
 
       // Generate user-specific database name using API key
       // Use the base database name (not the effective name) to avoid double API key suffix
-      const dbName = `${env.COUCHDB_DB_NAME}_api_${apiKey}`;
+      const isTest = process.env.NODE_ENV === 'test';
+      const baseName = isTest
+        ? env.COUCHDB_TEST_DB_NAME || env.COUCHDB_DB_NAME
+        : env.COUCHDB_DB_NAME;
+      const dbName = `${baseName}_api_${apiKey}`;
 
       return Promise.resolve({
         userId: apiKey, // Use API key as user identifier
@@ -77,7 +81,11 @@ const server = new FastMCP<UserSession>({
     // Here you would validate the API key against your auth system
     // For now, use the API key as the user identifier
     // Use the base database name (not the effective name) to avoid double API key suffix
-    const dbName = `${env.COUCHDB_DB_NAME}_api_${apiKey}`;
+    const isTest = process.env.NODE_ENV === 'test';
+    const baseName = isTest
+      ? env.COUCHDB_TEST_DB_NAME || env.COUCHDB_DB_NAME
+      : env.COUCHDB_DB_NAME;
+    const dbName = `${baseName}_api_${apiKey}`;
 
     return Promise.resolve({
       userId: apiKey,
@@ -295,24 +303,37 @@ server.addTool({
         }
       }
 
-      // Build query
-      const query: {
-        selector: Record<string, unknown>;
-        sort: Array<Record<string, string>>;
-        limit?: number;
-      } = {
+      // Build query with explicit sorting and index specification
+      const baseQuery = {
         selector,
         sort: [{ due: 'asc' }],
+        limit: args.limit && args.limit > 0 ? args.limit : 50,
       };
 
-      if (args.limit && args.limit > 0) {
-        query.limit = args.limit;
+      // Explicitly specify which index to use based on the query
+      // This is required for CouchDB to use the correct index for sorting
+      let use_index: string;
+      if (args.context && args.completed !== undefined) {
+        use_index = 'version-context-completed-due-index';
+      } else if (args.context) {
+        use_index = 'version-context-due-index';
+      } else if (args.completed !== undefined) {
+        use_index = 'version-completed-due-index';
       } else {
-        query.limit = 50; // Default limit
+        use_index = 'version-due-index';
       }
 
+      const finalQuery = { ...baseQuery, use_index } as nano.MangoQuery;
+
       const startTime = Date.now();
-      const response = await db.find(query as nano.MangoQuery);
+
+      // Debug: Log the exact query being sent
+      context.log.info('Executing Mango query', {
+        query: JSON.stringify(finalQuery, null, 2),
+        dbName: context.session?.userId,
+      });
+
+      const response = await db.find(finalQuery);
       const executionTime = Date.now() - startTime;
 
       context.log.info('Todos retrieved successfully', {

@@ -161,6 +161,14 @@ export class MCPTestServer {
         const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
 
         if (LIST_TOOLS.includes(toolName)) {
+          // Check if this is an error response
+          if (parsed.error) {
+            console.warn(
+              `⚠️  Tool ${toolName} returned error: ${parsed.error}`,
+            );
+            return [];
+          }
+
           // Extract data array from structured response
           if (parsed.data && Array.isArray(parsed.data)) {
             return parsed.data;
