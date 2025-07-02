@@ -19,6 +19,15 @@ export interface TodoAlpha3 {
   version: 'alpha3';
 }
 
+export interface MCPResponse {
+  summary: string;
+  data?: { id?: string; [key: string]: unknown };
+  error?: string;
+  next_actions?: string[];
+  recovery_suggestions?: string[];
+  metadata?: Record<string, unknown>;
+}
+
 export class MCPAssertions {
   constructor(private testServer: MCPTestServer) {}
 
@@ -71,7 +80,9 @@ export class MCPAssertions {
       if (result && typeof result === 'object' && 'error' in result) {
         // This is an expected error condition in the new format
         if (expectedErrorPattern) {
-          const errorText = result.error || result.summary || JSON.stringify(result);
+          const errorResult = result as { error?: unknown; summary?: unknown };
+          const errorText =
+            errorResult.error || errorResult.summary || JSON.stringify(result);
           if (typeof expectedErrorPattern === 'string') {
             expect(errorText).toContain(expectedErrorPattern);
           } else {

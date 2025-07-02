@@ -99,6 +99,7 @@ interface TodoAlpha3 {
 - Use try/catch for error handling with console.error
 - Use Prettier for formatting with existing config
 - **Always run the proper scripts for linting and formatting before manually fixing code style issues**
+- TypeScript: do not use `any`.
 
 ## Git Rules
 

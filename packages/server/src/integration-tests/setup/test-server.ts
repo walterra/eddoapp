@@ -154,12 +154,12 @@ export class MCPTestServer {
     // All tools now return JSON responses with the new structured format
     try {
       const parsed = JSON.parse(text);
-      
+
       // Handle the new structured response format
       if (parsed && typeof parsed === 'object') {
         // Special handling for tools that return lists
         const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
-        
+
         if (LIST_TOOLS.includes(toolName)) {
           // Extract data array from structured response
           if (parsed.data && Array.isArray(parsed.data)) {
@@ -185,17 +185,17 @@ export class MCPTestServer {
           return parsed;
         }
       }
-      
+
       return parsed;
     } catch (parseError) {
       // If JSON parsing fails, check if it's a plain text response (like getServerInfo)
       if (toolName === 'getServerInfo') {
         return text;
       }
-      
+
       console.error(`❌ Tool ${toolName} returned invalid JSON:`, parseError);
       console.error(`Raw response: ${text.substring(0, 200)}...`);
-      
+
       // Return appropriate default based on tool type
       const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
       return LIST_TOOLS.includes(toolName) ? [] : text;

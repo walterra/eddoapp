@@ -6,7 +6,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData } from '../__fixtures__/todo-factory.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
-import type { TodoAlpha3 as _TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type {
+  MCPResponse,
+  TodoAlpha3 as _TodoAlpha3,
+} from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 // Helper function to parse tag statistics from markdown response
@@ -158,14 +161,14 @@ describe('MCP Analytics Integration', () => {
 
     it('should update tag statistics when todos are modified', async () => {
       // Create todo with initial tags
-      const createResponse = await assert.expectToolCallSuccess<any>(
+      const createResponse = await assert.expectToolCallSuccess<MCPResponse>(
         'createTodo',
         {
           ...createTestTodoData.withTags(['initial', 'tag']),
           title: 'Modifiable Todo',
         },
       );
-      const todoId = createResponse.data.id;
+      const todoId = createResponse.data!.id!;
 
       // Check initial stats
       let tagStatsResponse = await assert.expectToolCallSuccess<string>(
@@ -198,16 +201,16 @@ describe('MCP Analytics Integration', () => {
 
     it('should update tag statistics when todos are deleted', async () => {
       // Create todos with tags
-      const createResponse1 = await assert.expectToolCallSuccess<any>(
+      const createResponse1 = await assert.expectToolCallSuccess<MCPResponse>(
         'createTodo',
         {
           ...createTestTodoData.withTags(['delete-test', 'common']),
           title: 'Todo to Delete',
         },
       );
-      const todoId1 = createResponse1.data.id;
+      const todoId1 = createResponse1.data!.id!;
 
-      await assert.expectToolCallSuccess<any>('createTodo', {
+      await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
         ...createTestTodoData.withTags(['keep-test', 'common']),
         title: 'Todo to Keep',
       });
@@ -240,14 +243,14 @@ describe('MCP Analytics Integration', () => {
 
     it('should handle tag statistics with completion status changes', async () => {
       // Create todo with tags
-      const createResponse = await assert.expectToolCallSuccess<any>(
+      const createResponse = await assert.expectToolCallSuccess<MCPResponse>(
         'createTodo',
         {
           ...createTestTodoData.withTags(['completion-test']),
           title: 'Completion Test',
         },
       );
-      const todoId = createResponse.data.id;
+      const todoId = createResponse.data!.id!;
 
       // Check initial stats
       let tagStatsResponse = await assert.expectToolCallSuccess<string>(
