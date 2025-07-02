@@ -1,6 +1,6 @@
 import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
-import { setupMCPIntegration } from '../mcp/client.js';
+import { getMCPClient } from '../mcp/client.js';
 import { logger } from '../utils/logger.js';
 import { buildSystemPrompt } from './system-prompt.js';
 
@@ -22,29 +22,18 @@ interface ToolCall {
 }
 
 export class SimpleAgent {
-  private mcpClient: Awaited<ReturnType<typeof setupMCPIntegration>> | null =
-    null;
-  private mcpInitialized = false;
-
   constructor() {
-    // MCP initialization will be handled on first use
+    // MCP client is initialized at bot startup, not here
   }
 
-  private async ensureMCPInitialized(): Promise<void> {
-    if (this.mcpInitialized) {
-      return;
+  private getMCPClientOrThrow() {
+    const client = getMCPClient();
+    if (!client) {
+      throw new Error(
+        'MCP client not initialized. Please ensure MCP is initialized at bot startup.',
+      );
     }
-
-    try {
-      this.mcpClient = await setupMCPIntegration();
-      this.mcpInitialized = true;
-      logger.info('MCP integration initialized', {
-        toolCount: this.mcpClient?.tools.length || 0,
-      });
-    } catch (error) {
-      logger.error('Failed to initialize MCP integration', { error });
-      this.mcpInitialized = true; // Mark as attempted to avoid retry loops
-    }
+    return client;
   }
 
   async execute(
@@ -100,8 +89,8 @@ export class SimpleAgent {
     userInput: string,
     telegramContext: BotContext,
   ): Promise<string> {
-    // Ensure MCP is initialized before starting the agent loop
-    await this.ensureMCPInitialized();
+    // Get MCP client (initialized at bot startup)
+    const mcpClient = this.getMCPClientOrThrow();
 
     // Start periodic typing for long operations
     const typingInterval = this.startPeriodicTyping(telegramContext);
@@ -144,7 +133,7 @@ export class SimpleAgent {
         logger.debug('Failed to send iteration update', { error });
       }
 
-      const systemPrompt = buildSystemPrompt(this.mcpClient?.tools || []);
+      const systemPrompt = buildSystemPrompt(mcpClient.tools);
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
         .join('\n');
@@ -153,7 +142,7 @@ export class SimpleAgent {
         iterationId,
         systemPromptPreview: systemPrompt.substring(0, 200) + '...',
         conversationPreview: conversationHistory.substring(0, 300) + '...',
-        availableTools: this.mcpClient?.tools.map((t) => t.name) || [],
+        availableTools: mcpClient.tools.map((t) => t.name),
       });
 
       // Show typing before LLM call
@@ -296,13 +285,9 @@ export class SimpleAgent {
     toolCall: ToolCall,
     _telegramContext: BotContext,
   ): Promise<unknown> {
-    await this.ensureMCPInitialized();
+    const mcpClient = this.getMCPClientOrThrow();
 
-    if (!this.mcpClient) {
-      throw new Error('MCP client not initialized');
-    }
-
-    const tool = this.mcpClient.tools.find((t) => t.name === toolCall.name);
+    const tool = mcpClient.tools.find((t) => t.name === toolCall.name);
     if (!tool) {
       throw new Error(`Tool not found: ${toolCall.name}`);
     }
@@ -312,7 +297,7 @@ export class SimpleAgent {
       parameters: toolCall.parameters,
     });
 
-    const result = await this.mcpClient.invoke(tool.name, toolCall.parameters);
+    const result = await mcpClient.invoke(tool.name, toolCall.parameters);
 
     return result;
   }
@@ -368,10 +353,10 @@ export class SimpleAgent {
     version: string;
     mcpToolsAvailable: number;
   }> {
-    await this.ensureMCPInitialized();
+    const mcpClient = getMCPClient();
     return {
       version: '3.0.0-simple',
-      mcpToolsAvailable: this.mcpClient?.tools.length || 0,
+      mcpToolsAvailable: mcpClient?.tools.length || 0,
     };
   }
 }
