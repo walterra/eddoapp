@@ -2,11 +2,17 @@ import {
   DatabaseHealthMonitor,
   SafeDbOperations,
   createSafeDbOperations,
+  validateEnv,
+  getEffectiveDbName,
 } from '@eddo/shared';
 import PouchDB from 'pouchdb-browser';
 import { createContext, useContext } from 'react';
 
-const pouchDb = new PouchDB('todos');
+// Get environment configuration for database naming
+const env = validateEnv(process.env);
+const dbName = getEffectiveDbName(env);
+
+const pouchDb = new PouchDB(dbName);
 const safeDbOperations = createSafeDbOperations(pouchDb);
 const healthMonitor = new DatabaseHealthMonitor(pouchDb);
 

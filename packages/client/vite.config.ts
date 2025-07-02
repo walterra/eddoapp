@@ -29,6 +29,9 @@ export default defineConfig({
     'process.env.COUCHDB_DB_NAME': JSON.stringify(
       process.env.COUCHDB_DB_NAME || 'todos-dev',
     ),
+    'process.env.COUCHDB_API_KEY': JSON.stringify(
+      process.env.COUCHDB_API_KEY || undefined,
+    ),
     'process.env.LOG_LEVEL': JSON.stringify(process.env.LOG_LEVEL || 'info'),
   },
 });
