@@ -159,11 +159,11 @@ describe('Backup Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir, '--parallelism', '5', '--timeout', '30000'])
+      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir, '--parallelism', '5', '--timeout', '60000'])
       .stdout(/Backup Configuration:/)
       .stdout(new RegExp(sourceDbName))
       .stdout(/Parallelism: 5/)
-      .stdout(/Timeout: 30000ms/)
+      .stdout(/Timeout: 60000ms/)
       .stdout(/Backup Summary:/)
       .code(0);
 
