@@ -1,7 +1,14 @@
 /**
  * Database changes provider - single PouchDB listener for the entire app
  */
-import { createContext, useContext, useEffect, useState, type FC, type ReactNode } from 'react';
+import {
+  type FC,
+  type ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 import { usePouchDb } from '../pouch_db';
 
@@ -12,12 +19,17 @@ interface DatabaseChangesContextType {
   isListening: boolean;
 }
 
-const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(null);
+const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(
+  null,
+);
 
-export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children }) => {
+export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const { changes } = usePouchDb();
   const [changeCount, setChangeCount] = useState(0);
   const [isListening, setIsListening] = useState(false);
+  console.log('changeCount', changeCount);
 
   useEffect(() => {
     const changesListener = changes({
@@ -26,8 +38,8 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children 
       include_docs: true,
     });
 
-    changesListener.on('change', () => {
-      setChangeCount(prev => prev + 1);
+    changesListener.on('change', (d) => {
+      setChangeCount(Number(d.seq));
     });
 
     changesListener.on('complete', () => {
@@ -61,7 +73,9 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children 
 export const useDatabaseChanges = (): DatabaseChangesContextType => {
   const context = useContext(DatabaseChangesContext);
   if (!context) {
-    throw new Error('useDatabaseChanges must be used within a DatabaseChangesProvider');
+    throw new Error(
+      'useDatabaseChanges must be used within a DatabaseChangesProvider',
+    );
   }
   return context;
 };

@@ -21,8 +21,8 @@ import {
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { ensureDesignDocuments } from '../database_setup';
-import { usePouchDb } from '../pouch_db';
 import { useDatabaseChanges } from '../hooks/use_database_changes';
+import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
 import { FormattedMessage } from './formatted_message';

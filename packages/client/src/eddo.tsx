@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import { AddTodo } from './components/add_todo';
 import { PageWrapper } from './components/page_wrapper';
 import { TodoBoard } from './components/todo_board';
+import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
 import { useSyncDev } from './hooks/use_sync_dev';
 import { PouchDbContext, pouchDbContextValue } from './pouch_db';
-import { DatabaseChangesProvider } from './hooks/use_database_changes';
 
 function DevSync() {
   useSyncDev();
