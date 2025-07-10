@@ -12,6 +12,7 @@ const TelegramConfigSchema = z.object({
   MCP_API_KEY: z
     .string()
     .min(1, 'MCP API key is required for server authentication'),
+  TELEGRAM_ALLOWED_USERS: z.string().optional(),
 });
 
 // Type for telegram-specific config
@@ -35,6 +36,24 @@ try {
   console.error('Configuration validation failed:', error);
   process.exit(1);
 }
+
+// Parse allowed users from comma-separated string
+function parseAllowedUsers(allowedUsersString?: string): Set<number> {
+  if (!allowedUsersString || allowedUsersString.trim() === '') {
+    return new Set();
+  }
+
+  return new Set(
+    allowedUsersString
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => id !== '')
+      .map((id) => parseInt(id, 10))
+      .filter((id) => !isNaN(id)),
+  );
+}
+
+export const allowedUsers = parseAllowedUsers(appConfig.TELEGRAM_ALLOWED_USERS);
 
 export { appConfig };
 export type { Config };
