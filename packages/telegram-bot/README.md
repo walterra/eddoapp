@@ -79,12 +79,18 @@ TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 # From Anthropic Console (Step 2)
 ANTHROPIC_API_KEY=sk-ant-api03-...
 
-# MCP Server (should be running on port 3001, no auth required)
+# MCP Server (should be running on port 3001)
 MCP_SERVER_URL=http://localhost:3001/mcp
+MCP_API_KEY=your-mcp-api-key
 
 # Optional: Adjust logging and environment
 NODE_ENV=development
 LOG_LEVEL=info
+
+# Optional: Restrict bot access to specific users
+# Comma-separated list of Telegram user IDs
+# Leave empty to deny all access (secure by default)
+TELEGRAM_ALLOWED_USERS=123456789,987654321
 ```
 
 ### Step 4: Start the System
@@ -241,13 +247,15 @@ This architecture replaces complex workflow frameworks (like LangGraph) with a m
 
 ### Environment Variables
 
-| Variable             | Description               | Default                 |
-| -------------------- | ------------------------- | ----------------------- |
-| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather | Required                |
-| `ANTHROPIC_API_KEY`  | Claude API key            | Required                |
-| `MCP_SERVER_URL`     | MCP server endpoint       | `http://localhost:3001` |
-| `NODE_ENV`           | Environment               | `development`           |
-| `LOG_LEVEL`          | Logging level             | `info`                  |
+| Variable                 | Description               | Default                 |
+| ------------------------ | ------------------------- | ----------------------- |
+| `TELEGRAM_BOT_TOKEN`     | Bot token from @BotFather | Required                |
+| `ANTHROPIC_API_KEY`      | Claude API key            | Required                |
+| `MCP_SERVER_URL`         | MCP server endpoint       | `http://localhost:3001` |
+| `MCP_API_KEY`            | MCP server API key        | Required                |
+| `NODE_ENV`               | Environment               | `development`           |
+| `LOG_LEVEL`              | Logging level             | `info`                  |
+| `TELEGRAM_ALLOWED_USERS` | Comma-separated user IDs  | (empty = deny all)      |
 
 ### MCP Server Connection
 
@@ -258,6 +266,33 @@ The bot connects to the MCP server using the official @modelcontextprotocol/sdk 
 - FastMCP server with httpStream transport
 
 The MCP client automatically discovers available tools on startup and provides them to the Claude AI for natural language tool selection.
+
+### User Authentication
+
+The bot implements user authentication to restrict access:
+
+- **Secure by default**: If `TELEGRAM_ALLOWED_USERS` is not set or empty, all users are denied access
+- **Whitelist approach**: Only users whose Telegram ID is in the allowed list can use the bot
+- **Clear rejection messages**: Unauthorized users receive a polite rejection message
+
+To find your Telegram user ID:
+
+1. Start a chat with `@userinfobot` on Telegram
+2. The bot will show your user ID
+3. Add this ID to your `.env` file
+
+Example configuration:
+
+```bash
+# Single user
+TELEGRAM_ALLOWED_USERS=123456789
+
+# Multiple users
+TELEGRAM_ALLOWED_USERS=123456789,987654321,555555555
+
+# Deny all access (default if not set)
+TELEGRAM_ALLOWED_USERS=
+```
 
 ## Deployment
 
@@ -431,13 +466,15 @@ Create and manage your bot:
 
 ### Environment Variables
 
-| Variable             | Required | Description    | Example                     |
-| -------------------- | -------- | -------------- | --------------------------- |
-| `TELEGRAM_BOT_TOKEN` | ✅       | From BotFather | `123456789:ABC...`          |
-| `ANTHROPIC_API_KEY`  | ✅       | Claude AI key  | `sk-ant-api03-...`          |
-| `MCP_SERVER_URL`     | ✅       | MCP endpoint   | `http://localhost:3001/mcp` |
-| `NODE_ENV`           | ⚪       | Environment    | `development`               |
-| `LOG_LEVEL`          | ⚪       | Logging level  | `info`                      |
+| Variable                 | Required | Description    | Example                     |
+| ------------------------ | -------- | -------------- | --------------------------- |
+| `TELEGRAM_BOT_TOKEN`     | ✅       | From BotFather | `123456789:ABC...`          |
+| `ANTHROPIC_API_KEY`      | ✅       | Claude AI key  | `sk-ant-api03-...`          |
+| `MCP_SERVER_URL`         | ✅       | MCP endpoint   | `http://localhost:3001/mcp` |
+| `MCP_API_KEY`            | ✅       | MCP API key    | `your-mcp-api-key`          |
+| `NODE_ENV`               | ⚪       | Environment    | `development`               |
+| `LOG_LEVEL`              | ⚪       | Logging level  | `info`                      |
+| `TELEGRAM_ALLOWED_USERS` | ⚪       | User whitelist | `123456789,987654321`       |
 
 ### Service Dependencies
 
