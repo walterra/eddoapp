@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Test Commands
 
 ### Root Level
+
 - Build all packages: `pnpm build`
 - Dev server (client): `pnpm dev`
 - Lint: `pnpm lint`
@@ -22,12 +23,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Check unused dependencies: `pnpm knip`
 
 ### Package-Specific
+
 - Client dev: `pnpm dev:client`
 - Server dev: `pnpm dev:server`
 - Telegram bot dev: `pnpm dev:telegram-bot`
 - Build specific package: `pnpm build:client|server|shared|telegram-bot`
 
 ### Backup & Restore
+
 - Interactive backup: `pnpm backup:interactive`
 - Interactive restore: `pnpm restore:interactive`
 - Direct backup: `pnpm backup -- --database <db-name> --output ./backups/`
@@ -35,6 +38,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Verify backup: `pnpm backup:verify`
 
 ### CLI & Mock Data
+
 - CLI interface: `pnpm cli`
 - Test CLI: `pnpm cli:test`
 - Populate mock data: `pnpm populate-mock-data`
@@ -120,18 +124,22 @@ interface TodoAlpha3 {
 
 - Use CC (Conventional Commit) prefixes for commit messages
 - Do not add "Generated with" or "Co-authored" sections to commit messages
+- Never git add all files. just add the files related to your current work/tasks.
 
 ## AI Agent Development Guidelines
 
 When working on AI agent code (especially in the telegram-bot package), follow these principles:
 
 ### Core Philosophy: Simplicity First
+
 - **Agents are just "for loops with LLM calls"** - avoid over-engineering
 - Prefer minimal recursive loops over complex state machines
 - Trust the LLM to orchestrate its own workflow rather than imposing rigid patterns
 
 ### Implementation Patterns
+
 1. **Simple Agent Loop Structure**:
+
    ```typescript
    async function agentLoop(userInput: string, context: BotContext) {
      let state = { input: userInput, history: [] };
@@ -149,15 +157,18 @@ When working on AI agent code (especially in the telegram-bot package), follow t
    ```
 
 2. **Avoid Complex Abstractions**:
+
    - NO: Graph-based workflows, state machines, rigid node systems
    - YES: Simple loops, direct tool calls, minimal state
 
 3. **Tool Integration**:
+
    - Fetch MCP tool definitions dynamically from server
    - Pass tool descriptions directly to LLM in system prompt
    - Let the LLM select tools based on descriptions, not complex routing
 
 4. **State Management**:
+
    - Keep state minimal: current input, history, context
    - Store conversation history in simple data structures (Map, Array)
    - Avoid complex state objects with 20+ fields
@@ -168,6 +179,7 @@ When working on AI agent code (especially in the telegram-bot package), follow t
    - Provide environmental feedback, not pre-programmed error flows
 
 ### What to Avoid
+
 - ❌ LangGraph or similar workflow frameworks
 - ❌ Pre-defined workflow patterns (Intent → Plan → Execute → Reflect)
 - ❌ Complex approval/routing nodes
@@ -175,6 +187,7 @@ When working on AI agent code (especially in the telegram-bot package), follow t
 - ❌ Hardcoded tool mappings or action registries
 
 ### What to Embrace
+
 - ✅ Direct LLM API calls with minimal abstraction
 - ✅ Dynamic tool discovery from MCP servers
 - ✅ Environmental feedback loops
@@ -186,26 +199,31 @@ When working on AI agent code (especially in the telegram-bot package), follow t
 When connecting to MCP servers, use the standard `@modelcontextprotocol/sdk` with these patterns:
 
 ### Basic Client Setup
+
 ```typescript
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const transport = new StreamableHTTPClientTransport(new URL(serverUrl));
-const client = new Client({
-  name: 'app-name',
-  version: '1.0.0',
-}, {
-  capabilities: { tools: {} }
-});
+const client = new Client(
+  {
+    name: 'app-name',
+    version: '1.0.0',
+  },
+  {
+    capabilities: { tools: {} },
+  },
+);
 
 await client.connect(transport);
 ```
 
 ### Tool Discovery and Invocation
+
 ```typescript
 // Discover tools
 const toolsResponse = await client.listTools();
-const tools = toolsResponse.tools.map(tool => ({
+const tools = toolsResponse.tools.map((tool) => ({
   name: tool.name,
   description: tool.description,
   inputSchema: tool.inputSchema,
@@ -219,16 +237,19 @@ const result = await client.callTool({
 ```
 
 ### Alternative: FastMCP
+
 FastMCP is primarily a **server** framework but demonstrates proper client usage. For clients, stick to the standard SDK patterns shown above rather than FastMCP abstractions.
 
 ## Testing Guidelines
 
 - When asked to fix tests, never touch the actual implementation.
 - When asked to fix a bug, never touch the tests that surfaced the bug.
+- **Embrace test driven development**
 
 ## Environment Variables
 
 ### CouchDB Configuration
+
 ```bash
 # Required
 COUCHDB_HOST=localhost
@@ -240,11 +261,12 @@ COUCHDB_PROTOCOL=http
 COUCHDB_USERNAME=your-username
 COUCHDB_PASSWORD=your-password
 
-# Method 2: Admin credentials  
+# Method 2: Admin credentials
 COUCHDB_ADMIN_USERNAME=admin
 COUCHDB_ADMIN_PASSWORD=admin-password
 ```
 
 ### AI Model Configuration
+
 - `LLM_MODEL`: Set to configure AI model (e.g., `claude-sonnet-4-0`, `claude-opus-4-0`, `claude-3-5-haiku-20241022`)
-- MCP server runs on port 3002 by default
+- MCP server runs on port 3002 by default (via proxy)
