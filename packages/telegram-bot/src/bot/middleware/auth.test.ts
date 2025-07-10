@@ -22,7 +22,9 @@ vi.mock('../../utils/config', () => {
   const mockAllowedUsers = new Set<number>();
   return {
     allowedUsers: mockAllowedUsers,
-    appConfig: {} as unknown,
+    appConfig: {
+      TELEGRAM_LOG_USER_DETAILS: false,
+    },
   };
 });
 
@@ -112,9 +114,6 @@ describe('Authentication Middleware', () => {
         'Unauthorized access attempt',
         expect.objectContaining({
           userId: 123456789,
-          username: 'testuser',
-          firstName: 'Test',
-          lastName: 'User',
           chatId: 12345,
           messageText: 'test message',
           allowedUsersCount: 1,
@@ -153,9 +152,6 @@ describe('Authentication Middleware', () => {
         'Unauthorized access attempt',
         expect.objectContaining({
           userId: 123456789,
-          username: 'emptyconfig',
-          firstName: undefined,
-          lastName: undefined,
           chatId: 12345,
           messageText: 'test message',
           allowedUsersCount: 0,
@@ -260,7 +256,6 @@ describe('Authentication Middleware', () => {
           'Rate limited user attempted access',
           expect.objectContaining({
             userId: unauthorizedUserId,
-            username: 'unauthorized',
           }),
         );
       });
@@ -337,6 +332,99 @@ describe('Authentication Middleware', () => {
         expect(mockCtx.reply).not.toHaveBeenCalled();
         expect(nextMock).toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('PII Logging Configuration', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      authFailures.clear();
+      mockAllowedUsers.clear();
+    });
+
+    it('should not log PII when TELEGRAM_LOG_USER_DETAILS is false', async () => {
+      // The default configuration should have PII logging disabled
+      const mockCtx = createMockContext(123456789, {
+        username: 'testuser',
+        first_name: 'John',
+        last_name: 'Doe',
+      });
+      await authMiddleware(mockCtx, nextMock);
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Unauthorized access attempt',
+        expect.not.objectContaining({
+          username: 'testuser',
+          firstName: 'John',
+          lastName: 'Doe',
+        }),
+      );
+
+      // Should still log non-PII fields
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Unauthorized access attempt',
+        expect.objectContaining({
+          userId: 123456789,
+          chatId: 12345,
+          messageText: 'test message',
+        }),
+      );
+    });
+
+    it('should respect the PII logging configuration', async () => {
+      // This test verifies that the auth middleware uses the configuration correctly
+      // Since our mock has TELEGRAM_LOG_USER_DETAILS set to false, PII should not be logged
+      const mockCtx = createMockContext(123456789, {
+        username: 'testuser',
+        first_name: 'John',
+        last_name: 'Doe',
+      });
+      await authMiddleware(mockCtx, nextMock);
+
+      // Verify the current config setting is respected
+      const { appConfig } = await import('../../utils/config');
+
+      if (appConfig.TELEGRAM_LOG_USER_DETAILS) {
+        // If PII logging is enabled, expect PII fields
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Unauthorized access attempt',
+          expect.objectContaining({
+            username: 'testuser',
+            firstName: 'John',
+            lastName: 'Doe',
+          }),
+        );
+      } else {
+        // If PII logging is disabled, ensure no PII fields
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Unauthorized access attempt',
+          expect.not.objectContaining({
+            username: 'testuser',
+            firstName: 'John',
+            lastName: 'Doe',
+          }),
+        );
+      }
+    });
+
+    it('should not log PII in rate limited attempts when disabled', async () => {
+      const userId = 123456789;
+      // Record failures to trigger rate limiting
+      for (let i = 0; i < MAX_AUTH_FAILURES; i++) {
+        recordAuthFailure(userId);
+      }
+
+      const mockCtx = createMockContext(userId, {
+        username: 'testuser',
+      });
+      await authMiddleware(mockCtx, nextMock);
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Rate limited user attempted access',
+        expect.not.objectContaining({
+          username: 'testuser',
+        }),
+      );
     });
   });
 });

@@ -1,6 +1,6 @@
 import { Context } from 'grammy';
 
-import { allowedUsers } from '../../utils/config';
+import { allowedUsers, appConfig } from '../../utils/config';
 import { logger } from '../../utils/logger';
 
 interface AuthFailureRecord {
@@ -103,7 +103,7 @@ export async function authMiddleware(
     if (isRateLimited(userId)) {
       logger.warn('Rate limited user attempted access', {
         userId,
-        username,
+        ...(appConfig.TELEGRAM_LOG_USER_DETAILS ? { username } : {}),
         chatId: ctx.chat?.id,
         messageText: ctx.message?.text,
         failureRecord: authFailures.get(userId),
@@ -123,9 +123,13 @@ export async function authMiddleware(
 
     logger.warn('Unauthorized access attempt', {
       userId,
-      username,
-      firstName: ctx.from?.first_name,
-      lastName: ctx.from?.last_name,
+      ...(appConfig.TELEGRAM_LOG_USER_DETAILS
+        ? {
+            username,
+            firstName: ctx.from?.first_name,
+            lastName: ctx.from?.last_name,
+          }
+        : {}),
       chatId: ctx.chat?.id,
       messageText: ctx.message?.text,
       allowedUsersCount: allowedUsers.size,

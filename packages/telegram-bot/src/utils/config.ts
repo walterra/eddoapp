@@ -13,6 +13,11 @@ const TelegramConfigSchema = z.object({
     .string()
     .min(1, 'MCP API key is required for server authentication'),
   TELEGRAM_ALLOWED_USERS: z.string().optional(),
+  TELEGRAM_LOG_USER_DETAILS: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((val) => val.toLowerCase() === 'true'),
 });
 
 // Type for telegram-specific config
