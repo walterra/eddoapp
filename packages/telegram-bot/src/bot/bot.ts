@@ -24,7 +24,7 @@ type BotContext = Context & {
 export function createBot(): Bot<BotContext> {
   const bot = new Bot<BotContext>(appConfig.TELEGRAM_BOT_TOKEN);
 
-  // Add session middleware
+  // Session middleware must come first to ensure session is available for subsequent middleware
   bot.use(
     session({
       initial: (): SessionData => ({
@@ -35,7 +35,7 @@ export function createBot(): Bot<BotContext> {
     }),
   );
 
-  // Add authentication middleware
+  // Auth middleware after session to have access to session data if needed
   bot.use(authMiddleware);
 
   // Add logging middleware
