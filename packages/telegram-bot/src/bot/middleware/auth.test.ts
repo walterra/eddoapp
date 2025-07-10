@@ -3,12 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { authMiddleware, isUserAuthorized } from './auth';
 
-// Mock the allowedUsers
-const mockAllowedUsers = new Set<number>();
-vi.mock('../../utils/config', () => ({
-  allowedUsers: mockAllowedUsers,
-  appConfig: {} as unknown,
-}));
+// Mock the config module before importing anything that uses it
+vi.mock('../../utils/config', () => {
+  const mockAllowedUsers = new Set<number>();
+  return {
+    allowedUsers: mockAllowedUsers,
+    appConfig: {} as unknown,
+  };
+});
+
+// Get reference to the mocked allowedUsers after the mock is set up
+const { allowedUsers: mockAllowedUsers } = await import('../../utils/config');
 
 describe('Authentication Middleware', () => {
   let nextMock: ReturnType<typeof vi.fn<[], Promise<void>>>;
