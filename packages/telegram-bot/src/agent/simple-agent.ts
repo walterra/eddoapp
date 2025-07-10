@@ -1,3 +1,6 @@
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+
 import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import { getMCPClient } from '../mcp/client.js';
@@ -256,6 +259,9 @@ export class SimpleAgent {
     // Stop periodic typing when done
     this.stopPeriodicTyping(typingInterval);
 
+    // Log final AgentState to disk
+    await this.logFinalAgentState(state, iteration);
+
     if (iteration >= maxIterations) {
       logger.warn('Agent loop reached max iterations', { maxIterations });
       return (
@@ -265,6 +271,45 @@ export class SimpleAgent {
     }
 
     return state.output || 'Process completed successfully.';
+  }
+
+  private async logFinalAgentState(
+    state: AgentState,
+    iteration: number,
+  ): Promise<void> {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const logDir = join(process.cwd(), 'logs', 'agent-states');
+      const filename = `agent-state-${timestamp}-iter${iteration}.json`;
+      const filepath = join(logDir, filename);
+
+      await mkdir(logDir, { recursive: true });
+
+      const logData = {
+        timestamp: new Date().toISOString(),
+        iteration,
+        finalState: state,
+        metadata: {
+          totalHistoryEntries: state.history.length,
+          totalToolResults: state.toolResults.length,
+          completed: state.done,
+          hasOutput: !!state.output,
+        },
+      };
+
+      await writeFile(filepath, JSON.stringify(logData, null, 2));
+
+      logger.info('Final AgentState logged to disk', {
+        filepath,
+        iteration,
+        historyEntries: state.history.length,
+        toolResults: state.toolResults.length,
+      });
+    } catch (error) {
+      logger.error('Failed to log final AgentState to disk', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private parseToolCall(response: string): ToolCall | null {
