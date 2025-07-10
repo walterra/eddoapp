@@ -5,6 +5,10 @@ import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import { getMCPClient } from '../mcp/client.js';
 import { logger } from '../utils/logger.js';
+import {
+  hasMarkdownFormatting,
+  validateTelegramMarkdown,
+} from '../utils/markdown.js';
 import { buildSystemPrompt } from './system-prompt.js';
 
 interface AgentState {
@@ -162,9 +166,24 @@ export class SimpleAgent {
       const conversationalPart = this.extractConversationalPart(llmResponse);
       if (conversationalPart) {
         try {
-          await telegramContext.reply(conversationalPart);
+          const replyOptions = conversationalPart.isMarkdown
+            ? { parse_mode: 'Markdown' as const }
+            : {};
+
+          await telegramContext.reply(conversationalPart.text, replyOptions);
         } catch (error) {
           logger.debug('Failed to send conversational part', { error });
+
+          // If markdown parsing failed, retry without markdown
+          if (conversationalPart.isMarkdown) {
+            try {
+              await telegramContext.reply(conversationalPart.text);
+            } catch (fallbackError) {
+              logger.debug('Failed to send fallback message', {
+                fallbackError,
+              });
+            }
+          }
         }
       }
 
@@ -320,14 +339,40 @@ export class SimpleAgent {
     }
   }
 
-  private extractConversationalPart(response: string): string | null {
+  private extractConversationalPart(
+    response: string,
+  ): { text: string; isMarkdown: boolean } | null {
     // Remove all TOOL_CALL lines using regex that handles nested braces
     const conversationalPart = response
       .replace(/TOOL_CALL:\s*\{(?:[^{}]|{[^}]*})*\}/g, '')
-      .replace(/\s+/g, ' ')
+      .replace(/[ \t]+/g, ' ') // Only collapse spaces and tabs, preserve newlines
+      .replace(/\n\s*\n/g, '\n') // Remove extra blank lines but keep single newlines
       .trim();
 
-    return conversationalPart || null;
+    if (!conversationalPart) {
+      return null;
+    }
+
+    // Check if the text has markdown formatting and validate it
+    const hasMarkdown = hasMarkdownFormatting(conversationalPart);
+    let isValidMarkdown = false;
+
+    if (hasMarkdown) {
+      const validation = validateTelegramMarkdown(conversationalPart);
+      isValidMarkdown = validation.isValid;
+
+      if (!isValidMarkdown) {
+        logger.debug('Invalid markdown detected in conversational part', {
+          error: validation.error,
+          text: conversationalPart.substring(0, 100) + '...',
+        });
+      }
+    }
+
+    return {
+      text: conversationalPart,
+      isMarkdown: hasMarkdown && isValidMarkdown,
+    };
   }
 
   private async executeTool(
