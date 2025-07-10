@@ -125,6 +125,12 @@ interface TodoAlpha3 {
 - Use CC (Conventional Commit) prefixes for commit messages
 - Do not add "Generated with" or "Co-authored" sections to commit messages
 - Never git add all files. just add the files related to your current work/tasks.
+- **NEVER use `git filter-branch` on the entire repository history** - this rewrites all commits and is extremely destructive
+- For removing files from history, prefer simpler solutions:
+  - Just delete the files and commit the change
+  - Use `git rebase -i` to edit specific recent commits
+  - If history rewriting is absolutely necessary, use modern tools like `git filter-repo` with careful consideration
+- Always warn about and get explicit confirmation before any operation that rewrites git history
 
 ## AI Agent Development Guidelines
 

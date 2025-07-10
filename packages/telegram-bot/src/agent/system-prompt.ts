@@ -51,6 +51,13 @@ Available tools:
 ${toolDescriptions}
 
 To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
+Always prefix a tool call with a brief conversational contextual message
+
+CRITICAL: Execute tools ONE AT A TIME. After making a tool call:
+1. STOP your response immediately
+2. WAIT for the tool execution result
+3. Only then proceed with next actions based on ACTUAL results
+4. NEVER assume tool results or continue as if tools succeeded
 
 IMPORTANT: For "start working" requests (phrases like "let's start with", "begin with", "work on", "tackle"):
 1. First search for existing todos with that title/description using list tool

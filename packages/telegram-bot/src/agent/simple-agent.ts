@@ -5,6 +5,11 @@ import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import { getMCPClient } from '../mcp/client.js';
 import { logger } from '../utils/logger.js';
+import {
+  convertToTelegramMarkdown,
+  hasMarkdownFormatting,
+  validateTelegramMarkdown,
+} from '../utils/markdown.js';
 import { buildSystemPrompt } from './system-prompt.js';
 
 interface AgentState {
@@ -129,13 +134,6 @@ export class SimpleAgent {
         },
       });
 
-      // Send iteration update to Telegram
-      try {
-        await telegramContext.reply(`🔄 Processing step ${iteration}...`);
-      } catch (error) {
-        logger.debug('Failed to send iteration update', { error });
-      }
-
       const systemPrompt = buildSystemPrompt(mcpClient.tools);
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
@@ -165,6 +163,73 @@ export class SimpleAgent {
       // Check if LLM wants to use a tool
       const toolCall = this.parseToolCall(llmResponse);
 
+      // Extract conversational part (before TOOL_CALL:) and send to Telegram
+      const conversationalPart = this.extractConversationalPart(llmResponse);
+
+      logger.debug('📝 Extracted conversational part', {
+        iterationId,
+        hasConversationalPart: !!conversationalPart,
+        text: conversationalPart?.text?.substring(0, 200) + '...',
+        isMarkdown: conversationalPart?.isMarkdown,
+        textLength: conversationalPart?.text?.length,
+      });
+
+      if (conversationalPart) {
+        try {
+          // Convert to Telegram's legacy markdown format if needed
+          const textToSend = conversationalPart.isMarkdown
+            ? convertToTelegramMarkdown(conversationalPart.text)
+            : conversationalPart.text;
+
+          // Use standard Markdown parse mode
+          const replyOptions = conversationalPart.isMarkdown
+            ? { parse_mode: 'Markdown' as const }
+            : {};
+
+          logger.debug('📤 Sending message to Telegram', {
+            iterationId,
+            parseMode: replyOptions.parse_mode || 'none',
+            originalText: conversationalPart.text.substring(0, 200) + '...',
+            convertedText: textToSend.substring(0, 200) + '...',
+            textLength: textToSend.length,
+          });
+
+          await telegramContext.reply(textToSend, replyOptions);
+
+          logger.debug('✅ Message sent successfully to Telegram', {
+            iterationId,
+            parseMode: replyOptions.parse_mode || 'none',
+          });
+        } catch (error) {
+          logger.error('❌ Failed to send message to Telegram', {
+            iterationId,
+            error: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+          });
+
+          // If markdown parsing failed, retry without markdown
+          if (conversationalPart.isMarkdown) {
+            try {
+              logger.debug('🔄 Retrying without markdown formatting', {
+                iterationId,
+              });
+              await telegramContext.reply(conversationalPart.text);
+              logger.debug('✅ Plain text message sent successfully', {
+                iterationId,
+              });
+            } catch (fallbackError) {
+              logger.error('❌ Failed to send fallback message', {
+                iterationId,
+                fallbackError:
+                  fallbackError instanceof Error
+                    ? fallbackError.message
+                    : String(fallbackError),
+              });
+            }
+          }
+        }
+      }
+
       if (toolCall) {
         logger.info('🔧 Agent Decision: Tool Call', {
           iterationId,
@@ -173,17 +238,7 @@ export class SimpleAgent {
           reasoning: 'LLM decided to use a tool based on the current context',
         });
 
-        // Send tool execution update to Telegram
         try {
-          await telegramContext.reply(`🔧 Using tool: ${toolCall.name}...`);
-        } catch (error) {
-          logger.debug('Failed to send tool execution update', { error });
-        }
-
-        try {
-          // Show appropriate action during tool execution
-          await this.showAction(telegramContext, toolCall.name);
-
           const toolResult = await this.executeTool(toolCall, telegramContext);
           state.toolResults.push({
             toolName: toolCall.name,
@@ -196,15 +251,6 @@ export class SimpleAgent {
             toolName: toolCall.name,
             resultPreview: JSON.stringify(toolResult).substring(0, 200) + '...',
           });
-
-          // Send tool success update to Telegram
-          try {
-            await telegramContext.reply(
-              `✅ Tool ${toolCall.name} completed successfully`,
-            );
-          } catch (error) {
-            logger.debug('Failed to send tool success update', { error });
-          }
 
           // Add tool result to conversation history
           state.history.push({
@@ -219,15 +265,6 @@ export class SimpleAgent {
             error: error instanceof Error ? error.message : String(error),
           });
 
-          // Send tool failure update to Telegram
-          try {
-            await telegramContext.reply(
-              `❌ Tool ${toolCall.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          } catch (replyError) {
-            logger.debug('Failed to send tool failure update', { replyError });
-          }
-
           state.history.push({
             role: 'user',
             content: `Tool "${toolCall.name}" failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -240,15 +277,6 @@ export class SimpleAgent {
           reasoning: 'LLM provided final response without tool call',
           responsePreview: llmResponse.substring(0, 200) + '...',
         });
-
-        // Send completion update to Telegram
-        try {
-          await telegramContext.reply(
-            '🏁 Processing complete, preparing response...',
-          );
-        } catch (error) {
-          logger.debug('Failed to send completion update', { error });
-        }
 
         // No tool call, agent is done
         state.done = true;
@@ -326,6 +354,44 @@ export class SimpleAgent {
     }
   }
 
+  private extractConversationalPart(
+    response: string,
+  ): { text: string; isMarkdown: boolean } | null {
+    // Remove any lines that start with TOOL_CALL
+    const conversationalPart = response
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('TOOL_CALL'))
+      .join('\n')
+      .replace(/[ \t]+/g, ' ') // Only collapse spaces and tabs, preserve newlines
+      .replace(/\n\s*\n/g, '\n') // Remove extra blank lines but keep single newlines
+      .trim();
+
+    if (!conversationalPart) {
+      return null;
+    }
+
+    // Check if the text has markdown formatting and validate it
+    const hasMarkdown = hasMarkdownFormatting(conversationalPart);
+    let isValidMarkdown = false;
+
+    if (hasMarkdown) {
+      const validation = validateTelegramMarkdown(conversationalPart);
+      isValidMarkdown = validation.isValid;
+
+      if (!isValidMarkdown) {
+        logger.debug('Invalid markdown detected in conversational part', {
+          error: validation.error,
+          text: conversationalPart.substring(0, 100) + '...',
+        });
+      }
+    }
+
+    return {
+      text: conversationalPart,
+      isMarkdown: hasMarkdown && isValidMarkdown,
+    };
+  }
+
   private async executeTool(
     toolCall: ToolCall,
     _telegramContext: BotContext,
@@ -352,34 +418,6 @@ export class SimpleAgent {
       await telegramContext.replyWithChatAction('typing');
     } catch (error) {
       logger.debug('Failed to show typing indicator', { error });
-    }
-  }
-
-  private async showAction(
-    telegramContext: BotContext,
-    toolName: string,
-  ): Promise<void> {
-    try {
-      // Choose appropriate action based on tool type
-      let action: 'typing' | 'upload_document' | 'find_location' = 'typing';
-
-      if (
-        toolName.includes('search') ||
-        toolName.includes('find') ||
-        toolName.includes('list')
-      ) {
-        action = 'find_location'; // Shows "searching" indicator
-      } else if (
-        toolName.includes('create') ||
-        toolName.includes('generate') ||
-        toolName.includes('export')
-      ) {
-        action = 'upload_document'; // Shows "uploading" indicator
-      }
-
-      await telegramContext.replyWithChatAction(action);
-    } catch (error) {
-      logger.debug('Failed to show action indicator', { error });
     }
   }
 
