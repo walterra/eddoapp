@@ -6,9 +6,10 @@ import {
   getRepeatTodo,
 } from '@eddo/shared';
 import { Checkbox } from 'flowbite-react';
-import { type FC, useEffect, useMemo, useState } from 'react';
+import { type FC, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
+import { useActiveTimer } from '../hooks/use_active_timer';
 import { usePouchDb } from '../pouch_db';
 import { FormattedMessage } from './formatted_message';
 import { TagDisplay } from './tag_display';
@@ -31,7 +32,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
 }) => {
   const { safeDb } = usePouchDb();
 
-  const [activeCounter, setActiveCounter] = useState(0);
+  const { counter: activeCounter } = useActiveTimer(active);
   const [showEditModal, setShowEditModal] = useState(false);
   const [error, setError] = useState<DatabaseError | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -115,21 +116,6 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     const duration = getActiveDuration(todo.active, activeDate);
     return duration;
   }, [active, activeDate, activeCounter]);
-
-  useEffect(() => {
-    if (active) {
-      const interval = setInterval(() => {
-        setActiveCounter((state) => state + 1);
-      }, 1000);
-
-      return () => {
-        clearInterval(interval);
-        setActiveCounter(0);
-      };
-    } else {
-      setActiveCounter(0);
-    }
-  }, [active]);
 
   return (
     <div
