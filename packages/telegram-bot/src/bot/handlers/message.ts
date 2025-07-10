@@ -50,11 +50,9 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
         stepsExecuted: result.finalState.executionSteps.length,
       });
 
-      // Send the final response to the user
+      // Note: Agent already sends conversational responses directly during processing
+      // Store the final response for session tracking without sending duplicate
       if (result.finalState.finalResponse) {
-        await ctx.reply(result.finalState.finalResponse, {
-          parse_mode: 'Markdown',
-        });
         ctx.session.lastBotMessage = result.finalState.finalResponse;
       }
     } else {
