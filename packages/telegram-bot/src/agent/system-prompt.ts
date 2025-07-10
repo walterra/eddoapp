@@ -51,6 +51,7 @@ Available tools:
 ${toolDescriptions}
 
 To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
+Always prefix a tool call with a brief conversational contextual message
 
 IMPORTANT: For "start working" requests (phrases like "let's start with", "begin with", "work on", "tackle"):
 1. First search for existing todos with that title/description using list tool
