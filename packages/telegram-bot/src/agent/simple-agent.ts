@@ -129,13 +129,6 @@ export class SimpleAgent {
         },
       });
 
-      // Send iteration update to Telegram
-      try {
-        await telegramContext.reply(`🔄 Processing step ${iteration}...`);
-      } catch (error) {
-        logger.debug('Failed to send iteration update', { error });
-      }
-
       const systemPrompt = buildSystemPrompt(mcpClient.tools);
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
@@ -164,6 +157,16 @@ export class SimpleAgent {
 
       // Check if LLM wants to use a tool
       const toolCall = this.parseToolCall(llmResponse);
+
+      // Extract conversational part (before TOOL_CALL:) and send to Telegram
+      const conversationalPart = this.extractConversationalPart(llmResponse);
+      if (conversationalPart) {
+        try {
+          await telegramContext.reply(conversationalPart);
+        } catch (error) {
+          logger.debug('Failed to send conversational part', { error });
+        }
+      }
 
       if (toolCall) {
         logger.info('🔧 Agent Decision: Tool Call', {
@@ -324,6 +327,16 @@ export class SimpleAgent {
       logger.error('Failed to parse tool call', { response, error });
       return null;
     }
+  }
+
+  private extractConversationalPart(response: string): string | null {
+    // Remove all TOOL_CALL lines using regex that handles nested braces
+    const conversationalPart = response
+      .replace(/TOOL_CALL:\s*\{(?:[^{}]|{[^}]*})*\}/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return conversationalPart || null;
   }
 
   private async executeTool(
