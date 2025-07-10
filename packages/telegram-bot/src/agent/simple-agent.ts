@@ -195,13 +195,6 @@ export class SimpleAgent {
           reasoning: 'LLM decided to use a tool based on the current context',
         });
 
-        // Send tool execution update to Telegram
-        try {
-          await telegramContext.reply(`🔧 Using tool: ${toolCall.name}...`);
-        } catch (error) {
-          logger.debug('Failed to send tool execution update', { error });
-        }
-
         try {
           const toolResult = await this.executeTool(toolCall, telegramContext);
           state.toolResults.push({
@@ -216,15 +209,6 @@ export class SimpleAgent {
             resultPreview: JSON.stringify(toolResult).substring(0, 200) + '...',
           });
 
-          // Send tool success update to Telegram
-          try {
-            await telegramContext.reply(
-              `✅ Tool ${toolCall.name} completed successfully`,
-            );
-          } catch (error) {
-            logger.debug('Failed to send tool success update', { error });
-          }
-
           // Add tool result to conversation history
           state.history.push({
             role: 'user',
@@ -237,15 +221,6 @@ export class SimpleAgent {
             toolName: toolCall.name,
             error: error instanceof Error ? error.message : String(error),
           });
-
-          // Send tool failure update to Telegram
-          try {
-            await telegramContext.reply(
-              `❌ Tool ${toolCall.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          } catch (replyError) {
-            logger.debug('Failed to send tool failure update', { replyError });
-          }
 
           state.history.push({
             role: 'user',
