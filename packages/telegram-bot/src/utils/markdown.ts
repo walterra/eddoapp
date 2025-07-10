@@ -51,3 +51,21 @@ export function hasMarkdownFormatting(text: string): boolean {
     return false;
   }
 }
+
+/**
+ * Converts standard markdown to Telegram's legacy Markdown format
+ * Standard markdown uses **bold** but Telegram legacy uses *bold*
+ */
+export function convertToTelegramMarkdown(text: string): string {
+  if (!text || typeof text !== 'string') {
+    return text;
+  }
+
+  // Convert **bold** to *bold* for Telegram's legacy markdown
+  let result = text.replace(/\*\*([^*]+)\*\*/g, '*$1*');
+
+  // Convert __italic__ to _italic_ (though both should work)
+  result = result.replace(/__([^_]+)__/g, '_$1_');
+
+  return result;
+}
