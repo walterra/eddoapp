@@ -248,7 +248,7 @@ server.addTool({
 server.addTool({
   name: 'listTodos',
   description:
-    "List todos with optional filters from the authenticated user's database",
+    "List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), limit (number of results)",
   parameters: z.object({
     context: z
       .string()
