@@ -123,15 +123,15 @@ READ:
   pnpm test:mcp getActiveTimeTracking '{}'
 
 UPDATE:
-  pnpm test:mcp updateTodo '{"id": "2025-06-18T10:30:00.000Z", "updates": {"title": "New Title"}}'
-  pnpm test:mcp toggleTodoCompletion '{"id": "2025-06-18T10:30:00.000Z"}'
+  pnpm test:mcp updateTodo '{"id": "2025-06-18T10:30:00.000Z", "title": "New Title"}'
+  pnpm test:mcp toggleTodoCompletion '{"id": "2025-06-18T10:30:00.000Z", "completed": true}'
 
 DELETE:
   pnpm test:mcp deleteTodo '{"id": "2025-06-18T10:30:00.000Z"}'
 
 TIME TRACKING:
-  pnpm test:mcp startTimeTracking '{"id": "2025-06-18T10:30:00.000Z", "category": "development"}'
-  pnpm test:mcp stopTimeTracking '{"id": "2025-06-18T10:30:00.000Z", "category": "development"}'
+  pnpm test:mcp startTimeTracking '{"id": "2025-06-18T10:30:00.000Z"}'
+  pnpm test:mcp stopTimeTracking '{"id": "2025-06-18T10:30:00.000Z"}'
 
 OTHER:
   pnpm test:mcp getServerInfo '{"section": "all"}'

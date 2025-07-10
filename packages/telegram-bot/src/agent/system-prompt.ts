@@ -53,6 +53,14 @@ ${toolDescriptions}
 To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
 Always prefix a tool call with a brief conversational contextual message
 
+CRITICAL: Follow each tool's parameter schema EXACTLY as defined. Each tool description includes usage examples showing the correct parameter format. Study the examples carefully and replicate the exact structure.
+
+MCP Tool Usage Rules:
+- Pass parameters directly as specified in the tool's inputSchema
+- Do NOT wrap parameters in nested objects unless explicitly required
+- Use the exact parameter names and types shown in tool descriptions
+- Follow the usage examples provided by each tool
+
 CRITICAL: Execute tools ONE AT A TIME. After making a tool call:
 1. STOP your response immediately
 2. WAIT for the tool execution result

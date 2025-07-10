@@ -109,13 +109,16 @@ server.addTool({
   name: 'createTodo',
   description: `Create a new todo item in the authenticated user's database.
 
-    Creates a TodoAlpha3 object with:
-    - Auto-generated ID (current ISO timestamp)
-    - Empty time tracking (active: {})
-    - Not completed status (completed: null)
-    - Default due date of end of current day if not specified
+Creates a TodoAlpha3 object with:
+- Auto-generated ID (current ISO timestamp)
+- Empty time tracking (active: {})
+- Not completed status (completed: null)
+- Default due date of end of current day if not specified
 
-    Returns: "Todo created with ID: <generated-id>"`,
+Usage examples:
+- Simple todo: {"title": "Buy groceries"}
+- With context: {"title": "Review budget", "context": "work", "due": "2025-07-15T23:59:59.999Z"}
+- With tags: {"title": "Call dentist", "context": "private", "tags": ["health", "urgent"]}`,
   parameters: z.object({
     title: z
       .string()
@@ -247,8 +250,14 @@ server.addTool({
 // List Todos Tool
 server.addTool({
   name: 'listTodos',
-  description:
-    "List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), limit (number of results)",
+  description: `List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), limit (number of results)
+
+Usage examples:
+- All todos: {}
+- Work todos: {"context": "work"}
+- Incomplete todos: {"completed": false}
+- This week's todos: {"dateFrom": "2025-07-10T00:00:00.000Z", "dateTo": "2025-07-16T23:59:59.999Z"}
+- Combined filters: {"context": "work", "completed": false, "limit": 10}`,
   parameters: z.object({
     context: z
       .string()
@@ -446,8 +455,14 @@ server.addTool({
 // Update Todo Tool
 server.addTool({
   name: 'updateTodo',
-  description:
-    'Update an existing todo CouchDB style. Before doing this update, you need to find the todo using listTodos to determine the ID.',
+  description: `Update an existing todo CouchDB style. Before doing this update, you need to find the todo using listTodos to determine the ID.
+
+Usage examples:
+- Update title: {"id": "2025-07-10T20:35:54.935Z", "title": "New title"}
+- Update multiple fields: {"id": "2025-07-10T20:35:54.935Z", "title": "New title", "description": "Updated notes", "context": "work"}
+- Update due date: {"id": "2025-07-10T20:35:54.935Z", "due": "2025-07-15T23:59:59.999Z"}
+
+IMPORTANT: Pass update fields directly as parameters, NOT wrapped in nested objects.`,
   parameters: z.object({
     id: z
       .string()
