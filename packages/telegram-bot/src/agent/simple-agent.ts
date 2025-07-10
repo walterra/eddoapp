@@ -6,6 +6,7 @@ import type { BotContext } from '../bot/bot.js';
 import { getMCPClient } from '../mcp/client.js';
 import { logger } from '../utils/logger.js';
 import {
+  convertToTelegramMarkdown,
   hasMarkdownFormatting,
   validateTelegramMarkdown,
 } from '../utils/markdown.js';
@@ -164,23 +165,65 @@ export class SimpleAgent {
 
       // Extract conversational part (before TOOL_CALL:) and send to Telegram
       const conversationalPart = this.extractConversationalPart(llmResponse);
+
+      logger.debug('📝 Extracted conversational part', {
+        iterationId,
+        hasConversationalPart: !!conversationalPart,
+        text: conversationalPart?.text?.substring(0, 200) + '...',
+        isMarkdown: conversationalPart?.isMarkdown,
+        textLength: conversationalPart?.text?.length,
+      });
+
       if (conversationalPart) {
         try {
+          // Convert to Telegram's legacy markdown format if needed
+          const textToSend = conversationalPart.isMarkdown
+            ? convertToTelegramMarkdown(conversationalPart.text)
+            : conversationalPart.text;
+
+          // Use standard Markdown parse mode
           const replyOptions = conversationalPart.isMarkdown
             ? { parse_mode: 'Markdown' as const }
             : {};
 
-          await telegramContext.reply(conversationalPart.text, replyOptions);
+          logger.debug('📤 Sending message to Telegram', {
+            iterationId,
+            parseMode: replyOptions.parse_mode || 'none',
+            originalText: conversationalPart.text.substring(0, 200) + '...',
+            convertedText: textToSend.substring(0, 200) + '...',
+            textLength: textToSend.length,
+          });
+
+          await telegramContext.reply(textToSend, replyOptions);
+
+          logger.debug('✅ Message sent successfully to Telegram', {
+            iterationId,
+            parseMode: replyOptions.parse_mode || 'none',
+          });
         } catch (error) {
-          logger.debug('Failed to send conversational part', { error });
+          logger.error('❌ Failed to send message to Telegram', {
+            iterationId,
+            error: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+          });
 
           // If markdown parsing failed, retry without markdown
           if (conversationalPart.isMarkdown) {
             try {
+              logger.debug('🔄 Retrying without markdown formatting', {
+                iterationId,
+              });
               await telegramContext.reply(conversationalPart.text);
+              logger.debug('✅ Plain text message sent successfully', {
+                iterationId,
+              });
             } catch (fallbackError) {
-              logger.debug('Failed to send fallback message', {
-                fallbackError,
+              logger.error('❌ Failed to send fallback message', {
+                iterationId,
+                fallbackError:
+                  fallbackError instanceof Error
+                    ? fallbackError.message
+                    : String(fallbackError),
               });
             }
           }
