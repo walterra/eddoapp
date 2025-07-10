@@ -38,44 +38,44 @@ Which todos currently have active time tracking?
 
 ### Todo Modifications
 ```
-Update the todo with ID "2025-06-18T10:30:00.000Z" to have title "Updated Title" and description "New description"
+Update the todo "Test MCP Create" to have title "Updated Title" and description "New description"
 
-Change the todo "2025-06-18T10:30:00.000Z" to private context and due date June 30th, 2025
+Change the todo "Complex Todo" to private context and due date June 30th, 2025
 
-Add tags "updated" and "mcp-test" to todo "2025-06-18T10:30:00.000Z" and set its link to "https://updated-link.com"
+Add tags "updated" and "mcp-test" to todo "Test MCP Create" and set its link to "https://updated-link.com"
 
-Mark todo "2025-06-18T10:30:00.000Z" as completed
+Mark todo "Test MCP Create" as completed
 
-Mark todo "2025-06-18T10:30:00.000Z" as incomplete again
+Mark todo "Updated Title" as incomplete again
 ```
 
 ## DELETE Operations
 
 ### Todo Removal
 ```
-Delete the todo with ID "2025-06-18T10:30:00.000Z"
+Delete the todo "Test MCP Create"
 
-Remove todo "2025-06-18T10:30:00.000Z" and then show me remaining work todos
+Remove todo "Complex Todo" and then show me remaining work todos
 ```
 
 ## TIME TRACKING Operations
 
 ### Start/Stop Time Tracking
 ```
-Start tracking time on todo "2025-06-18T10:30:00.000Z" under "development" category
+Start tracking time on todo "Test MCP Create" under "development" category
 
 Show me which todos have active time tracking
 
-Stop time tracking for "development" category on todo "2025-06-18T10:30:00.000Z"
+Stop time tracking for "development" category on todo "Test MCP Create"
 
-Start time tracking on todo "2025-06-18T10:30:00.000Z" for both "research" and "testing" categories
+Start time tracking on todo "Complex Todo" for both "research" and "testing" categories
 ```
 
 ## ERROR HANDLING Tests
 
 ### Invalid Input Testing
 ```
-Try to update a todo with invalid ID "invalid-id" to title "Should fail"
+Try to update a todo called "Nonexistent Todo" to title "Should fail"
 
 Create a todo for work context without specifying a title
 
