@@ -19,7 +19,13 @@
       "Bash(gh:*)",
       "Bash(pnpm test:*)",
       "Bash(ls:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pnpm format:*)",
+      "Bash(pnpm prettier:*)",
+      "Bash(pnpm vitest:run:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }
