@@ -2,6 +2,7 @@ import { Bot, Context, session } from 'grammy';
 
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
+import { authMiddleware } from './middleware/auth.js';
 
 // Define session data structure
 interface SessionData {
@@ -33,6 +34,9 @@ export function createBot(): Bot<BotContext> {
       }),
     }),
   );
+
+  // Add authentication middleware
+  bot.use(authMiddleware);
 
   // Add logging middleware
   bot.use(async (ctx, next) => {
