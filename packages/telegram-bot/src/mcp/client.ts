@@ -15,35 +15,6 @@ export interface MCPTool {
   invoke?: (params: Record<string, unknown>) => Promise<unknown>;
 }
 
-export interface CreateTodoParams extends Record<string, unknown> {
-  title: string;
-  description?: string;
-  context?: string;
-  due?: string;
-  tags?: string[];
-  repeat?: number | null;
-  link?: string | null;
-}
-
-export interface ListTodosParams extends Record<string, unknown> {
-  context?: string;
-  completed?: boolean;
-  dateFrom?: string;
-  dateTo?: string;
-  limit?: number;
-}
-
-export interface UpdateTodoParams extends Record<string, unknown> {
-  id: string;
-  title?: string;
-  description?: string;
-  context?: string;
-  due?: string;
-  tags?: string[];
-  repeat?: number | null;
-  link?: string | null;
-}
-
 export interface MCPClient {
   client: Client;
   tools: MCPTool[];
