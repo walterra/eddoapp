@@ -1,5 +1,7 @@
+import { marked } from 'marked';
+
 /**
- * Simple markdown validation utility for Telegram message formatting
+ * Markdown validation utility for Telegram message formatting using marked
  */
 
 interface MarkdownValidationResult {
@@ -8,8 +10,8 @@ interface MarkdownValidationResult {
 }
 
 /**
- * Validates if a string is valid Telegram markdown
- * Telegram supports a subset of markdown with specific rules
+ * Validates if a string is valid markdown using marked parser
+ * If marked can parse it without errors, it's considered valid
  */
 export function validateTelegramMarkdown(
   text: string,
@@ -19,86 +21,33 @@ export function validateTelegramMarkdown(
   }
 
   try {
-    // Check for balanced markdown syntax
-    const checks = [
-      // Check for balanced bold markers
-      { regex: /\*\*/g, name: 'bold (**)', requireEven: true },
-      { regex: /\*/g, name: 'italic (*)', requireEven: true },
-      { regex: /`/g, name: 'code (`)', requireEven: true },
-      { regex: /```/g, name: 'code block (```)', requireEven: true },
-      { regex: /~/g, name: 'strikethrough (~)', requireEven: true },
-      { regex: /__/g, name: 'underline (__)', requireEven: true },
-    ];
-
-    for (const check of checks) {
-      const matches = text.match(check.regex);
-      if (matches && check.requireEven && matches.length % 2 !== 0) {
-        return {
-          isValid: false,
-          error: `Unbalanced ${check.name} markers`,
-        };
-      }
-    }
-
-    // Check for valid link syntax [text](url)
-    const linkRegex = /\[([^\]]*)\]\(([^)]*)\)/g;
-    const links = text.match(linkRegex);
-    if (links) {
-      for (const link of links) {
-        const match = link.match(/\[([^\]]*)\]\(([^)]*)\)/);
-        if (!match || !match[1] || !match[2]) {
-          return {
-            isValid: false,
-            error: 'Invalid link format',
-          };
-        }
-      }
-    }
-
-    // Check for valid user mentions @username
-    const mentionRegex = /@\w+/g;
-    const mentions = text.match(mentionRegex);
-    if (mentions) {
-      for (const mention of mentions) {
-        if (mention.length < 2) {
-          return {
-            isValid: false,
-            error: 'Invalid mention format',
-          };
-        }
-      }
-    }
-
+    // Try to parse with marked - if it throws, markdown is invalid
+    marked(text);
     return { isValid: true };
   } catch (error) {
     return {
       isValid: false,
-      error: `Validation error: ${error instanceof Error ? error.message : String(error)}`,
+      error: `Markdown parsing error: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
 
 /**
- * Checks if text contains any markdown formatting
+ * Checks if text contains any markdown formatting by comparing parsed output with original
  */
 export function hasMarkdownFormatting(text: string): boolean {
   if (!text || typeof text !== 'string') {
     return false;
   }
 
-  const markdownPatterns = [
-    /\*\*.*?\*\*/, // Bold
-    /\*.*?\*/, // Italic
-    /`.*?`/, // Code
-    /```[\s\S]*?```/, // Code block
-    /~.*?~/, // Strikethrough
-    /__.*?__/, // Underline
-    /\[.*?\]\(.*?\)/, // Links
-    /@\w+/, // Mentions
-    /^#+\s/, // Headers
-    /^\s*[-*+]\s/, // Lists
-    /^\s*\d+\.\s/, // Numbered lists
-  ];
-
-  return markdownPatterns.some((pattern) => pattern.test(text));
+  try {
+    // Parse the markdown and check if it produces different output than plain text
+    const parsed = marked(text);
+    // If the parsed HTML is different from wrapped plain text, it has markdown formatting
+    const plainTextWrapped = `<p>${text}</p>\n`;
+    return parsed !== plainTextWrapped;
+  } catch (_error) {
+    // If parsing fails, assume no markdown formatting
+    return false;
+  }
 }
