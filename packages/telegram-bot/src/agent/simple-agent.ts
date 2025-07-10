@@ -203,9 +203,6 @@ export class SimpleAgent {
         }
 
         try {
-          // Show appropriate action during tool execution
-          await this.showAction(telegramContext, toolCall.name);
-
           const toolResult = await this.executeTool(toolCall, telegramContext);
           state.toolResults.push({
             toolName: toolCall.name,
@@ -342,9 +339,11 @@ export class SimpleAgent {
   private extractConversationalPart(
     response: string,
   ): { text: string; isMarkdown: boolean } | null {
-    // Remove all TOOL_CALL lines using regex that handles nested braces
+    // Remove any lines that start with TOOL_CALL
     const conversationalPart = response
-      .replace(/TOOL_CALL:\s*\{(?:[^{}]|{[^}]*})*\}/g, '')
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('TOOL_CALL'))
+      .join('\n')
       .replace(/[ \t]+/g, ' ') // Only collapse spaces and tabs, preserve newlines
       .replace(/\n\s*\n/g, '\n') // Remove extra blank lines but keep single newlines
       .trim();
@@ -401,34 +400,6 @@ export class SimpleAgent {
       await telegramContext.replyWithChatAction('typing');
     } catch (error) {
       logger.debug('Failed to show typing indicator', { error });
-    }
-  }
-
-  private async showAction(
-    telegramContext: BotContext,
-    toolName: string,
-  ): Promise<void> {
-    try {
-      // Choose appropriate action based on tool type
-      let action: 'typing' | 'upload_document' | 'find_location' = 'typing';
-
-      if (
-        toolName.includes('search') ||
-        toolName.includes('find') ||
-        toolName.includes('list')
-      ) {
-        action = 'find_location'; // Shows "searching" indicator
-      } else if (
-        toolName.includes('create') ||
-        toolName.includes('generate') ||
-        toolName.includes('export')
-      ) {
-        action = 'upload_document'; // Shows "uploading" indicator
-      }
-
-      await telegramContext.replyWithChatAction(action);
-    } catch (error) {
-      logger.debug('Failed to show action indicator', { error });
     }
   }
 
