@@ -2,6 +2,7 @@ import { Bot, Context, session } from 'grammy';
 
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
+import { authMiddleware } from './middleware/auth.js';
 
 // Define session data structure
 interface SessionData {
@@ -23,7 +24,7 @@ type BotContext = Context & {
 export function createBot(): Bot<BotContext> {
   const bot = new Bot<BotContext>(appConfig.TELEGRAM_BOT_TOKEN);
 
-  // Add session middleware
+  // Session middleware must come first to ensure session is available for subsequent middleware
   bot.use(
     session({
       initial: (): SessionData => ({
@@ -33,6 +34,9 @@ export function createBot(): Bot<BotContext> {
       }),
     }),
   );
+
+  // Auth middleware after session to have access to session data if needed
+  bot.use(authMiddleware);
 
   // Add logging middleware
   bot.use(async (ctx, next) => {
