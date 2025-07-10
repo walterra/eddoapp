@@ -3,6 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { authMiddleware, isUserAuthorized } from './auth';
 
+// Mock the logger
+vi.mock('../../utils/logger', () => ({
+  logger: {
+    warn: vi.fn(),
+  },
+}));
+
 // Mock the config module before importing anything that uses it
 vi.mock('../../utils/config', () => {
   const mockAllowedUsers = new Set<number>();
@@ -14,18 +21,25 @@ vi.mock('../../utils/config', () => {
 
 // Get reference to the mocked allowedUsers after the mock is set up
 const { allowedUsers: mockAllowedUsers } = await import('../../utils/config');
+const { logger: mockLogger } = await import('../../utils/logger');
 
 describe('Authentication Middleware', () => {
   let nextMock: ReturnType<typeof vi.fn<[], Promise<void>>>;
 
   beforeEach(() => {
     nextMock = vi.fn<[], Promise<void>>();
+    vi.clearAllMocks();
   });
 
-  function createMockContext(userId?: number): Context {
+  function createMockContext(
+    userId?: number,
+    additionalFromData?: Record<string, unknown>,
+  ): Context {
     return {
-      from: userId ? { id: userId } : undefined,
+      from: userId ? { id: userId, ...additionalFromData } : undefined,
       reply: vi.fn(),
+      chat: { id: 12345 },
+      message: { text: 'test message' },
     } as unknown as Context;
   }
 
@@ -59,12 +73,23 @@ describe('Authentication Middleware', () => {
         '❌ Unable to verify your identity. Please try again.',
       );
       expect(nextMock).not.toHaveBeenCalled();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Authentication failed: No user ID available',
+        {
+          chat: 12345,
+          messageText: 'test message',
+        },
+      );
     });
 
     it('should reject unauthorized users', async () => {
       mockAllowedUsers.clear();
       mockAllowedUsers.add(987654321);
-      const mockCtx = createMockContext(123456789);
+      const mockCtx = createMockContext(123456789, {
+        username: 'testuser',
+        first_name: 'Test',
+        last_name: 'User',
+      });
       await authMiddleware(mockCtx, nextMock);
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
@@ -72,6 +97,18 @@ describe('Authentication Middleware', () => {
           'If you believe this is an error, please contact the bot administrator.',
       );
       expect(nextMock).not.toHaveBeenCalled();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Unauthorized access attempt',
+        {
+          userId: 123456789,
+          username: 'testuser',
+          firstName: 'Test',
+          lastName: 'User',
+          chatId: 12345,
+          messageText: 'test message',
+          allowedUsersCount: 1,
+        },
+      );
     });
 
     it('should allow authorized users', async () => {
@@ -82,11 +119,14 @@ describe('Authentication Middleware', () => {
 
       expect(mockCtx.reply).not.toHaveBeenCalled();
       expect(nextMock).toHaveBeenCalled();
+      expect(mockLogger.warn).not.toHaveBeenCalled();
     });
 
     it('should deny all users when allowedUsers is empty', async () => {
       mockAllowedUsers.clear();
-      const mockCtx = createMockContext(123456789);
+      const mockCtx = createMockContext(123456789, {
+        username: 'emptyconfig',
+      });
       await authMiddleware(mockCtx, nextMock);
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
@@ -94,6 +134,18 @@ describe('Authentication Middleware', () => {
           'If you believe this is an error, please contact the bot administrator.',
       );
       expect(nextMock).not.toHaveBeenCalled();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Unauthorized access attempt',
+        {
+          userId: 123456789,
+          username: 'emptyconfig',
+          firstName: undefined,
+          lastName: undefined,
+          chatId: 12345,
+          messageText: 'test message',
+          allowedUsersCount: 0,
+        },
+      );
     });
   });
 });
