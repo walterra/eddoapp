@@ -244,15 +244,6 @@ export class SimpleAgent {
           responsePreview: llmResponse.substring(0, 200) + '...',
         });
 
-        // Send completion update to Telegram
-        try {
-          await telegramContext.reply(
-            '🏁 Processing complete, preparing response...',
-          );
-        } catch (error) {
-          logger.debug('Failed to send completion update', { error });
-        }
-
         // No tool call, agent is done
         state.done = true;
         state.output = llmResponse;
