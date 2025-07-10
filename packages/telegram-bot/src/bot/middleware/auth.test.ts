@@ -1,7 +1,14 @@
 import { Context } from 'grammy';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { authMiddleware, isUserAuthorized } from './auth';
+import {
+  MAX_AUTH_FAILURES,
+  authFailures,
+  authMiddleware,
+  isRateLimited,
+  isUserAuthorized,
+  recordAuthFailure,
+} from './auth';
 
 // Mock the logger
 vi.mock('../../utils/logger', () => ({
@@ -29,6 +36,8 @@ describe('Authentication Middleware', () => {
   beforeEach(() => {
     nextMock = vi.fn<[], Promise<void>>();
     vi.clearAllMocks();
+    // Clear auth failures between tests
+    authFailures.clear();
   });
 
   function createMockContext(
@@ -82,7 +91,7 @@ describe('Authentication Middleware', () => {
       );
     });
 
-    it('should reject unauthorized users', async () => {
+    it('should reject unauthorized users with remaining attempts message', async () => {
       mockAllowedUsers.clear();
       mockAllowedUsers.add(987654321);
       const mockCtx = createMockContext(123456789, {
@@ -93,13 +102,15 @@ describe('Authentication Middleware', () => {
       await authMiddleware(mockCtx, nextMock);
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        '🚫 Unauthorized: You are not allowed to use this bot.\n\n' +
-          'If you believe this is an error, please contact the bot administrator.',
+        expect.stringContaining(
+          '🚫 Unauthorized: You are not allowed to use this bot.\n\n' +
+            '4 attempts remaining before temporary restriction.',
+        ),
       );
       expect(nextMock).not.toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Unauthorized access attempt',
-        {
+        expect.objectContaining({
           userId: 123456789,
           username: 'testuser',
           firstName: 'Test',
@@ -107,7 +118,9 @@ describe('Authentication Middleware', () => {
           chatId: 12345,
           messageText: 'test message',
           allowedUsersCount: 1,
-        },
+          failureCount: 1,
+          rateLimited: false,
+        }),
       );
     });
 
@@ -130,13 +143,15 @@ describe('Authentication Middleware', () => {
       await authMiddleware(mockCtx, nextMock);
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        '🚫 Unauthorized: You are not allowed to use this bot.\n\n' +
-          'If you believe this is an error, please contact the bot administrator.',
+        expect.stringContaining(
+          '🚫 Unauthorized: You are not allowed to use this bot.\n\n' +
+            '4 attempts remaining before temporary restriction.',
+        ),
       );
       expect(nextMock).not.toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Unauthorized access attempt',
-        {
+        expect.objectContaining({
           userId: 123456789,
           username: 'emptyconfig',
           firstName: undefined,
@@ -144,8 +159,184 @@ describe('Authentication Middleware', () => {
           chatId: 12345,
           messageText: 'test message',
           allowedUsersCount: 0,
-        },
+          failureCount: 1,
+          rateLimited: false,
+        }),
       );
+    });
+  });
+
+  describe('Rate Limiting', () => {
+    describe('recordAuthFailure', () => {
+      it('should record first auth failure', () => {
+        const userId = 123456789;
+        recordAuthFailure(userId);
+
+        const record = authFailures.get(userId);
+        expect(record).toBeDefined();
+        expect(record?.count).toBe(1);
+        expect(record?.firstFailure).toBeLessThanOrEqual(Date.now());
+        expect(record?.lastFailure).toBeLessThanOrEqual(Date.now());
+      });
+
+      it('should increment failure count for repeated failures', () => {
+        const userId = 123456789;
+
+        recordAuthFailure(userId);
+        recordAuthFailure(userId);
+        recordAuthFailure(userId);
+
+        const record = authFailures.get(userId);
+        expect(record?.count).toBe(3);
+      });
+    });
+
+    describe('isRateLimited', () => {
+      it('should return false for users with no failures', () => {
+        expect(isRateLimited(123456789)).toBe(false);
+      });
+
+      it('should return false for users below failure threshold', () => {
+        const userId = 123456789;
+
+        // Record failures below threshold
+        for (let i = 0; i < MAX_AUTH_FAILURES - 1; i++) {
+          recordAuthFailure(userId);
+        }
+
+        expect(isRateLimited(userId)).toBe(false);
+      });
+
+      it('should return true for users at failure threshold', () => {
+        const userId = 123456789;
+
+        // Record failures at threshold
+        for (let i = 0; i < MAX_AUTH_FAILURES; i++) {
+          recordAuthFailure(userId);
+        }
+
+        expect(isRateLimited(userId)).toBe(true);
+      });
+
+      it('should return true for users above failure threshold', () => {
+        const userId = 123456789;
+
+        // Record failures above threshold
+        for (let i = 0; i < MAX_AUTH_FAILURES + 2; i++) {
+          recordAuthFailure(userId);
+        }
+
+        expect(isRateLimited(userId)).toBe(true);
+      });
+    });
+
+    describe('authMiddleware with rate limiting', () => {
+      it('should rate limit after max failures', async () => {
+        mockAllowedUsers.clear();
+        mockAllowedUsers.add(987654321); // Different user is allowed
+
+        const unauthorizedUserId = 123456789;
+        const mockCtx = createMockContext(unauthorizedUserId, {
+          username: 'unauthorized',
+        });
+
+        // Make max failures
+        for (let i = 0; i < MAX_AUTH_FAILURES; i++) {
+          const ctx = createMockContext(unauthorizedUserId, {
+            username: 'unauthorized',
+          });
+          await authMiddleware(ctx, nextMock);
+        }
+
+        // Next attempt should be rate limited
+        await authMiddleware(mockCtx, nextMock);
+
+        expect(mockCtx.reply).toHaveBeenCalledWith(
+          '⏰ Too many unauthorized attempts. Please wait 15 minutes before trying again.\n\n' +
+            'If you believe this is an error, please contact the bot administrator.',
+        );
+        expect(nextMock).not.toHaveBeenCalled();
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Rate limited user attempted access',
+          expect.objectContaining({
+            userId: unauthorizedUserId,
+            username: 'unauthorized',
+          }),
+        );
+      });
+
+      it('should show rate limit message when threshold is reached', async () => {
+        mockAllowedUsers.clear();
+        mockAllowedUsers.add(987654321); // Different user is allowed
+
+        const unauthorizedUserId = 123456789;
+
+        // Make failures up to threshold - 1
+        for (let i = 0; i < MAX_AUTH_FAILURES - 1; i++) {
+          const ctx = createMockContext(unauthorizedUserId, {
+            username: 'unauthorized',
+          });
+          await authMiddleware(ctx, nextMock);
+        }
+
+        // Final failure that triggers rate limiting
+        const mockCtx = createMockContext(unauthorizedUserId, {
+          username: 'unauthorized',
+        });
+        await authMiddleware(mockCtx, nextMock);
+
+        expect(mockCtx.reply).toHaveBeenCalledWith(
+          '🚫 Too many unauthorized attempts. Access has been temporarily restricted.\n\n' +
+            'Please wait 15 minutes before trying again. If you believe this is an error, please contact the bot administrator.',
+        );
+        expect(nextMock).not.toHaveBeenCalled();
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Unauthorized access attempt',
+          expect.objectContaining({
+            userId: unauthorizedUserId,
+            rateLimited: true,
+            failureCount: MAX_AUTH_FAILURES,
+          }),
+        );
+      });
+
+      it('should show remaining attempts before rate limiting', async () => {
+        mockAllowedUsers.clear();
+        mockAllowedUsers.add(987654321); // Different user is allowed
+
+        const unauthorizedUserId = 123456789;
+        const mockCtx = createMockContext(unauthorizedUserId, {
+          username: 'unauthorized',
+        });
+
+        // First failure
+        await authMiddleware(mockCtx, nextMock);
+
+        const remainingAttempts = MAX_AUTH_FAILURES - 1;
+        expect(mockCtx.reply).toHaveBeenCalledWith(
+          expect.stringContaining(
+            `${remainingAttempts} attempts remaining before temporary restriction.`,
+          ),
+        );
+      });
+
+      it('should not affect authorized users', async () => {
+        mockAllowedUsers.clear();
+        const authorizedUserId = 123456789;
+        mockAllowedUsers.add(authorizedUserId);
+
+        // Record some failures for this user (simulating previous unauthorized attempts)
+        for (let i = 0; i < MAX_AUTH_FAILURES; i++) {
+          recordAuthFailure(authorizedUserId);
+        }
+
+        // User should still be able to access if they become authorized
+        const mockCtx = createMockContext(authorizedUserId);
+        await authMiddleware(mockCtx, nextMock);
+
+        expect(mockCtx.reply).not.toHaveBeenCalled();
+        expect(nextMock).toHaveBeenCalled();
+      });
     });
   });
 });
