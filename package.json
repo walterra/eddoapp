@@ -122,7 +122,7 @@
     "tsc:check": "tsc --build",
     "vitest:run": "vitest run",
     "knip": "knip",
-    "test:mcp-server": "node scripts/test-mcp.js",
+    "test:mcp-manual": "node scripts/test-mcp.js",
     "cli": "tsx scripts/cli.ts",
     "cli:test": "tsx scripts/test-cli.ts",
     "backup": "tsx scripts/backup.ts",
