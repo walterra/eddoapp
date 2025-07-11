@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Run integration tests with proper server lifecycle management
+ * Run telegram-bot integration tests with proper server lifecycle management
  */
 import { spawn } from 'child_process';
 import { setTimeout } from 'timers/promises';
@@ -29,13 +29,14 @@ function findAvailablePort(startPort = 3001) {
   });
 }
 
-async function runIntegrationTests() {
+async function runTelegramBotIntegrationTests() {
   let serverProcess;
   let testExitCode = 0;
 
   try {
     // Find an available port for the MCP server
     const mcpPort = process.env.MCP_TEST_PORT || await findAvailablePort(3001);
+    const mcpUrl = `http://localhost:${mcpPort}/mcp`;
     
     console.log(`🚀 Starting MCP test server on port ${mcpPort}...`);
     serverProcess = spawn('pnpm', [
@@ -54,23 +55,29 @@ async function runIntegrationTests() {
     serverProcess.stdout.on('data', (data) => {
       const output = data.toString();
       if (!output.includes('ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL')) {
-        process.stdout.write(output);
+        process.stdout.write(`[MCP Server] ${output}`);
       }
     });
 
     serverProcess.stderr.on('data', (data) => {
       const output = data.toString();
       if (!output.includes('ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL')) {
-        process.stderr.write(output);
+        process.stderr.write(`[MCP Server] ${output}`);
       }
     });
 
-    // Server readiness is now handled by polling in the test infrastructure
-    console.log('⏳ Server started, tests will poll for readiness...');
+    // Wait a bit for server to start
+    await setTimeout(3000);
+    console.log('⏳ Server started, running telegram-bot integration tests...');
 
     // Run the tests
-    console.log('🧪 Running integration tests...');
-    const testProcess = spawn('vitest', ['run', 'packages/server/src/integration-tests'], {
+    console.log(`🧪 Running telegram-bot integration tests against ${mcpUrl}...`);
+    const testProcess = spawn('pnpm', ['--filter', '@eddo/telegram-bot', 'test:integration'], {
+      env: {
+        ...process.env,
+        MCP_TEST_URL: mcpUrl,
+        MCP_TEST_PORT: mcpPort.toString()
+      },
       stdio: 'inherit'
     });
 
@@ -102,7 +109,7 @@ async function runIntegrationTests() {
 }
 
 // Run the tests
-runIntegrationTests().catch((error) => {
-  console.error('❌ Integration test runner failed:', error);
+runTelegramBotIntegrationTests().catch((error) => {
+  console.error('❌ Telegram bot integration test runner failed:', error);
   process.exit(1);
 });

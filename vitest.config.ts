@@ -37,7 +37,9 @@ export default defineConfig({
         test: {
           globals: true,
           environment: 'node',
-          include: ['packages/server/src/integration-tests/**/*.test.ts'],
+          include: [
+            'packages/server/src/integration-tests/**/*.test.ts'
+          ],
           testTimeout: 60000,
         },
       },

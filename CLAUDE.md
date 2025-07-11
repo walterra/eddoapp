@@ -13,13 +13,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Format fix: `pnpm format`
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`
-- Integration tests: `pnpm test:integration`
+- MCP server integration tests: `pnpm test:integration:mcp-server`
+- Agent loop integration tests: `pnpm test:integration:agent-loop` (requires ANTHROPIC_API_KEY)
 - E2E tests: `pnpm test:e2e`
 - Full test suite: `pnpm test:all`
-- CI test suite: `pnpm test:ci`
+- CI test suite: `pnpm test:ci` (excludes telegram-bot integration tests)
+- CI test suite with all tests: `pnpm test:ci:all` (requires ANTHROPIC_API_KEY)
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
-- MCP server test: `pnpm test:mcp`
+- MCP server test: `pnpm test:mcp-server`
 - Check unused dependencies: `pnpm knip`
 
 ### Package-Specific
