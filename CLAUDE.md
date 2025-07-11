@@ -27,7 +27,7 @@ DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|
 - Format fix: `pnpm format`
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`
-- MCP server integration tests: `pnpm test:integration:mcp-server`
+- MCP server integration tests: `pnpm test:integration:mcp-server` (uses vitest with global setup)
 - Agent loop integration tests: `pnpm test:integration:agent-loop` (requires ANTHROPIC_API_KEY)
 - E2E tests: `pnpm test:e2e`
 - Full test suite: `pnpm test:all`
@@ -129,6 +129,24 @@ interface TodoAlpha3 {
   - `ai/`: Claude integration and persona management
   - `bot/`: Telegram bot handlers and commands
   - `mcp/`: MCP client integration
+
+### Testing Architecture
+
+The project uses a layered testing approach with different tools for different purposes:
+
+- **Unit Tests**: Vitest for individual functions and components
+- **Integration Tests**: Vitest setup with global server management
+- **E2E Tests**: Vitest for end-to-end workflow testing
+
+#### MCP Server Integration Tests
+
+The MCP server integration tests use a **vitest-native approach**:
+
+- **Global Setup**: `packages/server/src/integration-tests/setup/global-setup.ts` manages server lifecycle
+- **Automatic Port Allocation**: Finds available ports dynamically to avoid conflicts
+- **Server Management**: Starts/stops MCP server automatically for each test run
+- **Database Isolation**: Each test gets its own isolated database instance
+- **Single Command**: `pnpm test:integration:mcp-server` runs all integration tests
 
 ## Code Style
 
