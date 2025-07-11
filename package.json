@@ -95,7 +95,7 @@
     "lint:format": "prettier --cache --check ./packages",
     "lint": "eslint --cache ./packages --ignore-pattern '**/dist/**'",
     "test": "pnpm test:unit",
-    "test:unit": "vitest run packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
+    "test:unit": "vitest run packages/web-client/src packages/core-shared/src packages/core-server/src",
     "test:integration:mcp-server": "node scripts/run-integration-tests.js",
     "test:integration:agent-loop": "node scripts/run-telegram-bot-integration-tests.js",
     "test:e2e": "vitest run scripts/__tests__/e2e",
