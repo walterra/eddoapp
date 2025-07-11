@@ -11,7 +11,8 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**'],
     testTimeout: 45000, // 45 seconds for CouchDB operations (best practice)
     hookTimeout: 15000, // 15 seconds for setup/teardown with database recreation
-    globalSetup: ['src/integration-tests/setup/global.ts'], // Enable global setup to avoid race conditions
+    globalSetup: ['src/integration-tests/setup/global-setup.ts'],
+    setupFiles: ['src/integration-tests/setup/global.ts'],
     reporters: ['verbose'],
     environment: 'node',
     globals: true,
