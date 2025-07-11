@@ -24,9 +24,8 @@
     "dev": "tsx watch src/mcp-server.ts",
     "start": "node dist/mcp-server.js",
     "start:test": "tsx src/mcp-server.ts",
-    "check:ports": "tsx src/integration-tests/check-ports.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:integration:watch": "npm run check:ports && vitest --config vitest.integration.config.ts",
-    "test:integration:ui": "npm run check:ports && vitest --config vitest.integration.config.ts --ui"
+    "test:integration:watch": "vitest --config vitest.integration.config.ts",
+    "test:integration:ui": "vitest --config vitest.integration.config.ts --ui"
   }
 }
