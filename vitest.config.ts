@@ -1,10 +1,13 @@
-import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
     alias: {
-      'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),
+      'tailwindcss/version.js': resolve(
+        __dirname,
+        'packages/web-client/src/tailwindcss-version-shim.js',
+      ),
     },
   },
   test: {
@@ -22,7 +25,10 @@ export default defineConfig({
         name: 'unit',
         resolve: {
           alias: {
-            'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),
+            'tailwindcss/version.js': resolve(
+              __dirname,
+              'packages/web-client/src/tailwindcss-version-shim.js',
+            ),
             '@eddo/core-client': resolve(__dirname, 'packages/core-client/src'),
             '@eddo/core-server': resolve(__dirname, 'packages/core-server/src'),
             '@eddo/core-shared': resolve(__dirname, 'packages/core-shared/src'),
@@ -49,7 +55,10 @@ export default defineConfig({
         name: 'integration',
         resolve: {
           alias: {
-            'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),
+            'tailwindcss/version.js': resolve(
+              __dirname,
+              'packages/web-client/src/tailwindcss-version-shim.js',
+            ),
             '@eddo/core-client': resolve(__dirname, 'packages/core-client/src'),
             '@eddo/core-server': resolve(__dirname, 'packages/core-server/src'),
             '@eddo/core-shared': resolve(__dirname, 'packages/core-shared/src'),
@@ -66,7 +75,10 @@ export default defineConfig({
         name: 'e2e',
         resolve: {
           alias: {
-            'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),
+            'tailwindcss/version.js': resolve(
+              __dirname,
+              'packages/web-client/src/tailwindcss-version-shim.js',
+            ),
             '@eddo/core-client': resolve(__dirname, 'packages/core-client/src'),
             '@eddo/core-server': resolve(__dirname, 'packages/core-server/src'),
             '@eddo/core-shared': resolve(__dirname, 'packages/core-shared/src'),
