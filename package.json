@@ -113,7 +113,7 @@
     "test:unit": "vitest run packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
     "test:coverage": "vitest run --coverage packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
     "coverage:open": "open coverage/index.html",
-    "test:integration:mcp-server": "tsx scripts/run-integration-tests.ts",
+    "test:integration:mcp-server": "tsx scripts/run-mcp-server-integration-tests.ts",
     "test:integration:agent-loop": "tsx scripts/run-telegram-bot-integration-tests.ts",
     "test:e2e": "vitest run scripts/__tests__/e2e",
     "test:all": "npm-run-all --parallel tsc:check test:unit test:integration:mcp-server test:e2e lint lint:format",
