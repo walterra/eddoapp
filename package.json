@@ -90,7 +90,7 @@
     "lint": "eslint --cache ./packages --ignore-pattern '**/dist/**'",
     "test": "pnpm test:unit",
     "test:unit": "vitest run packages/client/src packages/shared/src packages/shared/src",
-    "test:integration:mcp-server": "node scripts/run-mcp-server-integration-tests.js",
+    "test:integration:mcp-server": "pnpm --filter @eddo/server test:integration",
     "test:integration:agent-loop": "node scripts/run-telegram-bot-integration-tests.js",
     "test:e2e": "vitest run scripts/__tests__/e2e",
     "test:all": "npm-run-all --parallel tsc:check test:unit test:integration:mcp-server test:e2e lint lint:format",
