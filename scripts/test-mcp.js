@@ -9,7 +9,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
-const MCP_URL = 'http://localhost:3002/mcp';
+const MCP_URL = 'http://localhost:3001/mcp';
 
 async function testMcpTool(toolName, args = {}) {
   console.log(`🚀 Testing MCP tool: ${toolName}`);
@@ -22,8 +22,14 @@ async function testMcpTool(toolName, args = {}) {
   try {
     console.log('🔧 Creating MCP client...');
 
-    // Create transport
-    const transport = new StreamableHTTPClientTransport(new URL(MCP_URL));
+    // Create transport with API key authentication
+    const transport = new StreamableHTTPClientTransport(new URL(MCP_URL), {
+      requestInit: {
+        headers: {
+          'X-API-Key': 'walterra',
+        },
+      },
+    });
 
     // Create client
     client = new Client(
