@@ -429,12 +429,18 @@ importers:
       eslint:
         specifier: ^9.39.1
         version: 9.39.1(jiti@2.6.1)
+      nano:
+        specifier: ^10.1.2
+        version: 10.1.4
       tsx:
         specifier: ^4.20.6
         version: 4.20.6
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
+      vite-tsconfig-paths:
+        specifier: ^4.2.0
+        version: 4.3.2(typescript@5.8.3)(vite@7.2.7(@types/node@24.7.2)(jiti@2.6.1)(lightningcss@1.30.1)(tsx@4.20.6)(yaml@2.8.2))
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.7.2)(jiti@2.6.1)(jsdom@27.0.0(postcss@8.5.6))(lightningcss@1.30.1)(tsx@4.20.6)(yaml@2.8.2)
@@ -4330,6 +4336,9 @@ packages:
     resolution: {integrity: sha512-yANWAN2DUcBtuus5Cpd+SKROzXHs2iVXFZt/Ykrfz6SAXqacLX25NZpltE+39ceMexYF4TtEadjuSTw8+3wX4g==}
     engines: {node: '>=4'}
 
+  globrex@0.1.2:
+    resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
+
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
@@ -5292,6 +5301,10 @@ packages:
     resolution: {integrity: sha512-tacvGzUY5o2D8CBh2rrwxyNojUsZNU2zjNTzKQrkgGJQTbGAfArVWXSKMBokBeeg6C7OLRGUEyoFlYbfeWQIqw==}
     engines: {node: '>=20.17'}
 
+  nano@10.1.4:
+    resolution: {integrity: sha512-bJOFIPLExIbF6mljnfExXX9Cub4W0puhDjVMp+qV40xl/DBvgKao7St4+6/GB6EoHZap7eFnrnx4mnp5KYgwJA==}
+    engines: {node: '>=14'}
+
   nano@11.0.3:
     resolution: {integrity: sha512-bOiBWTW5sA92Rp2Tuu5LmujUe0rre5AAKuiXuhjD4tBAVRZRrKWK0AJyEYWFm9PN8TRktsbUfUdDb//c5Cr3Dg==}
     engines: {node: '>=20.0'}
@@ -5318,6 +5331,9 @@ packages:
 
   nice-try@1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
+
+  node-abort-controller@3.1.1:
+    resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -6581,6 +6597,16 @@ packages:
       '@swc/wasm':
         optional: true
 
+  tsconfck@3.1.6:
+    resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+    peerDependencies:
+      typescript: ^5.0.0
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
 
@@ -6742,6 +6768,14 @@ packages:
     resolution: {integrity: sha512-EbKSKh+bh1E1IFxeO0pg1n4dvoOTt0UDiXMd/qn++r98+jPO1xtJilvXldeuQ8giIB5IkpjCgMleHMNEsGH6pg==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
+
+  vite-tsconfig-paths@4.3.2:
+    resolution: {integrity: sha512-0Vd/a6po6Q+86rPlntHye7F31zA2URZMbH8M3saAZ/xR9QoGN/L21bxEGfXdWmFdNkqPpRdxFT7nmNe12e9/uA==}
+    peerDependencies:
+      vite: '*'
+    peerDependenciesMeta:
+      vite:
+        optional: true
 
   vite@7.1.7:
     resolution: {integrity: sha512-VbA8ScMvAISJNJVbRDTJdCwqQoAareR/wutevKanhR2/1EkoXVZVkkORaYm/tNVCjP/UDTKtcw3bAkwOUdedmA==}
@@ -10853,7 +10887,7 @@ snapshots:
       strict-event-emitter-types: 2.0.0
       undici: 7.16.0
       uri-templates: 0.2.0
-      xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@4.2.1))(zod@4.2.1)
+      xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@3.25.76))(zod@4.2.1)
       yargs: 18.0.0
       zod: 4.2.1
       zod-to-json-schema: 3.25.0(zod@4.2.1)
@@ -11238,6 +11272,8 @@ snapshots:
       ignore: 3.3.10
       pify: 3.0.0
       slash: 1.0.0
+
+  globrex@0.1.2: {}
 
   gopd@1.2.0: {}
 
@@ -12170,6 +12206,14 @@ snapshots:
 
   nano-spawn@2.0.0: {}
 
+  nano@10.1.4:
+    dependencies:
+      axios: 1.13.2(debug@4.4.3)
+      node-abort-controller: 3.1.1
+      qs: 6.14.0
+    transitivePeerDependencies:
+      - debug
+
   nano@11.0.3: {}
 
   nanoid@3.3.11: {}
@@ -12183,6 +12227,8 @@ snapshots:
   negotiator@1.0.0: {}
 
   nice-try@1.0.5: {}
+
+  node-abort-controller@3.1.1: {}
 
   node-domexception@1.0.0: {}
 
@@ -13603,6 +13649,10 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.13.21
 
+  tsconfck@3.1.6(typescript@5.8.3):
+    optionalDependencies:
+      typescript: 5.8.3
+
   tsconfig-paths@3.15.0:
     dependencies:
       '@types/json5': 0.0.29
@@ -13802,6 +13852,17 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  vite-tsconfig-paths@4.3.2(typescript@5.8.3)(vite@7.2.7(@types/node@24.7.2)(jiti@2.6.1)(lightningcss@1.30.1)(tsx@4.20.6)(yaml@2.8.2)):
+    dependencies:
+      debug: 4.4.3
+      globrex: 0.1.2
+      tsconfck: 3.1.6(typescript@5.8.3)
+    optionalDependencies:
+      vite: 7.2.7(@types/node@24.7.2)(jiti@2.6.1)(lightningcss@1.30.1)(tsx@4.20.6)(yaml@2.8.2)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
 
   vite@7.1.7(@types/node@24.7.2)(jiti@2.6.1)(lightningcss@1.30.1)(tsx@4.20.6)(yaml@2.8.2):
     dependencies:
@@ -14036,7 +14097,7 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.24.6(zod@3.25.76)
 
-  xsschema@0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@4.2.1))(zod@4.2.1):
+  xsschema@0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@3.25.76))(zod@4.2.1):
     optionalDependencies:
       zod: 4.2.1
       zod-to-json-schema: 3.25.0(zod@4.2.1)

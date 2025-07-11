@@ -8,7 +8,11 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:watch": "vitest --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",
@@ -30,7 +34,9 @@
     "eslint": "^9.39.1",
     "tsx": "^4.20.6",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "nano": "^10.1.2",
+    "vite-tsconfig-paths": "^4.2.0"
   },
   "keywords": [
     "telegram",
