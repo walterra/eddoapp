@@ -49,13 +49,6 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm build
-      - name: Wait for CouchDB
-        run: |
-          until curl -f http://admin:testpassword@localhost:5984/; do
-            echo "Waiting for CouchDB..."
-            sleep 2
-          done
-          echo "CouchDB is ready!"
       - name: Setup test database
         run: |
           curl -X PUT http://admin:testpassword@localhost:5984/todos-test
