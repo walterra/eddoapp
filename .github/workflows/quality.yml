@@ -91,7 +91,9 @@ jobs:
         with:
           script: |
             const clientSize = process.env.CLIENT_SIZE;
-            const comment = `## Bundle Size Report 📦
+            const commentMarker = '<!-- bundle-size-report -->';
+            const comment = `${commentMarker}
+            ## Bundle Size Report 📦
             
             **Client bundle size:** ${clientSize}KB
             **Limit:** 2048KB
@@ -99,9 +101,31 @@ jobs:
             
             [View detailed bundle analysis](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
             
-            github.rest.issues.createComment({
+            // Find existing bundle size comment
+            const comments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: comment
             });
+            
+            const existingComment = comments.data.find(comment => 
+              comment.body.includes(commentMarker)
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
