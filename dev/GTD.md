@@ -1,0 +1,5 @@
+- https://gettingthingsdone.com/2011/10/gtd-best-practices-collect-part-1-of-5/
+- https://gettingthingsdone.com/2011/10/gtd-best-practices-process-part-2-of-5/
+- https://gettingthingsdone.com/2011/11/gtd-best-practices-organize-part-3-of-5/
+- https://gettingthingsdone.com/2011/11/gtd-best-practices-review-part-4-of-5/
+- https://gettingthingsdone.com/2011/12/gtd-best-practices-doing-part-5-of-5/
