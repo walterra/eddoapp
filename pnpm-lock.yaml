@@ -268,6 +268,9 @@ importers:
       postcss:
         specifier: ^8.4.16
         version: 8.5.6
+      pouchdb-adapter-memory:
+        specifier: ^7.3.1
+        version: 7.3.1
       tailwindcss:
         specifier: ^3.1.8
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.12.1)(@types/node@24.0.3)(typescript@5.8.3))
@@ -361,8 +364,8 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       grammy:
-        specifier: ^1.21.1
-        version: 1.36.3
+        specifier: ^1.37.0
+        version: 1.37.0
       marked:
         specifier: ^16.0.0
         version: 16.0.0
@@ -469,6 +472,11 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
+  '@babel/parser@7.28.0':
+    resolution: {integrity: sha512-jVZGvOxOuNSsuQuLRTh13nU0AogFlw32w/MT+LV6D3sP5WdbW61E77RnkbaO2dUvmPAYrBDJXGn5gGS6tH4j8g==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+
   '@babel/plugin-transform-react-jsx-self@7.27.1':
     resolution: {integrity: sha512-6UzkCs+ejGdZ5mFFC/OCUrv028ab2fp1znZmCZjAOBKiBK2jXD1O+BPSfX8X2qjJ75fZBMSnQn3Rq2mrBJK2mw==}
     engines: {node: '>=6.9.0'}
@@ -495,6 +503,10 @@ packages:
 
   '@babel/types@7.27.6':
     resolution: {integrity: sha512-ETyHEk2VHHvl9b9jZP5IHPavHYk57EhanlRRuae9XCpb/j5bDCbPPMOBfCWhnl/7EDJz0jEMCi/RhccCE8r1+Q==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/types@7.28.1':
+    resolution: {integrity: sha512-x0LvFTekgSX+83TI28Y9wYPUfzrnl2aT5+5QLnO6v7mSJYtEEevuDRN0F0uSHRk1G1IWZC43o00Y0xDDrpBGPQ==}
     engines: {node: '>=6.9.0'}
 
   '@cloudant/couchbackup@2.11.7':
@@ -904,8 +916,8 @@ packages:
   '@floating-ui/utils@0.2.9':
     resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==}
 
-  '@grammyjs/types@3.20.0':
-    resolution: {integrity: sha512-KIoikN5VTj6dcJpzMwXtouzaN3BZJ4jihBuEeXzWr25HtEfCF25V3dN11u+uNYi/9sBDvs0KCKZhyN/xFY0MBg==}
+  '@grammyjs/types@3.21.0':
+    resolution: {integrity: sha512-IMj0EpmglPCICuyfGRx4ENKPSuzS2xMSoPgSPzHC6FtnWKDEmJLBP/GbPv/h3TAeb27txqxm/BUld+gbJk6ccQ==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1692,6 +1704,11 @@ packages:
 
   abstract-leveldown@6.2.3:
     resolution: {integrity: sha512-BsLm5vFMRUrrLeCcRc+G0t2qOaTzpoJQLOubq2XM72eNpjF5UdU5o/5NvlNhx95XHcAvcl8OMXr4mlg/fRgUXQ==}
+    engines: {node: '>=6'}
+    deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
+
+  abstract-leveldown@6.3.0:
+    resolution: {integrity: sha512-TU5nlYgta8YrBMNpc9FwQzRbiXsj49gsALsXadbGHt9CROPzX5fB0rWDR5mtdpOOKa5XqRFpbj1QroPAoPzVjQ==}
     engines: {node: '>=6'}
     deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
 
@@ -2774,8 +2791,8 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  grammy@1.36.3:
-    resolution: {integrity: sha512-OmoYn0WTETbMR7FbEy6QWx0Dvm3Md1O84UOgZLmj19mYlKbhefu2fSHDjoflxDNu8QgIrseQRsFSk4zRRcvJOA==}
+  grammy@1.37.0:
+    resolution: {integrity: sha512-UBGqGKux+49t1vm7n/m1BaeXIYbWESXjhaFxG+9z33VTLSHdQJwIOmpNKmZSaoBlSWbAJE+IJZ30X7RfWvEolA==}
     engines: {node: ^12.20.0 || >=14.13.1}
 
   graphemer@1.4.0:
@@ -3829,11 +3846,20 @@ packages:
   pouchdb-abstract-mapreduce@7.3.1:
     resolution: {integrity: sha512-0zKXVFBvrfc1KnN0ggrB762JDmZnUpePHywo9Bq3Jy+L1FnoG7fXM5luFfvv5/T0gEw+ZTIwoocZECMnESBI9w==}
 
+  pouchdb-adapter-leveldb-core@7.3.1:
+    resolution: {integrity: sha512-mxShHlqLMPz2gChrgtA9okV1ogFmQrRAoM/O4EN0CrQWPLXqYtpL1f7sI2asIvFe7SmpnvbLx7kkZyFmLTfwjA==}
+
   pouchdb-adapter-leveldb-core@9.0.0:
     resolution: {integrity: sha512-b3ZGPtVXyivGL5SK3AIDG7PrNsZdoDpGFkmTytDTtctkVhxOg71gnXXP+CrupENPqSNG/eGbKW4w+bbMpxy6aA==}
 
+  pouchdb-adapter-memory@7.3.1:
+    resolution: {integrity: sha512-iHdWGJAHONqQv0we3Oi1MYen69ZS8McLW9wUyaAYcWTJnAIIAr2ZM0/TeTDVSHfMUwYqEYk7X8jRtJZEMwLnwg==}
+
   pouchdb-adapter-memory@9.0.0:
     resolution: {integrity: sha512-XbCwJ5f5U9dGdkiDikzYjTebdPHuA6Ghylx1Pq0lDe4y6l8R9xhjDSUy56pJ8G2F4Z+8QdB5FBY9EQoFlFSXWQ==}
+
+  pouchdb-adapter-utils@7.3.1:
+    resolution: {integrity: sha512-uKLG6dClwTs/sLIJ4WkLAi9wlnDBpOnfyhpeAgOjlOGN/XLz5nKHrA4UJRnURDyc+uv79S9r/Unc4hVpmbSPUw==}
 
   pouchdb-adapter-utils@9.0.0:
     resolution: {integrity: sha512-hmbm4ey0HL0vtoY1tRTPIt2FfYjvMh3DWoGGSxXDTS73qTFQ+Fhhi5I0AnN9PcD2omfKQAVXiYks4kkMvlAHqA==}
@@ -3877,6 +3903,9 @@ packages:
   pouchdb-find@7.3.1:
     resolution: {integrity: sha512-AeqUfAVY1c7IFaY36BRT0vIz9r4VTKq/YOWTmiqndOZUQ/pDGxyO2fNFal6NN3PyYww0JijlD377cPvhnrhJVA==}
 
+  pouchdb-json@7.3.1:
+    resolution: {integrity: sha512-AyOKsmc85/GtHjMZyEacqzja8qLVfycS1hh1oskR+Bm5PIITX52Fb8zyi0hEetV6VC0yuGbn0RqiLjJxQePeqQ==}
+
   pouchdb-json@9.0.0:
     resolution: {integrity: sha512-aI41mYVyI195GXuT1Ys7mLIB/Mvrz11ihoTP6km6hYqVgSuaUxuZcFUozlyTJiZXr7H5kdhNgclhlVnjir4JAA==}
 
@@ -3888,6 +3917,9 @@ packages:
 
   pouchdb-md5@9.0.0:
     resolution: {integrity: sha512-58xUYBvW3/s+aH0j4uOhhN8yCk0LQ254cxBzI/gbKA9PrfwHpe4zrr0L/ia5ml3A30oH1f8aTnuVMwWDkFcuww==}
+
+  pouchdb-merge@7.3.1:
+    resolution: {integrity: sha512-FeK3r35mKimokf2PQ2tUI523QWyZ4lYZ0Yd75FfSch/SPY6wIokz5XBZZ6PHdu5aOJsEKzoLUxr8CpSg9DhcAw==}
 
   pouchdb-merge@9.0.0:
     resolution: {integrity: sha512-Xh+TgOZCkGoZpI589btKf/cTiuQ5CsnPl9YpdW4h0cAPusniN6XNsR62F+/HbL9wirI6XTEPHUrk7MsQbk3S3A==}
@@ -4438,6 +4470,9 @@ packages:
   strtok3@6.3.0:
     resolution: {integrity: sha512-fZtbhtvI9I48xDSywd/somNqgUHl2L2cstmXCCif0itOf96jeW18MBSyrLuNicYQVkvpOxkZtkzujiTJ9LW5Jw==}
     engines: {node: '>=10'}
+
+  sublevel-pouchdb@7.3.1:
+    resolution: {integrity: sha512-n+4fK72F/ORdqPwoGgMGYeOrW2HaPpW9o9k80bT1B3Cim5BSvkKkr9WbWOWynni/GHkbCEdvLVFJL1ktosAdhQ==}
 
   sublevel-pouchdb@9.0.0:
     resolution: {integrity: sha512-pX4r8+F7wuts0C81kUJ341h4bl2aRe7qV572FE8X1FMz9VkKlmi2nPD1vfeiOJXz5Y09I4MHjGULAbqvTfQZEQ==}
@@ -5173,6 +5208,11 @@ snapshots:
     dependencies:
       '@babel/types': 7.27.6
 
+  '@babel/parser@7.28.0':
+    dependencies:
+      '@babel/types': 7.28.1
+    optional: true
+
   '@babel/plugin-transform-react-jsx-self@7.27.1(@babel/core@7.27.4)':
     dependencies:
       '@babel/core': 7.27.4
@@ -5207,6 +5247,12 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
+
+  '@babel/types@7.28.1':
+    dependencies:
+      '@babel/helper-string-parser': 7.27.1
+      '@babel/helper-validator-identifier': 7.27.1
+    optional: true
 
   '@cloudant/couchbackup@2.11.7(@types/tough-cookie@4.0.5)(axios@1.10.0)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.0)(tough-cookie@5.1.2)':
     dependencies:
@@ -5486,7 +5532,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.9': {}
 
-  '@grammyjs/types@3.20.0': {}
+  '@grammyjs/types@3.21.0': {}
 
   '@humanfs/core@0.19.1': {}
 
@@ -6218,7 +6264,7 @@ snapshots:
 
   '@vue/compiler-core@3.5.16':
     dependencies:
-      '@babel/parser': 7.27.5
+      '@babel/parser': 7.28.0
       '@vue/shared': 3.5.16
       entities: 4.5.0
       estree-walker: 2.0.2
@@ -6233,7 +6279,7 @@ snapshots:
 
   '@vue/compiler-sfc@3.5.16':
     dependencies:
-      '@babel/parser': 7.27.5
+      '@babel/parser': 7.28.0
       '@vue/compiler-core': 3.5.16
       '@vue/compiler-dom': 3.5.16
       '@vue/compiler-ssr': 3.5.16
@@ -6262,6 +6308,14 @@ snapshots:
       xtend: 4.0.2
 
   abstract-leveldown@6.2.3:
+    dependencies:
+      buffer: 5.7.1
+      immediate: 3.3.0
+      level-concat-iterator: 2.0.1
+      level-supports: 1.0.1
+      xtend: 4.0.2
+
+  abstract-leveldown@6.3.0:
     dependencies:
       buffer: 5.7.1
       immediate: 3.3.0
@@ -6856,7 +6910,7 @@ snapshots:
 
   encoding-down@6.3.0:
     dependencies:
-      abstract-leveldown: 6.2.3
+      abstract-leveldown: 6.3.0
       inherits: 2.0.4
       level-codec: 9.0.2
       level-errors: 2.0.1
@@ -7625,9 +7679,9 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  grammy@1.36.3:
+  grammy@1.37.0:
     dependencies:
-      '@grammyjs/types': 3.20.0
+      '@grammyjs/types': 3.21.0
       abort-controller: 3.0.0
       debug: 4.4.1
       node-fetch: 2.7.0
@@ -8658,6 +8712,23 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-adapter-leveldb-core@7.3.1:
+    dependencies:
+      argsarray: 0.0.1
+      buffer-from: 1.1.2
+      double-ended-queue: 2.1.0-0
+      levelup: 4.4.0
+      pouchdb-adapter-utils: 7.3.1
+      pouchdb-binary-utils: 7.3.1
+      pouchdb-collections: 7.3.1
+      pouchdb-errors: 7.3.1
+      pouchdb-json: 7.3.1
+      pouchdb-md5: 7.3.1
+      pouchdb-merge: 7.3.1
+      pouchdb-utils: 7.3.1
+      sublevel-pouchdb: 7.3.1
+      through2: 3.0.2
+
   pouchdb-adapter-leveldb-core@9.0.0:
     dependencies:
       double-ended-queue: 2.1.0-0
@@ -8675,12 +8746,27 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-adapter-memory@7.3.1:
+    dependencies:
+      memdown: 1.4.1
+      pouchdb-adapter-leveldb-core: 7.3.1
+      pouchdb-utils: 7.3.1
+
   pouchdb-adapter-memory@9.0.0:
     dependencies:
       memdown: 1.4.1
       pouchdb-adapter-leveldb-core: 9.0.0
     transitivePeerDependencies:
       - encoding
+
+  pouchdb-adapter-utils@7.3.1:
+    dependencies:
+      pouchdb-binary-utils: 7.3.1
+      pouchdb-collections: 7.3.1
+      pouchdb-errors: 7.3.1
+      pouchdb-md5: 7.3.1
+      pouchdb-merge: 7.3.1
+      pouchdb-utils: 7.3.1
 
   pouchdb-adapter-utils@9.0.0:
     dependencies:
@@ -8761,6 +8847,10 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-json@7.3.1:
+    dependencies:
+      vuvuzela: 1.0.3
+
   pouchdb-json@9.0.0:
     dependencies:
       vuvuzela: 1.0.3
@@ -8781,6 +8871,8 @@ snapshots:
     dependencies:
       pouchdb-binary-utils: 9.0.0
       spark-md5: 3.0.2
+
+  pouchdb-merge@7.3.1: {}
 
   pouchdb-merge@9.0.0:
     dependencies:
@@ -9388,6 +9480,13 @@ snapshots:
     dependencies:
       '@tokenizer/token': 0.3.0
       peek-readable: 4.1.0
+
+  sublevel-pouchdb@7.3.1:
+    dependencies:
+      inherits: 2.0.4
+      level-codec: 9.0.2
+      ltgt: 2.2.1
+      readable-stream: 1.1.14
 
   sublevel-pouchdb@9.0.0:
     dependencies:
