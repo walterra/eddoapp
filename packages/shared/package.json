@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "date-fns": "^2.29.3",
-    "dotenv-mono": "^1.3.14",
+    "dotenv-mono": "github:marcocesarato/dotenv-mono#master",
     "lodash-es": "^4.17.21",
     "pouchdb-adapter-memory": "^9.0.0",
     "pouchdb-browser": "^7.3.1",

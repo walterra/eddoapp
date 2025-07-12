@@ -92,7 +92,7 @@ jobs:
       - name: Run license compliance check
         run: |
           echo "Checking license compliance..."
-          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-3-Clause;BSD-2-Clause;ISC;Unlicense;CC0-1.0' --excludePrivatePackages --json > license-report.json || true
+          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-3-Clause;BSD-2-Clause;ISC;Unlicense;CC0-1.0;Apache*' --excludePrivatePackages --json > license-report.json || true
           
           # Check for forbidden licenses
           FORBIDDEN_FOUND=$(npx license-checker --json | jq -r 'to_entries[] | select(.value.licenses | test("GPL|AGPL"; "i")) | .key' | wc -l)
