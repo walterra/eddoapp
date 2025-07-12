@@ -53,10 +53,14 @@ jobs:
       - name: Check bundle size
         run: |
           # Check client build output size
-          if [ -d "packages/client/dist" ]; then
-            CLIENT_SIZE=$(du -sk packages/client/dist | cut -f1)
+          if [ -d "dist/client" ]; then
+            CLIENT_SIZE=$(du -sk dist/client | cut -f1)
             echo "Client bundle size: ${CLIENT_SIZE}KB"
             echo "CLIENT_SIZE=${CLIENT_SIZE}" >> $GITHUB_ENV
+            
+            # Get detailed breakdown
+            echo "Bundle breakdown:"
+            ls -lah dist/client/assets/ || echo "No assets directory found"
             
             # Fail if client bundle exceeds 2MB (2048KB)
             if [ $CLIENT_SIZE -gt 2048 ]; then
@@ -66,7 +70,9 @@ jobs:
               echo "✅ Client bundle size (${CLIENT_SIZE}KB) is within limit"
             fi
           else
-            echo "Client dist directory not found"
+            echo "❌ Client dist directory not found at dist/client"
+            echo "Available directories:"
+            ls -la dist/ || echo "No dist directory found"
             echo "CLIENT_SIZE=0" >> $GITHUB_ENV
           fi
 
@@ -75,6 +81,7 @@ jobs:
         with:
           name: build-artifacts
           path: |
+            dist/
             packages/*/dist/
           retention-days: 7
 
