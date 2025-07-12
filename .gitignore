@@ -6,3 +6,4 @@ coverage/
 dist/
 tsconfig.tsbuildinfo
 packages/telegram-bot/logs/
+backups/
