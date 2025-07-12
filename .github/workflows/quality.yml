@@ -1,0 +1,131 @@
+name: Quality Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Check bundle size
+        run: |
+          # Check client build output size
+          if [ -d "dist/client" ]; then
+            CLIENT_SIZE=$(du -sk dist/client | cut -f1)
+            echo "Client bundle size: ${CLIENT_SIZE}KB"
+            echo "CLIENT_SIZE=${CLIENT_SIZE}" >> $GITHUB_ENV
+            
+            # Get detailed breakdown
+            echo "Bundle breakdown:"
+            ls -lah dist/client/assets/ || echo "No assets directory found"
+            
+            # Fail if client bundle exceeds 2MB (2048KB)
+            if [ $CLIENT_SIZE -gt 2048 ]; then
+              echo "❌ Client bundle size (${CLIENT_SIZE}KB) exceeds limit (2048KB)"
+              exit 1
+            else
+              echo "✅ Client bundle size (${CLIENT_SIZE}KB) is within limit"
+            fi
+          else
+            echo "❌ Client dist directory not found at dist/client"
+            echo "Available directories:"
+            ls -la dist/ || echo "No dist directory found"
+            echo "CLIENT_SIZE=0" >> $GITHUB_ENV
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            packages/*/dist/
+          retention-days: 7
+
+      - name: Comment bundle size on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const clientSize = process.env.CLIENT_SIZE;
+            const commentMarker = '<!-- bundle-size-report -->';
+            const comment = `${commentMarker}
+            ## Bundle Size Report 📦
+            
+            **Client bundle size:** ${clientSize}KB
+            **Limit:** 2048KB
+            **Status:** ${clientSize > 2048 ? '❌ Exceeds limit' : '✅ Within limit'}
+            
+            [View detailed bundle analysis](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            // Find existing bundle size comment
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const existingComment = comments.data.find(comment => 
+              comment.body.includes(commentMarker)
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }

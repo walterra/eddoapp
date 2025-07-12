@@ -3,6 +3,7 @@ git commit just the currently staged files with a proper one-liner commit messag
 IMPORTANT: Before committing, record the list of originally staged files using `git diff --cached --name-only`. This is critical for the next step.
 
 Note: Husky pre-commit hook runs TypeScript checks, linting, and format checks. If the hook finds problems:
+
 1. **Always prefer running linting scripts before manual fixes**: Use `pnpm lint`, `pnpm format`, `pnpm tsc:check` to fix formatting, linting, and type issues automatically before attempting manual fixes
 2. Fix any remaining issues (formatting, linting, etc.)
 3. ONLY stage files that were in the ORIGINAL staged files list
