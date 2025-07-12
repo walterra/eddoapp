@@ -71,7 +71,7 @@ importers:
         version: 8.0.1(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@trivago/prettier-plugin-sort-imports':
         specifier: ^5.2.2
-        version: 5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.5.3)
+        version: 5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.6.2)
       '@types/d3-array':
         specifier: ^3.0.3
         version: 3.2.1
@@ -160,11 +160,11 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1
       prettier:
-        specifier: ^3.5.3
-        version: 3.5.3
+        specifier: ^3.6.2
+        version: 3.6.2
       prettier-plugin-tailwindcss:
         specifier: ^0.6.12
-        version: 0.6.12(@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.5.3))(prettier@3.5.3)
+        version: 0.6.12(@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.6.2))(prettier@3.6.2)
       prompts:
         specifier: ^2.4.2
         version: 2.4.2
@@ -268,6 +268,9 @@ importers:
       postcss:
         specifier: ^8.4.16
         version: 8.5.6
+      pouchdb-adapter-memory:
+        specifier: ^7.3.1
+        version: 7.3.1
       tailwindcss:
         specifier: ^3.1.8
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.12.1)(@types/node@24.0.3)(typescript@5.8.3))
@@ -469,6 +472,11 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
+  '@babel/parser@7.28.0':
+    resolution: {integrity: sha512-jVZGvOxOuNSsuQuLRTh13nU0AogFlw32w/MT+LV6D3sP5WdbW61E77RnkbaO2dUvmPAYrBDJXGn5gGS6tH4j8g==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+
   '@babel/plugin-transform-react-jsx-self@7.27.1':
     resolution: {integrity: sha512-6UzkCs+ejGdZ5mFFC/OCUrv028ab2fp1znZmCZjAOBKiBK2jXD1O+BPSfX8X2qjJ75fZBMSnQn3Rq2mrBJK2mw==}
     engines: {node: '>=6.9.0'}
@@ -495,6 +503,10 @@ packages:
 
   '@babel/types@7.27.6':
     resolution: {integrity: sha512-ETyHEk2VHHvl9b9jZP5IHPavHYk57EhanlRRuae9XCpb/j5bDCbPPMOBfCWhnl/7EDJz0jEMCi/RhccCE8r1+Q==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/types@7.28.1':
+    resolution: {integrity: sha512-x0LvFTekgSX+83TI28Y9wYPUfzrnl2aT5+5QLnO6v7mSJYtEEevuDRN0F0uSHRk1G1IWZC43o00Y0xDDrpBGPQ==}
     engines: {node: '>=6.9.0'}
 
   '@cloudant/couchbackup@2.11.7':
@@ -1692,6 +1704,11 @@ packages:
 
   abstract-leveldown@6.2.3:
     resolution: {integrity: sha512-BsLm5vFMRUrrLeCcRc+G0t2qOaTzpoJQLOubq2XM72eNpjF5UdU5o/5NvlNhx95XHcAvcl8OMXr4mlg/fRgUXQ==}
+    engines: {node: '>=6'}
+    deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
+
+  abstract-leveldown@6.3.0:
+    resolution: {integrity: sha512-TU5nlYgta8YrBMNpc9FwQzRbiXsj49gsALsXadbGHt9CROPzX5fB0rWDR5mtdpOOKa5XqRFpbj1QroPAoPzVjQ==}
     engines: {node: '>=6'}
     deprecated: Superseded by abstract-level (https://github.com/Level/community#faq)
 
@@ -3829,11 +3846,20 @@ packages:
   pouchdb-abstract-mapreduce@7.3.1:
     resolution: {integrity: sha512-0zKXVFBvrfc1KnN0ggrB762JDmZnUpePHywo9Bq3Jy+L1FnoG7fXM5luFfvv5/T0gEw+ZTIwoocZECMnESBI9w==}
 
+  pouchdb-adapter-leveldb-core@7.3.1:
+    resolution: {integrity: sha512-mxShHlqLMPz2gChrgtA9okV1ogFmQrRAoM/O4EN0CrQWPLXqYtpL1f7sI2asIvFe7SmpnvbLx7kkZyFmLTfwjA==}
+
   pouchdb-adapter-leveldb-core@9.0.0:
     resolution: {integrity: sha512-b3ZGPtVXyivGL5SK3AIDG7PrNsZdoDpGFkmTytDTtctkVhxOg71gnXXP+CrupENPqSNG/eGbKW4w+bbMpxy6aA==}
 
+  pouchdb-adapter-memory@7.3.1:
+    resolution: {integrity: sha512-iHdWGJAHONqQv0we3Oi1MYen69ZS8McLW9wUyaAYcWTJnAIIAr2ZM0/TeTDVSHfMUwYqEYk7X8jRtJZEMwLnwg==}
+
   pouchdb-adapter-memory@9.0.0:
     resolution: {integrity: sha512-XbCwJ5f5U9dGdkiDikzYjTebdPHuA6Ghylx1Pq0lDe4y6l8R9xhjDSUy56pJ8G2F4Z+8QdB5FBY9EQoFlFSXWQ==}
+
+  pouchdb-adapter-utils@7.3.1:
+    resolution: {integrity: sha512-uKLG6dClwTs/sLIJ4WkLAi9wlnDBpOnfyhpeAgOjlOGN/XLz5nKHrA4UJRnURDyc+uv79S9r/Unc4hVpmbSPUw==}
 
   pouchdb-adapter-utils@9.0.0:
     resolution: {integrity: sha512-hmbm4ey0HL0vtoY1tRTPIt2FfYjvMh3DWoGGSxXDTS73qTFQ+Fhhi5I0AnN9PcD2omfKQAVXiYks4kkMvlAHqA==}
@@ -3877,6 +3903,9 @@ packages:
   pouchdb-find@7.3.1:
     resolution: {integrity: sha512-AeqUfAVY1c7IFaY36BRT0vIz9r4VTKq/YOWTmiqndOZUQ/pDGxyO2fNFal6NN3PyYww0JijlD377cPvhnrhJVA==}
 
+  pouchdb-json@7.3.1:
+    resolution: {integrity: sha512-AyOKsmc85/GtHjMZyEacqzja8qLVfycS1hh1oskR+Bm5PIITX52Fb8zyi0hEetV6VC0yuGbn0RqiLjJxQePeqQ==}
+
   pouchdb-json@9.0.0:
     resolution: {integrity: sha512-aI41mYVyI195GXuT1Ys7mLIB/Mvrz11ihoTP6km6hYqVgSuaUxuZcFUozlyTJiZXr7H5kdhNgclhlVnjir4JAA==}
 
@@ -3888,6 +3917,9 @@ packages:
 
   pouchdb-md5@9.0.0:
     resolution: {integrity: sha512-58xUYBvW3/s+aH0j4uOhhN8yCk0LQ254cxBzI/gbKA9PrfwHpe4zrr0L/ia5ml3A30oH1f8aTnuVMwWDkFcuww==}
+
+  pouchdb-merge@7.3.1:
+    resolution: {integrity: sha512-FeK3r35mKimokf2PQ2tUI523QWyZ4lYZ0Yd75FfSch/SPY6wIokz5XBZZ6PHdu5aOJsEKzoLUxr8CpSg9DhcAw==}
 
   pouchdb-merge@9.0.0:
     resolution: {integrity: sha512-Xh+TgOZCkGoZpI589btKf/cTiuQ5CsnPl9YpdW4h0cAPusniN6XNsR62F+/HbL9wirI6XTEPHUrk7MsQbk3S3A==}
@@ -3966,8 +3998,8 @@ packages:
       prettier-plugin-svelte:
         optional: true
 
-  prettier@3.5.3:
-    resolution: {integrity: sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==}
+  prettier@3.6.2:
+    resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -4438,6 +4470,9 @@ packages:
   strtok3@6.3.0:
     resolution: {integrity: sha512-fZtbhtvI9I48xDSywd/somNqgUHl2L2cstmXCCif0itOf96jeW18MBSyrLuNicYQVkvpOxkZtkzujiTJ9LW5Jw==}
     engines: {node: '>=10'}
+
+  sublevel-pouchdb@7.3.1:
+    resolution: {integrity: sha512-n+4fK72F/ORdqPwoGgMGYeOrW2HaPpW9o9k80bT1B3Cim5BSvkKkr9WbWOWynni/GHkbCEdvLVFJL1ktosAdhQ==}
 
   sublevel-pouchdb@9.0.0:
     resolution: {integrity: sha512-pX4r8+F7wuts0C81kUJ341h4bl2aRe7qV572FE8X1FMz9VkKlmi2nPD1vfeiOJXz5Y09I4MHjGULAbqvTfQZEQ==}
@@ -5173,6 +5208,11 @@ snapshots:
     dependencies:
       '@babel/types': 7.27.6
 
+  '@babel/parser@7.28.0':
+    dependencies:
+      '@babel/types': 7.28.1
+    optional: true
+
   '@babel/plugin-transform-react-jsx-self@7.27.1(@babel/core@7.27.4)':
     dependencies:
       '@babel/core': 7.27.4
@@ -5207,6 +5247,12 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
+
+  '@babel/types@7.28.1':
+    dependencies:
+      '@babel/helper-string-parser': 7.27.1
+      '@babel/helper-validator-identifier': 7.27.1
+    optional: true
 
   '@cloudant/couchbackup@2.11.7(@types/tough-cookie@4.0.5)(axios@1.10.0)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.0)(tough-cookie@5.1.2)':
     dependencies:
@@ -5823,7 +5869,7 @@ snapshots:
 
   '@tokenizer/token@0.3.0': {}
 
-  '@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.5.3)':
+  '@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.6.2)':
     dependencies:
       '@babel/generator': 7.27.5
       '@babel/parser': 7.27.5
@@ -5831,7 +5877,7 @@ snapshots:
       '@babel/types': 7.27.6
       javascript-natural-sort: 0.7.1
       lodash: 4.17.21
-      prettier: 3.5.3
+      prettier: 3.6.2
     optionalDependencies:
       '@vue/compiler-sfc': 3.5.16
     transitivePeerDependencies:
@@ -6218,7 +6264,7 @@ snapshots:
 
   '@vue/compiler-core@3.5.16':
     dependencies:
-      '@babel/parser': 7.27.5
+      '@babel/parser': 7.28.0
       '@vue/shared': 3.5.16
       entities: 4.5.0
       estree-walker: 2.0.2
@@ -6233,7 +6279,7 @@ snapshots:
 
   '@vue/compiler-sfc@3.5.16':
     dependencies:
-      '@babel/parser': 7.27.5
+      '@babel/parser': 7.28.0
       '@vue/compiler-core': 3.5.16
       '@vue/compiler-dom': 3.5.16
       '@vue/compiler-ssr': 3.5.16
@@ -6262,6 +6308,14 @@ snapshots:
       xtend: 4.0.2
 
   abstract-leveldown@6.2.3:
+    dependencies:
+      buffer: 5.7.1
+      immediate: 3.3.0
+      level-concat-iterator: 2.0.1
+      level-supports: 1.0.1
+      xtend: 4.0.2
+
+  abstract-leveldown@6.3.0:
     dependencies:
       buffer: 5.7.1
       immediate: 3.3.0
@@ -6856,7 +6910,7 @@ snapshots:
 
   encoding-down@6.3.0:
     dependencies:
-      abstract-leveldown: 6.2.3
+      abstract-leveldown: 6.3.0
       inherits: 2.0.4
       level-codec: 9.0.2
       level-errors: 2.0.1
@@ -8658,6 +8712,23 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-adapter-leveldb-core@7.3.1:
+    dependencies:
+      argsarray: 0.0.1
+      buffer-from: 1.1.2
+      double-ended-queue: 2.1.0-0
+      levelup: 4.4.0
+      pouchdb-adapter-utils: 7.3.1
+      pouchdb-binary-utils: 7.3.1
+      pouchdb-collections: 7.3.1
+      pouchdb-errors: 7.3.1
+      pouchdb-json: 7.3.1
+      pouchdb-md5: 7.3.1
+      pouchdb-merge: 7.3.1
+      pouchdb-utils: 7.3.1
+      sublevel-pouchdb: 7.3.1
+      through2: 3.0.2
+
   pouchdb-adapter-leveldb-core@9.0.0:
     dependencies:
       double-ended-queue: 2.1.0-0
@@ -8675,12 +8746,27 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-adapter-memory@7.3.1:
+    dependencies:
+      memdown: 1.4.1
+      pouchdb-adapter-leveldb-core: 7.3.1
+      pouchdb-utils: 7.3.1
+
   pouchdb-adapter-memory@9.0.0:
     dependencies:
       memdown: 1.4.1
       pouchdb-adapter-leveldb-core: 9.0.0
     transitivePeerDependencies:
       - encoding
+
+  pouchdb-adapter-utils@7.3.1:
+    dependencies:
+      pouchdb-binary-utils: 7.3.1
+      pouchdb-collections: 7.3.1
+      pouchdb-errors: 7.3.1
+      pouchdb-md5: 7.3.1
+      pouchdb-merge: 7.3.1
+      pouchdb-utils: 7.3.1
 
   pouchdb-adapter-utils@9.0.0:
     dependencies:
@@ -8761,6 +8847,10 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-json@7.3.1:
+    dependencies:
+      vuvuzela: 1.0.3
+
   pouchdb-json@9.0.0:
     dependencies:
       vuvuzela: 1.0.3
@@ -8781,6 +8871,8 @@ snapshots:
     dependencies:
       pouchdb-binary-utils: 9.0.0
       spark-md5: 3.0.2
+
+  pouchdb-merge@7.3.1: {}
 
   pouchdb-merge@9.0.0:
     dependencies:
@@ -8834,13 +8926,13 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier-plugin-tailwindcss@0.6.12(@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.5.3))(prettier@3.5.3):
+  prettier-plugin-tailwindcss@0.6.12(@trivago/prettier-plugin-sort-imports@5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.6.2))(prettier@3.6.2):
     dependencies:
-      prettier: 3.5.3
+      prettier: 3.6.2
     optionalDependencies:
-      '@trivago/prettier-plugin-sort-imports': 5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.5.3)
+      '@trivago/prettier-plugin-sort-imports': 5.2.2(@vue/compiler-sfc@3.5.16)(prettier@3.6.2)
 
-  prettier@3.5.3: {}
+  prettier@3.6.2: {}
 
   pretty-format@27.5.1:
     dependencies:
@@ -9388,6 +9480,13 @@ snapshots:
     dependencies:
       '@tokenizer/token': 0.3.0
       peek-readable: 4.1.0
+
+  sublevel-pouchdb@7.3.1:
+    dependencies:
+      inherits: 2.0.4
+      level-codec: 9.0.2
+      ltgt: 2.2.1
+      readable-stream: 1.1.14
 
   sublevel-pouchdb@9.0.0:
     dependencies:
