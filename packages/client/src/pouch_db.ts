@@ -1,13 +1,14 @@
 import {
   DatabaseHealthMonitor,
-  SafeDbOperations,
   createSafeDbOperations,
   getEffectiveDbName,
   validateEnv,
 } from '@eddo/shared';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
-import { createContext, useContext } from 'react';
+import { useContext } from 'react';
+
+import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 
 // Enable the find plugin
 PouchDB.plugin(PouchDBFind);
@@ -20,14 +21,6 @@ const pouchDb = new PouchDB(dbName);
 const safeDbOperations = createSafeDbOperations(pouchDb);
 const healthMonitor = new DatabaseHealthMonitor(pouchDb);
 
-export type PouchDbContextType = {
-  safeDb: SafeDbOperations;
-  changes: typeof pouchDb.changes;
-  sync: typeof pouchDb.sync;
-  healthMonitor: DatabaseHealthMonitor;
-  rawDb: typeof pouchDb;
-};
-
 export const pouchDbContextValue: PouchDbContextType = {
   safeDb: safeDbOperations,
   changes: pouchDb.changes.bind(pouchDb),
@@ -35,8 +28,6 @@ export const pouchDbContextValue: PouchDbContextType = {
   healthMonitor,
   rawDb: pouchDb,
 };
-
-export const PouchDbContext = createContext<PouchDbContextType | null>(null);
 
 export const usePouchDb = () => {
   const context = useContext(PouchDbContext);

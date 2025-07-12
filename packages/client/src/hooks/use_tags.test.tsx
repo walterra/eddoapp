@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PouchDbContext, type PouchDbContextType } from '../pouch_db';
+import { PouchDbContext, type PouchDbContextType } from '../pouch_db_types';
 import '../test-polyfill';
 import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
 import { useTags } from './use_tags';

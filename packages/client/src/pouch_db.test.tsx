@@ -37,9 +37,17 @@ describe('PouchDB Context and Hook', () => {
   describe('usePouchDb hook', () => {
     it('should throw error when used outside provider', () => {
       // The error is caught during rendering, not in result.error
-      expect(() => {
-        renderHook(() => usePouchDb());
-      }).toThrow('usePouchDb must be used within a PouchDbContext.Provider');
+      // We need to suppress console.error during this test since React will log the error
+      const originalError = console.error;
+      console.error = () => {};
+
+      try {
+        expect(() => {
+          renderHook(() => usePouchDb());
+        }).toThrow('usePouchDb must be used within a PouchDbContext.Provider');
+      } finally {
+        console.error = originalError;
+      }
     });
 
     it('should return context when used within provider', () => {

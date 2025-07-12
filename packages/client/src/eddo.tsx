@@ -6,7 +6,8 @@ import { TodoBoard } from './components/todo_board';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
 import { useSyncDev } from './hooks/use_sync_dev';
-import { PouchDbContext, pouchDbContextValue } from './pouch_db';
+import { pouchDbContextValue } from './pouch_db';
+import { PouchDbContext } from './pouch_db_types';
 
 function DevSync() {
   useSyncDev();

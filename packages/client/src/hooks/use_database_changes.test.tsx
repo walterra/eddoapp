@@ -102,11 +102,19 @@ describe('useDatabaseChanges Hook', () => {
 
   describe('useDatabaseChanges hook', () => {
     it('should throw error when used outside provider', () => {
-      expect(() => {
-        renderHook(() => useDatabaseChanges());
-      }).toThrow(
-        'useDatabaseChanges must be used within a DatabaseChangesProvider',
-      );
+      // We need to suppress console.error during this test since React will log the error
+      const originalError = console.error;
+      console.error = () => {};
+
+      try {
+        expect(() => {
+          renderHook(() => useDatabaseChanges());
+        }).toThrow(
+          'useDatabaseChanges must be used within a DatabaseChangesProvider',
+        );
+      } finally {
+        console.error = originalError;
+      }
     });
 
     it('should return initial state when used within provider', () => {

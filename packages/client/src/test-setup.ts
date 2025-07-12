@@ -5,7 +5,7 @@ import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import { vi } from 'vitest';
 
-import type { PouchDbContextType } from './pouch_db';
+import type { PouchDbContextType } from './pouch_db_types';
 import './test-polyfill';
 
 // Add memory adapter and find plugin for testing
