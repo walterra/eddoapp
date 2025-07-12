@@ -1,7 +1,7 @@
 import { type DatabaseError, DatabaseErrorType, NewTodo } from '@eddo/shared';
 import { add, format, getISOWeek, sub } from 'date-fns';
 import { Button, TextInput } from 'flowbite-react';
-import { type FC, useState } from 'react';
+import React, { type FC, useState } from 'react';
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 
 import { CONTEXT_DEFAULT } from '../constants';

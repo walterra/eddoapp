@@ -6,7 +6,7 @@ import {
   getRepeatTodo,
 } from '@eddo/shared';
 import { Checkbox } from 'flowbite-react';
-import { type FC, useMemo, useState } from 'react';
+import React, { type FC, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';
@@ -198,6 +198,11 @@ export const TodoListElement: FC<TodoListElementProps> = ({
               {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
                 <button
                   className="rounded-lg py-0 pl-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                  data-testid={
+                    thisButtonTimeTrackingActive
+                      ? 'pause-button'
+                      : 'play-button'
+                  }
                   disabled={isUpdating}
                   onClick={timeTrackingButtonPressed}
                   type="button"
@@ -211,6 +216,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
               )}
               <button
                 className="rounded-lg py-0 pr-1 text-sm text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                data-testid="edit-button"
                 onClick={showEditModalButtonPressed}
                 type="button"
               >
