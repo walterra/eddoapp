@@ -17,7 +17,7 @@
     "date-fns": "^2.29.3",
     "events": "^3.3.0",
     "fastmcp": "^3.4.0",
-    "flowbite": "^1.5.4",
+    "flowbite": "^3.1.2",
     "flowbite-react": "^0.6.4",
     "lodash-es": "^4.17.21",
     "nano": "^10.1.4",
