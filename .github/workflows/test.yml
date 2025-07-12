@@ -60,7 +60,7 @@ jobs:
           COUCHDB_URL: http://admin:testpassword@localhost:5984
           COUCHDB_TEST_URL: http://admin:testpassword@localhost:5984
           CI: true
-        run: pnpm test:integration:mcp-server
+        run: pnpm test:integration
       - name: Run e2e tests
         env:
           COUCHDB_URL: http://admin:testpassword@localhost:5984
