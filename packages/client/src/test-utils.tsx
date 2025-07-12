@@ -3,7 +3,7 @@ import type { TodoAlpha3 } from '@eddo/shared';
 import { type RenderOptions, render } from '@testing-library/react';
 import React, { type ReactElement, type ReactNode } from 'react';
 
-import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
+import { PouchDbContext, type PouchDbContextType } from './pouch_db';
 import { createTestPouchDb } from './test-setup';
 
 // Local test todo factory to avoid import issues
