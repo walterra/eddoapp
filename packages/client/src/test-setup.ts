@@ -1,11 +1,12 @@
 // Test setup for React components with real PouchDB using memory adapter
-import './test-polyfill';
-import { vi } from 'vitest';
+import { DatabaseHealthMonitor, createSafeDbOperations } from '@eddo/shared';
 import memory from 'pouchdb-adapter-memory';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
-import { createSafeDbOperations, DatabaseHealthMonitor } from '@eddo/shared';
+import { vi } from 'vitest';
+
 import type { PouchDbContextType } from './pouch_db_types';
+import './test-polyfill';
 
 // Add memory adapter and find plugin for testing
 PouchDB.plugin(memory);
@@ -18,7 +19,7 @@ export const createTestPouchDb = () => {
   // Use unique names to avoid conflicts
   const dbName = `test-db-${Date.now()}-${++testDbCounter}`;
   const db = new PouchDB(dbName, { adapter: 'memory' });
-  
+
   const safeDbOperations = createSafeDbOperations(db);
   const healthMonitor = new DatabaseHealthMonitor(db);
 

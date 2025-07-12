@@ -1,11 +1,15 @@
 // Test utilities for React component testing with real PouchDB
-import { type ReactElement, type ReactNode } from 'react';
-import { render, type RenderOptions } from '@testing-library/react';
+import type { TodoAlpha3 } from '@eddo/shared';
+import { type RenderOptions, render } from '@testing-library/react';
+import React, { type ReactElement, type ReactNode } from 'react';
+
 import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 import { createTestPouchDb } from './test-setup';
-import type { TodoAlpha3 } from '@eddo/shared';
+
 // Local test todo factory to avoid import issues
-export const createTestTodo = (overrides: Partial<TodoAlpha3> & { _id: string }): Omit<TodoAlpha3, '_rev'> => {
+export const createTestTodo = (
+  overrides: Partial<TodoAlpha3> & { _id: string },
+): Omit<TodoAlpha3, '_rev'> => {
   return {
     _id: overrides._id,
     title: overrides.title ?? 'Test Todo',
@@ -22,9 +26,17 @@ export const createTestTodo = (overrides: Partial<TodoAlpha3> & { _id: string })
 };
 
 // Test wrapper component that provides PouchDB context
-export const TestWrapper = ({ children, testDb }: { children: ReactNode; testDb?: PouchDbContextType }) => {
-  const { contextValue } = testDb ? { contextValue: testDb } : createTestPouchDb();
-  
+export const TestWrapper = ({
+  children,
+  testDb,
+}: {
+  children: ReactNode;
+  testDb?: PouchDbContextType;
+}) => {
+  const { contextValue } = testDb
+    ? { contextValue: testDb }
+    : createTestPouchDb();
+
   return (
     <PouchDbContext.Provider value={contextValue}>
       {children}
@@ -35,10 +47,10 @@ export const TestWrapper = ({ children, testDb }: { children: ReactNode; testDb?
 // Custom render function with real PouchDB context
 export const renderWithPouchDb = (
   ui: ReactElement,
-  options?: RenderOptions & { testDb?: PouchDbContextType }
+  options?: RenderOptions & { testDb?: PouchDbContextType },
 ): ReturnType<typeof render> => {
   const { testDb, ...renderOptions } = options || {};
-  
+
   return render(ui, {
     wrapper: ({ children }) => (
       <TestWrapper testDb={testDb}>{children}</TestWrapper>
@@ -48,18 +60,24 @@ export const renderWithPouchDb = (
 };
 
 // Create multiple test todos
-export const createTestTodos = (count: number, baseOverrides: Partial<TodoAlpha3> = {}): Omit<TodoAlpha3, '_rev'>[] => {
+export const createTestTodos = (
+  count: number,
+  baseOverrides: Partial<TodoAlpha3> = {},
+): Omit<TodoAlpha3, '_rev'>[] => {
   return Array.from({ length: count }, (_, index) =>
     createTestTodo({
       _id: new Date(Date.now() + index).toISOString(),
       title: `Test Todo ${index + 1}`,
       ...baseOverrides,
-    })
+    }),
   );
 };
 
 // Helper to populate database with test data
-export const populateTestDatabase = async (db: PouchDB.Database, todos: Omit<TodoAlpha3, '_rev'>[]) => {
+export const populateTestDatabase = async (
+  db: PouchDB.Database,
+  todos: Omit<TodoAlpha3, '_rev'>[],
+) => {
   for (const todo of todos) {
     await db.put(todo);
   }

@@ -1,11 +1,12 @@
-import './test-polyfill';
-import React, { useContext } from 'react';
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { type Todo } from '@eddo/shared';
 import { renderHook } from '@testing-library/react';
+import React, { useContext } from 'react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
+import './test-polyfill';
 import { createTestPouchDb, destroyTestPouchDb } from './test-setup';
 import { createTestTodo } from './test-utils';
-import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
-import { type Todo } from '@eddo/shared';
 
 // Create a test version of usePouchDb hook
 const usePouchDb = () => {
@@ -94,7 +95,7 @@ describe('PouchDB Context and Hook', () => {
 
     it('should perform real database put and get operations', async () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
-      
+
       const testTodo = createTestTodo({
         _id: '2025-07-12T10:00:00.000Z',
         title: 'Integration Test Todo',
@@ -120,7 +121,7 @@ describe('PouchDB Context and Hook', () => {
 
     it('should perform bulk document operations', async () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
-      
+
       const todos = [
         createTestTodo({ _id: '2025-07-12T10:00:00.000Z', title: 'Todo 1' }),
         createTestTodo({ _id: '2025-07-12T11:00:00.000Z', title: 'Todo 2' }),
@@ -133,9 +134,10 @@ describe('PouchDB Context and Hook', () => {
 
     it('should perform health check', async () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
-      
+
       // This should not throw
-      const healthCheck = await result.current.healthMonitor.performHealthCheck();
+      const healthCheck =
+        await result.current.healthMonitor.performHealthCheck();
       expect(healthCheck).toBeDefined();
     });
   });
@@ -149,7 +151,7 @@ describe('PouchDB Context and Hook', () => {
 
     it('should return current metrics for memory database', () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
-      
+
       const metrics = result.current.healthMonitor.getCurrentMetrics();
       expect(metrics).toBeDefined();
       expect(typeof metrics.isConnected).toBe('boolean');
@@ -165,26 +167,29 @@ describe('PouchDB Context and Hook', () => {
 
     it('should provide working changes function', async () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
-      
-      const changes = result.current.changes({ live: false, include_docs: true });
-      
+
+      const changes = result.current.changes({
+        live: false,
+        include_docs: true,
+      });
+
       expect(changes).toBeDefined();
       expect(typeof changes.on).toBe('function');
       expect(typeof changes.cancel).toBe('function');
-      
+
       changes.cancel(); // Clean up
     });
 
     it('should detect document changes', async () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
-      
+
       let _changeDetected = false;
-      const changes = result.current.changes({ 
-        live: false, 
+      const changes = result.current.changes({
+        live: false,
         include_docs: true,
-        since: 'now'
+        since: 'now',
       });
-      
+
       changes.on('change', () => {
         _changeDetected = true;
       });
@@ -194,14 +199,13 @@ describe('PouchDB Context and Hook', () => {
         _id: '2025-07-12T10:00:00.000Z',
         title: 'Change Detection Test',
       });
-      
+
       await result.current.safeDb.safePut(testTodo);
-      
+
       // Give changes feed time to process
       await new Promise((resolve) => setTimeout(resolve, 100));
-      
+
       changes.cancel();
     });
   });
 });
-

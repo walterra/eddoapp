@@ -1,11 +1,19 @@
+import { type Todo } from '@eddo/shared';
+import { act, renderHook } from '@testing-library/react';
+import type PouchDB from 'pouchdb-browser';
+import React, {
+  type ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { type PouchDbContextType } from '../pouch_db_types';
 import '../test-polyfill';
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
 import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
 import { createTestTodo } from '../test-utils';
-import { type PouchDbContextType } from '../pouch_db_types';
-import { type Todo } from '@eddo/shared';
 
 // Create a test version of the useDatabaseChanges hook and provider to avoid import issues
 interface DatabaseChangesContextType {
@@ -13,10 +21,15 @@ interface DatabaseChangesContextType {
   isListening: boolean;
 }
 
-const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(null);
+const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(
+  null,
+);
 
-const TestDatabaseChangesProvider = ({ children, pouchDbContext }: { 
-  children: ReactNode; 
+const TestDatabaseChangesProvider = ({
+  children,
+  pouchDbContext,
+}: {
+  children: ReactNode;
   pouchDbContext: PouchDbContextType;
 }) => {
   const [changeCount, setChangeCount] = useState(0);
@@ -29,9 +42,12 @@ const TestDatabaseChangesProvider = ({ children, pouchDbContext }: {
       include_docs: true,
     });
 
-    changesListener.on('change', (d: { seq: string }) => {
-      setChangeCount(Number(d.seq));
-    });
+    changesListener.on(
+      'change',
+      (d: PouchDB.Core.ChangesResponseChange<Record<string, unknown>>) => {
+        setChangeCount(typeof d.seq === 'string' ? Number(d.seq) : d.seq);
+      },
+    );
 
     changesListener.on('complete', () => {
       setIsListening(false);
@@ -60,7 +76,9 @@ const TestDatabaseChangesProvider = ({ children, pouchDbContext }: {
 const useDatabaseChanges = (): DatabaseChangesContextType => {
   const context = useContext(DatabaseChangesContext);
   if (!context) {
-    throw new Error('useDatabaseChanges must be used within a DatabaseChangesProvider');
+    throw new Error(
+      'useDatabaseChanges must be used within a DatabaseChangesProvider',
+    );
   }
   return context;
 };
@@ -86,7 +104,9 @@ describe('useDatabaseChanges Hook', () => {
     it('should throw error when used outside provider', () => {
       expect(() => {
         renderHook(() => useDatabaseChanges());
-      }).toThrow('useDatabaseChanges must be used within a DatabaseChangesProvider');
+      }).toThrow(
+        'useDatabaseChanges must be used within a DatabaseChangesProvider',
+      );
     });
 
     it('should return initial state when used within provider', () => {
@@ -296,4 +316,3 @@ describe('useDatabaseChanges Hook', () => {
     });
   });
 });
-
