@@ -6,4 +6,10 @@ if (typeof global !== 'undefined') {
   if (!g.self) {
     g.self = global as typeof globalThis & Window;
   }
+
+  // Make React globally available for JSX
+  if (!g.React) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    g.React = require('react');
+  }
 }

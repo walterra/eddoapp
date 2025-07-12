@@ -319,7 +319,6 @@ describe('TodoEditModal', () => {
     });
 
     it('updates time tracking from field', async () => {
-      const user = userEvent.setup();
       const todoWithTracking = {
         ...createTestTodo({
           _id: '2025-07-12T14:00:00.000Z',
@@ -337,8 +336,9 @@ describe('TodoEditModal', () => {
       );
 
       const fromInput = screen.getByDisplayValue('2025-07-12T14:00:00.000Z');
-      await user.clear(fromInput);
-      await user.type(fromInput, '2025-07-12T13:00:00.000Z');
+      fireEvent.change(fromInput, {
+        target: { value: '2025-07-12T13:00:00.000Z' },
+      });
 
       expect(fromInput).toHaveValue('2025-07-12T13:00:00.000Z');
       expect(screen.getByText('2h')).toBeInTheDocument();
