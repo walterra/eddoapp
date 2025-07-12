@@ -17,6 +17,9 @@ importers:
       date-fns:
         specifier: ^2.29.3
         version: 2.30.0
+      dotenv-mono:
+        specifier: github:marcocesarato/dotenv-mono#master
+        version: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/cd0aa8efb97036b724c21b0660e60064745095d6
       events:
         specifier: ^3.3.0
         version: 3.3.0
@@ -114,9 +117,6 @@ importers:
       commander:
         specifier: ^14.0.0
         version: 14.0.0
-      dotenv-mono:
-        specifier: ^1.3.14
-        version: 1.3.14
       eslint:
         specifier: ^9.29.0
         version: 9.29.0(jiti@2.4.2)
@@ -268,6 +268,9 @@ importers:
       postcss:
         specifier: ^8.4.16
         version: 8.5.6
+      pouchdb-adapter-memory:
+        specifier: ^7.3.1
+        version: 7.3.1
       tailwindcss:
         specifier: ^3.1.8
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.12.1)(@types/node@24.0.3)(typescript@5.8.3))
@@ -318,8 +321,8 @@ importers:
         specifier: ^2.29.3
         version: 2.30.0
       dotenv-mono:
-        specifier: ^1.3.14
-        version: 1.3.14
+        specifier: github:marcocesarato/dotenv-mono#master
+        version: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/cd0aa8efb97036b724c21b0660e60064745095d6
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -2217,6 +2220,11 @@ packages:
     resolution: {integrity: sha512-Wz8nIv9gU1IuAuHrsA0GfA3r7EygUE9JHyjJ7Tx3e8hZOWc/LI6V3k5XVLZ0/1Jd0/RFGnmb798NwtSpJGCK1Q==}
     hasBin: true
 
+  dotenv-mono@https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/cd0aa8efb97036b724c21b0660e60064745095d6:
+    resolution: {tarball: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/cd0aa8efb97036b724c21b0660e60064745095d6}
+    version: 1.3.15
+    hasBin: true
+
   dotenv@16.5.0:
     resolution: {integrity: sha512-m/C+AwOAr9/W1UOIZUo232ejMNnJAJtYQjUbHoNTBNTJSvqzzDh7vnrei3o3r3m9blf6ZoDkvcw0VmozNRFJxg==}
     engines: {node: '>=12'}
@@ -3829,11 +3837,20 @@ packages:
   pouchdb-abstract-mapreduce@7.3.1:
     resolution: {integrity: sha512-0zKXVFBvrfc1KnN0ggrB762JDmZnUpePHywo9Bq3Jy+L1FnoG7fXM5luFfvv5/T0gEw+ZTIwoocZECMnESBI9w==}
 
+  pouchdb-adapter-leveldb-core@7.3.1:
+    resolution: {integrity: sha512-mxShHlqLMPz2gChrgtA9okV1ogFmQrRAoM/O4EN0CrQWPLXqYtpL1f7sI2asIvFe7SmpnvbLx7kkZyFmLTfwjA==}
+
   pouchdb-adapter-leveldb-core@9.0.0:
     resolution: {integrity: sha512-b3ZGPtVXyivGL5SK3AIDG7PrNsZdoDpGFkmTytDTtctkVhxOg71gnXXP+CrupENPqSNG/eGbKW4w+bbMpxy6aA==}
 
+  pouchdb-adapter-memory@7.3.1:
+    resolution: {integrity: sha512-iHdWGJAHONqQv0we3Oi1MYen69ZS8McLW9wUyaAYcWTJnAIIAr2ZM0/TeTDVSHfMUwYqEYk7X8jRtJZEMwLnwg==}
+
   pouchdb-adapter-memory@9.0.0:
     resolution: {integrity: sha512-XbCwJ5f5U9dGdkiDikzYjTebdPHuA6Ghylx1Pq0lDe4y6l8R9xhjDSUy56pJ8G2F4Z+8QdB5FBY9EQoFlFSXWQ==}
+
+  pouchdb-adapter-utils@7.3.1:
+    resolution: {integrity: sha512-uKLG6dClwTs/sLIJ4WkLAi9wlnDBpOnfyhpeAgOjlOGN/XLz5nKHrA4UJRnURDyc+uv79S9r/Unc4hVpmbSPUw==}
 
   pouchdb-adapter-utils@9.0.0:
     resolution: {integrity: sha512-hmbm4ey0HL0vtoY1tRTPIt2FfYjvMh3DWoGGSxXDTS73qTFQ+Fhhi5I0AnN9PcD2omfKQAVXiYks4kkMvlAHqA==}
@@ -3877,6 +3894,9 @@ packages:
   pouchdb-find@7.3.1:
     resolution: {integrity: sha512-AeqUfAVY1c7IFaY36BRT0vIz9r4VTKq/YOWTmiqndOZUQ/pDGxyO2fNFal6NN3PyYww0JijlD377cPvhnrhJVA==}
 
+  pouchdb-json@7.3.1:
+    resolution: {integrity: sha512-AyOKsmc85/GtHjMZyEacqzja8qLVfycS1hh1oskR+Bm5PIITX52Fb8zyi0hEetV6VC0yuGbn0RqiLjJxQePeqQ==}
+
   pouchdb-json@9.0.0:
     resolution: {integrity: sha512-aI41mYVyI195GXuT1Ys7mLIB/Mvrz11ihoTP6km6hYqVgSuaUxuZcFUozlyTJiZXr7H5kdhNgclhlVnjir4JAA==}
 
@@ -3888,6 +3908,9 @@ packages:
 
   pouchdb-md5@9.0.0:
     resolution: {integrity: sha512-58xUYBvW3/s+aH0j4uOhhN8yCk0LQ254cxBzI/gbKA9PrfwHpe4zrr0L/ia5ml3A30oH1f8aTnuVMwWDkFcuww==}
+
+  pouchdb-merge@7.3.1:
+    resolution: {integrity: sha512-FeK3r35mKimokf2PQ2tUI523QWyZ4lYZ0Yd75FfSch/SPY6wIokz5XBZZ6PHdu5aOJsEKzoLUxr8CpSg9DhcAw==}
 
   pouchdb-merge@9.0.0:
     resolution: {integrity: sha512-Xh+TgOZCkGoZpI589btKf/cTiuQ5CsnPl9YpdW4h0cAPusniN6XNsR62F+/HbL9wirI6XTEPHUrk7MsQbk3S3A==}
@@ -4438,6 +4461,9 @@ packages:
   strtok3@6.3.0:
     resolution: {integrity: sha512-fZtbhtvI9I48xDSywd/somNqgUHl2L2cstmXCCif0itOf96jeW18MBSyrLuNicYQVkvpOxkZtkzujiTJ9LW5Jw==}
     engines: {node: '>=10'}
+
+  sublevel-pouchdb@7.3.1:
+    resolution: {integrity: sha512-n+4fK72F/ORdqPwoGgMGYeOrW2HaPpW9o9k80bT1B3Cim5BSvkKkr9WbWOWynni/GHkbCEdvLVFJL1ktosAdhQ==}
 
   sublevel-pouchdb@9.0.0:
     resolution: {integrity: sha512-pX4r8+F7wuts0C81kUJ341h4bl2aRe7qV572FE8X1FMz9VkKlmi2nPD1vfeiOJXz5Y09I4MHjGULAbqvTfQZEQ==}
@@ -6822,6 +6848,11 @@ snapshots:
       dotenv: 16.5.0
       dotenv-expand: 11.0.7
 
+  dotenv-mono@https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/cd0aa8efb97036b724c21b0660e60064745095d6:
+    dependencies:
+      dotenv: 16.5.0
+      dotenv-expand: 11.0.7
+
   dotenv@16.5.0: {}
 
   double-ended-queue@2.1.0-0: {}
@@ -8658,6 +8689,23 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-adapter-leveldb-core@7.3.1:
+    dependencies:
+      argsarray: 0.0.1
+      buffer-from: 1.1.2
+      double-ended-queue: 2.1.0-0
+      levelup: 4.4.0
+      pouchdb-adapter-utils: 7.3.1
+      pouchdb-binary-utils: 7.3.1
+      pouchdb-collections: 7.3.1
+      pouchdb-errors: 7.3.1
+      pouchdb-json: 7.3.1
+      pouchdb-md5: 7.3.1
+      pouchdb-merge: 7.3.1
+      pouchdb-utils: 7.3.1
+      sublevel-pouchdb: 7.3.1
+      through2: 3.0.2
+
   pouchdb-adapter-leveldb-core@9.0.0:
     dependencies:
       double-ended-queue: 2.1.0-0
@@ -8675,12 +8723,27 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-adapter-memory@7.3.1:
+    dependencies:
+      memdown: 1.4.1
+      pouchdb-adapter-leveldb-core: 7.3.1
+      pouchdb-utils: 7.3.1
+
   pouchdb-adapter-memory@9.0.0:
     dependencies:
       memdown: 1.4.1
       pouchdb-adapter-leveldb-core: 9.0.0
     transitivePeerDependencies:
       - encoding
+
+  pouchdb-adapter-utils@7.3.1:
+    dependencies:
+      pouchdb-binary-utils: 7.3.1
+      pouchdb-collections: 7.3.1
+      pouchdb-errors: 7.3.1
+      pouchdb-md5: 7.3.1
+      pouchdb-merge: 7.3.1
+      pouchdb-utils: 7.3.1
 
   pouchdb-adapter-utils@9.0.0:
     dependencies:
@@ -8761,6 +8824,10 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  pouchdb-json@7.3.1:
+    dependencies:
+      vuvuzela: 1.0.3
+
   pouchdb-json@9.0.0:
     dependencies:
       vuvuzela: 1.0.3
@@ -8781,6 +8848,8 @@ snapshots:
     dependencies:
       pouchdb-binary-utils: 9.0.0
       spark-md5: 3.0.2
+
+  pouchdb-merge@7.3.1: {}
 
   pouchdb-merge@9.0.0:
     dependencies:
@@ -9388,6 +9457,13 @@ snapshots:
     dependencies:
       '@tokenizer/token': 0.3.0
       peek-readable: 4.1.0
+
+  sublevel-pouchdb@7.3.1:
+    dependencies:
+      inherits: 2.0.4
+      level-codec: 9.0.2
+      ltgt: 2.2.1
+      readable-stream: 1.1.14
 
   sublevel-pouchdb@9.0.0:
     dependencies:
