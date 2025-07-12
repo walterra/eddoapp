@@ -5,6 +5,11 @@ import { z } from 'zod';
 // Load environment variables
 dotenvLoad();
 
+// Override MCP_SERVER_URL for integration tests if MCP_TEST_URL is provided
+if (process.env.MCP_TEST_URL) {
+  process.env.MCP_SERVER_URL = process.env.MCP_TEST_URL;
+}
+
 // Extend the shared environment schema with telegram-specific required fields
 const TelegramConfigSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1, 'Telegram bot token is required'),

@@ -1,35 +1,33 @@
-/**
- * Vitest configuration for MCP integration tests
- */
-import { resolve } from 'path';
+import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
   test: {
-    name: 'mcp-integration',
+    name: 'telegram-bot-integration',
     include: ['src/integration-tests/**/*.test.ts'],
-    exclude: ['node_modules/**', 'dist/**'],
-    testTimeout: 45000, // 45 seconds for CouchDB operations (best practice)
-    hookTimeout: 15000, // 15 seconds for setup/teardown with database recreation
+    exclude: ['src/**/*.unit.test.ts'],
+    testTimeout: 60000, // 1 minute timeout for integration tests
+    hookTimeout: 30000, // 30 second timeout for setup/teardown
     globalSetup: ['src/integration-tests/setup/global-setup.ts'],
     setupFiles: ['src/integration-tests/setup/global.ts'],
-    reporters: ['verbose'],
-    environment: 'node',
     globals: true,
-
-    // Enforce strict sequential execution for database isolation
+    environment: 'node',
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true,
+        singleFork: true, // Run tests sequentially to avoid database conflicts
         isolate: true, // Ensure complete isolation between tests
       },
     },
     maxConcurrency: 1, // Only one test at a time
-
+    coverage: {
+      enabled: false, // Disable coverage for integration tests
+    },
     // Retry failed tests once
     retry: 1,
-
+    // Show detailed output
+    reporter: 'verbose',
     // Environment variables for tests
     env: {
       NODE_ENV: 'test',
@@ -38,18 +36,5 @@ export default defineConfig({
       // Allow custom test database URL
       COUCHDB_TEST_URL: process.env.COUCHDB_TEST_URL,
     },
-
-    // Enable debugging to see what's happening
-    logLevel: 'verbose',
-  },
-
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-    },
-  },
-
-  esbuild: {
-    target: 'node18',
   },
 });

@@ -1,38 +1,11 @@
 /**
  * Global test setup for MCP integration tests
- * Note: Server is started externally via npm-run-all before tests run
+ * Note: Server is now managed by global-setup.ts
  */
 import { afterAll, beforeAll } from 'vitest';
 
 // Global test configuration
 beforeAll(async () => {
-  // Set test environment variables
-  process.env.NODE_ENV = 'test';
-  process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
-  process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
-
-  // Check if test port is available
-  const { ensurePortAvailable } = await import('./port-check.js');
-  const testPort = parseInt(process.env.MCP_TEST_PORT || '3003', 10);
-
-  try {
-    await ensurePortAvailable(testPort);
-  } catch (error) {
-    console.error(`\n❌ ${error}\n`);
-    process.exit(1);
-  }
-
-  // Increase timeout for integration tests
-  globalThis.setTimeout =
-    globalThis.setTimeout ||
-    ((cb: () => void, ms: number) => {
-      return setTimeout(cb, ms);
-    });
-
-  console.log(
-    '🚀 MCP Integration Test Suite - Server should already be running',
-  );
-
   // Set up test database infrastructure once (indexes, design documents)
   console.log('🏗️  Setting up shared test database infrastructure...');
   const { DatabaseSetup } = await import('./database-setup.js');
