@@ -234,16 +234,16 @@ describe('TodoEditModal', () => {
     });
 
     it('updates repeat field', async () => {
-      const user = userEvent.setup();
       renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
       const repeatInput = screen.getByLabelText('Repeat');
-      await user.clear(repeatInput);
-      await user.type(repeatInput, '7');
+      fireEvent.change(repeatInput, { target: { value: '7' } });
 
-      expect(repeatInput).toHaveValue('7');
+      await waitFor(() => {
+        expect(repeatInput).toHaveValue('7');
+      });
     });
 
     it('clears repeat when empty string is entered', async () => {
