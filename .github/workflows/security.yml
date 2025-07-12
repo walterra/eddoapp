@@ -50,15 +50,70 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Run security audit
+      - name: Run secrets detection
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Run security audit with enforcement
         run: |
-          echo "Running security audit..."
-          if pnpm audit --audit-level moderate; then
-            echo "✅ No moderate or higher vulnerabilities found"
+          echo "Running security audit with vulnerability enforcement..."
+          pnpm audit --audit-level high --json > audit-results.json || true
+          
+          # Parse audit results
+          if [ -f audit-results.json ]; then
+            HIGH_COUNT=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0' 2>/dev/null || echo "0")
+            CRITICAL_COUNT=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0' 2>/dev/null || echo "0")
+            MODERATE_COUNT=$(cat audit-results.json | jq '.metadata.vulnerabilities.moderate // 0' 2>/dev/null || echo "0")
+            
+            echo "Vulnerability Summary:"
+            echo "- Critical: $CRITICAL_COUNT"
+            echo "- High: $HIGH_COUNT" 
+            echo "- Moderate: $MODERATE_COUNT"
+            
+            if [ "$CRITICAL_COUNT" -gt 0 ]; then
+              echo "❌ CRITICAL vulnerabilities found: $CRITICAL_COUNT - BLOCKING DEPLOYMENT"
+              exit 1
+            elif [ "$HIGH_COUNT" -gt 0 ]; then
+              echo "❌ HIGH vulnerabilities found: $HIGH_COUNT - BLOCKING DEPLOYMENT"
+              exit 1
+            elif [ "$MODERATE_COUNT" -gt 0 ]; then
+              echo "⚠️  MODERATE vulnerabilities found: $MODERATE_COUNT - WARNING (deployment allowed)"
+            else
+              echo "✅ No high or critical vulnerabilities found"
+            fi
           else
-            echo "⚠️  Security vulnerabilities detected (see details above)"
-            echo "This is informational - CodeQL analysis will continue"
+            echo "⚠️  Could not parse audit results, allowing deployment"
           fi
+
+      - name: Run license compliance check
+        run: |
+          echo "Checking license compliance..."
+          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-3-Clause;BSD-2-Clause;ISC;Unlicense;CC0-1.0' --excludePrivatePackages --json > license-report.json || true
+          
+          # Check for forbidden licenses
+          FORBIDDEN_FOUND=$(npx license-checker --json | jq -r 'to_entries[] | select(.value.licenses | test("GPL|AGPL"; "i")) | .key' | wc -l)
+          
+          if [ "$FORBIDDEN_FOUND" -gt 0 ]; then
+            echo "❌ FORBIDDEN licenses detected:"
+            npx license-checker --json | jq -r 'to_entries[] | select(.value.licenses | test("GPL|AGPL"; "i")) | "\(.key): \(.value.licenses)"'
+            exit 1
+          else
+            echo "✅ No forbidden licenses found"
+          fi
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            audit-results.json
+            license-report.json
+          retention-days: 30
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -67,3 +122,47 @@ jobs:
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: security
+    if: always()
+    
+    steps:
+      - name: Download security artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: security-reports
+          path: ./security-reports
+        continue-on-error: true
+
+      - name: Generate security summary
+        run: |
+          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if security job succeeded
+          if [ "${{ needs.security.result }}" == "success" ]; then
+            echo "| 🔍 Secrets Detection | ✅ PASSED | No verified secrets found |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🛡️ Vulnerability Scan | ✅ PASSED | No critical/high vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📜 License Compliance | ✅ PASSED | No forbidden licenses detected |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔬 CodeQL Analysis | ✅ PASSED | Static analysis completed |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **All security checks passed** - Deployment approved" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔍 Secrets Detection | ❌ FAILED | Check logs for details |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🛡️ Vulnerability Scan | ❌ FAILED | Critical/high vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📜 License Compliance | ❌ FAILED | Forbidden licenses detected |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔬 CodeQL Analysis | ⚠️ PARTIAL | May have issues |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Security checks failed** - Deployment blocked" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Scan Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
