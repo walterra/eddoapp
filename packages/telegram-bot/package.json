@@ -15,7 +15,7 @@
     "@eddo/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.13.1",
     "dotenv-mono": "^1.3.14",
-    "fastmcp": "^3.4.0",
+    "fastmcp": "^3.8.5",
     "grammy": "^1.37.0",
     "marked": "^16.0.0",
     "uuid": "^11.1.0",
