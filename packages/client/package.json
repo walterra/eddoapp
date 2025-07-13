@@ -12,7 +12,7 @@
     "flowbite": "^1.5.4",
     "flowbite-react": "^0.6.4",
     "lodash-es": "^4.17.21",
-    "pouchdb-browser": "^7.3.1",
+    "pouchdb-browser": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

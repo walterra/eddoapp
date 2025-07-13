@@ -63,7 +63,7 @@
     "postcss": "^8.4.16",
     "pouchdb": "^9.0.0",
     "pouchdb-adapter-memory": "^9.0.0",
-    "pouchdb-browser": "^7.3.1",
+    "pouchdb-browser": "^9.0.0",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.12",
     "prompts": "^2.4.2",
