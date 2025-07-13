@@ -1,1 +1,0 @@
-- https://github.com/walterra/eddoapp/pull/77

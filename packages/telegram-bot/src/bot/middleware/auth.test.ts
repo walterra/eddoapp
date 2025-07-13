@@ -33,10 +33,10 @@ const { allowedUsers: mockAllowedUsers } = await import('../../utils/config');
 const { logger: mockLogger } = await import('../../utils/logger');
 
 describe('Authentication Middleware', () => {
-  let nextMock: ReturnType<typeof vi.fn<[], Promise<void>>>;
+  let nextMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    nextMock = vi.fn<[], Promise<void>>();
+    nextMock = vi.fn();
     vi.clearAllMocks();
     // Clear auth failures between tests
     authFailures.clear();
