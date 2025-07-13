@@ -364,7 +364,7 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       grammy:
-        specifier: ^1.21.1
+        specifier: ^1.37.0
         version: 1.37.0
       marked:
         specifier: ^16.0.0
