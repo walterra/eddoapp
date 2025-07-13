@@ -1,0 +1,1 @@
+- productionize - at the moment i'm running just a local dev environment. we need to improve the whole project to be able to be deployable.
