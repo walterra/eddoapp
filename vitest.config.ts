@@ -20,9 +20,9 @@ export default defineConfig({
           globals: true,
           environment: 'jsdom',
           include: [
-            'packages/client/src/**/*.test.tsx',
-            'packages/shared/src/**/*.test.ts',
-            'packages/telegram-bot/src/**/*.test.ts',
+            'packages/web_client/src/**/*.test.tsx',
+            'packages/core/src/**/*.test.ts',
+            'packages/telegram_bot/src/**/*.test.ts',
             'scripts/backup-interactive.test.ts'
           ],
           exclude: [
@@ -37,7 +37,7 @@ export default defineConfig({
         test: {
           globals: true,
           environment: 'node',
-          include: ['packages/server/src/integration-tests/**/*.test.ts'],
+          include: ['packages/mcp_server/src/integration-tests/**/*.test.ts'],
           testTimeout: 60000,
         },
       },

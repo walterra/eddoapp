@@ -18,10 +18,10 @@
   "exclude": ["node_modules"],
   "include": [],
   "references": [
-    { "path": "./packages/shared" },
-    { "path": "./packages/client" },
-    { "path": "./packages/server" },
-    { "path": "./packages/telegram-bot" }
+    { "path": "./packages/core" },
+    { "path": "./packages/web_client" },
+    { "path": "./packages/mcp_server" },
+    { "path": "./packages/telegram_bot" }
   ],
   "ts-node": {
     "transpileOnly": true,

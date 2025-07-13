@@ -13,7 +13,7 @@ async function runIntegrationTests() {
     // Start the MCP server
     console.log('🚀 Starting MCP test server...');
     serverProcess = spawn('pnpm', [
-      '--filter', '@eddo/server', 'start:test'
+      '--filter', '@eddo/mcp-server', 'start:test'
     ], {
       env: {
         ...process.env,
@@ -44,7 +44,7 @@ async function runIntegrationTests() {
 
     // Run the tests
     console.log('🧪 Running integration tests...');
-    const testProcess = spawn('vitest', ['run', 'packages/server/src/integration-tests'], {
+    const testProcess = spawn('vitest', ['run', 'packages/mcp_server/src/integration-tests'], {
       stdio: 'inherit'
     });
 

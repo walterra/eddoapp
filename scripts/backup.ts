@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 import couchbackup from '@cloudant/couchbackup';
-import { validateEnv, getCouchDbConfig } from '@eddo/shared/config';
+import { validateEnv, getCouchDbConfig } from '@eddo/core/config';
 import { 
   ensureBackupDir, 
   generateBackupFilename, 
