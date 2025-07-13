@@ -3,15 +3,15 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
-  root: './packages/client',
+  root: './packages/web_client',
   build: {
     outDir: '../../dist',
     emptyOutDir: true
   },
   optimizeDeps: {
-    include: ['@eddo/shared']
+    include: ['@eddo/core']
   },
   ssr: {
-    noExternal: ['@eddo/shared']
+    noExternal: ['@eddo/core']
   }
 });

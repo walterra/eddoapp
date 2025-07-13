@@ -8,7 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import type { TodoAlpha3 } from '@eddo/shared/types/todo';
+import type { TodoAlpha3 } from '@eddo/core/types/todo';
 
 // Configuration
 const BACKUP_DIR = process.env.BACKUP_DIR || './backups';

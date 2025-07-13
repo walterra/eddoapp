@@ -1,0 +1,31 @@
+{
+  "name": "@eddo/core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types/*": "./dist/types/*.js",
+    "./utils/*": "./dist/utils/*.js",
+    "./api/*": "./dist/api/*.js",
+    "./config": "./dist/config/index.js"
+  },
+  "dependencies": {
+    "date-fns": "^2.29.3",
+    "dotenv-mono": "github:marcocesarato/dotenv-mono#master",
+    "lodash-es": "^4.17.21",
+    "pouchdb-adapter-memory": "^9.0.0",
+    "pouchdb-browser": "^9.0.0",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.6",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}

@@ -12,7 +12,7 @@ import prompts from 'prompts';
 import ora from 'ora';
 import chalk from 'chalk';
 import couchbackup from '@cloudant/couchbackup';
-import { validateEnv, getCouchDbConfig, getAvailableDatabases } from '@eddo/shared/config';
+import { validateEnv, getCouchDbConfig, getAvailableDatabases } from '@eddo/core/config';
 import { 
   getAllBackupFiles,
   checkDatabaseExists,

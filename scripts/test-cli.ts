@@ -7,7 +7,7 @@
 
 import chalk from 'chalk';
 import { getBackupConfig } from './backup-interactive.js';
-import { validateEnv, getAvailableDatabases } from '@eddo/shared/config';
+import { validateEnv, getAvailableDatabases } from '@eddo/core/config';
 
 async function testDatabaseDiscovery(): Promise<void> {
   console.log(chalk.blue('\n🧪 Testing Database Discovery\n'));
