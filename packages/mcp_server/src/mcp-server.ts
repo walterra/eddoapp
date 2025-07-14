@@ -109,6 +109,17 @@ server.addTool({
   name: 'createTodo',
   description: `Create a new todo item in the authenticated user's database with GTD tag support.
 
+🧠 MEMORY SYSTEM - HIGHEST PRIORITY:
+When the user asks to remember something, create a todo with:
+- tags: ["user:memory"]
+- title: Brief summary of what to remember
+- description: Full details to remember
+- context: "memory" (NOT "private" - ALWAYS "memory")
+- due: Current date in ISO format ending with T23:59:59.999Z
+
+Examples (using TODAY'S date):
+- User says "remember my favorite coffee is espresso" → {"title": "Coffee preference", "description": "User's favorite coffee is espresso", "tags": ["user:memory"], "context": "memory", "due": "${new Date().toISOString().split('T')[0]}T23:59:59.999Z"}
+
 Creates a TodoAlpha3 object with:
 - Auto-generated ID (current ISO timestamp)
 - Empty time tracking (active: {})
@@ -120,13 +131,13 @@ When creating todos, intelligently add appropriate GTD tags based on the nature 
 
 - "gtd:next" for clear, actionable items that are ready to be done
   Examples: "Call John", "Send email", "Buy groceries", "Review document"
-  
+
 - "gtd:project" for multi-step outcomes that require planning
   Examples: "Plan vacation", "Hire developer", "Redesign website", "Organize event"
-  
+
 - "gtd:waiting" for items blocked by others or external dependencies
   Examples: "Wait for budget approval", "Waiting for client response", "Pending review"
-  
+
 - "gtd:someday" for vague, future, or low-priority items
   Examples: "Maybe learn Spanish", "Consider new laptop", "Research topic", "Explore idea"
 
@@ -141,7 +152,11 @@ Usage examples:
 - Project: {"title": "Plan team retreat", "tags": ["gtd:project"], "context": "work"}
 - Waiting: {"title": "Wait for budget approval", "tags": ["gtd:waiting"], "context": "work"}
 - Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}
-- Appointment: {"title": "15:00 Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}`,
+- Appointment: {"title": "15:00 Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}
+
+🧠 CRITICAL REMINDER: For memory requests (user says "remember..."):
+- ALWAYS use context "memory" - never "private" or any other context!
+- ALWAYS use due date as TODAY'S date at 23:59:59.999Z - NEVER use future dates like 2025-12-31!`,
   parameters: z.object({
     title: z
       .string()
@@ -991,7 +1006,7 @@ server.addTool({
     .describe(
       'No parameters required - returns all todos with active time tracking',
     ),
-  execute: async (args, context) => {
+  execute: async (_args, context) => {
     const db = getUserDb(context);
 
     context.log.info('Retrieving active time tracking todos for user', {
@@ -1064,7 +1079,14 @@ server.addTool({
     'Get comprehensive information about the Eddo MCP server with authentication, including data model, available tools, and usage examples',
   parameters: z.object({
     section: z
-      .enum(['overview', 'datamodel', 'tools', 'examples', 'tagstats', 'all'])
+      .enum([
+        'overview',
+        'datamodel',
+        'examples',
+        'tagstats',
+        'memories',
+        'all',
+      ])
       .default('all')
       .describe('Specific section of documentation to retrieve'),
   }),
@@ -1117,6 +1139,43 @@ Error retrieving tag statistics: ${error}`;
       }
     }
 
+    // Get user memories if needed
+    let memoriesSection = '';
+    if (args.section === 'memories' || args.section === 'all') {
+      try {
+        const memoryResult = await db.find({
+          selector: {
+            tags: { $elemMatch: { $eq: 'user:memory' } },
+          },
+          // Remove sort to avoid index requirement - memories will be in creation order
+        });
+
+        const memories = memoryResult.docs || [];
+        // Sort by _id (creation timestamp) in descending order in JavaScript
+        const sortedMemories = memories.sort((a, b) =>
+          b._id.localeCompare(a._id),
+        );
+        const memoryList =
+          sortedMemories.length > 0
+            ? sortedMemories
+                .map((todo) => `- ${todo.title}: ${todo.description}`)
+                .join('\n')
+            : '- No memories found';
+
+        memoriesSection = `# User Memories
+
+Current stored memories for context:
+
+${memoryList}
+
+*Memories are stored as todos with tag 'user:memory'*`;
+      } catch (error) {
+        memoriesSection = `# User Memories
+
+Error retrieving memories: ${error}`;
+      }
+    }
+
     const sections: Record<string, string> = {
       overview: `# Eddo MCP Server Overview
 
@@ -1145,19 +1204,6 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
   title: string;            // Todo title
   version: 'alpha3';        // Schema version
 }`,
-
-      tools: `# Available Tools
-
-1. **createTodo** - Create a new todo item
-2. **listTodos** - List todos with optional filters (context, completed, date range)
-3. **updateTodo** - Update an existing todo's properties
-4. **toggleTodoCompletion** - Mark todo as completed/uncompleted (handles repeating)
-5. **deleteTodo** - Permanently delete a todo
-6. **startTimeTracking** - Start tracking time for a todo
-7. **stopTimeTracking** - Stop active time tracking
-8. **getActiveTimeTracking** - Get todos with active time tracking
-9. **getServerInfo** - Get this documentation
-10. **getUserInfo** - Get current authenticated user information`,
 
       examples: `# Usage Examples
 
@@ -1205,6 +1251,7 @@ curl -H "X-API-Key: your-api-key-here" http://localhost:3001/mcp
 }`,
 
       tagstats: tagStatsSection,
+      memories: memoriesSection,
     };
 
     if (args.section === 'all') {
@@ -1213,7 +1260,7 @@ curl -H "X-API-Key: your-api-key-here" http://localhost:3001/mcp
 
     return (
       sections[args.section] ||
-      'Invalid section. Choose from: overview, datamodel, tools, examples, tagstats, all'
+      'Invalid section. Choose from: overview, datamodel, tools, examples, tagstats, memories, all'
     );
   },
 });

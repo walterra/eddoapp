@@ -22,6 +22,7 @@ interface AgentState {
   done: boolean;
   output?: string;
   toolResults: Array<{ toolName: string; result: unknown; timestamp: number }>;
+  systemPrompt?: string;
 }
 
 interface ToolCall {
@@ -116,6 +117,59 @@ export class SimpleAgent {
       toolResults: [],
     };
 
+    // Get comprehensive system information from MCP server (once before loop)
+    let mcpSystemInfo = '';
+    try {
+      const serverInfoResult = await mcpClient.invoke('getServerInfo', {
+        section: 'all',
+      });
+
+      // MCP server returns an array of content objects with type and text
+      if (Array.isArray(serverInfoResult) && serverInfoResult.length > 0) {
+        const textContent = serverInfoResult.find(
+          (content) => content.type === 'text',
+        );
+        if (textContent?.text) {
+          mcpSystemInfo = textContent.text;
+          logger.debug(
+            'Retrieved comprehensive server info from MCP content array',
+            {
+              length: textContent.text.length,
+              preview: textContent.text.substring(0, 200) + '...',
+            },
+          );
+        }
+      } else if (typeof serverInfoResult === 'string') {
+        // Fallback for direct string response
+        mcpSystemInfo = serverInfoResult;
+        logger.debug('Retrieved comprehensive server info as string', {
+          length: serverInfoResult.length,
+          preview: serverInfoResult.substring(0, 200) + '...',
+        });
+      }
+    } catch (error) {
+      logger.debug(
+        'Failed to retrieve server info, falling back to basic tools',
+        {
+          error,
+        },
+      );
+      // Fallback to basic tool list if getServerInfo fails
+      mcpSystemInfo = mcpClient.tools
+        .map((tool) => `- ${tool.name}: ${tool.description}`)
+        .join('\n');
+    }
+
+    // Build system prompt once before the loop with dynamic tools
+    const tools = mcpClient.tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+    }));
+    const systemPrompt = buildSystemPrompt(mcpSystemInfo, tools);
+
+    // Store system prompt in state for logging
+    state.systemPrompt = systemPrompt;
+
     const maxIterations = 10;
     let iteration = 0;
 
@@ -134,7 +188,6 @@ export class SimpleAgent {
         },
       });
 
-      const systemPrompt = buildSystemPrompt(mcpClient.tools);
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
         .join('\n');
@@ -322,6 +375,8 @@ export class SimpleAgent {
           totalToolResults: state.toolResults.length,
           completed: state.done,
           hasOutput: !!state.output,
+          hasSystemPrompt: !!state.systemPrompt,
+          systemPromptLength: state.systemPrompt?.length || 0,
         },
       };
 

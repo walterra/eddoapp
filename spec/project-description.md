@@ -11,6 +11,7 @@ TypeScript monorepo with React frontend, MCP server, and Telegram bot.
 - Time tracking with start/pause functionality
 - Repeating tasks and tag system
 - Telegram bot with AI agent (Claude)
+- AI memory system via tagged todos (user:memory) for context-aware conversations
 - MCP server for external integrations
 
 ## Commands

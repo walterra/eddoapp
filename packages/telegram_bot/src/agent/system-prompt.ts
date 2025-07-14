@@ -1,19 +1,34 @@
 import { getPersona } from '../ai/personas.js';
-import type { MCPTool } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 
-export function buildSystemPrompt(tools: MCPTool[]): string {
+export function buildSystemPrompt(
+  mcpServerInfo: string,
+  tools?: Array<{ name: string; description: string }>,
+): string {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
-
-  const toolDescriptions =
-    tools.map((tool) => `- ${tool.name}: ${tool.description}`).join('\n') ||
-    'No tools available';
-
   const currentDateTime = new Date().toISOString();
+
+  // Generate tools section if tools are provided
+  const toolsSection = tools
+    ? `
+# Available Tools
+
+${tools.map((tool, index) => `${index + 1}. **${tool.name}** - ${tool.description}`).join('\n')}
+
+---
+
+`
+    : '';
 
   return `${persona.personalityPrompt}
 
 Current date and time: ${currentDateTime}
+
+${mcpServerInfo}
+
+${toolsSection}
+
+To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
 
 COMMUNICATION STYLE: You are communicating via Telegram chat. Keep responses CONCISE and BRIEF:
 - Use 1-2 short sentences maximum for confirmations
@@ -37,6 +52,10 @@ CRITICAL: NEVER create todos without due dates. Always parse and provide an ISO 
 
 Infer a fitting context from the users intent, default context: private
 
+IMPORTANT: For memory requests (when user asks to "remember" something):
+- ALWAYS use context "memory" (this overrides the default "private")  
+- ALWAYS use due date as TODAY'S date at 23:59:59.999Z (not some future date like end of year)
+
 SPECIAL URL HANDLING: If the user's message contains only a URL (or URL with minimal text), automatically:
 1. Create a todo with context "read-later"
 2. Save the URL in the link attribute
@@ -46,11 +65,6 @@ Examples:
 - "https://github.com/user/repo" → title: "GitHub: user/repo"
 - "https://docs.example.com/guide" → title: "Example Docs: guide"
 - "https://blog.site.com/article-title" → title: "Site Blog: article-title"
-
-Available tools:
-${toolDescriptions}
-
-To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
 
 CRITICAL: Follow each tool's parameter schema EXACTLY as defined. Each tool description includes usage examples showing the correct parameter format. Study the examples carefully and replicate the exact structure.
 

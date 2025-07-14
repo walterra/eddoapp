@@ -5,6 +5,7 @@ This document provides comprehensive examples to verify all CRUD operations work
 ## CREATE Operations
 
 ### Basic Todo Creation
+
 ```bash
 # Create a simple todo
 pnpm test:mcp createTodo '{"title": "Test MCP Create", "context": "work", "due": "2025-06-20"}'
@@ -20,6 +21,7 @@ pnpm test:mcp createTodo '{"title": "Todo 2", "context": "private", "due": "2025
 ## READ Operations
 
 ### Query and Filtering
+
 ```bash
 # List all todos
 pnpm test:mcp listTodos '{}'
@@ -46,6 +48,7 @@ pnpm test:mcp getActiveTimeTracking '{}'
 ## UPDATE Operations
 
 ### Todo Modifications
+
 ```bash
 # Update todo title and description
 pnpm test:mcp updateTodo '{"id": "2025-06-18T10:30:00.000Z", "updates": {"title": "Updated Title", "description": "New description"}}'
@@ -66,6 +69,7 @@ pnpm test:mcp toggleTodoCompletion '{"id": "2025-06-18T10:30:00.000Z"}'
 ## DELETE Operations
 
 ### Todo Removal
+
 ```bash
 # Delete a specific todo
 pnpm test:mcp deleteTodo '{"id": "2025-06-18T10:30:00.000Z"}'
@@ -77,6 +81,7 @@ pnpm test:mcp listTodos '{"context": "work"}'
 ## TIME TRACKING Operations
 
 ### Start/Stop Time Tracking
+
 ```bash
 # Start time tracking on a todo
 pnpm test:mcp startTimeTracking '{"id": "2025-06-18T10:30:00.000Z", "category": "development"}'
@@ -95,6 +100,7 @@ pnpm test:mcp startTimeTracking '{"id": "2025-06-18T10:30:00.000Z", "category": 
 ## ANALYTICS Operations
 
 ### Tag Statistics
+
 ```bash
 # Get tag usage statistics
 pnpm test:mcp getServerInfo '{"section": "tagstats"}'
@@ -109,6 +115,7 @@ pnpm test:mcp getServerInfo '{"section": "all"}'
 ## ERROR HANDLING Tests
 
 ### Invalid Input Testing
+
 ```bash
 # Test invalid todo ID
 pnpm test:mcp updateTodo '{"id": "invalid-id", "updates": {"title": "Should fail"}}'
@@ -126,6 +133,7 @@ pnpm test:mcp createTodo '{"title": "Test", "context": "work", "due": "invalid-d
 ## INTEGRATION Test Sequence
 
 ### Full CRUD Lifecycle
+
 ```bash
 # Full CRUD lifecycle test
 # 1. Create
@@ -156,30 +164,30 @@ pnpm test:mcp listTodos '{"context": "work"}'
 The application exposes these MCP tools for CRUD operations:
 
 1. **CREATE**: `createTodo` - Creates new todo items with full schema validation
-2. **READ**: 
+2. **READ**:
    - `listTodos` - Lists todos with filtering by context, completion status, date range, and limits
    - `getActiveTimeTracking` - Queries todos with active time tracking
-3. **UPDATE**: 
+3. **UPDATE**:
    - `updateTodo` - Updates existing todo properties
    - `toggleTodoCompletion` - Handles completion status and repeating todos
 4. **DELETE**: `deleteTodo` - Permanently removes todos
-5. **TIME TRACKING**: 
+5. **TIME TRACKING**:
    - `startTimeTracking` - Begins time tracking for a todo
    - `stopTimeTracking` - Ends time tracking sessions
-6. **ANALYTICS**: 
+6. **ANALYTICS**:
    - `getServerInfo` - Provides server information and analytics (use `"section": "tagstats"` for tag statistics)
 
 ## Data Model (Alpha3)
 
 ```typescript
 interface TodoAlpha3 {
-  _id: string;           // ISO timestamp of creation
+  _id: string; // ISO timestamp of creation
   active: Record<string, string | null>; // Time tracking entries
   completed: string | null;
-  context: string;       // GTD context
+  context: string; // GTD context
   description: string;
-  due: string;          // ISO date string
-  link: string | null;  // Added in alpha3
+  due: string; // ISO date string
+  link: string | null; // Added in alpha3
   repeat: number | null; // Days
   tags: string[];
   title: string;
