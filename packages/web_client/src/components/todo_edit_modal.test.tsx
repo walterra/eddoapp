@@ -741,15 +741,13 @@ describe('TodoEditModal', () => {
     });
 
     it('maintains form state during a single session', async () => {
-      const user = userEvent.setup();
       renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
       // Update a field
       const titleInput = screen.getByLabelText('Todo');
-      await user.clear(titleInput);
-      await user.type(titleInput, 'Modified Title');
+      fireEvent.change(titleInput, { target: { value: 'Modified Title' } });
 
       expect(titleInput).toHaveValue('Modified Title');
 

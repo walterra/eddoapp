@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { config } from 'dotenv';
+import flowbiteReact from 'flowbite-react/plugin/vite';
 import path from 'node:path';
 import { defineConfig } from 'vite';
 
@@ -7,7 +8,7 @@ import { defineConfig } from 'vite';
 config({ path: path.resolve(__dirname, '../../.env') });
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), flowbiteReact()],
   resolve: {
     alias: {
       '@eddo/core': path.resolve(__dirname, '../core/src'),
