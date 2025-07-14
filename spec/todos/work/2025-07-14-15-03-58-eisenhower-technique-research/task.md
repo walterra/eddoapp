@@ -50,3 +50,4 @@ After researching the Eisenhower Matrix and evaluating integration options, deci
 - Examples corrected to show proper usage of tags vs context attributes
 - Clean separation: generic system prompt, GTD-specific persona, MCP tool descriptions
 - Eliminated overlap between MCP server and GTD coach - MCP server takes precedence for technical details
+- Removed confusing next_actions from MCP server responses - agent loop drives workflow planning

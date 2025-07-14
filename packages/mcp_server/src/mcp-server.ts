@@ -236,7 +236,6 @@ Usage examples:
           context: newTodo.context,
           due: newTodo.due,
         },
-        next_actions: ['listTodos', 'startTimeTracking'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'create',
@@ -392,10 +391,6 @@ Usage examples:
           limit: args.limit || 50,
           has_more: response.docs.length === (args.limit || 50),
         },
-        next_actions:
-          response.docs.length > 0
-            ? ['updateTodo', 'toggleTodoCompletion', 'startTimeTracking']
-            : ['createTodo'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'list',
@@ -421,7 +416,6 @@ Usage examples:
             limit: args.limit || 50,
             has_more: false,
           },
-          next_actions: ['createTodo'],
           metadata: {
             operation: 'list',
             timestamp: new Date().toISOString(),
@@ -462,7 +456,6 @@ server.addTool({
           dbName: 'default',
           authenticated: false,
         },
-        next_actions: ['getServerInfo'],
         metadata: {
           operation: 'user_info',
           timestamp: new Date().toISOString(),
@@ -478,7 +471,6 @@ server.addTool({
         dbName: context.session.dbName,
         authenticated: true,
       },
-      next_actions: ['listTodos', 'createTodo', 'getServerInfo'],
       metadata: {
         operation: 'user_info',
         timestamp: new Date().toISOString(),
@@ -564,11 +556,6 @@ IMPORTANT: Pass update fields directly as parameters, NOT wrapped in nested obje
             (k) => args[k as keyof typeof args] !== undefined && k !== 'id',
           ),
         },
-        next_actions: [
-          'listTodos',
-          'toggleTodoCompletion',
-          'startTimeTracking',
-        ],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'update',
@@ -667,7 +654,6 @@ server.addTool({
               new_due_date: newDueDate.toISOString(),
               repeat_interval: todo.repeat,
             },
-            next_actions: ['listTodos', 'startTimeTracking'],
             metadata: {
               execution_time: `${executionTime.toFixed(2)}ms`,
               operation: 'complete_and_repeat',
@@ -698,9 +684,6 @@ server.addTool({
           status,
           completed_at: todo.completed,
         },
-        next_actions: args.completed
-          ? ['listTodos', 'createTodo']
-          : ['startTimeTracking', 'updateTodo'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'toggle_completion',
@@ -765,7 +748,6 @@ server.addTool({
           title: todo.title,
           deleted_at: new Date().toISOString(),
         },
-        next_actions: ['listTodos', 'createTodo'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'delete',
@@ -844,7 +826,6 @@ server.addTool({
           started_at: now,
           active_sessions: Object.keys(todo.active).length,
         },
-        next_actions: ['stopTimeTracking', 'getActiveTimeTracking'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'start_time_tracking',
@@ -939,11 +920,6 @@ server.addTool({
               duration_formatted: `${Math.floor(duration / 60000)}m ${Math.floor((duration % 60000) / 1000)}s`,
             },
           },
-          next_actions: [
-            'getActiveTimeTracking',
-            'listTodos',
-            'startTimeTracking',
-          ],
           metadata: {
             execution_time: `${executionTime.toFixed(2)}ms`,
             operation: 'stop_time_tracking',
@@ -961,7 +937,6 @@ server.addTool({
           title: todo.title,
           active_sessions: 0,
         },
-        next_actions: ['startTimeTracking', 'getActiveTimeTracking'],
         metadata: {
           operation: 'stop_time_tracking',
           timestamp: new Date().toISOString(),
@@ -1039,10 +1014,6 @@ server.addTool({
             (end) => end === null,
           ).length,
         })),
-        next_actions:
-          activeTodos.length > 0
-            ? ['stopTimeTracking']
-            : ['startTimeTracking', 'listTodos'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'get_active_time_tracking',
