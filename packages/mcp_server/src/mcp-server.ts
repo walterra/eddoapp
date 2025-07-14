@@ -38,7 +38,7 @@ const server = new FastMCP<UserSession>({
     logLevel: 'info',
   },
   instructions:
-    'Eddo Todo MCP Server with API key authentication. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.',
+    'Eddo Todo MCP Server with API key authentication and GTD tag awareness. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday (for actionability)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
 
   // Authentication function - runs for each request
   authenticate: (request) => {
@@ -107,7 +107,7 @@ function getUserDb(context: {
 // Create Todo Tool
 server.addTool({
   name: 'createTodo',
-  description: `Create a new todo item in the authenticated user's database.
+  description: `Create a new todo item in the authenticated user's database with GTD tag support.
 
 Creates a TodoAlpha3 object with:
 - Auto-generated ID (current ISO timestamp)
@@ -115,10 +115,26 @@ Creates a TodoAlpha3 object with:
 - Not completed status (completed: null)
 - Default due date of end of current day if not specified
 
+GTD TAG GUIDELINES (for calling LLM):
+When creating todos, intelligently add appropriate GTD tags based on the nature of the item:
+
+- "gtd:next" for clear, actionable items that are ready to be done
+  Examples: "Call John", "Send email", "Buy groceries", "Review document"
+  
+- "gtd:project" for multi-step outcomes that require planning
+  Examples: "Plan vacation", "Hire developer", "Redesign website", "Organize event"
+  
+- "gtd:waiting" for items blocked by others or external dependencies
+  Examples: "Wait for budget approval", "Waiting for client response", "Pending review"
+  
+- "gtd:someday" for vague, future, or low-priority items
+  Examples: "Maybe learn Spanish", "Consider new laptop", "Research topic", "Explore idea"
+
 Usage examples:
-- Simple todo: {"title": "Buy groceries"}
-- With context: {"title": "Review budget", "context": "work", "due": "2025-07-15T23:59:59.999Z"}
-- With tags: {"title": "Call dentist", "context": "private", "tags": ["health", "urgent"]}`,
+- Actionable: {"title": "Buy groceries", "tags": ["gtd:next"], "context": "private"}
+- Project: {"title": "Plan team retreat", "tags": ["gtd:project"], "context": "work"}
+- Waiting: {"title": "Wait for budget approval", "tags": ["gtd:waiting"], "context": "work"}
+- Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}`,
   parameters: z.object({
     title: z
       .string()
@@ -145,7 +161,7 @@ Usage examples:
       .array(z.string())
       .default([])
       .describe(
-        'Array of tags for categorization and filtering. Can be used for projects, priorities, or custom categories',
+        'Array of tags for categorization and filtering. Should include appropriate GTD tags (gtd:next, gtd:project, gtd:waiting, gtd:someday) based on the item type. Also supports custom categories, projects, and priorities.',
       ),
     repeat: z
       .number()
@@ -252,11 +268,20 @@ server.addTool({
   name: 'listTodos',
   description: `List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), limit (number of results)
 
+GTD-AWARE QUERY HANDLING:
+- "What's next?" → filter by gtd:next tags, prioritize by context
+- "What am I waiting for?" → filter by gtd:waiting tags
+- "Show my projects" → filter by gtd:project tags
+- "Someday items" → filter by gtd:someday tags
+- "What's next at work?" → combine gtd:next + work context
+
 Usage examples:
 - All todos: {}
-- Work todos: {"context": "work"}
-- Incomplete todos: {"completed": false}
-- This week's todos: {"dateFrom": "2025-07-10T00:00:00.000Z", "dateTo": "2025-07-16T23:59:59.999Z"}
+- Next actions: {"tags": ["gtd:next"]}
+- Work next actions: {"context": "work", "tags": ["gtd:next"]}
+- Projects: {"tags": ["gtd:project"]}
+- Waiting items: {"tags": ["gtd:waiting"]}
+- Work projects: {"context": "work", "tags": ["gtd:project"]}
 - Combined filters: {"context": "work", "completed": false, "limit": 10}`,
   parameters: z.object({
     context: z
@@ -281,6 +306,12 @@ Usage examples:
       .number()
       .default(50)
       .describe('Maximum number of todos to return (default: 50)'),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe(
+        'Filter by specific tags (e.g., ["gtd:next"] for next actions, ["gtd:project"] for projects)',
+      ),
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
@@ -310,6 +341,10 @@ Usage examples:
         if (args.dateTo) {
           (selector.due as Record<string, unknown>)['$lte'] = args.dateTo;
         }
+      }
+
+      if (args.tags && args.tags.length > 0) {
+        selector.tags = { $in: args.tags };
       }
 
       // Build query with explicit sorting and index specification
