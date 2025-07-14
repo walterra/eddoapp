@@ -42,6 +42,9 @@ pnpm install
 # Start development (client + MCP server)
 pnpm dev
 
+# Start telegram bot
+pnpm dev:telegram-bot
+
 # Run tests
 pnpm test
 
