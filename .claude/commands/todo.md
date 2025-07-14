@@ -238,9 +238,13 @@ src/notifications.ts # Core logic
 
 3. **If approved**:
 
-   - Move task to done and cleanup:
+   - Update status and move task to done:
      ```bash
+     # Update status to Done in the task file
+     sed -i '' 's/^\*\*Status:\*\* In Progress/\*\*Status:\*\* Done/' spec/todos/work/[task-name]/task.md && \
+     # Move to done directory
      mv spec/todos/work/[task-name]/task.md spec/todos/done/[task-name].md && \
+     # Cleanup work directory if empty
      if [ -z "$(ls -A spec/todos/work/[task-name]/)" ]; then \
          rmdir spec/todos/work/[task-name]/ && echo "Work directory cleaned up"; \
      else \

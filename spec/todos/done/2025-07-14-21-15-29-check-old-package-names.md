@@ -1,6 +1,6 @@
 # read spec/todos/done/2025-07-13-13-07-22-better-package-names.md - it looks like we missed renaming some references across the codebase. check the code base for old package names and update everywereh.
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-07-14T21:15:29
 **Started:** 2025-07-14T21:16:45
 **Agent PID:** 1664

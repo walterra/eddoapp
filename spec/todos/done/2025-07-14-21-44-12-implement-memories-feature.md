@@ -1,6 +1,6 @@
 # in spec/stevens-demo-comparison.md we defined a way to store memories. let's implement it. we need to update system prompts in two ways: the system prompt needs to know that when a user asks to remember something that the todo should be the MemoryTodo (e.g. tagged with `user:memory`). The other way around we need to query CouchDB for all tasks tagged `user:memory` and add that to the system prompt.
 
-**Status:** In Progress
+**Status:** Done
 **Started:** 2025-07-14T21:44:45
 **Created:** 2025-07-14T21:44:12
 **Agent PID:** 1664
