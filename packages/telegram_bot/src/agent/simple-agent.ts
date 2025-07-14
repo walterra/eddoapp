@@ -134,7 +134,34 @@ export class SimpleAgent {
         },
       });
 
-      const systemPrompt = buildSystemPrompt(mcpClient.tools);
+      // Retrieve memories before building system prompt
+      let memories = '';
+      try {
+        const memoryResult = await mcpClient.invoke('listTodos', {
+          tags: ['user:memory'],
+        });
+        if (
+          memoryResult &&
+          typeof memoryResult === 'object' &&
+          'data' in memoryResult
+        ) {
+          const memoryTodos =
+            (
+              memoryResult as {
+                data: Array<{ title: string; description: string }>;
+              }
+            ).data || [];
+          memories = memoryTodos
+            .map((todo) => `- ${todo.title}: ${todo.description}`)
+            .join('\n');
+        }
+      } catch (error) {
+        logger.debug('Failed to retrieve memories, continuing without them', {
+          error,
+        });
+      }
+
+      const systemPrompt = buildSystemPrompt(mcpClient.tools, memories);
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
         .join('\n');

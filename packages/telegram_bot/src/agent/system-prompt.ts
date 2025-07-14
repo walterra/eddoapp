@@ -2,7 +2,7 @@ import { getPersona } from '../ai/personas.js';
 import type { MCPTool } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 
-export function buildSystemPrompt(tools: MCPTool[]): string {
+export function buildSystemPrompt(tools: MCPTool[], memories?: string): string {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
 
   const toolDescriptions =
@@ -11,8 +11,24 @@ export function buildSystemPrompt(tools: MCPTool[]): string {
 
   const currentDateTime = new Date().toISOString();
 
-  return `${persona.personalityPrompt}
+  const memorySection = memories
+    ? `
 
+USER MEMORIES:
+${memories}
+
+When the user asks to remember something, create a todo with:
+- tags: ["user:memory"]
+- title: Brief summary of what to remember
+- description: Full details to remember
+- context: "memory" 
+- due: Current date
+
+`
+    : '';
+
+  return `${persona.personalityPrompt}
+${memorySection}
 Current date and time: ${currentDateTime}
 
 COMMUNICATION STYLE: You are communicating via Telegram chat. Keep responses CONCISE and BRIEF:
