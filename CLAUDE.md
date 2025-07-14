@@ -88,15 +88,15 @@ interface TodoAlpha3 {
 
 ### Package Structure
 
-- `packages/client/src/`: React frontend application
+- `packages/web_client/src/`: React frontend application
   - `components/`: React components (flat structure)
   - `hooks/`: Custom React hooks
-- `packages/shared/src/`: Shared code across packages
+- `packages/core/src/`: Shared code across packages
   - `api/versions/`: Data model versions and migration functions
   - `types/`: TypeScript definitions
   - `utils/`: Utility functions with co-located tests
-- `packages/server/src/`: MCP server implementation
-- `packages/telegram-bot/src/`: Telegram bot with AI agent
+- `packages/mcp_server/src/`: MCP server implementation
+- `packages/telegram_bot/src/`: Telegram bot with AI agent
   - `agent/`: Simple agent loop implementation
   - `ai/`: Claude integration and persona management
   - `bot/`: Telegram bot handlers and commands

@@ -9,14 +9,14 @@ This document describes all feature flags and configuration toggles available in
 #### `MCP_API_KEY`
 - **Type**: String (optional)
 - **Default**: `undefined` (no authentication)
-- **Location**: `packages/telegram-bot/src/mcp/enhanced-client.ts:53`
+- **Location**: `packages/telegram_bot/src/mcp/enhanced-client.ts:53`
 - **Purpose**: Optional authentication for MCP server API
 - **Usage**: Adds Authorization header if present
 - **Impact**: Enables authenticated MCP server connections
 
 ## Configuration Schema Variables
 
-These are defined in `packages/telegram-bot/src/utils/config.ts`:
+These are defined in `packages/telegram_bot/src/utils/config.ts`:
 
 ### `NODE_ENV`
 - **Type**: Enum
@@ -40,7 +40,7 @@ These are defined in `packages/telegram-bot/src/utils/config.ts`:
 
 ## Workflow Configuration Flags
 
-These are boolean flags in the `WorkflowConfig` interface (`packages/telegram-bot/src/agent/types/workflow-types.ts`):
+These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bot/src/agent/types/workflow-types.ts`):
 
 ### `enableStreaming`
 - **Type**: Boolean
@@ -59,20 +59,20 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram-bo
 ## Hardcoded Feature Toggles
 
 ### Console Logging Toggle
-- **Location**: `packages/telegram-bot/src/utils/logger.ts:20`
+- **Location**: `packages/telegram_bot/src/utils/logger.ts:20`
 - **Condition**: `appConfig.NODE_ENV !== 'production'`
 - **Purpose**: Enables console logging in non-production environments
 - **Impact**: Adds colorized console output for development
 
 ### Workflow Fallback Logic
-- **Location**: `packages/telegram-bot/src/agent/index.ts:31-65`
+- **Location**: `packages/telegram_bot/src/agent/index.ts:31-65`
 - **Purpose**: Progressive fallback from Enhanced → Simple → Basic workflows
 - **Impact**: Provides graceful degradation if advanced features fail
 
 ## Development/Debug Features
 
 ### Workflow Resume Token
-- **Location**: `packages/telegram-bot/src/bot/commands/start.ts:183`
+- **Location**: `packages/telegram_bot/src/bot/commands/start.ts:183`
 - **Token**: `'__RESUME_WORKFLOW__'`
 - **Purpose**: Special internal message to resume paused workflows
 - **Usage**: Used by approval commands to continue interrupted workflows
@@ -80,7 +80,7 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram-bo
 ## Configuration Constants
 
 ### MCP Action Aliases
-- **Location**: `packages/telegram-bot/src/config/mcp-actions.config.ts`
+- **Location**: `packages/telegram_bot/src/config/mcp-actions.config.ts`
 - **Purpose**: Maps legacy snake_case action names to camelCase for backward compatibility
 - **Usage**: Allows flexible action naming across different integrations
 
@@ -92,7 +92,7 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram-bo
 ## Removed/Deprecated Flags
 
 ### Enhanced MCP Feature Flag
-- **Location**: `packages/telegram-bot/src/mcp/enhanced-client.ts:211`
+- **Location**: `packages/telegram_bot/src/mcp/enhanced-client.ts:211`
 - **Status**: **REMOVED** - Comment indicates "Feature flag removed - always use enhanced MCP with @langchain/mcp-adapters"
 - **Previous Purpose**: Controlled whether to use enhanced MCP integration
 - **Current State**: Always enabled

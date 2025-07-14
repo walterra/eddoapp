@@ -2,7 +2,7 @@
 
 ## Current State Analysis
 
-Based on analysis of the telegram bot (`packages/telegram-bot`) and MCP server (`packages/server`) implementations, several critical gaps exist in the MCP interplay that impact reliability and capability discovery.
+Based on analysis of the telegram bot (`packages/telegram_bot`) and MCP server (`packages/mcp_server`) implementations, several critical gaps exist in the MCP interplay that impact reliability and capability discovery.
 
 ### Current Implementation Issues
 
@@ -36,7 +36,7 @@ Based on analysis of the telegram bot (`packages/telegram-bot`) and MCP server (
 **Objective**: Implement complete MCP protocol initialization sequence
 
 **Changes Required**:
-- Modify `packages/telegram-bot/src/mcp/client.ts` to implement full handshake:
+- Modify `packages/telegram_bot/src/mcp/client.ts` to implement full handshake:
   ```typescript
   // 1. Send initialize request with client capabilities
   const initResult = await client.initialize({
@@ -109,7 +109,7 @@ Based on analysis of the telegram bot (`packages/telegram-bot`) and MCP server (
 **Objective**: Provide richer capability information to the LLM
 
 **Changes Required**:
-- Modify `packages/telegram-bot/src/agent/system-prompt.ts` to include:
+- Modify `packages/telegram_bot/src/agent/system-prompt.ts` to include:
   - Full JSON schemas for tool parameters
   - Tool categorization (CRUD, Time Tracking, Utilities)
   - Usage examples from server metadata

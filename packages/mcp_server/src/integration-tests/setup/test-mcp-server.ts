@@ -64,7 +64,7 @@ export class TestMCPServerInstance {
       // Start the MCP server using the dedicated test script
       this.serverProcess = spawn(
         'pnpm',
-        ['--filter', '@eddo/server', 'start:test'],
+        ['--filter', '@eddo/mcp-server', 'start:test'],
         {
           env: {
             ...process.env,

@@ -21,8 +21,8 @@ The Telegram bot currently has no user authentication or authorization mechanism
 - Shared database access for all users
 
 ### Existing Security Measures
-- Rate limiting: 1 message per second per user (`packages/telegram-bot/src/bot/bot.ts:78-96`)
-- MCP API key authentication to server (`packages/telegram-bot/src/mcp/connection-manager.ts:121-122`)
+- Rate limiting: 1 message per second per user (`packages/telegram_bot/src/bot/bot.ts:78-96`)
+- MCP API key authentication to server (`packages/telegram_bot/src/mcp/connection-manager.ts:121-122`)
 - Session tracking with user IDs
 - Comprehensive logging of interactions
 
@@ -30,11 +30,11 @@ The Telegram bot currently has no user authentication or authorization mechanism
 
 ### Phase 1: Basic User Authentication ✅
 - [x] Add `TELEGRAM_ALLOWED_USERS` environment variable to store comma-separated list of allowed user IDs
-- [x] Create authentication middleware in `packages/telegram-bot/src/bot/middleware/auth.ts`
+- [x] Create authentication middleware in `packages/telegram_bot/src/bot/middleware/auth.ts`
 - [x] Implement user ID verification before processing any commands
 - [x] Add unauthorized user rejection with informative message
-- [x] Update `packages/telegram-bot/src/utils/config.ts` to parse allowed users list
-- [x] Add authentication check to message handler (`packages/telegram-bot/src/bot/handlers/message.ts`)
+- [x] Update `packages/telegram_bot/src/utils/config.ts` to parse allowed users list
+- [x] Add authentication check to message handler (`packages/telegram_bot/src/bot/handlers/message.ts`)
 
 ### Phase 2: Per-User Data Isolation
 - [ ] Implement user registry system with database-per-user pattern
@@ -68,7 +68,7 @@ TELEGRAM_ADMIN_USERS=123456789
 
 ### Authentication Middleware
 ```typescript
-// packages/telegram-bot/src/bot/middleware/auth.ts
+// packages/telegram_bot/src/bot/middleware/auth.ts
 export function authenticateUser(userId: number): boolean {
   const allowedUsers = config.TELEGRAM_ALLOWED_USERS;
   return allowedUsers.includes(userId.toString());
@@ -77,7 +77,7 @@ export function authenticateUser(userId: number): boolean {
 
 ### Message Handler Update
 ```typescript
-// packages/telegram-bot/src/bot/handlers/message.ts
+// packages/telegram_bot/src/bot/handlers/message.ts
 if (!authenticateUser(ctx.from.id)) {
   await ctx.reply('Unauthorized. This bot is private.');
   return;

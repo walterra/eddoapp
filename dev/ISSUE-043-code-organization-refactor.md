@@ -27,20 +27,20 @@ Reorganize the codebase with clear separation:
 
 ```
 /packages/
-  /client/         # Client-side web application
+  /web_client/     # Client-side web application
     /src/
     /tests/
     package.json
     tsconfig.json
     vite.config.ts
     
-  /server/         # MCP server
+  /mcp_server/     # MCP server
     /src/
     /tests/
     package.json
     tsconfig.json
     
-  /shared/         # Shared types and utilities
+  /core/           # Shared types and utilities
     /src/
       /types/      # TodoAlpha3, etc.
       /utils/      # Shared utilities
@@ -116,12 +116,12 @@ Bit would be more beneficial for larger projects with many reusable components o
 1. Set up monorepo structure:
    - Create `pnpm-workspace.yaml` at root
    - Configure packages directory structure
-2. Create three packages: `@eddo/client`, `@eddo/server`, `@eddo/shared`
+2. Create three packages: `@eddo/web-client`, `@eddo/mcp-server`, `@eddo/core`
 3. Move existing code to appropriate packages:
    - Client: All React components, hooks, and client utilities
    - Server: `mcp-server.ts` and related server code
    - Shared: `TodoAlpha3` type and other shared types/utilities
-4. Update imports to use package names (e.g., `import { TodoAlpha3 } from '@eddo/shared'`)
+4. Update imports to use package names (e.g., `import { TodoAlpha3 } from '@eddo/core'`)
 5. Configure separate build processes:
    - Client: Keep existing Vite config
    - Server: Add TypeScript build for Node.js

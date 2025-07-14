@@ -16,7 +16,7 @@
         "**/*.test.tsx"
       ]
     },
-    "packages/client": {
+    "packages/web_client": {
       "entry": [
       ],
       "project": [
@@ -30,7 +30,7 @@
         "**/*.test.tsx"
       ]
     },
-    "packages/server": {
+    "packages/mcp_server": {
       "entry": [
       ],
       "project": [
@@ -42,7 +42,7 @@
         "**/*.test.ts"
       ]
     },
-    "packages/shared": {
+    "packages/core": {
       "entry": [
       ],
       "project": [
@@ -55,7 +55,7 @@
         "src/utils/__mocks__/**"
       ]
     },
-    "packages/telegram-bot": {
+    "packages/telegram_bot": {
       "entry": [
       ],
       "project": [

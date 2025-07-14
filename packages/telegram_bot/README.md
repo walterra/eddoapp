@@ -20,7 +20,7 @@ A sophisticated digital butler bot for Telegram that integrates with the Eddo to
 - Node.js 18+ and pnpm
 - Telegram account and mobile app
 - Anthropic API Key (Claude AI)
-- Running Eddo MCP Server (see `packages/server`)
+- Running Eddo MCP Server (see `packages/mcp_server`)
 
 ### Step 1: Create Your Telegram Bot
 
@@ -67,7 +67,7 @@ pnpm install
 2. **Copy environment template**:
 
 ```bash
-cp packages/telegram-bot/.env.example packages/telegram-bot/.env
+cp packages/telegram_bot/.env.example packages/telegram_bot/.env
 ```
 
 3. **Configure your `.env` file** with your tokens:
@@ -104,7 +104,7 @@ pnpm dev:server
 2. **Start the Telegram Bot** (in another terminal):
 
 ```bash
-pnpm dev:telegram-bot
+pnpm dev:telegram_bot
 ```
 
 3. **Test your bot**:
@@ -326,7 +326,7 @@ docker run -d --env-file .env eddo-telegram-bot
 **Solutions**:
 
 - Verify `TELEGRAM_BOT_TOKEN` is correct (check BotFather)
-- Ensure bot is running (`pnpm dev:telegram-bot`)
+- Ensure bot is running (`pnpm dev:telegram_bot`)
 - Check console for error messages
 - Test token with: `curl https://api.telegram.org/bot<YOUR_TOKEN>/getMe`
 
@@ -365,7 +365,7 @@ docker run -d --env-file .env eddo-telegram-bot
 **Symptoms**: "Configuration validation failed" on startup
 **Solutions**:
 
-- Ensure `.env` file exists in `packages/telegram-bot/`
+- Ensure `.env` file exists in `packages/telegram_bot/`
 - Check all required variables are set (see `.env.example`)
 - Verify no extra spaces or quotes in `.env` values
 - Use absolute paths if needed
@@ -397,10 +397,10 @@ curl https://api.telegram.org/bot<YOUR_TOKEN>/getMe
 
 ```bash
 # Real-time logs
-tail -f packages/telegram-bot/combined.log
+tail -f packages/telegram_bot/combined.log
 
 # Error logs only
-tail -f packages/telegram-bot/error.log
+tail -f packages/telegram_bot/error.log
 
 # Or check console output
 ```
