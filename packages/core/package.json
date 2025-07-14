@@ -13,7 +13,7 @@
     "./config": "./dist/config/index.js"
   },
   "dependencies": {
-    "date-fns": "^2.29.3",
+    "date-fns": "^4.1.0",
     "dotenv-mono": "github:marcocesarato/dotenv-mono#master",
     "lodash-es": "^4.17.21",
     "pouchdb-adapter-memory": "^9.0.0",

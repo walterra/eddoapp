@@ -93,8 +93,12 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
 
   const isActiveValid = activeArray.reduce((valid, [from, to]) => {
     try {
-      getFormattedDuration(getActiveDuration({ [from]: to }));
-      return valid;
+      const duration = getActiveDuration({ [from]: to });
+      if (!Number.isFinite(duration) || duration < 0) {
+        return false;
+      }
+      const formatted = getFormattedDuration(duration);
+      return valid && formatted !== '';
     } catch (_e) {
       return false;
     }
@@ -347,9 +351,12 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
                 <div className="mb-6 grow px-3 md:mb-0">
                   {(function () {
                     try {
-                      return getFormattedDuration(
-                        getActiveDuration({ [from]: to }),
-                      );
+                      const duration = getActiveDuration({ [from]: to });
+                      if (!Number.isFinite(duration) || duration < 0) {
+                        return 'n/a';
+                      }
+                      const formatted = getFormattedDuration(duration);
+                      return formatted !== '' ? formatted : 'n/a';
                     } catch (_e) {
                       return 'n/a';
                     }

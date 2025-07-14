@@ -7,7 +7,7 @@
   "dependencies": {
     "@eddo/core": "workspace:*",
     "d3-array": "^3.0.3",
-    "date-fns": "^2.29.3",
+    "date-fns": "^4.1.0",
     "events": "^3.3.0",
     "flowbite": "^3.1.2",
     "flowbite-react": "^0.11.9",
