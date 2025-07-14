@@ -66,7 +66,7 @@ interface UserRegistryEntryAlpha1 {
 Following the established pattern from todo schema:
 
 ```
-packages/shared/src/api/versions/
+packages/core/src/api/versions/
 ├── user_registry_alpha1.ts    # Base version with core fields
 ├── user_registry_alpha2.ts    # Future version with migration
 ├── migrate_user_registry.ts   # Central migration orchestrator
@@ -180,7 +180,7 @@ User-specific CouchDB Database
 
 ### Phase 1: User Registry Database
 
-1. **Create Versioned Registry Types** (`packages/shared/src/api/versions/user_registry_alpha1.ts`)
+1. **Create Versioned Registry Types** (`packages/core/src/api/versions/user_registry_alpha1.ts`)
 ```typescript
 import { isNil } from 'lodash-es';
 import { type UnknownObject } from '../../types/unknown-object';
@@ -209,7 +209,7 @@ export function isUserRegistryEntryAlpha1(arg: unknown): arg is UserRegistryEntr
 }
 ```
 
-2. **Create Migration System** (`packages/shared/src/api/versions/migrate_user_registry.ts`)
+2. **Create Migration System** (`packages/core/src/api/versions/migrate_user_registry.ts`)
 ```typescript
 import { isNil } from 'lodash-es';
 import { type UnknownObject } from '../../types/unknown-object';
@@ -250,7 +250,7 @@ function migrateLegacyToAlpha1(entry: any): UserRegistryEntryAlpha1 {
 }
 ```
 
-3. **Create Type Definitions** (`packages/shared/src/types/user-registry.ts`)
+3. **Create Type Definitions** (`packages/core/src/types/user-registry.ts`)
 ```typescript
 import { type UserRegistryEntryAlpha1 } from '../api/versions/user_registry_alpha1';
 
@@ -266,11 +266,11 @@ export interface UserRegistryOperations {
 }
 ```
 
-4. **Implement Registry Operations** (`packages/server/src/db/user-registry.ts`)
+4. **Implement Registry Operations** (`packages/mcp_server/src/db/user-registry.ts`)
 ```typescript
 import nano from 'nano';
-import { UserRegistryEntry, UserRegistryOperations } from '@eddo/shared';
-import { migrateUserRegistryEntry, isLatestUserRegistryVersion } from '@eddo/shared';
+import { UserRegistryEntry, UserRegistryOperations } from '@eddo/core';
+import { migrateUserRegistryEntry, isLatestUserRegistryVersion } from '@eddo/core';
 
 export class UserRegistry implements UserRegistryOperations {
   private db: nano.DocumentScope<UserRegistryEntry>;
@@ -315,7 +315,7 @@ export class UserRegistry implements UserRegistryOperations {
 
 ### Phase 2: Environment Configuration
 
-1. **Update Environment Variables** (`packages/shared/src/config/env.ts`)
+1. **Update Environment Variables** (`packages/core/src/config/env.ts`)
 ```typescript
 export interface EnvConfig {
   // Existing config...
@@ -324,7 +324,7 @@ export interface EnvConfig {
 }
 ```
 
-2. **Parse User Mappings** (`packages/telegram-bot/src/utils/config.ts`)
+2. **Parse User Mappings** (`packages/telegram_bot/src/utils/config.ts`)
 ```typescript
 function parseUserMappings(mapping: string): Map<number, string> {
   const mappings = new Map<number, string>();
@@ -342,7 +342,7 @@ function parseUserMappings(mapping: string): Map<number, string> {
 
 ### Phase 3: Enhanced Authentication
 
-1. **Update Auth Middleware** (`packages/telegram-bot/src/bot/middleware/auth.ts`)
+1. **Update Auth Middleware** (`packages/telegram_bot/src/bot/middleware/auth.ts`)
 ```typescript
 export async function resolveUserContext(
   telegramId: number,
@@ -381,7 +381,7 @@ export async function resolveUserContext(
 
 ### Phase 4: Per-User MCP Clients
 
-1. **Update Connection Manager** (`packages/telegram-bot/src/mcp/connection-manager.ts`)
+1. **Update Connection Manager** (`packages/telegram_bot/src/mcp/connection-manager.ts`)
 ```typescript
 export class MCPConnectionManager {
   private userClients: Map<string, Client> = new Map();
@@ -419,7 +419,7 @@ export class MCPConnectionManager {
 1. **Bootstrap Registry Database**
 ```bash
 # Script to create and initialize user registry
-node packages/server/scripts/setup-user-registry.js
+node packages/mcp_server/scripts/setup-user-registry.js
 ```
 
 2. **Design Documents for Registry**

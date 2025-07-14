@@ -38,7 +38,7 @@ Our MCP server exposes 8 main tools for CRUD operations, time tracking, and anal
 ### Existing Assets
 - `scripts/test-mcp.js`: CLI-based MCP tool testing
 - `dev/MCP-CRUD.md`: Comprehensive command reference
-- Established test patterns in `packages/shared/src/api/`
+- Established test patterns in `packages/core/src/api/`
 
 ### Available MCP Tools
 1. **CREATE**: `createTodo`
@@ -51,7 +51,7 @@ Our MCP server exposes 8 main tools for CRUD operations, time tracking, and anal
 
 ### Test Suite Organization
 ```
-packages/server/src/integration-tests/
+packages/mcp_server/src/integration-tests/
 ├── __fixtures__/           # Shared test data
 ├── helpers/               # Test utilities
 ├── suites/
@@ -122,7 +122,7 @@ describe('MCP Analytics Integration', () => {
 ### 1. Test Server Harness
 Create a dedicated MCP server instance for testing:
 ```typescript
-// packages/server/src/integration-tests/setup/test-server.ts
+// packages/mcp_server/src/integration-tests/setup/test-server.ts
 export class MCPTestServer {
   private server: Server;
   private client: Client;
@@ -145,7 +145,7 @@ export class MCPTestServer {
 
 ### 2. Test Data Factories
 ```typescript
-// packages/server/src/integration-tests/__fixtures__/todo-factory.ts
+// packages/mcp_server/src/integration-tests/__fixtures__/todo-factory.ts
 export const createTestTodoData = {
   basic: () => ({ /* minimal valid todo */ }),
   withTimeTracking: () => ({ /* todo with active tracking */ }),
@@ -156,7 +156,7 @@ export const createTestTodoData = {
 
 ### 3. Test Utilities
 ```typescript
-// packages/server/src/integration-tests/helpers/mcp-assertions.ts
+// packages/mcp_server/src/integration-tests/helpers/mcp-assertions.ts
 export const mcpAssertions = {
   async toolExists(client: Client, toolName: string): Promise<boolean>,
   async callTool(client: Client, name: string, args: any): Promise<any>,
@@ -200,9 +200,9 @@ describe('MCP Complete Workflow Integration', () => {
 export default defineConfig({
   test: {
     name: 'mcp-integration',
-    include: ['packages/server/src/integration-tests/**/*.test.ts'],
+    include: ['packages/mcp_server/src/integration-tests/**/*.test.ts'],
     testTimeout: 30000, // MCP operations can be slower
-    setupFiles: ['packages/server/src/integration-tests/setup/global.ts'],
+    setupFiles: ['packages/mcp_server/src/integration-tests/setup/global.ts'],
   },
 });
 ```
@@ -212,9 +212,9 @@ Add to `package.json`:
 ```json
 {
   "scripts": {
-    "test:mcp:integration": "vitest run packages/server/src/integration-tests",
-    "test:mcp:integration:watch": "vitest packages/server/src/integration-tests",
-    "test:mcp:debug": "vitest --reporter=verbose packages/server/src/integration-tests"
+    "test:mcp:integration": "vitest run packages/mcp_server/src/integration-tests",
+    "test:mcp:integration:watch": "vitest packages/mcp_server/src/integration-tests",
+    "test:mcp:debug": "vitest --reporter=verbose packages/mcp_server/src/integration-tests"
   }
 }
 ```

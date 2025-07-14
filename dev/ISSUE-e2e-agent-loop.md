@@ -1,10 +1,10 @@
 # E2E Tests for Agent Loop
 
 ## Overview
-Create end-to-end tests for the `SimpleAgent` class in `packages/telegram-bot/src/agent/simple-agent.ts` that test the complete agent loop workflow without Telegram integration.
+Create end-to-end tests for the `SimpleAgent` class in `packages/telegram_bot/src/agent/simple-agent.ts` that test the complete agent loop workflow without Telegram integration.
 
 ## Test Structure
-1. **Test File**: `packages/telegram-bot/src/agent/simple-agent.test.ts`
+1. **Test File**: `packages/telegram_bot/src/agent/simple-agent.test.ts`
 2. **Test Setup**: Mock Telegram context, real MCP server integration, real CouchDB
 3. **Test Flow**: Input message → Agent processes → Verify todo created in CouchDB
 
@@ -94,9 +94,9 @@ it('should handle complex requests requiring multiple tool calls', async () => {
 ```
 
 ## Files to Create
-1. `packages/telegram-bot/src/agent/simple-agent.test.ts` - Main test file
-2. `packages/telegram-bot/src/agent/__fixtures__/mock-telegram-context.ts` - Mock helpers
-3. Updates to `packages/telegram-bot/vitest.config.ts` - Test configuration
+1. `packages/telegram_bot/src/agent/simple-agent.test.ts` - Main test file
+2. `packages/telegram_bot/src/agent/__fixtures__/mock-telegram-context.ts` - Mock helpers
+3. Updates to `packages/telegram_bot/vitest.config.ts` - Test configuration
 
 ## Mock Strategy
 - **Mock**: Telegram-specific functionality (reply, typing indicators)

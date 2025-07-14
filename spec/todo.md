@@ -1,2 +1,1 @@
-- read spec/todos/done/2025-07-13-13-07-22-better-package-names.md - it looks like we missed renaming some references across the codebase. check the code base for old package names and update everywereh.
 - productionize - at the moment i'm running just a local dev environment. we need to improve the whole project to be able to be deployable.
