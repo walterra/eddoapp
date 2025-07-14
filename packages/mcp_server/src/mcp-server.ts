@@ -112,7 +112,7 @@ server.addTool({
 🧠 MEMORY SYSTEM - HIGHEST PRIORITY:
 When the user asks to remember something, create a todo with:
 - tags: ["user:memory"]
-- title: Brief summary of what to remember  
+- title: Brief summary of what to remember
 - description: Full details to remember
 - context: "memory" (NOT "private" - ALWAYS "memory")
 - due: Current date in ISO format ending with T23:59:59.999Z
@@ -131,13 +131,13 @@ When creating todos, intelligently add appropriate GTD tags based on the nature 
 
 - "gtd:next" for clear, actionable items that are ready to be done
   Examples: "Call John", "Send email", "Buy groceries", "Review document"
-  
+
 - "gtd:project" for multi-step outcomes that require planning
   Examples: "Plan vacation", "Hire developer", "Redesign website", "Organize event"
-  
+
 - "gtd:waiting" for items blocked by others or external dependencies
   Examples: "Wait for budget approval", "Waiting for client response", "Pending review"
-  
+
 - "gtd:someday" for vague, future, or low-priority items
   Examples: "Maybe learn Spanish", "Consider new laptop", "Research topic", "Explore idea"
 
@@ -1082,7 +1082,6 @@ server.addTool({
       .enum([
         'overview',
         'datamodel',
-        'tools',
         'examples',
         'tagstats',
         'memories',
@@ -1205,19 +1204,6 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
   title: string;            // Todo title
   version: 'alpha3';        // Schema version
 }`,
-
-      tools: `# Available Tools
-
-1. **createTodo** - Create a new todo item
-2. **listTodos** - List todos with optional filters (context, completed, date range)
-3. **updateTodo** - Update an existing todo's properties
-4. **toggleTodoCompletion** - Mark todo as completed/uncompleted (handles repeating)
-5. **deleteTodo** - Permanently delete a todo
-6. **startTimeTracking** - Start tracking time for a todo
-7. **stopTimeTracking** - Stop active time tracking
-8. **getActiveTimeTracking** - Get todos with active time tracking
-9. **getServerInfo** - Get this documentation
-10. **getUserInfo** - Get current authenticated user information`,
 
       examples: `# Usage Examples
 

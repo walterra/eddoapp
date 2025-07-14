@@ -1,15 +1,32 @@
 import { getPersona } from '../ai/personas.js';
 import { appConfig } from '../utils/config.js';
 
-export function buildSystemPrompt(mcpServerInfo: string): string {
+export function buildSystemPrompt(
+  mcpServerInfo: string,
+  tools?: Array<{ name: string; description: string }>,
+): string {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
   const currentDateTime = new Date().toISOString();
+
+  // Generate tools section if tools are provided
+  const toolsSection = tools
+    ? `
+# Available Tools
+
+${tools.map((tool, index) => `${index + 1}. **${tool.name}** - ${tool.description}`).join('\n')}
+
+---
+
+`
+    : '';
 
   return `${persona.personalityPrompt}
 
 Current date and time: ${currentDateTime}
 
 ${mcpServerInfo}
+
+${toolsSection}
 
 To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
 

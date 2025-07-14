@@ -160,8 +160,12 @@ export class SimpleAgent {
         .join('\n');
     }
 
-    // Build system prompt once before the loop
-    const systemPrompt = buildSystemPrompt(mcpSystemInfo);
+    // Build system prompt once before the loop with dynamic tools
+    const tools = mcpClient.tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+    }));
+    const systemPrompt = buildSystemPrompt(mcpSystemInfo, tools);
 
     // Store system prompt in state for logging
     state.systemPrompt = systemPrompt;
