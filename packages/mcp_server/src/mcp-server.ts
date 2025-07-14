@@ -38,7 +38,7 @@ const server = new FastMCP<UserSession>({
     logLevel: 'info',
   },
   instructions:
-    'Eddo Todo MCP Server with API key authentication and GTD tag awareness. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n- DUE FIELD: For gtd:calendar = exact appointment time, for others = deadline/target\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n- tags: ["gtd:calendar"] + context: "work" for appointments/meetings\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
+    'Eddo Todo MCP Server with API key authentication and GTD tag awareness. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n- DUE FIELD: For gtd:calendar = exact appointment time, for others = deadline/target\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n- tags: ["gtd:calendar"] + context: "work" for appointments/meetings\n\nAPPOINTMENT CREATION RULE: For gtd:calendar items, ALWAYS prefix title with time in HH:MM format:\n- "Doctor appointment at 3pm" → title: "15:00 Doctor appointment"\n- "Meeting tomorrow at 10:30" → title: "10:30 Meeting"\n- "Lunch at noon" → title: "12:00 Lunch"\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
 
   // Authentication function - runs for each request
   authenticate: (request) => {
@@ -133,17 +133,21 @@ When creating todos, intelligently add appropriate GTD tags based on the nature 
 - "gtd:calendar" for time-specific appointments and meetings
   Examples: "Doctor appointment", "Team meeting", "Conference call", "Flight departure"
   Note: Use exact appointment time in due field, not deadline
+  IMPORTANT: For gtd:calendar items, prefix the title with time in HH:MM format (24-hour)
+  Example: "15:00 Doctor appointment", "10:30 Team meeting", "08:45 Flight to Paris"
 
 Usage examples:
 - Actionable: {"title": "Buy groceries", "tags": ["gtd:next"], "context": "private"}
 - Project: {"title": "Plan team retreat", "tags": ["gtd:project"], "context": "work"}
 - Waiting: {"title": "Wait for budget approval", "tags": ["gtd:waiting"], "context": "work"}
 - Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}
-- Appointment: {"title": "Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}`,
+- Appointment: {"title": "15:00 Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}`,
   parameters: z.object({
     title: z
       .string()
-      .describe('The main title/name of the todo item (required)'),
+      .describe(
+        'The main title/name of the todo item (required). For gtd:calendar items, prefix with time in HH:MM format (24-hour), e.g., "15:00 Doctor appointment"',
+      ),
     description: z
       .string()
       .default('')
