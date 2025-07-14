@@ -35,6 +35,10 @@ CRITICAL: NEVER create todos without due dates. Always parse and provide an ISO 
 
 Infer a fitting context from the users intent, default context: private
 
+IMPORTANT: For memory requests (when user asks to "remember" something):
+- ALWAYS use context "memory" (this overrides the default "private")  
+- ALWAYS use due date as TODAY'S date at 23:59:59.999Z (not some future date like end of year)
+
 SPECIAL URL HANDLING: If the user's message contains only a URL (or URL with minimal text), automatically:
 1. Create a todo with context "read-later"
 2. Save the URL in the link attribute

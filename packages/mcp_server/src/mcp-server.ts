@@ -109,6 +109,17 @@ server.addTool({
   name: 'createTodo',
   description: `Create a new todo item in the authenticated user's database with GTD tag support.
 
+🧠 MEMORY SYSTEM - HIGHEST PRIORITY:
+When the user asks to remember something, create a todo with:
+- tags: ["user:memory"]
+- title: Brief summary of what to remember  
+- description: Full details to remember
+- context: "memory" (NOT "private" - ALWAYS "memory")
+- due: Current date in ISO format ending with T23:59:59.999Z
+
+Examples (using TODAY'S date):
+- User says "remember my favorite coffee is espresso" → {"title": "Coffee preference", "description": "User's favorite coffee is espresso", "tags": ["user:memory"], "context": "memory", "due": "${new Date().toISOString().split('T')[0]}T23:59:59.999Z"}
+
 Creates a TodoAlpha3 object with:
 - Auto-generated ID (current ISO timestamp)
 - Empty time tracking (active: {})
@@ -143,17 +154,9 @@ Usage examples:
 - Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}
 - Appointment: {"title": "15:00 Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}
 
-MEMORY SYSTEM:
-When the user asks to remember something, create a todo with:
-- tags: ["user:memory"]
-- title: Brief summary of what to remember
-- description: Full details to remember
-- context: "memory"
-- due: Current date
-
-Examples:
-- User says "remember my favorite coffee is espresso" → {"title": "Coffee preference", "description": "User's favorite coffee is espresso", "tags": ["user:memory"], "context": "memory"}
-- User says "remember I have a meeting with John on Fridays" → {"title": "Weekly meeting schedule", "description": "User has a meeting with John on Fridays", "tags": ["user:memory"], "context": "memory"}`,
+🧠 CRITICAL REMINDER: For memory requests (user says "remember..."):
+- ALWAYS use context "memory" - never "private" or any other context!
+- ALWAYS use due date as TODAY'S date at 23:59:59.999Z - NEVER use future dates like 2025-12-31!`,
   parameters: z.object({
     title: z
       .string()
