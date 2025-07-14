@@ -143,47 +143,93 @@ stevensDemo implements a sophisticated AI butler system with persistent chat his
 
 ## Technical Architecture Comparison
 
+### Service Isolation Architecture
+
+**Required Service Boundaries:**
+
+1. **MCP Server** (Todo Service):
+   - **Database Access**: ONLY `user-todos-{userId}` databases
+   - **Responsibilities**: Todo CRUD, time tracking, context management
+   - **Restrictions**: NO access to chat/memory databases
+
+2. **Telegram Bot Server** (Chat Service):
+   - **Database Access**: OPTIONAL `user-chat-{userId}` databases (opt-in feature)
+   - **Basic Mode**: Stateless operation (current functionality)
+   - **Enhanced Mode**: Chat storage, conversation context, memory extraction
+   - **Todo Operations**: MUST use MCP server (no direct todo DB access)
+
+**Two-Tier Functionality:**
+
+**Basic Mode (No Database):**
+- ✅ Current stateless bot functionality
+- ✅ Todo operations via MCP server
+- ✅ Simple command responses
+- ❌ No chat history persistence
+- ❌ No conversation context
+- ❌ No memory extraction
+
+**Enhanced Mode (Opt-in Database):**
+- ✅ All Basic Mode features
+- ✅ Persistent chat history
+- ✅ Conversation context across sessions
+- ✅ Memory extraction and storage
+- ✅ Personalized responses
+- ✅ Daily briefings
+
+**Security Benefits:**
+- **Principle of Least Privilege**: Each service accesses only required data
+- **Data Isolation**: Chat history separated from todo data
+- **Clear API Boundaries**: All todo operations go through MCP protocol
+- **Audit Trail**: All cross-service communication via MCP calls
+- **Optional Privacy**: Users can choose basic mode for no data persistence
+
 ### Database Design
 
-| Feature | stevensDemo | Eddo |
-|---------|-------------|------|
-| **Chat History** | ✅ Dedicated table | ❌ No persistence |
-| **Memory System** | ✅ Flexible schema | ❌ Task-focused only |
-| **Data Import** | ✅ Multiple sources | ❌ Manual entry only |
-| **User Context** | ✅ Persistent memories | ❌ No user context |
+| Feature | stevensDemo | Eddo Basic | Eddo Enhanced |
+|---------|-------------|------------|---------------|
+| **Chat History** | ✅ Dedicated table | ❌ No persistence | ✅ Optional CouchDB |
+| **Memory System** | ✅ Flexible schema | ❌ Task-focused only | ✅ Optional memories |
+| **Data Import** | ✅ Multiple sources | ❌ Manual entry only | ✅ Planned features |
+| **User Context** | ✅ Persistent memories | ❌ No user context | ✅ Optional context |
+| **Service Isolation** | ❌ Shared database | ✅ Stateless isolation | ✅ Database separation |
+| **Privacy Level** | ❌ Always persistent | ✅ No data stored | ✅ User choice |
 
 ### AI Integration
 
-| Feature | stevensDemo | Eddo |
-|---------|-------------|------|
-| **Conversation History** | ✅ Full context | ❌ Stateless |
-| **Memory Management** | ✅ AI-driven CRUD | ❌ Manual only |
-| **Proactive Engagement** | ✅ Daily briefings | ❌ Reactive only |
-| **Persona Consistency** | ✅ Defined character | ❌ Basic implementation |
+| Feature | stevensDemo | Eddo Basic | Eddo Enhanced |
+|---------|-------------|------------|---------------|
+| **Conversation History** | ✅ Full context | ❌ Stateless | ✅ Optional context |
+| **Memory Management** | ✅ AI-driven CRUD | ❌ Manual only | ✅ Optional AI memories |
+| **Proactive Engagement** | ✅ Daily briefings | ❌ Reactive only | ✅ Optional briefings |
+| **Persona Consistency** | ✅ Defined character | ✅ Basic Mr. Stevens | ✅ Enhanced persona |
 
 ## Implementation Recommendations
 
 ### High Priority (Immediate Impact)
 
-1. **Chat History Persistence with Intelligent Context Management**
-   - Implement **per-user database architecture** (consistent with eddo's MCP server pattern)
-   - Add chat history storage using CouchDB/PouchDB JSON documents
+1. **Optional Chat History Persistence with Intelligent Context Management**
+   - Implement **opt-in per-user database architecture** (consistent with eddo's MCP server pattern)
+   - Add **configuration option** to enable/disable chat history storage
+   - **Basic Mode**: Keep current stateless functionality as default
+   - **Enhanced Mode**: Add chat history storage using CouchDB/PouchDB JSON documents
    - Implement **token-based context limits** (not just message counts)
    - Add **sliding window approach**: Keep recent messages + summarized older context
    - Implement **conversation summarization** for long-term context preservation
    - Add **memory extraction** from conversations to permanent storage
 
-2. **Memory System Foundation**
-   - Create `memories` table alongside existing todo schema
-   - Implement basic memory CRUD operations
-   - Add AI-driven memory extraction from conversations
+2. **Optional Memory System Foundation**
+   - **Basic Mode**: No memory storage (current functionality)
+   - **Enhanced Mode**: Create `memories` collection in chat database
+   - Implement basic memory CRUD operations (Enhanced Mode only)
+   - Add AI-driven memory extraction from conversations (Enhanced Mode only)
 
 ### Medium Priority (Enhanced Experience)
 
-3. **Daily Briefings**
-   - Add scheduled task summaries
-   - Implement productivity insights
-   - Create automated deadline reminders
+3. **Optional Daily Briefings**
+   - **Basic Mode**: No automated briefings (current functionality)
+   - **Enhanced Mode**: Add scheduled task summaries
+   - **Enhanced Mode**: Implement productivity insights
+   - **Enhanced Mode**: Create automated deadline reminders
 
 4. **External Data Integration**
    - Add weather API for location-aware suggestions
@@ -208,9 +254,10 @@ Based on stevensDemo's limitations, eddo should implement more sophisticated con
 
 ### Recommended Approach
 
-1. **Per-User Database Architecture**
+1. **Optional Per-User Database Architecture with Service Isolation**
    ```typescript
-   // Per-user database structure (consistent with eddo's MCP pattern)
+   // TELEGRAM BOT SERVER: Optional chat database (user-chat-{userId})
+   // Only exists in Enhanced Mode
    interface UserChatDocument {
      _id: string;                    // Message ID (timestamp-based)
      _rev?: string;                  // CouchDB revision
@@ -224,6 +271,30 @@ Based on stevensDemo's limitations, eddo should implement more sophisticated con
      conversationId?: string;        // Conversation grouping
      extractedMemories?: string[];   // References to extracted memories
    }
+
+   // MCP SERVER: Todo database (user-todos-{userId})
+   // Required for both Basic and Enhanced modes
+   interface TodoDocument {
+     _id: string;                    // ISO timestamp of creation
+     _rev?: string;                  // CouchDB revision
+     active: Record<string, string | null>; // Time tracking entries
+     completed: string | null;
+     context: string;                // GTD context
+     description: string;
+     due: string;                    // ISO date string
+     link: string | null;
+     repeat: number | null;          // Days
+     tags: string[];
+     title: string;
+     version: 'alpha3';
+   }
+
+   // Configuration for bot mode
+   interface BotConfig {
+     enhancedMode: boolean;          // Enable chat history persistence
+     databaseEnabled: boolean;       // Enable CouchDB for chat features
+     mcpServerUrl: string;           // Required for todo operations
+   }
    ```
 
 2. **Token-Based Context Management**
@@ -236,9 +307,10 @@ Based on stevensDemo's limitations, eddo should implement more sophisticated con
    }
    ```
 
-3. **Memory System Integration**
+3. **Optional Memory System Integration with Service Isolation**
    ```typescript
-   // Memory documents (per-user database)
+   // TELEGRAM BOT SERVER: Optional memory documents (user-chat-{userId} database)
+   // Only exists in Enhanced Mode
    interface UserMemoryDocument {
      _id: string;                    // Memory ID
      _rev?: string;                  // CouchDB revision
@@ -250,19 +322,35 @@ Based on stevensDemo's limitations, eddo should implement more sophisticated con
      createdAt: number;              // Unix timestamp
      conversationRefs?: string[];    // References to related chat messages
    }
+
+   // Service Communication Pattern:
+   // Telegram Bot → MCP Server for todo operations (Both Basic and Enhanced modes)
+   interface MCPTodoOperation {
+     method: 'create_todo' | 'update_todo' | 'delete_todo' | 'get_todos';
+     params: {
+       userId: string;
+       todoData?: Partial<TodoDocument>;
+       filters?: Record<string, any>;
+     };
+   }
    ```
 
-4. **Context Management Strategy**
-   - **Recent Messages**: Store last 15 messages as individual documents
-   - **Conversation Summaries**: Generate summaries for older message groups
-   - **Memory Extraction**: Extract task-related information to permanent memories
-   - **Token Estimation**: Track token usage for intelligent context window management
+4. **Context Management Strategy (Enhanced Mode Only)**
+   - **Basic Mode**: No context management (stateless)
+   - **Enhanced Mode**: Store last 15 messages as individual documents
+   - **Enhanced Mode**: Generate summaries for older message groups
+   - **Enhanced Mode**: Extract task-related information to permanent memories
+   - **Enhanced Mode**: Track token usage for intelligent context window management
 
-5. **Database Benefits for Eddo**
-   - **Security**: Complete user isolation (no shared data)
-   - **Consistency**: Matches existing MCP server architecture
-   - **Scalability**: Per-user backup/restore capabilities
-   - **Offline-First**: Leverages existing PouchDB/CouchDB sync
+5. **Database Benefits for Eddo with Optional Service Isolation**
+   - **Security**: Complete user isolation (no shared data) + service isolation
+   - **Consistency**: Matches existing MCP server architecture with clear boundaries
+   - **Scalability**: Per-user backup/restore capabilities per service
+   - **Offline-First**: Leverages existing PouchDB/CouchDB sync with service separation
+   - **Principle of Least Privilege**: Each service accesses only required databases
+   - **Clear API Boundaries**: All todo operations must go through MCP protocol
+   - **Privacy Choice**: Users can opt for Basic Mode with no data persistence
+   - **Gradual Migration**: Users can upgrade from Basic to Enhanced Mode
 
 This approach would significantly improve upon stevensDemo's naive "last N messages" strategy while maintaining eddo's productivity focus.
 
