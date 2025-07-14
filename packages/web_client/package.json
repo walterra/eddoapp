@@ -39,6 +39,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "postinstall": "flowbite-react patch"
   }
 }

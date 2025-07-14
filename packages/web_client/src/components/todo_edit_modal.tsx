@@ -6,7 +6,16 @@ import {
   getFormattedDuration,
   getRepeatTodo,
 } from '@eddo/core';
-import { Button, Checkbox, Label, Modal, TextInput } from 'flowbite-react';
+import {
+  Button,
+  Checkbox,
+  Label,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  TextInput,
+} from 'flowbite-react';
 import React, { type FC, useEffect, useState } from 'react';
 
 import { useTags } from '../hooks/use_tags';
@@ -93,8 +102,8 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
 
   return (
     <Modal onClose={onClose} show={show}>
-      <Modal.Header>Edit Todo</Modal.Header>
-      <Modal.Body>
+      <ModalHeader>Edit Todo</ModalHeader>
+      <ModalBody>
         {error && (
           <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-700 dark:bg-red-900">
             <div className="flex items-start">
@@ -147,13 +156,13 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
         <form className="flex flex-col gap-4">
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="eddoTodoCreationDate" value="Creation date" />
+              <Label htmlFor="eddoTodoCreationDate">Creation date</Label>
             </div>
             {editedTodo._id}
           </div>
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="eddoTodoContext" value="Context" />
+              <Label htmlFor="eddoTodoContext">Context</Label>
             </div>
             <TextInput
               aria-label="Context"
@@ -171,7 +180,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
           </div>
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="eddoTodoTitle" value="Todo" />
+              <Label htmlFor="eddoTodoTitle">Todo</Label>
             </div>
             <TextInput
               aria-label="Todo"
@@ -189,7 +198,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
           </div>
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="eddoTodoLink" value="Link" />
+              <Label htmlFor="eddoTodoLink">Link</Label>
             </div>
             <TextInput
               aria-label="Link"
@@ -207,7 +216,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
           </div>
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="eddoTodoTags" value="Tags" />
+              <Label htmlFor="eddoTodoTags">Tags</Label>
             </div>
             <TagInput
               onChange={(tags) =>
@@ -225,7 +234,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
             <div className="-mx-3 mb-2 flex flex-wrap items-end">
               <div className="mb-6 grow px-3 md:mb-0">
                 <div className="mb-2 block">
-                  <Label htmlFor="eddoTodoDue" value="Due date" />
+                  <Label htmlFor="eddoTodoDue">Due date</Label>
                 </div>
                 <TextInput
                   aria-label="Due date"
@@ -260,7 +269,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
           </div>
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="eddoTodoRepeat" value="Repeat in X days" />
+              <Label htmlFor="eddoTodoRepeat">Repeat in X days</Label>
             </div>
             <TextInput
               aria-label="Repeat"
@@ -299,7 +308,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
           </div>
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="" value="Time tracking" />
+              <Label htmlFor="">Time tracking</Label>
             </div>
             {activeArray.map(([from, to], index) => (
               <div className="-mx-3 mb-2 flex flex-wrap items-end" key={index}>
@@ -350,8 +359,8 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
             ))}
           </div>
         </form>
-      </Modal.Body>
-      <Modal.Footer>
+      </ModalBody>
+      <ModalFooter>
         <div className="flex w-full justify-between">
           <div>
             <Button
@@ -371,7 +380,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
             </Button>
           </div>
         </div>
-      </Modal.Footer>
+      </ModalFooter>
     </Modal>
   );
 };
