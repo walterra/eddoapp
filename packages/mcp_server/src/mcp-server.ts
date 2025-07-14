@@ -38,7 +38,7 @@ const server = new FastMCP<UserSession>({
     logLevel: 'info',
   },
   instructions:
-    'Eddo Todo MCP Server with API key authentication and GTD tag awareness. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday (for actionability)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
+    'Eddo Todo MCP Server with API key authentication and GTD tag awareness. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n- DUE FIELD: For gtd:calendar = exact appointment time, for others = deadline/target\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n- tags: ["gtd:calendar"] + context: "work" for appointments/meetings\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
 
   // Authentication function - runs for each request
   authenticate: (request) => {
@@ -130,11 +130,16 @@ When creating todos, intelligently add appropriate GTD tags based on the nature 
 - "gtd:someday" for vague, future, or low-priority items
   Examples: "Maybe learn Spanish", "Consider new laptop", "Research topic", "Explore idea"
 
+- "gtd:calendar" for time-specific appointments and meetings
+  Examples: "Doctor appointment", "Team meeting", "Conference call", "Flight departure"
+  Note: Use exact appointment time in due field, not deadline
+
 Usage examples:
 - Actionable: {"title": "Buy groceries", "tags": ["gtd:next"], "context": "private"}
 - Project: {"title": "Plan team retreat", "tags": ["gtd:project"], "context": "work"}
 - Waiting: {"title": "Wait for budget approval", "tags": ["gtd:waiting"], "context": "work"}
-- Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}`,
+- Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}
+- Appointment: {"title": "Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}`,
   parameters: z.object({
     title: z
       .string()
@@ -155,13 +160,13 @@ Usage examples:
       .string()
       .optional()
       .describe(
-        'Due date in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ). Defaults to 23:59:59.999Z of current day if not provided',
+        'Due date in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ). For gtd:calendar items, use exact appointment time. For other items, use deadline/target date. Defaults to 23:59:59.999Z of current day if not provided',
       ),
     tags: z
       .array(z.string())
       .default([])
       .describe(
-        'Array of tags for categorization and filtering. Should include appropriate GTD tags (gtd:next, gtd:project, gtd:waiting, gtd:someday) based on the item type. Also supports custom categories, projects, and priorities.',
+        'Array of tags for categorization and filtering. Should include appropriate GTD tags (gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar) based on the item type. Also supports custom categories, projects, and priorities.',
       ),
     repeat: z
       .number()
@@ -272,6 +277,7 @@ GTD-AWARE QUERY HANDLING:
 - "What am I waiting for?" → filter by gtd:waiting tags
 - "Show my projects" → filter by gtd:project tags
 - "Someday items" → filter by gtd:someday tags
+- "What's my schedule?" / "Show appointments" → filter by gtd:calendar tags
 - "What's next at work?" → combine gtd:next + work context
 
 Usage examples:
@@ -280,6 +286,8 @@ Usage examples:
 - Work next actions: {"context": "work", "tags": ["gtd:next"]}
 - Projects: {"tags": ["gtd:project"]}
 - Waiting items: {"tags": ["gtd:waiting"]}
+- Appointments: {"tags": ["gtd:calendar"]}
+- Today's appointments: {"tags": ["gtd:calendar"], "dateFrom": "2025-07-15T00:00:00.000Z", "dateTo": "2025-07-15T23:59:59.999Z"}
 - Work projects: {"context": "work", "tags": ["gtd:project"]}
 - Combined filters: {"context": "work", "completed": false, "limit": 10}`,
   parameters: z.object({
