@@ -27,3 +27,7 @@ The system leverages the existing todo infrastructure and MCP server architectur
 - [x] Automated test: Test memory retrieval via `listTodos` filter for `user:memory` tag
 - [ ] User test: Ask bot to "remember my favorite coffee is espresso" and verify todo is created with correct tag
 - [ ] User test: In new conversation, reference the remembered information and verify bot has access to it
+
+## Notes
+
+**Architecture Improvement**: Moved memory creation instructions from Telegram bot system prompt to MCP server `createTodo` tool description. This keeps the Telegram bot agnostic and follows proper separation of concerns - the MCP server now contains all the memory-specific instructions while the bot simply displays retrieved memories as context.

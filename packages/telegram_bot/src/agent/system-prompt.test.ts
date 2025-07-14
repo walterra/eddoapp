@@ -48,11 +48,6 @@ describe('buildSystemPrompt', () => {
     expect(result).toContain('USER MEMORIES:');
     expect(result).toContain('- Coffee preference: User likes espresso');
     expect(result).toContain('- Meeting time: Prefers morning meetings');
-    expect(result).toContain(
-      'When the user asks to remember something, create a todo with:',
-    );
-    expect(result).toContain('tags: ["user:memory"]');
-    expect(result).toContain('context: "memory"');
   });
 
   it('should handle empty memories string', () => {
@@ -62,17 +57,12 @@ describe('buildSystemPrompt', () => {
     expect(result).not.toContain('USER MEMORIES:');
   });
 
-  it('should include memory creation instructions when memories are provided', () => {
+  it('should include memory context when memories are provided', () => {
     const memories = '- Some memory: User preference';
     const result = buildSystemPrompt(mockTools, memories);
 
-    expect(result).toContain(
-      'When the user asks to remember something, create a todo with:',
-    );
-    expect(result).toContain('- tags: ["user:memory"]');
-    expect(result).toContain('- title: Brief summary of what to remember');
-    expect(result).toContain('- description: Full details to remember');
-    expect(result).toContain('- context: "memory"');
-    expect(result).toContain('- due: Current date');
+    expect(result).toContain('USER MEMORIES:');
+    expect(result).toContain('- Some memory: User preference');
+    expect(result).not.toContain('When the user asks to remember something');
   });
 });

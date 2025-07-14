@@ -141,7 +141,19 @@ Usage examples:
 - Project: {"title": "Plan team retreat", "tags": ["gtd:project"], "context": "work"}
 - Waiting: {"title": "Wait for budget approval", "tags": ["gtd:waiting"], "context": "work"}
 - Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}
-- Appointment: {"title": "15:00 Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}`,
+- Appointment: {"title": "15:00 Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}
+
+MEMORY SYSTEM:
+When the user asks to remember something, create a todo with:
+- tags: ["user:memory"]
+- title: Brief summary of what to remember
+- description: Full details to remember
+- context: "memory"
+- due: Current date
+
+Examples:
+- User says "remember my favorite coffee is espresso" → {"title": "Coffee preference", "description": "User's favorite coffee is espresso", "tags": ["user:memory"], "context": "memory"}
+- User says "remember I have a meeting with John on Fridays" → {"title": "Weekly meeting schedule", "description": "User has a meeting with John on Fridays", "tags": ["user:memory"], "context": "memory"}`,
   parameters: z.object({
     title: z
       .string()

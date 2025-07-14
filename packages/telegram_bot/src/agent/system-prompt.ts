@@ -17,13 +17,6 @@ export function buildSystemPrompt(tools: MCPTool[], memories?: string): string {
 USER MEMORIES:
 ${memories}
 
-When the user asks to remember something, create a todo with:
-- tags: ["user:memory"]
-- title: Brief summary of what to remember
-- description: Full details to remember
-- context: "memory" 
-- due: Current date
-
 `
     : '';
 
