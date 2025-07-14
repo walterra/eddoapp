@@ -30,4 +30,8 @@ The system leverages the existing todo infrastructure and MCP server architectur
 
 ## Notes
 
-**Architecture Improvement**: Moved memory creation instructions from Telegram bot system prompt to MCP server `createTodo` tool description. This keeps the Telegram bot agnostic and follows proper separation of concerns - the MCP server now contains all the memory-specific instructions while the bot simply displays retrieved memories as context.
+**Architecture Improvements**: 
+1. **Memory Creation**: Moved memory creation instructions from Telegram bot system prompt to MCP server `createTodo` tool description 
+2. **Memory Retrieval**: Moved memory retrieval from Telegram bot direct database access to MCP server `getServerInfo` tool with new 'memories' section
+
+This keeps the Telegram bot completely agnostic - it no longer contains any memory-specific logic. The MCP server now handles all memory operations through its tools, maintaining proper separation of concerns.

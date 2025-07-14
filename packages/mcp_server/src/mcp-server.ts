@@ -1003,7 +1003,7 @@ server.addTool({
     .describe(
       'No parameters required - returns all todos with active time tracking',
     ),
-  execute: async (args, context) => {
+  execute: async (_args, context) => {
     const db = getUserDb(context);
 
     context.log.info('Retrieving active time tracking todos for user', {
@@ -1076,7 +1076,15 @@ server.addTool({
     'Get comprehensive information about the Eddo MCP server with authentication, including data model, available tools, and usage examples',
   parameters: z.object({
     section: z
-      .enum(['overview', 'datamodel', 'tools', 'examples', 'tagstats', 'all'])
+      .enum([
+        'overview',
+        'datamodel',
+        'tools',
+        'examples',
+        'tagstats',
+        'memories',
+        'all',
+      ])
       .default('all')
       .describe('Specific section of documentation to retrieve'),
   }),
@@ -1126,6 +1134,39 @@ ${tagList}
         tagStatsSection = `# Top Used Tags
 
 Error retrieving tag statistics: ${error}`;
+      }
+    }
+
+    // Get user memories if needed
+    let memoriesSection = '';
+    if (args.section === 'memories' || args.section === 'all') {
+      try {
+        const memoryResult = await db.find({
+          selector: {
+            tags: { $elemMatch: { $eq: 'user:memory' } },
+          },
+          sort: [{ _id: 'desc' }],
+        });
+
+        const memories = memoryResult.docs || [];
+        const memoryList =
+          memories.length > 0
+            ? memories
+                .map((todo) => `- ${todo.title}: ${todo.description}`)
+                .join('\n')
+            : '- No memories found';
+
+        memoriesSection = `# User Memories
+
+Current stored memories for context:
+
+${memoryList}
+
+*Memories are stored as todos with tag 'user:memory'*`;
+      } catch (error) {
+        memoriesSection = `# User Memories
+
+Error retrieving memories: ${error}`;
       }
     }
 
@@ -1217,6 +1258,7 @@ curl -H "X-API-Key: your-api-key-here" http://localhost:3001/mcp
 }`,
 
       tagstats: tagStatsSection,
+      memories: memoriesSection,
     };
 
     if (args.section === 'all') {
@@ -1225,7 +1267,7 @@ curl -H "X-API-Key: your-api-key-here" http://localhost:3001/mcp
 
     return (
       sections[args.section] ||
-      'Invalid section. Choose from: overview, datamodel, tools, examples, tagstats, all'
+      'Invalid section. Choose from: overview, datamodel, tools, examples, tagstats, memories, all'
     );
   },
 });

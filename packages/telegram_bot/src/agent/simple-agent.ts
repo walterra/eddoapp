@@ -134,26 +134,20 @@ export class SimpleAgent {
         },
       });
 
-      // Retrieve memories before building system prompt
+      // Retrieve memories from MCP server
       let memories = '';
       try {
-        const memoryResult = await mcpClient.invoke('listTodos', {
-          tags: ['user:memory'],
+        const memoryResult = await mcpClient.invoke('getServerInfo', {
+          section: 'memories',
         });
-        if (
-          memoryResult &&
-          typeof memoryResult === 'object' &&
-          'data' in memoryResult
-        ) {
-          const memoryTodos =
-            (
-              memoryResult as {
-                data: Array<{ title: string; description: string }>;
-              }
-            ).data || [];
-          memories = memoryTodos
-            .map((todo) => `- ${todo.title}: ${todo.description}`)
-            .join('\n');
+        if (typeof memoryResult === 'string') {
+          // Extract just the memory list from the markdown response
+          const memoryMatch = memoryResult.match(
+            /Current stored memories for context:\n\n([\s\S]*?)\n\n\*/,
+          );
+          if (memoryMatch && memoryMatch[1]) {
+            memories = memoryMatch[1];
+          }
         }
       } catch (error) {
         logger.debug('Failed to retrieve memories, continuing without them', {
