@@ -1,3 +1,2 @@
 - read spec/todos/done/2025-07-13-13-07-22-better-package-names.md - it looks like we missed renaming some references across the codebase. check the code base for old package names and update everywereh.
-- at the moment the "due" attribute in eddo is ambiguous. for example, it can be the date of an appointment or it can be the due date of a longer running task. how can we make this more clear? evaluate: should we allow no due date to signal gtd "some day" style? should we use tags to distinguish between different types of todos in regards to the use of due date?
 - productionize - at the moment i'm running just a local dev environment. we need to improve the whole project to be able to be deployable.
