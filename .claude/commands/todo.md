@@ -103,26 +103,27 @@ src/notifications.ts # Core logic
      - Write confirmed content to spec/project-description.md
      - Read spec/project-description.md in full using Read tool
 
-3. **Ensure directory structure and check for orphaned tasks**:
-   - Create directories and find orphaned tasks:
+3. **Ensure directory structure and check for existing tasks**:
+   - Create directories and find all existing tasks:
      ```bash
-     mkdir -p spec spec/todos/work spec/todos/done && orphaned_count=0 && for d in spec/todos/work/*/task.md; do [ -f "$d" ] || continue; pid=$(grep "^**Agent PID:" "$d" | cut -d' ' -f3); [ -n "$pid" ] && ps -p "$pid" >/dev/null 2>&1 && continue; orphaned_count=$((orphaned_count + 1)); task_name=$(basename $(dirname "$d")); task_title=$(head -1 "$d" | sed 's/^# //'); echo "$orphaned_count. $task_name: $task_title"; done
+     mkdir -p spec spec/todos/work spec/todos/done && orphaned_count=0 && active_count=0 && for d in spec/todos/work/*/task.md; do [ -f "$d" ] || continue; pid=$(grep "^**Agent PID:" "$d" | cut -d' ' -f3); task_name=$(basename $(dirname "$d")); task_title=$(head -1 "$d" | sed 's/^# //'); if [ -n "$pid" ] && ps -p "$pid" >/dev/null 2>&1; then active_count=$((active_count + 1)); echo "ACTIVE $active_count. $task_name: $task_title"; else orphaned_count=$((orphaned_count + 1)); echo "ORPHANED $orphaned_count. $task_name: $task_title"; fi; done
      ```
-   - If orphaned tasks exist,
-     - Present the orphaned tasks to the user as a numbered list (the user can not see the Bash tool outputs in full!)
-     - STOP: "Found orphaned task(s). What would you like to do? (resume <number|name> / reset <number|name> / ignore all)"
-     - **resume <number>**:
-       - Get task name from numbered list
+   - If existing tasks found (orphaned or active),
+     - Present tasks to the user as numbered lists grouped by type (the user can not see the Bash tool outputs in full!)
+     - STOP: "Found existing task(s). What would you like to do? (resume <type:number|name> / reset <type:number|name> / ignore all / new)"
+     - **resume <type:number>** (e.g., "resume active:1" or "resume orphaned:2"):
+       - Get task name from the specified list (active or orphaned)
        - Read task.md, check Status field
-       - Update **Agent PID:** with current agent PID (Bash tool: echo $PPID)
+       - Update **Agent PID:** with current agent PID (Bash tool: echo $PPID) if resuming orphaned task
        - If "Refining": Continue from Phase 2 where it left off
        - If "In Progress": Continue from Phase 3, step 1 (Update task.md)
-     - **reset <number>**:
-       - Get task name from numbered list
+     - **reset <type:number>**:
+       - Get task name from the specified list
        - Read spec/todos/work/[task-name]/task.md in full, add it back to spec/todo.md
        - Delete spec/todos/work/[task-name]/
        - Continue to Phase 1
-     - **ignore all**: Continue to Phase 1 (leaves orphaned tasks as-is)
+     - **ignore all**: Continue to Phase 1 (leaves all existing tasks as-is)
+     - **new**: Continue to Phase 1 (start a new task from spec/todo.md)
 
 ### Phase 1: SELECT
 
