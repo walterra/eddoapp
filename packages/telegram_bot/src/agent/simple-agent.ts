@@ -117,6 +117,55 @@ export class SimpleAgent {
       toolResults: [],
     };
 
+    // Get comprehensive system information from MCP server (once before loop)
+    let mcpSystemInfo = '';
+    try {
+      const serverInfoResult = await mcpClient.invoke('getServerInfo', {
+        section: 'all',
+      });
+
+      // MCP server returns an array of content objects with type and text
+      if (Array.isArray(serverInfoResult) && serverInfoResult.length > 0) {
+        const textContent = serverInfoResult.find(
+          (content) => content.type === 'text',
+        );
+        if (textContent?.text) {
+          mcpSystemInfo = textContent.text;
+          logger.debug(
+            'Retrieved comprehensive server info from MCP content array',
+            {
+              length: textContent.text.length,
+              preview: textContent.text.substring(0, 200) + '...',
+            },
+          );
+        }
+      } else if (typeof serverInfoResult === 'string') {
+        // Fallback for direct string response
+        mcpSystemInfo = serverInfoResult;
+        logger.debug('Retrieved comprehensive server info as string', {
+          length: serverInfoResult.length,
+          preview: serverInfoResult.substring(0, 200) + '...',
+        });
+      }
+    } catch (error) {
+      logger.debug(
+        'Failed to retrieve server info, falling back to basic tools',
+        {
+          error,
+        },
+      );
+      // Fallback to basic tool list if getServerInfo fails
+      mcpSystemInfo = mcpClient.tools
+        .map((tool) => `- ${tool.name}: ${tool.description}`)
+        .join('\n');
+    }
+
+    // Build system prompt once before the loop
+    const systemPrompt = buildSystemPrompt(mcpSystemInfo);
+
+    // Store system prompt in state for logging
+    state.systemPrompt = systemPrompt;
+
     const maxIterations = 10;
     let iteration = 0;
 
@@ -134,34 +183,6 @@ export class SimpleAgent {
           done: state.done,
         },
       });
-
-      // Retrieve memories from MCP server
-      let memories = '';
-      try {
-        const memoryResult = await mcpClient.invoke('getServerInfo', {
-          section: 'memories',
-        });
-        if (typeof memoryResult === 'string') {
-          // Extract just the memory list from the markdown response
-          const memoryMatch = memoryResult.match(
-            /Current stored memories for context:\n\n([\s\S]*?)\n\n\*/,
-          );
-          if (memoryMatch && memoryMatch[1]) {
-            memories = memoryMatch[1];
-          }
-        }
-      } catch (error) {
-        logger.debug('Failed to retrieve memories, continuing without them', {
-          error,
-        });
-      }
-
-      const systemPrompt = buildSystemPrompt(mcpClient.tools, memories);
-
-      // Store system prompt in state for logging (only on first iteration)
-      if (iteration === 1) {
-        state.systemPrompt = systemPrompt;
-      }
 
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)

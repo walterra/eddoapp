@@ -37,3 +37,11 @@ The system leverages the existing todo infrastructure and MCP server architectur
 This keeps the Telegram bot completely agnostic - it no longer contains any memory-specific logic. The MCP server now handles all memory operations through its tools, maintaining proper separation of concerns.
 
 **Logging Enhancement**: Added system prompt to agent state logging. The system prompt (including retrieved memories) is now captured in the agent state logs at `packages/telegram_bot/logs/agent-states/` for debugging and analysis. This will help track how memories are being included in the AI context.
+
+**Major System Prompt Refactor**: Replaced separate tool descriptions with comprehensive `getServerInfo(section: 'all')` call. The system prompt now includes:
+- **Complete tool documentation** from MCP server 
+- **Tag statistics** showing most used tags
+- **User memories** for context-aware responses
+- **Data model info** and **usage examples**
+
+This provides much richer context to the AI while maintaining clean architecture - the Telegram bot gets all necessary information from a single MCP server call.

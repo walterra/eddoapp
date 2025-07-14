@@ -10,10 +10,12 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const MCP_URL = 'http://localhost:3002/mcp';
+const TEST_API_KEY = 'test-script-key';
 
 async function testMcpTool(toolName, args = {}) {
   console.log(`🚀 Testing MCP tool: ${toolName}`);
   console.log(`📡 Server URL: ${MCP_URL}`);
+  console.log(`🔑 API Key: ${TEST_API_KEY}`);
   console.log(`📋 Arguments:`, JSON.stringify(args, null, 2));
   console.log('');
 
@@ -22,8 +24,14 @@ async function testMcpTool(toolName, args = {}) {
   try {
     console.log('🔧 Creating MCP client...');
 
-    // Create transport
-    const transport = new StreamableHTTPClientTransport(new URL(MCP_URL));
+    // Create transport with authentication headers
+    const transport = new StreamableHTTPClientTransport(new URL(MCP_URL), {
+      requestInit: {
+        headers: {
+          'X-API-Key': TEST_API_KEY,
+        },
+      },
+    });
 
     // Create client
     client = new Client(

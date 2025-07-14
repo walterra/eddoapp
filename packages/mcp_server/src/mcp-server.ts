@@ -1145,13 +1145,17 @@ Error retrieving tag statistics: ${error}`;
           selector: {
             tags: { $elemMatch: { $eq: 'user:memory' } },
           },
-          sort: [{ _id: 'desc' }],
+          // Remove sort to avoid index requirement - memories will be in creation order
         });
 
         const memories = memoryResult.docs || [];
+        // Sort by _id (creation timestamp) in descending order in JavaScript
+        const sortedMemories = memories.sort((a, b) =>
+          b._id.localeCompare(a._id),
+        );
         const memoryList =
-          memories.length > 0
-            ? memories
+          sortedMemories.length > 0
+            ? sortedMemories
                 .map((todo) => `- ${todo.title}: ${todo.description}`)
                 .join('\n')
             : '- No memories found';

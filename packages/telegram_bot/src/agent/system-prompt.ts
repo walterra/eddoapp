@@ -1,28 +1,17 @@
 import { getPersona } from '../ai/personas.js';
-import type { MCPTool } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 
-export function buildSystemPrompt(tools: MCPTool[], memories?: string): string {
+export function buildSystemPrompt(mcpServerInfo: string): string {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
-
-  const toolDescriptions =
-    tools.map((tool) => `- ${tool.name}: ${tool.description}`).join('\n') ||
-    'No tools available';
-
   const currentDateTime = new Date().toISOString();
 
-  const memorySection = memories
-    ? `
-
-USER MEMORIES:
-${memories}
-
-`
-    : '';
-
   return `${persona.personalityPrompt}
-${memorySection}
+
 Current date and time: ${currentDateTime}
+
+${mcpServerInfo}
+
+To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
 
 COMMUNICATION STYLE: You are communicating via Telegram chat. Keep responses CONCISE and BRIEF:
 - Use 1-2 short sentences maximum for confirmations
@@ -55,11 +44,6 @@ Examples:
 - "https://github.com/user/repo" → title: "GitHub: user/repo"
 - "https://docs.example.com/guide" → title: "Example Docs: guide"
 - "https://blog.site.com/article-title" → title: "Site Blog: article-title"
-
-Available tools:
-${toolDescriptions}
-
-To use a tool, respond with: TOOL_CALL: {"name": "toolName", "parameters": {...}}
 
 CRITICAL: Follow each tool's parameter schema EXACTLY as defined. Each tool description includes usage examples showing the correct parameter format. Study the examples carefully and replicate the exact structure.
 
