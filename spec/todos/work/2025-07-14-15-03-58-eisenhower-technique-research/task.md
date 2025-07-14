@@ -51,3 +51,4 @@ After researching the Eisenhower Matrix and evaluating integration options, deci
 - Clean separation: generic system prompt, GTD-specific persona, MCP tool descriptions
 - Eliminated overlap between MCP server and GTD coach - MCP server takes precedence for technical details
 - Removed confusing next_actions from MCP server responses - agent loop drives workflow planning
+- Fixed tool execution flow to prevent hallucinations - LLM must call tools FIRST, then respond with actual data
