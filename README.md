@@ -2,166 +2,75 @@
 
 _Loosely GTD inspired todo & time tracking app_
 
-Consider this an alpha state proof of concept for now. I encourage you to give it a try and I'd love to hear your feedback, but don't expect 100% data integrity across updates.
+A monorepo containing a React frontend, MCP server, and Telegram bot with AI agent capabilities. Built with offline-first architecture using PouchDB for data persistence.
 
-The current version persists its data just locally within the browser via PouchDb.
+**⚠️ Alpha State**: This is a proof of concept. While we encourage you to try it and provide feedback, don't expect 100% data integrity across updates.
 
-The app is inspired by my offline/notebook based approach I've been using for 10+ years.
+The app is inspired by an offline/notebook based approach that has been refined over 10+ years.
 
-Notebook             |  Eddo
-:-------------------------:|:-------------------------:
-<img src="./img/notebook.jpg" alt="notebook" width="60%" /> | <img src="./img/screenshot.png" alt="Eddo screenshot" width="100%" />
+|                          Notebook                           |                                 Eddo                                  |
+| :---------------------------------------------------------: | :-------------------------------------------------------------------: |
+| <img src="./img/notebook.jpg" alt="notebook" width="60%" /> | <img src="./img/screenshot.png" alt="Eddo screenshot" width="100%" /> |
 
-- The form to add a todo consists of a context (e.g. home/work), the todo itself and a due date.
-- The whole view is filtered by calendar week and you page through weeks.
-- Each column can be treated similar to a GTD-like context.
-- Within a column, todos will be grouped by date.
-- Each todo has a start/pause button for time tracking.
-- Time tracked for todos will be summed up for each day and column.
+## Key Features
 
-## Setup
+- **GTD-Style Contexts**: Organize todos by context (e.g., work, home) in Kanban-style columns
+- **Calendar Week Navigation**: View and navigate todos by calendar week
+- **Time Tracking**: Start/pause timers for individual todos with daily summaries
+- **Offline-First**: PouchDB provides local storage with real-time sync capabilities
+- **AI Integration**: Telegram bot with Claude AI for natural language todo management
+- **MCP Server**: Programmatic access via Model Context Protocol
+- **Data Migration**: Automatic schema versioning and migration system
 
-- Clone the repository
-- Run `pnpm install` (or `npm install` if you don't use `pnpm`).
-- Run `pnpm dev` to give it a try as is on your local machine.
-- Run `pnpm build` to create a production build which you can deploy/use to your liking.
+## Architecture
 
-## Configuration
+A **monorepo** with four main packages:
 
-### AI Model Configuration
+- **Web Client**: React/TypeScript frontend with offline-first PouchDB storage
+- **MCP Server**: Model Context Protocol server for external integrations
+- **Core**: Shared types and utilities across packages
+- **Telegram Bot**: AI-powered bot using Anthropic Claude
 
-The application supports configurable AI models via the `LLM_MODEL` environment variable. Current available models:
+Key patterns: database-centric design, offline-first architecture, and automatic data migration.
 
-**Claude 4 Models (May 2025):**
-- `claude-opus-4-20250514` or `claude-opus-4-0` (most capable)
-- `claude-sonnet-4-20250514` or `claude-sonnet-4-0` (balanced performance)
-
-**Claude 3.7 Models:**
-- `claude-3-7-sonnet-20250219`
-
-**Claude 3.5 Models:**
-- `claude-3-5-haiku-20241022` (fastest)
-
-## MCP Server Testing
-
-The application includes an MCP (Model Context Protocol) server that provides programmatic access to the todo system. You can test the server's functionality using the included test script.
-
-### Testing the MCP Server
-
-**Prerequisites:**
-- Start the MCP server: `pnpm dev:server`
-- The server runs on port 3002 by default
-
-**Test all server information (including tag statistics):**
-```bash
-pnpm test:mcp
-```
-
-**Test specific sections:**
-```bash
-pnpm test:mcp tagstats    # Top used tags across all todos
-pnpm test:mcp overview    # Server overview and basic info
-pnpm test:mcp datamodel   # TodoAlpha3 schema documentation
-pnpm test:mcp tools       # Available MCP tools
-pnpm test:mcp examples    # Usage examples
-```
-
-The test script handles MCP session initialization and provides formatted output of the server's capabilities and statistics.
-
-### MCP Server Features
-
-The MCP server provides:
-
-- **Structured JSON responses**: All responses include execution metrics, error handling, and recovery suggestions
-- **API key authentication**: Per-user database isolation using X-API-Key headers
-- **Error handling**: Error recovery with actionable suggestions
-- **Performance metrics**: Execution time tracking and performance insights
-- **Auto-database creation**: Automatic database creation when needed
-
-## Backup & Restore
-
-The application includes backup and restore functionality for CouchDB databases, supporting both interactive and command-line usage.
-
-### Prerequisites
-
-- CouchDB server running and accessible
-- Environment variables configured (see Configuration section below)
-
-### Interactive Backup
-
-Create backups using an interactive CLI interface:
+## Quick Start
 
 ```bash
-pnpm backup:interactive
+# Install dependencies
+pnpm install
+
+# Start development (client + MCP server)
+pnpm dev
+
+# Run tests
+pnpm test
+
+# Build for production
+pnpm build
 ```
 
-The interactive backup tool will:
-- Discover available databases automatically
-- Allow you to select which database to backup
-- Show progress indicators and statistics
-- Save backups to the `backups/` directory with timestamped filenames
+**Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0
 
-### Interactive Restore
+## Components
 
-Restore databases using an interactive CLI interface:
+### Web Client
 
-```bash
-pnpm restore:interactive
-```
+React frontend with GTD-style contexts, calendar week navigation, and time tracking. Runs offline-first with PouchDB.
 
-The interactive restore tool will:
-- Show available backup files with metadata
-- Allow you to select which backup to restore
-- Create the target database if it doesn't exist
-- Provide progress indicators and confirmation prompts
+### Telegram Bot
 
-### Command Line Backup & Restore
+AI-powered bot with **agentic loop architecture** that understands complex, multi-step instructions. Features:
 
-**Direct backup with arguments:**
-```bash
-pnpm backup -- --database todos-dev --output ./backups/
-```
+- **Natural language processing**: "Add a work todo for tomorrow's meeting and set a reminder"
+- **Autonomous task execution**: Can break down complex requests into multiple actions
+- **Dynamic tool selection**: Chooses appropriate MCP tools based on user intent
 
-**Direct restore with arguments:**
-```bash
-pnpm restore -- --input ./backups/backup-file.json --database todos-dev
-```
+Set `TELEGRAM_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables to get started.
 
-### Backup Verification
+### MCP Server
 
-Verify the integrity of backup files:
+Provides programmatic access to todos via Model Context Protocol. Test with `pnpm test:mcp`.
 
-```bash
-pnpm backup:verify
-```
+## Development
 
-### Configuration
-
-Set the following environment variables for CouchDB access:
-
-```bash
-# Required
-COUCHDB_HOST=localhost
-COUCHDB_PORT=5984
-COUCHDB_PROTOCOL=http
-
-# Authentication (choose one method)
-# Method 1: Username/Password
-COUCHDB_USERNAME=your-username
-COUCHDB_PASSWORD=your-password
-
-# Method 2: Admin credentials  
-COUCHDB_ADMIN_USERNAME=admin
-COUCHDB_ADMIN_PASSWORD=admin-password
-```
-
-### Backup Features
-
-- **Automatic database discovery**: Lists all available databases
-- **Progress tracking**: Real-time progress indicators with file size and duration
-- **Timestamped filenames**: Automatic backup file naming with ISO timestamps
-- **Verification**: Built-in backup integrity checking
-- **Parallel processing**: Configurable parallelism for faster backups
-- **Error handling**: Error recovery and user-friendly messages
-- **Force restore**: Option to recreate databases before restore for clean state
-
+See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup, architecture, testing, and contribution guidelines.
