@@ -22,6 +22,7 @@ interface AgentState {
   done: boolean;
   output?: string;
   toolResults: Array<{ toolName: string; result: unknown; timestamp: number }>;
+  systemPrompt?: string;
 }
 
 interface ToolCall {
@@ -156,6 +157,12 @@ export class SimpleAgent {
       }
 
       const systemPrompt = buildSystemPrompt(mcpClient.tools, memories);
+
+      // Store system prompt in state for logging (only on first iteration)
+      if (iteration === 1) {
+        state.systemPrompt = systemPrompt;
+      }
+
       const conversationHistory = state.history
         .map((msg) => `${msg.role}: ${msg.content}`)
         .join('\n');
@@ -343,6 +350,8 @@ export class SimpleAgent {
           totalToolResults: state.toolResults.length,
           completed: state.done,
           hasOutput: !!state.output,
+          hasSystemPrompt: !!state.systemPrompt,
+          systemPromptLength: state.systemPrompt?.length || 0,
         },
       };
 

@@ -35,3 +35,5 @@ The system leverages the existing todo infrastructure and MCP server architectur
 2. **Memory Retrieval**: Moved memory retrieval from Telegram bot direct database access to MCP server `getServerInfo` tool with new 'memories' section
 
 This keeps the Telegram bot completely agnostic - it no longer contains any memory-specific logic. The MCP server now handles all memory operations through its tools, maintaining proper separation of concerns.
+
+**Logging Enhancement**: Added system prompt to agent state logging. The system prompt (including retrieved memories) is now captured in the agent state logs at `packages/telegram_bot/logs/agent-states/` for debugging and analysis. This will help track how memories are being included in the AI context.
