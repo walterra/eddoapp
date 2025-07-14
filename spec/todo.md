@@ -1,1 +1,2 @@
+- at the moment the telegram chat doesn't have persisted history. every chat message triggers a new agent loop that has a chat history for its agent run, but it cannot access prior messages. investigate the reference project for this in /Users/walterra/dev/stevensDemo and check how it stores chat history. then consider eddo's stack and come up with a fitting adaptation of this pattern.
 - productionize - at the moment i'm running just a local dev environment. we need to improve the whole project to be able to be deployable.
