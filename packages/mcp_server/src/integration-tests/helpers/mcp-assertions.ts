@@ -23,7 +23,6 @@ export interface MCPResponse {
   summary: string;
   data?: { id?: string; [key: string]: unknown };
   error?: string;
-  next_actions?: string[];
   recovery_suggestions?: string[];
   metadata?: Record<string, unknown>;
 }

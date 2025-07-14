@@ -38,7 +38,7 @@ const server = new FastMCP<UserSession>({
     logLevel: 'info',
   },
   instructions:
-    'Eddo Todo MCP Server with API key authentication. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.',
+    'Eddo Todo MCP Server with API key authentication and GTD tag awareness. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n- DUE FIELD: For gtd:calendar = exact appointment time, for others = deadline/target\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n- tags: ["gtd:calendar"] + context: "work" for appointments/meetings\n\nAPPOINTMENT CREATION RULE: For gtd:calendar items, ALWAYS prefix title with time in HH:MM format:\n- "Doctor appointment at 3pm" → title: "15:00 Doctor appointment"\n- "Meeting tomorrow at 10:30" → title: "10:30 Meeting"\n- "Lunch at noon" → title: "12:00 Lunch"\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
 
   // Authentication function - runs for each request
   authenticate: (request) => {
@@ -107,7 +107,7 @@ function getUserDb(context: {
 // Create Todo Tool
 server.addTool({
   name: 'createTodo',
-  description: `Create a new todo item in the authenticated user's database.
+  description: `Create a new todo item in the authenticated user's database with GTD tag support.
 
 Creates a TodoAlpha3 object with:
 - Auto-generated ID (current ISO timestamp)
@@ -115,14 +115,39 @@ Creates a TodoAlpha3 object with:
 - Not completed status (completed: null)
 - Default due date of end of current day if not specified
 
+GTD TAG GUIDELINES (for calling LLM):
+When creating todos, intelligently add appropriate GTD tags based on the nature of the item:
+
+- "gtd:next" for clear, actionable items that are ready to be done
+  Examples: "Call John", "Send email", "Buy groceries", "Review document"
+  
+- "gtd:project" for multi-step outcomes that require planning
+  Examples: "Plan vacation", "Hire developer", "Redesign website", "Organize event"
+  
+- "gtd:waiting" for items blocked by others or external dependencies
+  Examples: "Wait for budget approval", "Waiting for client response", "Pending review"
+  
+- "gtd:someday" for vague, future, or low-priority items
+  Examples: "Maybe learn Spanish", "Consider new laptop", "Research topic", "Explore idea"
+
+- "gtd:calendar" for time-specific appointments and meetings
+  Examples: "Doctor appointment", "Team meeting", "Conference call", "Flight departure"
+  Note: Use exact appointment time in due field, not deadline
+  IMPORTANT: For gtd:calendar items, prefix the title with time in HH:MM format (24-hour)
+  Example: "15:00 Doctor appointment", "10:30 Team meeting", "08:45 Flight to Paris"
+
 Usage examples:
-- Simple todo: {"title": "Buy groceries"}
-- With context: {"title": "Review budget", "context": "work", "due": "2025-07-15T23:59:59.999Z"}
-- With tags: {"title": "Call dentist", "context": "private", "tags": ["health", "urgent"]}`,
+- Actionable: {"title": "Buy groceries", "tags": ["gtd:next"], "context": "private"}
+- Project: {"title": "Plan team retreat", "tags": ["gtd:project"], "context": "work"}
+- Waiting: {"title": "Wait for budget approval", "tags": ["gtd:waiting"], "context": "work"}
+- Someday: {"title": "Maybe learn Spanish", "tags": ["gtd:someday"], "context": "private"}
+- Appointment: {"title": "15:00 Doctor appointment", "tags": ["gtd:calendar"], "context": "private", "due": "2025-07-15T15:00:00.000Z"}`,
   parameters: z.object({
     title: z
       .string()
-      .describe('The main title/name of the todo item (required)'),
+      .describe(
+        'The main title/name of the todo item (required). For gtd:calendar items, prefix with time in HH:MM format (24-hour), e.g., "15:00 Doctor appointment"',
+      ),
     description: z
       .string()
       .default('')
@@ -139,13 +164,13 @@ Usage examples:
       .string()
       .optional()
       .describe(
-        'Due date in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ). Defaults to 23:59:59.999Z of current day if not provided',
+        'Due date in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ). For gtd:calendar items, use exact appointment time. For other items, use deadline/target date. Defaults to 23:59:59.999Z of current day if not provided',
       ),
     tags: z
       .array(z.string())
       .default([])
       .describe(
-        'Array of tags for categorization and filtering. Can be used for projects, priorities, or custom categories',
+        'Array of tags for categorization and filtering. Should include appropriate GTD tags (gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar) based on the item type. Also supports custom categories, projects, and priorities.',
       ),
     repeat: z
       .number()
@@ -220,7 +245,6 @@ Usage examples:
           context: newTodo.context,
           due: newTodo.due,
         },
-        next_actions: ['listTodos', 'startTimeTracking'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'create',
@@ -252,11 +276,23 @@ server.addTool({
   name: 'listTodos',
   description: `List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), limit (number of results)
 
+GTD-AWARE QUERY HANDLING:
+- "What's next?" → filter by gtd:next tags, prioritize by context
+- "What am I waiting for?" → filter by gtd:waiting tags
+- "Show my projects" → filter by gtd:project tags
+- "Someday items" → filter by gtd:someday tags
+- "What's my schedule?" / "Show appointments" → filter by gtd:calendar tags
+- "What's next at work?" → combine gtd:next + work context
+
 Usage examples:
 - All todos: {}
-- Work todos: {"context": "work"}
-- Incomplete todos: {"completed": false}
-- This week's todos: {"dateFrom": "2025-07-10T00:00:00.000Z", "dateTo": "2025-07-16T23:59:59.999Z"}
+- Next actions: {"tags": ["gtd:next"]}
+- Work next actions: {"context": "work", "tags": ["gtd:next"]}
+- Projects: {"tags": ["gtd:project"]}
+- Waiting items: {"tags": ["gtd:waiting"]}
+- Appointments: {"tags": ["gtd:calendar"]}
+- Today's appointments: {"tags": ["gtd:calendar"], "dateFrom": "2025-07-15T00:00:00.000Z", "dateTo": "2025-07-15T23:59:59.999Z"}
+- Work projects: {"context": "work", "tags": ["gtd:project"]}
 - Combined filters: {"context": "work", "completed": false, "limit": 10}`,
   parameters: z.object({
     context: z
@@ -281,6 +317,12 @@ Usage examples:
       .number()
       .default(50)
       .describe('Maximum number of todos to return (default: 50)'),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe(
+        'Filter by specific tags (e.g., ["gtd:next"] for next actions, ["gtd:project"] for projects)',
+      ),
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
@@ -310,6 +352,10 @@ Usage examples:
         if (args.dateTo) {
           (selector.due as Record<string, unknown>)['$lte'] = args.dateTo;
         }
+      }
+
+      if (args.tags && args.tags.length > 0) {
+        selector.tags = { $in: args.tags };
       }
 
       // Build query with explicit sorting and index specification
@@ -357,10 +403,6 @@ Usage examples:
           limit: args.limit || 50,
           has_more: response.docs.length === (args.limit || 50),
         },
-        next_actions:
-          response.docs.length > 0
-            ? ['updateTodo', 'toggleTodoCompletion', 'startTimeTracking']
-            : ['createTodo'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'list',
@@ -386,7 +428,6 @@ Usage examples:
             limit: args.limit || 50,
             has_more: false,
           },
-          next_actions: ['createTodo'],
           metadata: {
             operation: 'list',
             timestamp: new Date().toISOString(),
@@ -427,7 +468,6 @@ server.addTool({
           dbName: 'default',
           authenticated: false,
         },
-        next_actions: ['getServerInfo'],
         metadata: {
           operation: 'user_info',
           timestamp: new Date().toISOString(),
@@ -443,7 +483,6 @@ server.addTool({
         dbName: context.session.dbName,
         authenticated: true,
       },
-      next_actions: ['listTodos', 'createTodo', 'getServerInfo'],
       metadata: {
         operation: 'user_info',
         timestamp: new Date().toISOString(),
@@ -529,11 +568,6 @@ IMPORTANT: Pass update fields directly as parameters, NOT wrapped in nested obje
             (k) => args[k as keyof typeof args] !== undefined && k !== 'id',
           ),
         },
-        next_actions: [
-          'listTodos',
-          'toggleTodoCompletion',
-          'startTimeTracking',
-        ],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'update',
@@ -632,7 +666,6 @@ server.addTool({
               new_due_date: newDueDate.toISOString(),
               repeat_interval: todo.repeat,
             },
-            next_actions: ['listTodos', 'startTimeTracking'],
             metadata: {
               execution_time: `${executionTime.toFixed(2)}ms`,
               operation: 'complete_and_repeat',
@@ -663,9 +696,6 @@ server.addTool({
           status,
           completed_at: todo.completed,
         },
-        next_actions: args.completed
-          ? ['listTodos', 'createTodo']
-          : ['startTimeTracking', 'updateTodo'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'toggle_completion',
@@ -730,7 +760,6 @@ server.addTool({
           title: todo.title,
           deleted_at: new Date().toISOString(),
         },
-        next_actions: ['listTodos', 'createTodo'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'delete',
@@ -809,7 +838,6 @@ server.addTool({
           started_at: now,
           active_sessions: Object.keys(todo.active).length,
         },
-        next_actions: ['stopTimeTracking', 'getActiveTimeTracking'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'start_time_tracking',
@@ -904,11 +932,6 @@ server.addTool({
               duration_formatted: `${Math.floor(duration / 60000)}m ${Math.floor((duration % 60000) / 1000)}s`,
             },
           },
-          next_actions: [
-            'getActiveTimeTracking',
-            'listTodos',
-            'startTimeTracking',
-          ],
           metadata: {
             execution_time: `${executionTime.toFixed(2)}ms`,
             operation: 'stop_time_tracking',
@@ -926,7 +949,6 @@ server.addTool({
           title: todo.title,
           active_sessions: 0,
         },
-        next_actions: ['startTimeTracking', 'getActiveTimeTracking'],
         metadata: {
           operation: 'stop_time_tracking',
           timestamp: new Date().toISOString(),
@@ -1004,10 +1026,6 @@ server.addTool({
             (end) => end === null,
           ).length,
         })),
-        next_actions:
-          activeTodos.length > 0
-            ? ['stopTimeTracking']
-            : ['startTimeTracking', 'listTodos'],
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
           operation: 'get_active_time_tracking',
