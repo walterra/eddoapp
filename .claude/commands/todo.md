@@ -240,9 +240,15 @@ src/notifications.ts # Core logic
    - Move task to done and cleanup:
      ```bash
      mv spec/todos/work/[task-name]/task.md spec/todos/done/[task-name].md && \
-     rmdir spec/todos/work/[task-name]/
+     if [ -z "$(ls -A spec/todos/work/[task-name]/)" ]; then \
+         rmdir spec/todos/work/[task-name]/ && echo "Work directory cleaned up"; \
+     else \
+         echo "Work directory contains additional files, left for manual cleanup"; \
+     fi
      ```
-   - Commit all changes (including todo.md removal and project-description.md if updated) with descriptive message
+   - STOP: "Task complete! Please review git status. Ready to commit and push? (y\n)"
+   - **If approved**:
+   - Commit staged changes with descriptive one-line message
    - Push
 
 4. STOP: "Task complete! Continue with next todo? (y/n)"
