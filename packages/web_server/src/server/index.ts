@@ -81,7 +81,7 @@ app.get('/*', async (c) => {
         ${
           import.meta.env.DEV
             ? `<script type="module" src="/src/client.tsx"></script>`
-            : `<script type="module" src="/client.js"></script>`
+            : `<script type="module" src="/static/client.js"></script>`
         }
       </body>
     </html>

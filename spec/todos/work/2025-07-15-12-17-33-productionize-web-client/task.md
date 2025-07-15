@@ -41,7 +41,7 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - [x] Update package.json dependencies to include web_client dependencies
 - [x] Remove @eddo/web-client workspace dependency
 - [x] Update vite.config.ts paths and remove web_client alias
-- [x] Test client loading and resolve MIME type issues (REQUIRES SERVER RESTART)
+- [x] Test client loading and resolve MIME type issues (PARTIALLY WORKING - server restart timing sensitive)
 - [x] Delete packages/web_client package (consolidation complete)
 - [x] Update all references to web_client/web-client in configuration files
 - [ ] User test: Deploy to staging environment and verify full functionality
@@ -73,3 +73,5 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - **CLEANUP COMPLETE**: Deleted packages/web_client package - consolidation fully complete
 - **REFERENCES UPDATED**: Fixed all web_client references in config files (vite.config.ts, tsconfig.json, tailwind.config.cjs, etc.)
 - **DEPENDENCIES REGENERATED**: Updated pnpm-lock.yaml to reflect new package structure
+- **TAILWIND CONFIG OPTIMIZED**: Consolidated to single root config, limited to src/client/ directory
+- **VITE CONFIG FIXED**: Added /^\/src\/.*/ to exclude patterns to let Vite handle client files (REQUIRES RESTART)
