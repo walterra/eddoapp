@@ -55,14 +55,20 @@ pnpm install
 ### Development Commands
 
 ```bash
-# Start both client and MCP server
+# Start both web client and API server
 pnpm dev
 
 # Or start components individually
-pnpm dev:client        # React frontend (port 5173)
+pnpm dev:web-client    # React frontend (port 5173, dev only)
+pnpm dev:web-api       # API server (port 3000, main entry point)
 pnpm dev:server        # MCP server (port 3002)
 pnpm dev:telegram-bot  # Telegram bot
 ```
+
+**Development Access:**
+- **Main Application**: http://localhost:3000/ (API server proxies to web client)
+- **Web Client Dev Server**: http://localhost:5173/ (Vite dev server, used internally)
+- **MCP Server**: http://localhost:3002/ (Model Context Protocol server)
 
 ### Build Commands
 

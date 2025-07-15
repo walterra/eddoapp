@@ -32,4 +32,4 @@ Start the development server:
 pnpm dev
 ```
 
-This will start a local development server using Vite. Open your browser and navigate to the URL shown in the terminal (typically http://localhost:5173/).
+This will start both the web client and API server. Open your browser and navigate to http://localhost:3000/ to access the application.

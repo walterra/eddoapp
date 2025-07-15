@@ -45,9 +45,8 @@ app.route('/auth', authRoutes);
 app.use('/api/*', jwt({ secret: config.jwtSecret }));
 app.route('/api/db', dbProxyRoutes);
 
-// Static file serving and SPA fallback only in production
 if (!isDevelopment) {
-  // Serve static files from public directory
+  // Production: Serve static files from public directory
   app.use('/*', serveStatic({ root: publicPath }));
 
   // SPA fallback - serve index.html for all non-API routes
@@ -61,9 +60,34 @@ if (!isDevelopment) {
     // Fallback if no index.html exists
     return c.text('Application not built. Run build first.', 404);
   });
+} else {
+  // Development: Proxy non-API routes to Vite dev server
+  app.get('/*', async (c) => {
+    const viteDevServerUrl = 'http://localhost:5173';
+    const requestPath = c.req.path;
+
+    try {
+      const response = await fetch(`${viteDevServerUrl}${requestPath}`);
+
+      // Forward the response from Vite dev server
+      const body = await response.text();
+      const contentType = response.headers.get('content-type') || 'text/html';
+
+      return new Response(body, {
+        status: response.status,
+        headers: {
+          'Content-Type': contentType,
+        },
+      });
+    } catch (error) {
+      console.error('Error proxying to Vite dev server:', error);
+      return c.text(
+        "Vite dev server not available. Make sure it's running on port 5173.",
+        502,
+      );
+    }
+  });
 }
-// In development mode, unmatched routes naturally return 404
-// No need for explicit handlers - the API server only handles API routes
 
 const port = config.port;
 console.log(`Server starting on port ${port}`);

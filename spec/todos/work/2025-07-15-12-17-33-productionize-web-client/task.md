@@ -66,10 +66,10 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
   - [x] Add tsconfig.json and tsconfig.node.json to web-client package
   - [x] Test development: web (Vite:5173) + server (Hono:3000) with proxy, no CORS issues
   - [x] Clean up dev mode: Remove faux "use Vite dev server" message handler from web-api
-  - [ ] **CRITICAL ARCHITECTURE FIX**: Reverse proxy direction - web-api should proxy to web-client (not vice versa)
-    - [ ] Remove proxy config from packages/web-client/vite.config.ts
-    - [ ] Add proxy logic to packages/web-api/src/index.ts for non-API routes in development
-    - [ ] Update development flow: users access localhost:3000, API handles directly, non-API proxied to Vite:5173
+  - [x] **CRITICAL ARCHITECTURE FIX**: Reverse proxy direction - web-api should proxy to web-client (not vice versa)
+    - [x] Remove proxy config from packages/web-client/vite.config.ts
+    - [x] Add proxy logic to packages/web-api/src/index.ts for non-API routes in development
+    - [x] Update development flow: users access localhost:3000, API handles directly, non-API proxied to Vite:5173
   - [ ] Fix environment variables: Add VITE_ prefix for client-side env vars
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
