@@ -70,18 +70,13 @@ app.get('/*', async (c) => {
           window.process = { env: { NODE_DEBUG: undefined } }; // https://github.com/pouchdb/pouchdb/issues/8266
           window.global = window;
         </script>
-        ${
-          import.meta.env.DEV
-            ? `<script type="module" src="/@vite/client"></script>`
-            : ''
-        }
       </head>
       <body>
         <div id="root"></div>
         ${
-          import.meta.env.DEV
-            ? `<script type="module" src="/src/client.tsx"></script>`
-            : `<script type="module" src="/static/client.js"></script>`
+          import.meta.env.PROD
+            ? `<script type="module" src="/static/client.js"></script>`
+            : `<script type="module" src="/src/client.tsx"></script>`
         }
       </body>
     </html>
