@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Started:** 2025-07-15T20:17:45
 **Created:** 2025-07-15T12:17:33
-**Agent PID:** 1664
+**Agent PID:** 26868
 
 ## Original Todo
 
@@ -32,9 +32,9 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - [x] Add production build scripts and Docker configuration
 - [x] Automated test: Test authentication flow and API proxy functionality
 - [x] Automated test: Verify credentials are not exposed in production build
-- [ ] User test: Deploy to staging environment and verify full functionality
-- [ ] User test: Confirm offline-first PouchDB sync works through proxy
-- [ ] User test: Test authentication flow and session management
+- [ ] User test: Deploy to staging environment and verify full functionality (FAILED - MIME type issue)
+- [ ] User test: Confirm offline-first PouchDB sync works through proxy (BLOCKED - can't test due to MIME type issue)
+- [ ] User test: Test authentication flow and session management (BLOCKED - can't test due to MIME type issue)
 
 ## Notes
 
@@ -45,3 +45,8 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - Docker configuration and build scripts added
 - Authentication flow tests passing
 - Credentials exposure tests confirm no sensitive data in production build
+- **CRITICAL ISSUE IDENTIFIED**: @hono/vite-dev-server default exclude patterns exclude TypeScript/TSX files
+- Error: "Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of 'text/html'"
+- Root cause: Default exclude patterns include `/.*\.tsx$/` which prevents Vite from handling TypeScript files
+- **FIX IMPLEMENTED**: Updated vite.config.ts to remove TypeScript/TSX exclusion and added manual Vite client script injection
+- Server needs restart for changes to take effect

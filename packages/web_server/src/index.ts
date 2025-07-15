@@ -13,7 +13,7 @@ const app = new Hono();
 
 // Get absolute path to client build directory
 const clientBuildPath = path.resolve(process.cwd(), '../../dist/client');
-const isDevelopment = config.nodeEnv === 'development';
+const isDevelopment = import.meta.env.DEV;
 
 console.log('Development mode:', isDevelopment);
 if (!isDevelopment) {
@@ -39,116 +39,54 @@ app.get('/health', (c) =>
 // Auth routes (no JWT required)
 app.route('/auth', authRoutes);
 
+// Static file serving will be handled by Vite dev server in development
+// No manual static file serving needed when using @hono/vite-dev-server
+
 // Protected API routes (JWT required)
 app.use('/api/*', jwt({ secret: config.jwtSecret }));
 app.route('/api/db', dbProxyRoutes);
 
-// In development, proxy to the separate client dev server
-// In production, serve the built client files
-if (isDevelopment) {
-  // Development: proxy to the separate web_client dev server
-  app.get('/*', async (c) => {
-    // Let API routes pass through, but proxy all other routes including Vite dev files
-    if (
-      c.req.path.startsWith('/api/') ||
-      c.req.path.startsWith('/auth/') ||
-      c.req.path === '/health'
-    ) {
-      return c.text('Not Found', 404);
-    }
+// Serve client application (unified approach)
+app.get('/*', async (c) => {
+  // Don't serve client for API routes - they should already be handled above
+  if (
+    c.req.path.startsWith('/api/') ||
+    c.req.path.startsWith('/auth/') ||
+    c.req.path === '/health'
+  ) {
+    return c.text('Not Found', 404);
+  }
 
-    try {
-      const clientUrl = 'http://localhost:5173';
-      const targetUrl = `${clientUrl}${c.req.path}`;
-      console.log(`Proxying request: ${c.req.method} ${targetUrl}`);
-
-      const response = await fetch(targetUrl, {
-        method: c.req.method,
-        headers: {
-          host: 'localhost:5173',
-          'user-agent': c.req.header('user-agent') || 'Hono-Proxy',
-          accept: c.req.header('accept') || '*/*',
-          'accept-language':
-            c.req.header('accept-language') || 'en-US,en;q=0.9',
-          'accept-encoding':
-            c.req.header('accept-encoding') || 'gzip, deflate, br',
-          referer: c.req.header('referer') || 'http://localhost:5173/',
-        },
-      });
-
-      console.log(`Proxy response: ${response.status} ${response.statusText}`);
-
-      const responseHeaders = new Headers();
-      response.headers.forEach((value, key) => {
-        responseHeaders.set(key, value);
-      });
-
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: responseHeaders,
-      });
-    } catch (error) {
-      console.error('Error proxying to client dev server:', error);
-      console.error('Error details:', error.message);
-      return c.text(
-        'Client dev server not available. Run "pnpm dev:web-client" first.',
-        503,
-      );
-    }
-  });
-} else {
-  // Production: serve built client files
-  app.get('/assets/*', async (c) => {
-    try {
-      const { promises: fs } = await import('fs');
-      const assetPath = c.req.path;
-      const filePath = path.join(clientBuildPath, assetPath);
-      const content = await fs.readFile(filePath);
-
-      // Set proper MIME type based on file extension
-      const ext = path.extname(assetPath).toLowerCase();
-      const mimeTypes: Record<string, string> = {
-        '.js': 'application/javascript',
-        '.css': 'text/css',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.svg': 'image/svg+xml',
-        '.ico': 'image/x-icon',
-      };
-
-      const mimeType = mimeTypes[ext] || 'application/octet-stream';
-
-      return new Response(content, {
-        headers: {
-          'Content-Type': mimeType,
-          'Cache-Control': 'public, max-age=31536000',
-        },
-      });
-    } catch (_error) {
-      console.error('Asset not found:', c.req.path);
-      return c.text('Asset not found', 404);
-    }
-  });
-
-  // Production: fallback for client-side routing
-  app.get('/*', async (c) => {
-    try {
-      const { promises: fs } = await import('fs');
-      const indexPath = path.join(clientBuildPath, 'index.html');
-      const content = await fs.readFile(indexPath, 'utf-8');
-      return c.html(content);
-    } catch (error) {
-      console.error('Error serving index.html:', error);
-      return c.text(
-        'Client build not found. Run "pnpm build:web-client" first.',
-        404,
-      );
-    }
-  });
-}
+  // Serve the React app
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="theme-color" content="#fff" />
+        <title>Eddo</title>
+        <script>
+          window.process = { env: { NODE_DEBUG: undefined } }; // https://github.com/pouchdb/pouchdb/issues/8266
+          window.global = window;
+        </script>
+        ${
+          import.meta.env.DEV
+            ? `<script type="module" src="/@vite/client"></script>`
+            : ''
+        }
+      </head>
+      <body>
+        <div id="root"></div>
+        ${
+          import.meta.env.DEV
+            ? `<script type="module" src="/src/client.tsx"></script>`
+            : `<script type="module" src="/client.js"></script>`
+        }
+      </body>
+    </html>
+  `);
+});
 
 const port = config.port;
 console.log(`Server starting on port ${port}`);

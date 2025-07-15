@@ -1,4 +1,5 @@
 import devServer from '@hono/vite-dev-server';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
@@ -7,8 +8,19 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      react(),
       devServer({
         entry: 'src/index.ts',
+        exclude: [
+          // Remove TypeScript/TSX exclusion to allow Vite to handle them
+          /.*\.(s?css|less)($|\?)/,
+          /.*\.(svg|png|jpg|jpeg|gif|webp)($|\?)/,
+          /^\/@.+$/,
+          /^\/favicon\.ico$/,
+          /^\/(public|assets|static)\/.+/,
+          /^\/node_modules\/.*/,
+        ],
+        injectClientScript: false,
       }),
     ],
     server: {
@@ -23,6 +35,9 @@ export default defineConfig(({ mode }) => {
         '@eddo/core': resolve(__dirname, '../core/src'),
         '@eddo/web-client': resolve(__dirname, '../web_client/src'),
       },
+    },
+    css: {
+      postcss: './postcss.config.js',
     },
   };
 });
