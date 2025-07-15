@@ -50,13 +50,14 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 ### Phase 2: Production-Ready Architecture (BASED ON REFERENCE PROJECT)
 
 - [x] **MODERNIZE BUILD SETUP**: Configure Vite to build web assets into server public/ directory
-- [ ] **SPLIT INTO SEPARATE PACKAGES**: Create separate web and server packages following reference project architecture in /Users/walterra/dev/monorepo-example-tasks-app
-  - [ ] Create packages/web with React frontend (Vite dev server on port 5173)
-  - [ ] Create packages/server with Hono API server (port 3000)
-  - [ ] Move client files (src/client/, src/assets/, src/client.tsx) to packages/web/src/
-  - [ ] Move server files (src/server/) to packages/server/src/
-  - [ ] Update packages/web/vite.config.ts to build into ../server/public/ and proxy /api to server
-  - [ ] Configure packages/server middleware: API routes at /api/\*, static assets from public/, SPA fallback
+- [x] **SPLIT INTO SEPARATE PACKAGES**: Create separate web and server packages following reference project architecture in /Users/walterra/dev/monorepo-example-tasks-app
+  - [x] Create packages/web-client with React frontend (Vite dev server on port 5173)
+  - [x] Create packages/web-api with Hono API server (port 3000)
+  - [x] Move client files (src/client/, src/assets/, src/client.tsx) to packages/web-client/src/
+  - [x] Move server files (src/server/) to packages/web-api/src/
+  - [x] Add .gitignore files to both packages/web-client and packages/web-api
+  - [ ] Update packages/web-client/vite.config.ts to build into ../web-api/public/ and proxy /api to web-api
+  - [ ] Configure packages/web-api middleware: API routes at /api/\*, static assets from public/, SPA fallback
   - [ ] Implement SPA fallback logic: non-API routes serve index.html for client-side routing
   - [ ] Update root package.json scripts: dev runs both servers in parallel
   - [ ] Update workspace dependencies and remove packages/web_server
