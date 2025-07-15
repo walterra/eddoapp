@@ -24,15 +24,10 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify(
       process.env.NODE_ENV || 'development',
     ),
-    'process.env.COUCHDB_URL': JSON.stringify(
-      process.env.COUCHDB_URL || 'http://admin:password@localhost:5984',
-    ),
-    'process.env.COUCHDB_DB_NAME': JSON.stringify(
-      process.env.COUCHDB_DB_NAME || 'todos-dev',
-    ),
-    'process.env.COUCHDB_API_KEY': JSON.stringify(
-      process.env.COUCHDB_API_KEY || undefined,
-    ),
     'process.env.LOG_LEVEL': JSON.stringify(process.env.LOG_LEVEL || 'info'),
+    // Production API endpoint for web server
+    'process.env.API_URL': JSON.stringify(
+      process.env.API_URL || 'http://localhost:3000/api',
+    ),
   },
 });

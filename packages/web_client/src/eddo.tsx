@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 
 import { AddTodo } from './components/add_todo';
+import { Login } from './components/login';
 import { PageWrapper } from './components/page_wrapper';
 import { TodoBoard } from './components/todo_board';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
-import { useSyncDev } from './hooks/use_sync_dev';
+import { useSyncProduction } from './hooks/use_sync_production';
 import { pouchDbContextValue } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
 
-function DevSync() {
-  useSyncDev();
+function ProductionSync() {
+  useSyncProduction();
   return null;
 }
 
@@ -27,11 +28,17 @@ function HealthMonitor() {
 export function Eddo() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const { authenticate, isAuthenticated, isAuthenticating } =
+    useSyncProduction();
+
+  if (!isAuthenticated) {
+    return <Login isAuthenticating={isAuthenticating} onLogin={authenticate} />;
+  }
 
   return (
     <PouchDbContext.Provider value={pouchDbContextValue}>
       <DatabaseChangesProvider>
-        <DevSync />
+        <ProductionSync />
         <HealthMonitor />
         <PageWrapper>
           <AddTodo

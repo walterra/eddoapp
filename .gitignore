@@ -1,4 +1,5 @@
 .env
+.env.production
 .eslintcache
 .pnpm-debug.log
 /node_modules/

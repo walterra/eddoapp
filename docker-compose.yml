@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # CouchDB service
+  couchdb:
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=password
+    ports:
+      - "5984:5984"
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Eddo App service
+  app:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - CORS_ORIGIN=http://localhost:3000
+      - JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long-change-this-in-production
+      - COUCHDB_URL=http://couchdb:5984
+      - COUCHDB_ADMIN_USERNAME=admin
+      - COUCHDB_ADMIN_PASSWORD=password
+      - COUCHDB_DB_NAME=todos-prod
+      - API_URL=http://localhost:3000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  couchdb_data:

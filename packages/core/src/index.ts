@@ -25,4 +25,4 @@ export * from './utils/get_repeat_todo';
 export * from './utils/shuffle';
 
 // Configuration
-export * from './config';
+export * from './config/env';
