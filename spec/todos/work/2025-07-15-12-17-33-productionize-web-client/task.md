@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Started:** 2025-07-15T20:17:45
 **Created:** 2025-07-15T12:17:33
-**Agent PID:** 54859
+**Agent PID:** 32139
 
 ## Original Todo
 
@@ -66,6 +66,10 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
   - [x] Add tsconfig.json and tsconfig.node.json to web-client package
   - [x] Test development: web (Vite:5173) + server (Hono:3000) with proxy, no CORS issues
   - [x] Clean up dev mode: Remove faux "use Vite dev server" message handler from web-api
+  - [ ] **CRITICAL ARCHITECTURE FIX**: Reverse proxy direction - web-api should proxy to web-client (not vice versa)
+    - [ ] Remove proxy config from packages/web-client/vite.config.ts
+    - [ ] Add proxy logic to packages/web-api/src/index.ts for non-API routes in development
+    - [ ] Update development flow: users access localhost:3000, API handles directly, non-API proxied to Vite:5173
   - [ ] Fix environment variables: Add VITE_ prefix for client-side env vars
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
@@ -160,3 +164,11 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - **CORS SOLUTION**: Development uses proxy, production uses single server (same origin)
 - **ROUTING LOGIC**: /api/_ → API routes, /_ → static assets or SPA fallback to index.html
 - **SPA FALLBACK**: Non-API routes serve index.html for client-side routing (React Router support)
+
+### Architecture Discovery: Proxy Direction Issue
+
+- **PROBLEM IDENTIFIED**: Current proxy setup is backwards from reference implementation
+- **CURRENT (WRONG)**: Web-client (Vite:5173) proxies `/api` to web-api (Hono:3000)
+- **CORRECT**: Web-api (Hono:3000) should proxy non-API routes to web-client (Vite:5173)
+- **WHY**: Single entry point at localhost:3000, matches production architecture
+- **BENEFIT**: Production and development have same entry point, cleaner architecture
