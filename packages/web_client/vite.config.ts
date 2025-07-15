@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
     publicDir: false,
     server: {
       port: 5173,
+      hmr: {
+        port: 5173,
+        host: 'localhost',
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:3000',

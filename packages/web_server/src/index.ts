@@ -48,7 +48,7 @@ app.route('/api/db', dbProxyRoutes);
 if (isDevelopment) {
   // Development: proxy to the separate web_client dev server
   app.get('/*', async (c) => {
-    // Let API routes pass through
+    // Let API routes pass through, but proxy all other routes including Vite dev files
     if (
       c.req.path.startsWith('/api/') ||
       c.req.path.startsWith('/auth/') ||
@@ -59,10 +59,24 @@ if (isDevelopment) {
 
     try {
       const clientUrl = 'http://localhost:5173';
-      const response = await fetch(`${clientUrl}${c.req.path}`, {
+      const targetUrl = `${clientUrl}${c.req.path}`;
+      console.log(`Proxying request: ${c.req.method} ${targetUrl}`);
+
+      const response = await fetch(targetUrl, {
         method: c.req.method,
-        headers: Object.fromEntries(c.req.headers.entries()),
+        headers: {
+          host: 'localhost:5173',
+          'user-agent': c.req.header('user-agent') || 'Hono-Proxy',
+          accept: c.req.header('accept') || '*/*',
+          'accept-language':
+            c.req.header('accept-language') || 'en-US,en;q=0.9',
+          'accept-encoding':
+            c.req.header('accept-encoding') || 'gzip, deflate, br',
+          referer: c.req.header('referer') || 'http://localhost:5173/',
+        },
       });
+
+      console.log(`Proxy response: ${response.status} ${response.statusText}`);
 
       const responseHeaders = new Headers();
       response.headers.forEach((value, key) => {
@@ -76,6 +90,7 @@ if (isDevelopment) {
       });
     } catch (error) {
       console.error('Error proxying to client dev server:', error);
+      console.error('Error details:', error.message);
       return c.text(
         'Client dev server not available. Run "pnpm dev:web-client" first.',
         503,
