@@ -81,10 +81,13 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Verified all static assets load from web-api server (86+ successful requests)
     - [x] Confirmed Vite dev server integration and HMR working
     - [x] Verified monorepo @eddo/core imports work through proxy
-  - [ ] **FIX APPLICATION ERROR**: Resolve React error in <Eddo> component before proceeding
-    - [ ] Debug and fix the React component error preventing app from rendering
-    - [ ] Ensure development environment is fully functional
-    - [ ] Verify app loads and renders correctly in browser
+  - [x] **FIX APPLICATION ERROR**: Resolve React error in <Eddo> component before proceeding
+    - [x] Debug and fix the React component error preventing app from rendering
+    - [x] Merge useSyncDev and useSyncProduction into unified sync hook (always uses /api endpoint)
+    - [x] Fix context provider issue by moving sync call inside PouchDbContext.Provider
+    - [x] Eliminate unnecessary 401 errors by only syncing when authenticated
+    - [x] Ensure development environment is fully functional
+    - [x] Verify app loads and renders correctly in browser
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory

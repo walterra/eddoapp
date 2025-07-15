@@ -64,21 +64,20 @@ export const useSync = () => {
   }, []);
 
   useEffect(() => {
+    // Only sync when authenticated
+    if (!authToken) return;
+
     const env = validateEnv(import.meta.env);
     const apiUrl = env.VITE_API_URL;
 
-    // Always connect to API server, with auth if available
+    // Connect to API server with authentication
     const remoteDb = new PouchDB(`${apiUrl}/db`, {
       fetch: (url, opts) => {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           ...opts?.headers,
+          Authorization: `Bearer ${authToken.token}`,
         };
-
-        // Add auth header if we have a token
-        if (authToken) {
-          headers.Authorization = `Bearer ${authToken.token}`;
-        }
 
         return fetch(url, {
           ...opts,
