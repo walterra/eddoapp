@@ -10,7 +10,7 @@ interface AuthToken {
   expiresIn: string;
 }
 
-export const useSyncProduction = () => {
+export const useSync = () => {
   const { sync } = usePouchDb();
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -64,22 +64,25 @@ export const useSyncProduction = () => {
   }, []);
 
   useEffect(() => {
-    if (!authToken) return;
-
     const env = validateEnv(import.meta.env);
     const apiUrl = env.VITE_API_URL;
 
-    // Create a custom adapter for PouchDB that uses our authenticated API
+    // Always connect to API server, with auth if available
     const remoteDb = new PouchDB(`${apiUrl}/db`, {
       fetch: (url, opts) => {
-        // Add authentication header to all requests
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          ...opts?.headers,
+        };
+
+        // Add auth header if we have a token
+        if (authToken) {
+          headers.Authorization = `Bearer ${authToken.token}`;
+        }
+
         return fetch(url, {
           ...opts,
-          headers: {
-            ...opts?.headers,
-            Authorization: `Bearer ${authToken.token}`,
-            'Content-Type': 'application/json',
-          },
+          headers,
         });
       },
     });
