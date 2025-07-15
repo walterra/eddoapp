@@ -1,3 +1,5 @@
+import { validateEnv } from '@eddo/core';
+import 'dotenv-mono/load';
 import { z } from 'zod';
 
 const envSchema = z.object({
@@ -17,19 +19,21 @@ const envSchema = z.object({
   COUCHDB_DB_NAME: z.string().default('todos-prod'),
 });
 
-const env = envSchema.parse(process.env);
+// Use the core environment validation first, then extend with web-server specific config
+const coreEnv = validateEnv(process.env);
+const webServerEnv = envSchema.parse(process.env);
 
 export const config = {
-  nodeEnv: env.NODE_ENV,
-  port: env.PORT,
-  jwtSecret: env.JWT_SECRET,
-  corsOrigin: env.CORS_ORIGIN,
+  nodeEnv: webServerEnv.NODE_ENV,
+  port: webServerEnv.PORT,
+  jwtSecret: webServerEnv.JWT_SECRET,
+  corsOrigin: webServerEnv.CORS_ORIGIN,
 
   couchdb: {
-    url: env.COUCHDB_URL,
-    username: env.COUCHDB_USERNAME || env.COUCHDB_ADMIN_USERNAME,
-    password: env.COUCHDB_PASSWORD || env.COUCHDB_ADMIN_PASSWORD,
-    dbName: env.COUCHDB_DB_NAME,
+    url: coreEnv.COUCHDB_URL,
+    username: coreEnv.COUCHDB_USERNAME || coreEnv.COUCHDB_ADMIN_USERNAME,
+    password: coreEnv.COUCHDB_PASSWORD || coreEnv.COUCHDB_ADMIN_PASSWORD,
+    dbName: coreEnv.COUCHDB_DB_NAME,
   },
 
   // Helper to get CouchDB auth header

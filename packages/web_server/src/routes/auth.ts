@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { sign, verify } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
 import { config } from '../config';
@@ -29,7 +29,7 @@ authApp.post('/login', async (c) => {
     }
 
     // Generate JWT token
-    const token = sign(
+    const token = jwt.sign(
       {
         username,
         exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
@@ -59,7 +59,7 @@ authApp.get('/validate', async (c) => {
   const token = authHeader.substring(7);
 
   try {
-    const decoded = verify(token, config.jwtSecret) as {
+    const decoded = jwt.verify(token, config.jwtSecret) as {
       username: string;
       exp: number;
     };

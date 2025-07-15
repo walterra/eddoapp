@@ -77,16 +77,16 @@
   },
   "scripts": {
     "build": "pnpm run --recursive build",
-    "build:client": "pnpm --filter @eddo/web-client build",
     "build:server": "pnpm --filter @eddo/mcp-server build",
     "build:shared": "pnpm --filter @eddo/core build",
     "build:telegram-bot": "pnpm --filter @eddo/telegram-bot build",
+    "build:web-client": "pnpm --filter @eddo/web-client build",
     "build:web-server": "pnpm --filter @eddo/web-server build",
     "dev": "npm-run-all --parallel dev:client dev:server",
     "dev:production": "npm-run-all --parallel dev:client dev:web-server",
-    "dev:client": "pnpm --filter @eddo/web-client dev",
     "dev:server": "pnpm --filter @eddo/mcp-server dev",
     "dev:telegram-bot": "pnpm --filter @eddo/telegram-bot dev",
+    "dev:web-client": "pnpm --filter @eddo/web-client dev",
     "dev:web-server": "pnpm --filter @eddo/web-server dev",
     "format": "prettier --write ./packages",
     "lint:format": "prettier --cache --check ./packages",
@@ -110,7 +110,7 @@
     "populate-mock-data": "tsx scripts/populate-mock-data.ts",
     "populate-mock-data:dry-run": "tsx scripts/populate-mock-data.ts --dry-run",
     "prepare": "husky",
-    "build:production": "pnpm build:shared && pnpm build:web-server && pnpm build:client",
+    "build:production": "pnpm build:shared && pnpm build:web-server && pnpm build:web-client",
     "start:production": "NODE_ENV=production pnpm --filter @eddo/web-server start"
   },
   "browserslist": [
