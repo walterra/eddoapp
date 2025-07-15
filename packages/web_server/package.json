@@ -6,20 +6,32 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@eddo/core": "workspace:*",
-    "hono": "^4.6.14",
     "@hono/node-server": "^1.14.0",
-    "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
+    "flowbite": "^3.1.2",
+    "flowbite-react": "^0.11.9",
+    "hono": "^4.6.14",
+    "jsonwebtoken": "^9.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.7",
+    "@hono/vite-dev-server": "^0.20.0",
     "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.12.4",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.0.4",
     "vitest": "^3.2.4"
   },
   "scripts": {
-    "dev": "NODE_ENV=development tsx watch src/index.ts",
+    "dev": "NODE_ENV=development vite",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run"
