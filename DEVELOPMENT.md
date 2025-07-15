@@ -6,7 +6,8 @@ This guide provides detailed technical information for developing Eddo, a GTD-in
 
 ### Monorepo Structure
 
-- **`packages/web_server`**: Consolidated React/TypeScript frontend with Hono backend and PouchDB for offline-first storage
+- **`packages/web-client`**: React/TypeScript frontend with PouchDB for offline-first storage
+- **`packages/web-api`**: Hono API server for authentication and CouchDB proxy
 - **`packages/mcp_server`**: MCP (Model Context Protocol) server for external integrations
 - **`packages/core`**: Shared types, utilities, and data models across packages
 - **`packages/telegram_bot`**: Telegram bot with AI agent capabilities using Anthropic Claude

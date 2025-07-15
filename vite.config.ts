@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
-  root: './packages/web_server',
+  root: './packages/web-client',
   build: {
     outDir: '../../dist',
     emptyOutDir: true

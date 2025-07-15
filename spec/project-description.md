@@ -28,7 +28,8 @@ TypeScript monorepo with React frontend, MCP server, and Telegram bot.
 
 ## Structure
 
-packages/web_server/src/client.tsx       # React frontend entry
+packages/web-client/src/client.tsx       # React frontend entry
+packages/web-api/src/index.ts           # Hono API server entry
 packages/mcp_server/src/mcp-server.ts    # MCP server
 packages/telegram_bot/src/index.ts   # Telegram bot
 packages/core/src/                 # Shared types/utils

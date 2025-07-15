@@ -16,7 +16,7 @@
         "**/*.test.tsx"
       ]
     },
-    "packages/web_server": {
+    "packages/web-client": {
       "entry": [
       ],
       "project": [
@@ -28,6 +28,18 @@
         "node_modules/**",
         "**/*.test.ts",
         "**/*.test.tsx"
+      ]
+    },
+    "packages/web-api": {
+      "entry": [
+      ],
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignore": [
+        "dist/**",
+        "node_modules/**",
+        "**/*.test.ts"
       ]
     },
     "packages/mcp_server": {

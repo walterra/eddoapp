@@ -38,7 +38,7 @@ function extractPasswordFromUrl(url: string): string | undefined {
   }
 }
 
-// Use the core environment validation first, then extend with web-server specific config
+// Use the core environment validation first, then extend with web-api specific config
 const coreEnv = validateEnv(process.env);
 const webServerEnv = envSchema.parse(process.env);
 
