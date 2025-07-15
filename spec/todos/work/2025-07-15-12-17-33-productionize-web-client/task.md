@@ -70,7 +70,7 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Remove proxy config from packages/web-client/vite.config.ts
     - [x] Add proxy logic to packages/web-api/src/index.ts for non-API routes in development
     - [x] Update development flow: users access localhost:3000, API handles directly, non-API proxied to Vite:5173
-  - [ ] Fix environment variables: Add VITE_ prefix for client-side env vars
+  - [x] Fix environment variables: Add VITE_ prefix for client-side env vars
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory

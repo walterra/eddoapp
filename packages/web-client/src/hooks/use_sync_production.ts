@@ -65,7 +65,7 @@ export const useSyncProduction = () => {
   useEffect(() => {
     if (!authToken) return;
 
-    const apiUrl = process.env.API_URL || 'http://localhost:3000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
     // Create a custom adapter for PouchDB that uses our authenticated API
     const remoteDb = new PouchDB(`${apiUrl}/db`, {
