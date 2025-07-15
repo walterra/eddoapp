@@ -18,7 +18,11 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
     build: {
-      outDir: 'dist',
+      outDir: 'public',
+      emptyOutDir: true,
+      rollupOptions: {
+        input: resolve(__dirname, 'index.html'),
+      },
     },
     resolve: {
       alias: {

@@ -48,7 +48,8 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development vite",
-    "build": "tsc",
+    "build": "vite build",
+    "build:server": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run",
     "postinstall": "flowbite-react patch"
