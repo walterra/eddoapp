@@ -1,10 +1,10 @@
 import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { existsSync, readFileSync } from 'fs';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { jwt } from 'hono/jwt';
 import { logger } from 'hono/logger';
-import { serveStatic } from 'hono/node-server';
 import path from 'path';
 
 import { config } from './config';
@@ -45,52 +45,25 @@ app.route('/auth', authRoutes);
 app.use('/api/*', jwt({ secret: config.jwtSecret }));
 app.route('/api/db', dbProxyRoutes);
 
-// Static file serving from public directory (production builds)
-app.use('/*', serveStatic({ root: publicPath }));
+// Static file serving and SPA fallback only in production
+if (!isDevelopment) {
+  // Serve static files from public directory
+  app.use('/*', serveStatic({ root: publicPath }));
 
-// SPA fallback - serve index.html for all non-API routes
-app.get('/*', async (c) => {
-  // Don't serve SPA fallback for API routes - they should already be handled above
-  if (
-    c.req.path.startsWith('/api/') ||
-    c.req.path.startsWith('/auth/') ||
-    c.req.path === '/health'
-  ) {
-    return c.text('Not Found', 404);
-  }
+  // SPA fallback - serve index.html for all non-API routes
+  app.get('/*', async (c) => {
+    // Check if the built index.html exists
+    if (existsSync(indexHtmlPath)) {
+      const indexHtml = readFileSync(indexHtmlPath, 'utf-8');
+      return c.html(indexHtml);
+    }
 
-  // In development mode, serve a simple fallback
-  if (isDevelopment) {
-    return c.html(`
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-          <meta name="theme-color" content="#fff" />
-          <title>Eddo</title>
-          <script>
-            window.process = { env: { NODE_DEBUG: undefined } }; // https://github.com/pouchdb/pouchdb/issues/8266
-            window.global = window;
-          </script>
-        </head>
-        <body>
-          <div id="root"></div>
-          <script type="module" src="/src/client.tsx"></script>
-        </body>
-      </html>
-    `);
-  }
-
-  // In production, serve the built index.html
-  if (existsSync(indexHtmlPath)) {
-    const indexHtml = readFileSync(indexHtmlPath, 'utf-8');
-    return c.html(indexHtml);
-  }
-
-  // Fallback if no index.html exists
-  return c.text('Application not built. Run build first.', 404);
-});
+    // Fallback if no index.html exists
+    return c.text('Application not built. Run build first.', 404);
+  });
+}
+// In development mode, unmatched routes naturally return 404
+// No need for explicit handlers - the API server only handles API routes
 
 const port = config.port;
 console.log(`Server starting on port ${port}`);

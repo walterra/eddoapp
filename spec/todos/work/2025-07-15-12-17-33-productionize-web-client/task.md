@@ -62,7 +62,11 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
   - [x] Update root package.json scripts: dev runs both servers in parallel
   - [x] Cleanup: Remove packages/web_server directory and update workspace dependencies
   - [x] Update all remaining references to web_server/web-server in config files
-  - [ ] Test development: web (Vite:5173) + server (Hono:3000) with proxy, no CORS issues
+  - [x] Fix serveStatic import path in web-api (from 'hono/node-server' to '@hono/node-server/serve-static')
+  - [x] Add tsconfig.json and tsconfig.node.json to web-client package
+  - [x] Test development: web (Vite:5173) + server (Hono:3000) with proxy, no CORS issues
+  - [x] Clean up dev mode: Remove faux "use Vite dev server" message handler from web-api
+  - [ ] Fix environment variables: Add VITE_ prefix for client-side env vars
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory
@@ -81,6 +85,24 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - [ ] User test: Verify production build performance and caching
 
 ## Notes
+
+### Development vs Production Architecture
+
+**Reference Implementation Analysis (Cloudflare Workers):**
+- Uses `c.env.ASSETS` for static file serving (Cloudflare-specific feature)
+- Single middleware handles both dev and prod because Cloudflare's wrangler manages assets
+- No need for conditional dev/prod logic
+
+**Our Implementation (Node.js/Hono):**
+- Must handle static files differently in dev vs prod
+- **Development**: Vite dev server (5173) serves client with HMR, API server (3000) only handles API routes
+- **Production**: API server (3000) serves both API routes and static files from public/
+- This split is necessary because Node.js doesn't have Cloudflare's built-in asset handling
+
+**Current Dev Mode Issue:**
+- API server returns "Development mode - use Vite dev server on port 5173" for non-API routes
+- This is unnecessary and confusing - should just let routes 404 naturally
+- Need to remove the explicit dev mode handler that returns faux messages
 
 ### Phase 1 Implementation (COMPLETED)
 

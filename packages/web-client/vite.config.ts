@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        '@eddo/core': resolve(__dirname, '../../core/src'),
+        '@eddo/core': resolve(__dirname, '../core/src'),
       },
     },
     css: {

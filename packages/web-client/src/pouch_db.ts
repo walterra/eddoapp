@@ -14,7 +14,7 @@ import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 PouchDB.plugin(PouchDBFind);
 
 // Get environment configuration for database naming
-const env = validateEnv(process.env);
+const env = validateEnv(import.meta.env);
 const dbName = getEffectiveDbName(env);
 
 const pouchDb = new PouchDB(dbName);
