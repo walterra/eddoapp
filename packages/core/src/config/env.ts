@@ -43,6 +43,7 @@ export const envSchema = z.object({
 
   // Web Client Configuration (Vite environment variables)
   VITE_API_URL: z.string().url().default('http://localhost:3000/api'),
+  VITE_COUCHDB_API_KEY: z.string().optional(),
 
   // Web API Configuration
   PORT: z.coerce.number().default(3000),
@@ -70,9 +71,9 @@ export function validateEnv(env: unknown): Env {
  */
 export function getEffectiveDbName(env: Env): string {
   const baseName = env.COUCHDB_DB_NAME;
-  return env.COUCHDB_API_KEY
-    ? `${baseName}_api_${env.COUCHDB_API_KEY}`
-    : baseName;
+  // Use VITE_COUCHDB_API_KEY for client-side, COUCHDB_API_KEY for server-side
+  const apiKey = env.VITE_COUCHDB_API_KEY || env.COUCHDB_API_KEY;
+  return apiKey ? `${baseName}_api_${apiKey}` : baseName;
 }
 
 /**

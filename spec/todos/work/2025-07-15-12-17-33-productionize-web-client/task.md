@@ -88,6 +88,11 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Eliminate unnecessary 401 errors by only syncing when authenticated
     - [x] Ensure development environment is fully functional
     - [x] Verify app loads and renders correctly in browser
+  - [x] **FIX DATABASE NAME CONSISTENCY**: Ensure web-client uses same database name as telegram bot
+    - [x] Add VITE_COUCHDB_API_KEY to @eddo/core envSchema for client-side access
+    - [x] Update getEffectiveDbName() to support both VITE_COUCHDB_API_KEY and COUCHDB_API_KEY
+    - [x] Add VITE_COUCHDB_API_KEY=walterra to .env.development and .env.production
+    - [x] Verify effective database name calculation: todos-dev_api_walterra
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory

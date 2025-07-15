@@ -13,7 +13,13 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
 
   // Get the database name for display
   const env = validateEnv(import.meta.env);
+  console.log('Environment variables:', {
+    COUCHDB_DB_NAME: env.COUCHDB_DB_NAME,
+    COUCHDB_API_KEY: env.COUCHDB_API_KEY,
+    VITE_COUCHDB_API_KEY: env.VITE_COUCHDB_API_KEY,
+  });
   const databaseName = getEffectiveDbName(env);
+  console.log('Database name:', databaseName);
 
   return (
     <>
