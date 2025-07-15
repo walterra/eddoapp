@@ -1,8 +1,10 @@
 import { serve } from '@hono/node-server';
+import { existsSync, readFileSync } from 'fs';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { jwt } from 'hono/jwt';
 import { logger } from 'hono/logger';
+import { serveStatic } from 'hono/node-server';
 import path from 'path';
 
 import { config } from './config';
@@ -11,14 +13,14 @@ import { dbProxyRoutes } from './routes/db-proxy';
 
 const app = new Hono();
 
-// Get absolute path to client build directory
-const clientBuildPath = path.resolve(process.cwd(), '../../dist/client');
-const isDevelopment = import.meta.env.DEV;
+// Get absolute path to public directory (where web-client builds to)
+const publicPath = path.resolve(process.cwd(), 'public');
+const indexHtmlPath = path.join(publicPath, 'index.html');
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 console.log('Development mode:', isDevelopment);
-if (!isDevelopment) {
-  console.log('Client build path:', clientBuildPath);
-}
+console.log('Public path:', publicPath);
+console.log('Index.html path:', indexHtmlPath);
 
 // Middleware
 app.use('*', logger());
@@ -39,16 +41,16 @@ app.get('/health', (c) =>
 // Auth routes (no JWT required)
 app.route('/auth', authRoutes);
 
-// Static file serving will be handled by Vite dev server in development
-// No manual static file serving needed when using @hono/vite-dev-server
-
 // Protected API routes (JWT required)
 app.use('/api/*', jwt({ secret: config.jwtSecret }));
 app.route('/api/db', dbProxyRoutes);
 
-// Serve client application (unified approach)
+// Static file serving from public directory (production builds)
+app.use('/*', serveStatic({ root: publicPath }));
+
+// SPA fallback - serve index.html for all non-API routes
 app.get('/*', async (c) => {
-  // Don't serve client for API routes - they should already be handled above
+  // Don't serve SPA fallback for API routes - they should already be handled above
   if (
     c.req.path.startsWith('/api/') ||
     c.req.path.startsWith('/auth/') ||
@@ -57,30 +59,37 @@ app.get('/*', async (c) => {
     return c.text('Not Found', 404);
   }
 
-  // Serve the React app
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="theme-color" content="#fff" />
-        <title>Eddo</title>
-        <script>
-          window.process = { env: { NODE_DEBUG: undefined } }; // https://github.com/pouchdb/pouchdb/issues/8266
-          window.global = window;
-        </script>
-      </head>
-      <body>
-        <div id="root"></div>
-        ${
-          import.meta.env.PROD
-            ? `<script type="module" src="/static/client.js"></script>`
-            : `<script type="module" src="/src/client.tsx"></script>`
-        }
-      </body>
-    </html>
-  `);
+  // In development mode, serve a simple fallback
+  if (isDevelopment) {
+    return c.html(`
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+          <meta name="theme-color" content="#fff" />
+          <title>Eddo</title>
+          <script>
+            window.process = { env: { NODE_DEBUG: undefined } }; // https://github.com/pouchdb/pouchdb/issues/8266
+            window.global = window;
+          </script>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="module" src="/src/client.tsx"></script>
+        </body>
+      </html>
+    `);
+  }
+
+  // In production, serve the built index.html
+  if (existsSync(indexHtmlPath)) {
+    const indexHtml = readFileSync(indexHtmlPath, 'utf-8');
+    return c.html(indexHtml);
+  }
+
+  // Fallback if no index.html exists
+  return c.text('Application not built. Run build first.', 404);
 });
 
 const port = config.port;

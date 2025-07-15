@@ -57,10 +57,10 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
   - [x] Move server files (src/server/) to packages/web-api/src/
   - [x] Add .gitignore files to both packages/web-client and packages/web-api
   - [x] Update packages/web-client/vite.config.ts to build into ../web-api/public/ and proxy /api to web-api
-  - [ ] Configure packages/web-api middleware: API routes at /api/\*, static assets from public/, SPA fallback
-  - [ ] Implement SPA fallback logic: non-API routes serve index.html for client-side routing
+  - [x] Configure packages/web-api middleware: API routes at /api/\*, static assets from public/, SPA fallback
+  - [x] Implement SPA fallback logic: non-API routes serve index.html for client-side routing
   - [ ] Update root package.json scripts: dev runs both servers in parallel
-  - [ ] Update workspace dependencies and remove packages/web_server
+  - [ ] Cleanup: Remove packages/web_server directory and update workspace dependencies
   - [ ] Test development: web (Vite:5173) + server (Hono:3000) with proxy, no CORS issues
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
