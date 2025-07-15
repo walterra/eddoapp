@@ -19,6 +19,25 @@ const envSchema = z.object({
   COUCHDB_DB_NAME: z.string().default('todos-prod'),
 });
 
+// Helper functions to extract credentials from CouchDB URL
+function extractUsernameFromUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    return parsed.username || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function extractPasswordFromUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    return parsed.password || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Use the core environment validation first, then extend with web-server specific config
 const coreEnv = validateEnv(process.env);
 const webServerEnv = envSchema.parse(process.env);
@@ -31,8 +50,8 @@ export const config = {
 
   couchdb: {
     url: coreEnv.COUCHDB_URL,
-    username: coreEnv.COUCHDB_USERNAME || coreEnv.COUCHDB_ADMIN_USERNAME,
-    password: coreEnv.COUCHDB_PASSWORD || coreEnv.COUCHDB_ADMIN_PASSWORD,
+    username: extractUsernameFromUrl(coreEnv.COUCHDB_URL),
+    password: extractPasswordFromUrl(coreEnv.COUCHDB_URL),
     dbName: coreEnv.COUCHDB_DB_NAME,
   },
 

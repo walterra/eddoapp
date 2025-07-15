@@ -84,6 +84,7 @@
     "build:web-server": "pnpm --filter @eddo/web-server build",
     "dev": "npm-run-all --parallel dev:client dev:server",
     "dev:production": "npm-run-all --parallel dev:client dev:web-server",
+    "dev:web-server-with-client": "npm-run-all --parallel dev:web-client dev:web-server",
     "dev:server": "pnpm --filter @eddo/mcp-server dev",
     "dev:telegram-bot": "pnpm --filter @eddo/telegram-bot dev",
     "dev:web-client": "pnpm --filter @eddo/web-client dev",

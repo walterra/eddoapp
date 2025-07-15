@@ -1,0 +1,18 @@
+
+> eddo-app@0.0.1 dev:web-client /Users/walterra/dev/eddoapp
+> pnpm --filter @eddo/web-client dev
+
+
+> @eddo/web-client@0.0.1 dev /Users/walterra/dev/eddoapp/packages/web_client
+> vite
+
+Generating .flowbite-react/class-list.json file...
+
+  VITE v7.0.4  ready in 163 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+/Users/walterra/dev/eddoapp/packages/web_client:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @eddo/web-client@0.0.1 dev: `vite`
+Exit status 143
+ ELIFECYCLE  Command failed with exit code 143.
