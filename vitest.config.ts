@@ -20,7 +20,7 @@ export default defineConfig({
           globals: true,
           environment: 'jsdom',
           include: [
-            'packages/web_client/src/**/*.test.tsx',
+            'packages/web_server/src/client/**/*.test.tsx',
             'packages/core/src/**/*.test.ts',
             'packages/telegram_bot/src/**/*.test.ts',
             'scripts/backup-interactive.test.ts'

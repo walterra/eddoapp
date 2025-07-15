@@ -1,7 +1,7 @@
-import { Eddo } from '@eddo/web-client/eddo';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { Eddo } from './client/eddo';
 import './styles.css';
 
 // Ensure the root element exists

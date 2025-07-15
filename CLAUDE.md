@@ -88,7 +88,7 @@ interface TodoAlpha3 {
 
 ### Package Structure
 
-- `packages/web_client/src/`: React frontend application
+- `packages/web_server/src/client/`: React frontend application
   - `components/`: React components (flat structure)
   - `hooks/`: Custom React hooks
 - `packages/core/src/`: Shared code across packages

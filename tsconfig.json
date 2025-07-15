@@ -19,7 +19,6 @@
   "include": [],
   "references": [
     { "path": "./packages/core" },
-    { "path": "./packages/web_client" },
     { "path": "./packages/mcp_server" },
     { "path": "./packages/telegram_bot" }
   ],

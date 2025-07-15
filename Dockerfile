@@ -10,7 +10,6 @@ WORKDIR /app
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 COPY packages/core/package.json ./packages/core/
-COPY packages/web_client/package.json ./packages/web_client/
 COPY packages/web_server/package.json ./packages/web_server/
 
 # Install dependencies

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       devServer({
-        entry: 'src/index.ts',
+        entry: 'src/server/index.ts',
         exclude: [
           // Remove TypeScript/TSX exclusion to allow Vite to handle them
           /.*\.(s?css|less)($|\?)/,
@@ -33,7 +33,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@eddo/core': resolve(__dirname, '../core/src'),
-        '@eddo/web-client': resolve(__dirname, '../web_client/src'),
       },
     },
     css: {
