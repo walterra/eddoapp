@@ -1,4 +1,4 @@
-import { getCouchDbConfig, getCouchDbUrl, validateEnv } from '@eddo/core';
+import { getCouchDbConfig, getEffectiveDbName, validateEnv } from '@eddo/core';
 import 'dotenv-mono/load';
 
 // Use the core environment validation for all configuration
@@ -24,8 +24,13 @@ export const config = {
     return undefined;
   },
 
-  // Helper to get full CouchDB URL with auth (delegate to core)
+  // Helper to get full CouchDB URL without credentials (for fetch API)
   getCouchDbUrl(path: string = ''): string {
-    return getCouchDbUrl(env) + path;
+    const url = new URL(env.COUCHDB_URL);
+    // Remove credentials from URL for fetch API compatibility
+    url.username = '';
+    url.password = '';
+    const effectiveDbName = getEffectiveDbName(env);
+    return `${url.toString()}${effectiveDbName}${path}`;
   },
 };
