@@ -23,6 +23,7 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 
 ## Implementation Plan
 
+### Phase 1: Current Basic Setup (COMPLETED)
 - [x] Create production web server using Hono framework (packages/web_server/)
 - [x] Remove CouchDB credentials from Vite config (packages/web_client/vite.config.ts)
 - [x] Implement CouchDB authentication proxy API endpoints (/api/db/*)
@@ -44,12 +45,27 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - [x] Test client loading and resolve MIME type issues (PARTIALLY WORKING - server restart timing sensitive)
 - [x] Delete packages/web_client package (consolidation complete)
 - [x] Update all references to web_client/web-client in configuration files
-- [ ] User test: Deploy to staging environment and verify full functionality
-- [ ] User test: Confirm offline-first PouchDB sync works through proxy
-- [ ] User test: Test authentication flow and session management
+
+### Phase 2: Production-Ready Architecture (BASED ON REFERENCE PROJECT)
+- [ ] **MODERNIZE BUILD SETUP**: Configure Vite to build web assets into server public/ directory
+- [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
+- [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory
+- [ ] **ADD ENVIRONMENT MANAGEMENT**: Use proper environment variables for secrets management
+- [ ] **IMPLEMENT SPA FALLBACK**: Configure proper routing for React SPA in production
+- [ ] **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses
+- [ ] **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
+
+### Phase 3: Testing & Deployment
+- [ ] Automated test: Verify production build and static asset serving
+- [ ] Automated test: Test authentication flow with AuthJS
+- [ ] User test: Deploy to production environment and verify full functionality
+- [ ] User test: Confirm offline-first PouchDB sync works through existing CouchDB proxy
+- [ ] User test: Test GitHub OAuth authentication flow
+- [ ] User test: Verify production build performance and caching
 
 ## Notes
 
+### Phase 1 Implementation (COMPLETED)
 - Web server implemented using Hono framework with TypeScript
 - CouchDB credentials successfully removed from client bundle
 - JWT authentication system working with demo credentials (demo/password)
@@ -75,3 +91,17 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - **DEPENDENCIES REGENERATED**: Updated pnpm-lock.yaml to reflect new package structure
 - **TAILWIND CONFIG OPTIMIZED**: Consolidated to single root config, limited to src/client/ directory
 - **VITE CONFIG FIXED**: Added /^\/src\/.*/ to exclude patterns to let Vite handle client files (REQUIRES RESTART)
+
+### Reference Project Analysis (COMPLETED)
+- **REFERENCE PROJECT**: /Users/walterra/dev/monorepo-example-tasks-app analyzed for production patterns
+- **KEY FINDINGS**: Modern deployment with Hono + React + Drizzle stack
+- **ARCHITECTURE**: Single server serves both API and static assets (unified deployment)
+- **BUILD PATTERN**: Vite builds frontend into `api/public/` directory for unified deployment
+- **TYPE SAFETY**: Hono RPC client provides end-to-end type safety from API to frontend
+- **AUTHENTICATION**: AuthJS with GitHub OAuth (more robust than JWT)
+- **DATABASE**: Drizzle ORM for production scalability and migrations
+- **DEPLOYMENT**: Standard Node.js deployment with static asset serving
+- **ENVIRONMENT**: Environment variables for secrets management
+- **PERFORMANCE**: Optimized bundling and proper caching headers
+- **DEVELOPER EXPERIENCE**: Hot reload, type safety, unified monorepo with pnpm workspaces
+- **PRODUCTION READY**: Error handling, migrations, testing, and proper security patterns
