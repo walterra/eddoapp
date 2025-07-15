@@ -15,7 +15,7 @@ The web client currently runs only in development mode using Vite with a **criti
 
 1. **Remove credential exposure** by implementing a secure authentication proxy
 2. **Add a production web server** using Hono framework (chosen for 2025)
-3. **Implement proper authentication** with token-based security  
+3. **Implement proper authentication** with token-based security
 4. **Create production build pipeline** with environment-specific configurations
 5. **Add deployment configuration** for various hosting platforms
 
@@ -24,9 +24,10 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 ## Implementation Plan
 
 ### Phase 1: Current Basic Setup (COMPLETED)
+
 - [x] Create production web server using Hono framework (packages/web_server/)
 - [x] Remove CouchDB credentials from Vite config (packages/web_client/vite.config.ts)
-- [x] Implement CouchDB authentication proxy API endpoints (/api/db/*)
+- [x] Implement CouchDB authentication proxy API endpoints (/api/db/\*)
 - [x] Add JWT-based authentication system for client-server communication
 - [x] Create production environment configuration (.env.production)
 - [x] Update client code to use API endpoints instead of direct CouchDB connection
@@ -47,7 +48,20 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - [x] Update all references to web_client/web-client in configuration files
 
 ### Phase 2: Production-Ready Architecture (BASED ON REFERENCE PROJECT)
+
 - [x] **MODERNIZE BUILD SETUP**: Configure Vite to build web assets into server public/ directory
+- [ ] **SPLIT INTO SEPARATE PACKAGES**: Create separate web and server packages following reference project architecture in /Users/walterra/dev/monorepo-example-tasks-app
+  - [ ] Create packages/web with React frontend (Vite dev server on port 5173)
+  - [ ] Create packages/server with Hono API server (port 3000)
+  - [ ] Move client files (src/client/, src/assets/, src/client.tsx) to packages/web/src/
+  - [ ] Move server files (src/server/) to packages/server/src/
+  - [ ] Update packages/web/vite.config.ts to build into ../server/public/ and proxy /api to server
+  - [ ] Configure packages/server middleware: API routes at /api/\*, static assets from public/, SPA fallback
+  - [ ] Implement SPA fallback logic: non-API routes serve index.html for client-side routing
+  - [ ] Update root package.json scripts: dev runs both servers in parallel
+  - [ ] Update workspace dependencies and remove packages/web_server
+  - [ ] Test development: web (Vite:5173) + server (Hono:3000) with proxy, no CORS issues
+  - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory
 - [ ] **ADD ENVIRONMENT MANAGEMENT**: Use proper environment variables for secrets management
@@ -56,6 +70,7 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - [ ] **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
 
 ### Phase 3: Testing & Deployment
+
 - [ ] Automated test: Verify production build and static asset serving
 - [ ] Automated test: Test authentication flow with AuthJS
 - [ ] User test: Deploy to production environment and verify full functionality
@@ -66,6 +81,7 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 ## Notes
 
 ### Phase 1 Implementation (COMPLETED)
+
 - Web server implemented using Hono framework with TypeScript
 - CouchDB credentials successfully removed from client bundle
 - JWT authentication system working with demo credentials (demo/password)
@@ -90,13 +106,17 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - **REFERENCES UPDATED**: Fixed all web_client references in config files (vite.config.ts, tsconfig.json, tailwind.config.cjs, etc.)
 - **DEPENDENCIES REGENERATED**: Updated pnpm-lock.yaml to reflect new package structure
 - **TAILWIND CONFIG OPTIMIZED**: Consolidated to single root config, limited to src/client/ directory
-- **VITE CONFIG FIXED**: Added /^\/src\/.*/ to exclude patterns to let Vite handle client files (REQUIRES RESTART)
+- **VITE CONFIG FIXED**: Added /^\/src\/.\*/ to exclude patterns to let Vite handle client files (REQUIRES RESTART)
 
 ### Reference Project Analysis (COMPLETED)
+
 - **REFERENCE PROJECT**: /Users/walterra/dev/monorepo-example-tasks-app analyzed for production patterns
 - **KEY FINDINGS**: Modern deployment with Hono + React + Drizzle stack
-- **ARCHITECTURE**: Single server serves both API and static assets (unified deployment)
-- **BUILD PATTERN**: Vite builds frontend into `api/public/` directory for unified deployment
+- **ARCHITECTURE**: Separate apps/web (Vite dev) + apps/api (Hono server) with unified deployment
+- **BUILD PATTERN**: Vite builds frontend into `../api/public/` directory for unified deployment
+- **DEVELOPMENT**: Web runs Vite dev server (port 5173), API runs Hono server (port 8787)
+- **PROXY**: Web app proxies `/api` requests to API server during development
+- **MIME TYPE SOLUTION**: Uses standard Vite dev server instead of @hono/vite-dev-server
 - **TYPE SAFETY**: Hono RPC client provides end-to-end type safety from API to frontend
 - **AUTHENTICATION**: AuthJS with GitHub OAuth (more robust than JWT)
 - **DATABASE**: Drizzle ORM for production scalability and migrations
@@ -105,3 +125,14 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - **PERFORMANCE**: Optimized bundling and proper caching headers
 - **DEVELOPER EXPERIENCE**: Hot reload, type safety, unified monorepo with pnpm workspaces
 - **PRODUCTION READY**: Error handling, migrations, testing, and proper security patterns
+
+### Architecture Split Decision (NEW)
+
+- **PROBLEM**: @hono/vite-dev-server causes MIME type issues with TSX files
+- **SOLUTION**: Split packages/web_server into separate packages/web + packages/server
+- **BENEFITS**: Clean separation, standard Vite dev server, follows reference project pattern
+- **DEVELOPMENT**: packages/web (Vite:5173) + packages/server (Hono:3000)
+- **PRODUCTION**: packages/web builds into packages/server/public/, single server:3000 deployment
+- **CORS SOLUTION**: Development uses proxy, production uses single server (same origin)
+- **ROUTING LOGIC**: /api/_ → API routes, /_ → static assets or SPA fallback to index.html
+- **SPA FALLBACK**: Non-API routes serve index.html for client-side routing (React Router support)
