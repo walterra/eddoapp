@@ -71,6 +71,11 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Add proxy logic to packages/web-api/src/index.ts for non-API routes in development
     - [x] Update development flow: users access localhost:3000, API handles directly, non-API proxied to Vite:5173
   - [x] Fix environment variables: Add VITE_ prefix for client-side env vars
+  - [ ] **STANDARDIZE ENV UTILITIES**: Consistent use of @eddo/core env utilities across packages
+    - [ ] Add VITE_API_URL to @eddo/core envSchema for client-side validation
+    - [ ] Fix web-client inconsistencies: use import.meta.env consistently with validateEnv
+    - [ ] Simplify web-api config: reduce duplication with core schema
+    - [ ] Update all packages to use consistent env handling pattern
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory
@@ -172,3 +177,31 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - **CORRECT**: Web-api (Hono:3000) should proxy non-API routes to web-client (Vite:5173)
 - **WHY**: Single entry point at localhost:3000, matches production architecture
 - **BENEFIT**: Production and development have same entry point, cleaner architecture
+
+### Environment Variables Analysis & Recommendation
+
+**@eddo/core env utility provides:**
+- ✅ **Zod validation** with defaults and type safety
+- ✅ **Centralized schema** for all env vars  
+- ✅ **Helper functions** like `getEffectiveDbName()`, `getCouchDbConfig()`
+- ✅ **Consistent** environment handling across packages
+
+**Current inconsistencies identified:**
+1. **Web-client mixed usage**: 
+   - `pouch_db.ts` uses `validateEnv(import.meta.env)` ✅ correct
+   - `page_wrapper.tsx` uses `validateEnv(process.env)` ❌ wrong for client-side
+   - `use_sync_production.ts` uses `import.meta.env.VITE_API_URL` ✅ correct but bypasses validation
+2. **Web-api redundancy**: Uses both `validateEnv(process.env)` and custom schema (duplicates core logic)
+
+**MCP server approach (good example):**
+- Uses `validateEnv(process.env)` consistently ✅
+- Leverages all helper functions from @eddo/core ✅
+- Clean, type-safe configuration ✅
+
+**RECOMMENDATION**: Standardize on @eddo/core env utilities across all packages:
+1. **Fix web-client inconsistencies** - use `import.meta.env` consistently with validateEnv
+2. **Simplify web-api config** - reduce duplication with core schema
+3. **Add missing env vars** to core schema (like `VITE_API_URL`)
+4. **Consistent type safety** across all packages
+
+**BENEFITS**: Better maintainability, consistency, fewer environment-related bugs
