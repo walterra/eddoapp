@@ -32,9 +32,19 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - [x] Add production build scripts and Docker configuration
 - [x] Automated test: Test authentication flow and API proxy functionality
 - [x] Automated test: Verify credentials are not exposed in production build
-- [ ] User test: Deploy to staging environment and verify full functionality (FAILED - MIME type issue)
-- [ ] User test: Confirm offline-first PouchDB sync works through proxy (BLOCKED - can't test due to MIME type issue)
-- [ ] User test: Test authentication flow and session management (BLOCKED - can't test due to MIME type issue)
+- [ ] **ARCHITECTURE REFACTOR**: Consolidate web_client into web_server package
+- [ ] Create organized directory structure: src/server/ and src/client/
+- [ ] Move server files (index.ts, routes/, config.ts) to packages/web_server/src/server/
+- [ ] Move all React components from packages/web_client/src to packages/web_server/src/client/
+- [ ] Update client.tsx to import from new client/ directory structure
+- [ ] Update server imports to use new server/ directory structure
+- [ ] Update package.json dependencies to include web_client dependencies
+- [ ] Remove @eddo/web-client workspace dependency
+- [ ] Update vite.config.ts paths and remove web_client alias
+- [ ] Test client loading and resolve MIME type issues
+- [ ] User test: Deploy to staging environment and verify full functionality
+- [ ] User test: Confirm offline-first PouchDB sync works through proxy
+- [ ] User test: Test authentication flow and session management
 
 ## Notes
 
@@ -50,3 +60,6 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 - Root cause: Default exclude patterns include `/.*\.tsx$/` which prevents Vite from handling TypeScript files
 - **FIX IMPLEMENTED**: Updated vite.config.ts to remove TypeScript/TSX exclusion and added manual Vite client script injection
 - Server needs restart for changes to take effect
+- **ARCHITECTURE DECISION**: Consolidate to single package (web_server) - follows Hono's monolithic React app pattern
+- Current hybrid approach (client.tsx importing from web_client) causes MIME type issues
+- Single package eliminates cross-package import complexity and configuration issues
