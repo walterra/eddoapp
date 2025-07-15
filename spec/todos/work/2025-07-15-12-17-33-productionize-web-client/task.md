@@ -71,11 +71,11 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Add proxy logic to packages/web-api/src/index.ts for non-API routes in development
     - [x] Update development flow: users access localhost:3000, API handles directly, non-API proxied to Vite:5173
   - [x] Fix environment variables: Add VITE_ prefix for client-side env vars
-  - [ ] **STANDARDIZE ENV UTILITIES**: Consistent use of @eddo/core env utilities across packages
-    - [ ] Add VITE_API_URL to @eddo/core envSchema for client-side validation
-    - [ ] Fix web-client inconsistencies: use import.meta.env consistently with validateEnv
-    - [ ] Simplify web-api config: reduce duplication with core schema
-    - [ ] Update all packages to use consistent env handling pattern
+  - [x] **STANDARDIZE ENV UTILITIES**: Consistent use of @eddo/core env utilities across packages
+    - [x] Add VITE_API_URL to @eddo/core envSchema for client-side validation
+    - [x] Fix web-client inconsistencies: use import.meta.env consistently with validateEnv
+    - [x] Simplify web-api config: reduce duplication with core schema
+    - [x] Update all packages to use consistent env handling pattern
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory

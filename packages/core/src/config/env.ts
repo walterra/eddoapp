@@ -40,6 +40,17 @@ export const envSchema = z.object({
   // Claude Code SDK Configuration
   CLAUDE_CODE_WORKING_DIR: z.string().default('./bot_workspace'),
   CLAUDE_CODE_SESSION_TIMEOUT: z.coerce.number().default(3600),
+
+  // Web Client Configuration (Vite environment variables)
+  VITE_API_URL: z.string().url().default('http://localhost:3000/api'),
+
+  // Web API Configuration
+  PORT: z.coerce.number().default(3000),
+  JWT_SECRET: z
+    .string()
+    .min(32, 'JWT secret must be at least 32 characters')
+    .optional(),
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
 });
 
 /**

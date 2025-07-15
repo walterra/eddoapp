@@ -9,7 +9,7 @@ export const useSyncDev = () => {
 
   useEffect(() => {
     // Development only - no auth needed
-    const env = validateEnv(process.env);
+    const env = validateEnv(import.meta.env);
     const remoteDb = new PouchDB(getCouchDbUrl(env));
 
     const syncHandler = sync(remoteDb, {

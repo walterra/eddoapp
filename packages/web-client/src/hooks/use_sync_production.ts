@@ -1,3 +1,4 @@
+import { validateEnv } from '@eddo/core';
 import PouchDB from 'pouchdb-browser';
 import { useEffect, useState } from 'react';
 
@@ -65,7 +66,8 @@ export const useSyncProduction = () => {
   useEffect(() => {
     if (!authToken) return;
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const env = validateEnv(import.meta.env);
+    const apiUrl = env.VITE_API_URL;
 
     // Create a custom adapter for PouchDB that uses our authenticated API
     const remoteDb = new PouchDB(`${apiUrl}/db`, {

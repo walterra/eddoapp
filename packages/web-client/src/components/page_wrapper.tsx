@@ -12,7 +12,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
   const { healthCheck } = useDatabaseHealth();
 
   // Get the database name for display
-  const env = validateEnv(process.env);
+  const env = validateEnv(import.meta.env);
   const databaseName = getEffectiveDbName(env);
 
   return (
