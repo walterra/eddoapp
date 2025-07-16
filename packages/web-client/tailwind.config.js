@@ -1,3 +1,5 @@
+import flowbite from 'flowbite/plugin';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,5 +9,5 @@ export default {
   ],
   darkMode: 'media',
   mode: 'jit',
-  plugins: [],
+  plugins: [flowbite],
 };

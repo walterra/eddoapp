@@ -64,7 +64,12 @@ export function Login({ onLogin, isAuthenticating }: LoginProps) {
             />
           </div>
 
-          <Button className="w-full" disabled={isAuthenticating} type="submit">
+          <Button
+            className="w-full"
+            color="blue"
+            disabled={isAuthenticating}
+            type="submit"
+          >
             {isAuthenticating ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>

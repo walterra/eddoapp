@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import './assets/styles.css';
 import { Eddo } from './eddo';
+import './eddo.css';
 
 // Ensure the root element exists
 const rootElement = document.getElementById('root');

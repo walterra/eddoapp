@@ -163,7 +163,7 @@ export const AddTodo: FC<AddTodoProps> = ({
             />
           </div>
           <div className="pr-3">
-            <Button disabled={isSubmitting} type="submit">
+            <Button color="blue" disabled={isSubmitting} type="submit">
               {isSubmitting ? 'Adding...' : 'Add todo'}
             </Button>
           </div>
@@ -174,13 +174,23 @@ export const AddTodo: FC<AddTodoProps> = ({
             onTagsChange={setSelectedTags}
             selectedTags={selectedTags}
           />
-          <Button className="p-0" onClick={previousWeekClickHandler} size="xs">
+          <Button
+            className="p-0"
+            color="gray"
+            onClick={previousWeekClickHandler}
+            size="xs"
+          >
             <RiArrowLeftSLine size="2em" />
           </Button>{' '}
           <span className="font-semibold text-gray-900 dark:text-white">
             CW{currentCalendarWeek}
           </span>{' '}
-          <Button className="p-0" onClick={nextWeekClickHandler} size="xs">
+          <Button
+            className="p-0"
+            color="gray"
+            onClick={nextWeekClickHandler}
+            size="xs"
+          >
             <RiArrowRightSLine size="2em" />
           </Button>
         </div>

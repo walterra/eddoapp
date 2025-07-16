@@ -371,6 +371,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
         <div className="flex w-full justify-between">
           <div>
             <Button
+              color="blue"
               disabled={!isActiveValid || isSaving || isDeleting}
               onClick={editSaveButtonPressed}
             >
@@ -379,7 +380,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
           </div>
           <div>
             <Button
-              color="failure"
+              color="red"
               disabled={isSaving || isDeleting}
               onClick={deleteButtonPressed}
             >
