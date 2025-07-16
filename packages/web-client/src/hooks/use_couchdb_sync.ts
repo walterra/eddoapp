@@ -10,7 +10,7 @@ interface AuthToken {
   expiresIn: string;
 }
 
-export const useSync = () => {
+export const useCouchDbSync = () => {
   const { sync } = usePouchDb();
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
