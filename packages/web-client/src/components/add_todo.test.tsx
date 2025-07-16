@@ -143,13 +143,19 @@ describe('AddTodo Component', () => {
     });
 
     it("should have today's date as default due date", () => {
+      // Mock the current date to avoid timezone flakiness
+      const mockToday = new Date('2025-07-16T12:00:00.000Z');
+      vi.setSystemTime(mockToday);
+
       render(<AddTodo {...defaultProps} />);
 
       const dueDateInput = screen.getByLabelText(
         'Due date',
       ) as HTMLInputElement;
-      const expectedDate = format(new Date(), 'yyyy-MM-dd');
+      const expectedDate = format(mockToday, 'yyyy-MM-dd');
       expect(dueDateInput.value).toBe(expectedDate);
+
+      vi.useRealTimers();
     });
   });
 
