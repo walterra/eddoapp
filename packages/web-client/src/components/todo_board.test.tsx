@@ -2,7 +2,6 @@ import { type DatabaseError, DatabaseErrorType } from '@eddo/core';
 import '@testing-library/jest-dom';
 import { screen, waitFor } from '@testing-library/react';
 import { add, endOfWeek, startOfWeek } from 'date-fns';
-import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../test-polyfill';
@@ -143,7 +142,7 @@ describe('TodoBoard', () => {
       // Mock safeQuery to return our test data
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
-        .mockImplementation((designDoc, viewName, _options) => {
+        .mockImplementation((_designDoc, viewName, _options) => {
           if (viewName === 'byDueDate') {
             return Promise.resolve(todosInWeek);
           }
@@ -193,7 +192,7 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
-        .mockImplementation((designDoc, viewName, _options) => {
+        .mockImplementation((_designDoc, viewName, _options) => {
           if (viewName === 'byTimeTrackingActive') {
             return Promise.resolve(activeTodos);
           }
@@ -236,7 +235,7 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
-        .mockImplementation((designDoc, viewName, _options) => {
+        .mockImplementation((_designDoc, viewName, _options) => {
           if (viewName === 'byActive') {
             return Promise.resolve(activities);
           }
@@ -294,7 +293,7 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
-        .mockImplementation((designDoc, viewName) => {
+        .mockImplementation((_designDoc, viewName) => {
           if (viewName === 'byDueDate') {
             return Promise.resolve(todos);
           }
@@ -381,7 +380,7 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
-        .mockImplementation((designDoc, viewName) => {
+        .mockImplementation((_designDoc, viewName) => {
           if (viewName === 'byDueDate') {
             return Promise.resolve(todos);
           }
@@ -433,7 +432,7 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
-        .mockImplementation((designDoc, viewName) => {
+        .mockImplementation((_designDoc, viewName) => {
           if (viewName === 'byDueDate') {
             return Promise.resolve([todoWithoutContext]);
           }
@@ -601,7 +600,7 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
-        .mockImplementation((designDoc, viewName) => {
+        .mockImplementation((_designDoc, viewName) => {
           if (viewName === 'byDueDate') {
             return Promise.resolve(todos);
           }

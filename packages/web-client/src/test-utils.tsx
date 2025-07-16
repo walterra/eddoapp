@@ -1,7 +1,7 @@
 // Test utilities for React component testing with real PouchDB
 import type { TodoAlpha3 } from '@eddo/core';
 import { type RenderOptions, render } from '@testing-library/react';
-import React, { type ReactElement, type ReactNode } from 'react';
+import { type ReactElement, type ReactNode } from 'react';
 
 import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 import { createTestPouchDb } from './test-setup';

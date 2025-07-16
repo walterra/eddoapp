@@ -191,7 +191,6 @@ describe('PouchDB Context and Hook', () => {
     it('should detect document changes', async () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
 
-      let _changeDetected = false;
       const changes = result.current.changes({
         live: false,
         include_docs: true,
@@ -199,7 +198,7 @@ describe('PouchDB Context and Hook', () => {
       });
 
       changes.on('change', () => {
-        _changeDetected = true;
+        // Change detected
       });
 
       // Add a document to trigger change

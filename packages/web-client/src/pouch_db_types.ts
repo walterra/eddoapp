@@ -1,4 +1,5 @@
 import type { DatabaseHealthMonitor, SafeDbOperations } from '@eddo/core';
+// @ts-expect-error - Used for type namespace access
 import type PouchDB from 'pouchdb-browser';
 import { createContext } from 'react';
 

@@ -21,9 +21,13 @@ export const useCouchDbSync = () => {
       fetch: (url, opts) => {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
-          ...opts?.headers,
           Authorization: `Bearer ${authToken.token}`,
         };
+
+        // Add existing headers if they exist
+        if (opts?.headers) {
+          Object.assign(headers, opts.headers);
+        }
 
         return fetch(url, {
           ...opts,

@@ -2,7 +2,6 @@ import type { TodoAlpha3 } from '@eddo/core';
 import '@testing-library/jest-dom';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';

@@ -1,7 +1,6 @@
 import { type Todo } from '@eddo/core';
 import { act, renderHook } from '@testing-library/react';
-import type PouchDB from 'pouchdb-browser';
-import React, {
+import {
   type ReactNode,
   createContext,
   useContext,
@@ -42,12 +41,9 @@ const TestDatabaseChangesProvider = ({
       include_docs: true,
     });
 
-    changesListener.on(
-      'change',
-      (d: PouchDB.Core.ChangesResponseChange<Record<string, unknown>>) => {
-        setChangeCount(typeof d.seq === 'string' ? Number(d.seq) : d.seq);
-      },
-    );
+    changesListener.on('change', (d: { seq: string | number }) => {
+      setChangeCount(typeof d.seq === 'string' ? Number(d.seq) : d.seq);
+    });
 
     changesListener.on('complete', () => {
       setIsListening(false);

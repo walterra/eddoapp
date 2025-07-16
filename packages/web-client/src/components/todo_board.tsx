@@ -10,7 +10,7 @@ import {
 import { group } from 'd3-array';
 import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
 import { uniqBy } from 'lodash-es';
-import React, {
+import {
   type FC,
   useCallback,
   useEffect,

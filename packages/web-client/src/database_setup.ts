@@ -3,6 +3,7 @@
  * Creates design documents and indexes that will sync to CouchDB
  */
 import type { SafeDbOperations } from '@eddo/core';
+// @ts-expect-error - Used for type namespace access
 import type PouchDB from 'pouchdb-browser';
 
 interface DesignDocument {

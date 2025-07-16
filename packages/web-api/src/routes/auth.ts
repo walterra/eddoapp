@@ -19,10 +19,11 @@ authApp.post('/login', async (c) => {
     const { username, password } = loginSchema.parse(body);
 
     // Simple demo authentication - replace with real user verification
+    // Extract credentials from CouchDB URL for comparison
+    const url = new URL(config.couchdb.url);
     const validCredentials =
       (username === 'demo' && password === 'password') ||
-      (username === config.couchdb.username &&
-        password === config.couchdb.password);
+      (username === url.username && password === url.password);
 
     if (!validCredentials) {
       return c.json({ error: 'Invalid credentials' }, 401);

@@ -20,7 +20,8 @@
   "references": [
     { "path": "./packages/core" },
     { "path": "./packages/mcp_server" },
-    { "path": "./packages/telegram_bot" }
+    { "path": "./packages/telegram_bot" },
+    { "path": "./packages/web-api" }
   ],
   "ts-node": {
     "transpileOnly": true,

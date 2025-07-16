@@ -5,7 +5,7 @@ import importPlugin from 'eslint-plugin-import';
 
 export default [
   {
-    ignores: ['dist/', 'coverage/', 'public/'],
+    ignores: ['dist/', 'coverage/', 'public/', '**/public/', '**/dist/'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
