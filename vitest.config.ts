@@ -1,25 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
-// Custom plugin to handle the tailwindcss/version.js import issue
-function tailwindVersionPlugin() {
-  return {
-    name: 'tailwind-version-plugin',
-    resolveId(id: string) {
-      if (id === 'tailwindcss/version.js') {
-        return id;
-      }
-    },
-    load(id: string) {
-      if (id === 'tailwindcss/version.js') {
-        return 'export const version = "3.4.17"; export default version;';
-      }
-    },
-  };
-}
-
 export default defineConfig({
-  plugins: [tailwindVersionPlugin()],
   resolve: {
     alias: {
       'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),
@@ -38,7 +20,6 @@ export default defineConfig({
     projects: [
       {
         name: 'unit',
-        plugins: [tailwindVersionPlugin()],
         resolve: {
           alias: {
             'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),

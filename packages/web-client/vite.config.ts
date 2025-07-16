@@ -1,29 +1,12 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
-import { Plugin, defineConfig, loadEnv } from 'vite';
-
-// Custom plugin to handle the tailwindcss/version.js import issue
-function tailwindVersionPlugin(): Plugin {
-  return {
-    name: 'tailwind-version-plugin',
-    resolveId(id: string) {
-      if (id === 'tailwindcss/version.js') {
-        return id;
-      }
-    },
-    load(id: string) {
-      if (id === 'tailwindcss/version.js') {
-        return 'export const version = "3.4.17"; export default version;';
-      }
-    },
-  };
-}
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    plugins: [react(), tailwindVersionPlugin()],
+    plugins: [react()],
     server: {
       port: parseInt(env.PORT || '5173'),
       host: '0.0.0.0',
@@ -37,7 +20,6 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         input: resolve(__dirname, 'index.html'),
-        external: ['tailwindcss/version.js'],
       },
     },
     resolve: {
@@ -50,7 +32,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     css: {
-      postcss: './postcss.config.js',
+      postcss: '../../postcss.config.cjs',
     },
   };
 });
