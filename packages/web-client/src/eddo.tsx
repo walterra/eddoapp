@@ -4,6 +4,7 @@ import { AddTodo } from './components/add_todo';
 import { Login } from './components/login';
 import { PageWrapper } from './components/page_wrapper';
 import { TodoBoard } from './components/todo_board';
+import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
@@ -28,7 +29,7 @@ function HealthMonitor() {
 function AuthenticatedApp() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const { authenticate, isAuthenticated, isAuthenticating } = useCouchDbSync();
+  const { authenticate, isAuthenticated, isAuthenticating } = useAuth();
 
   if (!isAuthenticated) {
     return <Login isAuthenticating={isAuthenticating} onLogin={authenticate} />;
