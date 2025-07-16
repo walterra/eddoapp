@@ -1,4 +1,4 @@
-import { type Env, validateEnv } from '@eddo/core';
+import { type Env, validateEnv } from '@eddo/core-server';
 import { dotenvLoad } from 'dotenv-mono';
 import { z } from 'zod';
 

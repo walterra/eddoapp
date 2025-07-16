@@ -170,7 +170,7 @@ export class SimpleAgent {
     // Store system prompt in state for logging
     state.systemPrompt = systemPrompt;
 
-    const maxIterations = 10;
+    const maxIterations = 50;
     let iteration = 0;
 
     while (!state.done && iteration < maxIterations) {

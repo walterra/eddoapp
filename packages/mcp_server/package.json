@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/mcp-server.js",
   "dependencies": {
-    "@eddo/core": "workspace:*",
+    "@eddo/core-server": "workspace:*",
     "dotenv-mono": "^1.3.14",
     "fastmcp": "^3.8.5",
     "nano": "^10.1.4",
@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.13.1",
-    "@types/node": "^24.0.13",
+    "@types/node": "^22.12.4",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

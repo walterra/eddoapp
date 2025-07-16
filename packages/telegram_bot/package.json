@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.2",
-    "@eddo/core": "workspace:*",
+    "@eddo/core-server": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.13.1",
     "dotenv-mono": "^1.3.14",
     "fastmcp": "^3.8.5",
@@ -23,7 +23,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^24.0.13",
+    "@types/node": "^22.12.4",
     "@types/uuid": "^10.0.0",
     "eslint": "^9.0.0",
     "tsx": "^4.6.0",

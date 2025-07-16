@@ -2,7 +2,7 @@
  * E2E Test Utilities
  * Provides helper functions for setting up and cleaning up CouchDB databases in e2e tests
  */
-import { validateEnv, getTestCouchDbConfig } from '@eddo/core';
+import { validateEnv, getTestCouchDbConfig } from '@eddo/core-server';
 import nano from 'nano';
 
 /**

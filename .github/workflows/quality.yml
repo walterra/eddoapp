@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4.1.0
@@ -53,14 +53,14 @@ jobs:
       - name: Check bundle size
         run: |
           # Check client build output size
-          if [ -d "dist/client" ]; then
-            CLIENT_SIZE=$(du -sk dist/client | cut -f1)
+          if [ -d "packages/web-api/public" ]; then
+            CLIENT_SIZE=$(du -sk packages/web-api/public | cut -f1)
             echo "Client bundle size: ${CLIENT_SIZE}KB"
             echo "CLIENT_SIZE=${CLIENT_SIZE}" >> $GITHUB_ENV
             
             # Get detailed breakdown
             echo "Bundle breakdown:"
-            ls -lah dist/client/assets/ || echo "No assets directory found"
+            ls -lah packages/web-api/public/assets/ || echo "No assets directory found"
             
             # Fail if client bundle exceeds 2MB (2048KB)
             if [ $CLIENT_SIZE -gt 2048 ]; then
@@ -70,9 +70,10 @@ jobs:
               echo "✅ Client bundle size (${CLIENT_SIZE}KB) is within limit"
             fi
           else
-            echo "❌ Client dist directory not found at dist/client"
+            echo "❌ Client build directory not found at packages/web-api/public"
             echo "Available directories:"
-            ls -la dist/ || echo "No dist directory found"
+            ls -la packages/web-client/ || echo "No web-client package found"
+            ls -la packages/web-api/ || echo "No web-api package found"
             echo "CLIENT_SIZE=0" >> $GITHUB_ENV
           fi
 

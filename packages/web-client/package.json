@@ -1,0 +1,48 @@
+{
+  "name": "@eddo/web-client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eddo/core-client": "workspace:*",
+    "d3-array": "^3.0.3",
+    "date-fns": "^4.1.0",
+    "events": "^3.3.0",
+    "flowbite": "^3.1.2",
+    "flowbite-react": "^0.11.9",
+    "lodash-es": "^4.17.21",
+    "pouchdb-browser": "^9.0.0",
+    "pouchdb-find": "^9.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.5.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/d3-array": "^3.0.3",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^22.12.4",
+    "@types/pouchdb-browser": "^6.1.5",
+    "@types/pouchdb-find": "^6.3.7",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "pouchdb-adapter-memory": "^9.0.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.7.2",
+    "vite": "^7.0.4",
+    "vitest": "^3.2.4"
+  },
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "dev": "vite",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  }
+}

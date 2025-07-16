@@ -17,7 +17,7 @@ TypeScript monorepo with React frontend, MCP server, and Telegram bot.
 ## Commands
 
 - **Build**: `pnpm build`
-- **Dev**: `pnpm dev`
+- **Dev**: `pnpm dev` (never run this yourself, the user will do this for you)
 - **Lint**: `pnpm lint`
 - **Format**: `pnpm format`
 - **Check**: `pnpm tsc:check`
@@ -28,8 +28,11 @@ TypeScript monorepo with React frontend, MCP server, and Telegram bot.
 
 ## Structure
 
-packages/web_client/src/index.tsx        # React frontend entry
-packages/mcp_server/src/mcp-server.ts    # MCP server
-packages/telegram_bot/src/index.ts   # Telegram bot
-packages/core/src/                 # Shared types/utils
-scripts/                             # CLI tools
+packages/web-client/src/client.tsx # React frontend entry
+packages/web-api/src/index.ts # Hono API server entry
+packages/mcp_server/src/mcp-server.ts # MCP server
+packages/telegram_bot/src/index.ts # Telegram bot
+packages/core-shared/src/ # Shared types/utils
+packages/core-server/src/ # Server-side core functionality
+packages/core-client/src/ # Client-side core functionality
+scripts/ # CLI tools

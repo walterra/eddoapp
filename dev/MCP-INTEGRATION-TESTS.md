@@ -38,7 +38,7 @@ Our MCP server exposes 8 main tools for CRUD operations, time tracking, and anal
 ### Existing Assets
 - `scripts/test-mcp.js`: CLI-based MCP tool testing
 - `dev/MCP-CRUD.md`: Comprehensive command reference
-- Established test patterns in `packages/core/src/api/`
+- Established test patterns in `packages/core-shared/src/api/` and `packages/core-server/src/api/`
 
 ### Available MCP Tools
 1. **CREATE**: `createTodo`

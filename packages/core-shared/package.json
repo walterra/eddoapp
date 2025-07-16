@@ -1,0 +1,28 @@
+{
+  "name": "@eddo/core-shared",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types/*": "./dist/types/*.js",
+    "./utils/*": "./dist/utils/*.js",
+    "./api/*": "./dist/api/*.js",
+    "./versions/*": "./dist/versions/*.js"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "lodash-es": "^4.17.21",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.6",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}

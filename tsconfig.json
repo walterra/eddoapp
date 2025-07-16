@@ -10,7 +10,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "noEmit": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true
@@ -18,10 +18,13 @@
   "exclude": ["node_modules"],
   "include": [],
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/web_client" },
+    { "path": "./packages/core-shared" },
+    { "path": "./packages/core-client" },
+    { "path": "./packages/core-server" },
     { "path": "./packages/mcp_server" },
-    { "path": "./packages/telegram_bot" }
+    { "path": "./packages/telegram_bot" },
+    { "path": "./packages/web-api" },
+    { "path": "./packages/web-client" }
   ],
   "ts-node": {
     "transpileOnly": true,

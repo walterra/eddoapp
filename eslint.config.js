@@ -5,7 +5,7 @@ import importPlugin from 'eslint-plugin-import';
 
 export default [
   {
-    ignores: ['dist/', 'coverage/'],
+    ignores: ['dist/', 'coverage/', 'public/', '**/public/', '**/dist/'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -82,6 +82,19 @@ export default [
     files: ['**/*.ts'],
     rules: {
       'react/display-name': 0,
+    },
+  },
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      'import/no-extraneous-dependencies': [
+        'error',
+        {
+          devDependencies: true,
+          peerDependencies: true,
+          optionalDependencies: false,
+        },
+      ],
     },
   },
   {

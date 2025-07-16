@@ -2,7 +2,7 @@
  * MCP User Context Management
  * Implements per-user database pattern for complete data isolation
  */
-import type { TodoAlpha3 } from '@eddo/core';
+import type { TodoAlpha3 } from '@eddo/core-server';
 import nano from 'nano';
 
 export class UserContextManager {

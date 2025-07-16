@@ -4,10 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
+### Commands to run servers
+
+Never run these commands yourself or kill related processes. The user is responsible for running the server. If you need to run or restart one of these commands, ask the user to do it for you.
+
+- web (client+api): `pnpm dev` (port 3000)
+- web client dev only: `pnpm dev:web-client` (port 5173 in dev)
+- web api dev only: `pnpm dev:web-api` (port 3000, passes through web-client)
+- MCP server dev: `pnpm dev:mcp-server`
+- Telegram bot dev: `pnpm dev:telegram-bot`
+
 ### Root Level
 
-- Build all packages: `pnpm build`
-- Dev server (client): `pnpm dev`
+Use these commands for investigating, testing and linting.
+DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|build` from the repo root.
+
+- IMPORTANT: Use `pnpm logs:tail` to investigate unified logs produced by `pnpm dev`
+- Build all packages: `pnpm build` (always run from the repo root, not from individual package dirs)
+- Build for production: `pnpm build:production`
 - Lint: `pnpm lint`
 - Format check: `pnpm lint:format`
 - Format fix: `pnpm format`
@@ -19,15 +33,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - CI test suite: `pnpm test:ci`
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
-- MCP server test: `pnpm test:mcp`
+- MCP server test: `pnpm test:mcp` (this lets you run commands against mcp-server)
 - Check unused dependencies: `pnpm knip`
 
 ### Package-Specific
 
-- Client dev: `pnpm dev:client`
-- Server dev: `pnpm dev:server`
-- Telegram bot dev: `pnpm dev:telegram-bot`
-- Build specific package: `pnpm build:client|server|shared|telegram-bot`
+- Build specific package: `pnpm build:client|api|core|mcp-server|telegram-bot`
 
 ### Backup & Restore
 
@@ -48,9 +59,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a GTD-inspired todo and time tracking application built as a monorepo with multiple packages:
 
-- **client**: React/TypeScript frontend with PouchDB for offline-first storage
-- **server**: MCP (Model Context Protocol) server for external integrations
-- **shared**: Common types, utilities, and data models across packages
+- **web-client**: React/TypeScript frontend with PouchDB for offline-first storage (port 5173 in dev)
+- **web-api**: Hono API server for authentication and CouchDB proxy (port 3000)
+- **core**: Common types, utilities, and data models across packages
+- **mcp-server**: MCP (Model Context Protocol) server for external integrations (port 3002)
 - **telegram-bot**: Telegram bot with AI agent capabilities using Anthropic Claude
 
 ### Key Architectural Patterns
@@ -88,14 +100,28 @@ interface TodoAlpha3 {
 
 ### Package Structure
 
-- `packages/web_client/src/`: React frontend application
+- `packages/web-client/src/`: React frontend application
   - `components/`: React components (flat structure)
   - `hooks/`: Custom React hooks
-- `packages/core/src/`: Shared code across packages
-  - `api/versions/`: Data model versions and migration functions
-  - `types/`: TypeScript definitions
+  - `pages/`: Page components for routing
+  - `utils/`: Frontend-specific utilities
+- `packages/web-api/src/`: Hono API server
+  - `routes/`: API route handlers
+  - `middleware/`: Authentication and error handling
+  - `config.ts`: Server configuration
+- `packages/core-shared/src/`: Shared code across packages
+  - `api/`: Database operations and health monitoring
+  - `types/`: TypeScript definitions for shared data models
   - `utils/`: Utility functions with co-located tests
+  - `versions/`: Data model versions and migration functions
+- `packages/core-server/src/`: Server-side core functionality
+  - `api/`: Database factory and server-specific operations
+  - `config/`: Server environment configuration and validation
+- `packages/core-client/src/`: Client-side core functionality
+  - `config/`: Client environment configuration
 - `packages/mcp_server/src/`: MCP server implementation
+  - `tools/`: MCP tool definitions
+  - `server.ts`: FastMCP server setup
 - `packages/telegram_bot/src/`: Telegram bot with AI agent
   - `agent/`: Simple agent loop implementation
   - `ai/`: Claude integration and persona management
@@ -136,53 +162,22 @@ interface TodoAlpha3 {
 
 When working on AI agent code (especially in the telegram-bot package), follow these principles:
 
-### Core Philosophy: Simplicity First
+### Telegram Bot Dev Philosophy: Simplicity First
 
 - **Agents are just "for loops with LLM calls"** - avoid over-engineering
 - Prefer minimal recursive loops over complex state machines
 - Trust the LLM to orchestrate its own workflow rather than imposing rigid patterns
-
-### Implementation Patterns
-
-1. **Simple Agent Loop Structure**:
-
-   ```typescript
-   async function agentLoop(userInput: string, context: BotContext) {
-     let state = { input: userInput, history: [] };
-     while (!state.done) {
-       const llmResponse = await processWithLLM(state);
-       if (llmResponse.needsTool) {
-         state = await executeTool(llmResponse.tool, state);
-       } else {
-         state.done = true;
-       }
-       state.history.push(llmResponse);
-     }
-     return state.output;
-   }
-   ```
-
-2. **Avoid Complex Abstractions**:
-
-   - NO: Graph-based workflows, state machines, rigid node systems
-   - YES: Simple loops, direct tool calls, minimal state
-
-3. **Tool Integration**:
-
-   - Fetch MCP tool definitions dynamically from server
-   - Pass tool descriptions directly to LLM in system prompt
-   - Let the LLM select tools based on descriptions, not complex routing
-
-4. **State Management**:
-
-   - Keep state minimal: current input, history, context
-   - Store conversation history in simple data structures (Map, Array)
-   - Avoid complex state objects with 20+ fields
-
-5. **Error Handling**:
-   - Use simple try-catch blocks
-   - Let the LLM interpret and learn from errors
-   - Provide environmental feedback, not pre-programmed error flows
+- NO: Graph-based workflows, state machines, rigid node systems
+- YES: Simple loops, direct tool calls, minimal state
+- Fetch MCP tool definitions dynamically from server
+- Pass tool descriptions directly to LLM in system prompt
+- Let the LLM select tools based on descriptions, not complex routing
+- Keep state minimal: current input, history, context
+- Store conversation history in simple data structures (Map, Array)
+- Avoid complex state objects with 20+ fields
+- Use simple try-catch blocks
+- Let the LLM interpret and learn from errors
+- Provide environmental feedback, not pre-programmed error flows
 
 ### What to Avoid
 
@@ -199,52 +194,6 @@ When working on AI agent code (especially in the telegram-bot package), follow t
 - ✅ Environmental feedback loops
 - ✅ Trust in LLM's ability to self-organize
 - ✅ Code that reads like a simple script, not a framework
-
-## MCP Client Usage
-
-When connecting to MCP servers, use the standard `@modelcontextprotocol/sdk` with these patterns:
-
-### Basic Client Setup
-
-```typescript
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-
-const transport = new StreamableHTTPClientTransport(new URL(serverUrl));
-const client = new Client(
-  {
-    name: 'app-name',
-    version: '1.0.0',
-  },
-  {
-    capabilities: { tools: {} },
-  },
-);
-
-await client.connect(transport);
-```
-
-### Tool Discovery and Invocation
-
-```typescript
-// Discover tools
-const toolsResponse = await client.listTools();
-const tools = toolsResponse.tools.map((tool) => ({
-  name: tool.name,
-  description: tool.description,
-  inputSchema: tool.inputSchema,
-}));
-
-// Invoke tools
-const result = await client.callTool({
-  name: toolName,
-  arguments: params,
-});
-```
-
-### Alternative: FastMCP
-
-FastMCP is primarily a **server** framework but demonstrates proper client usage. For clients, stick to the standard SDK patterns shown above rather than FastMCP abstractions.
 
 ## Testing Guidelines
 
@@ -276,3 +225,17 @@ COUCHDB_ADMIN_PASSWORD=admin-password
 
 - `LLM_MODEL`: Set to configure AI model (e.g., `claude-sonnet-4-0`, `claude-opus-4-0`, `claude-3-5-haiku-20241022`)
 - MCP server runs on port 3002 by default (via proxy)
+
+### Additional Environment Variables
+
+```bash
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=your-bot-token
+BOT_PERSONA_ID=gtd_coach  # Options: butler, gtd_coach, zen_master
+
+# Application
+VITE_COUCHDB_API_KEY=your-api-key
+
+# Development
+NODE_ENV=development|production
+```
