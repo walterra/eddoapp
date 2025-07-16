@@ -1,11 +1,11 @@
+import '@eddo/core-shared/api/test-setup';
+import { createTestTodoAlpha3 } from '@eddo/core-shared/api/test-utils';
+import { type TodoAlpha3 } from '@eddo/core-shared/versions/todo_alpha3';
 import memory from 'pouchdb-adapter-memory';
 import PouchDB from 'pouchdb-browser';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createDatabase } from './database-factory';
-import './test-setup';
-import { createTestTodoAlpha3 } from './test-utils';
-import { type TodoAlpha3 } from './versions/todo_alpha3';
 
 // Add memory adapter for testing
 PouchDB.plugin(memory);

@@ -4,7 +4,7 @@
  * Handles database creation, indexes, and design documents
  * Can be used in production, development, and CI/CD pipelines
  */
-import { validateEnv } from '@eddo/core';
+import { validateEnv } from '@eddo/core-server';
 import { dotenvLoad } from 'dotenv-mono';
 
 import { DatabaseSetup } from '../integration-tests/setup/database-setup.js';

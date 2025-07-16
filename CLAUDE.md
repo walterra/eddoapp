@@ -109,11 +109,16 @@ interface TodoAlpha3 {
   - `routes/`: API route handlers
   - `middleware/`: Authentication and error handling
   - `config.ts`: Server configuration
-- `packages/core/src/`: Shared code across packages
-  - `api/versions/`: Data model versions and migration functions
-  - `types/`: TypeScript definitions
+- `packages/core-shared/src/`: Shared code across packages
+  - `api/`: Database operations and health monitoring
+  - `types/`: TypeScript definitions for shared data models
   - `utils/`: Utility functions with co-located tests
-  - `env.ts`: Environment variable validation and helpers
+  - `versions/`: Data model versions and migration functions
+- `packages/core-server/src/`: Server-side core functionality
+  - `api/`: Database factory and server-specific operations
+  - `config/`: Server environment configuration and validation
+- `packages/core-client/src/`: Client-side core functionality
+  - `config/`: Client environment configuration
 - `packages/mcp_server/src/`: MCP server implementation
   - `tools/`: MCP tool definitions
   - `server.ts`: FastMCP server setup

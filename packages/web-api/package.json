@@ -9,7 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@eddo/core": "workspace:*",
+    "@eddo/core-server": "workspace:*",
     "@hono/node-server": "^1.16.0",
     "bcryptjs": "^2.4.3",
     "hono": "^4.8.5",

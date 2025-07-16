@@ -8,7 +8,7 @@ import fs from 'fs';
 import { getBackupConfig } from './backup-interactive.js';
 
 // Mock dependencies
-vi.mock('@eddo/core/config', () => ({
+vi.mock('@eddo/core-server/config', () => ({
   validateEnv: vi.fn(() => ({
     COUCHDB_URL: 'http://localhost:5984',
     COUCHDB_USERNAME: 'admin',

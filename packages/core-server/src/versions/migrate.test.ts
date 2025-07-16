@@ -1,14 +1,20 @@
+import {
+  createTestTodoAlpha1,
+  createTestTodoAlpha2,
+  createTestTodoAlpha3,
+} from '@eddo/core-shared/api/test-utils';
+import {
+  isLatestVersion,
+  migrateTodo,
+} from '@eddo/core-shared/versions/migrate';
+import { type TodoAlpha1 } from '@eddo/core-shared/versions/todo_alpha1';
+import { type TodoAlpha2 } from '@eddo/core-shared/versions/todo_alpha2';
+import { type TodoAlpha3 } from '@eddo/core-shared/versions/todo_alpha3';
 import memory from 'pouchdb-adapter-memory';
 import PouchDB from 'pouchdb-browser';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { createDatabase } from '../database-factory';
-import '../test-setup';
-import { createTestTodoAlpha2, createTestTodoAlpha3 } from '../test-utils';
-import { isLatestVersion, migrateTodo } from './migrate';
-import { type TodoAlpha1 } from './todo_alpha1';
-import { type TodoAlpha2 } from './todo_alpha2';
-import { type TodoAlpha3 } from './todo_alpha3';
+import { createDatabase } from '../api/database-factory';
 
 // Add memory adapter for testing
 PouchDB.plugin(memory);
@@ -32,11 +38,13 @@ describe('Database Migration Functions', () => {
   describe('migrateTodo', () => {
     it('should migrate from alpha1 to alpha3', () => {
       const alpha1Todo: TodoAlpha1 = {
-        _id: '2025-01-01T00:00:00.000Z',
+        ...createTestTodoAlpha1({
+          _id: '2025-01-01T00:00:00.000Z',
+          title: 'Test Todo',
+          completed: false,
+          context: 'work',
+        }),
         _rev: '1-abc',
-        title: 'Test Todo',
-        completed: false,
-        context: 'work',
       };
 
       const result = migrateTodo(alpha1Todo);
@@ -54,17 +62,14 @@ describe('Database Migration Functions', () => {
 
     it('should migrate from alpha2 to alpha3', () => {
       const alpha2Todo: TodoAlpha2 = {
-        _id: '2025-01-01T00:00:00.000Z',
+        ...createTestTodoAlpha2({
+          _id: '2025-01-01T00:00:00.000Z',
+          title: 'Test Todo',
+          description: 'Test description',
+          tags: ['test'],
+          active: { '2025-01-01': 'start' },
+        }),
         _rev: '2-def',
-        title: 'Test Todo',
-        description: 'Test description',
-        completed: null,
-        due: '2025-01-02',
-        context: 'work',
-        repeat: null,
-        tags: ['test'],
-        active: { '2025-01-01': 'start' },
-        version: 'alpha2',
       };
 
       const result = migrateTodo(alpha2Todo);

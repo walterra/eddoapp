@@ -1,4 +1,4 @@
-import { shuffle } from '@eddo/core';
+import { shuffle } from '@eddo/core-client';
 import { type FC } from 'react';
 
 const SHUFFLE = false;

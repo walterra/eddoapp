@@ -1,7 +1,7 @@
 /**
  * Database health indicator component
  */
-import { DatabaseHealthCheck } from '@eddo/core';
+import { DatabaseHealthCheck } from '@eddo/core-client';
 import React from 'react';
 
 interface DatabaseHealthIndicatorProps {

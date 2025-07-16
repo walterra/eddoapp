@@ -9,9 +9,9 @@ export default defineConfig({
     emptyOutDir: true
   },
   optimizeDeps: {
-    include: ['@eddo/core']
+    include: ['@eddo/core-shared', '@eddo/core-client']
   },
   ssr: {
-    noExternal: ['@eddo/core']
+    noExternal: ['@eddo/core-shared', '@eddo/core-client']
   }
 });

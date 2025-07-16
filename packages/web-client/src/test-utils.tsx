@@ -1,5 +1,5 @@
 // Test utilities for React component testing with real PouchDB
-import type { TodoAlpha3 } from '@eddo/core';
+import type { TodoAlpha3 } from '@eddo/core-client';
 import { type RenderOptions, render } from '@testing-library/react';
 import { type ReactElement, type ReactNode } from 'react';
 

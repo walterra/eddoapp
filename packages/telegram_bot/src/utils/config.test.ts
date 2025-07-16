@@ -11,7 +11,7 @@ const mockEnv = {
 };
 
 // Mock the shared environment validation
-vi.mock('@eddo/core', () => ({
+vi.mock('@eddo/core-server', () => ({
   validateEnv: vi.fn(() => ({})),
 }));
 

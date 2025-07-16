@@ -1,7 +1,7 @@
 /**
  * React hook for tag management and autocomplete
  */
-import { type Todo } from '@eddo/core';
+import { type Todo } from '@eddo/core-client';
 import { useEffect, useState } from 'react';
 
 import { usePouchDb } from '../pouch_db';

@@ -7,7 +7,7 @@ import {
   getCouchDbConfig,
   getTestCouchDbConfig,
   validateEnv,
-} from '@eddo/core';
+} from '@eddo/core-server';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';

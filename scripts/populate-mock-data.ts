@@ -6,8 +6,8 @@
  */
 
 import fetch from 'node-fetch';
-import { validateEnv, getCouchDbConfig } from '@eddo/core/config';
-import type { TodoAlpha3 } from '@eddo/core/types/todo';
+import { validateEnv, getCouchDbConfig } from '@eddo/core-server/config';
+import type { TodoAlpha3 } from '@eddo/core-server/types/todo';
 
 // Environment configuration using shared validation
 const env = validateEnv(process.env);

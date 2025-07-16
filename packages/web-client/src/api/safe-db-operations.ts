@@ -2,7 +2,7 @@ import {
   DatabaseError,
   DatabaseErrorType,
   DatabaseOperationError,
-} from '../types/database-errors';
+} from '@eddo/core-shared/types/database-errors';
 
 /** Configuration for retry behavior */
 type RetryConfig = {
@@ -126,7 +126,7 @@ const withRetry = async <T>(
       );
 
       console.warn(
-        `Database operation "${operationName}" failed (attempt ${attempt}/${retryConfig.maxRetries}). Retrying in ${delay}ms...`,
+        `Database operation "${operationName}"${documentId ? ` for document "${documentId}"` : ''} failed (attempt ${attempt}/${retryConfig.maxRetries}). Retrying in ${delay}ms...`,
         error,
       );
 

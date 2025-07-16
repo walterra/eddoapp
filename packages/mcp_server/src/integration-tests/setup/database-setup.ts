@@ -3,7 +3,7 @@
  * Handles design document creation and database schema management
  * Separated from MCP server for better architecture and test isolation
  */
-import { getTestCouchDbConfig, validateEnv } from '@eddo/core';
+import { getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
 import nano from 'nano';
 
 export interface DesignDocument {

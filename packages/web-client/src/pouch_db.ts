@@ -1,13 +1,13 @@
 import {
   DatabaseHealthMonitor,
-  createSafeDbOperations,
   getClientDbName,
   validateClientEnv,
-} from '@eddo/core';
+} from '@eddo/core-client';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import { useContext } from 'react';
 
+import { createSafeDbOperations } from './api/safe-db-operations';
 import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 
 // Enable the find plugin

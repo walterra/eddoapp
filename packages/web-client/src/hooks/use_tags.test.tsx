@@ -1,4 +1,4 @@
-import { type TodoAlpha3 } from '@eddo/core';
+import { type TodoAlpha3 } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { renderHook, waitFor } from '@testing-library/react';
 import {

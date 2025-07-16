@@ -5,7 +5,7 @@ import {
   getActiveDuration,
   getFormattedDuration,
   getRepeatTodo,
-} from '@eddo/core';
+} from '@eddo/core-client';
 import {
   Button,
   Checkbox,

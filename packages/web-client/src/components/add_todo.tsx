@@ -1,4 +1,8 @@
-import { type DatabaseError, DatabaseErrorType, NewTodo } from '@eddo/core';
+import {
+  type DatabaseError,
+  DatabaseErrorType,
+  NewTodo,
+} from '@eddo/core-client';
 import { add, format, getISOWeek, sub } from 'date-fns';
 import { Button, TextInput } from 'flowbite-react';
 import React, { type FC, useState } from 'react';

@@ -1,4 +1,4 @@
-import { DatabaseError, DatabaseErrorType } from '@eddo/core';
+import { DatabaseError, DatabaseErrorType } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

@@ -66,7 +66,7 @@ interface UserRegistryEntryAlpha1 {
 Following the established pattern from todo schema:
 
 ```
-packages/core/src/api/versions/
+packages/core-shared/src/versions/
 ├── user_registry_alpha1.ts    # Base version with core fields
 ├── user_registry_alpha2.ts    # Future version with migration
 ├── migrate_user_registry.ts   # Central migration orchestrator
@@ -180,7 +180,7 @@ User-specific CouchDB Database
 
 ### Phase 1: User Registry Database
 
-1. **Create Versioned Registry Types** (`packages/core/src/api/versions/user_registry_alpha1.ts`)
+1. **Create Versioned Registry Types** (`packages/core-shared/src/versions/user_registry_alpha1.ts`)
 ```typescript
 import { isNil } from 'lodash-es';
 import { type UnknownObject } from '../../types/unknown-object';
@@ -209,7 +209,7 @@ export function isUserRegistryEntryAlpha1(arg: unknown): arg is UserRegistryEntr
 }
 ```
 
-2. **Create Migration System** (`packages/core/src/api/versions/migrate_user_registry.ts`)
+2. **Create Migration System** (`packages/core-shared/src/versions/migrate_user_registry.ts`)
 ```typescript
 import { isNil } from 'lodash-es';
 import { type UnknownObject } from '../../types/unknown-object';
@@ -250,7 +250,7 @@ function migrateLegacyToAlpha1(entry: any): UserRegistryEntryAlpha1 {
 }
 ```
 
-3. **Create Type Definitions** (`packages/core/src/types/user-registry.ts`)
+3. **Create Type Definitions** (`packages/core-shared/src/types/user-registry.ts`)
 ```typescript
 import { type UserRegistryEntryAlpha1 } from '../api/versions/user_registry_alpha1';
 
@@ -315,7 +315,7 @@ export class UserRegistry implements UserRegistryOperations {
 
 ### Phase 2: Environment Configuration
 
-1. **Update Environment Variables** (`packages/core/src/config/env.ts`)
+1. **Update Environment Variables** (`packages/core-server/src/config/env.ts`)
 ```typescript
 export interface EnvConfig {
   // Existing config...

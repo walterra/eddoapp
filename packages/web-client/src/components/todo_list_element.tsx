@@ -4,7 +4,7 @@ import {
   getActiveDuration,
   getFormattedDuration,
   getRepeatTodo,
-} from '@eddo/core';
+} from '@eddo/core-client';
 import { Checkbox } from 'flowbite-react';
 import React, { type FC, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';

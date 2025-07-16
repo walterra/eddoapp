@@ -32,7 +32,9 @@ export default defineConfig({
           include: [
             'packages/web-client/src/**/*.test.{ts,tsx}',
             'packages/web-api/src/**/*.test.ts',
-            'packages/core/src/**/*.test.ts',
+            'packages/core-shared/src/**/*.test.ts',
+            'packages/core-server/src/**/*.test.ts',
+            'packages/core-client/src/**/*.test.ts',
             'packages/telegram_bot/src/**/*.test.ts',
             'scripts/backup-interactive.test.ts',
           ],

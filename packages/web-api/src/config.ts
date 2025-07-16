@@ -1,4 +1,8 @@
-import { getCouchDbConfig, getEffectiveDbName, validateEnv } from '@eddo/core';
+import {
+  getCouchDbConfig,
+  getEffectiveDbName,
+  validateEnv,
+} from '@eddo/core-server';
 import 'dotenv-mono/load';
 
 // Use the core environment validation for all configuration

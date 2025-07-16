@@ -1,6 +1,6 @@
-import { type TodoAlpha1 } from './versions/todo_alpha1';
-import { type TodoAlpha2 } from './versions/todo_alpha2';
-import { type TodoAlpha3 } from './versions/todo_alpha3';
+import { type TodoAlpha1 } from '../versions/todo_alpha1';
+import { type TodoAlpha2 } from '../versions/todo_alpha2';
+import { type TodoAlpha3 } from '../versions/todo_alpha3';
 
 /**
  * Create a TodoAlpha3 for testing without requiring _rev

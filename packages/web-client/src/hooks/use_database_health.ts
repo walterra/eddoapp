@@ -1,7 +1,7 @@
 /**
  * React hook for database health monitoring
  */
-import { DatabaseHealthCheck } from '@eddo/core';
+import { DatabaseHealthCheck } from '@eddo/core-client';
 import { useEffect, useState } from 'react';
 
 import { usePouchDb } from '../pouch_db';

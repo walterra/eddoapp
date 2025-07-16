@@ -6,7 +6,7 @@ import {
   getFormattedDurationForActivities,
   isLatestVersion,
   migrateTodo,
-} from '@eddo/core';
+} from '@eddo/core-client';
 import { group } from 'd3-array';
 import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
 import { uniqBy } from 'lodash-es';

@@ -9,9 +9,9 @@
     "noEmit": false,
     "baseUrl": ".",
     "paths": {
-      "@eddo/core": ["../core/src"]
+      "@eddo/core-server": ["../core-server/src"]
     }
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "../core" }]
+  "references": [{ "path": "../core-shared" }, { "path": "../core-server" }]
 }

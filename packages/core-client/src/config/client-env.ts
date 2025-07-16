@@ -21,9 +21,21 @@ export type ClientEnv = z.infer<typeof clientEnvSchema>;
 
 /**
  * Validate and parse client-side environment configuration
+ * Uses safe parsing with defaults for missing variables
  */
 export function validateClientEnv(env: unknown): ClientEnv {
-  return clientEnvSchema.parse(env);
+  const result = clientEnvSchema.safeParse(env);
+  if (!result.success) {
+    console.warn(
+      'Client environment validation failed, using defaults:',
+      result.error.message,
+    );
+    return {
+      NODE_ENV: 'development',
+      VITE_COUCHDB_API_KEY: undefined,
+    };
+  }
+  return result.data;
 }
 
 /**

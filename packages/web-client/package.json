@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@eddo/core": "workspace:*",
+    "@eddo/core-client": "workspace:*",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",
     "events": "^3.3.0",

@@ -9,7 +9,9 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
-COPY packages/core/package.json ./packages/core/
+COPY packages/core-shared/package.json ./packages/core-shared/
+COPY packages/core-server/package.json ./packages/core-server/
+COPY packages/core-client/package.json ./packages/core-client/
 COPY packages/web-client/package.json ./packages/web-client/
 COPY packages/web-api/package.json ./packages/web-api/
 
@@ -33,7 +35,9 @@ WORKDIR /app
 
 # Copy package files for production dependencies
 COPY package.json pnpm-lock.yaml ./
-COPY packages/core/package.json ./packages/core/
+COPY packages/core-shared/package.json ./packages/core-shared/
+COPY packages/core-server/package.json ./packages/core-server/
+COPY packages/core-client/package.json ./packages/core-client/
 COPY packages/web-client/package.json ./packages/web-client/
 COPY packages/web-api/package.json ./packages/web-api/
 

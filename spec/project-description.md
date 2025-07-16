@@ -32,5 +32,7 @@ packages/web-client/src/client.tsx # React frontend entry
 packages/web-api/src/index.ts # Hono API server entry
 packages/mcp_server/src/mcp-server.ts # MCP server
 packages/telegram_bot/src/index.ts # Telegram bot
-packages/core/src/ # Shared types/utils
+packages/core-shared/src/ # Shared types/utils
+packages/core-server/src/ # Server-side core functionality
+packages/core-client/src/ # Client-side core functionality
 scripts/ # CLI tools

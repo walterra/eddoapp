@@ -2,7 +2,7 @@
  * Test MCP Server Instance
  * Manages MCP server lifecycle for integration tests
  */
-import { getTestCouchDbConfig, validateEnv } from '@eddo/core';
+import { getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
 import { ChildProcess, spawn } from 'child_process';
 import nano from 'nano';
 

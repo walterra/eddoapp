@@ -1,10 +1,11 @@
 // Test setup for React components with real PouchDB using memory adapter
-import { DatabaseHealthMonitor, createSafeDbOperations } from '@eddo/core';
+import { DatabaseHealthMonitor } from '@eddo/core-client';
 import memory from 'pouchdb-adapter-memory';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import { vi } from 'vitest';
 
+import { createSafeDbOperations } from './api/safe-db-operations';
 import type { PouchDbContextType } from './pouch_db_types';
 import './test-polyfill';
 

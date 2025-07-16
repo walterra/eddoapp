@@ -1,4 +1,4 @@
-import { getClientDbName, validateClientEnv } from '@eddo/core';
+import { getClientDbName, validateClientEnv } from '@eddo/core-client';
 import { type FC } from 'react';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
@@ -13,11 +13,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
 
   // Get the database name for display
   const env = validateClientEnv(import.meta.env);
-  console.log('Environment variables:', {
-    VITE_COUCHDB_API_KEY: env.VITE_COUCHDB_API_KEY,
-  });
   const databaseName = getClientDbName(env);
-  console.log('Database name:', databaseName);
 
   return (
     <>

@@ -8,7 +8,7 @@ export default defineConfig({
         __dirname,
         'src/tailwindcss-version-shim.js',
       ),
-      '@eddo/core': resolve(__dirname, '../core/src'),
+      '@eddo/core-shared': resolve(__dirname, '../core-shared/src'),
     },
   },
   test: {

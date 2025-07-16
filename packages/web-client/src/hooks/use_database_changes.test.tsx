@@ -1,4 +1,4 @@
-import { type Todo } from '@eddo/core';
+import { type Todo } from '@eddo/core-client';
 import { act, renderHook } from '@testing-library/react';
 import {
   type ReactNode,

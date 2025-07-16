@@ -146,7 +146,16 @@ export async function getAvailableDatabases(env: Env): Promise<string[]> {
 
 // For backward compatibility in client code that expects these exports
 // Client will provide its own env via Vite, server/telegram-bot will load via dotenv-mono
-export const env =
-  typeof process !== 'undefined' && process.env
-    ? validateEnv(process.env)
-    : ({} as Env);
+// Note: Environment validation is now explicit - call validateEnv() or createEnv() where needed
+export const env = {} as Env;
+
+/**
+ * Create and validate environment configuration
+ * Call this explicitly where environment validation is needed
+ */
+export function createEnv(): Env {
+  if (typeof process === 'undefined' || !process.env) {
+    throw new Error('Environment variables not available');
+  }
+  return validateEnv(process.env);
+}

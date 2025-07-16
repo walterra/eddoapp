@@ -13,7 +13,7 @@ export const useCouchDbSync = () => {
     if (!authToken) return;
 
     // Connect to API server with authentication (hardcoded relative path)
-    const remoteDb = new PouchDB('/api/db', {
+    const remoteDb = new PouchDB('http://localhost:3000/api/db', {
       fetch: (url, opts) => {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',

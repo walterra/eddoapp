@@ -1,4 +1,4 @@
-import { type DatabaseError, DatabaseErrorType } from '@eddo/core';
+import { type DatabaseError, DatabaseErrorType } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { screen, waitFor } from '@testing-library/react';
 import { add, endOfWeek, startOfWeek } from 'date-fns';

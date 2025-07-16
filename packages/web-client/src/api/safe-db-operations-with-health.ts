@@ -1,7 +1,8 @@
 /**
  * Enhanced safe database operations with health monitoring integration
  */
-import { DatabaseHealthMonitor } from './database-health-monitor';
+import { DatabaseHealthMonitor } from '@eddo/core-shared/api/database-health-monitor';
+
 import { SafeDbOperations, createSafeDbOperations } from './safe-db-operations';
 
 export interface SafeDbOperationsWithHealth extends SafeDbOperations {

@@ -222,7 +222,9 @@ export class MCPTestServer {
 
   private async setupTestDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/core');
+      const { validateEnv, getTestCouchDbConfig } = await import(
+        '@eddo/core-server'
+      );
       const { DatabaseSetup } = await import('./database-setup.js');
 
       const env = validateEnv(process.env);
@@ -252,7 +254,9 @@ export class MCPTestServer {
 
   private async forceCleanupDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/core');
+      const { validateEnv, getTestCouchDbConfig } = await import(
+        '@eddo/core-server'
+      );
       const nano = await import('nano');
 
       const env = validateEnv(process.env);

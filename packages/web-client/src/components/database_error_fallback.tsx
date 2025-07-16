@@ -1,4 +1,4 @@
-import { DatabaseError, DatabaseErrorType } from '@eddo/core';
+import { DatabaseError, DatabaseErrorType } from '@eddo/core-client';
 import React from 'react';
 
 interface DatabaseErrorFallbackProps {
