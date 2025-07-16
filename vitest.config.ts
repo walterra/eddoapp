@@ -1,34 +1,61 @@
 import { defineConfig } from 'vitest/config';
+import { resolve } from 'path';
+
+// Custom plugin to handle the tailwindcss/version.js import issue
+function tailwindVersionPlugin() {
+  return {
+    name: 'tailwind-version-plugin',
+    resolveId(id: string) {
+      if (id === 'tailwindcss/version.js') {
+        return id;
+      }
+    },
+    load(id: string) {
+      if (id === 'tailwindcss/version.js') {
+        return 'export const version = "3.4.17"; export default version;';
+      }
+    },
+  };
+}
 
 export default defineConfig({
+  plugins: [tailwindVersionPlugin()],
+  resolve: {
+    alias: {
+      'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
+    setupFiles: ['./test/setup.js'],
     include: [
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
     ],
-    exclude: [
-      '**/*.e2e.test.ts',
-      '**/integration-tests/**'
-    ],
+    exclude: ['**/*.e2e.test.ts', '**/integration-tests/**'],
     testTimeout: 10000,
     projects: [
       {
         name: 'unit',
+        plugins: [tailwindVersionPlugin()],
+        resolve: {
+          alias: {
+            'tailwindcss/version.js': resolve(__dirname, 'packages/web-client/src/tailwindcss-version-shim.js'),
+          },
+        },
         test: {
           globals: true,
           environment: 'jsdom',
+          setupFiles: ['./test/setup.js'],
           include: [
-            'packages/web-client/src/**/*.test.tsx',
+            'packages/web-client/src/**/*.test.{ts,tsx}',
+            'packages/web-api/src/**/*.test.ts',
             'packages/core/src/**/*.test.ts',
             'packages/telegram_bot/src/**/*.test.ts',
-            'scripts/backup-interactive.test.ts'
+            'scripts/backup-interactive.test.ts',
           ],
-          exclude: [
-            '**/*.e2e.test.ts',
-            '**/integration-tests/**'
-          ],
+          exclude: ['**/*.e2e.test.ts', '**/integration-tests/**'],
           testTimeout: 10000,
         },
       },

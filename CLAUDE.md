@@ -17,9 +17,10 @@ Never run these commands yourself or kill related processes. The user is respons
 ### Root Level
 
 Use these commands for investigating, testing and linting.
+DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|build` from the repo root.
 
 - IMPORTANT: Use `pnpm logs:tail` to investigate unified logs produced by `pnpm dev`
-- Build all packages: `pnpm build`
+- Build all packages: `pnpm build` (always run from the repo root, not from individual package dirs)
 - Build for production: `pnpm build:production`
 - Lint: `pnpm lint`
 - Format check: `pnpm lint:format`
@@ -228,7 +229,6 @@ TELEGRAM_BOT_TOKEN=your-bot-token
 BOT_PERSONA_ID=gtd_coach  # Options: butler, gtd_coach, zen_master
 
 # Application
-VITE_API_URL=http://localhost:3000
 VITE_COUCHDB_API_KEY=your-api-key
 
 # Development

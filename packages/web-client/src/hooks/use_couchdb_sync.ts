@@ -1,4 +1,3 @@
-import { validateEnv } from '@eddo/core';
 import PouchDB from 'pouchdb-browser';
 import { useEffect } from 'react';
 
@@ -13,11 +12,8 @@ export const useCouchDbSync = () => {
     // Only sync when authenticated
     if (!authToken) return;
 
-    const env = validateEnv(import.meta.env);
-    const apiUrl = env.VITE_API_URL;
-
-    // Connect to API server with authentication
-    const remoteDb = new PouchDB(`${apiUrl}/db`, {
+    // Connect to API server with authentication (hardcoded relative path)
+    const remoteDb = new PouchDB('/api/db', {
       fetch: (url, opts) => {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',

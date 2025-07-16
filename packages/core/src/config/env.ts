@@ -13,7 +13,7 @@ export const envSchema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
 
   // CouchDB Configuration
-  COUCHDB_URL: z.string().default('http://admin:password@localhost:5984'),
+  COUCHDB_URL: z.string(),
   COUCHDB_DB_NAME: z.string().default('todos-dev'),
   COUCHDB_API_KEY: z.string().optional(),
 
@@ -42,7 +42,6 @@ export const envSchema = z.object({
   CLAUDE_CODE_SESSION_TIMEOUT: z.coerce.number().default(3600),
 
   // Web Client Configuration (Vite environment variables)
-  VITE_API_URL: z.string().url().default('http://localhost:3000/api'),
   VITE_COUCHDB_API_KEY: z.string().optional(),
 
   // Web API Configuration

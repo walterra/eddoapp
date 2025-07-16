@@ -1,8 +1,8 @@
 import {
   DatabaseHealthMonitor,
   createSafeDbOperations,
-  getEffectiveDbName,
-  validateEnv,
+  getClientDbName,
+  validateClientEnv,
 } from '@eddo/core';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
@@ -14,8 +14,8 @@ import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 PouchDB.plugin(PouchDBFind);
 
 // Get environment configuration for database naming
-const env = validateEnv(import.meta.env);
-const dbName = getEffectiveDbName(env);
+const env = validateClientEnv(import.meta.env);
+const dbName = getClientDbName(env);
 
 const pouchDb = new PouchDB(dbName);
 const safeDbOperations = createSafeDbOperations(pouchDb);

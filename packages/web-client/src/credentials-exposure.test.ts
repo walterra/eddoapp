@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('Credentials Exposure Test', () => {
   it('should not expose CouchDB credentials in production build', async () => {
-    const distPath = join(__dirname, '../../../dist/client');
+    const distPath = join(__dirname, '../../web-api/public/assets');
 
     try {
       // Read all JavaScript files in the dist directory
@@ -33,9 +33,7 @@ describe('Credentials Exposure Test', () => {
       }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        console.log(
-          'Dist directory not found - build first with: pnpm build:client',
-        );
+        console.log('Build directory not found - build first with: pnpm build');
         expect(true).toBe(true); // Skip test if build doesn't exist
       } else {
         throw error;
@@ -44,7 +42,7 @@ describe('Credentials Exposure Test', () => {
   });
 
   it('should include API_URL in production build', async () => {
-    const distPath = join(__dirname, '../../../dist/client');
+    const distPath = join(__dirname, '../../web-api/public/assets');
 
     try {
       const files = await fs.readdir(distPath);
@@ -69,9 +67,7 @@ describe('Credentials Exposure Test', () => {
       expect(foundApiUrl).toBe(true);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        console.log(
-          'Dist directory not found - build first with: pnpm build:client',
-        );
+        console.log('Build directory not found - build first with: pnpm build');
         expect(true).toBe(true); // Skip test if build doesn't exist
       } else {
         throw error;

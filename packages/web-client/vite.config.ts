@@ -1,9 +1,9 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { Plugin, defineConfig, loadEnv } from 'vite';
 
 // Custom plugin to handle the tailwindcss/version.js import issue
-function tailwindVersionPlugin() {
+function tailwindVersionPlugin(): Plugin {
   return {
     name: 'tailwind-version-plugin',
     resolveId(id: string) {

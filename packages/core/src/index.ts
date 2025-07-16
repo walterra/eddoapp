@@ -26,3 +26,4 @@ export * from './utils/shuffle';
 
 // Configuration
 export * from './config/env';
+export * from './config/client-env';
