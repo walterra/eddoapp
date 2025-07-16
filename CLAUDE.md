@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Commands to run servers
 
-Never run this commands yourself or kill related processes. The user is responsible for running the server. If you need to run one of these commands, ask the user to do it for you.
+Never run these commands yourself or kill related processes. The user is responsible for running the server. If you need to run or restart one of these commands, ask the user to do it for you.
 
 - web (client+api): `pnpm dev` (port 3000)
 - web client dev only: `pnpm dev:web-client` (port 5173 in dev)
@@ -15,6 +15,8 @@ Never run this commands yourself or kill related processes. The user is responsi
 - Telegram bot dev: `pnpm dev:telegram-bot`
 
 ### Root Level
+
+Use these commands for investigating, testing and linting.
 
 - IMPORTANT: Use `pnpm logs:tail` to investigate unified logs produced by `pnpm dev`
 - Build all packages: `pnpm build`
@@ -30,7 +32,7 @@ Never run this commands yourself or kill related processes. The user is responsi
 - CI test suite: `pnpm test:ci`
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
-- MCP server test: `pnpm test:mcp`
+- MCP server test: `pnpm test:mcp` (this lets you run commands against mcp-server)
 - Check unused dependencies: `pnpm knip`
 
 ### Package-Specific

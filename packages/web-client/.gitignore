@@ -1,5 +1,5 @@
 node_modules
-dist
+public
 *.log
 .env
 .env.local

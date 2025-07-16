@@ -3,13 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
-  },
   "dependencies": {
     "@eddo/core": "workspace:*",
     "d3-array": "^3.0.3",
@@ -44,5 +37,12 @@
     "typescript": "~5.7.2",
     "vite": "^7.0.4",
     "vitest": "^3.2.4"
+  },
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "dev": "vite",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   }
 }

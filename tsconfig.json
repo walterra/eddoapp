@@ -21,7 +21,8 @@
     { "path": "./packages/core" },
     { "path": "./packages/mcp_server" },
     { "path": "./packages/telegram_bot" },
-    { "path": "./packages/web-api" }
+    { "path": "./packages/web-api" },
+    { "path": "./packages/web-client" }
   ],
   "ts-node": {
     "transpileOnly": true,
