@@ -82,9 +82,9 @@
     "build:telegram-bot": "pnpm --filter @eddo/telegram-bot build",
     "build:web-client": "pnpm --filter @eddo/web-client build",
     "build:web-api": "pnpm --filter @eddo/web-api build",
-    "dev": "npm-run-all --parallel --print-label dev:web-client dev:web-api",
-    "dev:web-client": "pnpm --filter @eddo/web-client dev",
-    "dev:web-api": "pnpm --filter @eddo/web-api dev",
+    "dev": "FORCE_COLOR=1 npm-run-all --parallel --print-label dev:web-client dev:web-api 2>&1 | while IFS= read -r line; do echo \"[$(date '+%Y-%m-%d %H:%M:%S')] $line\"; done | tee logs/dev-$(date +%Y%m%d-%H%M%S).log",
+    "dev:web-client": "FORCE_COLOR=1 pnpm --filter @eddo/web-client dev",
+    "dev:web-api": "FORCE_COLOR=1 pnpm --filter @eddo/web-api dev",
     "dev:mcp-server": "pnpm --filter @eddo/mcp-server dev",
     "dev:telegram-bot": "pnpm --filter @eddo/telegram-bot dev",
     "format": "prettier --write ./packages",
@@ -110,7 +110,11 @@
     "populate-mock-data:dry-run": "tsx scripts/populate-mock-data.ts --dry-run",
     "prepare": "husky",
     "build:production": "pnpm build:core && pnpm build:web-client && pnpm build:web-api",
-    "start:production": "NODE_ENV=production pnpm --filter @eddo/web-api start"
+    "start:production": "NODE_ENV=production pnpm --filter @eddo/web-api start",
+    "logs:clean": "find logs/ -name '*.log' -mtime +7 -delete 2>/dev/null || true",
+    "logs:tail": "ls -t logs/*.log 2>/dev/null | head -1 | xargs tail -n 100 2>/dev/null || echo 'No log files found'",
+    "logs:list": "ls -la logs/*.log 2>/dev/null || echo 'No log files found'",
+    "logs:follow": "ls -t logs/*.log 2>/dev/null | head -1 | xargs tail -f 2>/dev/null || echo 'No log files found'"
   },
   "browserslist": [
     ">0.2%",

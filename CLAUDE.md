@@ -8,16 +8,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Never run this commands yourself or kill related processes. The user is responsible for running the server. If you need to run one of these commands, ask the user to do it for you.
 
-- web client dev: `pnpm dev:web-client` (port 5173 in dev)
-- web api dev: `pnpm dev:web-api` (port 3000, passes through web-client)
+- web (client+api): `pnpm dev` (port 3000)
+- web client dev only: `pnpm dev:web-client` (port 5173 in dev)
+- web api dev only: `pnpm dev:web-api` (port 3000, passes through web-client)
 - MCP server dev: `pnpm dev:mcp-server`
 - Telegram bot dev: `pnpm dev:telegram-bot`
 
 ### Root Level
 
+- IMPORTANT: Use `pnpm logs:tail` to investigate unified logs produced by `pnpm dev`
 - Build all packages: `pnpm build`
 - Build for production: `pnpm build:production`
-- Dev server (client + API): `pnpm dev` (never kill this process and do not run yourself, the user will run this for you)
 - Lint: `pnpm lint`
 - Format check: `pnpm lint:format`
 - Format fix: `pnpm format`

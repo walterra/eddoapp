@@ -68,6 +68,11 @@ dbProxyApp.all('/*', async (c) => {
   const path = c.req.path.replace('/api/db', '');
   const method = c.req.method;
 
+  // Preserve query string
+  const url = new URL(c.req.url);
+  const queryString = url.search; // includes the '?' prefix
+  const fullPath = `${path}${queryString}`;
+
   // Get request body for non-GET requests
   let body: string | undefined;
   if (method !== 'GET' && method !== 'HEAD') {
@@ -81,33 +86,7 @@ dbProxyApp.all('/*', async (c) => {
     headers['Content-Type'] = contentType;
   }
 
-  const response = await proxyCouchDBRequest(method, path, body, headers);
-  return response;
-});
-
-// Specific route for database info
-dbProxyApp.get('/', async (_c) => {
-  const response = await proxyCouchDBRequest('GET', '');
-  return response;
-});
-
-// Specific route for _all_docs
-dbProxyApp.get('/_all_docs', async (c) => {
-  const queryParams = c.req.query();
-  const queryString = new URLSearchParams(queryParams).toString();
-  const path = queryString ? `/_all_docs?${queryString}` : '/_all_docs';
-
-  const response = await proxyCouchDBRequest('GET', path);
-  return response;
-});
-
-// Specific route for _changes
-dbProxyApp.get('/_changes', async (c) => {
-  const queryParams = c.req.query();
-  const queryString = new URLSearchParams(queryParams).toString();
-  const path = queryString ? `/_changes?${queryString}` : '/_changes';
-
-  const response = await proxyCouchDBRequest('GET', path);
+  const response = await proxyCouchDBRequest(method, fullPath, body, headers);
   return response;
 });
 

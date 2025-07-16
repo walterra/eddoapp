@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Started:** 2025-07-15T20:17:45
 **Created:** 2025-07-15T12:17:33
-**Agent PID:** 76392
+**Agent PID:** 92790
 
 ## Original Todo
 
@@ -102,6 +102,29 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Update package.json to use cleaner task names (web-client, web-api) instead of dev:web-client
     - [x] Format: `[web-api   ]` and `[web-client]` prefixes for clear service identification
     - [x] Test development workflow with clear service identification (user should run pnpm dev to verify)
+  - [x] **ADD FILE LOGGING**: Configure pnpm dev to log both to console and file
+    - [x] Use tee command to duplicate output to both console and timestamped log file
+    - [x] Create logs/ directory structure for development logs
+    - [x] Add logs/ to .gitignore to avoid committing log files
+    - [x] Add logs:clean script to remove log files older than 7 days
+    - [x] Add logs:tail script to show last 100 lines of most recent log file
+    - [x] Add logs:list script to list all log files with details
+    - [x] Add logs:follow script to tail -f the most recent log file
+    - [x] Preserve color coding in terminal by using FORCE_COLOR=1 environment variable
+    - [x] Add human-readable timestamps to all log lines using date command
+    - [x] Test dual logging functionality (user should run pnpm dev to verify)
+  - [x] **OPTIMIZE COUCHDB SYNC**: Reduce excessive polling requests
+    - [x] Identified root cause: PouchDB sync with live: true creating frequent _changes requests
+    - [x] Optimized sync configuration: increased batch_size (500), reduced heartbeat (60s), added exponential backoff
+    - [x] Optimized database changes listener: added batch processing and reduced heartbeat frequency
+    - [x] Expected reduction: 6x fewer heartbeat requests (60s vs 10s) and more efficient batching
+    - [x] Test optimized sync performance (user should run pnpm dev and check pnpm logs:tail)
+  - [x] **IMPLEMENT PERIODIC MANUAL REPLICATION**: Replace live sync with periodic bidirectional replication
+    - [x] Switch from live sync to periodic manual replication (every 30 seconds)
+    - [x] Implement bidirectional sync using replicate.to() and replicate.from() methods
+    - [x] Configure batch_size: 100 and retry: true for optimal performance
+    - [x] Add error handling and logging for push/pull operations
+    - [x] Expected significant reduction in CouchDB requests (from continuous to periodic)
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory
 - [ ] **ADD ENVIRONMENT MANAGEMENT**: Use proper environment variables for secrets management
