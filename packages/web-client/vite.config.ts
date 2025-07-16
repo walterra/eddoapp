@@ -10,6 +10,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: parseInt(env.PORT || '5173'),
       host: '0.0.0.0',
+      hmr: {
+        port: 5173,
+        host: 'localhost',
+      },
     },
     build: {
       outDir: '../web-api/public',

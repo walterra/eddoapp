@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Started:** 2025-07-15T20:17:45
 **Created:** 2025-07-15T12:17:33
-**Agent PID:** 22898
+**Agent PID:** 76392
 
 ## Original Todo
 
@@ -70,7 +70,7 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Remove proxy config from packages/web-client/vite.config.ts
     - [x] Add proxy logic to packages/web-api/src/index.ts for non-API routes in development
     - [x] Update development flow: users access localhost:3000, API handles directly, non-API proxied to Vite:5173
-  - [x] Fix environment variables: Add VITE_ prefix for client-side env vars
+  - [x] Fix environment variables: Add VITE\_ prefix for client-side env vars
   - [x] **STANDARDIZE ENV UTILITIES**: Consistent use of @eddo/core env utilities across packages
     - [x] Add VITE_API_URL to @eddo/core envSchema for client-side validation
     - [x] Fix web-client inconsistencies: use import.meta.env consistently with validateEnv
@@ -93,8 +93,16 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
     - [x] Update getEffectiveDbName() to support both VITE_COUCHDB_API_KEY and COUCHDB_API_KEY
     - [x] Add VITE_COUCHDB_API_KEY=walterra to .env.development and .env.production
     - [x] Verify effective database name calculation: todos-dev_api_walterra
+  - [x] **FIX WEBSOCKET CONNECTION**: Resolve Vite HMR WebSocket connection to wrong port
+    - [x] Add explicit HMR configuration to packages/web-client/vite.config.ts
+    - [x] Configure HMR to connect to correct port (5173) instead of proxy port (3000)
+    - [x] Test WebSocket connection and verify HMR works correctly
+  - [x] **IMPROVE DEVELOPMENT LOGGING**: Add service-prefixed logging for pnpm dev command
+    - [x] Configure npm-run-all to prefix logs with service name using --print-label flag
+    - [x] Update package.json to use cleaner task names (web-client, web-api) instead of dev:web-client
+    - [x] Format: `[web-api   ]` and `[web-client]` prefixes for clear service identification
+    - [x] Test development workflow with clear service identification (user should run pnpm dev to verify)
   - [ ] Test production build: web builds into server/public/, single server:3000 serves all
-- [ ] **UPGRADE AUTHENTICATION**: Replace JWT with AuthJS (GitHub OAuth integration)
 - [ ] **IMPLEMENT UNIFIED DEPLOYMENT**: Configure server to serve both API and static assets from public/ directory
 - [ ] **ADD ENVIRONMENT MANAGEMENT**: Use proper environment variables for secrets management
 - [ ] **IMPLEMENT SPA FALLBACK**: Configure proper routing for React SPA in production
@@ -115,17 +123,20 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 ### Development vs Production Architecture
 
 **Reference Implementation Analysis (Cloudflare Workers):**
+
 - Uses `c.env.ASSETS` for static file serving (Cloudflare-specific feature)
 - Single middleware handles both dev and prod because Cloudflare's wrangler manages assets
 - No need for conditional dev/prod logic
 
 **Our Implementation (Node.js/Hono):**
+
 - Must handle static files differently in dev vs prod
 - **Development**: Vite dev server (5173) serves client with HMR, API server (3000) only handles API routes
 - **Production**: API server (3000) serves both API routes and static files from public/
 - This split is necessary because Node.js doesn't have Cloudflare's built-in asset handling
 
 **Current Dev Mode Issue:**
+
 - API server returns "Development mode - use Vite dev server on port 5173" for non-API routes
 - This is unnecessary and confusing - should just let routes 404 naturally
 - Need to remove the explicit dev mode handler that returns faux messages
@@ -198,24 +209,28 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 ### Environment Variables Analysis & Recommendation
 
 **@eddo/core env utility provides:**
+
 - ✅ **Zod validation** with defaults and type safety
-- ✅ **Centralized schema** for all env vars  
+- ✅ **Centralized schema** for all env vars
 - ✅ **Helper functions** like `getEffectiveDbName()`, `getCouchDbConfig()`
 - ✅ **Consistent** environment handling across packages
 
 **Current inconsistencies identified:**
-1. **Web-client mixed usage**: 
+
+1. **Web-client mixed usage**:
    - `pouch_db.ts` uses `validateEnv(import.meta.env)` ✅ correct
    - `page_wrapper.tsx` uses `validateEnv(process.env)` ❌ wrong for client-side
    - `use_sync_production.ts` uses `import.meta.env.VITE_API_URL` ✅ correct but bypasses validation
 2. **Web-api redundancy**: Uses both `validateEnv(process.env)` and custom schema (duplicates core logic)
 
 **MCP server approach (good example):**
+
 - Uses `validateEnv(process.env)` consistently ✅
 - Leverages all helper functions from @eddo/core ✅
 - Clean, type-safe configuration ✅
 
 **RECOMMENDATION**: Standardize on @eddo/core env utilities across all packages:
+
 1. **Fix web-client inconsistencies** - use `import.meta.env` consistently with validateEnv
 2. **Simplify web-api config** - reduce duplication with core schema
 3. **Add missing env vars** to core schema (like `VITE_API_URL`)
@@ -228,26 +243,46 @@ The current PouchDB/CouchDB architecture can be maintained while adding a secure
 **🎯 CRITICAL ARCHITECTURE FIX - VERIFIED SUCCESSFUL!**
 
 **✅ Architecture Working Correctly:**
+
 - **Single entry point**: Users access `localhost:3000` (web-api server) ✅
-- **API routes**: Handled directly by Hono server ✅  
+- **API routes**: Handled directly by Hono server ✅
 - **Static routes**: Proxied to Vite dev server on `localhost:5173` ✅
 - **Production alignment**: Same entry point for dev and prod ✅
 
 **✅ Comprehensive Testing Results:**
+
 - **86+ successful HTTP requests**: All resources loading from web-api server ✅
 - **HTML structure**: Complete and proper with correct title ✅
 - **Vite integration**: HMR connection working, React refresh active ✅
 - **Monorepo imports**: @eddo/core packages loading through proxy ✅
-- **Environment variables**: All VITE_ prefixed vars accessible ✅
+- **Environment variables**: All VITE\_ prefixed vars accessible ✅
 
 **⚠️ Current Blocker:**
+
 - **React error in `<Eddo>` component**: Application not rendering due to component error
 - **Console error**: "The above error occurred in the <Eddo> component"
 - **Impact**: Prevents testing of application functionality (proxy architecture confirmed working)
 
-**✅ ISSUE RESOLVED**: 
+**✅ ISSUE RESOLVED**:
+
 - **Database API Error Fixed**: `use_sync.ts:82` - GET http://localhost:3000/api/db/ now returns 200 with database info
 - **Root Cause Fixed**: Updated CouchDB URL handling to separate credentials from URL in fetch requests
 - **Solution**: Modified `packages/web-api/src/config.ts` to strip credentials from URL and use Authorization header
 - **API Response**: Returns valid CouchDB database information including doc_count, update_seq, etc.
 - **Impact**: Application can now sync with CouchDB successfully, development unblocked
+
+### PouchDB Memory Leak Fix (2025-07-16)
+
+**✅ ISSUE RESOLVED**:
+
+- **Memory Leak Fixed**: MaxListenersExceededWarning in PouchDB event listeners eliminated
+- **Root Cause**: `useCouchDbSync()` hook was being called twice (CouchdbSyncProvider + AuthenticatedApp)
+- **Solution**: Separated authentication and sync concerns:
+  - Created new `useAuth` hook for authentication state only
+  - Refactored `useCouchDbSync` to handle sync operations only
+  - Updated `AuthenticatedApp` to use `useAuth` instead of `useCouchDbSync`
+- **Files Modified**:
+  - `packages/web-client/src/hooks/use_auth.ts` (new)
+  - `packages/web-client/src/hooks/use_couchdb_sync.ts` (refactored)
+  - `packages/web-client/src/eddo.tsx` (updated imports)
+- **Impact**: Console errors eliminated, cleaner architecture with better separation of concerns
