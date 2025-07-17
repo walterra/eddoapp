@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { AddTodo } from './components/add_todo';
 import { Login } from './components/login';
 import { PageWrapper } from './components/page_wrapper';
+import { Register } from './components/register';
 import { TodoBoard } from './components/todo_board';
 import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
@@ -29,10 +30,27 @@ function HealthMonitor() {
 function AuthenticatedApp() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const { authenticate, isAuthenticated, isAuthenticating } = useAuth();
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const { authenticate, register, isAuthenticated, isAuthenticating } =
+    useAuth();
 
   if (!isAuthenticated) {
-    return <Login isAuthenticating={isAuthenticating} onLogin={authenticate} />;
+    if (authMode === 'register') {
+      return (
+        <Register
+          isAuthenticating={isAuthenticating}
+          onBackToLogin={() => setAuthMode('login')}
+          onRegister={register}
+        />
+      );
+    }
+    return (
+      <Login
+        isAuthenticating={isAuthenticating}
+        onGoToRegister={() => setAuthMode('register')}
+        onLogin={authenticate}
+      />
+    );
   }
 
   return (

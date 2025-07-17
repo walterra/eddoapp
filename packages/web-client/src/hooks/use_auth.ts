@@ -39,6 +39,42 @@ export const useAuth = () => {
     }
   };
 
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+    telegramId?: number,
+  ): Promise<{ success: boolean; error?: string }> => {
+    setIsAuthenticating(true);
+    try {
+      const response = await fetch('/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password, telegramId }),
+      });
+
+      if (response.ok) {
+        const token = await response.json();
+        setAuthToken(token);
+        localStorage.setItem('authToken', JSON.stringify(token));
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        return {
+          success: false,
+          error: errorData.error || 'Registration failed',
+        };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { success: false, error: 'Network error occurred' };
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
   const logout = () => {
     setAuthToken(null);
     localStorage.removeItem('authToken');
@@ -61,6 +97,7 @@ export const useAuth = () => {
   return {
     authToken,
     authenticate,
+    register,
     logout,
     isAuthenticated: !!authToken,
     isAuthenticating,

@@ -4,9 +4,14 @@ import { useState } from 'react';
 interface LoginProps {
   onLogin: (username: string, password: string) => Promise<boolean>;
   isAuthenticating: boolean;
+  onGoToRegister: () => void;
 }
 
-export function Login({ onLogin, isAuthenticating }: LoginProps) {
+export function Login({
+  onLogin,
+  isAuthenticating,
+  onGoToRegister,
+}: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -30,9 +35,22 @@ export function Login({ onLogin, isAuthenticating }: LoginProps) {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <h3 className="text-xl font-medium text-gray-900">
-            Sign in to Eddo App
-          </h3>
+          <div>
+            <h3 className="text-xl font-medium text-gray-900">
+              Sign in to Eddo App
+            </h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Don&apos;t have an account?{' '}
+              <button
+                className="text-blue-600 hover:underline"
+                disabled={isAuthenticating}
+                onClick={onGoToRegister}
+                type="button"
+              >
+                Create account
+              </button>
+            </p>
+          </div>
 
           {error && (
             <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
