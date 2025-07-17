@@ -102,10 +102,18 @@ export async function setupUserDatabase(username: string): Promise<void> {
   const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
   // Ensure user database exists
+  if (!userRegistry.ensureUserDatabase) {
+    throw new Error('User registry does not support user database operations');
+  }
   await userRegistry.ensureUserDatabase(username);
 
   // Get the user database instance
-  const userDb = userRegistry.getUserDatabase(username);
+  if (!userRegistry.getUserDatabase) {
+    throw new Error('User registry does not support user database operations');
+  }
+  const userDb = userRegistry.getUserDatabase(username) as DocumentScope<
+    Record<string, unknown>
+  >;
 
   // Setup design documents
   await setupDesignDocuments(userDb);
@@ -238,7 +246,14 @@ export async function verifyUserDatabase(username: string): Promise<boolean> {
   const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
   try {
-    const userDb = userRegistry.getUserDatabase(username);
+    if (!userRegistry.getUserDatabase) {
+      throw new Error(
+        'User registry does not support user database operations',
+      );
+    }
+    const userDb = userRegistry.getUserDatabase(username) as DocumentScope<
+      Record<string, unknown>
+    >;
 
     // Check design documents
     for (const designDoc of DESIGN_DOCS) {
