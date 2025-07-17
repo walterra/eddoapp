@@ -11,3 +11,4 @@ export { createUserRegistry } from './api/user-registry';
 
 // Server-specific utilities
 export * from './utils/database-names';
+export * from './utils/test-cleanup';
