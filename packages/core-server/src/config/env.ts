@@ -17,6 +17,10 @@ export const envSchema = z.object({
   COUCHDB_DB_NAME: z.string().default('todos-dev'),
   COUCHDB_API_KEY: z.string().optional(),
 
+  // Database Naming Configuration
+  DATABASE_PREFIX: z.string().default('eddo'),
+  DATABASE_TEST_PREFIX: z.string().default('eddo_test'),
+
   // MCP Server Configuration
   MCP_SERVER_URL: z.string().default('http://localhost:3001/mcp'),
   MCP_TEST_PORT: z.coerce.number().default(3003),

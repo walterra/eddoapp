@@ -8,7 +8,8 @@ import { type Env } from '../config/env';
  * Get the base database prefix based on environment
  */
 export function getDatabasePrefix(env: Env): string {
-  const basePrefix = env.NODE_ENV === 'test' ? 'eddo_test' : 'eddo';
+  const basePrefix =
+    env.NODE_ENV === 'test' ? env.DATABASE_TEST_PREFIX : env.DATABASE_PREFIX;
   return basePrefix;
 }
 
@@ -46,8 +47,15 @@ export function getUserApiKey(
  */
 export function extractUsernameFromDatabaseName(
   databaseName: string,
+  env: Env,
 ): string | null {
-  const patterns = [/^eddo_user_(.+)$/, /^eddo_test_user_(.+)$/];
+  const productionPrefix = env.DATABASE_PREFIX;
+  const testPrefix = env.DATABASE_TEST_PREFIX;
+
+  const patterns = [
+    new RegExp(`^${productionPrefix}_user_(.+)$`),
+    new RegExp(`^${testPrefix}_user_(.+)$`),
+  ];
 
   for (const pattern of patterns) {
     const match = databaseName.match(pattern);
@@ -62,15 +70,28 @@ export function extractUsernameFromDatabaseName(
 /**
  * Check if a database name is a user database
  */
-export function isUserDatabase(databaseName: string): boolean {
-  return /^eddo(?:_test)?_user_.+$/.test(databaseName);
+export function isUserDatabase(databaseName: string, env: Env): boolean {
+  const productionPrefix = env.DATABASE_PREFIX;
+  const testPrefix = env.DATABASE_TEST_PREFIX;
+
+  const pattern = new RegExp(`^(?:${productionPrefix}|${testPrefix})_user_.+$`);
+  return pattern.test(databaseName);
 }
 
 /**
  * Check if a database name is the user registry
  */
-export function isUserRegistryDatabase(databaseName: string): boolean {
-  return /^eddo(?:_test)?_user_registry$/.test(databaseName);
+export function isUserRegistryDatabase(
+  databaseName: string,
+  env: Env,
+): boolean {
+  const productionPrefix = env.DATABASE_PREFIX;
+  const testPrefix = env.DATABASE_TEST_PREFIX;
+
+  const pattern = new RegExp(
+    `^(?:${productionPrefix}|${testPrefix})_user_registry$`,
+  );
+  return pattern.test(databaseName);
 }
 
 /**

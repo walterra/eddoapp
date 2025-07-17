@@ -77,7 +77,7 @@ src/notifications.ts # Core logic
 
 **project-description.md** - On first run, or any time the user asks to regenerate it
 **spec/todos/done/[task-name].md** - Completed task with history + commit link
-**Git commits** - One commit per task with descriptive message
+**Git commits** - One commit per task item with descriptive message (ask user to review staged files, do not commit yourself)
 **Updated todo.md** - Completed items removed
 
 ## Workflow
@@ -115,8 +115,8 @@ src/notifications.ts # Core logic
        - Get task name from the specified list (active or orphaned)
        - Read task.md, check Status field
        - Update **Agent PID:** with current agent PID (Bash tool: echo $PPID) if resuming orphaned task
-       - If "Refining": Continue from Phase 2 where it left off
-       - If "In Progress": Continue from Phase 3, step 1 (Update task.md)
+       - If "Refining": Continue from Phase 2 where it left off, summarize state and ask user for permission to continue
+       - If "In Progress": Continue from Phase 3, step 1 (Update task.md), summarize state and ask user for permission to continue
      - **reset <type:number>**:
        - Get task name from the specified list
        - Read spec/todos/work/[task-name]/task.md in full, add it back to spec/todo.md
