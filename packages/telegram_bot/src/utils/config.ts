@@ -12,6 +12,10 @@ const TelegramConfigSchema = z.object({
   MCP_API_KEY: z
     .string()
     .min(1, 'MCP API key is required for server authentication'),
+  WEB_API_BASE_URL: z
+    .string()
+    .url('Web API base URL must be a valid URL')
+    .default('http://localhost:3000'),
   TELEGRAM_ALLOWED_USERS: z.string().optional(),
   TELEGRAM_LOG_USER_DETAILS: z
     .string()

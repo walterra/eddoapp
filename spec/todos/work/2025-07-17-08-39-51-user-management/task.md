@@ -60,10 +60,10 @@ The system will use environment-aware database naming:
 - [x] Update client-side database naming to match server-side user pattern - **ALREADY IMPLEMENTED**
 
 ### Phase 5: Telegram User Mapping
-- [ ] Create Telegram linking endpoint (packages/web-api/src/routes/auth.ts:250-300)
-- [ ] Add Telegram ID field to user profile (packages/web-client/src/components/UserProfile.tsx:80-120)
-- [ ] Generate unique linking codes for Telegram (packages/web-api/src/utils/linking-codes.ts)
-- [ ] Update bot to handle user linking commands (packages/telegram_bot/src/bot/commands/link.ts)
+- [x] Create Telegram linking endpoint (packages/web-api/src/routes/auth.ts:250-300)
+- [x] Add Telegram ID field to user profile (packages/web-client/src/components/UserProfile.tsx:80-120)
+- [x] Generate unique linking codes for Telegram (packages/web-api/src/utils/linking-codes.ts)
+- [x] Update bot to handle user linking commands (packages/telegram_bot/src/bot/commands/link.ts)
 - [ ] Ensure bot uses correct database based on environment (packages/telegram_bot/src/mcp/connection-manager.ts:50-80)
 
 ### Tests:
@@ -261,8 +261,22 @@ The system will use environment-aware database naming:
   - Legacy `getClientDbName()` references still present for display/fallback
   - Display inconsistency in page_wrapper.tsx shows legacy name instead of current database
 
+### Phase 5 Complete: Telegram User Mapping
+- ✅ **Telegram linking endpoints**: Fully implemented in auth.ts with code generation, validation, and linking
+- ✅ **User profile integration**: Telegram ID display and unlinking functionality in user profile component
+- ✅ **Secure linking codes**: Using existing crypto utility for secure token generation
+- ✅ **Bot commands implementation**: Created `/link` and `/unlink` commands with comprehensive error handling and user feedback
+- ✅ **Configuration**: Added WEB_API_BASE_URL to telegram bot config for API communication
+- ✅ **Help system**: Updated help command to include new linking commands
+- ✅ **Error handling**: Proper validation, expiration, and conflict handling for linking codes
+- ✅ **User experience**: Clear instructions and feedback messages for linking/unlinking process
+
+### Remaining Phase 5 Task
+- ❌ **MCP server user context**: Need to investigate how to pass user context to MCP server for database routing
+- This may require updates to MCP server tool calls to include user authentication context
+
 ### Next Steps
-- Clean up redundant API key system components
-- Align client/server username sanitization for consistency
-- Remove legacy database name references
+- Complete remaining automated tests and user tests
+- Add user context routing to MCP server calls
+- Test end-to-end user linking and todo synchronization
 - Add comprehensive tests for user flows and database sync

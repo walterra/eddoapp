@@ -1,4 +1,5 @@
 import { createBot } from './bot/bot.js';
+import { handleLink, handleUnlink } from './bot/commands/link.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
 import { getMCPClient, setupMCPIntegration } from './mcp/client.js';
@@ -30,6 +31,8 @@ async function main(): Promise<void> {
     bot.command('start', handleStart);
     bot.command('help', handleHelp);
     bot.command('status', handleStatus);
+    bot.command('link', handleLink);
+    bot.command('unlink', handleUnlink);
 
     // Register message handler for general text with agent workflow
     bot.on('message:text', handleMessage);
