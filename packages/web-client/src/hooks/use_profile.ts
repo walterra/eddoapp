@@ -146,6 +146,45 @@ export const useProfile = () => {
     }
   };
 
+  const linkTelegram = async (
+    telegramId: number,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (!authToken?.token) {
+      return { success: false, error: 'No authentication token' };
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/users/telegram-link', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ telegramId }),
+      });
+
+      if (response.ok) {
+        // Refetch profile to get updated data
+        await fetchProfile();
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'Failed to link Telegram';
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+    } catch (_error) {
+      const errorMessage = 'Network error occurred';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const unlinkTelegram = async (): Promise<{
     success: boolean;
     error?: string;
@@ -199,6 +238,7 @@ export const useProfile = () => {
     fetchProfile,
     updateProfile,
     changePassword,
+    linkTelegram,
     unlinkTelegram,
     clearError: () => setError(null),
   };

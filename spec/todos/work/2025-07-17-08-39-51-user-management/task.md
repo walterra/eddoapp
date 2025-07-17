@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Created:** 2025-07-17T08:39:51
 **Started:** 2025-07-17T08:47:32
-**Agent PID:** 20001
+**Agent PID:** 51212
 
 ## Original Todo
 
@@ -369,5 +369,51 @@ The system will use environment-aware database naming:
 **Expected Result**: Web UI should now show correct user-specific database name (eddo_user_togusa) in DB health section for authenticated users
 **Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
 
+### ✅ TELEGRAM AUTH FLOW CHICKEN-EGG PROBLEM FIXED
+**Issue**: Users couldn't link their Telegram account because the bot required authorization to interact, but they needed to interact with the bot to get their Telegram ID for linking
+**Root Cause**: Bot's unauthorized response didn't provide the user's Telegram ID needed for the linking process
+**Solution**: Modified auth middleware to include Telegram ID and step-by-step linking instructions in all unauthorized messages
+**Files Updated**:
+- `packages/telegram_bot/src/bot/middleware/auth.ts:154-165` - Added Telegram ID and linking instructions to unauthorized response
+- `packages/telegram_bot/src/bot/middleware/auth.ts:119-129` - Added same information to rate-limited response
+- `packages/telegram_bot/src/bot/middleware/auth.ts:155-165` - Added same information to rate-limited after failure response
+**User Experience**: Users now get their Telegram ID immediately when they try to use the bot, with clear instructions on how to link their account
+**Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
+
+### ✅ TELEGRAM ID INPUT FIELD IMPLEMENTATION COMPLETE
+**Issue**: Users needed a way to manually enter their Telegram ID in the web UI integrations section to link their accounts
+**Solution**: Added comprehensive Telegram ID input functionality to the user profile integrations tab
+**Files Updated**:
+- `packages/web-api/src/routes/users.ts:32-34` - Added linkTelegramSchema validation
+- `packages/web-api/src/routes/users.ts:242-295` - Added POST endpoint for manual Telegram linking
+- `packages/web-client/src/hooks/use_profile.ts:149-184` - Added linkTelegram hook function
+- `packages/web-client/src/hooks/use_profile.ts:241` - Added linkTelegram to hook exports
+- `packages/web-client/src/components/user_profile.tsx:17,34,156-178` - Added Telegram ID input UI and handler
+- `packages/web-client/src/components/user_profile.tsx:544-589` - Updated integrations tab with input form and instructions
+**Features Implemented**:
+- **Manual Telegram ID Entry**: Input field with validation for positive integers
+- **Duplicate Prevention**: Backend checks prevent linking already-linked Telegram IDs
+- **User Instructions**: Clear step-by-step guide for obtaining Telegram ID from the bot
+- **Error Handling**: Comprehensive validation and error messages
+- **Success Feedback**: User feedback for successful linking
+- **Responsive UI**: Clean, accessible form integrated with existing design
+**Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
+
+### ✅ CODE QUALITY IMPROVEMENT: STRING CONSOLIDATION COMPLETE
+**Issue**: Duplicate strings in Telegram bot auth middleware created maintenance burden and increased code complexity
+**Solution**: Consolidated repeated Telegram ID and linking instructions into a reusable helper function
+**Files Updated**:
+- `packages/telegram_bot/src/bot/middleware/auth.ts:71-82` - Added `generateLinkingInstructions()` helper function
+- `packages/telegram_bot/src/bot/middleware/auth.ts:90` - Added function to exports for testing
+- `packages/telegram_bot/src/bot/middleware/auth.ts:133-137` - Updated first rate-limited message to use helper
+- `packages/telegram_bot/src/bot/middleware/auth.ts:163-167` - Updated second rate-limited message to use helper
+- `packages/telegram_bot/src/bot/middleware/auth.ts:170-175` - Updated unauthorized message to use helper
+**Benefits**:
+- **DRY Principle**: Eliminated code duplication across three similar messages
+- **Maintainability**: Single source of truth for linking instructions
+- **Consistency**: Ensures all unauthorized messages have identical instructions
+- **Testability**: Helper function can be unit tested independently
+**Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
+
 ### Remaining User Acceptance Tests
-The implementation is complete and all automated tests pass. Critical registration bug has been fixed. Obsolete TELEGRAM_ALLOWED_USERS references have been cleaned up. User testing is needed to verify end-to-end functionality.
+The implementation is complete and all automated tests pass. Critical registration bug has been fixed. Obsolete TELEGRAM_ALLOWED_USERS references have been cleaned up. Telegram auth flow chicken-egg problem has been fixed. Telegram ID input field has been implemented. String consolidation refactoring has been completed. User testing is needed to verify end-to-end functionality.

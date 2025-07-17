@@ -68,12 +68,26 @@ export function isRateLimited(userId: number): boolean {
   return false;
 }
 
+// Helper function to generate linking instructions
+function generateLinkingInstructions(userId: number): string {
+  return (
+    `📱 Your Telegram ID: ${userId}\n\n` +
+    '🔗 To link your account:\n' +
+    '1. Go to the web app and log in\n' +
+    '2. Click "Profile" in the header\n' +
+    '3. Go to "Integrations" tab\n' +
+    '4. Enter your Telegram ID above\n' +
+    '5. Follow the linking instructions\n\n'
+  );
+}
+
 // Export for testing
 export {
   authFailures,
   MAX_AUTH_FAILURES,
   AUTH_FAILURE_WINDOW_MS,
   RATE_LIMIT_DURATION_MS,
+  generateLinkingInstructions,
 };
 
 export async function isUserAuthorized(userId: number): Promise<boolean> {
@@ -118,6 +132,7 @@ export async function authMiddleware(
 
       await ctx.reply(
         '⏰ Too many unauthorized attempts. Please wait 15 minutes before trying again.\n\n' +
+          generateLinkingInstructions(userId) +
           'If you believe this is an error, please contact the bot administrator.',
       );
       return;
@@ -147,12 +162,14 @@ export async function authMiddleware(
     if (isNowRateLimited) {
       await ctx.reply(
         '🚫 Too many unauthorized attempts. Access has been temporarily restricted.\n\n' +
+          generateLinkingInstructions(userId) +
           'Please wait 15 minutes before trying again. If you believe this is an error, please contact the bot administrator.',
       );
     } else {
       const remainingAttempts = MAX_AUTH_FAILURES - (failureRecord?.count || 0);
       await ctx.reply(
         '🚫 Unauthorized: You are not allowed to use this bot.\n\n' +
+          generateLinkingInstructions(userId) +
           `${remainingAttempts} attempts remaining before temporary restriction.\n\n` +
           'If you believe this is an error, please contact the bot administrator.',
       );

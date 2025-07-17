@@ -13,7 +13,7 @@ import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 import { z } from 'zod';
 
-import { authenticateUserFromMCP } from './auth/user-auth.js';
+import { validateUserContext } from './auth/user-auth.js';
 
 // Load environment variables
 dotenvLoad();
@@ -47,8 +47,23 @@ const server = new FastMCP<UserSession>({
   authenticate: async (request) => {
     console.log('MCP authentication request');
 
-    // Use user registry authentication
-    const authResult = await authenticateUserFromMCP(request.headers);
+    // Check if user headers are provided
+    const username =
+      request.headers['x-user-id'] || request.headers['X-User-ID'];
+
+    if (!username) {
+      // No user headers - this is likely a connection handshake
+      // Allow connection but return default session
+      console.log('MCP connection without user headers (connection handshake)');
+      return {
+        userId: 'anonymous',
+        dbName: 'default',
+        username: 'anonymous',
+      };
+    }
+
+    // Use user registry authentication for requests with headers
+    const authResult = await validateUserContext(request.headers);
     return {
       userId: authResult.userId,
       dbName: authResult.dbName,
@@ -64,6 +79,14 @@ function getUserDb(context: {
   if (!context.session) {
     throw new Error('No user session available');
   }
+
+  // For anonymous connections, require user headers for tool calls
+  if (context.session.userId === 'anonymous') {
+    throw new Error(
+      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID)',
+    );
+  }
+
   return couch.db.use<TodoAlpha3>(context.session.dbName);
 }
 

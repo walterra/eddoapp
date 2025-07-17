@@ -29,6 +29,10 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8),
 });
 
+const linkTelegramSchema = z.object({
+  telegramId: z.number().int().positive(),
+});
+
 interface JwtTokenPayload {
   userId: string;
   username: string;
@@ -232,6 +236,61 @@ usersApp.post('/change-password', async (c) => {
   } catch (error) {
     console.error('Password change error:', error);
     return c.json({ error: 'Failed to change password' }, 500);
+  }
+});
+
+// Link Telegram account manually
+usersApp.post('/telegram-link', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  const userToken = await extractUserFromToken(authHeader);
+
+  if (!userToken) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
+  try {
+    const body = await c.req.json();
+    const { telegramId } = linkTelegramSchema.parse(body);
+
+    const user = await userRegistry.findByUsername(userToken.username);
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    if (user.status !== 'active') {
+      return c.json({ error: 'Account is suspended' }, 403);
+    }
+
+    if (user.telegram_id) {
+      return c.json({ error: 'Telegram account already linked' }, 400);
+    }
+
+    // Check if Telegram ID is already linked to another account
+    const existingTelegram = await userRegistry.findByTelegramId(telegramId);
+    if (existingTelegram) {
+      return c.json(
+        { error: 'Telegram ID already linked to another account' },
+        409,
+      );
+    }
+
+    // Update user with Telegram ID
+    await userRegistry.update(user._id, {
+      telegram_id: telegramId,
+      updated_at: new Date().toISOString(),
+    });
+
+    return c.json({
+      success: true,
+      message: 'Telegram account linked successfully',
+      telegramId,
+    });
+  } catch (error) {
+    console.error('Telegram link error:', error);
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Invalid Telegram ID format' }, 400);
+    }
+    return c.json({ error: 'Failed to link Telegram account' }, 500);
   }
 });
 

@@ -14,6 +14,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
     error,
     updateProfile,
     changePassword,
+    linkTelegram,
     unlinkTelegram,
     clearError,
   } = useProfile();
@@ -30,6 +31,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState('');
+  const [telegramId, setTelegramId] = useState('');
 
   // Initialize form when profile loads
   useEffect(() => {
@@ -148,6 +150,30 @@ export function UserProfile({ onClose }: UserProfileProps) {
       setConfirmPassword('');
     } else {
       setFormError(result.error || 'Failed to change password');
+    }
+  };
+
+  const handleLinkTelegram = async () => {
+    setFormError('');
+    setSuccess(null);
+
+    if (!telegramId) {
+      setFormError('Please enter your Telegram ID');
+      return;
+    }
+
+    const telegramIdNumber = parseInt(telegramId, 10);
+    if (isNaN(telegramIdNumber) || telegramIdNumber <= 0) {
+      setFormError('Please enter a valid Telegram ID (positive number)');
+      return;
+    }
+
+    const result = await linkTelegram(telegramIdNumber);
+    if (result.success) {
+      setSuccess('Telegram account linked successfully');
+      setTelegramId('');
+    } else {
+      setFormError(result.error || 'Failed to link Telegram');
     }
   };
 
@@ -493,27 +519,74 @@ export function UserProfile({ onClose }: UserProfileProps) {
               </h2>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <h3 className="font-medium text-gray-900">Telegram Bot</h3>
-                    <p className="text-sm text-gray-600">
-                      {profile.telegramId
-                        ? `Connected to Telegram ID: ${profile.telegramId}`
-                        : 'Not connected to Telegram'}
-                    </p>
+                <div className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-900">
+                        Telegram Bot
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {profile.telegramId
+                          ? `Connected to Telegram ID: ${profile.telegramId}`
+                          : 'Not connected to Telegram'}
+                      </p>
+                    </div>
+
+                    {profile.telegramId ? (
+                      <Button
+                        color="red"
+                        disabled={isLoading}
+                        onClick={handleUnlinkTelegram}
+                      >
+                        {isLoading ? 'Unlinking...' : 'Unlink'}
+                      </Button>
+                    ) : null}
                   </div>
 
-                  {profile.telegramId ? (
-                    <Button
-                      color="red"
-                      disabled={isLoading}
-                      onClick={handleUnlinkTelegram}
-                    >
-                      {isLoading ? 'Unlinking...' : 'Unlink'}
-                    </Button>
-                  ) : (
-                    <div className="text-sm text-gray-500">
-                      Use the Telegram bot to link your account
+                  {!profile.telegramId && (
+                    <div className="mt-4 space-y-4 border-t pt-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          Link Telegram Account
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          Enter your Telegram ID to link your account. You can
+                          get your Telegram ID by messaging the bot.
+                        </p>
+                      </div>
+
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1">
+                          <Label htmlFor="telegramId">Telegram ID</Label>
+                          <TextInput
+                            disabled={isLoading}
+                            id="telegramId"
+                            onChange={(e) => setTelegramId(e.target.value)}
+                            placeholder="Enter your Telegram ID (e.g., 123456789)"
+                            type="text"
+                            value={telegramId}
+                          />
+                        </div>
+                        <Button
+                          color="blue"
+                          disabled={isLoading || !telegramId}
+                          onClick={handleLinkTelegram}
+                        >
+                          {isLoading ? 'Linking...' : 'Link Account'}
+                        </Button>
+                      </div>
+
+                      <div className="text-sm text-gray-500">
+                        <p>
+                          💡 <strong>How to get your Telegram ID:</strong>
+                        </p>
+                        <ol className="mt-1 list-inside list-decimal space-y-1">
+                          <li>Message the Telegram bot</li>
+                          <li>The bot will reply with your Telegram ID</li>
+                          <li>Copy and paste it into the field above</li>
+                          <li>Click &quot;Link Account&quot;</li>
+                        </ol>
+                      </div>
                     </div>
                   )}
                 </div>

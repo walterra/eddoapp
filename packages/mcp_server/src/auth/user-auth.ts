@@ -29,9 +29,10 @@ setInterval(() => {
 }, 60 * 1000); // Clean up every minute
 
 /**
- * Authenticate user via user registry using user context from MCP headers
+ * Validate user context from MCP headers (for microservice-to-microservice communication)
+ * This doesn't "authenticate" but validates that the user context is valid
  */
-export async function authenticateUserFromMCP(
+export async function validateUserContext(
   headers: Record<string, string | string[] | undefined>,
 ): Promise<MCPAuthResult> {
   // Extract authentication headers
