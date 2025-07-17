@@ -7,12 +7,14 @@ This document outlines the implementation plan for a user registry system that e
 ## Current State Analysis
 
 ### What Exists
+
 - **Infrastructure**: UserContextManager and per-user database support already implemented
 - **Authentication**: Telegram user ID allowlist-based authentication
 - **Database Pattern**: Support for `${baseName}_user_${userId}` naming
 - **MCP Server**: Handles per-request authentication with API keys
 
 ### What's Missing
+
 - **No User Mapping**: Telegram IDs aren't mapped to eddo usernames
 - **Shared Database**: All authenticated users share the same database
 - **No Per-User API Keys**: Single MCP API key for all users
@@ -109,12 +111,12 @@ export function migrateUserRegistryEntry(entry: unknown): UserRegistryEntryAlpha
   if (isUserRegistryEntryAlpha1(entry)) {
     return entry;
   }
-  
+
   // Handle legacy entries without version field
   if (isLegacyUserRegistryEntry(entry)) {
     return migrateLegacyToAlpha1(entry);
   }
-  
+
   throw new Error('invalid user registry entry');
 }
 
@@ -153,8 +155,6 @@ Telegram User (ID: 12345)
     ▼
 Bot Auth Middleware
     │
-    ├─── Check if ID in TELEGRAM_ALLOWED_USERS
-    │
     ├─── Lookup in user_registry database
     │    └─── Find mapping: 12345 → walterra
     │
@@ -181,6 +181,7 @@ User-specific CouchDB Database
 ### Phase 1: User Registry Database
 
 1. **Create Versioned Registry Types** (`packages/core-shared/src/versions/user_registry_alpha1.ts`)
+
 ```typescript
 import { isNil } from 'lodash-es';
 import { type UnknownObject } from '../../types/unknown-object';
@@ -210,6 +211,7 @@ export function isUserRegistryEntryAlpha1(arg: unknown): arg is UserRegistryEntr
 ```
 
 2. **Create Migration System** (`packages/core-shared/src/versions/migrate_user_registry.ts`)
+
 ```typescript
 import { isNil } from 'lodash-es';
 import { type UnknownObject } from '../../types/unknown-object';
@@ -223,12 +225,12 @@ export function migrateUserRegistryEntry(entry: unknown): UserRegistryEntryAlpha
   if (isUserRegistryEntryAlpha1(entry)) {
     return entry;
   }
-  
+
   // Handle legacy entries without version field
   if (isLegacyUserRegistryEntry(entry)) {
     return migrateLegacyToAlpha1(entry);
   }
-  
+
   throw new Error('invalid user registry entry');
 }
 
@@ -251,6 +253,7 @@ function migrateLegacyToAlpha1(entry: any): UserRegistryEntryAlpha1 {
 ```
 
 3. **Create Type Definitions** (`packages/core-shared/src/types/user-registry.ts`)
+
 ```typescript
 import { type UserRegistryEntryAlpha1 } from '../api/versions/user_registry_alpha1';
 
@@ -267,6 +270,7 @@ export interface UserRegistryOperations {
 ```
 
 4. **Implement Registry Operations** (`packages/mcp_server/src/db/user-registry.ts`)
+
 ```typescript
 import nano from 'nano';
 import { UserRegistryEntry, UserRegistryOperations } from '@eddo/core';
@@ -274,12 +278,12 @@ import { migrateUserRegistryEntry, isLatestUserRegistryVersion } from '@eddo/cor
 
 export class UserRegistry implements UserRegistryOperations {
   private db: nano.DocumentScope<UserRegistryEntry>;
-  
+
   constructor(couchUrl: string, dbName: string = 'user_registry') {
     const couch = nano(couchUrl);
     this.db = couch.use<UserRegistryEntry>(dbName);
   }
-  
+
   async findByTelegramId(telegramId: number): Promise<UserRegistryEntry | null> {
     const id = `telegram_${telegramId}`;
     try {
@@ -297,18 +301,18 @@ export class UserRegistry implements UserRegistryOperations {
       throw error;
     }
   }
-  
+
   async create(entry: Omit<UserRegistryEntry, '_id' | '_rev'>): Promise<UserRegistryEntry> {
     const newEntry: UserRegistryEntry = {
       ...entry,
       _id: `telegram_${entry.telegram_id}`,
       version: 'alpha1', // Always create with latest version
     };
-    
+
     const result = await this.db.insert(newEntry);
     return { ...newEntry, _rev: result.rev };
   }
-  
+
   // Additional methods...
 }
 ```
@@ -316,6 +320,7 @@ export class UserRegistry implements UserRegistryOperations {
 ### Phase 2: Environment Configuration
 
 1. **Update Environment Variables** (`packages/core-server/src/config/env.ts`)
+
 ```typescript
 export interface EnvConfig {
   // Existing config...
@@ -325,17 +330,18 @@ export interface EnvConfig {
 ```
 
 2. **Parse User Mappings** (`packages/telegram_bot/src/utils/config.ts`)
+
 ```typescript
 function parseUserMappings(mapping: string): Map<number, string> {
   const mappings = new Map<number, string>();
-  
+
   mapping.split(',').forEach(pair => {
     const [telegramId, username] = pair.trim().split(':');
     if (telegramId && username) {
       mappings.set(parseInt(telegramId), username);
     }
   });
-  
+
   return mappings;
 }
 ```
@@ -343,6 +349,7 @@ function parseUserMappings(mapping: string): Map<number, string> {
 ### Phase 3: Enhanced Authentication
 
 1. **Update Auth Middleware** (`packages/telegram_bot/src/bot/middleware/auth.ts`)
+
 ```typescript
 export async function resolveUserContext(
   telegramId: number,
@@ -350,7 +357,7 @@ export async function resolveUserContext(
 ): Promise<UserContext> {
   // Check registry first
   const registryEntry = await registry.findByTelegramId(telegramId);
-  
+
   if (registryEntry) {
     return {
       telegramId,
@@ -359,16 +366,16 @@ export async function resolveUserContext(
       databaseName: registryEntry.database_name,
     };
   }
-  
+
   // Fallback to environment mapping
   const envMapping = parseUserMappings(config.TELEGRAM_USER_MAPPING || '');
   const username = envMapping.get(telegramId);
-  
+
   if (username) {
     // Create registry entry from environment mapping
     return await createUserFromMapping(telegramId, username, registry);
   }
-  
+
   // Final fallback: use telegram ID
   return {
     telegramId,
@@ -382,23 +389,24 @@ export async function resolveUserContext(
 ### Phase 4: Per-User MCP Clients
 
 1. **Update Connection Manager** (`packages/telegram_bot/src/mcp/connection-manager.ts`)
+
 ```typescript
 export class MCPConnectionManager {
   private userClients: Map<string, Client> = new Map();
-  
+
   async getClientForUser(userContext: UserContext): Promise<Client> {
     const key = userContext.apiKey;
-    
+
     if (this.userClients.has(key)) {
       return this.userClients.get(key)!;
     }
-    
+
     const client = await this.createClient(userContext.apiKey);
     this.userClients.set(key, client);
-    
+
     return client;
   }
-  
+
   private async createClient(apiKey: string): Promise<Client> {
     const transport = new StreamableHTTPClientTransport(
       new URL(this.serverUrl),
@@ -408,7 +416,7 @@ export class MCPConnectionManager {
         },
       }
     );
-    
+
     // Create and connect client...
   }
 }
@@ -417,12 +425,14 @@ export class MCPConnectionManager {
 ### Phase 5: Database Management
 
 1. **Bootstrap Registry Database**
+
 ```bash
 # Script to create and initialize user registry
 node packages/mcp_server/scripts/setup-user-registry.js
 ```
 
 2. **Design Documents for Registry**
+
 ```javascript
 {
   "_id": "_design/queries",
@@ -443,21 +453,25 @@ node packages/mcp_server/scripts/setup-user-registry.js
 ## CouchDB Best Practices Applied
 
 ### 1. Database-per-User Pattern
+
 - **Recommendation**: "In the very common situation where you want user data to be private, the current best practice is to give every user a database"
 - **Implementation**: Each user gets `eddo_user_{username}` database
 - **Benefits**: Complete isolation, easy backup/restore, simple security model
 
 ### 2. Design Document Synchronization
+
 - **Challenge**: Keep design docs in sync across user databases
 - **Solution**: Use existing `DatabaseSetup` class to push updates
 - **Automation**: Deploy script updates all user databases
 
 ### 3. Security Considerations
+
 - **Registry Access**: Admin-only, not exposed to users
 - **Database Names**: Human-readable but not enumerable
 - **API Keys**: Generated per-user, not shared
 
 ### 4. Scalability
+
 - **CouchDB Capacity**: Handles 10k+ databases easily
 - **File System**: Modern filesystems (ext4) handle many subdirectories
 - **Connection Pooling**: Reuse MCP clients per user
@@ -465,22 +479,26 @@ node packages/mcp_server/scripts/setup-user-registry.js
 ## Migration Strategy
 
 ### Step 1: Enable Feature Flag
+
 ```bash
 ENABLE_USER_REGISTRY=true
 TELEGRAM_USER_MAPPING="12345:walterra,67890:john"
 ```
 
 ### Step 2: Create Registry Entries
+
 - Parse environment mappings
 - Create registry entries for existing users
 - New users get entries on first login
 
 ### Step 3: Gradual Migration
+
 - Existing users continue with shared database
 - New logins create per-user databases
 - Background job migrates data on-demand
 
 ### Step 4: Full Cutover
+
 - All users have registry entries
 - Remove shared database access
 - Disable fallback mechanisms
@@ -488,16 +506,19 @@ TELEGRAM_USER_MAPPING="12345:walterra,67890:john"
 ## Security Enhancements
 
 ### Data Isolation
+
 - Each user can only access their own database
 - No cross-user queries possible
 - Complete privacy between users
 
 ### Access Control
+
 - Registry database requires admin credentials
 - User databases accessed via unique API keys
 - No direct database access from Telegram bot
 
 ### Audit Trail
+
 - Registry tracks user creation/updates
 - Each database operation logged with user context
 - Failed access attempts recorded
@@ -505,6 +526,7 @@ TELEGRAM_USER_MAPPING="12345:walterra,67890:john"
 ## Testing Plan
 
 ### Unit Tests
+
 - [ ] User registry CRUD operations
 - [ ] User context resolution
 - [ ] API key generation
@@ -516,6 +538,7 @@ TELEGRAM_USER_MAPPING="12345:walterra,67890:john"
   - [ ] `migrateUserRegistryEntry()` central migration orchestrator
 
 ### Integration Tests
+
 - [ ] End-to-end authentication flow
 - [ ] Per-user database creation
 - [ ] MCP client isolation
@@ -527,6 +550,7 @@ TELEGRAM_USER_MAPPING="12345:walterra,67890:john"
   - [ ] Migration error handling
 
 ### Security Tests
+
 - [ ] Verify user isolation
 - [ ] Test unauthorized access attempts
 - [ ] Validate API key uniqueness
@@ -539,9 +563,9 @@ Following the todo schema testing approach:
 ```typescript
 // migrate_user_registry.test.ts
 import { describe, it, expect } from 'vitest';
-import { 
-  migrateUserRegistryEntry, 
-  isLatestUserRegistryVersion 
+import {
+  migrateUserRegistryEntry,
+  isLatestUserRegistryVersion
 } from './migrate_user_registry';
 
 describe('User Registry Migration', () => {
@@ -558,19 +582,19 @@ describe('User Registry Migration', () => {
       status: 'active',
       // Missing version field
     };
-    
+
     const migrated = migrateUserRegistryEntry(legacyEntry);
-    
+
     expect(migrated.version).toBe('alpha1');
     expect(migrated.telegram_id).toBe(12345);
     expect(migrated.eddo_username).toBe('walterra');
   });
-  
+
   it('should handle invalid entries', () => {
     expect(() => migrateUserRegistryEntry({})).toThrow('invalid user registry entry');
     expect(() => migrateUserRegistryEntry(null)).toThrow('invalid user registry entry');
   });
-  
+
   it('should detect latest version correctly', () => {
     const alpha1Entry = {
       _id: 'telegram_12345',
@@ -579,7 +603,7 @@ describe('User Registry Migration', () => {
       version: 'alpha1',
       // ... other fields
     };
-    
+
     expect(isLatestUserRegistryVersion(alpha1Entry)).toBe(true);
   });
 });
@@ -628,16 +652,19 @@ export function createLegacyUserRegistryEntry(
 ## Future Enhancements
 
 ### Admin Interface
+
 - Web UI for user management
 - Bulk user operations
 - Usage statistics per user
 
 ### Self-Service Registration
+
 - Users can claim usernames
 - Email verification flow
 - Profile management
 
 ### Advanced Permissions
+
 - Role-based access control
 - Shared databases for teams
 - Read-only access modes

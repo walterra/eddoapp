@@ -334,5 +334,15 @@ The system will use environment-aware database naming:
 **File**: `packages/web-client/src/eddo.tsx:37-42`
 **Status**: Fixed and verified
 
+### ✅ OBSOLETE TELEGRAM_ALLOWED_USERS CLEANUP COMPLETE
+**Issue**: Legacy TELEGRAM_ALLOWED_USERS environment variable and related code was still present despite migration to user registry system
+**Root Cause**: Config system, tests, and documentation contained obsolete references to old hardcoded user allowlist approach
+**Solution**: Removed all TELEGRAM_ALLOWED_USERS references and updated documentation to reflect new user registry authentication
+**Files Updated**:
+- `packages/telegram_bot/src/utils/config.ts` - Removed TELEGRAM_ALLOWED_USERS schema, parseAllowedUsers function, and TelegramUserIdSchema
+- `packages/telegram_bot/src/utils/config.test.ts` - Replaced obsolete tests with basic configuration tests
+- `packages/telegram_bot/README.md` - Updated documentation to reflect user registry authentication system
+**Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
+
 ### Remaining User Acceptance Tests
-The implementation is complete and all automated tests pass. Critical registration bug has been fixed. User testing is needed to verify end-to-end functionality.
+The implementation is complete and all automated tests pass. Critical registration bug has been fixed. Obsolete TELEGRAM_ALLOWED_USERS references have been cleaned up. User testing is needed to verify end-to-end functionality.
