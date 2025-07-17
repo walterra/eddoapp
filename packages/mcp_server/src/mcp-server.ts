@@ -13,6 +13,8 @@ import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 import { z } from 'zod';
 
+import { authenticateUserFromMCP } from './auth/user-auth.js';
+
 // Load environment variables
 dotenvLoad();
 
@@ -23,6 +25,7 @@ const env = validateEnv(process.env);
 type UserSession = {
   userId: string;
   dbName: string;
+  username: string;
 };
 
 // Initialize nano connection
@@ -38,59 +41,19 @@ const server = new FastMCP<UserSession>({
     logLevel: 'info',
   },
   instructions:
-    'Eddo Todo MCP Server with API key authentication and GTD tag awareness. Pass X-API-Key header for user-specific database access. Each API key gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n- DUE FIELD: For gtd:calendar = exact appointment time, for others = deadline/target\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n- tags: ["gtd:calendar"] + context: "work" for appointments/meetings\n\nAPPOINTMENT CREATION RULE: For gtd:calendar items, ALWAYS prefix title with time in HH:MM format:\n- "Doctor appointment at 3pm" → title: "15:00 Doctor appointment"\n- "Meeting tomorrow at 10:30" → title: "10:30 Meeting"\n- "Lunch at noon" → title: "12:00 Lunch"\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
+    'Eddo Todo MCP Server with user registry authentication and GTD tag awareness. Pass X-User-ID, X-Database-Name, and X-Telegram-ID headers for user-specific database access. Each user gets an isolated database.\n\nGTD SYSTEM:\n- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)\n- CONTEXT: work, private, errands, etc. (for location/situation)\n- DUE FIELD: For gtd:calendar = exact appointment time, for others = deadline/target\n\nWhen creating todos, add appropriate GTD tags AND set proper context:\n- tags: ["gtd:next"] + context: "work" for work actionable items\n- tags: ["gtd:project"] + context: "private" for personal projects\n- tags: ["gtd:waiting"] + context: "work" for work dependencies\n- tags: ["gtd:calendar"] + context: "work" for appointments/meetings\n\nAPPOINTMENT CREATION RULE: For gtd:calendar items, ALWAYS prefix title with time in HH:MM format:\n- "Doctor appointment at 3pm" → title: "15:00 Doctor appointment"\n- "Meeting tomorrow at 10:30" → title: "10:30 Meeting"\n- "Lunch at noon" → title: "12:00 Lunch"\n\nFor GTD queries like "what\'s next?", filter by gtd:next tags and optionally by context.',
 
   // Authentication function - runs for each request
-  authenticate: (request) => {
-    // Extract API key from X-API-Key header
-    const apiKey = request.headers['x-api-key'] as string;
+  authenticate: async (request) => {
+    console.log('MCP authentication request');
 
-    console.log(`Auth request with API key: ${apiKey ? '[REDACTED]' : 'none'}`);
-
-    // In test mode, we allow any non-empty API key for database isolation
-    if (env.NODE_ENV === 'test') {
-      if (!apiKey) {
-        throw new Response(null, {
-          status: 401,
-          statusText: 'API key required for test isolation',
-        });
-      }
-
-      // Generate user-specific database name using API key
-      // Use the base database name (not the effective name) to avoid double API key suffix
-      const isTest = process.env.NODE_ENV === 'test';
-      const baseName = isTest
-        ? env.COUCHDB_TEST_DB_NAME || env.COUCHDB_DB_NAME
-        : env.COUCHDB_DB_NAME;
-      const dbName = `${baseName}_api_${apiKey}`;
-
-      return Promise.resolve({
-        userId: apiKey, // Use API key as user identifier
-        dbName,
-      });
-    }
-
-    // In production mode, require valid API key
-    if (!apiKey) {
-      throw new Response(null, {
-        status: 401,
-        statusText: 'API key required',
-      });
-    }
-
-    // Here you would validate the API key against your auth system
-    // For now, use the API key as the user identifier
-    // Use the base database name (not the effective name) to avoid double API key suffix
-    const isTest = process.env.NODE_ENV === 'test';
-    const baseName = isTest
-      ? env.COUCHDB_TEST_DB_NAME || env.COUCHDB_DB_NAME
-      : env.COUCHDB_DB_NAME;
-    const dbName = `${baseName}_api_${apiKey}`;
-
-    return Promise.resolve({
-      userId: apiKey,
-      dbName,
-    });
+    // Use user registry authentication
+    const authResult = await authenticateUserFromMCP(request.headers);
+    return {
+      userId: authResult.userId,
+      dbName: authResult.dbName,
+      username: authResult.username,
+    };
   },
 });
 

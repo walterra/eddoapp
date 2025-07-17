@@ -4,6 +4,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import type { MCPTool } from './client.js';
+import type { MCPUserContext } from './user-context.js';
 
 export enum ConnectionState {
   DISCONNECTED = 'DISCONNECTED',
@@ -308,22 +309,40 @@ export class MCPConnectionManager {
   }
 
   /**
-   * Invoke a tool
+   * Invoke a tool with user context
    */
   async invoke(
     toolName: string,
     params: Record<string, unknown>,
+    userContext?: MCPUserContext,
   ): Promise<unknown> {
     if (this.state !== ConnectionState.CONNECTED || !this.client) {
       throw new Error(`Cannot invoke tool: connection state is ${this.state}`);
     }
 
-    logger.info('Invoking MCP tool', { toolName, params });
+    logger.info('Invoking MCP tool', {
+      toolName,
+      params,
+      username: userContext?.username,
+      databaseName: userContext?.databaseName,
+    });
 
     try {
+      // Add user context to tool parameters if provided
+      const enhancedParams = userContext
+        ? {
+            ...params,
+            _userContext: {
+              username: userContext.username,
+              databaseName: userContext.databaseName,
+              telegramId: userContext.telegramId,
+            },
+          }
+        : params;
+
       const result = await this.client.callTool({
         name: toolName,
-        arguments: params,
+        arguments: enhancedParams,
       });
 
       logger.info('MCP tool invoked successfully', {

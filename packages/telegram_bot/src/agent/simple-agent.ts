@@ -4,6 +4,7 @@ import { join } from 'path';
 import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import { getMCPClient } from '../mcp/client.js';
+import { extractUserContextForMCP } from '../mcp/user-context.js';
 import { logger } from '../utils/logger.js';
 import {
   convertToTelegramMarkdown,
@@ -120,9 +121,16 @@ export class SimpleAgent {
     // Get comprehensive system information from MCP server (once before loop)
     let mcpSystemInfo = '';
     try {
-      const serverInfoResult = await mcpClient.invoke('getServerInfo', {
-        section: 'all',
-      });
+      // Extract user context for MCP operations
+      const userContext = await extractUserContextForMCP(telegramContext);
+
+      const serverInfoResult = await mcpClient.invoke(
+        'getServerInfo',
+        {
+          section: 'all',
+        },
+        userContext || undefined,
+      );
 
       // MCP server returns an array of content objects with type and text
       if (Array.isArray(serverInfoResult) && serverInfoResult.length > 0) {
@@ -449,7 +457,7 @@ export class SimpleAgent {
 
   private async executeTool(
     toolCall: ToolCall,
-    _telegramContext: BotContext,
+    telegramContext: BotContext,
   ): Promise<unknown> {
     const mcpClient = this.getMCPClientOrThrow();
 
@@ -458,12 +466,22 @@ export class SimpleAgent {
       throw new Error(`Tool not found: ${toolCall.name}`);
     }
 
+    // Extract user context for MCP operations
+    const userContext = await extractUserContextForMCP(telegramContext);
+
     logger.info('Executing tool', {
       toolName: tool.name,
       parameters: toolCall.parameters,
+      username: userContext?.username,
+      databaseName: userContext?.databaseName,
     });
 
-    const result = await mcpClient.invoke(tool.name, toolCall.parameters);
+    // Pass user context to MCP tool invocation
+    const result = await mcpClient.invoke(
+      tool.name,
+      toolCall.parameters,
+      userContext || undefined,
+    );
 
     return result;
   }

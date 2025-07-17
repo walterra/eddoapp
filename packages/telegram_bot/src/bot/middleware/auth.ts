@@ -1,7 +1,10 @@
-import { Context } from 'grammy';
-
-import { allowedUsers, appConfig } from '../../utils/config';
-import { logger } from '../../utils/logger';
+import { appConfig } from '../../utils/config.js';
+import { logger } from '../../utils/logger.js';
+import {
+  isTelegramUserAuthorized,
+  lookupUserByTelegramId,
+} from '../../utils/user-lookup.js';
+import type { BotContext } from '../bot.js';
 
 interface AuthFailureRecord {
   count: number;
@@ -73,17 +76,21 @@ export {
   RATE_LIMIT_DURATION_MS,
 };
 
-export function isUserAuthorized(userId: number): boolean {
-  // If no users are configured, deny all access for security
-  if (allowedUsers.size === 0) {
+export async function isUserAuthorized(userId: number): Promise<boolean> {
+  try {
+    return await isTelegramUserAuthorized(userId);
+  } catch (error) {
+    logger.error('Error checking user authorization', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Default to deny access on error for security
     return false;
   }
-
-  return allowedUsers.has(userId);
 }
 
 export async function authMiddleware(
-  ctx: Context,
+  ctx: BotContext,
   next: () => Promise<void>,
 ): Promise<void> {
   const userId = ctx.from?.id;
@@ -98,7 +105,7 @@ export async function authMiddleware(
     return;
   }
 
-  if (!isUserAuthorized(userId)) {
+  if (!(await isUserAuthorized(userId))) {
     // Check if user is rate limited due to previous auth failures
     if (isRateLimited(userId)) {
       logger.warn('Rate limited user attempted access', {
@@ -132,7 +139,7 @@ export async function authMiddleware(
         : {}),
       chatId: ctx.chat?.id,
       messageText: ctx.message?.text,
-      allowedUsersCount: allowedUsers.size,
+      authMethod: 'user_registry',
       failureCount: failureRecord?.count,
       rateLimited: isNowRateLimited,
     });
@@ -151,6 +158,24 @@ export async function authMiddleware(
       );
     }
     return;
+  }
+
+  // User is authorized, populate session with user data
+  try {
+    const user = await lookupUserByTelegramId(userId);
+    if (user) {
+      ctx.session.user = user;
+      logger.debug('User data populated in session', {
+        telegramId: userId,
+        username: user.username,
+      });
+    }
+  } catch (error) {
+    logger.error('Error populating user data in session', {
+      telegramId: userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Continue anyway - auth already passed
   }
 
   // User is authorized, proceed to next middleware/handler
