@@ -28,13 +28,19 @@ export const config = {
     return undefined;
   },
 
-  // Helper to get full CouchDB URL without credentials (for fetch API)
-  getCouchDbUrl(path: string = ''): string {
+  // Helper to get base CouchDB URL without credentials (for fetch API)
+  getCouchDbBaseUrl(): string {
     const url = new URL(env.COUCHDB_URL);
     // Remove credentials from URL for fetch API compatibility
     url.username = '';
     url.password = '';
+    return url.toString();
+  },
+
+  // Helper to get full CouchDB URL without credentials (for fetch API)
+  getCouchDbUrl(path: string = ''): string {
+    const baseUrl = this.getCouchDbBaseUrl();
     const effectiveDbName = getEffectiveDbName(env);
-    return `${url.toString()}${effectiveDbName}${path}`;
+    return `${baseUrl}${effectiveDbName}${path}`;
   },
 };

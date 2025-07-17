@@ -60,7 +60,8 @@ export const userDatabaseMiddleware = createMiddleware(async (c, next) => {
 
     // Create user database context
     const userDatabaseName = getUserDatabaseName(env, decoded.username);
-    const userDatabaseUrl = `${env.COUCHDB_URL}/${userDatabaseName}`;
+    // Use helper to get base URL without credentials for fetch API compatibility
+    const userDatabaseUrl = `${config.getCouchDbBaseUrl()}${userDatabaseName}`;
 
     const userDbContext: UserDatabaseContext = {
       userId: decoded.userId,

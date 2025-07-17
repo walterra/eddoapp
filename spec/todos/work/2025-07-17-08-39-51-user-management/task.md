@@ -344,5 +344,17 @@ The system will use environment-aware database naming:
 - `packages/telegram_bot/README.md` - Updated documentation to reflect user registry authentication system
 **Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
 
+### ✅ COUCHDB PROXY CREDENTIALS FIX COMPLETE
+**Issue**: CouchDB proxy error - `TypeError: Request cannot be constructed from a URL that includes credentials: http://admin:password@localhost:5984/eddo_user_togusa/`
+**Root Cause**: User database middleware was using `env.COUCHDB_URL` directly (with embedded credentials) in fetch API calls, but fetch API doesn't support URLs with credentials
+**Solution**: Strip credentials from URL before constructing fetch requests, add credentials via Authorization header instead
+**Files Updated**:
+- `packages/web-api/src/config.ts:31-38` - Added `getCouchDbBaseUrl()` helper function to get base URL without credentials
+- `packages/web-api/src/config.ts:40-44` - Refactored `getCouchDbUrl()` to use new helper function
+- `packages/web-api/src/middleware/user-db.ts:63-64` - Use `config.getCouchDbBaseUrl()` instead of duplicating credential stripping logic
+**Authentication**: Uses `config.getCouchDbAuthHeader()` to add proper Authorization header with Basic auth
+**Benefits**: Eliminates code duplication, centralizes URL credential handling in config module
+**Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
+
 ### Remaining User Acceptance Tests
 The implementation is complete and all automated tests pass. Critical registration bug has been fixed. Obsolete TELEGRAM_ALLOWED_USERS references have been cleaned up. User testing is needed to verify end-to-end functionality.
