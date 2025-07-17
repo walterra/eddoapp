@@ -131,6 +131,17 @@ describe('Register Component', () => {
       const user = userEvent.setup();
       render(<Register {...defaultProps} />);
 
+      // Remove required attributes to test validation logic
+      const usernameInput = screen.getByLabelText('Username*');
+      const emailInput = screen.getByLabelText('Email*');
+      const passwordInput = screen.getByLabelText('Password*');
+      const confirmPasswordInput = screen.getByLabelText('Confirm Password*');
+
+      usernameInput.removeAttribute('required');
+      emailInput.removeAttribute('required');
+      passwordInput.removeAttribute('required');
+      confirmPasswordInput.removeAttribute('required');
+
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
       });
@@ -216,6 +227,11 @@ describe('Register Component', () => {
     it('shows error when email is invalid', async () => {
       const user = userEvent.setup();
       render(<Register {...defaultProps} />);
+
+      // Remove required attributes to test validation logic
+      const emailInput = screen.getByLabelText('Email*');
+      emailInput.removeAttribute('required');
+      emailInput.setAttribute('type', 'text'); // Change from email to text to bypass browser validation
 
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'invalid-email');
