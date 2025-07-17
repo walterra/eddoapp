@@ -89,7 +89,6 @@ authApp.post('/register', async (c) => {
       password_hash: passwordHash,
       telegram_id: telegramId,
       database_name: '', // Will be set by UserRegistry
-      api_key: '', // Will be set by UserRegistry
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       permissions: ['read', 'write'],

@@ -19,7 +19,6 @@ interface UserDatabaseContext {
   username: string;
   userDatabaseName: string;
   userDatabaseUrl: string;
-  apiKey: string;
 }
 
 declare module 'hono' {
@@ -68,7 +67,6 @@ export const userDatabaseMiddleware = createMiddleware(async (c, next) => {
       username: decoded.username,
       userDatabaseName,
       userDatabaseUrl,
-      apiKey: user.api_key,
     };
 
     // Set user database context in Hono context

@@ -52,7 +52,6 @@ function migrateLegacyToAlpha1(entry: UnknownObject): UserRegistryEntryAlpha1 {
     password_hash: (entry.password_hash as string) || '',
     database_name:
       (entry.database_name as string) || `eddo_user_${entry.username}`,
-    api_key: (entry.api_key as string) || `web_user_${entry.username}`,
     created_at: (entry.created_at as string) || now,
     updated_at: (entry.updated_at as string) || now,
     permissions: (entry.permissions as UserPermissions) || ['read', 'write'],
