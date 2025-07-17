@@ -171,7 +171,7 @@ async function setupDesignDocuments(
 
 /**
  * Create indexes in the user database
- * Uses CouchDB's native indexing via _index endpoint
+ * Uses nano's built-in createIndex method
  */
 async function setupIndexes(
   db: DocumentScope<Record<string, unknown>>,
@@ -180,29 +180,23 @@ async function setupIndexes(
 
   for (const indexDef of REQUIRED_INDEXES) {
     try {
-      // Create index using CouchDB's _index endpoint
-      const indexDoc = {
+      // Use nano's built-in createIndex method
+      const response = await db.createIndex({
         index: indexDef.index,
         name: indexDef.name,
         type: indexDef.type,
-      };
+      });
 
-      // Use the CouchDB _index endpoint to create the index
-      await db.insert(indexDoc as Record<string, unknown>, `_index`);
-      console.log(`✅ Index ${indexDef.name} created`);
-    } catch (error: unknown) {
-      // Index might already exist, which is fine
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 409
-      ) {
+      if (response.result === 'created') {
+        console.log(`✅ Index ${indexDef.name} created`);
+      } else if (response.result === 'exists') {
         console.log(`✅ Index ${indexDef.name} already exists`);
       } else {
-        console.error(`❌ Failed to create index ${indexDef.name}:`, error);
-        throw error;
+        console.log(`✅ Index ${indexDef.name} result: ${response.result}`);
       }
+    } catch (error: unknown) {
+      console.error(`❌ Failed to create index ${indexDef.name}:`, error);
+      throw error;
     }
   }
 }
