@@ -271,11 +271,34 @@ The system will use environment-aware database naming:
 - ✅ **Error handling**: Proper validation, expiration, and conflict handling for linking codes
 - ✅ **User experience**: Clear instructions and feedback messages for linking/unlinking process
 
+### Phase 6: User Registry Integration for MCP and Telegram Bot
+- [ ] Replace hardcoded TELEGRAM_ALLOWED_USERS with user registry lookup (packages/telegram_bot/src/bot/middleware/auth.ts)
+- [ ] Update MCP server to authenticate users via user registry instead of hardcoded MCP_API_KEY (packages/mcp_server/src/auth/user-auth.ts)
+- [ ] Implement user-specific MCP authentication tokens (per-user API keys from user registry)
+- [ ] Update telegram bot to use user-specific database context when making MCP calls (packages/telegram_bot/src/mcp/user-context.ts)
+- [ ] Add user lookup by Telegram ID in bot authentication middleware (packages/telegram_bot/src/utils/user-lookup.ts)
+- [ ] Update MCP server tools to respect user-specific database routing (packages/mcp_server/src/tools/*)
+- [ ] Remove dependency on hardcoded environment variables for user management
+- [ ] Ensure MCP server can validate user identity and route to correct user database
+
+### Critical Architecture Change Required
+**Current Problem**: 
+- TELEGRAM_ALLOWED_USERS environment variable manages access control
+- Single MCP_API_KEY for all MCP server authentication
+- No user context passed between telegram bot → MCP server → user databases
+
+**Required Solution**:
+- Telegram bot authenticates users via user registry (telegramId lookup)
+- Each user gets unique MCP authentication context
+- MCP server validates user identity and routes to user-specific databases
+- Remove hardcoded user lists and API keys in favor of user registry
+
 ### Remaining Phase 5 Task
 - ❌ **MCP server user context**: Need to investigate how to pass user context to MCP server for database routing
 - This may require updates to MCP server tool calls to include user authentication context
 
 ### Next Steps
+- Implement Phase 6: User Registry Integration for MCP and Telegram Bot
 - Complete remaining automated tests and user tests
 - Add user context routing to MCP server calls
 - Test end-to-end user linking and todo synchronization
