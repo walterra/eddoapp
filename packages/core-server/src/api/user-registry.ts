@@ -1,4 +1,6 @@
 import {
+  type CreateUserRegistryEntry,
+  type UpdateUserRegistryEntry,
   type UserContext,
   type UserRegistryEntry,
   type UserRegistryOperations,
@@ -23,14 +25,7 @@ interface UserRegistryContext {
   env: Env;
 }
 
-/**
- * Create a user registry instance with all operations
- */
-export function createUserRegistry(
-  couchUrl: string,
-  env: Env,
-  dbName?: string,
-): UserRegistryOperations & {
+interface UserRegistryExtendedOperations {
   ensureDatabase: () => Promise<void>;
   setupDesignDocuments: () => Promise<void>;
   createUserContext: (entry: UserRegistryEntry) => UserContext;
@@ -38,7 +33,20 @@ export function createUserRegistry(
   getUserDatabase: (
     username: string,
   ) => nano.DocumentScope<Record<string, unknown>>;
-} {
+}
+
+interface UserRegistryInstance
+  extends UserRegistryOperations,
+    UserRegistryExtendedOperations {}
+
+/**
+ * Create a user registry instance with all operations
+ */
+export function createUserRegistry(
+  couchUrl: string,
+  env: Env,
+  dbName?: string,
+): UserRegistryInstance {
   const couchConnection = nano(couchUrl);
   const registryDbName = dbName || getUserRegistryDatabaseConfig(env).dbName;
   const db = couchConnection.db.use<UserRegistryEntry>(registryDbName);
@@ -177,7 +185,7 @@ async function findByEmail(
 
 async function create(
   context: UserRegistryContext,
-  entry: Omit<UserRegistryEntry, '_id' | '_rev'>,
+  entry: CreateUserRegistryEntry,
 ): Promise<UserRegistryEntry> {
   const sanitizedUsername = sanitizeUsername(entry.username);
   const now = new Date().toISOString();
@@ -201,7 +209,7 @@ async function create(
 async function update(
   context: UserRegistryContext,
   id: string,
-  updates: Partial<UserRegistryEntry>,
+  updates: UpdateUserRegistryEntry,
 ): Promise<UserRegistryEntry> {
   const existing = await context.db.get(id);
   const now = new Date().toISOString();

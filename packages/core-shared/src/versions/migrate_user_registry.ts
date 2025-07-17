@@ -1,7 +1,9 @@
 import isNil from 'lodash-es/isNil';
 
 import {
+  type UserPermissions,
   type UserRegistryEntryAlpha1,
+  type UserStatus,
   isUserRegistryEntryAlpha1,
 } from './user_registry_alpha1';
 
@@ -53,8 +55,8 @@ function migrateLegacyToAlpha1(entry: UnknownObject): UserRegistryEntryAlpha1 {
     api_key: (entry.api_key as string) || `web_user_${entry.username}`,
     created_at: (entry.created_at as string) || now,
     updated_at: (entry.updated_at as string) || now,
-    permissions: (entry.permissions as string[]) || ['read', 'write'],
-    status: (entry.status as 'active' | 'suspended') || 'active',
+    permissions: (entry.permissions as UserPermissions) || ['read', 'write'],
+    status: (entry.status as UserStatus) || 'active',
     version: 'alpha1',
   };
 }

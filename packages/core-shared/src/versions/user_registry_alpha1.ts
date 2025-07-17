@@ -2,6 +2,10 @@ import isNil from 'lodash-es/isNil';
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
+export type UserStatus = 'active' | 'suspended';
+export type UserPermission = 'read' | 'write';
+export type UserPermissions = UserPermission[];
+
 export interface UserRegistryEntryAlpha1 {
   _id: string;
   _rev?: string;
@@ -13,8 +17,8 @@ export interface UserRegistryEntryAlpha1 {
   api_key: string;
   created_at: string;
   updated_at: string;
-  permissions: string[];
-  status: 'active' | 'suspended';
+  permissions: UserPermissions;
+  status: UserStatus;
   version: 'alpha1';
 }
 

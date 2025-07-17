@@ -200,11 +200,7 @@ authApp.get('/validate', async (c) => {
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as {
-      userId: string;
-      username: string;
-      exp: number;
-    };
+    const decoded = jwt.verify(token, config.jwtSecret) as JwtTokenPayload;
     return c.json({
       valid: true,
       userId: decoded.userId,
@@ -216,8 +212,19 @@ authApp.get('/validate', async (c) => {
   }
 });
 
+interface LinkingCodeData {
+  username: string;
+  expires: number;
+}
+
+interface JwtTokenPayload {
+  userId: string;
+  username: string;
+  exp: number;
+}
+
 // In-memory store for linking codes (in production, use Redis or database)
-const linkingCodes = new Map<string, { username: string; expires: number }>();
+const linkingCodes = new Map<string, LinkingCodeData>();
 
 // Generate linking code for Telegram
 authApp.post('/generate-link-code', async (c) => {
@@ -230,10 +237,7 @@ authApp.post('/generate-link-code', async (c) => {
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as {
-      userId: string;
-      username: string;
-    };
+    const decoded = jwt.verify(token, config.jwtSecret) as JwtTokenPayload;
 
     // Generate unique linking code
     const linkCode = generateSecureToken();

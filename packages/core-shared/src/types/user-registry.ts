@@ -1,18 +1,25 @@
-import { type UserRegistryEntryAlpha1 } from '../versions/user_registry_alpha1';
+import {
+  type UserPermissions,
+  type UserRegistryEntryAlpha1,
+  type UserStatus,
+} from '../versions/user_registry_alpha1';
 
 export type NewUserRegistryEntry = Omit<UserRegistryEntryAlpha1, '_rev'>;
 export type UserRegistryEntry = UserRegistryEntryAlpha1;
+
+export type CreateUserRegistryEntry = Omit<UserRegistryEntry, '_id' | '_rev'>;
+export type UpdateUserRegistryEntry = Partial<UserRegistryEntry>;
+
+export { type UserStatus, type UserPermissions };
 
 export interface UserRegistryOperations {
   findByUsername(username: string): Promise<UserRegistryEntry | null>;
   findByTelegramId(telegramId: number): Promise<UserRegistryEntry | null>;
   findByEmail(email: string): Promise<UserRegistryEntry | null>;
-  create(
-    entry: Omit<UserRegistryEntry, '_id' | '_rev'>,
-  ): Promise<UserRegistryEntry>;
+  create(entry: CreateUserRegistryEntry): Promise<UserRegistryEntry>;
   update(
     id: string,
-    updates: Partial<UserRegistryEntry>,
+    updates: UpdateUserRegistryEntry,
   ): Promise<UserRegistryEntry>;
   list(): Promise<UserRegistryEntry[]>;
   delete(id: string): Promise<void>;
@@ -24,8 +31,8 @@ export interface UserContext {
   telegramId?: number;
   apiKey: string;
   databaseName: string;
-  permissions: string[];
-  status: 'active' | 'suspended';
+  permissions: UserPermissions;
+  status: UserStatus;
 }
 
 export interface CreateUserRequest {
