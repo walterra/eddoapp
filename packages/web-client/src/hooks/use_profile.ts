@@ -11,7 +11,6 @@ interface UserProfile {
   updatedAt: string;
   permissions: string[];
   status: string;
-  api_key: string;
 }
 
 interface UpdateProfileData {
@@ -147,44 +146,6 @@ export const useProfile = () => {
     }
   };
 
-  const regenerateApiKey = async (): Promise<{
-    success: boolean;
-    error?: string;
-    apiKey?: string;
-  }> => {
-    if (!authToken?.token) {
-      return { success: false, error: 'No authentication token' };
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/users/regenerate-api-key', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Refetch profile to get updated API key
-        await fetchProfile();
-        return { success: true, apiKey: data.apiKey };
-      } else {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to regenerate API key';
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
-      }
-    } catch (_error) {
-      const errorMessage = 'Network error occurred';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const unlinkTelegram = async (): Promise<{
     success: boolean;
     error?: string;
@@ -238,7 +199,6 @@ export const useProfile = () => {
     fetchProfile,
     updateProfile,
     changePassword,
-    regenerateApiKey,
     unlinkTelegram,
     clearError: () => setError(null),
   };

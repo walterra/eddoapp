@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 import { config } from '../config';
 import {
-  generateSecureToken,
   hashPassword,
   validateEmail,
   validatePassword,
@@ -81,7 +80,6 @@ usersApp.get('/profile', async (c) => {
       updatedAt: user.updated_at,
       permissions: user.permissions,
       status: user.status,
-      api_key: user.api_key,
     });
   } catch (error) {
     console.error('Profile fetch error:', error);
@@ -174,7 +172,6 @@ usersApp.put('/profile', async (c) => {
       updatedAt: updatedUser.updated_at,
       permissions: updatedUser.permissions,
       status: updatedUser.status,
-      api_key: updatedUser.api_key,
     });
   } catch (error) {
     console.error('Profile update error:', error);
@@ -235,45 +232,6 @@ usersApp.post('/change-password', async (c) => {
   } catch (error) {
     console.error('Password change error:', error);
     return c.json({ error: 'Failed to change password' }, 500);
-  }
-});
-
-// Generate new API key
-usersApp.post('/regenerate-api-key', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  const userToken = await extractUserFromToken(authHeader);
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
-
-  try {
-    const user = await userRegistry.findByUsername(userToken.username);
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
-    if (user.status !== 'active') {
-      return c.json({ error: 'Account is suspended' }, 403);
-    }
-
-    // Generate new API key
-    const newApiKey = generateSecureToken();
-
-    // Update user with new API key
-    await userRegistry.update(user._id, {
-      api_key: newApiKey,
-      updated_at: new Date().toISOString(),
-    });
-
-    return c.json({
-      success: true,
-      apiKey: newApiKey,
-      message: 'API key regenerated successfully',
-    });
-  } catch (error) {
-    console.error('API key regeneration error:', error);
-    return c.json({ error: 'Failed to regenerate API key' }, 500);
   }
 });
 

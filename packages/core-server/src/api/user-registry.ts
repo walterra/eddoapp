@@ -13,7 +13,6 @@ import nano from 'nano';
 
 import { type Env } from '../config/env';
 import {
-  getUserApiKey,
   getUserDatabaseName,
   getUserRegistryDatabaseConfig,
   sanitizeUsername,
@@ -194,7 +193,6 @@ async function create(
     ...entry,
     _id: `user_${sanitizedUsername}`,
     database_name: getUserDatabaseName(context.env, entry.username),
-    api_key: getUserApiKey(entry.username, 'web'),
     created_at: entry.created_at || now,
     updated_at: now,
     permissions: entry.permissions || ['read', 'write'],
@@ -252,7 +250,6 @@ function createUserContext(entry: UserRegistryEntry): UserContext {
     userId: entry._id,
     username: entry.username,
     telegramId: entry.telegram_id,
-    apiKey: entry.api_key,
     databaseName: entry.database_name,
     permissions: entry.permissions,
     status: entry.status,

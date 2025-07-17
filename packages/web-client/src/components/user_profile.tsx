@@ -14,7 +14,6 @@ export function UserProfile({ onClose }: UserProfileProps) {
     error,
     updateProfile,
     changePassword,
-    regenerateApiKey,
     unlinkTelegram,
     clearError,
   } = useProfile();
@@ -149,23 +148,6 @@ export function UserProfile({ onClose }: UserProfileProps) {
       setConfirmPassword('');
     } else {
       setFormError(result.error || 'Failed to change password');
-    }
-  };
-
-  const handleRegenerateApiKey = async () => {
-    if (
-      !confirm(
-        'Are you sure you want to regenerate your API key? This will invalidate the current key.',
-      )
-    ) {
-      return;
-    }
-
-    const result = await regenerateApiKey();
-    if (result.success) {
-      setSuccess('API key regenerated successfully');
-    } else {
-      setFormError(result.error || 'Failed to regenerate API key');
     }
   };
 
@@ -496,38 +478,6 @@ export function UserProfile({ onClose }: UserProfileProps) {
                   >
                     {isLoading ? 'Changing Password...' : 'Change Password'}
                   </Button>
-                </div>
-              </div>
-            </Card>
-
-            <Card>
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  API Key Management
-                </h2>
-
-                <div>
-                  <Label htmlFor="apiKey">Your API Key</Label>
-                  <div className="flex space-x-4">
-                    <TextInput
-                      className="flex-1 bg-gray-50"
-                      disabled
-                      id="apiKey"
-                      type="password"
-                      value={profile.api_key}
-                    />
-                    <Button
-                      color="orange"
-                      disabled={isLoading}
-                      onClick={handleRegenerateApiKey}
-                    >
-                      {isLoading ? 'Regenerating...' : 'Regenerate'}
-                    </Button>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    This key is used for database access. Keep it secure and
-                    regenerate if compromised.
-                  </p>
                 </div>
               </div>
             </Card>

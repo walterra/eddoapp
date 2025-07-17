@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AddTodo } from './components/add_todo';
 import { Login } from './components/login';
@@ -9,7 +9,7 @@ import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
-import { pouchDbContextValue } from './pouch_db';
+import { createUserPouchDbContext, pouchDbContextValue } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
 
 function CouchdbSyncProvider() {
@@ -71,8 +71,19 @@ function AuthenticatedApp() {
 }
 
 export function Eddo() {
+  const { username, isAuthenticated } = useAuth();
+
+  // Create user-specific PouchDB context when authenticated
+  const pouchDbContext = useMemo(() => {
+    if (isAuthenticated && username) {
+      return createUserPouchDbContext(username);
+    }
+    // Fallback to default context for unauthenticated state
+    return pouchDbContextValue;
+  }, [isAuthenticated, username]);
+
   return (
-    <PouchDbContext.Provider value={pouchDbContextValue}>
+    <PouchDbContext.Provider value={pouchDbContext}>
       <AuthenticatedApp />
     </PouchDbContext.Provider>
   );

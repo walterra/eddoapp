@@ -14,7 +14,6 @@ export interface UserRegistryEntryAlpha1 {
   email: string;
   password_hash: string;
   database_name: string;
-  api_key: string;
   created_at: string;
   updated_at: string;
   permissions: UserPermissions;

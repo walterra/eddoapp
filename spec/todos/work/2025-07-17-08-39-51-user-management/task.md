@@ -51,11 +51,13 @@ The system will use environment-aware database naming:
 
 ### Phase 4: Web Client User Management UI
 - [x] Create registration form component (packages/web-client/src/components/Register.tsx)
-- [ ] Add user profile component (packages/web-client/src/components/UserProfile.tsx)
-- [ ] Update auth hook to handle registration (packages/web-client/src/hooks/useAuth.ts:50-100)
+- [x] Add user profile component (packages/web-client/src/components/UserProfile.tsx)
+- [x] Update auth hook to handle registration (packages/web-client/src/hooks/use_auth.ts)
+- [x] Add navigation to access UserProfile from main app (packages/web-client/src/components/page_wrapper.tsx)
 - [ ] Modify PouchDB hook to use user-specific database (packages/web-client/src/hooks/usePouchDb.ts:20-40)
-- [ ] Add user settings page (packages/web-client/src/pages/Settings.tsx)
 - [ ] Update database name generation to match server naming (packages/web-client/src/utils/database.ts:10-30)
+- [ ] Remove redundant API key system from user management
+- [ ] Update client-side database naming to match server-side user pattern
 
 ### Phase 5: Telegram User Mapping
 - [ ] Create Telegram linking endpoint (packages/web-api/src/routes/auth.ts:250-300)
@@ -223,7 +225,35 @@ The system will use environment-aware database naming:
 - ✅ **Lint and TypeScript checks pass**
 - ✅ **Follows existing code patterns**: Flowbite UI components, TailwindCSS styling, functional components
 
+### User Profile Component and Navigation Complete
+- ✅ **Created comprehensive user profile component** (`packages/web-client/src/components/user_profile.tsx`)
+- ✅ **Implemented tabbed interface** with three tabs:
+  - **Profile Tab**: Edit email, view account info, optional password change during profile updates
+  - **Security Tab**: Dedicated password change and API key regeneration functionality
+  - **Integrations Tab**: Telegram account linking/unlinking status and management
+- ✅ **Created useProfile hook** (`packages/web-client/src/hooks/use_profile.ts`):
+  - Profile fetching, updating, password changes, API key regeneration, Telegram unlinking
+  - Proper error handling and loading states
+  - Integration with existing JWT authentication
+- ✅ **Added navigation integration** (`packages/web-client/src/components/page_wrapper.tsx`):
+  - Profile and Logout buttons in app header for authenticated users
+  - Full-screen profile overlay with "Back to App" functionality
+  - Conditional rendering based on authentication state
+- ✅ **Enhanced API endpoints** to include `api_key` field in profile responses
+- ✅ **All tests passing** (349 passed | 3 skipped)
+- ✅ **Lint and TypeScript checks pass**
+- ✅ **Follows existing patterns**: Flowbite components, TailwindCSS, functional design
+
+### API Key System Analysis and Cleanup Plan
+- ✅ **Identified redundancy**: API keys are legacy remnants serving no functional purpose
+- ✅ **Current system works correctly** with JWT-based authentication and username-to-database mapping
+- ✅ **Authentication flow**: `User Login → JWT (username) → Database: {prefix}_user_{username}`
+- ❌ **Problem identified**: Client-side PouchDB naming uses legacy `VITE_COUCHDB_API_KEY` pattern
+- ❌ **Problem identified**: Server-side uses `{prefix}_user_{username}` pattern - mismatch causes sync issues
+- ✅ **Cleanup plan documented** in task.md for removing redundant API key system
+
 ### Next Steps
-- Continue with Phase 4 (Web Client User Management UI)
-- Build user profile component and settings page
-- Add comprehensive tests for user flows
+- Continue with API key system cleanup and client-server database naming alignment
+- Fix PouchDB hook to use user-specific database naming pattern
+- Remove redundant API key fields, endpoints, and UI components
+- Add comprehensive tests for user flows and database sync

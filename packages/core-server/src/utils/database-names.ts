@@ -32,17 +32,6 @@ export function getUserDatabaseName(env: Env, username: string): string {
 }
 
 /**
- * Get the user API key for database access
- */
-export function getUserApiKey(
-  username: string,
-  source: 'web' | 'telegram' = 'web',
-): string {
-  const sanitizedUsername = sanitizeUsername(username);
-  return `${source}_user_${sanitizedUsername}`;
-}
-
-/**
  * Extract username from user database name
  */
 export function extractUsernameFromDatabaseName(

@@ -29,7 +29,6 @@ export interface UserContext {
   userId: string;
   username: string;
   telegramId?: number;
-  apiKey: string;
   databaseName: string;
   permissions: UserPermissions;
   status: UserStatus;
