@@ -8,3 +8,6 @@ export * from './config';
 export * from './api/database-factory';
 export * from './api/user-registry';
 export { createUserRegistry } from './api/user-registry';
+
+// Server-specific utilities
+export * from './utils/database-names';

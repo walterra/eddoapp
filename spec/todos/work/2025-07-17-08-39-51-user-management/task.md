@@ -38,8 +38,8 @@ The system will use environment-aware database naming:
 - [x] Update login endpoint to use user registry (packages/web-api/src/routes/auth.ts:50-100)
 - [x] Add Telegram linking endpoints (packages/web-api/src/routes/auth.ts:250-300)
 - [x] Initialize user registry database on server start (packages/web-api/src/index.ts:95-115)
-- [ ] Add user profile endpoints (packages/web-api/src/routes/users.ts)
-- [ ] Create middleware for user-specific database access (packages/web-api/src/middleware/user-db.ts)
+- [x] Add user profile endpoints (packages/web-api/src/routes/users.ts)
+- [x] Create middleware for user-specific database access (packages/web-api/src/middleware/user-db.ts)
 - [ ] Add environment configuration for database prefixes (packages/core-server/src/config/env.ts:30-50)
 
 ### Phase 3: Database Per User Implementation
@@ -117,9 +117,34 @@ The system will use environment-aware database naming:
 - **Implementation**: Uses internal `UserRegistryContext` and pure functions
 - **Benefits**: Follows functional programming patterns, easier to test, better alignment with codebase style
 
+### User Profile Endpoints Complete
+- ✅ **Created comprehensive user profile API** (`packages/web-api/src/routes/users.ts`)
+- ✅ **Implemented 5 key endpoints**:
+  - `GET /api/users/profile` - Get current user profile
+  - `PUT /api/users/profile` - Update user profile (email, password)  
+  - `POST /api/users/change-password` - Dedicated password change endpoint
+  - `POST /api/users/regenerate-api-key` - Generate new API key
+  - `DELETE /api/users/telegram-link` - Unlink Telegram account
+- ✅ **Added JWT authentication** with token validation for all endpoints
+- ✅ **Implemented proper validation** with Zod schemas and crypto utilities
+- ✅ **Added comprehensive error handling** with appropriate HTTP status codes
+- ✅ **Integrated with existing user registry** system
+- ✅ **All tests passing** (322 passed | 3 skipped)
+- ✅ **Lint and TypeScript checks pass**
+
+### User Database Middleware Complete
+- ✅ **Created user-specific database middleware** (`packages/web-api/src/middleware/user-db.ts`)
+- ✅ **Implemented JWT token validation** with user context extraction
+- ✅ **Added user database context** with user-specific database URLs and API keys
+- ✅ **Created database proxy helper** for user-specific CouchDB requests
+- ✅ **Extended Hono context** with TypeScript declarations for user database context
+- ✅ **Added proper error handling** for token validation and database access
+- ✅ **Integrated with existing authentication** patterns and config
+- ✅ **All tests passing** (322 passed | 3 skipped)
+- ✅ **Lint and TypeScript checks pass**
+
 ### Next Steps
 - Continue with Phase 3 (Database Per User Implementation)
-- Add user profile management endpoints
 - Implement user-specific database routing
 - Build web client user management UI
 - Add comprehensive tests for user flows

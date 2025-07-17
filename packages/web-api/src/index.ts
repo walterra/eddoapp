@@ -11,6 +11,7 @@ import path from 'path';
 import { config } from './config';
 import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
+import { userRoutes } from './routes/users';
 
 const app = new Hono();
 
@@ -45,6 +46,7 @@ app.route('/auth', authRoutes);
 // Protected API routes (JWT required)
 app.use('/api/*', jwt({ secret: config.jwtSecret }));
 app.route('/api/db', dbProxyRoutes);
+app.route('/api/users', userRoutes);
 
 if (!isDevelopment) {
   // Production: Serve static files from public directory
