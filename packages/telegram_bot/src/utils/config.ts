@@ -9,9 +9,6 @@ dotenvLoad();
 const TelegramConfigSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1, 'Telegram bot token is required'),
   ANTHROPIC_API_KEY: z.string().min(1, 'Anthropic API key is required'),
-  MCP_API_KEY: z
-    .string()
-    .min(1, 'MCP API key is required for server authentication'),
   WEB_API_BASE_URL: z
     .string()
     .url('Web API base URL must be a valid URL')

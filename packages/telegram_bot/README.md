@@ -81,7 +81,6 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 
 # MCP Server (should be running on port 3001)
 MCP_SERVER_URL=http://localhost:3001/mcp
-MCP_API_KEY=your-mcp-api-key
 
 # Optional: Adjust logging and environment
 NODE_ENV=development
@@ -252,7 +251,6 @@ This architecture replaces complex workflow frameworks (like LangGraph) with a m
 | `TELEGRAM_BOT_TOKEN`     | Bot token from @BotFather | Required                |
 | `ANTHROPIC_API_KEY`      | Claude API key            | Required                |
 | `MCP_SERVER_URL`         | MCP server endpoint       | `http://localhost:3001` |
-| `MCP_API_KEY`            | MCP server API key        | Required                |
 | `NODE_ENV`               | Environment               | `development`           |
 | `LOG_LEVEL`              | Logging level             | `info`                  |
 | `TELEGRAM_ALLOWED_USERS` | Comma-separated user IDs  | (empty = deny all)      |
@@ -471,7 +469,6 @@ Create and manage your bot:
 | `TELEGRAM_BOT_TOKEN`     | ✅       | From BotFather | `123456789:ABC...`          |
 | `ANTHROPIC_API_KEY`      | ✅       | Claude AI key  | `sk-ant-api03-...`          |
 | `MCP_SERVER_URL`         | ✅       | MCP endpoint   | `http://localhost:3001/mcp` |
-| `MCP_API_KEY`            | ✅       | MCP API key    | `your-mcp-api-key`          |
 | `NODE_ENV`               | ⚪       | Environment    | `development`               |
 | `LOG_LEVEL`              | ⚪       | Logging level  | `info`                      |
 | `TELEGRAM_ALLOWED_USERS` | ⚪       | User whitelist | `123456789,987654321`       |

@@ -23,7 +23,6 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
 vi.mock('../utils/config.js', () => ({
   appConfig: {
     MCP_SERVER_URL: 'http://localhost:3000',
-    MCP_API_KEY: 'test-key',
   },
 }));
 

@@ -7,7 +7,6 @@ const mockConsoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 const mockEnv = {
   TELEGRAM_BOT_TOKEN: 'mock-token',
   ANTHROPIC_API_KEY: 'mock-key',
-  MCP_API_KEY: 'mock-mcp-key',
 };
 
 // Mock the shared environment validation

@@ -102,6 +102,8 @@ export class MCPConnectionManager {
 
   /**
    * Establish connection to MCP server
+   * Note: This creates a base connection without user-specific authentication.
+   * User authentication is handled per-request via headers in tool calls.
    */
   private async establishConnection(): Promise<void> {
     this.setState(ConnectionState.CONNECTING);
@@ -113,13 +115,13 @@ export class MCPConnectionManager {
         attempt: this.metrics.connectAttempts,
       });
 
-      // Create transport
+      // Create transport without API key - authentication handled per-request
       this.transport = new StreamableHTTPClientTransport(
         new URL(appConfig.MCP_SERVER_URL),
         {
           requestInit: {
             headers: {
-              'X-API-Key': appConfig.MCP_API_KEY,
+              'Content-Type': 'application/json',
             },
           },
         },
@@ -320,37 +322,65 @@ export class MCPConnectionManager {
       throw new Error(`Cannot invoke tool: connection state is ${this.state}`);
     }
 
+    if (!userContext) {
+      throw new Error('User context is required for MCP tool invocation');
+    }
+
     logger.info('Invoking MCP tool', {
       toolName,
       params,
-      username: userContext?.username,
-      databaseName: userContext?.databaseName,
+      username: userContext.username,
+      databaseName: userContext.databaseName,
     });
 
     try {
-      // Add user context to tool parameters if provided
-      const enhancedParams = userContext
-        ? {
-            ...params,
-            _userContext: {
-              username: userContext.username,
-              databaseName: userContext.databaseName,
-              telegramId: userContext.telegramId,
+      // Create a user-specific transport for this request
+      const userTransport = new StreamableHTTPClientTransport(
+        new URL(appConfig.MCP_SERVER_URL),
+        {
+          requestInit: {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-ID': userContext.username,
+              'X-Database-Name': userContext.databaseName,
+              'X-Telegram-ID': userContext.telegramId.toString(),
             },
-          }
-        : params;
+          },
+        },
+      );
 
-      const result = await this.client.callTool({
-        name: toolName,
-        arguments: enhancedParams,
-      });
+      // Create a temporary client with user-specific authentication
+      const userClient = new Client(
+        {
+          name: 'eddo-telegram-bot',
+          version: '1.0.0',
+        },
+        {
+          capabilities: {
+            tools: {},
+          },
+        },
+      );
 
-      logger.info('MCP tool invoked successfully', {
-        toolName,
-        result: result.content,
-      });
+      // Connect the user-specific client
+      await userClient.connect(userTransport);
 
-      return result.content;
+      try {
+        const result = await userClient.callTool({
+          name: toolName,
+          arguments: params,
+        });
+
+        logger.info('MCP tool invoked successfully', {
+          toolName,
+          result: result.content,
+        });
+
+        return result.content;
+      } finally {
+        // Clean up the user-specific connection
+        await userClient.close();
+      }
     } catch (error) {
       logger.error('MCP tool invocation failed', {
         toolName,
