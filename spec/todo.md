@@ -1,3 +1,2 @@
-- **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses
+- **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses https://github.com/w3cj/stoker
 - **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
-- productionize - at the moment i'm running just a local dev environment. we need to improve the whole project to be able to be deployable.

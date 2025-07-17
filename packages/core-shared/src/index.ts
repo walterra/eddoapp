@@ -3,12 +3,15 @@ export * from './types/todo';
 export * from './types/activity';
 export * from './types/database-errors';
 export * from './types/database-health';
+export * from './types/user-registry';
 
 // API versions
 export * from './versions/todo_alpha1';
 export * from './versions/todo_alpha2';
 export * from './versions/todo_alpha3';
 export * from './versions/migrate';
+export * from './versions/user_registry_alpha1';
+export * from './versions/migrate_user_registry';
 
 // Database monitoring
 export * from './api/database-health-monitor';

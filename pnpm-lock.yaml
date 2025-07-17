@@ -223,6 +223,9 @@ importers:
       dotenv-mono:
         specifier: github:marcocesarato/dotenv-mono#master
         version: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/80cdf9aa5433d1160f89b8a8a7c0a3cf3bf0abd6
+      nano:
+        specifier: ^10.1.4
+        version: 10.1.4
       pouchdb-adapter-memory:
         specifier: ^9.0.0
         version: 9.0.0

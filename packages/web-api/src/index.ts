@@ -1,3 +1,4 @@
+import { UserRegistry, createEnv } from '@eddo/core-server';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { existsSync, readFileSync } from 'fs';
@@ -92,33 +93,55 @@ if (!isDevelopment) {
 const port = config.port;
 console.log(`Server starting on port ${port}`);
 
-// Start server with graceful shutdown
-const server = serve({
-  fetch: app.fetch,
-  port,
-});
+// Initialize database
+async function initializeDatabase() {
+  try {
+    const env = createEnv();
+    const userRegistry = new UserRegistry(env.COUCHDB_URL, env);
 
-console.log(`✅ Server successfully started on port ${port}`);
+    // Ensure user registry database exists
+    await userRegistry.ensureDatabase();
 
-// Graceful shutdown handling
-const gracefulShutdown = (signal: string) => {
-  console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+    // Setup design documents
+    await userRegistry.setupDesignDocuments();
 
-  // Close the server
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
+    console.log('✅ User registry database initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize user registry database:', error);
+    // Don't exit - allow server to start even if database setup fails
+  }
+}
+
+// Initialize database before starting server
+initializeDatabase().then(() => {
+  // Start server with graceful shutdown
+  const server = serve({
+    fetch: app.fetch,
+    port,
   });
 
-  // Force shutdown after 10 seconds
-  setTimeout(() => {
-    console.error('❌ Force shutdown');
-    process.exit(1);
-  }, 10000);
-};
+  console.log(`✅ Server successfully started on port ${port}`);
 
-// Listen for shutdown signals
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  // Graceful shutdown handling
+  const gracefulShutdown = (signal: string) => {
+    console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+
+    // Close the server
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+
+    // Force shutdown after 10 seconds
+    setTimeout(() => {
+      console.error('❌ Force shutdown');
+      process.exit(1);
+    }, 10000);
+  };
+
+  // Listen for shutdown signals
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+});
 
 export default app;

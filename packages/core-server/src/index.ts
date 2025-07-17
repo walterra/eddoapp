@@ -6,3 +6,4 @@ export * from './config';
 
 // Server-specific API
 export * from './api/database-factory';
+export * from './api/user-registry';
