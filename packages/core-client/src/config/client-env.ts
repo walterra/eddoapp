@@ -9,9 +9,6 @@ export const clientEnvSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-
-  // Web Client Configuration (Vite environment variables)
-  VITE_COUCHDB_API_KEY: z.string().optional(),
 });
 
 /**
@@ -32,7 +29,6 @@ export function validateClientEnv(env: unknown): ClientEnv {
     );
     return {
       NODE_ENV: 'development',
-      VITE_COUCHDB_API_KEY: undefined,
     };
   }
   return result.data;
@@ -49,14 +45,4 @@ export function getUserDbName(username: string, env: ClientEnv): string {
   // Sanitize username to match server-side sanitization
   const sanitizedUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '_');
   return `${prefix}_user_${sanitizedUsername}`;
-}
-
-/**
- * Legacy function for backward compatibility
- * @deprecated Use getUserDbName instead for authenticated users
- */
-export function getClientDbName(env: ClientEnv): string {
-  const baseName = 'todos-dev'; // Fallback for unauthenticated state
-  const apiKey = env.VITE_COUCHDB_API_KEY;
-  return apiKey ? `${baseName}_api_${apiKey}` : baseName;
 }

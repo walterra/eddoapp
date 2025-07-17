@@ -7,12 +7,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    define: {
-      // Make environment variables available to client
-      'import.meta.env.VITE_COUCHDB_API_KEY': JSON.stringify(
-        env.VITE_COUCHDB_API_KEY,
-      ),
-    },
     server: {
       port: parseInt(env.PORT || '5173'),
       host: '0.0.0.0',

@@ -234,9 +234,6 @@ COUCHDB_ADMIN_PASSWORD=admin-password
 TELEGRAM_BOT_TOKEN=your-bot-token
 BOT_PERSONA_ID=gtd_coach  # Options: butler, gtd_coach, zen_master
 
-# Application
-VITE_COUCHDB_API_KEY=your-api-key
-
 # Development
 NODE_ENV=development|production
 ```

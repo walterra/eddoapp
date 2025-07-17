@@ -1,8 +1,8 @@
-import { getClientDbName, validateClientEnv } from '@eddo/core-client';
 import { Button } from 'flowbite-react';
 import { type FC, useState } from 'react';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
+import { usePouchDb } from '../pouch_db';
 import { DatabaseHealthIndicator } from './database_health_indicator';
 import { UserProfile } from './user_profile';
 
@@ -18,11 +18,11 @@ export const PageWrapper: FC<PageWrapperProps> = ({
   isAuthenticated,
 }) => {
   const { healthCheck } = useDatabaseHealth();
+  const { rawDb } = usePouchDb();
   const [showProfile, setShowProfile] = useState(false);
 
-  // Get the database name for display
-  const env = validateClientEnv(import.meta.env);
-  const databaseName = getClientDbName(env);
+  // Get the database name from the PouchDB instance
+  const databaseName = rawDb.name;
 
   // Show profile if requested
   if (showProfile) {

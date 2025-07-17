@@ -356,5 +356,18 @@ The system will use environment-aware database naming:
 **Benefits**: Eliminates code duplication, centralizes URL credential handling in config module
 **Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
 
+### ✅ OBSOLETE ENVIRONMENT VARIABLES CLEANUP COMPLETE
+**Issue**: Legacy environment variables causing DB health display to show wrong database name (todos-dev_api_walterra instead of eddo_user_togusa)
+**Root Cause**: `VITE_COUCHDB_API_KEY=walterra` was forcing client to use legacy API key fallback pattern instead of user-specific database naming
+**Solution**: Removed all obsolete environment variables and updated related configuration
+**Files Updated**:
+- `.env` - Removed `COUCHDB_DB_NAME=todos-dev`, `COUCHDB_API_KEY=walterra`, `VITE_COUCHDB_API_KEY=walterra`
+- `packages/web-client/vite.config.ts` - Removed `VITE_COUCHDB_API_KEY` from environment variable injection
+- `packages/web-client/src/vite-env.d.ts` - Removed `VITE_COUCHDB_API_KEY` from TypeScript interface
+- `packages/core-client/src/config/client-env.ts` - Removed `VITE_COUCHDB_API_KEY` from schema and simplified `getClientDbName()`
+- `packages/core-server/src/config/env.ts` - Removed `VITE_COUCHDB_API_KEY` from schema and updated `getEffectiveDbName()`
+**Expected Result**: Web UI should now show correct user-specific database name (eddo_user_togusa) in DB health section for authenticated users
+**Status**: ✅ Complete - All tests pass (349 passed | 3 skipped), lint and type checks pass
+
 ### Remaining User Acceptance Tests
 The implementation is complete and all automated tests pass. Critical registration bug has been fixed. Obsolete TELEGRAM_ALLOWED_USERS references have been cleaned up. User testing is needed to verify end-to-end functionality.

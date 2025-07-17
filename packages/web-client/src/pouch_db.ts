@@ -1,6 +1,5 @@
 import {
   DatabaseHealthMonitor,
-  getClientDbName,
   getUserDbName,
   validateClientEnv,
 } from '@eddo/core-client';
@@ -35,23 +34,6 @@ export function createUserPouchDbContext(username: string): PouchDbContextType {
     rawDb: pouchDb,
   };
 }
-
-/**
- * Legacy fallback context for unauthenticated state
- * @deprecated Should be replaced with user-specific context
- */
-const fallbackDbName = getClientDbName(env);
-const fallbackPouchDb = new PouchDB(fallbackDbName);
-const fallbackSafeDbOperations = createSafeDbOperations(fallbackPouchDb);
-const fallbackHealthMonitor = new DatabaseHealthMonitor(fallbackPouchDb);
-
-export const pouchDbContextValue: PouchDbContextType = {
-  safeDb: fallbackSafeDbOperations,
-  changes: fallbackPouchDb.changes.bind(fallbackPouchDb),
-  sync: fallbackPouchDb.sync.bind(fallbackPouchDb),
-  healthMonitor: fallbackHealthMonitor,
-  rawDb: fallbackPouchDb,
-};
 
 export const usePouchDb = () => {
   const context = useContext(PouchDbContext);

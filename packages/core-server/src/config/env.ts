@@ -46,7 +46,6 @@ export const envSchema = z.object({
   CLAUDE_CODE_SESSION_TIMEOUT: z.coerce.number().default(3600),
 
   // Web Client Configuration (Vite environment variables)
-  VITE_COUCHDB_API_KEY: z.string().optional(),
 
   // Web API Configuration
   PORT: z.coerce.number().default(3000),
@@ -74,8 +73,8 @@ export function validateEnv(env: unknown): Env {
  */
 export function getEffectiveDbName(env: Env): string {
   const baseName = env.COUCHDB_DB_NAME;
-  // Use VITE_COUCHDB_API_KEY for client-side, COUCHDB_API_KEY for server-side
-  const apiKey = env.VITE_COUCHDB_API_KEY || env.COUCHDB_API_KEY;
+  // Legacy API key support - no longer needed with JWT authentication
+  const apiKey = env.COUCHDB_API_KEY;
   return apiKey ? `${baseName}_api_${apiKey}` : baseName;
 }
 

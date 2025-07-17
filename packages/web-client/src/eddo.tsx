@@ -9,7 +9,7 @@ import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
-import { createUserPouchDbContext, pouchDbContextValue } from './pouch_db';
+import { createUserPouchDbContext } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
 
 function CouchdbSyncProvider() {
@@ -110,7 +110,7 @@ export function Eddo() {
       return createUserPouchDbContext(username);
     }
     // Fallback to default context for unauthenticated state
-    return pouchDbContextValue;
+    return null;
   }, [isAuthenticated, username]);
 
   return (
