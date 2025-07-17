@@ -319,11 +319,20 @@ The system will use environment-aware database naming:
 - **MCP Server:** User-specific database routing confirmed working
 - **Code Quality:** Lint and TypeScript checks all pass
 
-### ✅ CRITICAL BUG FIXED
+### ✅ CRITICAL BUGS FIXED
+
+#### 1. Registration Database Setup Issue
 **Issue**: Registration was failing during database setup due to incorrect CouchDB index creation method
 **Root Cause**: Using `db.insert()` with PUT request instead of nano's built-in `createIndex()` method
 **Solution**: Replaced manual `_index` endpoint calls with proper `db.createIndex()` API
-**Status**: Fixed and verified - TypeScript and linting checks pass
+**Status**: Fixed and verified
+
+#### 2. Logout Button Not Returning to Login Form
+**Issue**: After logout, the application remained on register form instead of returning to login form
+**Root Cause**: `authMode` state was not reset when `isAuthenticated` changed to false
+**Solution**: Added `useEffect` to reset `authMode` to 'login' when user logs out
+**File**: `packages/web-client/src/eddo.tsx:37-42`
+**Status**: Fixed and verified
 
 ### Remaining User Acceptance Tests
 The implementation is complete and all automated tests pass. Critical registration bug has been fixed. User testing is needed to verify end-to-end functionality.

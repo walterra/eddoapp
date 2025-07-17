@@ -34,6 +34,13 @@ function AuthenticatedApp() {
   const { authenticate, register, isAuthenticated, isAuthenticating } =
     useAuth();
 
+  // Reset authMode to 'login' when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAuthMode('login');
+    }
+  }, [isAuthenticated]);
+
   if (!isAuthenticated) {
     if (authMode === 'register') {
       return (
