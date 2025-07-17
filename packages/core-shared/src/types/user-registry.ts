@@ -23,6 +23,9 @@ export interface UserRegistryOperations {
   ): Promise<UserRegistryEntry>;
   list(): Promise<UserRegistryEntry[]>;
   delete(id: string): Promise<void>;
+  setupDatabase?: () => Promise<void>;
+  ensureUserDatabase?: (username: string) => Promise<void>;
+  getUserDatabase?: (username: string) => unknown;
 }
 
 export interface UserContext {

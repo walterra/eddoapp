@@ -1,4 +1,8 @@
-import { createEnv, createUserRegistry } from '@eddo/core-server';
+import {
+  createEnv,
+  createTestUserRegistry,
+  createUserRegistry,
+} from '@eddo/core-server';
 
 /**
  * Authentication result for MCP server
@@ -72,7 +76,10 @@ export async function validateUserContext(
   try {
     // Initialize environment and user registry
     const env = createEnv();
-    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+    const userRegistry =
+      env.NODE_ENV === 'test'
+        ? await createTestUserRegistry(env.COUCHDB_URL, env)
+        : createUserRegistry(env.COUCHDB_URL, env);
 
     // Look up user by username
     const user = await userRegistry.findByUsername(username);

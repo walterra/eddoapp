@@ -2,10 +2,19 @@
  * Global test setup for MCP integration tests
  * Note: Server is started externally via npm-run-all before tests run
  */
-import { afterAll, beforeAll } from 'vitest';
 
-// Global test configuration
-beforeAll(async () => {
+// Global test user for all tests
+let globalTestUser: {
+  userId: string;
+  username: string;
+  dbName: string;
+  telegramId: string;
+} | null = null;
+
+// Global setup function for Vitest
+export async function setup() {
+  console.log('🔄 GLOBAL SETUP: Starting global test setup...');
+
   // Set test environment variables
   process.env.NODE_ENV = 'test';
   process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
@@ -41,6 +50,100 @@ beforeAll(async () => {
   // Reset database completely to ensure clean start
   await dbSetup.resetDatabase();
 
+  // Set up test user registry and create shared test user
+  console.log(
+    '👤 Setting up test user registry and creating shared test user...',
+  );
+
+  try {
+    const { validateEnv, createTestUserRegistry } = await import(
+      '@eddo/core-server'
+    );
+
+    const env = validateEnv(process.env);
+    console.log('🔄 GLOBAL SETUP: Environment validated');
+
+    // Clean up existing test user registry database first
+    console.log(
+      '🔄 GLOBAL SETUP: Cleaning up existing test user registry database...',
+    );
+    const nano = await import('nano');
+    const couch = nano.default(env.COUCHDB_URL);
+    const testUserRegistryDbName = 'todos-test_user_registry';
+
+    try {
+      await couch.db.destroy(testUserRegistryDbName);
+      console.log(
+        '🔄 GLOBAL SETUP: Existing test user registry database deleted',
+      );
+    } catch (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        error.statusCode === 404
+      ) {
+        console.log(
+          '🔄 GLOBAL SETUP: Test user registry database does not exist',
+        );
+      } else {
+        console.warn(
+          '🔄 GLOBAL SETUP: Failed to delete existing test user registry database:',
+          error,
+        );
+      }
+    }
+
+    const userRegistry = await createTestUserRegistry(env.COUCHDB_URL, env);
+    console.log('🔄 GLOBAL SETUP: Test user registry created');
+
+    // Set up test user registry database
+    if (userRegistry.setupDatabase) {
+      await userRegistry.setupDatabase();
+    }
+    console.log('🔄 GLOBAL SETUP: Test user registry database set up');
+
+    // Create shared test user
+    const timestamp = Date.now();
+    globalTestUser = {
+      userId: `test-user-${timestamp}`,
+      username: `testuser_${timestamp}`,
+      dbName: `eddo_test_user_testuser_${timestamp}`,
+      telegramId: '123456789',
+    };
+
+    console.log(
+      `🔄 GLOBAL SETUP: Created global test user object: ${globalTestUser.username}`,
+    );
+
+    // Check if test user already exists (cleanup from previous run)
+    const existingUser = await userRegistry.findByUsername(
+      globalTestUser.username,
+    );
+    if (!existingUser) {
+      await userRegistry.create({
+        username: globalTestUser.username,
+        email: 'test@example.com',
+        password_hash: 'test-hash',
+        telegram_id: parseInt(globalTestUser.telegramId),
+        permissions: ['read', 'write'],
+        status: 'active',
+        version: 'alpha1',
+        database_name: globalTestUser.dbName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      console.log(`✅ Global test user created: ${globalTestUser.username}`);
+    } else {
+      console.log(
+        `✅ Global test user already exists: ${globalTestUser.username}`,
+      );
+    }
+  } catch (error) {
+    console.error('❌ GLOBAL SETUP ERROR:', error);
+    throw error;
+  }
+
   // Additional cleanup to ensure no test data remains
   const { MCPTestServer } = await import('./test-server.js');
   const cleanupServer = new MCPTestServer();
@@ -49,11 +152,26 @@ beforeAll(async () => {
   await cleanupServer.stop();
 
   console.log('✅ Test database infrastructure ready and verified clean');
-}, 30000); // 30 second timeout
+}
 
-afterAll(async () => {
+// Global teardown function for Vitest
+export async function teardown() {
   console.log('✅ MCP Integration Tests Complete');
-}, 5000); // 5 second timeout for cleanup
+}
+
+// Export function to get the global test user
+export function getGlobalTestUser() {
+  console.log(
+    '🔄 GLOBAL SETUP: getGlobalTestUser called, globalTestUser:',
+    globalTestUser ? 'exists' : 'null',
+  );
+  if (!globalTestUser) {
+    throw new Error(
+      'Global test user not initialized. Make sure beforeAll has run.',
+    );
+  }
+  return globalTestUser;
+}
 
 // Extend Vitest's expect with custom matchers if needed
 declare global {

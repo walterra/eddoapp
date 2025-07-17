@@ -109,6 +109,18 @@ export function getTestCouchDbConfig(env: Env) {
 }
 
 /**
+ * Get test-specific User Registry configuration
+ */
+export function getTestUserRegistryConfig(env: Env) {
+  const testUrl = env.COUCHDB_TEST_URL || env.COUCHDB_URL;
+  return {
+    url: testUrl,
+    dbName: `${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
+    fullUrl: `${testUrl}/${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
+  };
+}
+
+/**
  * Discover available databases on the CouchDB server
  */
 export async function getAvailableDatabases(env: Env): Promise<string[]> {

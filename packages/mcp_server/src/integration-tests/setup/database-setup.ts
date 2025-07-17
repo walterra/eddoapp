@@ -302,13 +302,13 @@ export class DatabaseSetup {
    * Wait for database destruction to complete
    */
   private async waitForDatabaseDestruction(
-    maxRetries: number = 10,
+    maxRetries: number = 15,
   ): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.couch.db.get(this.dbName);
         // Database still exists, wait and retry
-        await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
+        await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
       } catch (error: unknown) {
         if (
           error &&
@@ -318,6 +318,8 @@ export class DatabaseSetup {
         ) {
           // Database doesn't exist - destruction complete
           console.log(`✅ Database destruction verified: ${this.dbName}`);
+          // Add extra delay to ensure CouchDB has fully processed the deletion
+          await new Promise((resolve) => setTimeout(resolve, 500));
           return;
         } else {
           throw error;

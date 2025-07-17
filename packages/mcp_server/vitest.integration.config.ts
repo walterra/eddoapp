@@ -11,7 +11,7 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**'],
     testTimeout: 45000, // 45 seconds for CouchDB operations (best practice)
     hookTimeout: 15000, // 15 seconds for setup/teardown with database recreation
-    setupFiles: ['src/integration-tests/setup/global.ts'],
+    globalSetup: ['src/integration-tests/setup/global.ts'], // Enable global setup to avoid race conditions
     reporters: ['verbose'],
     environment: 'node',
     globals: true,
@@ -36,6 +36,9 @@ export default defineConfig({
       COUCHDB_TEST_DB_NAME: 'todos-test',
       // Allow custom test database URL
       COUCHDB_TEST_URL: process.env.COUCHDB_TEST_URL,
+      // Add required COUCHDB_URL from .env file
+      COUCHDB_URL:
+        process.env.COUCHDB_URL || 'http://admin:password@localhost:5984',
     },
 
     // Enable debugging to see what's happening

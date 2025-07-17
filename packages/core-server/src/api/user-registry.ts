@@ -28,10 +28,6 @@ interface UserRegistryExtendedOperations {
   ensureDatabase: () => Promise<void>;
   setupDesignDocuments: () => Promise<void>;
   createUserContext: (entry: UserRegistryEntry) => UserContext;
-  ensureUserDatabase: (username: string) => Promise<void>;
-  getUserDatabase: (
-    username: string,
-  ) => nano.DocumentScope<Record<string, unknown>>;
 }
 
 interface UserRegistryInstance
@@ -108,7 +104,7 @@ async function findByUsername(
 
   try {
     const doc = await context.db.get(id);
-    return migrateIfNeeded(context, doc);
+    return migrateIfNeeded(context, doc as UserRegistryEntry);
   } catch (error: unknown) {
     if (
       error &&
@@ -138,7 +134,7 @@ async function findByTelegramId(
     }
 
     const doc = result.rows[0].doc;
-    return doc ? migrateIfNeeded(context, doc) : null;
+    return doc ? migrateIfNeeded(context, doc as UserRegistryEntry) : null;
   } catch (error: unknown) {
     if (
       error &&
@@ -168,7 +164,7 @@ async function findByEmail(
     }
 
     const doc = result.rows[0].doc;
-    return doc ? migrateIfNeeded(context, doc) : null;
+    return doc ? migrateIfNeeded(context, doc as UserRegistryEntry) : null;
   } catch (error: unknown) {
     if (
       error &&
@@ -213,7 +209,7 @@ async function update(
   const now = new Date().toISOString();
 
   const updated: UserRegistryEntry = {
-    ...existing,
+    ...(existing as UserRegistryEntry),
     ...updates,
     _id: id,
     _rev: existing._rev,
@@ -231,7 +227,7 @@ async function list(
   const result = await context.db.list({ include_docs: true });
   return result.rows
     .filter((row) => row.doc && !row.id.startsWith('_design/'))
-    .map((row) => migrateIfNeeded(context, row.doc!));
+    .map((row) => migrateIfNeeded(context, row.doc! as UserRegistryEntry));
 }
 
 async function deleteEntry(
@@ -358,22 +354,136 @@ async function setupDesignDocuments(
     },
   };
 
-  try {
-    await context.db.insert(designDoc);
-  } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 409
-    ) {
-      // Design document already exists, update it
-      const existing = await context.db.get('_design/queries');
-      await context.db.insert({ ...designDoc, _rev: existing._rev });
-    } else {
-      throw error;
+  // Try to create/update design document with retry logic for conflicts
+  const maxRetries = 10;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await context.db.insert(designDoc);
+      console.log('Created design document: _design/queries');
+      break; // Success, exit retry loop
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        error.statusCode === 409
+      ) {
+        try {
+          // Design document exists, try to update it
+          const existing = await context.db.get('_design/queries');
+          await context.db.insert({ ...designDoc, _rev: existing._rev });
+          console.log('Updated design document: _design/queries');
+          break; // Success, exit retry loop
+        } catch (updateError: unknown) {
+          if (
+            updateError &&
+            typeof updateError === 'object' &&
+            'statusCode' in updateError &&
+            updateError.statusCode === 409
+          ) {
+            // Another conflict, retry if attempts remaining
+            if (attempt < maxRetries) {
+              console.warn(
+                `Design document conflict (attempt ${attempt}/${maxRetries}), retrying...`,
+              );
+              await new Promise((resolve) =>
+                setTimeout(resolve, 200 * attempt),
+              );
+              continue;
+            } else {
+              console.error('Design document update failed after retries');
+              throw updateError;
+            }
+          } else {
+            throw updateError;
+          }
+        }
+      } else {
+        throw error;
+      }
     }
   }
+}
+
+/**
+ * Create a test user registry for integration tests
+ * Uses a separate test database to avoid polluting production data
+ */
+export async function createTestUserRegistry(
+  couchDbUrl: string,
+  env: Env,
+): Promise<UserRegistryOperations> {
+  const { getTestUserRegistryConfig } = await import('../config/env.js');
+  const testConfig = getTestUserRegistryConfig(env);
+
+  const couchConnection = nano(couchDbUrl);
+  const db = couchConnection.db.use<UserRegistryEntry>(testConfig.dbName);
+
+  const context: UserRegistryContext = {
+    couchConnection,
+    db,
+    env,
+  };
+
+  // Helper function to ensure test database exists
+  async function ensureTestDatabase(): Promise<void> {
+    try {
+      await couchConnection.db.get(testConfig.dbName);
+      console.log(
+        `Test user registry database already exists: ${testConfig.dbName}`,
+      );
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        error.statusCode === 404
+      ) {
+        // Database doesn't exist, create it
+        try {
+          await couchConnection.db.create(testConfig.dbName);
+          console.log(
+            `Created test user registry database: ${testConfig.dbName}`,
+          );
+        } catch (createError: unknown) {
+          if (
+            createError &&
+            typeof createError === 'object' &&
+            'statusCode' in createError &&
+            createError.statusCode === 412
+          ) {
+            // Database already exists, which is fine
+            console.log(
+              `Test user registry database already exists: ${testConfig.dbName}`,
+            );
+          } else {
+            throw createError;
+          }
+        }
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  return {
+    create: (entry: CreateUserRegistryEntry) => create(context, entry),
+    findByUsername: (username: string) => findByUsername(context, username),
+    findByTelegramId: (telegramId: number) =>
+      findByTelegramId(context, telegramId),
+    findByEmail: (email: string) => findByEmail(context, email),
+    update: (id: string, updates: UpdateUserRegistryEntry) =>
+      update(context, id, updates),
+    list: () => list(context),
+    delete: (id: string) => deleteEntry(context, id),
+    setupDatabase: async () => {
+      await ensureTestDatabase();
+      await setupDesignDocuments(context);
+    },
+    ensureUserDatabase: (username: string) =>
+      ensureUserDatabase(context, username),
+    getUserDatabase: (username: string) => getUserDatabase(context, username),
+  };
 }
 
 // Legacy export for backward compatibility
