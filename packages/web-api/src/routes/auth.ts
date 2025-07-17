@@ -1,4 +1,4 @@
-import { UserRegistry, createEnv } from '@eddo/core-server';
+import { createEnv, createUserRegistry } from '@eddo/core-server';
 // User registry types are implicitly used by the endpoints
 import { Hono } from 'hono';
 import jwt from 'jsonwebtoken';
@@ -18,7 +18,7 @@ const authApp = new Hono();
 
 // Initialize environment and user registry
 const env = createEnv();
-const userRegistry = new UserRegistry(env.COUCHDB_URL, env);
+const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
 // Validation schemas
 const loginSchema = z.object({

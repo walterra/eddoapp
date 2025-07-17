@@ -1,4 +1,4 @@
-import { UserRegistry, createEnv } from '@eddo/core-server';
+import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { existsSync, readFileSync } from 'fs';
@@ -97,7 +97,7 @@ console.log(`Server starting on port ${port}`);
 async function initializeDatabase() {
   try {
     const env = createEnv();
-    const userRegistry = new UserRegistry(env.COUCHDB_URL, env);
+    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
     // Ensure user registry database exists
     await userRegistry.ensureDatabase();
