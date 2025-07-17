@@ -81,6 +81,7 @@ usersApp.get('/profile', async (c) => {
       updatedAt: user.updated_at,
       permissions: user.permissions,
       status: user.status,
+      api_key: user.api_key,
     });
   } catch (error) {
     console.error('Profile fetch error:', error);
@@ -173,6 +174,7 @@ usersApp.put('/profile', async (c) => {
       updatedAt: updatedUser.updated_at,
       permissions: updatedUser.permissions,
       status: updatedUser.status,
+      api_key: updatedUser.api_key,
     });
   } catch (error) {
     console.error('Profile update error:', error);
