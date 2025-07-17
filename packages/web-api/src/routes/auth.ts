@@ -13,6 +13,7 @@ import {
   validateUsername,
   verifyPassword,
 } from '../utils/crypto';
+import { setupUserDatabase } from '../utils/setup-user-db';
 
 const authApp = new Hono();
 
@@ -96,8 +97,8 @@ authApp.post('/register', async (c) => {
       version: 'alpha1',
     });
 
-    // Create user database
-    await userRegistry.ensureUserDatabase(username);
+    // Create user database with design documents and indexes
+    await setupUserDatabase(username);
 
     // Generate JWT token
     const token = jwt.sign(

@@ -45,8 +45,8 @@ The system will use environment-aware database naming:
 ### Phase 3: Database Per User Implementation
 - [x] Update database factory to create user-specific databases (packages/core-server/src/api/database-factory.ts:45-80)
 - [x] Modify database proxy to route to user databases (packages/web-api/src/routes/db-proxy.ts:30-60)
-- [ ] Create database setup script for new users (packages/web-api/src/utils/setup-user-db.ts)
-- [ ] Update design documents deployment for user databases (packages/core-server/src/api/database-setup.ts:100-150)
+- [x] Create database setup script for new users (packages/web-api/src/utils/setup-user-db.ts)
+- [x] Update design documents deployment for user databases (packages/core-server/src/api/database-setup.ts:100-150)
 - [ ] Implement database cleanup for test environments (packages/core-server/src/utils/test-cleanup.ts)
 
 ### Phase 4: Web Client User Management UI
@@ -160,6 +160,17 @@ The system will use environment-aware database naming:
 - ✅ **User-specific database routing**: All `/api/db/*` requests now route to individual user databases (e.g., `eddo_user_walterra`)
 - ✅ **Maintains user registry separation**: User registry database remains separate from user todo databases
 - ✅ **Proper authentication**: JWT tokens required for all database access
+- ✅ **All tests passing** (322 passed | 3 skipped)
+- ✅ **Lint and TypeScript checks pass**
+
+### Database Setup Script Complete
+- ✅ **Created comprehensive database setup script** (`packages/web-api/src/utils/setup-user-db.ts`)
+- ✅ **Integrated with user registration**: User databases now get proper design documents and indexes during registration
+- ✅ **Design documents deployment**: Includes `_design/todos` and `_design/tags` with all required views
+- ✅ **Index creation**: Creates all required CouchDB indexes for efficient querying (version-due, version-context-due, version-completed-due)
+- ✅ **Utility functions**: Includes `setupUserDatabase`, `cleanupUserDatabase`, and `verifyUserDatabase` functions
+- ✅ **Error handling**: Proper error handling for design document conflicts and index creation
+- ✅ **Logging**: Comprehensive logging for setup progress and issues
 - ✅ **All tests passing** (322 passed | 3 skipped)
 - ✅ **Lint and TypeScript checks pass**
 
