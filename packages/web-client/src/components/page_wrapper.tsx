@@ -2,18 +2,22 @@ import { getClientDbName, validateClientEnv } from '@eddo/core-client';
 import { Button } from 'flowbite-react';
 import { type FC, useState } from 'react';
 
-import { useAuth } from '../hooks/use_auth';
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { DatabaseHealthIndicator } from './database_health_indicator';
 import { UserProfile } from './user_profile';
 
 interface PageWrapperProps {
   children?: React.ReactNode;
+  logout: () => void;
+  isAuthenticated: boolean;
 }
 
-export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
+export const PageWrapper: FC<PageWrapperProps> = ({
+  children,
+  logout,
+  isAuthenticated,
+}) => {
   const { healthCheck } = useDatabaseHealth();
-  const { isAuthenticated, logout } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
 
   // Get the database name for display

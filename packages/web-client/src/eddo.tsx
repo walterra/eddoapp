@@ -27,12 +27,29 @@ function HealthMonitor() {
   return null;
 }
 
-function AuthenticatedApp() {
+interface AuthenticatedAppProps {
+  authenticate: (username: string, password: string) => Promise<boolean>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+    telegramId?: number,
+  ) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  isAuthenticating: boolean;
+}
+
+function AuthenticatedApp({
+  authenticate,
+  register,
+  logout,
+  isAuthenticated,
+  isAuthenticating,
+}: AuthenticatedAppProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const { authenticate, register, isAuthenticated, isAuthenticating } =
-    useAuth();
 
   // Reset authMode to 'login' when user logs out
   useEffect(() => {
@@ -64,7 +81,7 @@ function AuthenticatedApp() {
     <DatabaseChangesProvider>
       <CouchdbSyncProvider />
       <HealthMonitor />
-      <PageWrapper>
+      <PageWrapper isAuthenticated={isAuthenticated} logout={logout}>
         <AddTodo
           currentDate={currentDate}
           selectedTags={selectedTags}
@@ -78,7 +95,14 @@ function AuthenticatedApp() {
 }
 
 export function Eddo() {
-  const { username, isAuthenticated } = useAuth();
+  const {
+    username,
+    isAuthenticated,
+    authenticate,
+    register,
+    logout,
+    isAuthenticating,
+  } = useAuth();
 
   // Create user-specific PouchDB context when authenticated
   const pouchDbContext = useMemo(() => {
@@ -91,7 +115,13 @@ export function Eddo() {
 
   return (
     <PouchDbContext.Provider value={pouchDbContext}>
-      <AuthenticatedApp />
+      <AuthenticatedApp
+        authenticate={authenticate}
+        isAuthenticated={isAuthenticated}
+        isAuthenticating={isAuthenticating}
+        logout={logout}
+        register={register}
+      />
     </PouchDbContext.Provider>
   );
 }
