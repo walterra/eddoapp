@@ -1,3 +1,7 @@
+- the gtd tags like `gtd:next` should be a `gtd` attribute on todos just like context and be stored just `next`, will trigger creating TodoAlpha5
+- regression: time tracker not an actual card but creates another card on same day
+- peristent chat history for telegram-bot
+- daily briefings via telegram-bot (cron-like)
 - eddo*user_registry is the couchdb user registry. eddo_user*\* are the todos for each user. looks like a prefix naming clash. what is someone registered with a username "registry"?
 - **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses https://github.com/w3cj/stoker
 - **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
