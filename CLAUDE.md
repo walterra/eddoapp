@@ -130,7 +130,8 @@ interface TodoAlpha3 {
 
 ## Code Style
 
-- IMPORTANT: Prefer functional style with factories instead of object-oriented style
+- CRITICAL: Prefer functional style with factories instead of object-oriented style, no classes
+- CRITICAL: Avoid inline types, create interfaces and type definitions instead
 - Use minimal/lightweight TypeScript-style JSDoc to document code
 - Use snake_case for filenames
 - Use camelCase for variables/functions, PascalCase for components/types
@@ -232,9 +233,6 @@ COUCHDB_ADMIN_PASSWORD=admin-password
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=your-bot-token
 BOT_PERSONA_ID=gtd_coach  # Options: butler, gtd_coach, zen_master
-
-# Application
-VITE_COUCHDB_API_KEY=your-api-key
 
 # Development
 NODE_ENV=development|production

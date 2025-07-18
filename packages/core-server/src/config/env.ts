@@ -17,6 +17,10 @@ export const envSchema = z.object({
   COUCHDB_DB_NAME: z.string().default('todos-dev'),
   COUCHDB_API_KEY: z.string().optional(),
 
+  // Database Naming Configuration
+  DATABASE_PREFIX: z.string().default('eddo'),
+  DATABASE_TEST_PREFIX: z.string().default('eddo_test'),
+
   // MCP Server Configuration
   MCP_SERVER_URL: z.string().default('http://localhost:3001/mcp'),
   MCP_TEST_PORT: z.coerce.number().default(3003),
@@ -42,7 +46,6 @@ export const envSchema = z.object({
   CLAUDE_CODE_SESSION_TIMEOUT: z.coerce.number().default(3600),
 
   // Web Client Configuration (Vite environment variables)
-  VITE_COUCHDB_API_KEY: z.string().optional(),
 
   // Web API Configuration
   PORT: z.coerce.number().default(3000),
@@ -70,8 +73,8 @@ export function validateEnv(env: unknown): Env {
  */
 export function getEffectiveDbName(env: Env): string {
   const baseName = env.COUCHDB_DB_NAME;
-  // Use VITE_COUCHDB_API_KEY for client-side, COUCHDB_API_KEY for server-side
-  const apiKey = env.VITE_COUCHDB_API_KEY || env.COUCHDB_API_KEY;
+  // Legacy API key support - no longer needed with JWT authentication
+  const apiKey = env.COUCHDB_API_KEY;
   return apiKey ? `${baseName}_api_${apiKey}` : baseName;
 }
 
@@ -102,6 +105,18 @@ export function getTestCouchDbConfig(env: Env) {
     url: testUrl,
     dbName: env.COUCHDB_TEST_DB_NAME,
     fullUrl: `${testUrl}/${env.COUCHDB_TEST_DB_NAME}`,
+  };
+}
+
+/**
+ * Get test-specific User Registry configuration
+ */
+export function getTestUserRegistryConfig(env: Env) {
+  const testUrl = env.COUCHDB_TEST_URL || env.COUCHDB_URL;
+  return {
+    url: testUrl,
+    dbName: `${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
+    fullUrl: `${testUrl}/${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
   };
 }
 

@@ -1,6 +1,6 @@
-import { Context } from 'grammy';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { BotContext } from '../bot.js';
 import {
   MAX_AUTH_FAILURES,
   authFailures,
@@ -17,20 +17,24 @@ vi.mock('../../utils/logger', () => ({
   },
 }));
 
-// Mock the config module before importing anything that uses it
-vi.mock('../../utils/config', () => {
-  const mockAllowedUsers = new Set<number>();
-  return {
-    allowedUsers: mockAllowedUsers,
-    appConfig: {
-      TELEGRAM_LOG_USER_DETAILS: false,
-    },
-  };
-});
+// Mock the config module
+vi.mock('../../utils/config', () => ({
+  appConfig: {
+    TELEGRAM_LOG_USER_DETAILS: false,
+  },
+}));
 
-// Get reference to the mocked allowedUsers after the mock is set up
-const { allowedUsers: mockAllowedUsers } = await import('../../utils/config');
+// Mock user-lookup functions
+vi.mock('../../utils/user-lookup', () => ({
+  isTelegramUserAuthorized: vi.fn(),
+  lookupUserByTelegramId: vi.fn(),
+}));
+
 const { logger: mockLogger } = await import('../../utils/logger');
+const {
+  isTelegramUserAuthorized: mockIsTelegramUserAuthorized,
+  lookupUserByTelegramId: mockLookupUserByTelegramId,
+} = await import('../../utils/user-lookup');
 
 describe('Authentication Middleware', () => {
   let nextMock: ReturnType<typeof vi.fn>;
@@ -45,33 +49,36 @@ describe('Authentication Middleware', () => {
   function createMockContext(
     userId?: number,
     additionalFromData?: Record<string, unknown>,
-  ): Context {
+  ): BotContext {
     return {
       from: userId ? { id: userId, ...additionalFromData } : undefined,
       reply: vi.fn(),
       chat: { id: 12345 },
       message: { text: 'test message' },
-    } as unknown as Context;
+      session: {
+        userId: userId?.toString() || '',
+        lastActivity: new Date(),
+        context: {},
+      },
+    } as unknown as BotContext;
   }
 
   describe('isUserAuthorized', () => {
-    it('should return false when no users are configured', () => {
-      mockAllowedUsers.clear();
-      expect(isUserAuthorized(123456789)).toBe(false);
+    it('should return false when user is not authorized', async () => {
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
+      expect(await isUserAuthorized(123456789)).toBe(false);
     });
 
-    it('should return true for authorized users', () => {
-      mockAllowedUsers.clear();
-      mockAllowedUsers.add(123456789);
-      mockAllowedUsers.add(987654321);
-      expect(isUserAuthorized(123456789)).toBe(true);
-      expect(isUserAuthorized(987654321)).toBe(true);
+    it('should return true for authorized users', async () => {
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(true);
+      expect(await isUserAuthorized(123456789)).toBe(true);
     });
 
-    it('should return false for unauthorized users', () => {
-      mockAllowedUsers.clear();
-      mockAllowedUsers.add(123456789);
-      expect(isUserAuthorized(555555555)).toBe(false);
+    it('should return false when lookup throws error', async () => {
+      vi.mocked(mockIsTelegramUserAuthorized).mockRejectedValue(
+        new Error('Lookup failed'),
+      );
+      expect(await isUserAuthorized(123456789)).toBe(false);
     });
   });
 
@@ -94,8 +101,7 @@ describe('Authentication Middleware', () => {
     });
 
     it('should reject unauthorized users with remaining attempts message', async () => {
-      mockAllowedUsers.clear();
-      mockAllowedUsers.add(987654321);
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
       const mockCtx = createMockContext(123456789, {
         username: 'testuser',
         first_name: 'Test',
@@ -116,7 +122,6 @@ describe('Authentication Middleware', () => {
           userId: 123456789,
           chatId: 12345,
           messageText: 'test message',
-          allowedUsersCount: 1,
           failureCount: 1,
           rateLimited: false,
         }),
@@ -124,8 +129,18 @@ describe('Authentication Middleware', () => {
     });
 
     it('should allow authorized users', async () => {
-      mockAllowedUsers.clear();
-      mockAllowedUsers.add(123456789);
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(true);
+      vi.mocked(mockLookupUserByTelegramId).mockResolvedValue({
+        _id: '123',
+        username: 'testuser',
+        email: 'test@example.com',
+        telegram_id: 123456789,
+        database_name: 'testuser',
+        status: 'active',
+        permissions: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
       const mockCtx = createMockContext(123456789);
       await authMiddleware(mockCtx, nextMock);
 
@@ -134,8 +149,8 @@ describe('Authentication Middleware', () => {
       expect(mockLogger.warn).not.toHaveBeenCalled();
     });
 
-    it('should deny all users when allowedUsers is empty', async () => {
-      mockAllowedUsers.clear();
+    it('should deny unauthorized users', async () => {
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
       const mockCtx = createMockContext(123456789, {
         username: 'emptyconfig',
       });
@@ -154,7 +169,6 @@ describe('Authentication Middleware', () => {
           userId: 123456789,
           chatId: 12345,
           messageText: 'test message',
-          allowedUsersCount: 0,
           failureCount: 1,
           rateLimited: false,
         }),
@@ -228,8 +242,7 @@ describe('Authentication Middleware', () => {
 
     describe('authMiddleware with rate limiting', () => {
       it('should rate limit after max failures', async () => {
-        mockAllowedUsers.clear();
-        mockAllowedUsers.add(987654321); // Different user is allowed
+        vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
 
         const unauthorizedUserId = 123456789;
         const mockCtx = createMockContext(unauthorizedUserId, {
@@ -261,8 +274,7 @@ describe('Authentication Middleware', () => {
       });
 
       it('should show rate limit message when threshold is reached', async () => {
-        mockAllowedUsers.clear();
-        mockAllowedUsers.add(987654321); // Different user is allowed
+        vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
 
         const unauthorizedUserId = 123456789;
 
@@ -296,8 +308,7 @@ describe('Authentication Middleware', () => {
       });
 
       it('should show remaining attempts before rate limiting', async () => {
-        mockAllowedUsers.clear();
-        mockAllowedUsers.add(987654321); // Different user is allowed
+        vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
 
         const unauthorizedUserId = 123456789;
         const mockCtx = createMockContext(unauthorizedUserId, {
@@ -316,14 +327,26 @@ describe('Authentication Middleware', () => {
       });
 
       it('should not affect authorized users', async () => {
-        mockAllowedUsers.clear();
         const authorizedUserId = 123456789;
-        mockAllowedUsers.add(authorizedUserId);
 
         // Record some failures for this user (simulating previous unauthorized attempts)
         for (let i = 0; i < MAX_AUTH_FAILURES; i++) {
           recordAuthFailure(authorizedUserId);
         }
+
+        // Set up mock to return authorized for this user
+        vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(true);
+        vi.mocked(mockLookupUserByTelegramId).mockResolvedValue({
+          _id: '123',
+          username: 'testuser',
+          email: 'test@example.com',
+          telegram_id: authorizedUserId,
+          database_name: 'testuser',
+          status: 'active',
+          permissions: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
 
         // User should still be able to access if they become authorized
         const mockCtx = createMockContext(authorizedUserId);
@@ -339,11 +362,12 @@ describe('Authentication Middleware', () => {
     beforeEach(() => {
       vi.clearAllMocks();
       authFailures.clear();
-      mockAllowedUsers.clear();
     });
 
     it('should not log PII when TELEGRAM_LOG_USER_DETAILS is false', async () => {
-      // The default configuration should have PII logging disabled
+      // Set up unauthorized user
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
+
       const mockCtx = createMockContext(123456789, {
         username: 'testuser',
         first_name: 'John',
@@ -374,6 +398,8 @@ describe('Authentication Middleware', () => {
     it('should respect the PII logging configuration', async () => {
       // This test verifies that the auth middleware uses the configuration correctly
       // Since our mock has TELEGRAM_LOG_USER_DETAILS set to false, PII should not be logged
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
+
       const mockCtx = createMockContext(123456789, {
         username: 'testuser',
         first_name: 'John',
@@ -409,6 +435,8 @@ describe('Authentication Middleware', () => {
 
     it('should not log PII in rate limited attempts when disabled', async () => {
       const userId = 123456789;
+      vi.mocked(mockIsTelegramUserAuthorized).mockResolvedValue(false);
+
       // Record failures to trigger rate limiting
       for (let i = 0; i < MAX_AUTH_FAILURES; i++) {
         recordAuthFailure(userId);

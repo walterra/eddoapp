@@ -2,6 +2,7 @@ import { Bot, Context, session } from 'grammy';
 
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
+import type { TelegramUser } from '../utils/user-lookup.js';
 import { authMiddleware } from './middleware/auth.js';
 
 // Define session data structure
@@ -11,6 +12,7 @@ interface SessionData {
   lastActivity: Date;
   context: Record<string, unknown>;
   lastBotMessage?: string;
+  user?: TelegramUser; // User registry information
 }
 
 // Extend the context with session data

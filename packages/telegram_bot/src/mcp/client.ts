@@ -7,6 +7,7 @@ import {
   MCPConnectionManager,
   type ConnectionMetrics as _ConnectionMetrics,
 } from './connection-manager.js';
+import type { MCPUserContext } from './user-context.js';
 
 export interface MCPTool {
   name: string;
@@ -21,6 +22,7 @@ export interface MCPClient {
   invoke: (
     toolName: string,
     params: Record<string, unknown>,
+    userContext?: MCPUserContext,
   ) => Promise<unknown>;
   close: () => Promise<void>;
 }
@@ -66,8 +68,9 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
     const invoke = async (
       toolName: string,
       params: Record<string, unknown>,
+      userContext?: MCPUserContext,
     ) => {
-      return connectionManager!.invoke(toolName, params);
+      return connectionManager!.invoke(toolName, params, userContext);
     };
 
     // Close function

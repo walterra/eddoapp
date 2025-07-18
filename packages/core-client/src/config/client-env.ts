@@ -9,9 +9,6 @@ export const clientEnvSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-
-  // Web Client Configuration (Vite environment variables)
-  VITE_COUCHDB_API_KEY: z.string().optional(),
 });
 
 /**
@@ -32,18 +29,20 @@ export function validateClientEnv(env: unknown): ClientEnv {
     );
     return {
       NODE_ENV: 'development',
-      VITE_COUCHDB_API_KEY: undefined,
     };
   }
   return result.data;
 }
 
 /**
- * Get the effective database name (with API key suffix if provided)
- * Client-side version that only uses VITE_COUCHDB_API_KEY
+ * Get the user-specific database name for PouchDB
+ * This should match the server-side pattern: {prefix}_user_{username}
  */
-export function getClientDbName(env: ClientEnv): string {
-  const baseName = 'todos-dev'; // Hardcoded for client since server handles DB routing
-  const apiKey = env.VITE_COUCHDB_API_KEY;
-  return apiKey ? `${baseName}_api_${apiKey}` : baseName;
+export function getUserDbName(username: string, env: ClientEnv): string {
+  // For now, use 'eddo' as the default prefix to match server behavior
+  // In the future, this could be configurable via environment
+  const prefix = env.NODE_ENV === 'test' ? 'eddo_test' : 'eddo';
+  // Sanitize username to match server-side sanitization
+  const sanitizedUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  return `${prefix}_user_${sanitizedUsername}`;
 }

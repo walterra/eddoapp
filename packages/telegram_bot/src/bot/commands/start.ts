@@ -50,6 +50,8 @@ export async function handleHelp(ctx: BotContext): Promise<void> {
 /start - Welcome message and introduction
 /help - Show this help message
 /status - Check bot status
+/link - Link your Telegram account to your web profile
+/unlink - Get instructions to unlink your account
 
 *Natural Language Examples:*
 • "Add 'review quarterly reports' to work context for Friday"

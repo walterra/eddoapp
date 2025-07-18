@@ -4,21 +4,12 @@ This document describes all feature flags and configuration toggles available in
 
 ## Environment Variable Feature Flags
 
-### Authentication
-
-#### `MCP_API_KEY`
-- **Type**: String (optional)
-- **Default**: `undefined` (no authentication)
-- **Location**: `packages/telegram_bot/src/mcp/enhanced-client.ts:53`
-- **Purpose**: Optional authentication for MCP server API
-- **Usage**: Adds Authorization header if present
-- **Impact**: Enables authenticated MCP server connections
-
 ## Configuration Schema Variables
 
 These are defined in `packages/telegram_bot/src/utils/config.ts`:
 
 ### `NODE_ENV`
+
 - **Type**: Enum
 - **Values**: `'development'`, `'production'`, `'test'`
 - **Default**: `'development'`
@@ -26,6 +17,7 @@ These are defined in `packages/telegram_bot/src/utils/config.ts`:
 - **Usage**: Affects logging transport configuration in `logger.ts:20`
 
 ### `LOG_LEVEL`
+
 - **Type**: Enum
 - **Values**: `'error'`, `'warn'`, `'info'`, `'debug'`
 - **Default**: `'info'`
@@ -33,6 +25,7 @@ These are defined in `packages/telegram_bot/src/utils/config.ts`:
 - **Usage**: Used by Winston logger configuration
 
 ### `BOT_PERSONA_ID`
+
 - **Type**: String
 - **Default**: `'butler'`
 - **Purpose**: Controls which AI persona the bot uses
@@ -43,6 +36,7 @@ These are defined in `packages/telegram_bot/src/utils/config.ts`:
 These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bot/src/agent/types/workflow-types.ts`):
 
 ### `enableStreaming`
+
 - **Type**: Boolean
 - **Default**: `true`
 - **Location**: Line 168
@@ -50,6 +44,7 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bo
 - **Usage**: Configured in agent initialization
 
 ### `enableApprovals`
+
 - **Type**: Boolean
 - **Default**: `true`
 - **Location**: Line 169
@@ -59,12 +54,14 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bo
 ## Hardcoded Feature Toggles
 
 ### Console Logging Toggle
+
 - **Location**: `packages/telegram_bot/src/utils/logger.ts:20`
 - **Condition**: `appConfig.NODE_ENV !== 'production'`
 - **Purpose**: Enables console logging in non-production environments
 - **Impact**: Adds colorized console output for development
 
 ### Workflow Fallback Logic
+
 - **Location**: `packages/telegram_bot/src/agent/index.ts:31-65`
 - **Purpose**: Progressive fallback from Enhanced → Simple → Basic workflows
 - **Impact**: Provides graceful degradation if advanced features fail
@@ -72,6 +69,7 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bo
 ## Development/Debug Features
 
 ### Workflow Resume Token
+
 - **Location**: `packages/telegram_bot/src/bot/commands/start.ts:183`
 - **Token**: `'__RESUME_WORKFLOW__'`
 - **Purpose**: Special internal message to resume paused workflows
@@ -80,11 +78,13 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bo
 ## Configuration Constants
 
 ### MCP Action Aliases
+
 - **Location**: `packages/telegram_bot/src/config/mcp-actions.config.ts`
 - **Purpose**: Maps legacy snake_case action names to camelCase for backward compatibility
 - **Usage**: Allows flexible action naming across different integrations
 
 ### Tool Variants
+
 - **Location**: Same file as above
 - **Purpose**: Maps action names to multiple possible tool name variations
 - **Usage**: Provides fallback tool resolution for different MCP server implementations
@@ -92,6 +92,7 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bo
 ## Removed/Deprecated Flags
 
 ### Enhanced MCP Feature Flag
+
 - **Location**: `packages/telegram_bot/src/mcp/enhanced-client.ts:211`
 - **Status**: **REMOVED** - Comment indicates "Feature flag removed - always use enhanced MCP with @langchain/mcp-adapters"
 - **Previous Purpose**: Controlled whether to use enhanced MCP integration
@@ -102,9 +103,6 @@ These are boolean flags in the `WorkflowConfig` interface (`packages/telegram_bo
 ### Setting Feature Flags
 
 ```bash
-# Set MCP authentication
-export MCP_API_KEY=your-api-key-here
-
 # Set environment and logging
 export NODE_ENV=production
 export LOG_LEVEL=warn

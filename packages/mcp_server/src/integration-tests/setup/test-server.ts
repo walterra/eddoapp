@@ -20,6 +20,12 @@ export class MCPTestServer {
   private config: Required<MCPTestServerConfig>;
   private testLock: TestLock;
   private testApiKey: string;
+  private testUser: {
+    userId: string;
+    username: string;
+    dbName: string;
+    telegramId: string;
+  } | null = null;
 
   constructor(config: MCPTestServerConfig = {}) {
     // Use dynamic port from environment or fall back to default
@@ -41,18 +47,30 @@ export class MCPTestServer {
     this.testApiKey = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  private async ensureTestUser(): Promise<void> {
+    if (!this.testUser) {
+      const { getGlobalTestUser } = await import('./global-test-user.js');
+      this.testUser = await getGlobalTestUser();
+    }
+  }
+
   async start(): Promise<void> {
     if (this.client) {
       throw new Error('Test server already started');
     }
 
-    // Create transport with API key header for test isolation
+    // Ensure test user is initialized
+    await this.ensureTestUser();
+
+    // Create transport with user authentication headers for test isolation
     this.transport = new StreamableHTTPClientTransport(
       new URL(this.config.serverUrl),
       {
         requestInit: {
           headers: {
-            'X-API-Key': this.testApiKey,
+            'X-User-ID': this.testUser!.username,
+            'X-Database-Name': this.testUser!.dbName,
+            'X-Telegram-ID': this.testUser!.telegramId,
           },
         },
       },
@@ -216,22 +234,22 @@ export class MCPTestServer {
       `🔄 Test using isolated database for API key: ${this.testApiKey}`,
     );
 
+    // Clear all existing documents first
+    await this.clearAllDocuments();
+
     // Set up the database schema for this test's isolated database
     await this.setupTestDatabase();
   }
 
   private async setupTestDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import(
-        '@eddo/core-server'
-      );
       const { DatabaseSetup } = await import('./database-setup.js');
 
-      const env = validateEnv(process.env);
-      const couchDbConfig = getTestCouchDbConfig(env);
+      // Ensure test user is initialized
+      await this.ensureTestUser();
 
-      // Generate the same database name that the auth server will use
-      const testDbName = `${couchDbConfig.dbName}_api_${this.testApiKey}`;
+      // Use the user's database name (user is already created globally)
+      const testDbName = this.testUser!.dbName;
 
       // Set up the database with proper indexes and design documents
       const dbSetup = new DatabaseSetup(testDbName);
@@ -262,7 +280,11 @@ export class MCPTestServer {
       const env = validateEnv(process.env);
       const couchDbConfig = getTestCouchDbConfig(env);
       const couch = nano.default(couchDbConfig.url);
-      const db = couch.db.use(couchDbConfig.dbName);
+
+      // Ensure test user is initialized
+      await this.ensureTestUser();
+
+      const db = couch.db.use(this.testUser!.dbName);
 
       // Get all documents excluding design documents
       const allDocs = await db.list({ include_docs: false });
@@ -284,8 +306,17 @@ export class MCPTestServer {
         console.log('✅ Force cleanup completed');
       }
     } catch (error) {
-      console.error('❌ Force cleanup failed:', error);
-      throw error;
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        error.statusCode === 404
+      ) {
+        console.log('🔧 Database does not exist yet - no cleanup needed');
+      } else {
+        console.error('❌ Force cleanup failed:', error);
+        throw error;
+      }
     }
   }
 

@@ -9,10 +9,10 @@ dotenvLoad();
 const TelegramConfigSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1, 'Telegram bot token is required'),
   ANTHROPIC_API_KEY: z.string().min(1, 'Anthropic API key is required'),
-  MCP_API_KEY: z
+  WEB_API_BASE_URL: z
     .string()
-    .min(1, 'MCP API key is required for server authentication'),
-  TELEGRAM_ALLOWED_USERS: z.string().optional(),
+    .url('Web API base URL must be a valid URL')
+    .default('http://localhost:3000'),
   TELEGRAM_LOG_USER_DETAILS: z
     .string()
     .optional()
@@ -41,46 +41,6 @@ try {
   console.error('Configuration validation failed:', error);
   process.exit(1);
 }
-
-// Telegram user ID validation schema
-const TelegramUserIdSchema = z
-  .number()
-  .min(1, 'User ID must be positive')
-  .max(999999999999, 'User ID too large for Telegram platform');
-
-// Parse allowed users from comma-separated string
-export function parseAllowedUsers(allowedUsersString?: string): Set<number> {
-  if (!allowedUsersString || allowedUsersString.trim() === '') {
-    return new Set();
-  }
-
-  const validUserIds = allowedUsersString
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id !== '')
-    .map((id) => {
-      const parsed = parseInt(id, 10);
-      if (isNaN(parsed)) {
-        console.warn(`Invalid user ID format: "${id}" - skipping`);
-        return null;
-      }
-
-      const validation = TelegramUserIdSchema.safeParse(parsed);
-      if (!validation.success) {
-        console.warn(
-          `Invalid user ID: ${parsed} - ${validation.error.issues[0]?.message} - skipping`,
-        );
-        return null;
-      }
-
-      return parsed;
-    })
-    .filter((id): id is number => id !== null);
-
-  return new Set(validUserIds);
-}
-
-export const allowedUsers = parseAllowedUsers(appConfig.TELEGRAM_ALLOWED_USERS);
 
 export { appConfig };
 export type { Config };

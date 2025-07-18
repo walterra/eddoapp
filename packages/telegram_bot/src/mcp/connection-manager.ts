@@ -4,6 +4,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import type { MCPTool } from './client.js';
+import type { MCPUserContext } from './user-context.js';
 
 export enum ConnectionState {
   DISCONNECTED = 'DISCONNECTED',
@@ -101,6 +102,8 @@ export class MCPConnectionManager {
 
   /**
    * Establish connection to MCP server
+   * Note: This creates a base connection without user-specific authentication.
+   * User authentication is handled per-request via headers in tool calls.
    */
   private async establishConnection(): Promise<void> {
     this.setState(ConnectionState.CONNECTING);
@@ -112,13 +115,13 @@ export class MCPConnectionManager {
         attempt: this.metrics.connectAttempts,
       });
 
-      // Create transport
+      // Create transport without API key - authentication handled per-request
       this.transport = new StreamableHTTPClientTransport(
         new URL(appConfig.MCP_SERVER_URL),
         {
           requestInit: {
             headers: {
-              'X-API-Key': appConfig.MCP_API_KEY,
+              'Content-Type': 'application/json',
             },
           },
         },
@@ -308,30 +311,76 @@ export class MCPConnectionManager {
   }
 
   /**
-   * Invoke a tool
+   * Invoke a tool with user context
    */
   async invoke(
     toolName: string,
     params: Record<string, unknown>,
+    userContext?: MCPUserContext,
   ): Promise<unknown> {
     if (this.state !== ConnectionState.CONNECTED || !this.client) {
       throw new Error(`Cannot invoke tool: connection state is ${this.state}`);
     }
 
-    logger.info('Invoking MCP tool', { toolName, params });
+    if (!userContext) {
+      throw new Error('User context is required for MCP tool invocation');
+    }
+
+    logger.info('Invoking MCP tool', {
+      toolName,
+      params,
+      username: userContext.username,
+      databaseName: userContext.databaseName,
+    });
 
     try {
-      const result = await this.client.callTool({
-        name: toolName,
-        arguments: params,
-      });
+      // Create a user-specific transport for this request
+      const userTransport = new StreamableHTTPClientTransport(
+        new URL(appConfig.MCP_SERVER_URL),
+        {
+          requestInit: {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-ID': userContext.username,
+              'X-Database-Name': userContext.databaseName,
+              'X-Telegram-ID': userContext.telegramId.toString(),
+            },
+          },
+        },
+      );
 
-      logger.info('MCP tool invoked successfully', {
-        toolName,
-        result: result.content,
-      });
+      // Create a temporary client with user-specific authentication
+      const userClient = new Client(
+        {
+          name: 'eddo-telegram-bot',
+          version: '1.0.0',
+        },
+        {
+          capabilities: {
+            tools: {},
+          },
+        },
+      );
 
-      return result.content;
+      // Connect the user-specific client
+      await userClient.connect(userTransport);
+
+      try {
+        const result = await userClient.callTool({
+          name: toolName,
+          arguments: params,
+        });
+
+        logger.info('MCP tool invoked successfully', {
+          toolName,
+          result: result.content,
+        });
+
+        return result.content;
+      } finally {
+        // Clean up the user-specific connection
+        await userClient.close();
+      }
     } catch (error) {
       logger.error('MCP tool invocation failed', {
         toolName,

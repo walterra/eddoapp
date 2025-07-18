@@ -1,19 +1,33 @@
-import { getClientDbName, validateClientEnv } from '@eddo/core-client';
-import { type FC } from 'react';
+import { Button } from 'flowbite-react';
+import { type FC, useState } from 'react';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
+import { usePouchDb } from '../pouch_db';
 import { DatabaseHealthIndicator } from './database_health_indicator';
+import { UserProfile } from './user_profile';
 
 interface PageWrapperProps {
   children?: React.ReactNode;
+  logout: () => void;
+  isAuthenticated: boolean;
 }
 
-export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
+export const PageWrapper: FC<PageWrapperProps> = ({
+  children,
+  logout,
+  isAuthenticated,
+}) => {
   const { healthCheck } = useDatabaseHealth();
+  const { rawDb } = usePouchDb();
+  const [showProfile, setShowProfile] = useState(false);
 
-  // Get the database name for display
-  const env = validateClientEnv(import.meta.env);
-  const databaseName = getClientDbName(env);
+  // Get the database name from the PouchDB instance
+  const databaseName = rawDb.name;
+
+  // Show profile if requested
+  if (showProfile) {
+    return <UserProfile onClose={() => setShowProfile(false)} />;
+  }
 
   return (
     <>
@@ -30,11 +44,27 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children }) => {
             <div className="prose">
               <h1>Eddo</h1>
             </div>
-            <DatabaseHealthIndicator
-              databaseName={databaseName}
-              healthCheck={healthCheck}
-              showDetails={true}
-            />
+            <div className="flex items-center space-x-4">
+              {isAuthenticated && (
+                <div className="flex space-x-2">
+                  <Button
+                    color="gray"
+                    onClick={() => setShowProfile(true)}
+                    size="sm"
+                  >
+                    Profile
+                  </Button>
+                  <Button color="gray" onClick={logout} size="sm">
+                    Logout
+                  </Button>
+                </div>
+              )}
+              <DatabaseHealthIndicator
+                databaseName={databaseName}
+                healthCheck={healthCheck}
+                showDetails={true}
+              />
+            </div>
           </div>
           {children}
         </main>
