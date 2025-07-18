@@ -1,6 +1,6 @@
 # a `pnpm couchdb:cleanup` script that deletes test databases
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-07-18T09:26:37Z
 **Agent PID:** 83254
 **Started:** 2025-07-18T09:26:37Z
@@ -34,9 +34,9 @@ Create a `pnpm couchdb:cleanup` script that provides a CLI interface for cleanin
 - [x] Automated test: verify script handles non-existent databases gracefully
 - [x] Automated test: verify dry-run mode doesn't delete databases
 - [x] Automated test: verify test database filtering works correctly
-- [ ] User test: Run script with dry-run mode and verify output
-- [ ] User test: Create test database and verify cleanup works
-- [ ] User test: Verify confirmation prompts work correctly
+- [x] User test: Run script with dry-run mode and verify output
+- [x] User test: Create test database and verify cleanup works
+- [x] User test: Verify confirmation prompts work correctly
 
 ## Notes
 
