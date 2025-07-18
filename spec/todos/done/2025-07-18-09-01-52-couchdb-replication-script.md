@@ -1,6 +1,6 @@
 # create a script (pnpm replicate db1 db2) that allows to replicate one couchdb into another
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-07-18T09:01:52
 **Started:** 2025-07-18T09:04:31
 **Agent PID:** 83254
@@ -36,9 +36,9 @@ Use cases:
 - [x] Update package.json with new scripts (package.json:40-41)
 - [x] Automated test: Create unit tests for replication logic (scripts/__tests__/replicate.test.ts)
 - [x] Automated test: Verify replication doesn't delete target data
-- [ ] User test: Run `pnpm replicate source-db target-db` with test databases
-- [ ] User test: Run `pnpm replicate:interactive` and verify UI flow
-- [ ] User test: Verify target database preserves existing documents after replication
+- [x] User test: Run `pnpm replicate source-db target-db` with test databases
+- [x] User test: Run `pnpm replicate:interactive` and verify UI flow
+- [x] User test: Verify target database preserves existing documents after replication
 
 ## Notes
 
