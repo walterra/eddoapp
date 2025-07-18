@@ -2,7 +2,7 @@
  * E2E Test Utilities
  * Provides helper functions for setting up and cleaning up CouchDB databases in e2e tests
  */
-import { validateEnv, getTestCouchDbConfig } from '@eddo/core-server';
+import { validateEnv, getTestCouchDbConfig, cleanupDatabasesByPattern } from '@eddo/core-server';
 import nano from 'nano';
 
 /**
@@ -66,6 +66,14 @@ export class TestDatabaseManager {
   }
 
   /**
+   * Track a database name for cleanup (useful for databases created by external scripts)
+   */
+  trackDatabase(dbName: string): void {
+    this.createdDatabases.add(dbName);
+    console.log(`📋 Tracking database for cleanup: ${dbName}`);
+  }
+
+  /**
    * Delete a specific test database
    */
   async deleteTestDatabase(dbName: string): Promise<void> {
@@ -97,6 +105,39 @@ export class TestDatabaseManager {
       await this.deleteTestDatabase(dbName);
     }
     this.createdDatabases.clear();
+  }
+
+  /**
+   * Clean up all test databases matching pattern, including untracked ones
+   * This is useful for cleaning up databases created by external scripts
+   */
+  async cleanupAllTestDatabases(options: { dryRun?: boolean; verbose?: boolean } = {}): Promise<void> {
+    try {
+      // Clean up tracked databases first
+      await this.cleanupAll();
+      
+      // Clean up any remaining test databases using pattern matching
+      const testDatabasePattern = /^test-/;
+      const result = await cleanupDatabasesByPattern(testDatabasePattern, {
+        dryRun: options.dryRun || false,
+        verbose: options.verbose || false,
+        force: true, // Force cleanup for test databases
+      });
+      
+      if (options.verbose) {
+        console.log(`🧹 Pattern-based cleanup completed:`);
+        console.log(`  Cleaned: ${result.summary.cleaned}`);
+        console.log(`  Skipped: ${result.summary.skipped}`);
+        console.log(`  Errors: ${result.summary.errors}`);
+      }
+      
+      if (result.errors.length > 0) {
+        console.warn(`⚠️  Some databases could not be cleaned up:`, result.errors);
+      }
+    } catch (error) {
+      console.error('❌ Error during comprehensive test database cleanup:', error);
+      throw error;
+    }
   }
 
   /**

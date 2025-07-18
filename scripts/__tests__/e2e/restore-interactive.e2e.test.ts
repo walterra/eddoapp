@@ -37,6 +37,9 @@ describe('Restore Interactive E2E', () => {
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, SAMPLE_TODO_DOCS);
 
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
+
     // Step 2: Create a backup
     await runner()
       .env(testEnv)
@@ -112,6 +115,9 @@ describe('Restore Interactive E2E', () => {
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, [SAMPLE_TODO_DOCS[0]]);
 
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
+
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
@@ -160,6 +166,9 @@ describe('Restore Interactive E2E', () => {
 
     fs.mkdirSync(customBackupDir, { recursive: true });
 
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
+
     // Create source database and backup to custom directory
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, [SAMPLE_TODO_DOCS[0]]);
@@ -204,6 +213,9 @@ describe('Restore Interactive E2E', () => {
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, [SAMPLE_TODO_DOCS[0]]);
 
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
+
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
@@ -238,6 +250,9 @@ describe('Restore Interactive E2E', () => {
   it('should handle invalid backup file format', async () => {
     const targetDbName = generateTestDbName('invalid-format-test');
     const testEnv = createTestEnv();
+
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
 
     // Create an invalid backup file
     const invalidBackupFile = path.join(backupDir, 'invalid-backup.json');
@@ -279,6 +294,9 @@ describe('Restore Interactive E2E - File Discovery', () => {
     const sourceDbName = generateTestDbName('discovery-source');
     const targetDbName = generateTestDbName('discovery-target');
     const testEnv = createTestEnv();
+
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
 
     // Create multiple source databases and their backups
     const databases = [`${sourceDbName}-dev`, `${sourceDbName}-prod`, `${sourceDbName}-test`];
