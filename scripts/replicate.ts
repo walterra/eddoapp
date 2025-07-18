@@ -11,10 +11,6 @@ import chalk from 'chalk';
 import { validateEnv, getCouchDbConfig } from '@eddo/core-server/config';
 import { checkDatabaseExists, formatDuration } from './backup-utils.js';
 
-// Environment configuration using shared validation
-const env = validateEnv(process.env);
-const couchConfig = getCouchDbConfig(env);
-
 // Parse command line arguments
 function parseArgs(): { source: string; target: string; continuous?: boolean } {
   const args = process.argv.slice(2);
@@ -52,6 +48,11 @@ Examples:
 
 async function replicate(): Promise<void> {
   const { source, target, continuous } = parseArgs();
+  
+  // Environment configuration using shared validation
+  const env = validateEnv(process.env);
+  const couchConfig = getCouchDbConfig(env);
+  
   const spinner = ora();
 
   try {

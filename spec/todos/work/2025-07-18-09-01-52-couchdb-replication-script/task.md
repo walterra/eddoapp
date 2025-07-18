@@ -52,3 +52,4 @@ Implementation completed successfully. The replication scripts use nano's built-
 - **Continuous replication**: Optional --continuous flag for ongoing sync
 - **Safety checks**: Validates source existence before proceeding
 - **Comprehensive tests**: Unit tests verify functionality and data preservation
+- **Fixed help command**: Environment validation now only occurs during actual replication, not when showing help
