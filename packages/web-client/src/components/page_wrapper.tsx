@@ -42,7 +42,16 @@ export const PageWrapper: FC<PageWrapperProps> = ({
         <main className="h-full w-full flex-grow overflow-auto p-3" role="main">
           <div className="mb-4 flex items-center justify-between">
             <div className="prose">
-              <h1>Eddo</h1>
+              <h1 className="sr-only">Eddo</h1>
+              <pre
+                aria-label="Eddo logo"
+                className="m-0 p-0 font-mono text-sm leading-tight"
+                role="img"
+              >
+                {`   ┓ ┓
+┏┓┏┫┏┫┏┓
+┗ ┗┻┗┻┗┛`}
+              </pre>
             </div>
             <div className="flex items-center space-x-4">
               {isAuthenticated && (
