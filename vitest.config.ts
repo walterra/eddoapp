@@ -75,6 +75,7 @@ export default defineConfig({
         test: {
           globals: true,
           environment: 'node',
+          setupFiles: ['./test/e2e-setup.js'],
           include: ['scripts/__tests__/e2e/*.e2e.test.ts'],
           testTimeout: 60000,
         },

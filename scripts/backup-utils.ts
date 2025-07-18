@@ -268,3 +268,77 @@ export function createRestoreOptions(overrides?: Partial<RestoreOptions>): Resto
     ...overrides,
   };
 }
+
+/**
+ * Get replication status from CouchDB
+ */
+export async function getReplicationStatus(
+  replicationId: string,
+  couchdbUrl: string
+): Promise<any> {
+  try {
+    const url = new URL(couchdbUrl);
+    const baseUrl = `${url.protocol}//${url.host}`;
+    const credentials = url.username && url.password 
+      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+      : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (credentials) {
+      headers['Authorization'] = `Basic ${credentials}`;
+    }
+
+    const response = await fetch(`${baseUrl}/_replicator/${replicationId}`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get replication status: ${response.statusText}`);
+    }
+
+    return await response.json();
+    
+  } catch (error) {
+    throw new Error(`Failed to get replication status: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * List all active replications
+ */
+export async function listActiveReplications(couchdbUrl: string): Promise<any[]> {
+  try {
+    const url = new URL(couchdbUrl);
+    const baseUrl = `${url.protocol}//${url.host}`;
+    const credentials = url.username && url.password 
+      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+      : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (credentials) {
+      headers['Authorization'] = `Basic ${credentials}`;
+    }
+
+    const response = await fetch(`${baseUrl}/_scheduler/jobs`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to list replications: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.jobs || [];
+    
+  } catch (error) {
+    throw new Error(`Failed to list replications: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}

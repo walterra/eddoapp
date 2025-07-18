@@ -37,6 +37,9 @@ describe('Backup-Restore Workflow E2E', () => {
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, SAMPLE_TODO_DOCS);
 
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
+
     // Step 2: Create a backup
     await runner()
       .env(testEnv)
@@ -82,6 +85,9 @@ describe('Backup-Restore Workflow E2E', () => {
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, [SAMPLE_TODO_DOCS[0]]);
 
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
+
     // Step 2: Backup with custom parameters
     await runner()
       .env(testEnv)
@@ -112,6 +118,9 @@ describe('Backup-Restore Workflow E2E', () => {
     const targetDbName = generateTestDbName('invalid-backup-test');
     const testEnv = createTestEnv();
     
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
+    
     // Create an invalid backup file
     const invalidBackupFile = path.join(backupDir, 'invalid-backup.json');
     fs.writeFileSync(invalidBackupFile, 'invalid json content');
@@ -135,6 +144,9 @@ describe('Backup-Restore Workflow E2E', () => {
     // Step 1: Create source database with sample data
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, SAMPLE_TODO_DOCS);
+
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
 
     // Step 2: Create first backup
     await runner()
@@ -179,6 +191,9 @@ describe('Backup-Restore Workflow E2E', () => {
     // Step 1: Create source database with sample data
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, [SAMPLE_TODO_DOCS[0]]);
+
+    // Track the target database that will be created by the restore script
+    dbManager.trackDatabase(targetDbName);
 
     // Step 2: Backup to subdirectory
     await runner()
