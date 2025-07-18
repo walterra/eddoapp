@@ -58,3 +58,31 @@ Create a `pnpm couchdb:cleanup` script that provides a CLI interface for cleanin
 - Confirmation prompts before deletion (unless --force flag used)
 - Graceful error handling and user cancellation support
 - Comprehensive logging and progress indicators with ora spinners
+- Auto-detects mode based on options (--pattern sets mode to pattern, --databases sets mode to custom)
+- Proper glob-to-regex conversion for pattern matching (test-* only matches test-something, not todos-test_something)
+
+**CLI Options Analysis - Inconsistencies Found:**
+
+After comparing backup and replicate scripts' CLI options, several inconsistencies were identified:
+
+**Critical Issue - Flag Conflicts:**
+- **Backup script**: `-t, --timeout <ms>` (timeout in milliseconds)
+- **Replicate script**: `-t, --target <database>` (target database name)
+- **Problem**: Same short flag `-t` has different meanings across scripts
+
+**Missing Options:**
+- **Replicate script missing**: `--dry-run`, `--no-interactive`, `--timeout`, `--parallelism`
+- **Backup script missing**: N/A (specific to backup functionality)
+
+**Recommendations:**
+1. **Fix flag conflict**: Remove `-t` short flag from backup script's timeout option
+2. **Add missing options**: Add `--dry-run`, `--no-interactive`, `--timeout` to replicate script
+3. **Standardize patterns**: Both scripts should support consistent interactive/non-interactive modes
+
+**Current Cleanup Script Status:**
+- ✅ Follows good CLI patterns with `--dry-run` and `--no-interactive` equivalent (`--force`)
+- ✅ Uses consistent flag naming conventions
+- ✅ Provides comprehensive help documentation
+- ✅ Auto-detects mode based on provided options
+- ✅ **FIXED**: Now uses `COUCHDB_URL` environment variable like other scripts (removed `--db` CLI option)
+- ✅ **CONSISTENT**: Uses `validateEnv()` and `getCouchDbConfig()` for configuration like backup/replicate scripts

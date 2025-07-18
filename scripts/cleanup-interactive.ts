@@ -5,7 +5,7 @@ import prompts from 'prompts';
 import chalk from 'chalk';
 import ora from 'ora';
 import nano from 'nano';
-// Removed environment validation imports since we're using CLI args
+import { validateEnv, getCouchDbConfig } from '../packages/core-server/src/config/env.js';
 
 interface CleanupConfig {
   mode: 'all' | 'pattern' | 'age' | 'custom';
@@ -29,7 +29,6 @@ async function main() {
   program
     .name('cleanup-interactive')
     .description('Interactive CouchDB test database cleanup tool')
-    .option('--db <url>', 'CouchDB URL (e.g., http://admin:password@localhost:5984)', 'http://admin:password@localhost:5984')
     .option('-m, --mode <mode>', 'cleanup mode: all, pattern, age, custom', 'all')
     .option('-p, --pattern <pattern>', 'database name pattern to match')
     .option('-a, --age <days>', 'delete databases older than N days', parseInt)
@@ -43,7 +42,9 @@ async function main() {
   console.log(chalk.blue('\n🧹 CouchDB Test Database Cleanup Tool\n'));
 
   try {
-    const couchConfig = { url: options.db, dbName: '' };
+    // Environment configuration using shared validation
+    const env = validateEnv(process.env);
+    const couchConfig = getCouchDbConfig(env);
     
     // Auto-detect mode based on provided options
     let mode: CleanupConfig['mode'] = options.mode as CleanupConfig['mode'];
