@@ -31,9 +31,9 @@ Create a `pnpm couchdb:cleanup` script that provides a CLI interface for cleanin
 - [x] Use nano for actual database deletion operations (scripts/cleanup-interactive.ts)
 - [x] Add comprehensive error handling and user feedback (scripts/cleanup-interactive.ts)
 - [x] Add package.json scripts for couchdb:cleanup (package.json)
-- [ ] Automated test: verify script handles non-existent databases gracefully
-- [ ] Automated test: verify dry-run mode doesn't delete databases
-- [ ] Automated test: verify test database filtering works correctly
+- [x] Automated test: verify script handles non-existent databases gracefully
+- [x] Automated test: verify dry-run mode doesn't delete databases
+- [x] Automated test: verify test database filtering works correctly
 - [ ] User test: Run script with dry-run mode and verify output
 - [ ] User test: Create test database and verify cleanup works
 - [ ] User test: Verify confirmation prompts work correctly
@@ -86,3 +86,10 @@ After comparing backup and replicate scripts' CLI options, several inconsistenci
 - ✅ Auto-detects mode based on provided options
 - ✅ **FIXED**: Now uses `COUCHDB_URL` environment variable like other scripts (removed `--db` CLI option)
 - ✅ **CONSISTENT**: Uses `validateEnv()` and `getCouchDbConfig()` for configuration like backup/replicate scripts
+
+**Integration Tests Complete:**
+- ✅ Created comprehensive integration test suite in `scripts/__tests__/e2e/cleanup-interactive.e2e.test.ts`
+- ✅ Added `databaseExists()` method to `TestDatabaseManager` utility class
+- ✅ Tests cover: non-existent databases, invalid connections, pattern matching, dry-run mode, database filtering
+- ✅ Tests follow existing e2e test patterns and use the same infrastructure
+- ℹ️ **Note**: Tests require CouchDB environment to be set up (like all other e2e tests in the project)

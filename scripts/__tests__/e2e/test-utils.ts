@@ -147,6 +147,26 @@ export class TestDatabaseManager {
   }
 
   /**
+   * Check if a database exists
+   */
+  async databaseExists(dbName: string): Promise<boolean> {
+    try {
+      await this.couch.db.get(dbName);
+      return true;
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        error.statusCode === 404
+      ) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Get the list of databases that match test pattern
    */
   async getTestDatabases(): Promise<string[]> {
