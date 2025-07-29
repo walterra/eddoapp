@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { isTokenExpired } from '@eddo/core-client';
+import { useCallback, useEffect, useState } from 'react';
 
 interface AuthToken {
   token: string;
@@ -75,10 +76,19 @@ export const useAuth = () => {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setAuthToken(null);
     localStorage.removeItem('authToken');
-  };
+  }, []);
+
+  const checkTokenExpiration = useCallback(() => {
+    if (authToken && isTokenExpired(authToken.token)) {
+      console.warn('Authentication token expired - logging out');
+      logout();
+      return true;
+    }
+    return false;
+  }, [authToken, logout]);
 
   useEffect(() => {
     // Check for stored auth token
@@ -86,13 +96,36 @@ export const useAuth = () => {
     if (stored) {
       try {
         const token = JSON.parse(stored);
-        setAuthToken(token);
+        // Check if token is expired before setting it
+        if (isTokenExpired(token.token)) {
+          console.warn('Stored token is expired - removing');
+          localStorage.removeItem('authToken');
+        } else {
+          setAuthToken(token);
+        }
       } catch (error) {
         console.error('Invalid stored token:', error);
         localStorage.removeItem('authToken');
       }
     }
   }, []);
+
+  // Periodically check for token expiration
+  useEffect(() => {
+    if (!authToken) {
+      return;
+    }
+
+    // Check immediately
+    checkTokenExpiration();
+
+    // Then check every minute
+    const interval = setInterval(() => {
+      checkTokenExpiration();
+    }, 60000); // 1 minute
+
+    return () => clearInterval(interval);
+  }, [authToken, checkTokenExpiration]);
 
   return {
     authToken,
@@ -102,5 +135,6 @@ export const useAuth = () => {
     isAuthenticated: !!authToken,
     isAuthenticating,
     username: authToken?.username,
+    checkTokenExpiration,
   };
 };

@@ -7,6 +7,7 @@ export enum DatabaseErrorType {
   SYNC_CONFLICT = 'sync_conflict',
   CORRUPTION = 'corruption',
   PERMISSION_DENIED = 'permission_denied',
+  AUTHENTICATION_EXPIRED = 'authentication_expired',
 }
 
 /** Extended error interface for database operations */
