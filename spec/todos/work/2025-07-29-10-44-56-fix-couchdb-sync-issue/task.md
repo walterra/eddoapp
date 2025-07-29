@@ -1,6 +1,6 @@
 # issue with couchdb connection, after a while the UI stops syncing. suspicion: user stays on the logged in screen while they are really no longer having a session so the couchdb sync stops. sync works again after logging out and logging in.
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-07-29T10:44:56
 **Agent PID:** 68110
 
@@ -23,15 +23,15 @@ The CouchDB sync issue occurs because JWT tokens expire after 24 hours, but the 
 
 **Code Changes:**
 
-- [ ] Add token expiration utilities (packages/core-shared/src/utils/token-utils.ts)
-- [ ] Enhance authentication hook (packages/web-client/src/hooks/use_auth.ts)
-- [ ] Add sync error handling (packages/web-client/src/hooks/use_couchdb_sync.ts)
-- [ ] Extend error types (packages/core-shared/src/types/database-errors.ts)
-- [ ] Update error messaging (packages/web-client/src/components/database_error_message.tsx)
+- [x] Add token expiration utilities (packages/core-shared/src/utils/token-utils.ts)
+- [x] Enhance authentication hook (packages/web-client/src/hooks/use_auth.ts)
+- [x] Add sync error handling (packages/web-client/src/hooks/use_couchdb_sync.ts)
+- [x] Extend error types (packages/core-shared/src/types/database-errors.ts)
+- [x] Update error messaging (packages/web-client/src/components/database_error_message.tsx)
 
 **Automated Tests:**
 
-- [ ] Automated test: Token utility tests
+- [x] Automated test: Token utility tests
 - [ ] Automated test: Auth hook tests
 - [ ] Automated test: Sync error handling tests
 
@@ -42,3 +42,13 @@ The CouchDB sync issue occurs because JWT tokens expire after 24 hours, but the 
 - [ ] User test: Error messaging test - Verify clear error messages appear when session expires
 
 ## Notes
+
+**Started:** 2025-01-29T10:51:00
+
+**Implementation Details:**
+- Created token utility functions in core-shared package with proper TypeScript types
+- Enhanced auth hook to check token expiration on load and periodically every minute
+- Added sync error event handlers that detect 401/403 errors and trigger logout
+- Extended database error types to include AUTHENTICATION_EXPIRED
+- Updated error message component to show clear message for expired sessions
+- All existing tests pass, token utility tests added

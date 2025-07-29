@@ -23,6 +23,8 @@ export function DatabaseErrorMessage({
         return 'Sync conflict. Please refresh to see latest changes.';
       case DatabaseErrorType.OPERATION_FAILED:
         return `Failed to ${error.operation || 'complete operation'}. Please try again.`;
+      case DatabaseErrorType.AUTHENTICATION_EXPIRED:
+        return 'Session expired. Please log in again.';
       default:
         return 'An error occurred. Please try again.';
     }
