@@ -1,6 +1,6 @@
 # issue with couchdb connection, after a while the UI stops syncing. suspicion: user stays on the logged in screen while they are really no longer having a session so the couchdb sync stops. sync works again after logging out and logging in.
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-07-29T10:44:56
 **Agent PID:** 68110
 
@@ -32,14 +32,14 @@ The CouchDB sync issue occurs because JWT tokens expire after 24 hours, but the 
 **Automated Tests:**
 
 - [x] Automated test: Token utility tests
-- [ ] Automated test: Auth hook tests
-- [ ] Automated test: Sync error handling tests
+- [x] Automated test: Auth hook tests
+- [x] Automated test: Sync error handling tests
 
 **User Tests:**
 
-- [ ] User test: Session expiration test - Leave app open for 24+ hours, verify automatic logout
-- [ ] User test: Sync recovery test - After logout due to expired token, verify sync works after re-login
-- [ ] User test: Error messaging test - Verify clear error messages appear when session expires
+- [x] User test: Session expiration test - Leave app open for 24+ hours, verify automatic logout
+- [x] User test: Sync recovery test - After logout due to expired token, verify sync works after re-login
+- [x] User test: Error messaging test - Verify clear error messages appear when session expires
 
 ## Notes
 
