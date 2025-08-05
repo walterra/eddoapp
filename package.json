@@ -12,7 +12,7 @@
     "pnpm": ">=7.1.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.1",
+    "@modelcontextprotocol/sdk": "^1.17.1",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",
     "dotenv-mono": "github:marcocesarato/dotenv-mono#master",
