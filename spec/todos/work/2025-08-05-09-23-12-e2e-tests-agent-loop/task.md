@@ -1,7 +1,8 @@
 # we're on the branch to implement e2e tests for the agent loop, let's continue working on that
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-08-05T09:23:12
+**Started:** 2025-08-05T09:24:00
 **Agent PID:** 20118
 
 ## Original Todo
@@ -25,7 +26,7 @@ This task focuses on enhancing the existing integration test suite rather than c
 
 ### Code Changes:
 
-- [ ] Review and enhance existing integration test coverage (`packages/telegram_bot/src/integration-tests/suites/agent-loop.test.ts`)
+- [x] Review and enhance existing integration test coverage (`packages/telegram_bot/src/integration-tests/suites/agent-loop.test.ts`)
 - [ ] Add any missing test scenarios or edge cases
 - [ ] Improve test utilities and assertion helpers if needed
 - [ ] Ensure test isolation and cleanup are robust
@@ -33,7 +34,7 @@ This task focuses on enhancing the existing integration test suite rather than c
 
 ### Automated Tests:
 
-- [ ] Automated test: Review existing basic todo creation workflow test
+- [x] Automated test: Review existing basic todo creation workflow test
 - [ ] Automated test: Review existing complex todo with context, tags, and due dates test  
 - [ ] Automated test: Review existing multi-step workflow test
 - [ ] Automated test: Review existing error handling test
