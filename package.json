@@ -121,8 +121,7 @@
     "logs:clean": "find logs/ -name '*.log' -mtime +7 -delete 2>/dev/null || true",
     "logs:tail": "ls -t logs/*.log 2>/dev/null | head -1 | xargs tail -n 100 2>/dev/null || echo 'No log files found'",
     "logs:list": "ls -la logs/*.log 2>/dev/null || echo 'No log files found'",
-    "logs:follow": "ls -t logs/*.log 2>/dev/null | head -1 | xargs tail -f 2>/dev/null || echo 'No log files found'",
-    "postinstall": "flowbite-react patch"
+    "logs:follow": "ls -t logs/*.log 2>/dev/null | head -1 | xargs tail -f 2>/dev/null || echo 'No log files found'"
   },
   "browserslist": [
     ">0.2%",
