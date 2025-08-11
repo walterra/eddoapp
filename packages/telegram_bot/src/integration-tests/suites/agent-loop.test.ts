@@ -131,8 +131,8 @@ describe('Agent Loop E2E Integration', () => {
       const todo = result.docs[0];
       expect(todo.title.toLowerCase()).toContain('christmas');
       const dueDate = new Date(todo.due);
-      expect(dueDate.getMonth()).toBe(11); // December (0-indexed)
-      expect(dueDate.getDate()).toBe(25);
+      expect(dueDate.getUTCMonth()).toBe(11); // December (0-indexed)
+      expect(dueDate.getUTCDate()).toBe(25);
     });
   });
 
@@ -165,8 +165,8 @@ describe('Agent Loop E2E Integration', () => {
       // Verify due date is next month
       const dueDate = new Date(todo.due);
       const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      expect(dueDate.getMonth()).toBe(nextMonth.getMonth());
+      nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+      expect(dueDate.getUTCMonth()).toBe(nextMonth.getUTCMonth());
     });
 
     it('should create private todo with multiple tags', async () => {
@@ -195,9 +195,9 @@ describe('Agent Loop E2E Integration', () => {
 
       // Verify due date is tomorrow
       const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
       const dueDate = new Date(todo.due);
-      expect(dueDate.getDate()).toBe(tomorrow.getDate());
+      expect(dueDate.getUTCDate()).toBe(tomorrow.getUTCDate());
     });
   });
 
@@ -278,7 +278,7 @@ describe('Agent Loop E2E Integration', () => {
       // Due date should be today or later, not yesterday
       const dueDate = new Date(todo.due);
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
       expect(dueDate.getTime()).toBeGreaterThanOrEqual(today.getTime());
     });
 
