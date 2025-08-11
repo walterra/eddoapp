@@ -96,3 +96,13 @@ This task focuses on enhancing the existing integration test suite rather than c
 - Tests are making real Claude API calls and connecting to all services
 - May need timeout adjustment for slower Claude API responses
 - Basic workflow is working end-to-end
+
+7. **Fixed database query issues**: The tests were looking for `type: 'todo'` but TodoAlpha3 uses `version: 'alpha3'`. Fixed all test queries to use the correct selector.
+
+8. **Database indexes now created**: Added `DatabaseSetup` class to create required CouchDB indexes before each test, fixing "No index exists for this sort" errors.
+
+### Current Test Results:
+- ✅ 2 tests passing (basic todo creation, advanced list todos workflow)
+- ❌ 8 tests failing - Claude is not consistently using tools when expected
+- The main issue is that Claude sometimes responds conversationally instead of using the createTodo tool
+- This appears to be a prompt engineering or LLM behavior issue rather than infrastructure

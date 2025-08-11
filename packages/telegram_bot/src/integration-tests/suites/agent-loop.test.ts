@@ -85,6 +85,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo exists in database
       const result = await testDb.find({
         selector: {
+          version: 'alpha3',
           title: { $regex: '.*shopping.*' },
         },
       });
@@ -121,7 +122,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo in database
       const result = await testDb.find({
         selector: {
-          type: 'todo',
+          version: 'alpha3',
           title: { $regex: '.*Christmas.*' },
         },
       });
@@ -150,7 +151,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo in database
       const result = await testDb.find({
         selector: {
-          type: 'todo',
+          version: 'alpha3',
           context: 'work',
         },
       });
@@ -181,7 +182,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo in database
       const result = await testDb.find({
         selector: {
-          type: 'todo',
+          version: 'alpha3',
           title: { $regex: '.*mom.*' },
         },
       });
@@ -219,7 +220,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo was created
       const result = await testDb.find({
         selector: {
-          type: 'todo',
+          version: 'alpha3',
           title: { $regex: '.*code review.*' },
         },
       });
@@ -241,7 +242,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo with active time tracking
       const result = await testDb.find({
         selector: {
-          type: 'todo',
+          version: 'alpha3',
           title: { $regex: '.*pull requests.*' },
         },
       });
@@ -267,7 +268,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo was created with adjusted date
       const result = await testDb.find({
         selector: {
-          type: 'todo',
+          version: 'alpha3',
           title: { $regex: '.*time travel.*' },
         },
       });
@@ -342,7 +343,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo is completed
       const result = await testDb.find({
         selector: {
-          type: 'todo',
+          version: 'alpha3',
           title: { $regex: '.*test completion.*' },
         },
       });
