@@ -51,14 +51,15 @@ export function createAgentAssertions() {
      * Assert that agent used specific MCP tool
      */
     expectToolUsed(response: AgentResponse, toolName: string): void {
+      // Check if the tool was actually executed by looking at the replies for successful tool execution
       const replies = response.context.replies;
-      const toolMentioned = replies.some(
+      const toolExecuted = replies.some(
         (reply) =>
-          reply.includes(`Tool ${toolName}`) ||
-          reply.includes(`using ${toolName}`) ||
-          reply.includes(`${toolName} tool`),
+          reply.includes(`Tool "${toolName}" executed successfully`) ||
+          reply.includes(`TOOL_CALL: {"name": "${toolName}"`) ||
+          reply.includes(`"name": "${toolName}"`),
       );
-      expect(toolMentioned).toBe(true);
+      expect(toolExecuted).toBe(true);
     },
 
     /**
