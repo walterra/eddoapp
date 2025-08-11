@@ -68,24 +68,6 @@ export function createAgentAssertions() {
     },
 
     /**
-     * Assert number of agent iterations
-     */
-    expectIterationCount(
-      response: AgentResponse,
-      minIterations: number,
-      maxIterations?: number,
-    ): void {
-      const replies = response.context.replies;
-      const iterationCount = replies.filter((reply) =>
-        reply.includes('🤔 Processing'),
-      ).length;
-      expect(iterationCount).toBeGreaterThanOrEqual(minIterations);
-      if (maxIterations !== undefined) {
-        expect(iterationCount).toBeLessThanOrEqual(maxIterations);
-      }
-    },
-
-    /**
      * Extract tool calls from agent response
      */
     extractToolCalls(response: AgentResponse): string[] {

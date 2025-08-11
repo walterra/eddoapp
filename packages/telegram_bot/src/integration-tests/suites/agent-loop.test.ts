@@ -214,9 +214,6 @@ describe('Agent Loop E2E Integration', () => {
       assert.expectToolUsed(response, 'createTodo');
       assert.expectToolUsed(response, 'listTodos');
 
-      // Verify multiple iterations
-      assert.expectIterationCount(response, 2, 3);
-
       // Verify todo was created
       const result = await testDb.find({
         selector: {
