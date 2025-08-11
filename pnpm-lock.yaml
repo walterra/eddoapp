@@ -302,8 +302,8 @@ importers:
   packages/telegram_bot:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^0.57.0
-        version: 0.57.0
+        specifier: ^0.59.0
+        version: 0.59.0
       '@eddo/core-server':
         specifier: workspace:*
         version: link:../core-server
@@ -504,8 +504,8 @@ packages:
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
 
-  '@anthropic-ai/sdk@0.57.0':
-    resolution: {integrity: sha512-z5LMy0MWu0+w2hflUgj4RlJr1R+0BxKXL7ldXTO8FasU8fu599STghO+QKwId2dAD0d464aHtU+ChWuRHw4FNw==}
+  '@anthropic-ai/sdk@0.59.0':
+    resolution: {integrity: sha512-m9w9tC+N+GUNprwEOhU3VKKSYwXA1fIevRCe7kOFonV4xu5vxqmqyoLy+dkdVvc5W1F4WUTVE/7I4criaF9gnw==}
     hasBin: true
 
   '@asamuzakjp/css-color@3.2.0':
@@ -5291,7 +5291,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@anthropic-ai/sdk@0.57.0': {}
+  '@anthropic-ai/sdk@0.59.0': {}
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
