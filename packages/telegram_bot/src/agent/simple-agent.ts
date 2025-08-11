@@ -3,7 +3,10 @@ import { join } from 'path';
 
 import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
-import { BRIEFING_CONTENT_MARKER, RECAP_CONTENT_MARKER } from '../constants/briefing.js';
+import {
+  BRIEFING_CONTENT_MARKER,
+  RECAP_CONTENT_MARKER,
+} from '../constants/briefing.js';
 import { getMCPClient } from '../mcp/client.js';
 import { extractUserContextForMCP } from '../mcp/user-context.js';
 import { logger } from '../utils/logger.js';
@@ -51,7 +54,16 @@ export class SimpleAgent {
     userMessage: string,
     userId: string,
     telegramContext: BotContext,
-  ): Promise<{ success: boolean; finalResponse?: string; error?: Error }> {
+  ): Promise<{
+    success: boolean;
+    finalResponse?: string;
+    error?: Error;
+    toolResults?: Array<{
+      toolName: string;
+      result: unknown;
+      timestamp: number;
+    }>;
+  }> {
     const startTime = Date.now();
 
     logger.info('Starting simple agent execution', {
@@ -66,12 +78,13 @@ export class SimpleAgent {
       logger.info('Simple agent completed successfully', {
         userId,
         duration,
-        responseLength: result.length,
+        responseLength: result.response.length,
       });
 
       return {
         success: true,
-        finalResponse: result,
+        finalResponse: result.response,
+        toolResults: result.toolResults,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -96,7 +109,17 @@ export class SimpleAgent {
     }
   }
 
-  private async agentLoop(userInput: string, telegramContext: BotContext): Promise<string> {
+  private async agentLoop(
+    userInput: string,
+    telegramContext: BotContext,
+  ): Promise<{
+    response: string;
+    toolResults: Array<{
+      toolName: string;
+      result: unknown;
+      timestamp: number;
+    }>;
+  }> {
     // Get MCP client (initialized at bot startup)
     const mcpClient = this.getMCPClientOrThrow();
 
@@ -132,13 +155,18 @@ export class SimpleAgent {
 
       // MCP server returns an array of content objects with type and text
       if (Array.isArray(serverInfoResult) && serverInfoResult.length > 0) {
-        const textContent = serverInfoResult.find((content) => content.type === 'text');
+        const textContent = serverInfoResult.find(
+          (content) => content.type === 'text',
+        );
         if (textContent?.text) {
           mcpSystemInfo = textContent.text;
-          logger.debug('Retrieved comprehensive server info from MCP content array', {
-            length: textContent.text.length,
-            preview: textContent.text.substring(0, 200) + '...',
-          });
+          logger.debug(
+            'Retrieved comprehensive server info from MCP content array',
+            {
+              length: textContent.text.length,
+              preview: textContent.text.substring(0, 200) + '...',
+            },
+          );
         }
       } else if (typeof serverInfoResult === 'string') {
         // Fallback for direct string response
@@ -149,9 +177,12 @@ export class SimpleAgent {
         });
       }
     } catch (error) {
-      logger.debug('Failed to retrieve server info, falling back to basic tools', {
-        error,
-      });
+      logger.debug(
+        'Failed to retrieve server info, falling back to basic tools',
+        {
+          error,
+        },
+      );
       // Fallback to basic tool list if getServerInfo fails
       mcpSystemInfo = mcpClient.tools
         .map((tool) => `- ${tool.name}: ${tool.description}`)
@@ -200,7 +231,10 @@ export class SimpleAgent {
       // Show typing before LLM call
       await this.showTyping(telegramContext);
 
-      const llmResponse = await claudeService.generateResponse(state.history, systemPrompt);
+      const llmResponse = await claudeService.generateResponse(
+        state.history,
+        systemPrompt,
+      );
 
       state.history.push({
         role: 'assistant',
@@ -225,16 +259,25 @@ export class SimpleAgent {
       if (conversationalPart) {
         try {
           // Check if this is a briefing or recap (contains markers)
-          const hasBriefingMarker = conversationalPart.text.includes(BRIEFING_CONTENT_MARKER);
-          const hasRecapMarker = conversationalPart.text.includes(RECAP_CONTENT_MARKER);
+          const hasBriefingMarker = conversationalPart.text.includes(
+            BRIEFING_CONTENT_MARKER,
+          );
+          const hasRecapMarker =
+            conversationalPart.text.includes(RECAP_CONTENT_MARKER);
 
           // Strip the markers before converting and sending
           let textWithoutMarker = conversationalPart.text;
           if (hasBriefingMarker) {
-            textWithoutMarker = textWithoutMarker.replaceAll(BRIEFING_CONTENT_MARKER, '');
+            textWithoutMarker = textWithoutMarker.replaceAll(
+              BRIEFING_CONTENT_MARKER,
+              '',
+            );
           }
           if (hasRecapMarker) {
-            textWithoutMarker = textWithoutMarker.replaceAll(RECAP_CONTENT_MARKER, '');
+            textWithoutMarker = textWithoutMarker.replaceAll(
+              RECAP_CONTENT_MARKER,
+              '',
+            );
           }
 
           // Convert to Telegram's legacy markdown format if needed
@@ -274,12 +317,14 @@ export class SimpleAgent {
 
             // Check if user has printing enabled in their preferences
             const userWantsPrinting =
-              telegramContext.session?.user?.preferences?.printBriefing === true;
+              telegramContext.session?.user?.preferences?.printBriefing ===
+              true;
 
             logger.info('🔍 User print preference check', {
               iterationId,
               userId: telegramContext.from?.id?.toString(),
-              printBriefing: telegramContext.session?.user?.preferences?.printBriefing,
+              printBriefing:
+                telegramContext.session?.user?.preferences?.printBriefing,
               userWantsPrinting,
               contentType,
             });
@@ -290,7 +335,8 @@ export class SimpleAgent {
                 const printerModule = await import('@eddo/printer-service');
 
                 if (printerModule.appConfig.PRINTER_ENABLED) {
-                  const userId = telegramContext.from?.id?.toString() || 'unknown';
+                  const userId =
+                    telegramContext.from?.id?.toString() || 'unknown';
 
                   logger.info(
                     `🖨️ Attempting to print ${contentType.toLowerCase()} to thermal printer`,
@@ -303,7 +349,8 @@ export class SimpleAgent {
 
                   // Format content for thermal printer (emoji stripping, line wrapping, etc.)
                   // textWithoutMarker already has the marker removed
-                  const formattedContent = printerModule.formatBriefingForPrint(textWithoutMarker);
+                  const formattedContent =
+                    printerModule.formatBriefingForPrint(textWithoutMarker);
 
                   await printerModule.printBriefing({
                     content: formattedContent,
@@ -314,15 +361,22 @@ export class SimpleAgent {
 
                   logger.info(`✅ ${contentType} printed successfully`);
                 } else {
-                  logger.debug('🖨️ Printer globally disabled (PRINTER_ENABLED=false)');
+                  logger.debug(
+                    '🖨️ Printer globally disabled (PRINTER_ENABLED=false)',
+                  );
                 }
               } catch (printerError) {
                 // Don't fail briefing/recap if print fails - just log the error
-                logger.error(`❌ Failed to print ${contentType.toLowerCase()} (non-fatal)`, {
-                  error:
-                    printerError instanceof Error ? printerError.message : String(printerError),
-                  contentType,
-                });
+                logger.error(
+                  `❌ Failed to print ${contentType.toLowerCase()} (non-fatal)`,
+                  {
+                    error:
+                      printerError instanceof Error
+                        ? printerError.message
+                        : String(printerError),
+                    contentType,
+                  },
+                );
               }
             } else {
               logger.debug('🖨️ User has printing disabled, skipping print', {
@@ -352,7 +406,9 @@ export class SimpleAgent {
               logger.error('❌ Failed to send fallback message', {
                 iterationId,
                 fallbackError:
-                  fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+                  fallbackError instanceof Error
+                    ? fallbackError.message
+                    : String(fallbackError),
               });
             }
           }
@@ -421,16 +477,24 @@ export class SimpleAgent {
 
     if (iteration >= maxIterations) {
       logger.warn('Agent loop reached max iterations', { maxIterations });
-      return (
-        state.history[state.history.length - 1]?.content ||
-        'Process completed but exceeded maximum iterations.'
-      );
+      return {
+        response:
+          state.history[state.history.length - 1]?.content ||
+          'Process completed but exceeded maximum iterations.',
+        toolResults: state.toolResults,
+      };
     }
 
-    return state.output || 'Process completed successfully.';
+    return {
+      response: state.output || 'Process completed successfully.',
+      toolResults: state.toolResults,
+    };
   }
 
-  private async logFinalAgentState(state: AgentState, iteration: number): Promise<void> {
+  private async logFinalAgentState(
+    state: AgentState,
+    iteration: number,
+  ): Promise<void> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const logDir = join(process.cwd(), 'logs', 'agent-states');
@@ -520,7 +584,10 @@ export class SimpleAgent {
     };
   }
 
-  private async executeTool(toolCall: ToolCall, telegramContext: BotContext): Promise<unknown> {
+  private async executeTool(
+    toolCall: ToolCall,
+    telegramContext: BotContext,
+  ): Promise<unknown> {
     const mcpClient = this.getMCPClientOrThrow();
 
     const tool = mcpClient.tools.find((t) => t.name === toolCall.name);
@@ -539,7 +606,11 @@ export class SimpleAgent {
     });
 
     // Pass user context to MCP tool invocation
-    const result = await mcpClient.invoke(tool.name, toolCall.parameters, userContext || undefined);
+    const result = await mcpClient.invoke(
+      tool.name,
+      toolCall.parameters,
+      userContext || undefined,
+    );
 
     return result;
   }

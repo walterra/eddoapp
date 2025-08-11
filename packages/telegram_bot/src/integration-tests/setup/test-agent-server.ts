@@ -43,6 +43,7 @@ type BotContext = Context & {
 export interface MockTelegramContext {
   replies: string[];
   chatActions: string[];
+  toolResults?: Array<{ toolName: string; result: unknown; timestamp: number }>;
   reply: (text: string) => Promise<any>;
   replyWithChatAction: (action: string) => Promise<any>;
   from?: {
@@ -91,7 +92,9 @@ export class TestAgentServer {
 
     this.config = {
       mcpServerUrl:
-        config.mcpServerUrl || process.env.MCP_SERVER_URL || `http://localhost:${testPort}/mcp`,
+        config.mcpServerUrl ||
+        process.env.MCP_SERVER_URL ||
+        `http://localhost:${testPort}/mcp`,
       llmModel: config.llmModel || 'claude-3-5-haiku-20241022',
       mockTelegramResponses: config.mockTelegramResponses ?? true,
     };
@@ -108,7 +111,8 @@ export class TestAgentServer {
     // Set up environment variables for MCP client
     process.env.MCP_SERVER_URL = this.config.mcpServerUrl;
     process.env.MCP_API_KEY = this.testApiKey;
-    process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'test-token';
+    process.env.TELEGRAM_BOT_TOKEN =
+      process.env.TELEGRAM_BOT_TOKEN || 'test-token';
     process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'test-key';
 
     // Create test user in the registry
@@ -127,7 +131,9 @@ export class TestAgentServer {
   private async createTestUser(): Promise<void> {
     const couchDbUrl = process.env.COUCHDB_URL;
     if (!couchDbUrl) {
-      throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
+      throw new Error(
+        'COUCHDB_URL not set - testcontainer setup may have failed',
+      );
     }
 
     const env = validateEnv(process.env);
@@ -291,7 +297,17 @@ export class TestAgentServer {
     const mockContext = context || this.createMockContext();
 
     try {
-      const result = await agent.execute(input, userId, mockContext as unknown as BotContext);
+      const result = await agent.execute(
+        input,
+        userId,
+        mockContext as unknown as BotContext,
+      );
+
+      // Capture tool results in mock context
+      if (result.toolResults) {
+        mockContext.toolResults = result.toolResults;
+      }
+
       return {
         success: result.success,
         message: result.finalResponse || 'Agent completed successfully',
@@ -316,7 +332,9 @@ export class TestAgentServer {
   /**
    * List available MCP tools
    */
-  async listTools(): Promise<Array<{ name: string; description: string; inputSchema: unknown }>> {
+  async listTools(): Promise<
+    Array<{ name: string; description: string; inputSchema: unknown }>
+  > {
     const client = this.getMCPClient();
     return client.tools.map((tool) => ({
       name: tool.name,
