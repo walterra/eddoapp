@@ -93,8 +93,19 @@ describe('Agent Loop E2E Integration', () => {
       const todo = result.docs[0];
       expect(todo.title.toLowerCase()).toContain('shopping');
       expect(todo.due).toBeTruthy();
-      // Verify the due date is August 15, 2025 (which is what "next Friday" should resolve to)
-      expect(todo.due).toBe('2025-08-15T23:59:59.999Z');
+
+      // Verify the due date is a Friday in the future
+      const dueDate = new Date(todo.due);
+      const today = new Date();
+      expect(dueDate.getUTCDay()).toBe(5); // Friday (using UTC since the date is stored in UTC)
+      expect(dueDate.getTime()).toBeGreaterThan(today.getTime()); // In the future
+
+      // Verify it's the next Friday or the Friday after (depending on what day today is)
+      const daysDiff = Math.floor(
+        (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      expect(daysDiff).toBeGreaterThanOrEqual(4); // At least 4 days away
+      expect(daysDiff).toBeLessThanOrEqual(11); // At most 11 days away
     });
 
     it('should handle todo creation with specific date', async () => {
