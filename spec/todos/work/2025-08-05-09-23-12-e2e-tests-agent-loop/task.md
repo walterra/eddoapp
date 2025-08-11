@@ -73,7 +73,13 @@ This task focuses on enhancing the existing integration test suite rather than c
    - Ensured mock context includes all required user fields (_id, username, email, telegram_id, database_name, status, permissions, created_at, updated_at)
    - Fixed type mismatches between test SessionData and real BotContext
 
-5. **Test infrastructure working**: After fixes, the integration tests now:
+5. **Fixed invalid user issue**: The MCP server was rejecting tools calls with HTTP 401 "Invalid user". Fixed by:
+   - Added test user creation to `beforeEach` hook using `createTestUserRegistry`
+   - Ensures test user registry database and design documents exist
+   - Creates test user with all required fields matching the test session data
+   - Now successfully registers test users: "✅ Created test user: testuser-{api-key}"
+
+6. **Test infrastructure working**: After fixes, the integration tests now:
    - ✅ Start MCP server successfully on available port
    - ✅ Connect to CouchDB with proper authentication
    - ✅ Establish MCP connection between agent and server
@@ -82,7 +88,8 @@ This task focuses on enhancing the existing integration test suite rather than c
    - ✅ Send proper MCP authentication headers
    - ✅ Begin agent execution with real Claude API calls
    - ✅ Clean up test databases properly after each test
-   - ⏳ Currently getting HTTP 401 "Invalid user (cached)" - test user not in registry
+   - ✅ Create and register test users in user registry during test setup
+   - ⏳ Currently getting HTTP 400 "Database name mismatch in headers"
 
 ### Current Status:
 - Integration test infrastructure is functional and correctly set up
