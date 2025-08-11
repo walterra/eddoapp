@@ -68,14 +68,21 @@ This task focuses on enhancing the existing integration test suite rather than c
    - `beforeAll`: Cleans up orphaned test databases from previous interrupted runs
    - Uses `couch.db.destroy()` to properly delete test databases
 
-4. **Test infrastructure working**: After fixes, the integration tests now:
+4. **Fixed user context authentication issue**: The MCP server was rejecting tool calls with "User context is required for MCP tool invocation". Fixed by:
+   - Added proper `TelegramUser` object to mock session data in test setup
+   - Ensured mock context includes all required user fields (_id, username, email, telegram_id, database_name, status, permissions, created_at, updated_at)
+   - Fixed type mismatches between test SessionData and real BotContext
+
+5. **Test infrastructure working**: After fixes, the integration tests now:
    - ✅ Start MCP server successfully on available port
    - ✅ Connect to CouchDB with proper authentication
    - ✅ Establish MCP connection between agent and server
    - ✅ Discover all 10 MCP tools correctly
+   - ✅ Extract user context properly from mock session
+   - ✅ Send proper MCP authentication headers
    - ✅ Begin agent execution with real Claude API calls
    - ✅ Clean up test databases properly after each test
-   - ⏳ Currently times out waiting for Claude API response (2min timeout)
+   - ⏳ Currently getting HTTP 401 "Invalid user (cached)" - test user not in registry
 
 ### Current Status:
 - Integration test infrastructure is functional and correctly set up
