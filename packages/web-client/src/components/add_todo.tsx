@@ -172,7 +172,7 @@ export const AddTodo: FC<AddTodoProps> = ({
             </Button>
           </div>
         </div>
-        <div className="hidden items-center space-x-0 space-y-3 sm:flex sm:space-x-3 sm:space-y-0">
+        <div className="hidden items-center space-y-3 space-x-0 sm:flex sm:space-y-0 sm:space-x-3">
           <TagFilter
             availableTags={allTags}
             onTagsChange={setSelectedTags}

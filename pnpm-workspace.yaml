@@ -3,6 +3,8 @@ packages:
 
 onlyBuiltDependencies:
   - '@swc/core'
+  - '@tailwindcss/oxide'
   - esbuild
-  - unrs-resolver
   - leveldown
+  - oxc-resolver
+  - unrs-resolver
