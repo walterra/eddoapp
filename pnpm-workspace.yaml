@@ -6,4 +6,5 @@ onlyBuiltDependencies:
   - '@tailwindcss/oxide'
   - esbuild
   - leveldown
+  - oxc-resolver
   - unrs-resolver

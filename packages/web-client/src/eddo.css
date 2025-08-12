@@ -1,6 +1,7 @@
 @import 'tailwindcss';
-
-@config "../tailwind.config.js";
+@plugin "flowbite/plugin";
+@source "../node_modules/flowbite";
+@source "../node_modules/flowbite-react";
 
 :root {
   --background-color: #fff;

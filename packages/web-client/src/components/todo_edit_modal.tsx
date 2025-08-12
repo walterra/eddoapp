@@ -105,7 +105,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
   }, true);
 
   return (
-    <Modal onClose={onClose} show={show}>
+    <Modal onClose={onClose} show={show} size="2xl">
       <ModalHeader>Edit Todo</ModalHeader>
       <ModalBody>
         {error && (
@@ -157,7 +157,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
             </div>
           </div>
         )}
-        <form className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <div>
             <div className="mb-2 block">
               <Label htmlFor="eddoTodoCreationDate">Creation date</Label>
@@ -365,7 +365,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
               </div>
             ))}
           </div>
-        </form>
+        </div>
       </ModalBody>
       <ModalFooter>
         <div className="flex w-full justify-between">
