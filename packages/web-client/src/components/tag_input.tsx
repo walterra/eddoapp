@@ -76,7 +76,7 @@ export const TagInput: FC<TagInputProps> = ({
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-1 rounded-lg border border-gray-300 bg-gray-50 p-2 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700">
+      <div className="focus-within:ring-opacity-50 flex flex-wrap items-center gap-1 rounded-lg border border-gray-300 bg-gray-50 p-2 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
         {tags.map((tag) => (
           <span
             className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300"
