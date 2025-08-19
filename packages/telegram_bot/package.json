@@ -16,7 +16,7 @@
     "@modelcontextprotocol/sdk": "^1.17.1",
     "dotenv-mono": "^1.3.14",
     "fastmcp": "^3.14.4",
-    "grammy": "^1.37.0",
+    "grammy": "^1.38.1",
     "marked": "^16.1.2",
     "uuid": "^11.1.0",
     "winston": "^3.11.0",
