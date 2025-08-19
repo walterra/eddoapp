@@ -19,7 +19,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.12.4",
+    "@types/node": "^24.3.0",
     "dotenv": "^17.2.1",
     "tsx": "^4.19.0",
     "typescript": "~5.8.3",
