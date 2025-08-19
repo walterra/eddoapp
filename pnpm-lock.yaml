@@ -360,8 +360,8 @@ importers:
         specifier: workspace:*
         version: link:../core-server
       '@hono/node-server':
-        specifier: ^1.16.0
-        version: 1.16.0(hono@4.9.0)
+        specifier: ^1.19.0
+        version: 1.19.0(hono@4.9.0)
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -1067,8 +1067,8 @@ packages:
   '@grammyjs/types@3.22.1':
     resolution: {integrity: sha512-QJX0Y8lpjE+/nuTKGmxybKmvdrLHV7gqbhI/UXoWlJLWtowbwk+oW+ngfHKwegD+ewL2SX8+tQo/1E14Ma0qlw==}
 
-  '@hono/node-server@1.16.0':
-    resolution: {integrity: sha512-9LwRb5XOrTFapOABiQjGC50wRVlzUvWZsDHINCnkBniP+Q+LQf4waN0nzk9t+2kqcTsnGnieSmqpHsr6kH2bdw==}
+  '@hono/node-server@1.19.0':
+    resolution: {integrity: sha512-1k8/8OHf5VIymJEcJyVksFpT+AQ5euY0VA5hUkCnlKpD4mr8FSbvXaHblxeTTEr90OaqWzAkQaqD80qHZQKxBA==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
@@ -5671,7 +5671,7 @@ snapshots:
 
   '@grammyjs/types@3.22.1': {}
 
-  '@hono/node-server@1.16.0(hono@4.9.0)':
+  '@hono/node-server@1.19.0(hono@4.9.0)':
     dependencies:
       hono: 4.9.0
 
