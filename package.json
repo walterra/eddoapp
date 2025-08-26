@@ -17,7 +17,7 @@
     "date-fns": "^4.1.0",
     "dotenv-mono": "github:marcocesarato/dotenv-mono#master",
     "events": "^3.3.0",
-    "fastmcp": "^3.14.4",
+    "fastmcp": "^3.15.1",
     "flowbite": "^3.1.2",
     "flowbite-react": "^0.12.7",
     "lodash-es": "^4.17.21",
