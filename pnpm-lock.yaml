@@ -461,8 +461,8 @@ importers:
         specifier: ^6.1.5
         version: 6.1.5
       '@types/pouchdb-find':
-        specifier: ^6.3.7
-        version: 6.3.7
+        specifier: ^7.3.3
+        version: 7.3.3
       '@types/react':
         specifier: ^19.1.11
         version: 19.1.11
@@ -1590,8 +1590,8 @@ packages:
   '@types/pouchdb-core@7.0.15':
     resolution: {integrity: sha512-gq1Qbqn9nCaAKRRv6fRHZ4/ER+QYEwSXBZlDQcxwdbPrtZO8EhIn2Bct0AlguaSEdFcABfbaxxyQwFINkNQ9dQ==}
 
-  '@types/pouchdb-find@6.3.7':
-    resolution: {integrity: sha512-b2dr9xoZRK5Mwl8UiRA9l5j9mmCxNfqXuu63H1KZHwJLILjoIIz7BntCvM0hnlnl7Q8P8wORq0IskuaMq5Nnnw==}
+  '@types/pouchdb-find@7.3.3':
+    resolution: {integrity: sha512-U7zXk67s9Ar+9Pwj5kSbuMnn8zif0AOOIPy4KRFeJ/S/Tk+mNS90soj+3OV21H8xyB7WTxjvS1JLablZC6C6ow==}
 
   '@types/pouchdb-mapreduce@6.1.10':
     resolution: {integrity: sha512-AgYVqCnaA5D7cWkWyzZVuk0137N4yZsmIQTD/i3DmuMxYYoFrtWUoQu0tbA52SpTRGdL8ubQ7JFQXzA13fA6IQ==}
@@ -6057,9 +6057,9 @@ snapshots:
   '@types/pouchdb-core@7.0.15':
     dependencies:
       '@types/debug': 4.1.12
-      '@types/pouchdb-find': 6.3.7
+      '@types/pouchdb-find': 7.3.3
 
-  '@types/pouchdb-find@6.3.7':
+  '@types/pouchdb-find@7.3.3':
     dependencies:
       '@types/pouchdb-core': 7.0.15
 
@@ -6070,7 +6070,7 @@ snapshots:
   '@types/pouchdb-replication@6.4.7':
     dependencies:
       '@types/pouchdb-core': 7.0.15
-      '@types/pouchdb-find': 6.3.7
+      '@types/pouchdb-find': 7.3.3
 
   '@types/react-dom@18.3.7(@types/react@19.1.11)':
     dependencies:
