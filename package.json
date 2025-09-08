@@ -19,7 +19,7 @@
     "events": "^3.3.0",
     "fastmcp": "^3.15.1",
     "flowbite": "^3.1.2",
-    "flowbite-react": "^0.12.7",
+    "flowbite-react": "^0.12.8",
     "lodash-es": "^4.17.21",
     "nano": "^10.1.4",
     "react": "^19.1.1",
