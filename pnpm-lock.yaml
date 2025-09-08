@@ -184,7 +184,7 @@ importers:
         specifier: ^10.9.1
         version: 10.9.2(@swc/core@1.13.5)(@types/node@24.3.0)(typescript@5.9.2)
       tsx:
-        specifier: ^4.20.4
+        specifier: ^4.20.5
         version: 4.20.5
       typescript:
         specifier: ^5.8.3
@@ -293,7 +293,7 @@ importers:
         specifier: ^24.3.0
         version: 24.3.0
       tsx:
-        specifier: ^4.20.4
+        specifier: ^4.20.5
         version: 4.20.5
       typescript:
         specifier: ^5.8.3
@@ -345,7 +345,7 @@ importers:
         specifier: ^9.34.0
         version: 9.34.0(jiti@2.5.1)
       tsx:
-        specifier: ^4.20.4
+        specifier: ^4.20.5
         version: 4.20.5
       typescript:
         specifier: ^5.8.3
@@ -388,7 +388,7 @@ importers:
         specifier: ^17.2.1
         version: 17.2.1
       tsx:
-        specifier: ^4.20.4
+        specifier: ^4.20.5
         version: 4.20.5
       typescript:
         specifier: ~5.8.3
