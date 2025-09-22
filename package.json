@@ -111,6 +111,7 @@
     "backup:verify": "tsx scripts/verify-backup.ts",
     "restore": "tsx scripts/restore.ts",
     "restore:interactive": "tsx scripts/restore-interactive.ts",
+    "restore:ndjson": "tsx scripts/restore-ndjson.ts",
     "replicate": "tsx scripts/replicate.ts",
     "replicate:interactive": "tsx scripts/replicate-interactive.ts",
     "couchdb:cleanup": "tsx scripts/cleanup-interactive.ts",
