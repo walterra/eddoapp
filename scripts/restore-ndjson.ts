@@ -150,7 +150,7 @@ async function bulkInsertDocuments(docs: unknown[], dbName: string, couchConfig:
 /**
  * Main restore function
  */
-async function restoreNdjson(ndjsonFile: string, database?: string, force: boolean = false): Promise<void> {
+async function restoreNdjson(ndjsonFile: string, database?: string, force: boolean = false, append: boolean = false): Promise<void> {
   try {
     // Check file exists first before environment validation
     if (!fs.existsSync(ndjsonFile)) {
@@ -163,7 +163,8 @@ async function restoreNdjson(ndjsonFile: string, database?: string, force: boole
 
     const dbName = database || couchConfig.dbName;
 
-    console.log(`Starting NDJSON restore to database: ${dbName}`);
+    const operation = append ? 'append' : 'restore';
+    console.log(`Starting NDJSON ${operation} to database: ${dbName}`);
     console.log(`Source file: ${ndjsonFile}`);
 
     // Get file size
@@ -173,29 +174,46 @@ async function restoreNdjson(ndjsonFile: string, database?: string, force: boole
     // Check if database exists and has documents
     const { exists, docCount } = await checkDatabaseExists(dbName, env.COUCHDB_URL);
 
-    if (exists && docCount > 0 && !force) {
-      console.error(`Error: Database '${dbName}' already exists and contains ${docCount} documents.`);
-      console.error('This restore operation would overwrite existing data.');
-      console.error('');
-      console.error('To proceed anyway, use the --force parameter:');
-      console.error(`  pnpm restore:ndjson ${ndjsonFile} ${database ? `--database ${database}` : ''} --force`.trim());
-      process.exit(1);
-    }
+    if (append) {
+      // In append mode, database doesn't need to exist, but we'll create it if it doesn't
+      if (exists) {
+        console.log(`Appending to existing database with ${docCount} documents`);
+      } else {
+        console.log(`Database doesn't exist, creating new database for append operation`);
+      }
+    } else {
+      // In restore mode, warn about overwriting existing data
+      if (exists && docCount > 0 && !force) {
+        console.error(`Error: Database '${dbName}' already exists and contains ${docCount} documents.`);
+        console.error('This restore operation would overwrite existing data.');
+        console.error('');
+        console.error('To proceed anyway, use the --force parameter:');
+        console.error(`  pnpm restore:ndjson ${ndjsonFile} ${database ? `--database ${database}` : ''} --force`.trim());
+        console.error('Or use --append to add documents to the existing database:');
+        console.error(`  pnpm restore:ndjson ${ndjsonFile} ${database ? `--database ${database}` : ''} --append`.trim());
+        process.exit(1);
+      }
 
-    if (exists && docCount > 0) {
-      console.log(`Warning: Overwriting existing database with ${docCount} documents (--force was used)`);
+      if (exists && docCount > 0) {
+        console.log(`Warning: Overwriting existing database with ${docCount} documents (--force was used)`);
+      }
     }
 
     // Parse NDJSON file
     const docs = parseNdjsonFile(ndjsonFile);
 
-    // Recreate the database to ensure it's empty
-    await recreateDatabase(dbName, env.COUCHDB_URL);
+    if (!append) {
+      // Only recreate database in restore mode
+      await recreateDatabase(dbName, env.COUCHDB_URL);
+    } else if (!exists) {
+      // In append mode, create database if it doesn't exist
+      await recreateDatabase(dbName, env.COUCHDB_URL);
+    }
 
     // Perform bulk insert
     await bulkInsertDocuments(docs, dbName, couchConfig);
 
-    console.log(`NDJSON restore completed successfully!`);
+    console.log(`NDJSON ${operation} completed successfully!`);
 
     // Verify the restored database
     const { exists: verifyExists, docCount: verifyDocCount } = await checkDatabaseExists(dbName, env.COUCHDB_URL);
@@ -217,6 +235,7 @@ function parseArgs() {
   let ndjsonFile: string | undefined;
   let database: string | undefined;
   let force: boolean = false;
+  let append: boolean = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -225,6 +244,8 @@ function parseArgs() {
       i++; // Skip next argument as it's the value
     } else if (arg === '--force' || arg === '-f') {
       force = true;
+    } else if (arg === '--append' || arg === '-a') {
+      append = true;
     } else if (arg === '--help' || arg === '-h') {
       console.log(`
 Usage: restore-ndjson.ts <ndjson-file> [options]
@@ -235,18 +256,24 @@ Arguments:
 Options:
   -d, --database    Target database name (default: from environment config)
   -f, --force       Force restore even if database exists and has documents
+  -a, --append      Append documents to existing database instead of replacing
   -h, --help        Show this help message
 
 Examples:
   pnpm restore:ndjson ./all-todos.ndjson
   pnpm restore:ndjson ./backup.ndjson --database my-test-db
   pnpm restore:ndjson ./data.ndjson --database todos-backup --force
+  pnpm restore:ndjson ./new-todos.ndjson --database todos-dev --append
 
 NDJSON Format:
   Each line must contain a valid JSON document.
   Example:
     {"_id":"doc1","title":"Task 1","completed":false}
     {"_id":"doc2","title":"Task 2","completed":true}
+
+Notes:
+  --append mode will fail if documents with same _id already exist in database.
+  Use restore mode (default) to replace the entire database contents.
       `);
       process.exit(0);
     } else if (!ndjsonFile && !arg.startsWith('-')) {
@@ -254,12 +281,12 @@ NDJSON Format:
     }
   }
 
-  return { ndjsonFile, database, force };
+  return { ndjsonFile, database, force, append };
 }
 
 // Run restore if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { ndjsonFile, database, force } = parseArgs();
+  const { ndjsonFile, database, force, append } = parseArgs();
 
   if (!ndjsonFile) {
     console.error('Error: NDJSON file argument is required');
@@ -269,7 +296,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  restoreNdjson(ndjsonFile, database, force).catch(console.error);
+  restoreNdjson(ndjsonFile, database, force, append).catch(console.error);
 }
 
 export { restoreNdjson };

@@ -76,3 +76,10 @@ check the format of ./all-todos.ndjson - we need a new command in package.json "
 
 ### File Count Correction:
 The `./all-todos.ndjson` file actually contains **2086 documents** (not 2085 as originally estimated), all successfully restored.
+
+### NEW FEATURE: --append Option
+Added `--append` flag to support adding documents to existing databases instead of replacing:
+- `pnpm restore:ndjson file.ndjson --append` - adds documents to existing database
+- Fails gracefully if documents with same `_id` already exist (document conflicts)
+- Creates new database if target doesn't exist in append mode
+- Improved error messages suggest both `--force` and `--append` options
