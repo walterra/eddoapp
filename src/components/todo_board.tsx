@@ -56,7 +56,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   const [outdatedTodos, setOutdatedTodos] = useState<unknown[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [allTodos, setAllTodos] = useState<Todo[]>([]);
 
   // avoid multiple fetches
   const isFetching = useRef(false);
@@ -150,17 +149,39 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     }
   }
 
-  async function fetchAllTodos() {
+  async function handleDownloadAllTodos() {
     try {
       const resp = await db.allDocs({
         include_docs: true,
-        startkey: 'todo_',
-        endkey: 'todo_\ufff0',
       });
+
       const allTodosData = resp.rows
         .map((row) => row.doc)
-        .filter((doc) => doc && isLatestVersion(doc)) as Todo[];
-      setAllTodos(allTodosData);
+        .filter((doc) => {
+          if (!doc || !doc._id) return false;
+          const docAny = doc as any;
+          const isTodo = docAny.title && docAny.due && typeof docAny.title === 'string';
+          return isTodo && isLatestVersion(doc);
+        }) as Todo[];
+
+      if (allTodosData.length === 0) {
+        console.warn('No todos found to export');
+        return;
+      }
+
+      const ndjsonContent = allTodosData.map((todo) => JSON.stringify(todo)).join('\n');
+
+      const blob = new Blob([ndjsonContent], { type: 'application/x-ndjson' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'all-todos.ndjson';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
     } catch (e) {
       console.error('not able to fetch all todos', e);
     }
@@ -228,7 +249,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
 
     fetchTodos();
     fetchTimeTrackingActive();
-    fetchAllTodos();
   }, [currentCalendarWeek, isInitialized]);
 
   useEffect(() => {
@@ -296,10 +316,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   const dataStr =
     'data:text/json;charset=utf-8,' +
     encodeURIComponent(JSON.stringify(todos, null, 2));
-
-  const ndjsonStr =
-    'data:application/x-ndjson;charset=utf-8,' +
-    encodeURIComponent(allTodos.map((todo) => JSON.stringify(todo)).join('\n'));
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
@@ -425,9 +441,12 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
         <a download="todos.json" href={dataStr}>
           download json
         </a>
-        <a download="all-todos.ndjson" href={ndjsonStr}>
+        <button
+          className="text-blue-600 hover:text-blue-800 underline"
+          onClick={handleDownloadAllTodos}
+        >
           download all todos as ndjson
-        </a>
+        </button>
       </div>
     </div>
   );
