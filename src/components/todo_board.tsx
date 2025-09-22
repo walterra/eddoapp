@@ -56,6 +56,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   const [outdatedTodos, setOutdatedTodos] = useState<unknown[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [allTodos, setAllTodos] = useState<Todo[]>([]);
 
   // avoid multiple fetches
   const isFetching = useRef(false);
@@ -149,6 +150,22 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
     }
   }
 
+  async function fetchAllTodos() {
+    try {
+      const resp = await db.allDocs({
+        include_docs: true,
+        startkey: 'todo_',
+        endkey: 'todo_\ufff0',
+      });
+      const allTodosData = resp.rows
+        .map((row) => row.doc)
+        .filter((doc) => doc && isLatestVersion(doc)) as Todo[];
+      setAllTodos(allTodosData);
+    } catch (e) {
+      console.error('not able to fetch all todos', e);
+    }
+  }
+
   async function fetchTodos() {
     if (isFetching.current) {
       shouldFetch.current = true;
@@ -211,6 +228,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
 
     fetchTodos();
     fetchTimeTrackingActive();
+    fetchAllTodos();
   }, [currentCalendarWeek, isInitialized]);
 
   useEffect(() => {
@@ -278,6 +296,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
   const dataStr =
     'data:text/json;charset=utf-8,' +
     encodeURIComponent(JSON.stringify(todos, null, 2));
+
+  const ndjsonStr =
+    'data:application/x-ndjson;charset=utf-8,' +
+    encodeURIComponent(allTodos.map((todo) => JSON.stringify(todo)).join('\n'));
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
@@ -399,9 +421,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate }) => {
           </div>
         </div>
       </div>
-      <a download="todos.json" href={dataStr}>
-        download json
-      </a>
+      <div className="flex space-x-4 p-4">
+        <a download="todos.json" href={dataStr}>
+          download json
+        </a>
+        <a download="all-todos.ndjson" href={ndjsonStr}>
+          download all todos as ndjson
+        </a>
+      </div>
     </div>
   );
 };
