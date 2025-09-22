@@ -6,33 +6,43 @@
  */
 
 import fs from 'fs';
+import { dotenvLoad } from 'dotenv-mono';
 import couchbackup from '@cloudant/couchbackup';
 import { validateEnv, getCouchDbConfig } from '@eddo/core-server/config';
-import { 
-  ensureBackupDir, 
-  generateBackupFilename, 
+import {
+  ensureBackupDir,
+  generateBackupFilename,
   formatFileSize,
   createBackupOptions,
   DEFAULT_CONFIG
 } from './backup-utils.js';
 
+// Load environment variables
+dotenvLoad();
+
 // Additional backup-specific configuration
 const BACKUP_DIR = process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir;
 
-async function backup(): Promise<void> {
+async function backup(database?: string): Promise<void> {
   try {
     // Environment configuration using shared validation
     const env = validateEnv(process.env);
     const couchConfig = getCouchDbConfig(env);
 
+    // Use provided database or default from config
+    const dbName = database || couchConfig.dbName;
+
     // Ensure backup directory exists
     ensureBackupDir(BACKUP_DIR);
 
     // Generate backup filename with timestamp
-    const backupFile = generateBackupFilename(couchConfig.dbName, BACKUP_DIR);
+    const backupFile = generateBackupFilename(dbName, BACKUP_DIR);
 
-    console.log(`Starting backup of ${couchConfig.dbName} database...`);
-    console.log(`Source: ${couchConfig.fullUrl}`);
+    // Build the full database URL
+    const dbUrl = couchConfig.url + '/' + dbName;
+
+    console.log(`Starting backup of ${dbName} database...`);
+    console.log(`Source: ${dbUrl}`);
     console.log(`Destination: ${backupFile}`);
 
     const writeStream = fs.createWriteStream(backupFile);
@@ -43,7 +53,7 @@ async function backup(): Promise<void> {
 
     await new Promise<void>((resolve, reject) => {
       couchbackup.backup(
-        couchConfig.fullUrl,
+        dbUrl,
         writeStream,
         options,
         (err: Error | null, data?: unknown) => {
@@ -119,8 +129,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (args.backupDir) {
     process.env.BACKUP_DIR = args.backupDir;
   }
-  
-  backup().catch(console.error);
+
+  backup(args.database).catch(console.error);
 }
 
 export { backup };
