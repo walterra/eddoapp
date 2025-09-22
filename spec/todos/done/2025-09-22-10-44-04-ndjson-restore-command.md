@@ -1,6 +1,6 @@
 # check the format of ./all-todos.ndjson - we need a new command in package.json "pnpm restore:ndjson <filename>" that is able to restore this file format into a db.
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-09-22T10:44:04
 **Started:** 2025-09-22T10:44:04
 **Agent PID:** 57223
