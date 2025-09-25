@@ -230,132 +230,38 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       let newTodos: (Todo | unknown)[] = [];
       let newActivities: Activity[] = [];
 
-      // Check if we need advanced filtering (contexts, status, or time range other than current week)
-      const needsAdvancedFiltering =
-        selectedContexts.length > 0 ||
-        selectedStatus !== 'all' ||
-        selectedTimeRange.type !== 'current-week';
-
-      if (needsAdvancedFiltering && rawDb) {
-        try {
-          // Build selector for todos
-          const todoSelector: Record<string, unknown> = { version: 'alpha3' };
-
-          // Add date filtering
-          if (dateRange) {
-            todoSelector.due = {
-              $gte: dateRange.startDate,
-              $lte: dateRange.endDate,
-            };
-          }
-
-          // Add context filtering
-          if (selectedContexts.length > 0) {
-            todoSelector.context = { $in: selectedContexts };
-          }
-
-          // Add completion status filtering
-          if (selectedStatus !== 'all') {
-            if (selectedStatus === 'completed') {
-              todoSelector.completed = { $ne: null };
-            } else if (selectedStatus === 'incomplete') {
-              todoSelector.completed = null;
-            }
-          }
-
-          // Choose optimal index
-          let use_index = 'version-due-index';
-          if (selectedContexts.length > 0 && selectedStatus !== 'all') {
-            use_index = 'version-context-completed-due-index';
-          } else if (selectedContexts.length > 0) {
-            use_index = 'version-context-due-index';
-          } else if (selectedStatus !== 'all') {
-            use_index = 'version-completed-due-index';
-          }
-
-          const todoResult = await rawDb.find({
-            selector: todoSelector,
-            sort: [{ due: 'asc' }],
-            use_index,
-          });
-
-          newTodos = todoResult.docs;
-        } catch (mangoError) {
-          console.warn(
-            'Mango query failed, falling back to traditional query:',
-            mangoError,
-          );
-          // Fall back to traditional query for current week
-          const fallbackDateRange = dateRange || {
-            startDate: add(startOfWeek(currentDate, { weekStartsOn: 1 }), {
-              hours: 2,
-            }).toISOString(),
-            endDate: add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
-              hours: 2,
-            }).toISOString(),
-          };
-
-          newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-            descending: false,
-            endkey: fallbackDateRange.endDate,
-            include_docs: false,
-            startkey: fallbackDateRange.startDate,
-          });
-        }
-      } else {
-        // Use traditional query for simple current week filtering (preserves existing behavior)
-        const currentStartOfWeek = add(
-          startOfWeek(currentDate, { weekStartsOn: 1 }),
-          { hours: 2 },
-        );
-        const currentEndOfWeek = add(
-          endOfWeek(currentDate, { weekStartsOn: 1 }),
-          {
-            hours: 2,
-          },
-        );
-
+      // Use single reliable approach: traditional query + client-side filtering
+      if (dateRange) {
+        // Query by date range (current week, month, year, or custom range)
         newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
           descending: false,
-          endkey: currentEndOfWeek.toISOString(),
+          endkey: dateRange.endDate,
           include_docs: false,
-          startkey: currentStartOfWeek.toISOString(),
+          startkey: dateRange.startDate,
+        });
+      } else {
+        // All-time query - get all todos
+        newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
+          descending: false,
+          include_docs: false,
         });
       }
 
-      // For activities, handle both advanced filtering and traditional current week
+      // Query activities using same approach as todos
       console.time('fetchActivities');
-      if (needsAdvancedFiltering && dateRange) {
+      if (dateRange) {
+        // Query activities by date range
         newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
           descending: false,
           endkey: dateRange.endDate,
           include_docs: false,
           startkey: dateRange.startDate,
         });
-      } else if (needsAdvancedFiltering && !dateRange) {
-        // For all-time view, get all activities
-        newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
-          descending: false,
-          include_docs: false,
-        });
       } else {
-        // Traditional current week activities query
-        const currentStartOfWeek = add(
-          startOfWeek(currentDate, { weekStartsOn: 1 }),
-          { hours: 2 },
-        );
-        const currentEndOfWeek = add(
-          endOfWeek(currentDate, { weekStartsOn: 1 }),
-          {
-            hours: 2,
-          },
-        );
-
+        // All-time query - get all activities
         newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
           descending: false,
-          endkey: currentEndOfWeek.toISOString(),
           include_docs: false,
-          startkey: currentStartOfWeek.toISOString(),
         });
       }
       console.timeEnd('fetchActivities');
