@@ -3,7 +3,6 @@ import {
   type Todo,
   getFormattedDurationForActivities,
   isLatestVersion,
-  migrateTodo,
 } from '@eddo/core-client';
 import { group } from 'd3-array';
 import {
@@ -50,6 +49,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   const { safeDb, rawDb } = usePouchDb();
   const [outdatedTodos, setOutdatedTodos] = useState<Todo[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // avoid multiple fetches with debouncing
+  const isFetching = useRef(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // check integrity, e.g. if design docs are present
   const [isInitialized, setIsInitialized] = useState(false);
   // TODO The 'add' is a CEST quick fix
@@ -136,10 +140,33 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   }, [isInitialized, safeDb, rawDb]);
 
   useEffect(() => {
-    if (!isInitialized || outdatedTodos.length === 0) return;
+    console.log('🎯 useEffect triggered for fetchTodos', {
+      isInitialized,
+      currentDate: currentDate.toISOString(),
+      changeCount,
+      selectedTimeRange: selectedTimeRange.type,
+      selectedContexts: selectedContexts.length,
+      selectedStatus,
+      selectedTags: selectedTags.length,
+    });
 
-    fetchTodos();
-    fetchTimeTrackingActive();
+    if (!isInitialized || outdatedTodos.length === 0) {
+      console.log('⏸️ Skipping fetch - not initialized');
+      return;
+    }
+
+    console.log('⏰ Debouncing fetch request...');
+
+    // Clear any existing timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    // Set a new timeout to debounce the fetch
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchTodos();
+      fetchTimeTrackingActive();
+    }, 100);
   }, [
     currentDate,
     isInitialized,
@@ -166,56 +193,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     }
   }, [safeDb]);
 
-  const getDateRange = useCallback(() => {
-    const currentStartOfWeek = add(
-      startOfWeek(currentDate, { weekStartsOn: 1 }),
-      { hours: 2 },
-    );
-    const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
-      hours: 2,
+  const fetchTodos = useCallback(async () => {
+    console.log('🔄 fetchTodos called', {
+      isFetching: isFetching.current,
+      timestamp: new Date().toISOString(),
     });
 
-    switch (selectedTimeRange.type) {
-      case 'current-week':
-        return {
-          startDate: currentStartOfWeek.toISOString(),
-          endDate: currentEndOfWeek.toISOString(),
-        };
-      case 'current-month':
-        return {
-          startDate: add(startOfMonth(currentDate), { hours: 2 }).toISOString(),
-          endDate: add(endOfMonth(currentDate), { hours: 2 }).toISOString(),
-        };
-      case 'current-year':
-        return {
-          startDate: add(startOfYear(currentDate), { hours: 2 }).toISOString(),
-          endDate: add(endOfYear(currentDate), { hours: 2 }).toISOString(),
-        };
-      case 'custom':
-        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
-          return {
-            startDate: new Date(
-              selectedTimeRange.startDate + 'T00:00:00',
-            ).toISOString(),
-            endDate: new Date(
-              selectedTimeRange.endDate + 'T23:59:59',
-            ).toISOString(),
-          };
-        }
-        return null;
-      case 'all-time':
-        return null;
-      default:
-        return {
-          startDate: currentStartOfWeek.toISOString(),
-          endDate: currentEndOfWeek.toISOString(),
-        };
-    }
-  }, [currentDate, selectedTimeRange]);
-
-  const fetchTodos = useCallback(async () => {
     if (isFetching.current) {
-      shouldFetch.current = true;
+      console.log('⏳ Already fetching, skipping duplicate request');
       return;
     }
 
@@ -224,76 +209,129 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     setError(null);
 
     try {
-      console.time('fetchTodos');
+      console.time('fetchTodos-total');
 
-      const dateRange = getDateRange();
+      // Calculate date range inline to avoid dependency issues
+      const currentStartOfWeek = add(
+        startOfWeek(currentDate, { weekStartsOn: 1 }),
+        { hours: 2 },
+      );
+      const currentEndOfWeek = add(
+        endOfWeek(currentDate, { weekStartsOn: 1 }),
+        {
+          hours: 2,
+        },
+      );
+
+      let dateRange = null;
+      switch (selectedTimeRange.type) {
+        case 'current-week':
+          dateRange = {
+            startDate: currentStartOfWeek.toISOString(),
+            endDate: currentEndOfWeek.toISOString(),
+          };
+          break;
+        case 'current-month':
+          dateRange = {
+            startDate: add(startOfMonth(currentDate), {
+              hours: 2,
+            }).toISOString(),
+            endDate: add(endOfMonth(currentDate), { hours: 2 }).toISOString(),
+          };
+          break;
+        case 'current-year':
+          dateRange = {
+            startDate: add(startOfYear(currentDate), {
+              hours: 2,
+            }).toISOString(),
+            endDate: add(endOfYear(currentDate), { hours: 2 }).toISOString(),
+          };
+          break;
+        case 'custom':
+          if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+            dateRange = {
+              startDate: new Date(
+                selectedTimeRange.startDate + 'T00:00:00',
+              ).toISOString(),
+              endDate: new Date(
+                selectedTimeRange.endDate + 'T23:59:59',
+              ).toISOString(),
+            };
+          }
+          break;
+        case 'all-time':
+          dateRange = null;
+          break;
+        default:
+          dateRange = {
+            startDate: currentStartOfWeek.toISOString(),
+            endDate: currentEndOfWeek.toISOString(),
+          };
+      }
       let newTodos: (Todo | unknown)[] = [];
       let newActivities: Activity[] = [];
 
-      console.log('fetchTodos DEBUG:', {
+      console.log('📅 Date Range Calculated:', {
+        currentDate: currentDate.toISOString(),
         dateRange: dateRange
           ? `${dateRange.startDate} to ${dateRange.endDate}`
           : 'ALL-TIME',
         selectedTimeRange: selectedTimeRange.type,
+        weekNumber: format(currentDate, 'w'),
+        year: format(currentDate, 'yyyy'),
+        startOfWeekRaw: startOfWeek(currentDate, {
+          weekStartsOn: 1,
+        }).toISOString(),
+        endOfWeekRaw: endOfWeek(currentDate, { weekStartsOn: 1 }).toISOString(),
       });
 
-      // Use single reliable approach: traditional query + client-side filtering
-      if (dateRange) {
-        console.time('todos-date-range-query');
-        // Query by date range (current week, month, year, or custom range)
-        newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-          descending: false,
-          endkey: dateRange.endDate,
-          include_docs: false,
-          startkey: dateRange.startDate,
-        });
-        console.timeEnd('todos-date-range-query');
-        console.log(
-          `todos-date-range-query returned ${newTodos.length} results`,
-        );
-      } else {
-        console.time('todos-all-time-query');
-        // All-time query - get all todos
-        newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-          descending: false,
-          include_docs: false,
-        });
-        console.timeEnd('todos-all-time-query');
-        console.log(`todos-all-time-query returned ${newTodos.length} results`);
-      }
+      // Use parallel queries for better performance
+      console.time('parallel-queries');
 
-      // Query activities using same approach as todos
-      console.time('fetchActivities');
-      if (dateRange) {
-        // Query activities by date range
-        newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
-          descending: false,
-          endkey: dateRange.endDate,
-          include_docs: false,
-          startkey: dateRange.startDate,
-        });
-      } else {
-        // All-time query - get all activities
-        newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
-          descending: false,
-          include_docs: false,
-        });
-      }
-      console.timeEnd('fetchActivities');
+      const [todosResult, activitiesResult] = await Promise.all([
+        // Query todos
+        dateRange
+          ? safeDb.safeQuery<Todo>('todos', 'byDueDate', {
+              descending: false,
+              endkey: dateRange.endDate,
+              include_docs: false,
+              startkey: dateRange.startDate,
+            })
+          : safeDb.safeQuery<Todo>('todos', 'byDueDate', {
+              descending: false,
+              include_docs: false,
+            }),
 
-      console.timeEnd('fetchTodos');
+        // Query activities
+        dateRange
+          ? safeDb.safeQuery<Activity>('todos', 'byActive', {
+              descending: false,
+              endkey: dateRange.endDate,
+              include_docs: false,
+              startkey: dateRange.startDate,
+            })
+          : safeDb.safeQuery<Activity>('todos', 'byActive', {
+              descending: false,
+              include_docs: false,
+            }),
+      ]);
 
-      console.time('setOutdatedTodos');
+      newTodos = todosResult;
+      newActivities = activitiesResult;
+
+      console.timeEnd('parallel-queries');
+      console.log(
+        `✅ Parallel queries returned ${newTodos.length} todos and ${newActivities.length} activities`,
+      );
+
+      console.time('state-updates');
+      console.log('🔄 Setting state...');
       setOutdatedTodos([]); // Views now filter by version - no outdated docs returned
-      console.timeEnd('setOutdatedTodos');
-
-      console.time('setTodos');
       setTodos(newTodos as Todo[]); // Views ensure only alpha3 docs are returned
-      console.timeEnd('setTodos');
-
-      console.time('setActivities');
       setActivities(newActivities);
-      console.timeEnd('setActivities');
+      console.timeEnd('state-updates');
+
+      console.timeEnd('fetchTodos-total');
     } catch (err) {
       console.error('Failed to fetch todos:', err);
       setError(err as DatabaseError);
@@ -304,17 +342,17 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         console.log('Working in offline mode');
       }
     } finally {
+      console.log('🏁 fetchTodos completing', {
+        timestamp: new Date().toISOString(),
+      });
+
       isFetching.current = false;
       setIsLoading(false);
-      if (shouldFetch.current) {
-        shouldFetch.current = false;
-        fetchTodos();
-      }
     }
   }, [
     safeDb,
     rawDb,
-    getDateRange,
+    currentDate,
     selectedContexts,
     selectedStatus,
     selectedTimeRange,
@@ -324,17 +362,16 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   useEffect(() => {
     if (!isInitialized) return;
 
-    // disabled for now
-    return;
-
-    (async () => {
-      try {
-        await safeDb.safeBulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
-      } catch (err) {
-        console.error('Failed to migrate outdated todos:', err);
-        setError(err as DatabaseError);
-      }
-    })();
+    // Migration disabled for now
+    // TODO: Re-enable when needed
+    // (async () => {
+    //   try {
+    //     await safeDb.safeBulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
+    //   } catch (err) {
+    //     console.error('Failed to migrate outdated todos:', err);
+    //     setError(err as DatabaseError);
+    //   }
+    // })();
   }, [outdatedTodos, isInitialized, safeDb]);
 
   const filteredTodos = useMemo(() => {
@@ -405,7 +442,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
       return true;
     });
-  }, [activities, selectedTags, selectedContexts, selectedStatus]);
+  }, [activities, selectedContexts, selectedStatus, selectedTags]);
 
   const groupedByContextByDate = useMemo(() => {
     const grouped = Array.from(
