@@ -420,16 +420,39 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   }, [activities, todos]);
 
   const filteredTodos = useMemo(() => {
-    if (selectedTags.length === 0) {
-      return todos;
+    let filtered = todos;
+
+    // Apply client-side filtering as fallback/additional filtering
+    // Context filtering (if not handled by database query)
+    if (selectedContexts.length > 0) {
+      filtered = filtered.filter((todo) => {
+        return selectedContexts.includes(todo.context || CONTEXT_DEFAULT);
+      });
     }
 
-    return todos.filter((todo) => {
-      return selectedTags.some((selectedTag) =>
-        todo.tags.includes(selectedTag),
-      );
-    });
-  }, [todos, selectedTags]);
+    // Status filtering (if not handled by database query)
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter((todo) => {
+        if (selectedStatus === 'completed') {
+          return todo.completed !== null;
+        } else if (selectedStatus === 'incomplete') {
+          return todo.completed === null;
+        }
+        return true;
+      });
+    }
+
+    // Tag filtering
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((todo) => {
+        return selectedTags.some((selectedTag) =>
+          todo.tags.includes(selectedTag),
+        );
+      });
+    }
+
+    return filtered;
+  }, [todos, selectedTags, selectedContexts, selectedStatus]);
 
   const groupedByContextByDate = useMemo(() => {
     const grouped = Array.from(
