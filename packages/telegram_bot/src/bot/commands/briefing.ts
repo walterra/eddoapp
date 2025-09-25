@@ -6,6 +6,7 @@ import {
   TelegramUser,
   lookupUserByTelegramId,
 } from '../../utils/user-lookup.js';
+import type { BotContext } from '../bot.js';
 import { handleMessage } from '../handlers/message.js';
 
 /**
@@ -234,7 +235,7 @@ async function generateBriefingNow(
         'Generate a daily briefing for me including todays tasks, overdue items, next actions, waiting items, and active time tracking.';
     }
 
-    await handleMessage(ctx as any); // Type cast for briefing context
+    await handleMessage(ctx as BotContext); // Type cast for briefing context
 
     logger.info('On-demand briefing generated via agent', {
       userId: user._id,

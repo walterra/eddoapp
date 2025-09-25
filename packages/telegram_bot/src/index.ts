@@ -68,7 +68,6 @@ async function main(): Promise<void> {
     logger.info('Initializing daily briefing scheduler...');
     const dailyBriefingScheduler = createDailyBriefingScheduler({
       bot,
-      mcpClient,
       briefingHour: 7, // 7 AM
       checkIntervalMs: 60 * 1000, // Check every minute
     });

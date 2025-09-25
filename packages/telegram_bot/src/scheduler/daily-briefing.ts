@@ -3,21 +3,17 @@ import type { Bot } from 'grammy';
 
 import { SimpleAgent } from '../agent/simple-agent.js';
 import type { BotContext } from '../bot/bot.js';
-import type { MCPClient } from '../mcp/client.js';
-import { extractUserContextForMCP } from '../mcp/user-context.js';
 import { logger } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 
 interface DailyBriefingSchedulerConfig {
   bot: Bot<BotContext>;
-  mcpClient: MCPClient;
   briefingHour: number; // Hour in 24-hour format (e.g., 7 for 7 AM)
   checkIntervalMs: number; // How often to check for briefing time
 }
 
 export class DailyBriefingScheduler {
   private bot: Bot<BotContext>;
-  private mcpClient: MCPClient;
   private briefingHour: number;
   private checkIntervalMs: number;
   private intervalId: NodeJS.Timeout | null = null;
@@ -26,7 +22,6 @@ export class DailyBriefingScheduler {
 
   constructor(config: DailyBriefingSchedulerConfig) {
     this.bot = config.bot;
-    this.mcpClient = config.mcpClient;
     this.briefingHour = config.briefingHour;
     this.checkIntervalMs = config.checkIntervalMs;
 
@@ -179,7 +174,7 @@ export class DailyBriefingScheduler {
       const mockContext = {
         from: { id: user.telegram_id },
         message: { text: briefingRequestMessage },
-      } as any; // Type assertion for simplified mock
+      } as BotContext; // Type assertion for simplified mock
 
       const result = await agent.execute(
         briefingRequestMessage,
