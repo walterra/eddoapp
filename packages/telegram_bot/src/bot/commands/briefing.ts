@@ -1,6 +1,7 @@
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { Context } from 'grammy';
 
+import { DAILY_BRIEFING_REQUEST_MESSAGE } from '../../constants/briefing.js';
 import { logger } from '../../utils/logger.js';
 import {
   TelegramUser,
@@ -231,8 +232,7 @@ async function generateBriefingNow(
 
     // Use the agent to generate a briefing by modifying the context message
     if (ctx.message) {
-      ctx.message.text =
-        'Generate a daily briefing for me including todays tasks, overdue items, next actions, waiting items, and active time tracking.';
+      ctx.message.text = DAILY_BRIEFING_REQUEST_MESSAGE;
     }
 
     await handleMessage(ctx as BotContext); // Type cast for briefing context

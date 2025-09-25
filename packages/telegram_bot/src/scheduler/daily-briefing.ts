@@ -3,6 +3,7 @@ import type { Bot } from 'grammy';
 
 import { SimpleAgent } from '../agent/simple-agent.js';
 import type { BotContext } from '../bot/bot.js';
+import { DAILY_BRIEFING_REQUEST_MESSAGE } from '../constants/briefing.js';
 import { logger } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 
@@ -167,8 +168,7 @@ export class DailyBriefingScheduler {
       // Generate briefing content using the agent
       const agent = new SimpleAgent();
 
-      const briefingRequestMessage =
-        'Generate a daily briefing for me including todays tasks, overdue items, next actions, waiting items, and active time tracking.';
+      const briefingRequestMessage = DAILY_BRIEFING_REQUEST_MESSAGE;
 
       // Create a minimal bot context for the agent
       const mockContext = {

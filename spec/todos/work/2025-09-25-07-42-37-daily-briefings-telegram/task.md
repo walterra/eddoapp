@@ -1,6 +1,6 @@
 # daily briefings via telegram-bot (cron-like)
 
-**Status:** In Progress
+**Status:** In Progress - Ready for Testing
 **Created:** 2025-09-25T07:42:37Z
 **Started:** 2025-09-25T07:43:15Z
 **Agent PID:** 57223
@@ -43,14 +43,14 @@ The implementation follows the project's functional patterns and integrates with
 - [x] Add briefing toggle telegram commands (packages/telegram_bot/src/bot/commands/briefing.ts)
 - [x] Initialize scheduler in bot startup (packages/telegram_bot/src/index.ts)
 - [x] Test user registry alpha2 migration (fixed TypeScript compilation issues)
-- [ ] Test preferences API endpoints
-- [ ] Test scheduler timing logic
-- [ ] Test briefing generation with sample data
-- [ ] Test telegram commands for briefing toggle
-- [ ] Test web UI preferences toggle works
+- [x] Test preferences API endpoints (✅ API calls successful, toggle visible and functional)
+- [x] Test web UI preferences toggle works (✅ Toggle fixed and working, API integration confirmed)
 - [ ] Test `/briefing on` and `/briefing off` telegram commands
+- [ ] Test `/briefing now` command with real user data
+- [ ] Test scheduler timing logic
+- [ ] Test briefing generation content accuracy
 - [ ] Test 7 AM briefing delivery (simulate time change)
-- [ ] Verify briefing content accuracy with sample todos
+- [ ] Test cross-platform sync (web UI ↔ telegram commands)
 
 ## Review
 
