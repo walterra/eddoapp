@@ -16,6 +16,7 @@ export const TagInput: FC<TagInputProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const filteredSuggestions = suggestions.filter(
     (suggestion) =>
@@ -64,7 +65,9 @@ export const TagInput: FC<TagInputProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
+        !inputRef.current.contains(event.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
       }
@@ -109,7 +112,10 @@ export const TagInput: FC<TagInputProps> = ({
       </div>
 
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <div className="absolute top-full z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
+        <div
+          className="absolute top-full z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+          ref={suggestionsRef}
+        >
           {filteredSuggestions.slice(0, 5).map((suggestion) => (
             <button
               className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600"

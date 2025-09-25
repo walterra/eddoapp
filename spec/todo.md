@@ -1,4 +1,3 @@
-- the tags UI is buggy. when selecting a tag from the autocomplete dropdown, it doesn't update the input and create the tag.
 - proper timezone support
 - the gtd tags like `gtd:next` should be a `gtd` attribute on todos just like context and be stored just `next`, will trigger creating TodoAlpha5
 - peristent chat history for telegram-bot

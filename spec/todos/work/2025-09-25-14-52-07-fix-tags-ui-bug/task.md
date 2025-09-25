@@ -1,0 +1,61 @@
+# the tags UI is buggy. when selecting a tag from the autocomplete dropdown, it doesn't update the input and create the tag.
+
+**Status:** In Progress
+**Created:** 2025-09-25T14:52:07Z
+**Started:** 2025-09-25T14:52:54Z
+**Agent PID:** 57223
+
+## Original Todo
+
+- the tags UI is buggy. when selecting a tag from the autocomplete dropdown, it doesn't update the input and create the tag.
+
+## Description
+
+The TagInput component has a broken click-to-select functionality in the autocomplete dropdown. While users can type tags and use the Enter key to add them, clicking on autocomplete suggestions doesn't work properly. The component shows filtered tag suggestions in a dropdown, but when users click on a suggestion, it doesn't update the input field or add the selected tag.
+
+**Current Issue:** There's a skipped test in the codebase (`it.skip('adds tag when suggestion is clicked')`) that confirms this functionality is not working. The `handleSuggestionClick()` method exists but appears to have an implementation issue.
+
+**Expected Behavior:** When a user clicks on any suggestion in the autocomplete dropdown, it should:
+1. Add the selected tag to the tags array
+2. Clear the input field
+3. Hide the dropdown
+4. Focus back on the input for continued tag entry
+
+## Success Criteria
+
+**Functional:**
+- [ ] Clicking autocomplete suggestions adds selected tag and clears input
+- [ ] Works in both Add Todo form and Edit Todo modal
+- [ ] No duplicate tags added via click selection
+
+**Quality:**
+- [ ] Previously skipped test `adds tag when suggestion is clicked` passes
+- [ ] All existing tests pass
+- [ ] TypeScript and linting checks pass
+
+**User Validation:**
+- [ ] Manual test: Click selection works in Add Todo form
+- [ ] Manual test: Click selection works in Edit Todo modal
+- [ ] Manual test: Keyboard navigation still works alongside click
+
+## Implementation Plan
+
+**The Problem:** The click-outside handler is firing before the suggestion click handler can execute, causing the suggestions dropdown to close prematurely and preventing tag addition.
+
+**Root Cause:** The click-outside handler only checks if the clicked element is within `inputRef.current`, but the suggestions dropdown is rendered as a sibling element, not a child. This causes clicks on suggestions to be treated as "outside clicks."
+
+**Code Changes:**
+
+- [x] Add ref for suggestions container in TagInput component (`packages/web-client/src/components/tag_input.tsx:25-35`)
+- [x] Update click-outside handler to check both input and suggestions container (`packages/web-client/src/components/tag_input.tsx:63-75`)
+- [x] Attach suggestions container ref to suggestions dropdown div (`packages/web-client/src/components/tag_input.tsx:112`)
+
+**Tests:**
+- [x] Unskip the test `adds tag when suggestion is clicked` (`packages/web-client/src/components/tag_input.test.tsx:198`)
+- [x] Run test suite to ensure no regressions
+- [x] Run TypeScript and linting checks
+
+**User Testing:**
+- [ ] Manual test: Click suggestions in Add Todo form works correctly
+- [ ] Manual test: Click suggestions in Edit Todo modal works correctly
+- [ ] Manual test: Verify keyboard navigation still works alongside click

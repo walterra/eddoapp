@@ -195,7 +195,7 @@ describe('TagInput', () => {
       expect(workSuggestion).toBeUndefined();
     });
 
-    it.skip('adds tag when suggestion is clicked', async () => {
+    it('adds tag when suggestion is clicked', async () => {
       const user = userEvent.setup();
 
       render(
