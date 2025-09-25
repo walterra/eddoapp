@@ -6,6 +6,7 @@ import {
   TelegramUser,
   lookupUserByTelegramId,
 } from '../../utils/user-lookup.js';
+import { handleMessage } from '../handlers/message.js';
 
 /**
  * Handle the /briefing command to enable/disable daily briefings
@@ -64,11 +65,16 @@ export async function handleBriefing(ctx: Context): Promise<void> {
         await showBriefingStatus(ctx, user);
         break;
 
+      case 'now':
+        await generateBriefingNow(ctx, user);
+        break;
+
       default:
         await ctx.reply(
           '❓ **Briefing Command Usage:**\n\n' +
             '`/briefing on` - Enable daily briefings\n' +
             '`/briefing off` - Disable daily briefings\n' +
+            '`/briefing now` - Generate briefing immediately\n' +
             '`/briefing status` - Show current setting\n' +
             '`/briefing` - Show this help\n\n' +
             '💡 Daily briefings are sent at 7:00 AM with your todo summary.',
@@ -206,6 +212,50 @@ async function showBriefingStatus(
       }\n\n` +
       `💡 You can also manage this in the web app under Profile → Preferences.`,
   );
+}
+
+/**
+ * Generate and send a briefing immediately for a user using the agent
+ */
+async function generateBriefingNow(
+  ctx: Context,
+  user: TelegramUser,
+): Promise<void> {
+  try {
+    logger.info('Generating on-demand briefing via agent', {
+      userId: user._id,
+      username: user.username,
+      telegramId: user.telegram_id,
+    });
+
+    // Use the agent to generate a briefing by modifying the context message
+    if (ctx.message) {
+      ctx.message.text =
+        'Generate a daily briefing for me including todays tasks, overdue items, next actions, waiting items, and active time tracking.';
+    }
+
+    await handleMessage(ctx as any); // Type cast for briefing context
+
+    logger.info('On-demand briefing generated via agent', {
+      userId: user._id,
+      username: user.username,
+      telegramId: user.telegram_id,
+    });
+  } catch (error) {
+    logger.error('Failed to generate on-demand briefing via agent', {
+      userId: user._id,
+      error,
+    });
+
+    await ctx.reply(
+      '❌ **Sorry, there was an error generating your briefing.**\n\n' +
+        'This could be due to:\n' +
+        '• Temporary connectivity issues\n' +
+        '• AI service unavailability\n' +
+        '• Database access problems\n\n' +
+        'Please try again in a few moments, or contact support if the problem persists.',
+    );
+  }
 }
 
 /**

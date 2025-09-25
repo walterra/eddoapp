@@ -1,40 +1,18 @@
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { Bot } from 'grammy';
 
-import { claudeService } from '../ai/claude.js';
+import { SimpleAgent } from '../agent/simple-agent.js';
 import type { BotContext } from '../bot/bot.js';
-import { MCPClient } from '../mcp/client.js';
+import type { MCPClient } from '../mcp/client.js';
+import { extractUserContextForMCP } from '../mcp/user-context.js';
 import { logger } from '../utils/logger.js';
-import { TelegramUser } from '../utils/user-lookup.js';
+import type { TelegramUser } from '../utils/user-lookup.js';
 
 interface DailyBriefingSchedulerConfig {
   bot: Bot<BotContext>;
   mcpClient: MCPClient;
   briefingHour: number; // Hour in 24-hour format (e.g., 7 for 7 AM)
   checkIntervalMs: number; // How often to check for briefing time
-}
-
-interface BriefingContext {
-  user: TelegramUser;
-  today: string; // ISO date string
-  now: string; // ISO timestamp
-}
-
-interface TodoItem {
-  title: string;
-  description?: string;
-  due?: string;
-  context?: string;
-  tags?: string[];
-}
-
-interface BriefingData {
-  todayTasks: TodoItem[];
-  overdueTasks: TodoItem[];
-  nextActions: TodoItem[];
-  waitingItems: TodoItem[];
-  activeTracking: { title?: string; duration?: string } | null;
-  yesterdayCompleted: TodoItem[];
 }
 
 export class DailyBriefingScheduler {
@@ -184,25 +162,32 @@ export class DailyBriefingScheduler {
       return;
     }
 
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-
-    const briefingContext: BriefingContext = {
-      user,
-      today,
-      now: now.toISOString(),
-    };
-
-    logger.info('Generating briefing for user', {
+    logger.info('Generating briefing for user via agent', {
       userId: user._id,
       username: user.username,
       telegramId: user.telegram_id,
     });
 
     try {
-      // Generate briefing content using the AI agent
+      // Generate briefing content using the agent
+      const agent = new SimpleAgent();
+
+      const briefingRequestMessage =
+        'Generate a daily briefing for me including todays tasks, overdue items, next actions, waiting items, and active time tracking.';
+
+      // Create a minimal bot context for the agent
+      const mockContext = {
+        from: { id: user.telegram_id },
+        message: { text: briefingRequestMessage },
+      } as any; // Type assertion for simplified mock
+
+      const result = await agent.execute(
+        briefingRequestMessage,
+        user._id,
+        mockContext,
+      );
       const briefingMessage =
-        await this.generateBriefingContent(briefingContext);
+        result.finalResponse || '❌ Failed to generate briefing';
 
       // Send the briefing via Telegram
       await this.bot.api.sendMessage(user.telegram_id, briefingMessage, {
@@ -210,224 +195,18 @@ export class DailyBriefingScheduler {
         link_preview_options: { is_disabled: true },
       });
 
-      logger.info('Daily briefing sent successfully', {
+      logger.info('Daily briefing sent successfully via agent', {
         userId: user._id,
         username: user.username,
         telegramId: user.telegram_id,
+        outputLength: briefingMessage.length,
       });
     } catch (error) {
-      logger.error('Failed to generate or send briefing', {
+      logger.error('Failed to generate or send briefing via agent', {
         userId: user._id,
         username: user.username,
         error,
       });
-      throw error;
-    }
-  }
-
-  /**
-   * Generate briefing content for a user using AI with context data
-   */
-  private async generateBriefingContent(
-    context: BriefingContext,
-  ): Promise<string> {
-    // 1. Fetch necessary context data from database
-    const briefingData = await this.fetchBriefingContextData(context);
-
-    // 2. Generate LLM briefing using AI service with system prompt
-    return await this.generateAIBriefing(context, briefingData);
-  }
-
-  /**
-   * Fetch context data needed for briefing generation
-   */
-  private async fetchBriefingContextData(
-    context: BriefingContext,
-  ): Promise<BriefingData> {
-    const userContext = {
-      username: context.user.username,
-      databaseName: context.user.database_name,
-      telegramId: context.user.telegram_id,
-    };
-
-    try {
-      // Get today's tasks (due today)
-      const todayTasks = await this.mcpClient.invoke(
-        'listTodos',
-        {
-          dateFrom: context.today,
-          dateTo: context.today,
-          completed: false,
-        },
-        userContext,
-      );
-
-      // Get overdue tasks (due before today and not completed)
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const overdueDate = yesterday.toISOString().split('T')[0];
-
-      const overdueTasks = await this.mcpClient.invoke(
-        'listTodos',
-        {
-          dateTo: overdueDate,
-          completed: false,
-        },
-        userContext,
-      );
-
-      // Get next actions (gtd:next tagged items)
-      const nextActions = await this.mcpClient.invoke(
-        'listTodos',
-        {
-          tags: ['gtd:next'],
-          completed: false,
-        },
-        userContext,
-      );
-
-      // Get waiting items (gtd:waiting tagged items)
-      const waitingItems = await this.mcpClient.invoke(
-        'listTodos',
-        {
-          tags: ['gtd:waiting'],
-          completed: false,
-        },
-        userContext,
-      );
-
-      // Get active time tracking
-      const activeTracking = await this.mcpClient.invoke(
-        'getActiveTimeTracking',
-        {},
-        userContext,
-      );
-
-      // Get yesterday's completed tasks for summary
-      const yesterdayCompleted = await this.mcpClient.invoke(
-        'listTodos',
-        {
-          dateFrom: overdueDate,
-          dateTo: overdueDate,
-          completed: true,
-        },
-        userContext,
-      );
-
-      return {
-        todayTasks: (todayTasks as TodoItem[]) || ([] as TodoItem[]),
-        overdueTasks: (overdueTasks as TodoItem[]) || ([] as TodoItem[]),
-        nextActions: (nextActions as TodoItem[]) || ([] as TodoItem[]),
-        waitingItems: (waitingItems as TodoItem[]) || ([] as TodoItem[]),
-        activeTracking: activeTracking || null,
-        yesterdayCompleted:
-          (yesterdayCompleted as TodoItem[]) || ([] as TodoItem[]),
-      };
-    } catch (error) {
-      logger.warn('Some briefing data could not be retrieved', { error });
-      return {
-        todayTasks: [] as TodoItem[],
-        overdueTasks: [] as TodoItem[],
-        nextActions: [] as TodoItem[],
-        waitingItems: [] as TodoItem[],
-        activeTracking: null,
-        yesterdayCompleted: [] as TodoItem[],
-      };
-    }
-  }
-
-  /**
-   * Generate AI-powered briefing using Claude with system prompt and context data
-   */
-  private async generateAIBriefing(
-    context: BriefingContext,
-    briefingData: BriefingData,
-  ): Promise<string> {
-    const { user, today } = context;
-    const {
-      todayTasks,
-      overdueTasks,
-      nextActions,
-      waitingItems,
-      activeTracking,
-      yesterdayCompleted,
-    } = briefingData;
-
-    // Create system prompt for GTD-focused daily briefing
-    const systemPrompt = `You are a GTD (Getting Things Done) productivity coach providing daily briefings to help users stay organized and motivated.
-
-Your role:
-- Provide personalized, encouraging daily briefings
-- Use GTD methodology principles
-- Be concise but comprehensive
-- Use appropriate emojis for visual clarity
-- Format in Telegram Markdown
-- End with a motivational note
-
-Guidelines:
-- Start with a warm, personalized greeting
-- Prioritize overdue items first (these need immediate attention)
-- Highlight today's scheduled tasks
-- Show ready-to-work next actions
-- Mention items waiting for others
-- Include active time tracking if present
-- Reference yesterday's accomplishments if any
-- Provide actionable insights, not just lists
-- Keep total length under 1000 characters for readability
-- Use bullet points and clear sections
-- Include a brief motivational closing`;
-
-    // Prepare context data for the AI
-    const contextData = {
-      username: user.username,
-      date: today,
-      todayTasks: todayTasks.length,
-      todayTaskTitles: todayTasks.slice(0, 5).map((t: TodoItem) => t.title),
-      overdueTasks: overdueTasks.length,
-      overdueTaskTitles: overdueTasks.slice(0, 3).map((t: TodoItem) => t.title),
-      nextActions: nextActions.length,
-      nextActionTitles: nextActions.slice(0, 3).map((t: TodoItem) => t.title),
-      waitingItems: waitingItems.length,
-      waitingItemTitles: waitingItems.slice(0, 2).map((t: TodoItem) => t.title),
-      activeTracking: activeTracking
-        ? { title: activeTracking.title, duration: activeTracking.duration }
-        : null,
-      yesterdayCompleted: yesterdayCompleted.length,
-    };
-
-    // Create the conversation input with structured data
-    const conversationInput = `Generate a daily briefing for ${user.username} for ${new Date(
-      today,
-    ).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    })}.
-
-Context data:
-${JSON.stringify(contextData, null, 2)}
-
-Please create a comprehensive but concise daily briefing following GTD principles. Focus on actionable insights and maintain an encouraging, productive tone.`;
-
-    try {
-      const briefing = await claudeService.generateResponse(
-        conversationInput,
-        systemPrompt,
-      );
-
-      logger.info('AI briefing generated successfully', {
-        userId: user._id,
-        briefingLength: briefing.length,
-      });
-
-      return briefing;
-    } catch (error) {
-      logger.error('Failed to generate AI briefing', {
-        userId: user._id,
-        error,
-      });
-
-      // Re-throw to let caller handle fallback
       throw error;
     }
   }
