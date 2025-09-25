@@ -56,6 +56,15 @@ The TagInput component has a broken click-to-select functionality in the autocom
 - [x] Run TypeScript and linting checks
 
 **User Testing:**
-- [ ] Manual test: Click suggestions in Add Todo form works correctly
+- [x] Manual test: Click suggestions in Add Todo form works correctly
 - [ ] Manual test: Click suggestions in Edit Todo modal works correctly
-- [ ] Manual test: Verify keyboard navigation still works alongside click
+- [ ] Manual test: Verify keyboard navigation works (Up/Down arrows + Enter)
+
+## Notes
+
+**Additional Enhancement Added:** Implemented keyboard navigation for autocomplete suggestions:
+- **Arrow Down/Up**: Navigate through suggestions with visual highlighting
+- **Enter**: Select highlighted suggestion or add typed value if no suggestion selected
+- **Escape**: Hide suggestions dropdown
+- **Visual feedback**: Selected suggestion gets blue background
+- **State management**: Selected index resets on input change and focus
