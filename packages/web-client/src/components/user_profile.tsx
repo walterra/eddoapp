@@ -1,4 +1,4 @@
-import { Button, Card, Label, TextInput } from 'flowbite-react';
+import { Button, Card, Label, TextInput, ToggleSwitch } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 
 import { useProfile } from '../hooks/use_profile';
@@ -16,11 +16,12 @@ export function UserProfile({ onClose }: UserProfileProps) {
     changePassword,
     linkTelegram,
     unlinkTelegram,
+    updatePreferences,
     clearError,
   } = useProfile();
 
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'security' | 'integrations'
+    'profile' | 'security' | 'integrations' | 'preferences'
   >('profile');
   const [editMode, setEditMode] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -33,10 +34,18 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [formError, setFormError] = useState('');
   const [telegramId, setTelegramId] = useState('');
 
+  // Preferences states
+  const [dailyBriefing, setDailyBriefing] = useState(false);
+  const [briefingTime, setBriefingTime] = useState('07:00');
+
   // Initialize form when profile loads
   useEffect(() => {
     if (profile) {
       setEmail(profile.email);
+      if (profile.preferences) {
+        setDailyBriefing(profile.preferences.dailyBriefing);
+        setBriefingTime(profile.preferences.briefingTime || '07:00');
+      }
     }
   }, [profile]);
 
@@ -190,6 +199,22 @@ export function UserProfile({ onClose }: UserProfileProps) {
     }
   };
 
+  const handleUpdatePreferences = async () => {
+    setFormError('');
+    setSuccess(null);
+
+    const result = await updatePreferences({
+      dailyBriefing,
+      briefingTime,
+    });
+
+    if (result.success) {
+      setSuccess('Preferences updated successfully');
+    } else {
+      setFormError(result.error || 'Failed to update preferences');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -247,7 +272,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
         {/* Tab Navigation */}
         <div className="mb-6 border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            {(['profile', 'security', 'integrations'] as const).map((tab) => (
+            {(
+              ['profile', 'security', 'integrations', 'preferences'] as const
+            ).map((tab) => (
               <button
                 className={`border-b-2 px-1 py-2 text-sm font-medium ${
                   activeTab === tab
@@ -589,6 +616,74 @@ export function UserProfile({ onClose }: UserProfileProps) {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Preferences Tab */}
+        {activeTab === 'preferences' && (
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Preferences
+              </h2>
+
+              <div className="space-y-6">
+                <div className="rounded-lg border p-4">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-medium text-gray-900">
+                        Daily Briefings
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Receive daily briefings via Telegram bot at 7:00 AM with
+                        your todo summary, upcoming tasks, and time tracking.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Enable Daily Briefings</Label>
+                        <p className="text-xs text-gray-500">
+                          Get personalized morning summaries
+                        </p>
+                      </div>
+                      <ToggleSwitch
+                        checked={dailyBriefing}
+                        disabled={isLoading}
+                        onChange={setDailyBriefing}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="briefingTime">Briefing Time</Label>
+                      <TextInput
+                        disabled={!dailyBriefing || isLoading}
+                        id="briefingTime"
+                        onChange={(e) => setBriefingTime(e.target.value)}
+                        pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+                        placeholder="07:00"
+                        type="time"
+                        value={briefingTime}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Time when daily briefings will be sent (currently fixed
+                        at 7:00 AM)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    color="blue"
+                    disabled={isLoading}
+                    onClick={handleUpdatePreferences}
+                  >
+                    {isLoading ? 'Saving...' : 'Save Preferences'}
+                  </Button>
                 </div>
               </div>
             </div>

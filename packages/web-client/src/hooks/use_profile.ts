@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from './use_auth';
 
+interface UserPreferences {
+  dailyBriefing: boolean;
+  briefingTime?: string;
+  timezone?: string;
+}
+
 interface UserProfile {
   userId: string;
   username: string;
@@ -11,6 +17,7 @@ interface UserProfile {
   updatedAt: string;
   permissions: string[];
   status: string;
+  preferences: UserPreferences;
 }
 
 interface UpdateProfileData {
@@ -22,6 +29,12 @@ interface UpdateProfileData {
 interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;
+}
+
+interface UpdatePreferencesData {
+  dailyBriefing?: boolean;
+  briefingTime?: string;
+  timezone?: string;
 }
 
 export const useProfile = () => {
@@ -221,6 +234,46 @@ export const useProfile = () => {
     }
   };
 
+  const updatePreferences = async (
+    preferencesData: UpdatePreferencesData,
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!authToken) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/users/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken.token}`,
+        },
+        body: JSON.stringify(preferencesData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'Failed to update preferences';
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+
+      // Refresh profile to get updated data
+      await fetchProfile();
+      return { success: true };
+    } catch (error) {
+      console.error('Preferences update error:', error);
+      const errorMessage = 'Network error occurred';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch profile when auth token changes
   useEffect(() => {
     if (authToken?.token) {
@@ -240,6 +293,7 @@ export const useProfile = () => {
     changePassword,
     linkTelegram,
     unlinkTelegram,
+    updatePreferences,
     clearError: () => setError(null),
   };
 };
