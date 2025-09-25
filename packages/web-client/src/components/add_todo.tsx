@@ -62,12 +62,81 @@ export const AddTodo: FC<AddTodoProps> = ({
 
   const currentCalendarWeek = getISOWeek(currentDate);
 
-  function previousWeekClickHandler() {
-    setCurrentDate(sub(currentDate, { weeks: 1 }));
+  function getPeriodLabel(): string {
+    switch (selectedTimeRange.type) {
+      case 'current-week':
+        return `CW${currentCalendarWeek}`;
+      case 'current-month':
+        return format(currentDate, 'MMM yyyy');
+      case 'current-year':
+        return format(currentDate, 'yyyy');
+      case 'custom':
+        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+          const start = format(new Date(selectedTimeRange.startDate), 'MMM d');
+          const end = format(
+            new Date(selectedTimeRange.endDate),
+            'MMM d, yyyy',
+          );
+          return `${start} - ${end}`;
+        }
+        return 'Custom Range';
+      case 'all-time':
+        return 'All Time';
+      default:
+        return 'Period';
+    }
   }
 
-  function nextWeekClickHandler() {
-    setCurrentDate(add(currentDate, { weeks: 1 }));
+  function previousPeriodClickHandler() {
+    switch (selectedTimeRange.type) {
+      case 'current-week':
+        setCurrentDate(sub(currentDate, { weeks: 1 }));
+        break;
+      case 'current-month':
+        setCurrentDate(sub(currentDate, { months: 1 }));
+        break;
+      case 'current-year':
+        setCurrentDate(sub(currentDate, { years: 1 }));
+        break;
+      case 'custom':
+        // For custom ranges, navigate by the same duration as the current range
+        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+          const start = new Date(selectedTimeRange.startDate);
+          const end = new Date(selectedTimeRange.endDate);
+          const durationMs = end.getTime() - start.getTime();
+          setCurrentDate(
+            sub(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }),
+          );
+        }
+        break;
+      // all-time doesn't have navigation
+    }
+  }
+
+  function nextPeriodClickHandler() {
+    switch (selectedTimeRange.type) {
+      case 'current-week':
+        setCurrentDate(add(currentDate, { weeks: 1 }));
+        break;
+      case 'current-month':
+        setCurrentDate(add(currentDate, { months: 1 }));
+        break;
+      case 'current-year':
+        setCurrentDate(add(currentDate, { years: 1 }));
+        break;
+      case 'custom':
+        // For custom ranges, navigate by the same duration as the current range
+        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+          const start = new Date(selectedTimeRange.startDate);
+          const end = new Date(selectedTimeRange.endDate);
+          const durationMs = end.getTime() - start.getTime();
+          setCurrentDate(
+            add(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }),
+          );
+        }
+        break;
+      // all-time doesn't have navigation
+    }
   }
 
   async function addTodo(
@@ -210,23 +279,23 @@ export const AddTodo: FC<AddTodoProps> = ({
             onTagsChange={setSelectedTags}
             selectedTags={selectedTags}
           />
-          {selectedTimeRange.type === 'current-week' && (
+          {selectedTimeRange.type !== 'all-time' && (
             <>
               <Button
                 className="p-0"
                 color="gray"
-                onClick={previousWeekClickHandler}
+                onClick={previousPeriodClickHandler}
                 size="xs"
               >
                 <RiArrowLeftSLine size="2em" />
               </Button>{' '}
               <span className="font-semibold text-gray-900 dark:text-white">
-                CW{currentCalendarWeek}
+                {getPeriodLabel()}
               </span>{' '}
               <Button
                 className="p-0"
                 color="gray"
-                onClick={nextWeekClickHandler}
+                onClick={nextPeriodClickHandler}
                 size="xs"
               >
                 <RiArrowRightSLine size="2em" />

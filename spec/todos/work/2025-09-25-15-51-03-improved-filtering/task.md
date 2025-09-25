@@ -79,14 +79,19 @@ The goal is to transform the rigid "weekly + optional tags" system into a flexib
 2. **EddoContextFilter**: Multi-select dropdown for context filtering following TagFilter UI patterns
 3. **StatusFilter**: Single-select dropdown for completion status (All/Complete/Incomplete)
 4. **TimeRangeFilter**: Comprehensive time range selection including custom date range picker
-5. **Enhanced TodoBoard query logic**: Smart detection of when advanced filtering is needed
+5. **Enhanced TodoBoard query logic**: Simplified single-approach querying with reliable client-side filtering
+6. **Smart Calendar Navigation**: Context-aware navigation that adapts to selected time range
 
-### Database Optimization
+### Database & Architecture Improvements
+- **Simplified Query Architecture**: Replaced complex dual Mango/MapReduce system with single reliable approach
+- **Fixed Activities Filtering**: Activities now use embedded `activity.doc` instead of flawed matching logic
+- **Consistent Filtering**: Both todos and activities apply identical filtering logic
 - Added `version-context-completed-due-index` for optimal multi-filter query performance
-- Index selection logic chooses most specific index based on active filters
 
 ### User Experience Improvements
-- Weekly navigation buttons only appear when "Current week" time range is selected
+- **Context-Aware Navigation**: Navigation buttons adapt to time range (week/month/year/custom)
+- **Smart Period Labels**: Display appropriate labels (CW42, "Jan 2025", "2025", "Jan 5 - Feb 12, 2025")
+- **Intelligent Navigation Logic**: Navigate by weeks/months/years/custom duration as appropriate
 - All existing workflows preserved - no breaking changes
 - Filter UI integrated seamlessly into existing AddTodo component layout
 - Visual feedback for active filters (highlighted buttons with count badges)
