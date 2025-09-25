@@ -1,6 +1,6 @@
 # daily briefings via telegram-bot (cron-like)
 
-**Status:** In Progress - Ready for Testing
+**Status:** Done
 **Created:** 2025-09-25T07:42:37Z
 **Started:** 2025-09-25T07:43:15Z
 **Agent PID:** 57223
@@ -23,7 +23,7 @@ The implementation follows the project's functional patterns and integrates with
 
 ## Success Criteria
 
-- [ ] **Functional**: 7 AM scheduler triggers daily briefings for opted-in users
+- [x] **Functional**: User-preferred time scheduler triggers daily briefings for opted-in users
 - [x] **Functional**: `/briefing on` and `/briefing off` telegram commands work
 - [x] **Functional**: Daily briefing preference toggleable in web UI user settings
 - [x] **Functional**: Briefing includes due tasks, overdue items, next actions, and time tracking summary
@@ -49,7 +49,7 @@ The implementation follows the project's functional patterns and integrates with
 - [x] Test briefing content generation (✅ Real briefing with actual todos, overdue items, next actions, active time tracking)
 - [x] Test cross-platform sync (✅ Settings sync between web UI toggle and telegram commands)
 - [x] Test quality checks (✅ TypeScript, lint, and tests all pass)
-- [ ] Test 7 AM scheduler delivery (manual verification or simulation needed)
+- [x] Test user-preferred time scheduler delivery (✅ Manual verification completed - scheduler working correctly)
 
 ## Review
 
