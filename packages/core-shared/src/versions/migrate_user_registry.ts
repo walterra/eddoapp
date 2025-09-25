@@ -6,25 +6,34 @@ import {
   type UserStatus,
   isUserRegistryEntryAlpha1,
 } from './user_registry_alpha1';
+import {
+  type UserRegistryEntryAlpha2,
+  createDefaultUserPreferences,
+  isUserRegistryEntryAlpha2,
+} from './user_registry_alpha2';
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
 export function isLatestUserRegistryVersion(
   entry: unknown,
-): entry is UserRegistryEntryAlpha1 {
-  return isUserRegistryEntryAlpha1(entry);
+): entry is UserRegistryEntryAlpha2 {
+  return isUserRegistryEntryAlpha2(entry);
 }
 
 export function migrateUserRegistryEntry(
   entry: unknown,
-): UserRegistryEntryAlpha1 {
-  if (isUserRegistryEntryAlpha1(entry)) {
+): UserRegistryEntryAlpha2 {
+  if (isUserRegistryEntryAlpha2(entry)) {
     return entry;
+  }
+
+  if (isUserRegistryEntryAlpha1(entry)) {
+    return migrateAlpha1ToAlpha2(entry);
   }
 
   // Handle legacy entries without version field
   if (isLegacyUserRegistryEntry(entry)) {
-    return migrateLegacyToAlpha1(entry as UnknownObject);
+    return migrateAlpha1ToAlpha2(migrateLegacyToAlpha1(entry as UnknownObject));
   }
 
   throw new Error('invalid user registry entry');
@@ -38,6 +47,19 @@ function isLegacyUserRegistryEntry(arg: unknown): boolean {
     typeof (arg as UnknownObject).username === 'string' &&
     !('version' in arg)
   );
+}
+
+function migrateAlpha1ToAlpha2(
+  entry: UserRegistryEntryAlpha1,
+): UserRegistryEntryAlpha2 {
+  const now = new Date().toISOString();
+
+  return {
+    ...entry,
+    preferences: createDefaultUserPreferences(),
+    updated_at: now,
+    version: 'alpha2',
+  };
 }
 
 function migrateLegacyToAlpha1(entry: UnknownObject): UserRegistryEntryAlpha1 {

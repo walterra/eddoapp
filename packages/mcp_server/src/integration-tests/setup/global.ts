@@ -128,10 +128,14 @@ export async function setup() {
         telegram_id: parseInt(globalTestUser.telegramId),
         permissions: ['read', 'write'],
         status: 'active',
-        version: 'alpha1',
+        version: 'alpha2',
         database_name: globalTestUser.dbName,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        preferences: {
+          dailyBriefing: false,
+          briefingTime: '07:00',
+        },
       });
       console.log(`✅ Global test user created: ${globalTestUser.username}`);
     } else {

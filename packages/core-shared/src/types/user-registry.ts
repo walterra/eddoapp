@@ -1,11 +1,11 @@
 import {
   type UserPermissions,
-  type UserRegistryEntryAlpha1,
   type UserStatus,
 } from '../versions/user_registry_alpha1';
+import { type UserRegistryEntryAlpha2 } from '../versions/user_registry_alpha2';
 
-export type NewUserRegistryEntry = Omit<UserRegistryEntryAlpha1, '_rev'>;
-export type UserRegistryEntry = UserRegistryEntryAlpha1;
+export type NewUserRegistryEntry = Omit<UserRegistryEntryAlpha2, '_rev'>;
+export type UserRegistryEntry = UserRegistryEntryAlpha2;
 
 export type CreateUserRegistryEntry = Omit<UserRegistryEntry, '_id' | '_rev'>;
 export type UpdateUserRegistryEntry = Partial<UserRegistryEntry>;

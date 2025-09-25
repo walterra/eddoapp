@@ -6,6 +6,7 @@ import {
   type UserRegistryOperations,
 } from '@eddo/core-shared';
 import {
+  createDefaultUserPreferences,
   isLatestUserRegistryVersion,
   migrateUserRegistryEntry,
 } from '@eddo/core-shared';
@@ -193,7 +194,8 @@ async function create(
     updated_at: now,
     permissions: entry.permissions || ['read', 'write'],
     status: entry.status || 'active',
-    version: 'alpha1',
+    preferences: createDefaultUserPreferences(),
+    version: 'alpha2',
   };
 
   const result = await context.db.insert(newEntry);
@@ -208,13 +210,16 @@ async function update(
   const existing = await context.db.get(id);
   const now = new Date().toISOString();
 
+  // Migrate existing entry to latest version before updating
+  const migratedExisting = migrateUserRegistryEntry(existing);
+
   const updated: UserRegistryEntry = {
-    ...(existing as UserRegistryEntry),
+    ...migratedExisting,
     ...updates,
     _id: id,
     _rev: existing._rev,
     updated_at: now,
-    version: 'alpha1',
+    version: 'alpha2',
   };
 
   const result = await context.db.insert(updated);
