@@ -15,7 +15,9 @@ export const TagInput: FC<TagInputProps> = ({
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const filteredSuggestions = suggestions.filter(
     (suggestion) =>
@@ -30,6 +32,7 @@ export const TagInput: FC<TagInputProps> = ({
     }
     setInputValue('');
     setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -40,18 +43,38 @@ export const TagInput: FC<TagInputProps> = ({
     const value = e.target.value;
     setInputValue(value);
     setShowSuggestions(value.length > 0 && filteredSuggestions.length > 0);
+    setSelectedSuggestionIndex(-1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (inputValue.trim()) {
+      if (showSuggestions && selectedSuggestionIndex >= 0) {
+        // Add selected suggestion
+        addTag(filteredSuggestions[selectedSuggestionIndex]);
+      } else if (inputValue.trim()) {
+        // Add typed value
         addTag(inputValue);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (showSuggestions && filteredSuggestions.length > 0) {
+        setSelectedSuggestionIndex((prev) =>
+          prev < filteredSuggestions.length - 1 ? prev + 1 : 0,
+        );
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (showSuggestions && filteredSuggestions.length > 0) {
+        setSelectedSuggestionIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredSuggestions.length - 1,
+        );
       }
     } else if (e.key === 'Backspace' && inputValue === '' && tags.length > 0) {
       removeTag(tags[tags.length - 1]);
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
     }
   };
 
@@ -64,7 +87,9 @@ export const TagInput: FC<TagInputProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
+        !inputRef.current.contains(event.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
       }
@@ -95,11 +120,12 @@ export const TagInput: FC<TagInputProps> = ({
         <input
           className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
           onChange={handleInputChange}
-          onFocus={() =>
+          onFocus={() => {
             setShowSuggestions(
               inputValue.length > 0 && filteredSuggestions.length > 0,
-            )
-          }
+            );
+            setSelectedSuggestionIndex(-1);
+          }}
           onKeyDown={handleKeyDown}
           placeholder={tags.length === 0 ? placeholder : ''}
           ref={inputRef}
@@ -109,10 +135,17 @@ export const TagInput: FC<TagInputProps> = ({
       </div>
 
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <div className="absolute top-full z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
-          {filteredSuggestions.slice(0, 5).map((suggestion) => (
+        <div
+          className="absolute top-full z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+          ref={suggestionsRef}
+        >
+          {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
             <button
-              className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+              className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
+                index === selectedSuggestionIndex
+                  ? 'bg-blue-100 dark:bg-blue-900'
+                  : ''
+              }`}
               key={suggestion}
               onClick={() => handleSuggestionClick(suggestion)}
               type="button"

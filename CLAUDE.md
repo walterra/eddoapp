@@ -196,6 +196,34 @@ When working on AI agent code (especially in the telegram-bot package), follow t
 - ✅ Trust in LLM's ability to self-organize
 - ✅ Code that reads like a simple script, not a framework
 
+### Telegram Bot Architecture
+
+**Startup Sequence:**
+
+- `bot.start()` is a blocking call that keeps the bot polling indefinitely
+- Use `bot.start()` without `await` to run polling in background
+
+**Example Pattern:**
+
+```typescript
+// ✅ Correct: Initialize services first
+const scheduler = createScheduler();
+scheduler.start();
+
+// Then start bot polling (non-blocking)
+bot.start(); // Don't await
+
+// ✅ This code will execute
+logger.info('Bot is ready!');
+```
+
+**MCP Integration:**
+
+- **Prefer using agents over manual MCP tool calls** for complex queries
+- Agents handle data parsing, tool selection, and error handling automatically
+- Use manual MCP calls only for simple, well-understood operations
+- When briefings or complex data aggregation is needed, use agent message requests
+
 ## Testing Guidelines
 
 - When asked to fix tests, never touch the actual implementation.
