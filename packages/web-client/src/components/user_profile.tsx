@@ -1,7 +1,8 @@
-import { Button, Card, Label, TextInput, ToggleSwitch } from 'flowbite-react';
+import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 
 import { useProfile } from '../hooks/use_profile';
+import { ToggleSwitch } from './toggle_switch';
 
 interface UserProfileProps {
   onClose?: () => void;
