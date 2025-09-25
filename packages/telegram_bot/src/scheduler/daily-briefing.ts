@@ -9,25 +9,22 @@ import type { TelegramUser } from '../utils/user-lookup.js';
 
 interface DailyBriefingSchedulerConfig {
   bot: Bot<BotContext>;
-  briefingHour: number; // Hour in 24-hour format (e.g., 7 for 7 AM)
   checkIntervalMs: number; // How often to check for briefing time
 }
 
 export class DailyBriefingScheduler {
   private bot: Bot<BotContext>;
-  private briefingHour: number;
   private checkIntervalMs: number;
   private intervalId: NodeJS.Timeout | null = null;
-  private lastBriefingDate: string | null = null;
+  private sentBriefingsToday: Set<string> = new Set(); // Track sent briefings by user ID per day
+  private currentDate: string | null = null; // Track current date to reset sent briefings
   private isRunning = false;
 
   constructor(config: DailyBriefingSchedulerConfig) {
     this.bot = config.bot;
-    this.briefingHour = config.briefingHour;
     this.checkIntervalMs = config.checkIntervalMs;
 
     logger.info('Daily briefing scheduler created', {
-      briefingHour: this.briefingHour,
       checkIntervalMs: this.checkIntervalMs,
     });
   }
@@ -68,36 +65,113 @@ export class DailyBriefingScheduler {
    */
   private async checkAndSendBriefings(): Promise<void> {
     const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
     const todayDate = now.toISOString().split('T')[0];
 
-    // Check if it's the right hour and within first 5 minutes
-    if (currentHour !== this.briefingHour || currentMinute >= 5) {
-      return;
+    // Reset sent briefings if it's a new day
+    if (this.currentDate !== todayDate) {
+      this.sentBriefingsToday.clear();
+      this.currentDate = todayDate;
+      logger.info('New day detected, reset sent briefings tracker', {
+        date: todayDate,
+      });
     }
-
-    // Prevent multiple briefings on the same day
-    if (this.lastBriefingDate === todayDate) {
-      return;
-    }
-
-    logger.info('Time to send daily briefings', {
-      hour: currentHour,
-      minute: currentMinute,
-      date: todayDate,
-    });
 
     try {
-      await this.sendDailyBriefings();
-      this.lastBriefingDate = todayDate;
+      await this.checkAndSendUserBriefings(now);
     } catch (error) {
-      logger.error('Failed to send daily briefings', { error });
+      logger.error('Failed to check and send daily briefings', { error });
     }
   }
 
   /**
-   * Send daily briefings to all users with briefings enabled
+   * Check each user's briefing time and send if it's time
+   */
+  private async checkAndSendUserBriefings(now: Date): Promise<void> {
+    const env = createEnv();
+    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    try {
+      // Get all active users with briefings enabled
+      const users = await userRegistry.list();
+      const briefingUsers = users.filter(
+        (user) =>
+          user.status === 'active' &&
+          user.preferences?.dailyBriefing === true &&
+          user.telegram_id,
+      );
+
+      logger.debug('Checking briefing times for users', {
+        totalUsers: users.length,
+        briefingUsers: briefingUsers.length,
+        currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+      });
+
+      // Check each user's individual briefing time
+      for (const user of briefingUsers) {
+        // Type assertion is safe because we filtered for users with telegram_id
+        await this.checkUserBriefingTime(
+          user as TelegramUser,
+          currentHour,
+          currentMinute,
+        );
+      }
+    } catch (error) {
+      logger.error('Failed to check user briefing times', { error });
+    }
+  }
+
+  /**
+   * Check if it's time to send a briefing to a specific user
+   */
+  private async checkUserBriefingTime(
+    user: TelegramUser,
+    currentHour: number,
+    currentMinute: number,
+  ): Promise<void> {
+    // Skip if already sent briefing to this user today
+    if (this.sentBriefingsToday.has(user._id)) {
+      return;
+    }
+
+    // Parse user's briefing time (format: "HH:MM")
+    const briefingTime = user.preferences?.briefingTime || '07:00';
+    const [userHour, userMinute] = briefingTime.split(':').map(Number);
+
+    // Check if it's the right time for this user (within 5-minute window)
+    const isRightHour = currentHour === userHour;
+    const isWithinWindow =
+      currentMinute >= userMinute && currentMinute < userMinute + 5;
+
+    if (isRightHour && isWithinWindow) {
+      logger.info('Sending briefing to user at their preferred time', {
+        userId: user._id,
+        username: user.username,
+        briefingTime,
+        currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+      });
+
+      try {
+        await this.sendBriefingToUser(user);
+        this.sentBriefingsToday.add(user._id);
+
+        logger.info('Successfully sent briefing to user', {
+          userId: user._id,
+          username: user.username,
+        });
+      } catch (error) {
+        logger.error('Failed to send briefing to user', {
+          userId: user._id,
+          username: user.username,
+          error,
+        });
+      }
+    }
+  }
+
+  /**
+   * Send daily briefings to all users with briefings enabled (LEGACY - kept for backward compatibility)
    */
   private async sendDailyBriefings(): Promise<void> {
     const env = createEnv();
@@ -211,14 +285,14 @@ export class DailyBriefingScheduler {
    */
   getStatus(): {
     isRunning: boolean;
-    briefingHour: number;
-    lastBriefingDate: string | null;
+    currentDate: string | null;
+    sentBriefingsToday: number;
     checkIntervalMs: number;
   } {
     return {
       isRunning: this.isRunning,
-      briefingHour: this.briefingHour,
-      lastBriefingDate: this.lastBriefingDate,
+      currentDate: this.currentDate,
+      sentBriefingsToday: this.sentBriefingsToday.size,
       checkIntervalMs: this.checkIntervalMs,
     };
   }

@@ -639,8 +639,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         Daily Briefings
                       </h3>
                       <p className="text-sm text-gray-600">
-                        Receive daily briefings via Telegram bot at 7:00 AM with
-                        your todo summary, upcoming tasks, and time tracking.
+                        Receive daily briefings via Telegram bot at your
+                        preferred time with your todo summary, upcoming tasks,
+                        and time tracking.
                       </p>
                     </div>
 
@@ -670,8 +671,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         value={briefingTime}
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        Time when daily briefings will be sent (currently fixed
-                        at 7:00 AM)
+                        Your preferred time for receiving daily briefings
                       </p>
                     </div>
                   </div>

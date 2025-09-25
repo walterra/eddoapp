@@ -61,27 +61,27 @@ async function main(): Promise<void> {
     });
 
     // Start the bot
-    logger.info('Starting bot polling...');
-    await bot.start();
-
-    // Initialize and start daily briefing scheduler
+    // Initialize and start daily briefing scheduler BEFORE starting bot polling
     logger.info('Initializing daily briefing scheduler...');
     const dailyBriefingScheduler = createDailyBriefingScheduler({
       bot,
-      briefingHour: 7, // 7 AM
       checkIntervalMs: 60 * 1000, // Check every minute
     });
 
     dailyBriefingScheduler.start();
     globalScheduler = dailyBriefingScheduler; // Store for cleanup
     logger.info('✅ Daily briefing scheduler started', {
-      briefingHour: 7,
       checkInterval: '60s',
     });
 
+    logger.info('Starting bot polling...');
+    bot.start(); // Don't await - let it run in background
+
     logger.info('🎩 Eddo Bot is now running and ready to serve!');
     logger.info('📡 Connect your Telegram bot and start chatting!');
-    logger.info('🌅 Daily briefings will be sent at 7:00 AM to opted-in users');
+    logger.info(
+      '🌅 Daily briefings will be sent at user-preferred times to opted-in users',
+    );
   } catch (error) {
     logger.error('Failed to start bot', { error });
     process.exit(1);

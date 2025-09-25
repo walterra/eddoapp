@@ -79,7 +79,7 @@ export async function handleBriefing(ctx: Context): Promise<void> {
             '`/briefing now` - Generate briefing immediately\n' +
             '`/briefing status` - Show current setting\n' +
             '`/briefing` - Show this help\n\n' +
-            '💡 Daily briefings are sent at 7:00 AM with your todo summary.',
+            '💡 Daily briefings are sent at your preferred time with your todo summary.',
         );
         break;
     }
@@ -123,7 +123,7 @@ async function enableDailyBriefing(
 
     await ctx.reply(
       '✅ **Daily briefings enabled!**\n\n' +
-        '🌅 You will receive your daily todo summary at 7:00 AM.\n\n' +
+        `🌅 You will receive your daily todo summary at ${user.preferences?.briefingTime || '07:00'}.\n\n` +
         '**Your briefings will include:**\n' +
         "• Today's due tasks and appointments\n" +
         '• Overdue items needing attention\n' +
@@ -204,7 +204,7 @@ async function showBriefingStatus(
   await ctx.reply(
     `📊 **Daily Briefing Status**\n\n` +
       `${statusEmoji} **Status:** ${statusText}\n` +
-      `🕰 **Time:** ${briefingTime} (currently fixed at 7:00 AM)\n\n` +
+      `🕰 **Time:** ${briefingTime}\n\n` +
       `${
         isEnabled
           ? '🌅 You will receive daily briefings with your todo summary.\n\n' +
