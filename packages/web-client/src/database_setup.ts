@@ -23,21 +23,69 @@ export async function ensureDesignDocuments(
 ): Promise<void> {
   for (const expectedDoc of DESIGN_DOCS as DesignDocument[]) {
     try {
-      // Try to get existing design document
-      const existingDoc = await safeDb.safeGet<DesignDocument>(expectedDoc._id);
+      let existingDoc: DesignDocument | null = null;
+      let needsUpdate = true;
 
-      // Check if update is needed
-      const needsUpdate =
-        !existingDoc ||
-        JSON.stringify(existingDoc.views) !== JSON.stringify(expectedDoc.views);
+      try {
+        // Try to get existing design document
+        existingDoc = await safeDb.safeGet<DesignDocument>(expectedDoc._id);
+
+        // Check if update is needed - compare views
+        needsUpdate =
+          !existingDoc ||
+          JSON.stringify(existingDoc.views) !==
+            JSON.stringify(expectedDoc.views);
+      } catch (_getErr) {
+        // Document doesn't exist - need to create it
+        console.log(
+          `Design document ${expectedDoc._id} not found, will create`,
+        );
+        needsUpdate = true;
+        existingDoc = null;
+      }
 
       if (needsUpdate) {
-        // Update or create the design document
-        await safeDb.safePut({
-          ...expectedDoc,
-          _rev: existingDoc?._rev,
-        });
-        console.log(`✅ Design document ${expectedDoc._id} updated`);
+        // Update or create the design document with retry logic for conflicts
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries) {
+          try {
+            // Refresh the existing doc in case of concurrent updates
+            if (retryCount > 0 && existingDoc) {
+              existingDoc = await safeDb.safeGet<DesignDocument>(
+                expectedDoc._id,
+              );
+            }
+
+            const docToSave = {
+              ...expectedDoc,
+              ...(existingDoc?._rev ? { _rev: existingDoc._rev } : {}),
+            };
+
+            await safeDb.safePut(docToSave);
+            console.log(
+              `✅ Design document ${expectedDoc._id} ${existingDoc ? 'updated' : 'created'}`,
+            );
+            break; // Success - exit retry loop
+          } catch (putErr: unknown) {
+            if (
+              (putErr as Error).message?.includes('conflict') &&
+              retryCount < maxRetries - 1
+            ) {
+              retryCount++;
+              console.log(
+                `Retrying design document update ${expectedDoc._id} (attempt ${retryCount + 1})`,
+              );
+              // Short delay before retry
+              await new Promise((resolve) =>
+                setTimeout(resolve, 100 * retryCount),
+              );
+            } else {
+              throw putErr; // Re-throw if not a conflict or max retries reached
+            }
+          }
+        }
       }
     } catch (err) {
       console.error(`Failed to setup design document ${expectedDoc._id}:`, err);

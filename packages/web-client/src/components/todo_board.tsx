@@ -236,14 +236,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
           descending: false,
           endkey: dateRange.endDate,
-          include_docs: false,
+          include_docs: true,
           startkey: dateRange.startDate,
         });
       } else {
         // All-time query - get all todos
         newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
           descending: false,
-          include_docs: false,
+          include_docs: true,
         });
       }
 
@@ -254,14 +254,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
           descending: false,
           endkey: dateRange.endDate,
-          include_docs: false,
+          include_docs: true,
           startkey: dateRange.startDate,
         });
       } else {
         // All-time query - get all activities
         newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
           descending: false,
-          include_docs: false,
+          include_docs: true,
         });
       }
       console.timeEnd('fetchActivities');
@@ -269,13 +269,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       console.timeEnd('fetchTodos');
 
       console.time('setOutdatedTodos');
-      setOutdatedTodos(
-        newTodos.filter((d) => !isLatestVersion(d)).map((d) => d),
-      );
+      setOutdatedTodos([]); // Views now filter by version - no outdated docs returned
       console.timeEnd('setOutdatedTodos');
 
       console.time('setTodos');
-      setTodos(newTodos.filter((d) => isLatestVersion(d)) as Todo[]);
+      setTodos(newTodos as Todo[]); // Views ensure only alpha3 docs are returned
       console.timeEnd('setTodos');
 
       console.time('setActivities');
