@@ -99,6 +99,12 @@ describe('AddTodo Component', () => {
     setCurrentDate: vi.fn(),
     selectedTags: [],
     setSelectedTags: vi.fn(),
+    selectedContexts: [],
+    setSelectedContexts: vi.fn(),
+    selectedStatus: 'all' as const,
+    setSelectedStatus: vi.fn(),
+    selectedTimeRange: { type: 'current-week' as const },
+    setSelectedTimeRange: vi.fn(),
   };
 
   beforeEach(() => {

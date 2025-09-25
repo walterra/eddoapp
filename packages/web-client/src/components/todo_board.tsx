@@ -6,7 +6,16 @@ import {
   migrateTodo,
 } from '@eddo/core-client';
 import { group } from 'd3-array';
-import { add, endOfWeek, format, startOfWeek } from 'date-fns';
+import {
+  add,
+  endOfMonth,
+  endOfWeek,
+  endOfYear,
+  format,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+} from 'date-fns';
 import { uniqBy } from 'lodash-es';
 import { type FC, useEffect, useMemo, useState } from 'react';
 
@@ -19,21 +28,35 @@ import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
 import { FormattedMessage } from './formatted_message';
+import type { CompletionStatus } from './status_filter';
+import type { TimeRange } from './time_range_filter';
 import { TodoListElement } from './todo_list_element';
 
 interface TodoBoardProps {
   currentDate: Date;
   selectedTags: string[];
+  selectedContexts: string[];
+  selectedStatus: CompletionStatus;
+  selectedTimeRange: TimeRange;
 }
 
-export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => {
+export const TodoBoard: FC<TodoBoardProps> = ({
+  currentDate,
+  selectedTags,
+  selectedContexts,
+  selectedStatus,
+  selectedTimeRange,
+}) => {
   const { safeDb, rawDb } = usePouchDb();
   const [outdatedTodos, setOutdatedTodos] = useState<Todo[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
   // check integrity, e.g. if design docs are present
   const [isInitialized, setIsInitialized] = useState(false);
   // TODO The 'add' is a CEST quick fix
-  const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
+  const currentStartOfWeek = add(
+    startOfWeek(currentDate, { weekStartsOn: 1 }),
+    { hours: 2 },
+  );
   // TODO The 'add' is a CEST quick fix
   const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
     hours: 2,
@@ -57,7 +80,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
   });
 
   // Extract data from queries with useMemo to avoid new array references on every render
-  const activities = useMemo(() => activitiesQuery.data ?? [], [activitiesQuery.data]);
+  const activities = useMemo(
+    () => activitiesQuery.data ?? [],
+    [activitiesQuery.data],
+  );
 
   const timeTrackingActive = useMemo(
     () => timeTrackingQuery.data ?? ['hide-by-default'],
@@ -66,13 +92,17 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
 
   // Filter to get only latest version todos - use query data directly to avoid reference issues
   const todos = useMemo(
-    () => (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
+    () =>
+      (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
     [todosQuery.data],
   );
 
   // Track outdated todos for migration (if needed) - use useMemo to avoid infinite loop
   const outdatedTodosMemo = useMemo(
-    () => (todosQuery.data ?? []).filter((d: Todo) => !isLatestVersion(d)) as Todo[],
+    () =>
+      (todosQuery.data ?? []).filter(
+        (d: Todo) => !isLatestVersion(d),
+      ) as Todo[],
     [todosQuery.data],
   );
 
@@ -108,6 +138,205 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
   useEffect(() => {
     if (!isInitialized || outdatedTodos.length === 0) return;
 
+    fetchTodos();
+    fetchTimeTrackingActive();
+  }, [
+    currentDate,
+    isInitialized,
+    changeCount,
+    selectedTags,
+    selectedContexts,
+    selectedStatus,
+    selectedTimeRange,
+  ]);
+
+  const fetchTimeTrackingActive = useCallback(async () => {
+    try {
+      const resp = await safeDb.safeQuery<{ id: string }>(
+        'todos',
+        'byTimeTrackingActive',
+        {
+          key: null,
+        },
+      );
+      setTimeTrackingActive(resp.map((d) => d.id));
+    } catch (e) {
+      console.error('Not able to fetch active todos:', e);
+      setError(e as DatabaseError);
+    }
+  }, [safeDb]);
+
+  const getDateRange = useCallback(() => {
+    const currentStartOfWeek = add(
+      startOfWeek(currentDate, { weekStartsOn: 1 }),
+      { hours: 2 },
+    );
+    const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
+      hours: 2,
+    });
+
+    switch (selectedTimeRange.type) {
+      case 'current-week':
+        return {
+          startDate: currentStartOfWeek.toISOString(),
+          endDate: currentEndOfWeek.toISOString(),
+        };
+      case 'current-month':
+        return {
+          startDate: add(startOfMonth(currentDate), { hours: 2 }).toISOString(),
+          endDate: add(endOfMonth(currentDate), { hours: 2 }).toISOString(),
+        };
+      case 'current-year':
+        return {
+          startDate: add(startOfYear(currentDate), { hours: 2 }).toISOString(),
+          endDate: add(endOfYear(currentDate), { hours: 2 }).toISOString(),
+        };
+      case 'custom':
+        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+          return {
+            startDate: new Date(
+              selectedTimeRange.startDate + 'T00:00:00',
+            ).toISOString(),
+            endDate: new Date(
+              selectedTimeRange.endDate + 'T23:59:59',
+            ).toISOString(),
+          };
+        }
+        return null;
+      case 'all-time':
+        return null;
+      default:
+        return {
+          startDate: currentStartOfWeek.toISOString(),
+          endDate: currentEndOfWeek.toISOString(),
+        };
+    }
+  }, [currentDate, selectedTimeRange]);
+
+  const fetchTodos = useCallback(async () => {
+    if (isFetching.current) {
+      shouldFetch.current = true;
+      return;
+    }
+
+    isFetching.current = true;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.time('fetchTodos');
+
+      const dateRange = getDateRange();
+      let newTodos: (Todo | unknown)[] = [];
+      let newActivities: Activity[] = [];
+
+      if (!rawDb) {
+        throw new Error('Raw database not available for flexible filtering');
+      }
+
+      // Build selector for todos
+      const todoSelector: Record<string, unknown> = { version: 'alpha3' };
+
+      // Add date filtering
+      if (dateRange) {
+        todoSelector.due = {
+          $gte: dateRange.startDate,
+          $lte: dateRange.endDate,
+        };
+      }
+
+      // Add context filtering
+      if (selectedContexts.length > 0) {
+        todoSelector.context = { $in: selectedContexts };
+      }
+
+      // Add completion status filtering
+      if (selectedStatus !== 'all') {
+        if (selectedStatus === 'completed') {
+          todoSelector.completed = { $ne: null };
+        } else if (selectedStatus === 'incomplete') {
+          todoSelector.completed = null;
+        }
+      }
+
+      // Add tag filtering (done client-side later for performance)
+
+      // Choose optimal index
+      let use_index = 'version-due-index';
+      if (selectedContexts.length > 0 && selectedStatus !== 'all') {
+        use_index = 'version-context-completed-due-index';
+      } else if (selectedContexts.length > 0) {
+        use_index = 'version-context-due-index';
+      } else if (selectedStatus !== 'all') {
+        use_index = 'version-completed-due-index';
+      }
+
+      const todoResult = await rawDb.find({
+        selector: todoSelector,
+        sort: [{ due: 'asc' }],
+        use_index,
+      });
+
+      newTodos = todoResult.docs;
+
+      // For activities, we still need the time range for now since we don't have flexible activity filtering yet
+      if (dateRange) {
+        console.time('fetchActivities');
+        newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
+          descending: false,
+          endkey: dateRange.endDate,
+          include_docs: false,
+          startkey: dateRange.startDate,
+        });
+        console.timeEnd('fetchActivities');
+      } else {
+        // For all-time view, get all activities
+        newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
+          descending: false,
+          include_docs: false,
+        });
+      }
+
+      console.timeEnd('fetchTodos');
+
+      console.time('setOutdatedTodos');
+      setOutdatedTodos(
+        newTodos.filter((d) => !isLatestVersion(d)).map((d) => d),
+      );
+      console.timeEnd('setOutdatedTodos');
+
+      console.time('setTodos');
+      setTodos(newTodos.filter((d) => isLatestVersion(d)) as Todo[]);
+      console.timeEnd('setTodos');
+
+      console.time('setActivities');
+      setActivities(newActivities);
+      console.timeEnd('setActivities');
+    } catch (err) {
+      console.error('Failed to fetch todos:', err);
+      setError(err as DatabaseError);
+
+      // Show user-friendly error message
+      if ((err as DatabaseError).type === DatabaseErrorType.NETWORK_ERROR) {
+        // We're in offline mode, keep existing data
+        console.log('Working in offline mode');
+      }
+    } finally {
+      isFetching.current = false;
+      setIsLoading(false);
+      if (shouldFetch.current) {
+        shouldFetch.current = false;
+        fetchTodos();
+      }
+    }
+  }, [safeDb, rawDb, getDateRange, selectedContexts, selectedStatus]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    // disabled for now
+    return;
+
     (async () => {
       try {
         await safeDb.safeBulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
@@ -121,7 +350,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
   const filteredActivities = useMemo(() => {
     return activities.filter((a) => {
       // TODO The 'split' is a CEST quick fix
-      return !todos.some((t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0]);
+      return !todos.some(
+        (t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0],
+      );
     });
   }, [activities, todos]);
 
@@ -131,7 +362,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
     }
 
     return todos.filter((todo) => {
-      return selectedTags.some((selectedTag) => todo.tags.includes(selectedTag));
+      return selectedTags.some((selectedTag) =>
+        todo.tags.includes(selectedTag),
+      );
     });
   }, [todos, selectedTags]);
 
@@ -162,10 +395,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
 
   const durationByContext = useMemo(() => {
     return Object.fromEntries(
-      Array.from(group(activities, (d) => d.doc.context ?? CONTEXT_DEFAULT)).map((d) => [
-        d[0],
-        getFormattedDurationForActivities(d[1]),
-      ]),
+      Array.from(
+        group(activities, (d) => d.doc.context ?? CONTEXT_DEFAULT),
+      ).map((d) => [d[0], getFormattedDurationForActivities(d[1])]),
     );
   }, [activities]);
 
@@ -183,7 +415,8 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
   }, [activities]);
 
   const dataStr =
-    'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(todos, null, 2));
+    'data:text/json;charset=utf-8,' +
+    encodeURIComponent(JSON.stringify(todos, null, 2));
 
   // Combine manual error state with query errors
   const displayError = error || (queryError as DatabaseError);
@@ -214,7 +447,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
       {/* Show inline error if we have data */}
       {displayError && todos.length > 0 && (
         <div className="px-4 pt-2">
-          <DatabaseErrorMessage error={displayError} onDismiss={() => setError(null)} />
+          <DatabaseErrorMessage
+            error={displayError}
+            onDismiss={() => setError(null)}
+          />
         </div>
       )}
 
@@ -228,7 +464,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
 
                   todosByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
 
-                  const activitiesByMapDate = durationByContextByDate.find((d) => d[0] === context);
+                  const activitiesByMapDate = durationByContextByDate.find(
+                    (d) => d[0] === context,
+                  );
 
                   const activityDurationByDate = activitiesByMapDate
                     ? Array.from(activitiesByMapDate[1]).map((d) => [
@@ -236,7 +474,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
                         getFormattedDurationForActivities(d[1]),
                       ])
                     : [];
-                  activityDurationByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
+                  activityDurationByDate.sort((a, b) =>
+                    ('' + a[0]).localeCompare(b[0]),
+                  );
 
                   return (
                     <div className="eddo-w-kanban" key={context}>
@@ -251,15 +491,22 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
                         </div>
                       </div>
 
-                      <div className="eddo-w-kanban mb-4 space-y-4" id="kanban-list-1">
+                      <div
+                        className="eddo-w-kanban mb-4 space-y-4"
+                        id="kanban-list-1"
+                      >
                         {todosByDate.map(([todoDate, allTodosForDate]) => {
                           const todosForDate = uniqBy(allTodosForDate, (d) => {
                             return isLatestVersion(d) ? d._id : d.id;
                           });
 
                           todosForDate.sort((a, b) => {
-                            const aTitle = isLatestVersion(a) ? a.title : a.doc.title;
-                            const bTitle = isLatestVersion(b) ? b.title : b.doc.title;
+                            const aTitle = isLatestVersion(a)
+                              ? a.title
+                              : a.doc.title;
+                            const bTitle = isLatestVersion(b)
+                              ? b.title
+                              : b.doc.title;
 
                             return ('' + aTitle).localeCompare(bTitle);
                           });
@@ -267,14 +514,18 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
                           let displayDate = '';
 
                           try {
-                            displayDate = format(new Date(todoDate), 'yyyy-MM-dd');
+                            displayDate = format(
+                              new Date(todoDate),
+                              'yyyy-MM-dd',
+                            );
                           } catch (_e) {
                             displayDate = format(new Date(), 'yyyy-MM-dd');
                           }
 
-                          const activityDurationItem = activityDurationByDate.find(
-                            (d) => d[0] === displayDate,
-                          );
+                          const activityDurationItem =
+                            activityDurationByDate.find(
+                              (d) => d[0] === displayDate,
+                            );
 
                           const durationForDate = activityDurationItem
                             ? activityDurationItem[1]
@@ -284,7 +535,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
                             <div key={`${context}_${todoDate}`}>
                               <div className="flex items-center justify-between">
                                 <div className="mx-1">{displayDate}</div>
-                                <div className="mx-1 text-xs text-gray-400">{durationForDate}</div>
+                                <div className="mx-1 text-xs text-gray-400">
+                                  {durationForDate}
+                                </div>
                               </div>
                               {todosForDate.map((todoOrActivity) => {
                                 const todo = isLatestVersion(todoOrActivity)
@@ -292,11 +545,17 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
                                   : todoOrActivity.doc;
                                 return (
                                   <TodoListElement
-                                    active={timeTrackingActive.some((d: string) => d === todo._id)}
+                                    active={timeTrackingActive.some(
+                                      (d: string) => d === todo._id,
+                                    )}
                                     activeDate={displayDate}
-                                    activityOnly={!isLatestVersion(todoOrActivity)}
+                                    activityOnly={
+                                      !isLatestVersion(todoOrActivity)
+                                    }
                                     key={todo._id}
-                                    timeTrackingActive={timeTrackingActive.length > 0}
+                                    timeTrackingActive={
+                                      timeTrackingActive.length > 0
+                                    }
                                     todo={todo}
                                   />
                                 );

@@ -5,7 +5,11 @@
 // @ts-expect-error - Used for type namespace access
 import type PouchDB from 'pouchdb-browser';
 
-import { DESIGN_DOCS, REQUIRED_INDEXES, type DesignDocument } from '@eddo/core-shared';
+import {
+  DESIGN_DOCS,
+  REQUIRED_INDEXES,
+  type DesignDocument,
+} from '@eddo/core-shared';
 
 import type { SafeDbOperations } from './api/safe-db-operations';
 
@@ -24,7 +28,8 @@ export async function ensureDesignDocuments(
 
       // Check if update is needed
       const needsUpdate =
-        !existingDoc || JSON.stringify(existingDoc.views) !== JSON.stringify(expectedDoc.views);
+        !existingDoc ||
+        JSON.stringify(existingDoc.views) !== JSON.stringify(expectedDoc.views);
 
       if (needsUpdate) {
         // Update or create the design document
@@ -54,7 +59,9 @@ async function createIndexes(db: PouchDB.Database): Promise<void> {
   console.log('🔍 Creating indexes...');
 
   if (!db || typeof db.createIndex !== 'function') {
-    console.warn('⚠️  Database does not support createIndex. Skipping index creation.');
+    console.warn(
+      '⚠️  Database does not support createIndex. Skipping index creation.',
+    );
     return;
   }
 
