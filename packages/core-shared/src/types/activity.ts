@@ -4,5 +4,5 @@ export interface Activity {
   doc: Todo;
   from: string;
   id: string;
-  to: string;
+  to: string | null;
 }

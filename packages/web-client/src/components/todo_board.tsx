@@ -230,21 +230,36 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       let newTodos: (Todo | unknown)[] = [];
       let newActivities: Activity[] = [];
 
+      console.log('fetchTodos DEBUG:', {
+        dateRange: dateRange
+          ? `${dateRange.startDate} to ${dateRange.endDate}`
+          : 'ALL-TIME',
+        selectedTimeRange: selectedTimeRange.type,
+      });
+
       // Use single reliable approach: traditional query + client-side filtering
       if (dateRange) {
+        console.time('todos-date-range-query');
         // Query by date range (current week, month, year, or custom range)
         newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
           descending: false,
           endkey: dateRange.endDate,
-          include_docs: true,
+          include_docs: false,
           startkey: dateRange.startDate,
         });
+        console.timeEnd('todos-date-range-query');
+        console.log(
+          `todos-date-range-query returned ${newTodos.length} results`,
+        );
       } else {
+        console.time('todos-all-time-query');
         // All-time query - get all todos
         newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
           descending: false,
-          include_docs: true,
+          include_docs: false,
         });
+        console.timeEnd('todos-all-time-query');
+        console.log(`todos-all-time-query returned ${newTodos.length} results`);
       }
 
       // Query activities using same approach as todos
@@ -254,14 +269,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
           descending: false,
           endkey: dateRange.endDate,
-          include_docs: true,
+          include_docs: false,
           startkey: dateRange.startDate,
         });
       } else {
         // All-time query - get all activities
         newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
           descending: false,
-          include_docs: true,
+          include_docs: false,
         });
       }
       console.timeEnd('fetchActivities');
@@ -359,7 +374,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
   const filteredActivities = useMemo(() => {
     return activities.filter((activity) => {
-      // Activities contain the full todo document in activity.doc - use it directly!
       const todo = activity.doc;
 
       // Apply same filtering logic as filteredTodos
