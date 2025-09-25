@@ -89,7 +89,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         setIsInitialized(true);
       }
     })();
-  }, [isInitialized, safeDb]);
+  }, [isInitialized, safeDb, rawDb]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -254,7 +254,15 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         fetchTodos();
       }
     }
-  }, [safeDb, rawDb, getDateRange, selectedContexts, selectedStatus]);
+  }, [
+    safeDb,
+    rawDb,
+    getDateRange,
+    selectedContexts,
+    selectedStatus,
+    selectedTimeRange,
+    selectedTags,
+  ]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -271,13 +279,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       }
     })();
   }, [outdatedTodos, isInitialized, safeDb]);
-
-  const filteredActivities = activities.filter((a) => {
-    // TODO The 'split' is a CEST quick fix
-    return !todos.some(
-      (t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0],
-    );
-  });
 
   const filteredTodos = useMemo(() => {
     let filtered = todos;
@@ -313,6 +314,40 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
     return filtered;
   }, [todos, selectedTags, selectedContexts, selectedStatus]);
+
+  const filteredActivities = activities.filter((activity) => {
+    // Activities contain the full todo document in activity.doc - use it directly!
+    const todo = activity.doc;
+
+    // Apply same filtering logic as filteredTodos
+    // Context filtering
+    if (selectedContexts.length > 0) {
+      if (!selectedContexts.includes(todo.context || CONTEXT_DEFAULT)) {
+        return false;
+      }
+    }
+
+    // Status filtering
+    if (selectedStatus !== 'all') {
+      if (selectedStatus === 'completed' && todo.completed === null) {
+        return false;
+      }
+      if (selectedStatus === 'incomplete' && todo.completed !== null) {
+        return false;
+      }
+    }
+
+    // Tag filtering
+    if (selectedTags.length > 0) {
+      if (
+        !selectedTags.some((selectedTag) => todo.tags.includes(selectedTag))
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   const groupedByContextByDate = useMemo(() => {
     const grouped = Array.from(
