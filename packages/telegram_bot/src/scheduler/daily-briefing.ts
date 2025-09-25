@@ -231,21 +231,11 @@ export class DailyBriefingScheduler {
   private async generateBriefingContent(
     context: BriefingContext,
   ): Promise<string> {
-    try {
-      // 1. Fetch necessary context data from database
-      const briefingData = await this.fetchBriefingContextData(context);
+    // 1. Fetch necessary context data from database
+    const briefingData = await this.fetchBriefingContextData(context);
 
-      // 2. Generate LLM briefing using AI service with system prompt
-      return await this.generateAIBriefing(context, briefingData);
-    } catch (error) {
-      logger.error('Failed to generate briefing content', {
-        userId: context.user._id,
-        error,
-      });
-
-      // Fallback to a simple briefing if generation fails
-      return this.generateFallbackBriefing(context);
-    }
+    // 2. Generate LLM briefing using AI service with system prompt
+    return await this.generateAIBriefing(context, briefingData);
   }
 
   /**
@@ -440,24 +430,6 @@ Please create a comprehensive but concise daily briefing following GTD principle
       // Re-throw to let caller handle fallback
       throw error;
     }
-  }
-
-  /**
-   * Generate a simple fallback briefing if AI generation fails
-   */
-  private generateFallbackBriefing(context: BriefingContext): string {
-    return `🌅 **Good Morning, ${context.user.username}!**
-
-Your daily briefing for ${context.today}:
-
-📋 **Quick Summary:**
-- Check your todos for today's tasks
-- Review any overdue items
-- Focus on your next actions
-
-💪 **Ready to make today productive!**
-
-_This is a simplified briefing. The AI-generated summary is temporarily unavailable._`;
   }
 
   /**
