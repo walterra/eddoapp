@@ -108,6 +108,14 @@ describe('TodoBoard', () => {
     hours: 2,
   });
 
+  const defaultProps = {
+    currentDate,
+    selectedTags: [],
+    selectedContexts: [],
+    selectedStatus: 'all' as const,
+    selectedTimeRange: { type: 'current-week' as const },
+  };
+
   beforeEach(async () => {
     vi.clearAllMocks();
     testDb = createTestPouchDb();
@@ -155,10 +163,9 @@ describe('TodoBoard', () => {
           return Promise.resolve([]);
         });
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(
@@ -205,10 +212,9 @@ describe('TodoBoard', () => {
           return Promise.resolve([]);
         });
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
@@ -248,10 +254,9 @@ describe('TodoBoard', () => {
           return Promise.resolve([]);
         });
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
@@ -301,7 +306,7 @@ describe('TodoBoard', () => {
         });
 
       const { rerender } = renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={['work']} />,
+        <TodoBoard {...defaultProps} selectedTags={['work']} />,
         { testDb: testDb.contextValue },
       );
 
@@ -320,10 +325,7 @@ describe('TodoBoard', () => {
 
       // Test with multiple tags
       rerender(
-        <TodoBoard
-          currentDate={currentDate}
-          selectedTags={['work', 'personal']}
-        />,
+        <TodoBoard {...defaultProps} selectedTags={['work', 'personal']} />,
       );
 
       await waitFor(() => {
@@ -339,7 +341,7 @@ describe('TodoBoard', () => {
       });
 
       // Test with no tag filter
-      rerender(<TodoBoard currentDate={currentDate} selectedTags={[]} />);
+      rerender(<TodoBoard {...defaultProps} />);
 
       await waitFor(() => {
         expect(
@@ -387,10 +389,9 @@ describe('TodoBoard', () => {
           return Promise.resolve([]);
         });
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       // Check that context headers are displayed
       await waitFor(() => {
@@ -439,10 +440,9 @@ describe('TodoBoard', () => {
           return Promise.resolve([]);
         });
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       // Should use default context
       await waitFor(() => {
@@ -466,10 +466,9 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi.fn().mockRejectedValue(error);
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(
@@ -492,10 +491,9 @@ describe('TodoBoard', () => {
 
       testDb.contextValue.safeDb.safeQuery = vi.fn().mockRejectedValue(error);
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(
@@ -532,10 +530,9 @@ describe('TodoBoard', () => {
         return Promise.resolve([]);
       });
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(
@@ -570,10 +567,9 @@ describe('TodoBoard', () => {
         .fn()
         .mockReturnValue(fetchPromise);
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       // During loading, no error fallback should be shown
       expect(
@@ -607,10 +603,9 @@ describe('TodoBoard', () => {
           return Promise.resolve([]);
         });
 
-      renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         const downloadLink = screen.getByText('download json');
@@ -629,10 +624,9 @@ describe('TodoBoard', () => {
       const mockSafeQuery = vi.fn().mockResolvedValue([]);
       testDb.contextValue.safeDb.safeQuery = mockSafeQuery;
 
-      const { rerender } = renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      const { rerender } = renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(mockSafeQuery).toHaveBeenCalled();
@@ -642,7 +636,7 @@ describe('TodoBoard', () => {
 
       // Change to different week
       const newDate = new Date('2025-01-22T10:00:00.000Z'); // Next week
-      rerender(<TodoBoard currentDate={newDate} selectedTags={[]} />);
+      rerender(<TodoBoard {...defaultProps} currentDate={newDate} />);
 
       await waitFor(() => {
         expect(mockSafeQuery.mock.calls.length).toBeGreaterThan(
@@ -655,10 +649,9 @@ describe('TodoBoard', () => {
       const mockSafeQuery = vi.fn().mockResolvedValue([]);
       testDb.contextValue.safeDb.safeQuery = mockSafeQuery;
 
-      const { rerender } = renderWithPouchDb(
-        <TodoBoard currentDate={currentDate} selectedTags={[]} />,
-        { testDb: testDb.contextValue },
-      );
+      const { rerender } = renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       await waitFor(() => {
         expect(mockSafeQuery).toHaveBeenCalled();
@@ -668,7 +661,7 @@ describe('TodoBoard', () => {
 
       // Change to different day in same week
       const newDate = new Date('2025-01-16T10:00:00.000Z'); // Thursday, same week
-      rerender(<TodoBoard currentDate={newDate} selectedTags={[]} />);
+      rerender(<TodoBoard {...defaultProps} currentDate={newDate} />);
 
       // Wait a bit to ensure no additional calls are made
       await new Promise((resolve) => setTimeout(resolve, 100));

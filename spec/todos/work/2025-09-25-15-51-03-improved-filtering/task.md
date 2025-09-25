@@ -1,7 +1,8 @@
 # improved filtering: currently we enforce filtering by week and can do optional tag filtering. we need to support more filtering use cases, for example show all uncompleted todos without the weekly filtering. improve the filtering UI to be more flexible. weekly filter should still be the default.
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-09-25T15:51:03
+**Started:** 2025-09-25T15:56:42
 **Agent PID:** 58737
 
 ## Description

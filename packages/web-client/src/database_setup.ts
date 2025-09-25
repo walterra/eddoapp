@@ -118,6 +118,11 @@ export const REQUIRED_INDEXES = [
     name: 'version-completed-due-index',
     type: 'json' as const,
   },
+  {
+    index: { fields: ['version', 'context', 'completed', 'due'] },
+    name: 'version-context-completed-due-index',
+    type: 'json' as const,
+  },
 ];
 
 /**

@@ -8,7 +8,16 @@ import {
   migrateTodo,
 } from '@eddo/core-client';
 import { group } from 'd3-array';
-import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
+import {
+  add,
+  endOfMonth,
+  endOfWeek,
+  endOfYear,
+  format,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+} from 'date-fns';
 import { uniqBy } from 'lodash-es';
 import {
   type FC,
@@ -26,16 +35,24 @@ import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
 import { FormattedMessage } from './formatted_message';
+import type { CompletionStatus } from './status_filter';
+import type { TimeRange } from './time_range_filter';
 import { TodoListElement } from './todo_list_element';
 
 interface TodoBoardProps {
   currentDate: Date;
   selectedTags: string[];
+  selectedContexts: string[];
+  selectedStatus: CompletionStatus;
+  selectedTimeRange: TimeRange;
 }
 
 export const TodoBoard: FC<TodoBoardProps> = ({
   currentDate,
   selectedTags,
+  selectedContexts,
+  selectedStatus,
+  selectedTimeRange,
 }) => {
   const { safeDb, rawDb } = usePouchDb();
   const { changeCount } = useDatabaseChanges();
@@ -53,17 +70,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   const shouldFetch = useRef(true);
   // check integrity, e.g. if design docs are present
   const [isInitialized, setIsInitialized] = useState(false);
-
-  const currentCalendarWeek = getISOWeek(currentDate);
-  // TODO The 'add' is a CEST quick fix
-  const currentStartOfWeek = add(
-    startOfWeek(currentDate, { weekStartsOn: 1 }),
-    { hours: 2 },
-  );
-  // TODO The 'add' is a CEST quick fix
-  const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
-    hours: 2,
-  });
 
   useEffect(() => {
     if (isInitialized) return;
@@ -90,7 +96,15 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
     fetchTodos();
     fetchTimeTrackingActive();
-  }, [currentDate, isInitialized, changeCount]);
+  }, [
+    currentDate,
+    isInitialized,
+    changeCount,
+    selectedTags,
+    selectedContexts,
+    selectedStatus,
+    selectedTimeRange,
+  ]);
 
   const fetchTimeTrackingActive = useCallback(async () => {
     try {
@@ -108,6 +122,53 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     }
   }, [safeDb]);
 
+  const getDateRange = useCallback(() => {
+    const currentStartOfWeek = add(
+      startOfWeek(currentDate, { weekStartsOn: 1 }),
+      { hours: 2 },
+    );
+    const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
+      hours: 2,
+    });
+
+    switch (selectedTimeRange.type) {
+      case 'current-week':
+        return {
+          startDate: currentStartOfWeek.toISOString(),
+          endDate: currentEndOfWeek.toISOString(),
+        };
+      case 'current-month':
+        return {
+          startDate: add(startOfMonth(currentDate), { hours: 2 }).toISOString(),
+          endDate: add(endOfMonth(currentDate), { hours: 2 }).toISOString(),
+        };
+      case 'current-year':
+        return {
+          startDate: add(startOfYear(currentDate), { hours: 2 }).toISOString(),
+          endDate: add(endOfYear(currentDate), { hours: 2 }).toISOString(),
+        };
+      case 'custom':
+        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+          return {
+            startDate: new Date(
+              selectedTimeRange.startDate + 'T00:00:00',
+            ).toISOString(),
+            endDate: new Date(
+              selectedTimeRange.endDate + 'T23:59:59',
+            ).toISOString(),
+          };
+        }
+        return null;
+      case 'all-time':
+        return null;
+      default:
+        return {
+          startDate: currentStartOfWeek.toISOString(),
+          endDate: currentEndOfWeek.toISOString(),
+        };
+    }
+  }, [currentDate, selectedTimeRange]);
+
   const fetchTodos = useCallback(async () => {
     if (isFetching.current) {
       shouldFetch.current = true;
@@ -120,26 +181,79 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
     try {
       console.time('fetchTodos');
-      const newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-        descending: false,
-        endkey: currentEndOfWeek.toISOString(),
-        include_docs: false,
-        startkey: currentStartOfWeek.toISOString(),
-      });
-      console.timeEnd('fetchTodos');
 
-      console.time('fetchActivities');
-      const newActivities = await safeDb.safeQuery<Activity>(
-        'todos',
-        'byActive',
-        {
+      const dateRange = getDateRange();
+      let newTodos: (Todo | unknown)[] = [];
+      let newActivities: Activity[] = [];
+
+      if (!rawDb) {
+        throw new Error('Raw database not available for flexible filtering');
+      }
+
+      // Build selector for todos
+      const todoSelector: Record<string, unknown> = { version: 'alpha3' };
+
+      // Add date filtering
+      if (dateRange) {
+        todoSelector.due = {
+          $gte: dateRange.startDate,
+          $lte: dateRange.endDate,
+        };
+      }
+
+      // Add context filtering
+      if (selectedContexts.length > 0) {
+        todoSelector.context = { $in: selectedContexts };
+      }
+
+      // Add completion status filtering
+      if (selectedStatus !== 'all') {
+        if (selectedStatus === 'completed') {
+          todoSelector.completed = { $ne: null };
+        } else if (selectedStatus === 'incomplete') {
+          todoSelector.completed = null;
+        }
+      }
+
+      // Add tag filtering (done client-side later for performance)
+
+      // Choose optimal index
+      let use_index = 'version-due-index';
+      if (selectedContexts.length > 0 && selectedStatus !== 'all') {
+        use_index = 'version-context-completed-due-index';
+      } else if (selectedContexts.length > 0) {
+        use_index = 'version-context-due-index';
+      } else if (selectedStatus !== 'all') {
+        use_index = 'version-completed-due-index';
+      }
+
+      const todoResult = await rawDb.find({
+        selector: todoSelector,
+        sort: [{ due: 'asc' }],
+        use_index,
+      });
+
+      newTodos = todoResult.docs;
+
+      // For activities, we still need the time range for now since we don't have flexible activity filtering yet
+      if (dateRange) {
+        console.time('fetchActivities');
+        newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
           descending: false,
-          endkey: currentEndOfWeek.toISOString(),
+          endkey: dateRange.endDate,
           include_docs: false,
-          startkey: currentStartOfWeek.toISOString(),
-        },
-      );
-      console.timeEnd('fetchActivities');
+          startkey: dateRange.startDate,
+        });
+        console.timeEnd('fetchActivities');
+      } else {
+        // For all-time view, get all activities
+        newActivities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
+          descending: false,
+          include_docs: false,
+        });
+      }
+
+      console.timeEnd('fetchTodos');
 
       console.time('setOutdatedTodos');
       setOutdatedTodos(
@@ -171,14 +285,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         fetchTodos();
       }
     }
-  }, [safeDb, currentStartOfWeek, currentEndOfWeek]);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    fetchTodos();
-    fetchTimeTrackingActive();
-  }, [currentCalendarWeek, isInitialized]);
+  }, [safeDb, rawDb, getDateRange, selectedContexts, selectedStatus]);
 
   useEffect(() => {
     if (!isInitialized) return;
