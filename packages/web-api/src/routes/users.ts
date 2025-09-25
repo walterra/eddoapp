@@ -33,6 +33,15 @@ const linkTelegramSchema = z.object({
   telegramId: z.number().int().positive(),
 });
 
+const updatePreferencesSchema = z.object({
+  dailyBriefing: z.boolean().optional(),
+  briefingTime: z
+    .string()
+    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .optional(),
+  timezone: z.string().optional(),
+});
+
 interface JwtTokenPayload {
   userId: string;
   username: string;
@@ -84,6 +93,7 @@ usersApp.get('/profile', async (c) => {
       updatedAt: user.updated_at,
       permissions: user.permissions,
       status: user.status,
+      preferences: user.preferences,
     });
   } catch (error) {
     console.error('Profile fetch error:', error);
@@ -176,6 +186,7 @@ usersApp.put('/profile', async (c) => {
       updatedAt: updatedUser.updated_at,
       permissions: updatedUser.permissions,
       status: updatedUser.status,
+      preferences: updatedUser.preferences,
     });
   } catch (error) {
     console.error('Profile update error:', error);
@@ -330,6 +341,50 @@ usersApp.delete('/telegram-link', async (c) => {
   } catch (error) {
     console.error('Telegram unlink error:', error);
     return c.json({ error: 'Failed to unlink Telegram account' }, 500);
+  }
+});
+
+// Update user preferences
+usersApp.put('/preferences', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  const userToken = await extractUserFromToken(authHeader);
+
+  if (!userToken) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
+  try {
+    const body = await c.req.json();
+    const preferences = updatePreferencesSchema.parse(body);
+
+    const user = await userRegistry.findByUsername(userToken.username);
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    if (user.status !== 'active') {
+      return c.json({ error: 'Account is suspended' }, 403);
+    }
+
+    // Update preferences
+    const updatedUser = await userRegistry.update(user._id, {
+      preferences: {
+        ...user.preferences,
+        ...preferences,
+      },
+      updated_at: new Date().toISOString(),
+    });
+
+    return c.json({
+      success: true,
+      preferences: updatedUser.preferences,
+    });
+  } catch (error) {
+    console.error('Preferences update error:', error);
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Invalid preferences format' }, 400);
+    }
+    return c.json({ error: 'Failed to update preferences' }, 500);
   }
 });
 

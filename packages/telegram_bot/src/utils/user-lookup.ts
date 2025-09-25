@@ -1,4 +1,5 @@
 import { createEnv, createUserRegistry } from '@eddo/core-server';
+import { UserPreferences } from '@eddo/core-shared';
 
 import { logger } from './logger.js';
 
@@ -15,6 +16,7 @@ export interface TelegramUser {
   permissions: string[];
   created_at: string;
   updated_at: string;
+  preferences: UserPreferences;
 }
 
 /**
@@ -104,6 +106,7 @@ export async function lookupUserByTelegramId(
       permissions: user.permissions,
       created_at: user.created_at,
       updated_at: user.updated_at,
+      preferences: user.preferences,
     };
 
     // Cache the result

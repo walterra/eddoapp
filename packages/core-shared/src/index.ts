@@ -11,6 +11,7 @@ export * from './versions/todo_alpha2';
 export * from './versions/todo_alpha3';
 export * from './versions/migrate';
 export * from './versions/user_registry_alpha1';
+export * from './versions/user_registry_alpha2';
 export * from './versions/migrate_user_registry';
 
 // Database monitoring

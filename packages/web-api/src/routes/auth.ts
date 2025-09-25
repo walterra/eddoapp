@@ -93,7 +93,11 @@ authApp.post('/register', async (c) => {
       updated_at: new Date().toISOString(),
       permissions: ['read', 'write'],
       status: 'active',
-      version: 'alpha1',
+      version: 'alpha2',
+      preferences: {
+        dailyBriefing: false,
+        briefingTime: '07:00',
+      },
     });
 
     // Create user database with design documents and indexes

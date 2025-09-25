@@ -140,6 +140,10 @@ describe('Authentication Middleware', () => {
         permissions: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        preferences: {
+          dailyBriefing: false,
+          briefingTime: '07:00',
+        },
       });
       const mockCtx = createMockContext(123456789);
       await authMiddleware(mockCtx, nextMock);
@@ -346,6 +350,10 @@ describe('Authentication Middleware', () => {
           permissions: [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          preferences: {
+            dailyBriefing: false,
+            briefingTime: '07:00',
+          },
         });
 
         // User should still be able to access if they become authorized
