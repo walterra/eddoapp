@@ -9,7 +9,7 @@
     "date-fns": "^4.1.0",
     "events": "^3.3.0",
     "flowbite": "^3.1.2",
-    "flowbite-react": "^0.12.8",
+    "flowbite-react": "^0.12.9",
     "lodash-es": "^4.17.21",
     "pouchdb-browser": "^9.0.0",
     "pouchdb-find": "^9.0.0",
