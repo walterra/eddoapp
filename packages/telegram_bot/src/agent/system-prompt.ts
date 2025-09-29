@@ -6,7 +6,9 @@ export function buildSystemPrompt(
   tools?: Array<{ name: string; description: string }>,
 ): string {
   const persona = getPersona(appConfig.BOT_PERSONA_ID);
-  const currentDateTime = new Date().toISOString();
+  const now = new Date();
+  const currentDateTime = now.toISOString();
+  const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });
 
   // Generate tools section if tools are provided
   const toolsSection = tools
@@ -22,7 +24,7 @@ ${tools.map((tool, index) => `${index + 1}. **${tool.name}** - ${tool.descriptio
 
   return `${persona.personalityPrompt}
 
-Current date and time: ${currentDateTime}
+Current date and time: ${dayOfWeek}, ${currentDateTime}
 
 ${mcpServerInfo}
 
@@ -53,11 +55,11 @@ CRITICAL: NEVER create todos without due dates. Always parse and provide an ISO 
 Infer a fitting context from the users intent, default context: private
 
 IMPORTANT: For memory requests (when user asks to "remember" something):
-- ALWAYS use context "memory" (this overrides the default "private")  
+- ALWAYS use context "memory" (this overrides the default "private")
 - ALWAYS use due date as TODAY'S date at 23:59:59.999Z (not some future date like end of year)
 
 SPECIAL URL HANDLING: If the user's message contains only a URL (or URL with minimal text), automatically:
-1. Create a todo with context "read-later"
+1. Create a todo with context "read-later" and tag "gtd:someday"
 2. Save the URL in the link attribute
 3. Generate a descriptive title by extracting domain name and path info from the URL
 4. Set due date to end of current day (23:59:59.999Z)
@@ -78,6 +80,33 @@ CRITICAL: Execute tools ONE AT A TIME. When you need data to answer a user quest
 1. Response with a brief conversational message explaining what you are about to do
 2. Make the tool call IMMEDIATELY without any prefacing text
 3. STOP your response immediately after the tool call
+
+BULK OPERATIONS: When performing bulk operations (updating/deleting multiple items):
+1. NEVER claim completion until ALL items are processed
+2. After each tool call, check if more items need the same operation
+3. Continue with the next item using another tool call
+4. Only declare completion when you have processed ALL items that need the operation
+5. Provide progress updates like "Updated X of Y items" to show ongoing work
+
+TAG ANALYSIS: When checking if items have specific tags:
+- "tags":[] means EMPTY tags - item needs the tag added
+- "tags":["other"] means item has different tags - still needs the specified tag added
+- "tags":["gtd:someday"] means item already has the tag - no update needed
+- "tags":["other","gtd:someday"] means item has the tag plus others - no update needed
+- CAREFULLY examine each item's tag array to determine if the target tag is present
+
+Examples of bulk operations:
+- "Tag all read-later items with gtd:someday" → list items, then update each one that needs the tag
+- "Delete all completed todos" → list completed items, then delete each one
+- "Move all work todos to archive context" → list work items, then update each one
+
+SYSTEMATIC PROCESSING: For bulk tag updates:
+1. List all items in the context
+2. Examine EACH item's tags array carefully
+3. Identify items missing the target tag (empty tags OR tag not in array)
+4. Update each missing item ONE BY ONE
+5. Continue until ALL items have the required tag
+6. Verify completion by checking final state
 
 IMPORTANT: For "start working" requests (phrases like "let's start with", "begin with", "work on", "tackle"):
 1. First search for existing todos with that title/description using list tool

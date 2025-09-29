@@ -313,10 +313,14 @@ export class SimpleAgent {
             resultPreview: JSON.stringify(toolResult).substring(0, 200) + '...',
           });
 
-          // Add tool result to conversation history
+          // Add tool result to conversation history with clean summary
+          const cleanSummary = this.extractCleanToolSummary(
+            toolResult,
+            toolCall.name,
+          );
           state.history.push({
             role: 'user',
-            content: `Tool "${toolCall.name}" executed successfully. Result: ${JSON.stringify(toolResult)}`,
+            content: cleanSummary,
             timestamp: Date.now(),
           });
         } catch (error) {
@@ -503,6 +507,40 @@ export class SimpleAgent {
 
   private stopPeriodicTyping(interval: NodeJS.Timeout): void {
     clearInterval(interval);
+  }
+
+  private extractCleanToolSummary(
+    toolResult: unknown,
+    toolName: string,
+  ): string {
+    try {
+      // Handle MCP tool results which come as arrays with type/text objects
+      if (Array.isArray(toolResult) && toolResult.length > 0) {
+        const textContent = toolResult.find(
+          (item: { type?: string; text?: string }) => item.type === 'text',
+        );
+        if (textContent?.text) {
+          try {
+            // Try to parse the JSON content to extract clean summary
+            const parsed = JSON.parse(textContent.text);
+            if (parsed.summary) {
+              return `Tool "${toolName}" completed: ${parsed.summary}`;
+            }
+            if (parsed.data?.title) {
+              return `Tool "${toolName}" completed for: ${parsed.data.title}`;
+            }
+          } catch {
+            // If JSON parsing fails, use a generic success message
+          }
+        }
+      }
+
+      // Fallback to generic success message
+      return `Tool "${toolName}" executed successfully`;
+    } catch (error) {
+      logger.debug('Failed to extract clean tool summary', { error, toolName });
+      return `Tool "${toolName}" executed successfully`;
+    }
   }
 
   async getStatus(): Promise<{
