@@ -13,7 +13,7 @@ import {
 } from '../utils/markdown.js';
 import { buildSystemPrompt } from './system-prompt.js';
 
-interface AgentState {
+export interface AgentState {
   input: string;
   history: Array<{
     role: 'user' | 'assistant';
@@ -211,7 +211,7 @@ export class SimpleAgent {
       await this.showTyping(telegramContext);
 
       const llmResponse = await claudeService.generateResponse(
-        conversationHistory,
+        state.history,
         systemPrompt,
       );
 

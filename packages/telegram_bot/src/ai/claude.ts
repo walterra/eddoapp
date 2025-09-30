@@ -1,11 +1,12 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 
+import type { AgentState } from '../agent/simple-agent.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
 export interface ClaudeService {
   generateResponse: (
-    conversationHistory: string,
+    conversationHistory: AgentState['history'],
     systemPrompt: string,
   ) => Promise<string>;
 }
@@ -29,7 +30,7 @@ export class SimpleClaudeService implements ClaudeService {
   }
 
   async generateResponse(
-    conversationHistory: string,
+    conversationHistory: AgentState['history'],
     systemPrompt: string,
   ): Promise<string> {
     try {
@@ -48,12 +49,10 @@ export class SimpleClaudeService implements ClaudeService {
         model: appConfig.LLM_MODEL || 'claude-3-haiku-20240307',
         max_tokens: 1000,
         system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: conversationHistory,
-          },
-        ],
+        messages: conversationHistory.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
       });
 
       const content = response.content[0];
