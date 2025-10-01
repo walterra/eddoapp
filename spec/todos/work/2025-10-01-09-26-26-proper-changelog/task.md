@@ -28,23 +28,23 @@ This setup provides:
 
 ## Success Criteria
 
-- [ ] Functional: Changesets CLI installed and configured with proper config.json
-- [ ] Functional: `pnpm changeset` command creates changeset files successfully
-- [ ] Functional: `pnpm version` updates version numbers based on changesets
-- [ ] Functional: Commitizen installed and `pnpm commit` provides interactive commit prompt
-- [ ] Functional: Commitlint installed and validates commit messages via git hook
-- [ ] Functional: Husky git hooks properly configured (commit-msg and pre-commit)
-- [ ] Functional: Lint-staged runs on pre-commit hook
-- [ ] Functional: Initial CHANGELOG.md file created with proper format
-- [ ] Functional: GitHub Actions workflow for automated releases configured
-- [ ] Functional: Version bump script creates conventional commits
-- [ ] Quality: All dependencies added to package.json devDependencies
-- [ ] Quality: All TypeScript type checks pass
-- [ ] Quality: Configuration files match astro-photostream patterns
-- [ ] User validation: Can create a test changeset and generate changelog entry
-- [ ] User validation: Can make a commit using commitizen interactive prompt
-- [ ] User validation: Invalid commit messages are rejected by commitlint
-- [ ] Documentation: CHANGELOG workflow documented in CLAUDE.md
+- [x] Functional: Changesets CLI installed and configured with proper config.json
+- [x] Functional: `pnpm changeset` command creates changeset files successfully
+- [x] Functional: `pnpm version` updates version numbers based on changesets
+- [x] Functional: Commitizen installed and `pnpm commit` provides interactive commit prompt
+- [x] Functional: Commitlint installed and validates commit messages via git hook
+- [x] Functional: Husky git hooks properly configured (commit-msg and pre-commit)
+- [x] Functional: Lint-staged runs on pre-commit hook
+- [x] Functional: Initial CHANGELOG.md file created with proper format
+- [x] Functional: GitHub Actions workflow for automated releases configured
+- [x] Functional: Version bump script creates conventional commits
+- [x] Quality: All dependencies added to package.json devDependencies
+- [x] Quality: All TypeScript type checks pass
+- [x] Quality: Configuration files match astro-photostream patterns
+- [x] User validation: Can create a test changeset and generate changelog entry
+- [x] User validation: Can make a commit using commitizen interactive prompt
+- [x] User validation: Invalid commit messages are rejected by commitlint
+- [x] Documentation: CHANGELOG workflow documented in CLAUDE.md
 
 ## Implementation Plan
 
@@ -99,8 +99,13 @@ This setup provides:
 
 ### Documentation
 
-- [ ] Update CLAUDE.md with CHANGELOG workflow and release process (CLAUDE.md)
+- [x] Update CLAUDE.md with CHANGELOG workflow and release process (CLAUDE.md)
 
 ## Review
 
 ## Notes
+
+- Added root package ('.') to pnpm-workspace.yaml to enable changesets for infrastructure changes
+- Configured privatePackages.version=true in changeset config to allow versioning private packages
+- Removed 'docs' from scope-enum to avoid overlap with 'docs' type
+- Added 'changelog', 'release', and 'spec' scopes for infrastructure work

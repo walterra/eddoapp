@@ -159,6 +159,20 @@ interface TodoAlpha3 {
   - If history rewriting is absolutely necessary, use modern tools like `git filter-repo` with careful consideration
 - Always warn about and get explicit confirmation before any operation that rewrites git history
 
+## CHANGELOG & Release Workflow
+
+This project uses **Changesets** for automated CHANGELOG generation and version management, with **Commitizen** and **Commitlint** for enforcing conventional commits. Do not run changesets or commits by yourself, do them only when user explictly asks for it.
+
+**Pre-commit hooks automatically run**:
+
+- `lint-staged` - formats and lints staged files
+- Changes are auto-formatted with Prettier and ESLint
+
+**Commit-msg hook validates**:
+
+- `commitlint` - ensures conventional commit format
+- Invalid commits are rejected with helpful error messages
+
 ## AI Agent Development Guidelines
 
 When working on AI agent code (especially in the telegram-bot package), follow these principles:
