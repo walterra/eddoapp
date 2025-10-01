@@ -5,7 +5,7 @@ import { usePouchDb } from '../pouch_db';
 import { useAuth } from './use_auth';
 
 export const useCouchDbSync = () => {
-  const { sync, healthMonitor } = usePouchDb();
+  const { sync, healthMonitor, rawDb } = usePouchDb();
   const { authToken, logout } = useAuth();
 
   const handleAuthError = useCallback(() => {
@@ -62,8 +62,20 @@ export const useCouchDbSync = () => {
       healthMonitor.updateSyncStatus('syncing');
     });
 
-    syncHandler.on('complete', () => {
+    syncHandler.on('complete', async () => {
       healthMonitor.updateSyncStatus('connected');
+
+      // Pre-warm indexes to avoid query-time rebuilding
+      try {
+        await rawDb.find({
+          selector: { version: 'alpha3' },
+          limit: 0,
+        });
+        console.log('✅ Indexes pre-warmed after sync');
+      } catch (err) {
+        // Don't fail sync if pre-warming fails
+        console.warn('⚠️  Index pre-warming failed:', err);
+      }
     });
 
     syncHandler.on('paused', () => {
@@ -77,5 +89,5 @@ export const useCouchDbSync = () => {
       syncHandler.cancel();
       healthMonitor.updateSyncStatus('disconnected');
     };
-  }, [sync, authToken, handleAuthError, healthMonitor]);
+  }, [sync, authToken, handleAuthError, healthMonitor, rawDb]);
 };
