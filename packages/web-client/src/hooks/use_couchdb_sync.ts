@@ -62,10 +62,15 @@ export const useCouchDbSync = () => {
       healthMonitor.updateSyncStatus('syncing');
     });
 
-    syncHandler.on('complete', async () => {
+    syncHandler.on('complete', () => {
+      healthMonitor.updateSyncStatus('connected');
+    });
+
+    syncHandler.on('paused', async () => {
       healthMonitor.updateSyncStatus('connected');
 
       // Pre-warm indexes to avoid query-time rebuilding
+      // This fires after each sync cycle completes in live sync mode
       try {
         await rawDb.find({
           selector: { version: 'alpha3' },
@@ -76,10 +81,6 @@ export const useCouchDbSync = () => {
         // Don't fail sync if pre-warming fails
         console.warn('⚠️  Index pre-warming failed:', err);
       }
-    });
-
-    syncHandler.on('paused', () => {
-      healthMonitor.updateSyncStatus('connected');
     });
 
     // Initial status

@@ -58,11 +58,11 @@ The goal is to maintain the offline-first architecture while eliminating UX impa
 ### Phase 2: Index Pre-warming
 
 - [x] Add rawDb to usePouchDb destructuring in use_couchdb_sync.ts:8
-- [x] Add pre-warming query to 'complete' event handler in use_couchdb_sync.ts:65-79
+- [x] Add pre-warming query to 'paused' event handler in use_couchdb_sync.ts:69-84 (moved from 'complete' to work with live sync)
 - [x] Add rawDb to useEffect dependencies in use_couchdb_sync.ts:92
 - [x] Automated test: Run `pnpm tsc:check` to verify TypeScript compilation
 - [x] Automated test: Run `pnpm test` to verify no regressions
-- [ ] User test: Verify index pre-warming logs appear in console after sync completes
+- [x] User test: Verify index pre-warming logs appear in console after sync completes
 
 ### Phase 3: Smart Sync Strategy
 
