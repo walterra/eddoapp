@@ -57,23 +57,23 @@ export { generateStableKey } from './utils/generate_stable_key';
 
 ### Phase 3: Refactor Core-Shared Package
 
-- [ ] Refactor packages/core-shared/src/index.ts types section (5 wildcards → ~25 named exports)
-- [ ] Refactor packages/core-shared/src/index.ts versions section (6 wildcards → ~15 named exports)
-- [ ] Refactor packages/core-shared/src/index.ts utils section (6 wildcards → ~15 named exports)
-- [ ] Run `pnpm tsc:check` to verify types
+- [x] Refactor packages/core-shared/src/index.ts types section (5 wildcards → ~25 named exports)
+- [x] Refactor packages/core-shared/src/index.ts versions section (7 wildcards → ~15 named exports)
+- [x] Refactor packages/core-shared/src/index.ts utils section (5 wildcards → ~10 named exports)
+- [x] Run `pnpm tsc:check` to verify types
 
 ### Phase 4: Refactor Core-Client and Core-Server
 
-- [ ] Refactor packages/core-client/src/index.ts (2 wildcards → explicit exports from core-shared + config)
-- [ ] Refactor packages/core-server/src/index.ts (5 wildcards → explicit exports from core-shared + server modules, fix duplicate exports)
-- [ ] Run `pnpm tsc:check` to verify types
+- [x] Refactor packages/core-client/src/index.ts (2 wildcards → explicit exports from core-shared + config)
+- [x] Refactor packages/core-server/src/index.ts (5 wildcards → explicit exports from core-shared + server modules, removed duplicate exports)
+- [x] Run `pnpm tsc:check` to verify types
 
 ### Phase 5: Quality Checks
 
-- [ ] Automated test: Run `pnpm lint` - should pass with no errors
-- [ ] Automated test: Run `pnpm tsc:check` - should pass with no errors
-- [ ] Automated test: Run `pnpm build` - should complete successfully
-- [ ] Automated test: Run `pnpm test` - all tests should pass
+- [x] Automated test: Run `pnpm lint` - should pass with no errors
+- [x] Automated test: Run `pnpm tsc:check` - should pass with no errors
+- [x] Automated test: Run `pnpm build` - should complete successfully
+- [x] Automated test: Run `pnpm test` - all tests should pass (365 tests passed)
 - [ ] User test: Verify import from '@eddo/core-shared' works in web-client/src/components/week.tsx
 - [ ] User test: Verify import from '@eddo/core-client' works in web-client/src/pages/settings.tsx
 - [ ] User test: Verify import from '@eddo/core-server' works in web-api/src/routes/health.ts
