@@ -5,5 +5,4 @@
 - eddo*user_registry is the couchdb user registry. eddo_user*\* are the todos for each user. looks like a prefix naming clash. what is someone registered with a username "registry"?
 - **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses https://github.com/w3cj/stoker
 - **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
-- linting rule to prohibit barrel exports
 - alternative layout option instead of the kanban board: condensed table, sections intead of boards
