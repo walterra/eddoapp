@@ -1,7 +1,7 @@
 import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import reactPlugin from 'eslint-plugin-react';
 import importPlugin from 'eslint-plugin-import';
+import reactPlugin from 'eslint-plugin-react';
+import tseslint from 'typescript-eslint';
 
 export default [
   {
@@ -30,7 +30,12 @@ export default [
       '@typescript-eslint/no-non-null-assertion': 0,
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { ignoreRestSiblings: true, argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+        {
+          ignoreRestSiblings: true,
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
       '@typescript-eslint/no-var-requires': 0,
       'array-bracket-spacing': [2, 'never'],
@@ -48,6 +53,16 @@ export default [
       'import/no-extraneous-dependencies': [2],
       'import/no-namespace': 2,
       'import/order': 0,
+      // Prohibit wildcard re-exports (export * from) to improve tree-shaking,
+      // reduce circular dependencies, and maintain explicit API surfaces.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ExportAllDeclaration',
+          message:
+            'Wildcard re-exports (export * from) are prohibited. Use explicit named exports instead: export { name1, name2 } from "./module"',
+        },
+      ],
       'no-console': 0,
       'no-const-assign': 2,
       'no-extra-parens': [2, 'functions'],
