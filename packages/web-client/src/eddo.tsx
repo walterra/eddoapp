@@ -1,3 +1,5 @@
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AddTodo } from './components/add_todo';
@@ -5,6 +7,7 @@ import { Login } from './components/login';
 import { PageWrapper } from './components/page_wrapper';
 import { Register } from './components/register';
 import { TodoBoard } from './components/todo_board';
+import { createQueryClient } from './config/query_client';
 import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
@@ -113,15 +116,21 @@ export function Eddo() {
     return null;
   }, [isAuthenticated, username]);
 
+  // Create QueryClient instance once
+  const queryClient = useMemo(() => createQueryClient(), []);
+
   return (
-    <PouchDbContext.Provider value={pouchDbContext}>
-      <AuthenticatedApp
-        authenticate={authenticate}
-        isAuthenticated={isAuthenticated}
-        isAuthenticating={isAuthenticating}
-        logout={logout}
-        register={register}
-      />
-    </PouchDbContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <PouchDbContext.Provider value={pouchDbContext}>
+        <AuthenticatedApp
+          authenticate={authenticate}
+          isAuthenticated={isAuthenticated}
+          isAuthenticating={isAuthenticating}
+          logout={logout}
+          register={register}
+        />
+      </PouchDbContext.Provider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }

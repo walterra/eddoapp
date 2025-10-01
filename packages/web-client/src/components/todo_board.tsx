@@ -1,27 +1,19 @@
 import {
-  type Activity,
   type DatabaseError,
-  DatabaseErrorType,
   type Todo,
   getFormattedDurationForActivities,
   isLatestVersion,
   migrateTodo,
 } from '@eddo/core-client';
 import { group } from 'd3-array';
-import { add, endOfWeek, format, getISOWeek, startOfWeek } from 'date-fns';
+import { add, endOfWeek, format, startOfWeek } from 'date-fns';
 import { uniqBy } from 'lodash-es';
-import {
-  type FC,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { ensureDesignDocuments } from '../database_setup';
-import { useDatabaseChanges } from '../hooks/use_database_changes';
+import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
+import { useTodosByWeek } from '../hooks/use_todos_by_week';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
@@ -38,24 +30,13 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   selectedTags,
 }) => {
   const { safeDb, rawDb } = usePouchDb();
-  const { changeCount } = useDatabaseChanges();
   const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
     'hide-by-default',
   ]);
-  const [outdatedTodos, setOutdatedTodos] = useState<unknown[]>([]);
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [outdatedTodos, setOutdatedTodos] = useState<Todo[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // avoid multiple fetches
-  const fetchVersion = useRef(0);
-  const isFetching = useRef(false);
-  const shouldFetch = useRef(true);
   // check integrity, e.g. if design docs are present
   const [isInitialized, setIsInitialized] = useState(false);
-
-  const currentCalendarWeek = getISOWeek(currentDate);
   // TODO The 'add' is a CEST quick fix
   const currentStartOfWeek = add(
     startOfWeek(currentDate, { weekStartsOn: 1 }),
@@ -65,6 +46,50 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
     hours: 2,
   });
+
+  // Use TanStack Query hooks for data fetching - only enable after initialization
+  const todosQuery = useTodosByWeek({
+    startDate: currentStartOfWeek,
+    endDate: currentEndOfWeek,
+    enabled: isInitialized,
+  });
+
+  const activitiesQuery = useActivitiesByWeek({
+    startDate: currentStartOfWeek,
+    endDate: currentEndOfWeek,
+    enabled: isInitialized,
+  });
+
+  // Extract data from queries with useMemo to avoid new array references on every render
+  const activities = useMemo(
+    () => activitiesQuery.data ?? [],
+    [activitiesQuery.data],
+  );
+
+  // Filter to get only latest version todos - use query data directly to avoid reference issues
+  const todos = useMemo(
+    () =>
+      (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
+    [todosQuery.data],
+  );
+
+  // Track outdated todos for migration (if needed) - use useMemo to avoid infinite loop
+  const outdatedTodosMemo = useMemo(
+    () =>
+      (todosQuery.data ?? []).filter(
+        (d: Todo) => !isLatestVersion(d),
+      ) as Todo[],
+    [todosQuery.data],
+  );
+
+  // Update state only when outdated todos actually change
+  useEffect(() => {
+    setOutdatedTodos(outdatedTodosMemo);
+  }, [outdatedTodosMemo]);
+
+  // Combine loading and error states from both queries
+  const isLoading = todosQuery.isLoading || activitiesQuery.isLoading;
+  const queryError = todosQuery.error || activitiesQuery.error;
 
   useEffect(() => {
     if (isInitialized) return;
@@ -86,6 +111,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     })();
   }, [isInitialized, safeDb]);
 
+  useEffect(() => {
+    if (!isInitialized) return;
+    fetchTimeTrackingActive();
+  }, [isInitialized]);
+
   const fetchTimeTrackingActive = useCallback(async () => {
     try {
       const resp = await safeDb.safeQuery<{ id: string }>(
@@ -102,101 +132,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     }
   }, [safeDb]);
 
-  const fetchTodos = useCallback(async () => {
-    if (isFetching.current) {
-      shouldFetch.current = true;
-      return;
-    }
-
-    // Increment version and capture all values for this fetch synchronously
-    // This ensures we have a consistent snapshot before any async work
-    fetchVersion.current += 1;
-    const currentFetchVersion = fetchVersion.current;
-    const capturedStartOfWeek = currentStartOfWeek;
-    const capturedEndOfWeek = currentEndOfWeek;
-    const startKey = capturedStartOfWeek.toISOString();
-    const endKey = capturedEndOfWeek.toISOString();
-
-    console.log(
-      `Start fetching todos (v${currentFetchVersion}, week: ${startKey} - ${endKey})...`,
-    );
-    isFetching.current = true;
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.time('fetchTodos');
-      const newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-        descending: false,
-        endkey: endKey,
-        include_docs: false,
-        startkey: startKey,
-      });
-      console.timeEnd('fetchTodos');
-
-      console.time('fetchActivities');
-      const newActivities = await safeDb.safeQuery<Activity>(
-        'todos',
-        'byActive',
-        {
-          descending: false,
-          endkey: endKey,
-          include_docs: false,
-          startkey: startKey,
-        },
-      );
-      console.timeEnd('fetchActivities');
-
-      // Check if a newer fetch has started while we were querying
-      if (fetchVersion.current !== currentFetchVersion) {
-        console.log(
-          `Discarding stale fetch results (v${currentFetchVersion}, current: v${fetchVersion.current})`,
-        );
-        return;
-      }
-
-      console.time('setOutdatedTodos');
-      setOutdatedTodos(
-        newTodos.filter((d) => !isLatestVersion(d)).map((d) => d),
-      );
-      console.timeEnd('setOutdatedTodos');
-
-      console.time('setTodos');
-      setTodos(newTodos.filter((d) => isLatestVersion(d)) as Todo[]);
-      console.timeEnd('setTodos');
-
-      console.time('setActivities');
-      setActivities(newActivities);
-      console.timeEnd('setActivities');
-    } catch (err) {
-      console.error('Failed to fetch todos:', err);
-      // Only update error state if this is still the current fetch
-      if (fetchVersion.current === currentFetchVersion) {
-        setError(err as DatabaseError);
-      }
-
-      // Show user-friendly error message
-      if ((err as DatabaseError).type === DatabaseErrorType.NETWORK_ERROR) {
-        // We're in offline mode, keep existing data
-        console.log('Working in offline mode');
-      }
-    } finally {
-      isFetching.current = false;
-      setIsLoading(false);
-      if (shouldFetch.current) {
-        shouldFetch.current = false;
-        fetchTodos();
-      }
-    }
-  }, [safeDb, currentStartOfWeek, currentEndOfWeek]);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    fetchTodos();
-    fetchTimeTrackingActive();
-  }, [changeCount, currentDate, currentCalendarWeek, isInitialized]);
-
   useEffect(() => {
     if (!isInitialized || outdatedTodos.length === 0) return;
 
@@ -210,12 +145,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     })();
   }, [outdatedTodos, isInitialized, safeDb]);
 
-  const filteredActivities = activities.filter((a) => {
-    // TODO The 'split' is a CEST quick fix
-    return !todos.some(
-      (t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0],
-    );
-  });
+  const filteredActivities = useMemo(() => {
+    return activities.filter((a) => {
+      // TODO The 'split' is a CEST quick fix
+      return !todos.some(
+        (t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0],
+      );
+    });
+  }, [activities, todos]);
 
   const filteredTodos = useMemo(() => {
     if (selectedTags.length === 0) {
@@ -279,16 +216,24 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     'data:text/json;charset=utf-8,' +
     encodeURIComponent(JSON.stringify(todos, null, 2));
 
+  // Combine manual error state with query errors
+  const displayError = error || (queryError as DatabaseError);
+
   // Show error state if there's an error and no data
-  if (error && todos.length === 0 && !isLoading) {
+  if (displayError && todos.length === 0 && !isLoading) {
     return (
       <div className="bg-gray-50 p-8 dark:bg-gray-800">
         <DatabaseErrorFallback
-          error={error}
-          onDismiss={() => setError(null)}
+          error={displayError}
+          onDismiss={() => {
+            setError(null);
+            todosQuery.refetch();
+            activitiesQuery.refetch();
+          }}
           onRetry={() => {
             setError(null);
-            fetchTodos();
+            todosQuery.refetch();
+            activitiesQuery.refetch();
           }}
         />
       </div>
@@ -298,10 +243,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
       {/* Show inline error if we have data */}
-      {error && todos.length > 0 && (
+      {displayError && todos.length > 0 && (
         <div className="px-4 pt-2">
           <DatabaseErrorMessage
-            error={error}
+            error={displayError}
             onDismiss={() => setError(null)}
           />
         </div>

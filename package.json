@@ -137,11 +137,6 @@
     "version": "node scripts/version-packages.js",
     "release": "pnpm build && changeset publish"
   },
-  "config": {
-    "commitizen": {
-      "path": "cz-conventional-changelog"
-    }
-  },
   "browserslist": [
     ">0.2%",
     "not dead",

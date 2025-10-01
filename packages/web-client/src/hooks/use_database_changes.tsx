@@ -1,6 +1,7 @@
 /**
  * Database changes provider - single PouchDB listener for the entire app
  */
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type FC,
   type ReactNode,
@@ -27,6 +28,7 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const { changes } = usePouchDb();
+  const queryClient = useQueryClient();
   const [changeCount, setChangeCount] = useState(0);
   const [isListening, setIsListening] = useState(false);
   console.log('changeCount', changeCount);
@@ -40,6 +42,10 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({
 
     changesListener.on('change', (d) => {
       setChangeCount(Number(d.seq));
+      // Invalidate all queries when database changes occur
+      // This triggers TanStack Query to refetch active queries
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
     });
 
     changesListener.on('complete', () => {
@@ -57,7 +63,7 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({
       changesListener.cancel();
       setIsListening(false);
     };
-  }, [changes]);
+  }, [changes, queryClient]);
 
   return (
     <DatabaseChangesContext.Provider value={{ changeCount, isListening }}>
