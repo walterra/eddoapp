@@ -51,9 +51,9 @@ export { generateStableKey } from './utils/generate_stable_key';
 
 ### Phase 2: Refactor Simple Barrel Exports
 
-- [ ] Refactor packages/core-client/src/config/index.ts (1 wildcard → 4 named exports)
-- [ ] Refactor packages/core-server/src/config/index.ts (1 wildcard → 11 named exports)
-- [ ] Run `pnpm tsc:check` to verify types
+- [x] Refactor packages/core-client/src/config/index.ts (1 wildcard → 4 named exports)
+- [x] Refactor packages/core-server/src/config/index.ts (1 wildcard → 11 named exports)
+- [x] Run `pnpm tsc:check` to verify types
 
 ### Phase 3: Refactor Core-Shared Package
 
