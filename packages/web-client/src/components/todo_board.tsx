@@ -59,22 +59,28 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   });
 
   // Extract data from queries with fallback to empty arrays
-  const allTodos = todosQuery.data ?? [];
   const activities = activitiesQuery.data ?? [];
 
-  // Filter to get only latest version todos
+  // Filter to get only latest version todos - use query data directly to avoid reference issues
   const todos = useMemo(
-    () => allTodos.filter((d: Todo) => isLatestVersion(d)) as Todo[],
-    [allTodos],
+    () =>
+      (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
+    [todosQuery.data],
   );
 
-  // Track outdated todos for migration (if needed)
+  // Track outdated todos for migration (if needed) - use useMemo to avoid infinite loop
+  const outdatedTodosMemo = useMemo(
+    () =>
+      (todosQuery.data ?? []).filter(
+        (d: Todo) => !isLatestVersion(d),
+      ) as Todo[],
+    [todosQuery.data],
+  );
+
+  // Update state only when outdated todos actually change
   useEffect(() => {
-    const outdated = allTodos
-      .filter((d: Todo) => !isLatestVersion(d))
-      .map((d: Todo) => d);
-    setOutdatedTodos(outdated as Todo[]);
-  }, [allTodos]);
+    setOutdatedTodos(outdatedTodosMemo);
+  }, [outdatedTodosMemo]);
 
   // Combine loading and error states from both queries
   const isLoading = todosQuery.isLoading || activitiesQuery.isLoading;
