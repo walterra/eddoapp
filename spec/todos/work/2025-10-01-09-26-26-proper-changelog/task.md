@@ -1,0 +1,105 @@
+# Proper CHANGELOG - research 2025 best practices
+
+**Status:** In Progress
+**Created:** 2025-10-01T09:26:26
+**Started:** 2025-10-01T09:30:00
+**Agent PID:** 70023
+
+## Original Todo
+
+we need a proper CHANGELOG. web research 2025 best practice for this kind of project (for exampe commitizen with CHANGELOG integration). for comparison, check how ~/dev/astro-photostream maintains CHANGELOG, commit messages, releases, semver.
+
+## Description
+
+Implement a modern, automated CHANGELOG system using 2025 best practices for TypeScript monorepos, matching the approach used in astro-photostream. The eddo-app is a private monorepo application (not a library), so we'll implement:
+
+1. **Changesets** - For version bumping and automated CHANGELOG generation
+2. **Commitizen** - For interactive conventional commit messages
+3. **Commitlint** - For enforcing conventional commit format via git hooks
+4. **GitHub Releases** - Automated release creation on version bumps
+5. **Single root CHANGELOG.md** - Tracking all changes across packages (no npm publishing)
+
+This setup provides:
+- Automated CHANGELOG generation from changeset files
+- Enforced conventional commits for clean git history
+- Automated GitHub releases via CI workflow
+- Semantic versioning for deployment tracking
+
+## Success Criteria
+
+- [ ] Functional: Changesets CLI installed and configured with proper config.json
+- [ ] Functional: `pnpm changeset` command creates changeset files successfully
+- [ ] Functional: `pnpm version` updates version numbers based on changesets
+- [ ] Functional: Commitizen installed and `pnpm commit` provides interactive commit prompt
+- [ ] Functional: Commitlint installed and validates commit messages via git hook
+- [ ] Functional: Husky git hooks properly configured (commit-msg and pre-commit)
+- [ ] Functional: Lint-staged runs on pre-commit hook
+- [ ] Functional: Initial CHANGELOG.md file created with proper format
+- [ ] Functional: GitHub Actions workflow for automated releases configured
+- [ ] Functional: Version bump script creates conventional commits
+- [ ] Quality: All dependencies added to package.json devDependencies
+- [ ] Quality: All TypeScript type checks pass
+- [ ] Quality: Configuration files match astro-photostream patterns
+- [ ] User validation: Can create a test changeset and generate changelog entry
+- [ ] User validation: Can make a commit using commitizen interactive prompt
+- [ ] User validation: Invalid commit messages are rejected by commitlint
+- [ ] Documentation: CHANGELOG workflow documented in CLAUDE.md
+
+## Implementation Plan
+
+### Configuration Files
+
+- [ ] Create `.changeset/config.json` with proper monorepo settings (.changeset/config.json)
+- [ ] Create `commitlint.config.js` with commit types and scopes for eddo-app (commitlint.config.js)
+- [ ] Create `.lintstagedrc.json` for pre-commit formatting/linting (.lintstagedrc.json)
+- [ ] Update `.husky/commit-msg` hook for commitlint (.husky/commit-msg)
+- [ ] Update `.husky/pre-commit` hook for lint-staged (.husky/pre-commit)
+
+### Package Dependencies
+
+- [ ] Add changesets dependencies to root package.json (`@changesets/cli`) (package.json)
+- [ ] Add commitizen dependencies (`commitizen`, `cz-conventional-changelog`) (package.json)
+- [ ] Add commitlint dependencies (`@commitlint/cli`, `@commitlint/config-conventional`) (package.json)
+- [ ] Add lint-staged dependency (`lint-staged`) (package.json)
+
+### Package Scripts
+
+- [ ] Add `pnpm commit` script for commitizen interactive prompt (package.json)
+- [ ] Add `pnpm changeset` script alias (package.json)
+- [ ] Add `pnpm changeset:add` script alias (package.json)
+- [ ] Add `pnpm changeset:status` script alias (package.json)
+- [ ] Add `pnpm version` script for changeset version bumping (package.json)
+- [ ] Add `pnpm release` script (no npm publish, just for CI workflow) (package.json)
+- [ ] Add config for commitizen in package.json (package.json)
+
+### GitHub Release Automation
+
+- [ ] Create `scripts/version-packages.js` for automated version bumping (scripts/version-packages.js)
+- [ ] Create `.github/workflows/release.yml` for automated releases (.github/workflows/release.yml)
+
+### CHANGELOG Setup
+
+- [ ] Create initial `CHANGELOG.md` at root with Keep a Changelog format (CHANGELOG.md)
+- [ ] Add Unreleased section to CHANGELOG.md (CHANGELOG.md)
+
+### Automated Tests
+
+- [ ] Automated test: Run `pnpm install` to verify dependencies install correctly
+- [ ] Automated test: Run `pnpm tsc:check` to verify TypeScript compiles
+- [ ] Automated test: Run `pnpm lint` to verify linting passes
+- [ ] Automated test: Run `pnpm format` to verify formatting works
+
+### User Tests
+
+- [ ] User test: Create a test changeset using `pnpm changeset`
+- [ ] User test: Make a commit using `pnpm commit` with interactive prompt
+- [ ] User test: Verify invalid commit message is rejected by commitlint
+- [ ] User test: Verify pre-commit hook runs lint-staged
+
+### Documentation
+
+- [ ] Update CLAUDE.md with CHANGELOG workflow and release process (CLAUDE.md)
+
+## Review
+
+## Notes
