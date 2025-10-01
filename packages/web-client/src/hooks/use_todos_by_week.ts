@@ -6,6 +6,7 @@ import { usePouchDb } from '../pouch_db';
 interface UseTodosByWeekParams {
   startDate: Date;
   endDate: Date;
+  enabled?: boolean;
 }
 
 /**
@@ -17,9 +18,14 @@ interface UseTodosByWeekParams {
  *
  * @param startDate - Start of the week (ISO date)
  * @param endDate - End of the week (ISO date)
+ * @param enabled - Whether the query should run (default: true if safeDb exists)
  * @returns TanStack Query result with todos data, loading, and error states
  */
-export function useTodosByWeek({ startDate, endDate }: UseTodosByWeekParams) {
+export function useTodosByWeek({
+  startDate,
+  endDate,
+  enabled = true,
+}: UseTodosByWeekParams) {
   const { safeDb } = usePouchDb();
 
   return useQuery({
@@ -40,6 +46,6 @@ export function useTodosByWeek({ startDate, endDate }: UseTodosByWeekParams) {
       console.timeEnd('fetchTodos');
       return todos;
     },
-    enabled: !!safeDb,
+    enabled: !!safeDb && enabled,
   });
 }

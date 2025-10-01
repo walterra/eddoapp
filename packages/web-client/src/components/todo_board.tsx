@@ -47,15 +47,17 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     hours: 2,
   });
 
-  // Use TanStack Query hooks for data fetching
+  // Use TanStack Query hooks for data fetching - only enable after initialization
   const todosQuery = useTodosByWeek({
     startDate: currentStartOfWeek,
     endDate: currentEndOfWeek,
+    enabled: isInitialized,
   });
 
   const activitiesQuery = useActivitiesByWeek({
     startDate: currentStartOfWeek,
     endDate: currentEndOfWeek,
+    enabled: isInitialized,
   });
 
   // Extract data from queries with useMemo to avoid new array references on every render

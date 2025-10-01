@@ -6,6 +6,7 @@ import { usePouchDb } from '../pouch_db';
 interface UseActivitiesByWeekParams {
   startDate: Date;
   endDate: Date;
+  enabled?: boolean;
 }
 
 /**
@@ -17,11 +18,13 @@ interface UseActivitiesByWeekParams {
  *
  * @param startDate - Start of the week (ISO date)
  * @param endDate - End of the week (ISO date)
+ * @param enabled - Whether the query should run (default: true if safeDb exists)
  * @returns TanStack Query result with activities data, loading, and error states
  */
 export function useActivitiesByWeek({
   startDate,
   endDate,
+  enabled = true,
 }: UseActivitiesByWeekParams) {
   const { safeDb } = usePouchDb();
 
@@ -43,6 +46,6 @@ export function useActivitiesByWeek({
       console.timeEnd('fetchActivities');
       return activities;
     },
-    enabled: !!safeDb,
+    enabled: !!safeDb && enabled,
   });
 }
