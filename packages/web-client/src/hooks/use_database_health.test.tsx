@@ -1,7 +1,7 @@
 import { DatabaseHealthCheck } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { act, renderHook } from '@testing-library/react';
-import React from 'react';
+import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PouchDbContext, type PouchDbContextType } from '../pouch_db_types';
@@ -26,7 +26,7 @@ describe('useDatabaseHealth', () => {
   const renderHookWithContext = () => {
     return renderHook(() => useDatabaseHealth(), {
       wrapper: ({ children }) =>
-        React.createElement(
+        createElement(
           PouchDbContext.Provider,
           { value: contextValue },
           children,

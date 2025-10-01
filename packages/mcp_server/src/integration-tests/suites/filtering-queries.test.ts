@@ -5,8 +5,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData, testDates } from '../__fixtures__/todo-factory.js';
-import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import type { MCPResponse, TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 describe('MCP Query and Filtering Integration', () => {

@@ -4,9 +4,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { createTestTodoData as _createTestTodoData } from '../__fixtures__/todo-factory.js';
-import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import type { TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 describe('MCP Complete Workflow Integration', () => {

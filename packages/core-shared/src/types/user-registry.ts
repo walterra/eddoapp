@@ -10,7 +10,7 @@ export type UserRegistryEntry = UserRegistryEntryAlpha2;
 export type CreateUserRegistryEntry = Omit<UserRegistryEntry, '_id' | '_rev'>;
 export type UpdateUserRegistryEntry = Partial<UserRegistryEntry>;
 
-export { type UserStatus, type UserPermissions };
+export { type UserPermissions, type UserStatus };
 
 export interface UserRegistryOperations {
   findByUsername(username: string): Promise<UserRegistryEntry | null>;

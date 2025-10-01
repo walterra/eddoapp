@@ -5,11 +5,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData } from '../__fixtures__/todo-factory.js';
+import type { MCPResponse } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
-import type {
-  MCPResponse,
-  TodoAlpha3 as _TodoAlpha3,
-} from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 // Helper function to parse tag statistics from markdown response

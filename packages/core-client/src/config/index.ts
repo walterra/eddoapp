@@ -1,6 +1,6 @@
 export {
   clientEnvSchema,
-  type ClientEnv,
-  validateClientEnv,
   getUserDbName,
+  validateClientEnv,
+  type ClientEnv,
 } from './client-env';
