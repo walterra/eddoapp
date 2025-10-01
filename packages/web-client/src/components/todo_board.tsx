@@ -58,8 +58,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     endDate: currentEndOfWeek,
   });
 
-  // Extract data from queries with fallback to empty arrays
-  const activities = activitiesQuery.data ?? [];
+  // Extract data from queries with useMemo to avoid new array references on every render
+  const activities = useMemo(
+    () => activitiesQuery.data ?? [],
+    [activitiesQuery.data],
+  );
 
   // Filter to get only latest version todos - use query data directly to avoid reference issues
   const todos = useMemo(
@@ -140,12 +143,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     })();
   }, [outdatedTodos, isInitialized, safeDb]);
 
-  const filteredActivities = activities.filter((a) => {
-    // TODO The 'split' is a CEST quick fix
-    return !todos.some(
-      (t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0],
-    );
-  });
+  const filteredActivities = useMemo(() => {
+    return activities.filter((a) => {
+      // TODO The 'split' is a CEST quick fix
+      return !todos.some(
+        (t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0],
+      );
+    });
+  }, [activities, todos]);
 
   const filteredTodos = useMemo(() => {
     if (selectedTags.length === 0) {
