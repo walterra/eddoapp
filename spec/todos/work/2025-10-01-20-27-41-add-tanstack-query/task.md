@@ -1,7 +1,8 @@
 # Add TanStack Query to web client
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-10-01T20:27:41Z
+**Started:** 2025-10-01T20:32:15Z
 **Agent PID:** 30042
 
 ## Original Todo
@@ -33,12 +34,12 @@ Benefits:
 
 ## Implementation Plan
 
-- [ ] Install @tanstack/react-query and @tanstack/react-query-devtools (pnpm add --filter @eddo/web-client)
-- [ ] Create QueryClient configuration with offline-first settings (packages/web-client/src/config/query_client.ts)
-- [ ] Add QueryClientProvider wrapper in Eddo component (packages/web-client/src/eddo.tsx:116-117)
-- [ ] Create custom hook useTodosByWeek (packages/web-client/src/hooks/use_todos_by_week.ts)
-- [ ] Create custom hook useActivitiesByWeek (packages/web-client/src/hooks/use_activities_by_week.ts)
-- [ ] Integrate query invalidation with DatabaseChangesProvider (packages/web-client/src/hooks/use_database_changes.tsx)
+- [x] Install @tanstack/react-query and @tanstack/react-query-devtools (pnpm add --filter @eddo/web-client)
+- [x] Create QueryClient configuration with offline-first settings (packages/web-client/src/config/query_client.ts)
+- [x] Add QueryClientProvider wrapper in Eddo component (packages/web-client/src/eddo.tsx:116-117)
+- [x] Create custom hook useTodosByWeek (packages/web-client/src/hooks/use_todos_by_week.ts)
+- [x] Create custom hook useActivitiesByWeek (packages/web-client/src/hooks/use_activities_by_week.ts)
+- [x] Integrate query invalidation with DatabaseChangesProvider (packages/web-client/src/hooks/use_database_changes.tsx)
 - [ ] Refactor TodoBoard to use TanStack Query hooks (packages/web-client/src/components/todo_board.tsx:88-262)
 - [ ] Remove manual state management code from TodoBoard (useState for todos, activities, isLoading, error)
 - [ ] Remove concurrency control refs (isFetching, shouldFetch) from TodoBoard
