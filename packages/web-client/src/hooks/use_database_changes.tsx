@@ -1,6 +1,7 @@
 /**
  * Database changes provider - single PouchDB listener for the entire app
  */
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type FC,
   type ReactNode,

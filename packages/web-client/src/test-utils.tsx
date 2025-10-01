@@ -1,5 +1,6 @@
 // Test utilities for React component testing with real PouchDB
 import type { TodoAlpha3 } from '@eddo/core-client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type RenderOptions, render } from '@testing-library/react';
 import { type ReactElement, type ReactNode } from 'react';
 
@@ -25,7 +26,7 @@ export const createTestTodo = (
   };
 };
 
-// Test wrapper component that provides PouchDB context
+// Test wrapper component that provides PouchDB context and QueryClient
 export const TestWrapper = ({
   children,
   testDb,
@@ -37,10 +38,22 @@ export const TestWrapper = ({
     ? { contextValue: testDb }
     : createTestPouchDb();
 
+  // Create a new QueryClient for each test to avoid state leakage
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false, // Disable retries in tests
+        gcTime: Infinity,
+      },
+    },
+  });
+
   return (
-    <PouchDbContext.Provider value={contextValue}>
-      {children}
-    </PouchDbContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <PouchDbContext.Provider value={contextValue}>
+        {children}
+      </PouchDbContext.Provider>
+    </QueryClientProvider>
   );
 };
 

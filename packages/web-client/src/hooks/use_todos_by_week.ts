@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type { Todo } from '@eddo/core-shared';
-import { usePouchDb } from '../pouch_db_types';
+import { usePouchDb } from '../pouch_db';
 
 interface UseTodosByWeekParams {
   startDate: Date;
