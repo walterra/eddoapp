@@ -30,9 +30,11 @@ export default {
         'core-client',
         'core-server',
         'scripts',
-        'docs',
         'deps',
         'config',
+        'changelog',
+        'release',
+        'spec',
       ],
     ],
     'scope-empty': [0, 'never'], // Allow commits without scope
