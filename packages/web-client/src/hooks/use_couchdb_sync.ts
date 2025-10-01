@@ -18,6 +18,8 @@ export const useCouchDbSync = () => {
     // Only sync when authenticated
     if (!authToken) return;
 
+    let isCancelled = false;
+
     // Connect to API server with authentication (hardcoded relative path)
     const remoteDb = new PouchDB('http://localhost:3000/api/db', {
       fetch: (url, opts) => {
@@ -72,14 +74,19 @@ export const useCouchDbSync = () => {
       // Pre-warm indexes to avoid query-time rebuilding
       // This fires after each sync cycle completes in live sync mode
       try {
+        if (isCancelled) return;
         await rawDb.find({
           selector: { version: 'alpha3' },
           limit: 0,
         });
-        console.log('✅ Indexes pre-warmed after sync');
+        if (!isCancelled) {
+          console.log('✅ Indexes pre-warmed after sync');
+        }
       } catch (err) {
         // Don't fail sync if pre-warming fails
-        console.warn('⚠️  Index pre-warming failed:', err);
+        if (!isCancelled) {
+          console.warn('⚠️  Index pre-warming failed:', err);
+        }
       }
     });
 
@@ -87,7 +94,9 @@ export const useCouchDbSync = () => {
     healthMonitor.updateSyncStatus('syncing');
 
     return () => {
+      isCancelled = true;
       syncHandler.cancel();
+      remoteDb.close();
       healthMonitor.updateSyncStatus('disconnected');
     };
   }, [sync, authToken, handleAuthError, healthMonitor, rawDb]);
