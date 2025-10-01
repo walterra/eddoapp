@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Get version for PR title
+        run: |
+          pnpm changeset status --output=release.json > /dev/null 2>&1 || true
+          if [ -f release.json ]; then
+            VERSION=$(jq -r '.releases[0].newVersion // "packages"' release.json)
+            echo "NEW_VERSION=$VERSION" >> "$GITHUB_ENV"
+            rm release.json
+          else
+            echo "NEW_VERSION=packages" >> "$GITHUB_ENV"
+          fi
+
+      - name: Create Release Pull Request or Create GitHub Release
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+          createGithubReleases: true
+          version: node scripts/version-packages.js
+          title: "chore: release v${{env.NEW_VERSION}}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
