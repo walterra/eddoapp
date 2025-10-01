@@ -154,4 +154,4 @@ export function resetEddoAgent(): void {
 }
 
 // Export types for external use
-export type { WorkflowResult, WorkflowConfig } from './types/workflow-types.js';
+export type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';

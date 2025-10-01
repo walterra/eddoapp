@@ -16,7 +16,7 @@ import {
   ModalHeader,
   TextInput,
 } from 'flowbite-react';
-import React, { type FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useState } from 'react';
 
 import { useTags } from '../hooks/use_tags';
 import { usePouchDb } from '../pouch_db';

@@ -6,7 +6,7 @@ import {
   getRepeatTodo,
 } from '@eddo/core-client';
 import { Checkbox } from 'flowbite-react';
-import React, { type FC, useMemo, useState } from 'react';
+import { type FC, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';

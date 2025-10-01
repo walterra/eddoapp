@@ -1,6 +1,6 @@
 import { type Todo } from '@eddo/core-client';
 import { renderHook } from '@testing-library/react';
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';

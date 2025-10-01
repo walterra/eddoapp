@@ -4,8 +4,6 @@ import {
   type UserContext,
   type UserRegistryEntry,
   type UserRegistryOperations,
-} from '@eddo/core-shared';
-import {
   createDefaultUserPreferences,
   isLatestUserRegistryVersion,
   migrateUserRegistryEntry,
@@ -322,38 +320,38 @@ async function setupDesignDocuments(
     _id: '_design/queries',
     views: {
       by_username: {
-        map: `function(doc) { 
-          if (doc.username) { 
-            emit(doc.username, null); 
-          } 
+        map: `function(doc) {
+          if (doc.username) {
+            emit(doc.username, null);
+          }
         }`,
       },
       by_email: {
-        map: `function(doc) { 
-          if (doc.email) { 
-            emit(doc.email, null); 
-          } 
+        map: `function(doc) {
+          if (doc.email) {
+            emit(doc.email, null);
+          }
         }`,
       },
       by_telegram_id: {
-        map: `function(doc) { 
-          if (doc.telegram_id) { 
-            emit(doc.telegram_id, null); 
-          } 
+        map: `function(doc) {
+          if (doc.telegram_id) {
+            emit(doc.telegram_id, null);
+          }
         }`,
       },
       by_status: {
-        map: `function(doc) { 
-          if (doc.status) { 
-            emit(doc.status, null); 
-          } 
+        map: `function(doc) {
+          if (doc.status) {
+            emit(doc.status, null);
+          }
         }`,
       },
       active_users: {
-        map: `function(doc) { 
-          if (doc.status === 'active') { 
-            emit(doc.created_at, null); 
-          } 
+        map: `function(doc) {
+          if (doc.status === 'active') {
+            emit(doc.created_at, null);
+          }
         }`,
       },
     },

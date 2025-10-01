@@ -83,11 +83,11 @@ function generateLinkingInstructions(userId: number): string {
 
 // Export for testing
 export {
-  authFailures,
-  MAX_AUTH_FAILURES,
   AUTH_FAILURE_WINDOW_MS,
-  RATE_LIMIT_DURATION_MS,
+  authFailures,
   generateLinkingInstructions,
+  MAX_AUTH_FAILURES,
+  RATE_LIMIT_DURATION_MS,
 };
 
 export async function isUserAuthorized(userId: number): Promise<boolean> {
