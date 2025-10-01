@@ -5,7 +5,7 @@ import { usePouchDb } from '../pouch_db';
 import { useAuth } from './use_auth';
 
 export const useCouchDbSync = () => {
-  const { sync, healthMonitor } = usePouchDb();
+  const { sync, healthMonitor, rawDb } = usePouchDb();
   const { authToken, logout } = useAuth();
 
   const handleAuthError = useCallback(() => {
@@ -17,6 +17,8 @@ export const useCouchDbSync = () => {
   useEffect(() => {
     // Only sync when authenticated
     if (!authToken) return;
+
+    let isCancelled = false;
 
     // Connect to API server with authentication (hardcoded relative path)
     const remoteDb = new PouchDB('http://localhost:3000/api/db', {
@@ -41,6 +43,10 @@ export const useCouchDbSync = () => {
     const syncHandler = sync(remoteDb, {
       live: true,
       retry: true,
+      batch_size: 10,
+      batches_limit: 1,
+      heartbeat: 10000,
+      timeout: 5000,
     });
 
     // Add error handling for authentication failures
@@ -62,16 +68,36 @@ export const useCouchDbSync = () => {
       healthMonitor.updateSyncStatus('connected');
     });
 
-    syncHandler.on('paused', () => {
+    syncHandler.on('paused', async () => {
       healthMonitor.updateSyncStatus('connected');
+
+      // Pre-warm indexes to avoid query-time rebuilding
+      // This fires after each sync cycle completes in live sync mode
+      try {
+        if (isCancelled) return;
+        await rawDb.find({
+          selector: { version: 'alpha3' },
+          limit: 0,
+        });
+        if (!isCancelled) {
+          console.log('✅ Indexes pre-warmed after sync');
+        }
+      } catch (err) {
+        // Don't fail sync if pre-warming fails
+        if (!isCancelled) {
+          console.warn('⚠️  Index pre-warming failed:', err);
+        }
+      }
     });
 
     // Initial status
     healthMonitor.updateSyncStatus('syncing');
 
     return () => {
+      isCancelled = true;
       syncHandler.cancel();
+      remoteDb.close();
       healthMonitor.updateSyncStatus('disconnected');
     };
-  }, [sync, authToken, handleAuthError, healthMonitor]);
+  }, [sync, authToken, handleAuthError, healthMonitor, rawDb]);
 };

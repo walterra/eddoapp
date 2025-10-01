@@ -49,6 +49,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   // avoid multiple fetches
+  const fetchVersion = useRef(0);
   const isFetching = useRef(false);
   const shouldFetch = useRef(true);
   // check integrity, e.g. if design docs are present
@@ -85,13 +86,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     })();
   }, [isInitialized, safeDb]);
 
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    fetchTodos();
-    fetchTimeTrackingActive();
-  }, [currentDate, isInitialized, changeCount]);
-
   const fetchTimeTrackingActive = useCallback(async () => {
     try {
       const resp = await safeDb.safeQuery<{ id: string }>(
@@ -114,6 +108,18 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       return;
     }
 
+    // Increment version and capture all values for this fetch synchronously
+    // This ensures we have a consistent snapshot before any async work
+    fetchVersion.current += 1;
+    const currentFetchVersion = fetchVersion.current;
+    const capturedStartOfWeek = currentStartOfWeek;
+    const capturedEndOfWeek = currentEndOfWeek;
+    const startKey = capturedStartOfWeek.toISOString();
+    const endKey = capturedEndOfWeek.toISOString();
+
+    console.log(
+      `Start fetching todos (v${currentFetchVersion}, week: ${startKey} - ${endKey})...`,
+    );
     isFetching.current = true;
     setIsLoading(true);
     setError(null);
@@ -122,9 +128,9 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       console.time('fetchTodos');
       const newTodos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
         descending: false,
-        endkey: currentEndOfWeek.toISOString(),
+        endkey: endKey,
         include_docs: false,
-        startkey: currentStartOfWeek.toISOString(),
+        startkey: startKey,
       });
       console.timeEnd('fetchTodos');
 
@@ -134,12 +140,20 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         'byActive',
         {
           descending: false,
-          endkey: currentEndOfWeek.toISOString(),
+          endkey: endKey,
           include_docs: false,
-          startkey: currentStartOfWeek.toISOString(),
+          startkey: startKey,
         },
       );
       console.timeEnd('fetchActivities');
+
+      // Check if a newer fetch has started while we were querying
+      if (fetchVersion.current !== currentFetchVersion) {
+        console.log(
+          `Discarding stale fetch results (v${currentFetchVersion}, current: v${fetchVersion.current})`,
+        );
+        return;
+      }
 
       console.time('setOutdatedTodos');
       setOutdatedTodos(
@@ -156,7 +170,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       console.timeEnd('setActivities');
     } catch (err) {
       console.error('Failed to fetch todos:', err);
-      setError(err as DatabaseError);
+      // Only update error state if this is still the current fetch
+      if (fetchVersion.current === currentFetchVersion) {
+        setError(err as DatabaseError);
+      }
 
       // Show user-friendly error message
       if ((err as DatabaseError).type === DatabaseErrorType.NETWORK_ERROR) {
@@ -178,13 +195,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
     fetchTodos();
     fetchTimeTrackingActive();
-  }, [currentCalendarWeek, isInitialized]);
+  }, [changeCount, currentDate, currentCalendarWeek, isInitialized]);
 
   useEffect(() => {
-    if (!isInitialized) return;
-
-    // disabled for now
-    return;
+    if (!isInitialized || outdatedTodos.length === 0) return;
 
     (async () => {
       try {
