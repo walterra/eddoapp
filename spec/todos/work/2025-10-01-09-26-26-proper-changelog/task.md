@@ -20,6 +20,7 @@ Implement a modern, automated CHANGELOG system using 2025 best practices for Typ
 5. **Single root CHANGELOG.md** - Tracking all changes across packages (no npm publishing)
 
 This setup provides:
+
 - Automated CHANGELOG generation from changeset files
 - Enforced conventional commits for clean git history
 - Automated GitHub releases via CI workflow
@@ -49,45 +50,45 @@ This setup provides:
 
 ### Configuration Files
 
-- [ ] Create `.changeset/config.json` with proper monorepo settings (.changeset/config.json)
-- [ ] Create `commitlint.config.js` with commit types and scopes for eddo-app (commitlint.config.js)
-- [ ] Create `.lintstagedrc.json` for pre-commit formatting/linting (.lintstagedrc.json)
-- [ ] Update `.husky/commit-msg` hook for commitlint (.husky/commit-msg)
-- [ ] Update `.husky/pre-commit` hook for lint-staged (.husky/pre-commit)
+- [x] Create `.changeset/config.json` with proper monorepo settings (.changeset/config.json)
+- [x] Create `commitlint.config.js` with commit types and scopes for eddo-app (commitlint.config.js)
+- [x] Create `.lintstagedrc.json` for pre-commit formatting/linting (.lintstagedrc.json)
+- [x] Update `.husky/commit-msg` hook for commitlint (.husky/commit-msg)
+- [x] Update `.husky/pre-commit` hook for lint-staged (.husky/pre-commit)
 
 ### Package Dependencies
 
-- [ ] Add changesets dependencies to root package.json (`@changesets/cli`) (package.json)
-- [ ] Add commitizen dependencies (`commitizen`, `cz-conventional-changelog`) (package.json)
-- [ ] Add commitlint dependencies (`@commitlint/cli`, `@commitlint/config-conventional`) (package.json)
-- [ ] Add lint-staged dependency (`lint-staged`) (package.json)
+- [x] Add changesets dependencies to root package.json (`@changesets/cli`) (package.json)
+- [x] Add commitizen dependencies (`commitizen`, `cz-conventional-changelog`) (package.json)
+- [x] Add commitlint dependencies (`@commitlint/cli`, `@commitlint/config-conventional`) (package.json)
+- [x] Add lint-staged dependency (`lint-staged`) (package.json)
 
 ### Package Scripts
 
-- [ ] Add `pnpm commit` script for commitizen interactive prompt (package.json)
-- [ ] Add `pnpm changeset` script alias (package.json)
-- [ ] Add `pnpm changeset:add` script alias (package.json)
-- [ ] Add `pnpm changeset:status` script alias (package.json)
-- [ ] Add `pnpm version` script for changeset version bumping (package.json)
-- [ ] Add `pnpm release` script (no npm publish, just for CI workflow) (package.json)
-- [ ] Add config for commitizen in package.json (package.json)
+- [x] Add `pnpm commit` script for commitizen interactive prompt (package.json)
+- [x] Add `pnpm changeset` script alias (package.json)
+- [x] Add `pnpm changeset:add` script alias (package.json)
+- [x] Add `pnpm changeset:status` script alias (package.json)
+- [x] Add `pnpm version` script for changeset version bumping (package.json)
+- [x] Add `pnpm release` script (no npm publish, just for CI workflow) (package.json)
+- [x] Add config for commitizen in package.json (package.json)
 
 ### GitHub Release Automation
 
-- [ ] Create `scripts/version-packages.js` for automated version bumping (scripts/version-packages.js)
-- [ ] Create `.github/workflows/release.yml` for automated releases (.github/workflows/release.yml)
+- [x] Create `scripts/version-packages.js` for automated version bumping (scripts/version-packages.js)
+- [x] Create `.github/workflows/release.yml` for automated releases (.github/workflows/release.yml)
 
 ### CHANGELOG Setup
 
-- [ ] Create initial `CHANGELOG.md` at root with Keep a Changelog format (CHANGELOG.md)
-- [ ] Add Unreleased section to CHANGELOG.md (CHANGELOG.md)
+- [x] Create initial `CHANGELOG.md` at root with Keep a Changelog format (CHANGELOG.md)
+- [x] Add Unreleased section to CHANGELOG.md (CHANGELOG.md)
 
 ### Automated Tests
 
-- [ ] Automated test: Run `pnpm install` to verify dependencies install correctly
-- [ ] Automated test: Run `pnpm tsc:check` to verify TypeScript compiles
-- [ ] Automated test: Run `pnpm lint` to verify linting passes
-- [ ] Automated test: Run `pnpm format` to verify formatting works
+- [x] Automated test: Run `pnpm install` to verify dependencies install correctly
+- [x] Automated test: Run `pnpm tsc:check` to verify TypeScript compiles
+- [x] Automated test: Run `pnpm lint` to verify linting passes
+- [x] Automated test: Run `pnpm format` to verify formatting works
 
 ### User Tests
 

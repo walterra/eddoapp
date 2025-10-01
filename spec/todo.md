@@ -6,5 +6,4 @@
 - **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses https://github.com/w3cj/stoker
 - **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
 - linting rule to prohibit barrel exports
-- CHANGELOG workflow
 - alternative layout option instead of the kanban board: condensed table, sections intead of boards
