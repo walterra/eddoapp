@@ -50,7 +50,7 @@
     "@typescript-eslint/parser": "^8.42.0",
     "@vitejs/plugin-react": "^5.0.2",
     "autoprefixer": "^10.4.12",
-    "chalk": "^5.6.0",
+    "chalk": "^5.6.2",
     "clet": "^1.0.1",
     "commander": "^14.0.0",
     "eslint": "^9.36.0",
