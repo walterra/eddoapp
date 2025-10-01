@@ -93,9 +93,9 @@ This setup provides:
 ### User Tests
 
 - [x] User test: Create a test changeset using `pnpm changeset`
-- [ ] User test: Make a commit using `pnpm commit` with interactive prompt
-- [ ] User test: Verify invalid commit message is rejected by commitlint
-- [ ] User test: Verify pre-commit hook runs lint-staged
+- [x] User test: Make a commit using `pnpm commit` with interactive prompt
+- [x] User test: Verify invalid commit message is rejected by commitlint
+- [x] User test: Verify pre-commit hook runs lint-staged
 
 ### Documentation
 
