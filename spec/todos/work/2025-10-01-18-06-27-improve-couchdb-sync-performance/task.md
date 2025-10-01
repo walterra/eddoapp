@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Created:** 2025-10-01T18:06:27
 **Started:** 2025-10-01T18:12:00
-**Agent PID:** 70023
+**Agent PID:** 30042
 
 ## Original Todo
 
@@ -49,20 +49,19 @@ The goal is to maintain the offline-first architecture while eliminating UX impa
 
 ### Phase 1: Quick Wins (Sync Parameters + Revision Limits)
 
-- [ ] Add optimized sync parameters to use_couchdb_sync.ts:41-44 (batch_size: 10, batches_limit: 1, heartbeat: 10000, timeout: 5000)
-- [ ] Create setRevisionLimit function in database_setup.ts after line 158
-- [ ] Call setRevisionLimit from ensureDesignDocuments in database_setup.ts:98
-- [ ] Automated test: Run `pnpm tsc:check` to verify TypeScript compilation
-- [ ] Automated test: Run `pnpm test` to verify no regressions
+- [x] Add optimized sync parameters to use_couchdb_sync.ts:41-48 (batch_size: 10, batches_limit: 1, heartbeat: 10000, timeout: 5000)
+- [x] Revision limit set in pouch_db.ts:26 (revs_limit: 5) during database initialization
+- [x] Automated test: Run `pnpm tsc:check` to verify TypeScript compilation
+- [x] Automated test: Run `pnpm test` to verify no regressions
 - [ ] User test: Start dev server, navigate between weeks rapidly, check console for timing improvements
 
 ### Phase 2: Index Pre-warming
 
-- [ ] Add rawDb to usePouchDb destructuring in use_couchdb_sync.ts:8
-- [ ] Add pre-warming query to 'complete' event handler in use_couchdb_sync.ts:61-63
-- [ ] Add rawDb to useEffect dependencies in use_couchdb_sync.ts:76
-- [ ] Automated test: Run `pnpm tsc:check` to verify TypeScript compilation
-- [ ] Automated test: Run `pnpm test` to verify no regressions
+- [x] Add rawDb to usePouchDb destructuring in use_couchdb_sync.ts:8
+- [x] Add pre-warming query to 'complete' event handler in use_couchdb_sync.ts:65-79
+- [x] Add rawDb to useEffect dependencies in use_couchdb_sync.ts:92
+- [x] Automated test: Run `pnpm tsc:check` to verify TypeScript compilation
+- [x] Automated test: Run `pnpm test` to verify no regressions
 - [ ] User test: Verify index pre-warming logs appear in console after sync completes
 
 ### Phase 3: Smart Sync Strategy
