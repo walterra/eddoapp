@@ -41,6 +41,10 @@ export const useCouchDbSync = () => {
     const syncHandler = sync(remoteDb, {
       live: true,
       retry: true,
+      batch_size: 10,
+      batches_limit: 1,
+      heartbeat: 10000,
+      timeout: 5000,
     });
 
     // Add error handling for authentication failures

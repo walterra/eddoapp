@@ -22,7 +22,10 @@ const env = validateClientEnv(import.meta.env);
  */
 export function createUserPouchDbContext(username: string): PouchDbContextType {
   const dbName = getUserDbName(username, env);
-  const pouchDb = new PouchDB(dbName);
+  const pouchDb = new PouchDB(dbName, {
+    revs_limit: 5,
+    auto_compaction: true,
+  });
   const safeDbOperations = createSafeDbOperations(pouchDb);
   const healthMonitor = new DatabaseHealthMonitor(pouchDb);
 
