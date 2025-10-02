@@ -3,96 +3,17 @@ import {
   createUserRegistry,
   getUserDatabaseName,
 } from '@eddo/core-server';
+import {
+  DESIGN_DOCS,
+  REQUIRED_INDEXES,
+  type DesignDocument,
+} from '@eddo/core-shared';
 import type { DocumentScope } from 'nano';
 
 /**
  * Database setup utilities for new user databases
  * Creates design documents and indexes that are required for todo functionality
  */
-
-interface DesignDocument extends Record<string, unknown> {
-  _id: string;
-  _rev?: string;
-  views?: Record<string, { map: string; reduce?: string }>;
-}
-
-interface IndexDefinition {
-  index: { fields: string[] };
-  name: string;
-  type: 'json';
-}
-
-/**
- * Design documents required for todo functionality
- */
-const DESIGN_DOCS: DesignDocument[] = [
-  {
-    _id: '_design/todos',
-    views: {
-      byActive: {
-        map: `function (doc) {
-          if (doc.active) {
-            Object.entries(doc.active).forEach(([from, to]) => {
-              emit(from, { doc, from, id: doc._id, to });
-            });
-          }
-        }`,
-      },
-      byDueDate: {
-        map: `function (doc) {
-          if (doc.due) {
-            emit(doc.due, doc);
-          }
-        }`,
-      },
-      byTimeTrackingActive: {
-        map: `function (doc) {
-          Object.entries(doc.active).forEach((d) => {
-            if (d[1] === null) {
-              emit(null, { id: doc._id });
-            }
-          });
-        }`,
-      },
-    },
-  },
-  {
-    _id: '_design/tags',
-    views: {
-      by_tag: {
-        map: `function(doc) {
-          if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
-            for (var i = 0; i < doc.tags.length; i++) {
-              emit(doc.tags[i], 1);
-            }
-          }
-        }`,
-        reduce: '_count',
-      },
-    },
-  },
-];
-
-/**
- * Required indexes for efficient querying
- */
-const REQUIRED_INDEXES: IndexDefinition[] = [
-  {
-    index: { fields: ['version', 'due'] },
-    name: 'version-due-index',
-    type: 'json',
-  },
-  {
-    index: { fields: ['version', 'context', 'due'] },
-    name: 'version-context-due-index',
-    type: 'json',
-  },
-  {
-    index: { fields: ['version', 'completed', 'due'] },
-    name: 'version-completed-due-index',
-    type: 'json',
-  },
-];
 
 /**
  * Setup a new user database with all required design documents and indexes

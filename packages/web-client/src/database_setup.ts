@@ -5,61 +5,13 @@
 // @ts-expect-error - Used for type namespace access
 import type PouchDB from 'pouchdb-browser';
 
+import {
+  DESIGN_DOCS,
+  REQUIRED_INDEXES,
+  type DesignDocument,
+} from '@eddo/core-shared';
+
 import type { SafeDbOperations } from './api/safe-db-operations';
-
-interface DesignDocument {
-  _id: string;
-  _rev?: string;
-  views?: Record<string, { map: string; reduce?: string }>;
-}
-
-const DESIGN_DOCS: DesignDocument[] = [
-  {
-    _id: '_design/todos',
-    views: {
-      byActive: {
-        map: `function (doc) {
-          if (doc.active) {
-            Object.entries(doc.active).forEach(([from, to]) => {
-              emit(from, { doc, from, id: doc._id, to });
-            });
-          }
-        }`,
-      },
-      byDueDate: {
-        map: `function (doc) {
-          if (doc.due) {
-            emit(doc.due, doc);
-          }
-        }`,
-      },
-      byTimeTrackingActive: {
-        map: `function (doc) {
-          Object.entries(doc.active).forEach((d) => {
-            if (d[1] === null) {
-              emit(null, { id: doc._id });
-            }
-          });
-        }`,
-      },
-    },
-  },
-  {
-    _id: '_design/tags',
-    views: {
-      by_tag: {
-        map: `function(doc) {
-          if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
-            for (var i = 0; i < doc.tags.length; i++) {
-              emit(doc.tags[i], 1);
-            }
-          }
-        }`,
-        reduce: '_count',
-      },
-    },
-  },
-];
 
 /**
  * Ensures all required design documents exist in the database
@@ -69,7 +21,7 @@ export async function ensureDesignDocuments(
   safeDb: SafeDbOperations,
   rawDb?: PouchDB.Database,
 ): Promise<void> {
-  for (const expectedDoc of DESIGN_DOCS) {
+  for (const expectedDoc of DESIGN_DOCS as DesignDocument[]) {
     try {
       // Try to get existing design document
       const existingDoc = await safeDb.safeGet<DesignDocument>(expectedDoc._id);
@@ -98,27 +50,6 @@ export async function ensureDesignDocuments(
     await createIndexes(rawDb);
   }
 }
-
-/**
- * Creates CouchDB-compatible indexes for efficient querying
- */
-export const REQUIRED_INDEXES = [
-  {
-    index: { fields: ['version', 'due'] },
-    name: 'version-due-index',
-    type: 'json' as const,
-  },
-  {
-    index: { fields: ['version', 'context', 'due'] },
-    name: 'version-context-due-index',
-    type: 'json' as const,
-  },
-  {
-    index: { fields: ['version', 'completed', 'due'] },
-    name: 'version-completed-due-index',
-    type: 'json' as const,
-  },
-];
 
 /**
  * Creates indexes in the database
