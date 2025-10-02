@@ -63,6 +63,14 @@ export {
 // Database monitoring
 export { DatabaseHealthMonitor } from './api/database-health-monitor';
 
+// Database structures
+export {
+  DESIGN_DOCS,
+  REQUIRED_INDEXES,
+  type DesignDocument,
+  type IndexDefinition,
+} from './api/database-structures';
+
 // Utils
 export { generateStableKey } from './utils/generate_stable_key';
 export { getActiveDuration } from './utils/get_active_duration';
