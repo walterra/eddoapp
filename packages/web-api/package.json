@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@eddo/core-server": "workspace:*",
+    "@eddo/core-shared": "workspace:*",
     "@hono/node-server": "^1.19.1",
     "bcryptjs": "^3.0.2",
     "hono": "^4.9.4",
