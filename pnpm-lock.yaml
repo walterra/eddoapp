@@ -380,6 +380,9 @@ importers:
       '@eddo/core-server':
         specifier: workspace:*
         version: link:../core-server
+      '@eddo/core-shared':
+        specifier: workspace:*
+        version: link:../core-shared
       '@hono/node-server':
         specifier: ^1.19.1
         version: 1.19.1(hono@4.9.4)
@@ -423,6 +426,9 @@ importers:
       '@eddo/core-client':
         specifier: workspace:*
         version: link:../core-client
+      '@eddo/core-shared':
+        specifier: workspace:*
+        version: link:../core-shared
       '@tanstack/react-query':
         specifier: ^5.90.2
         version: 5.90.2(react@19.1.1)
