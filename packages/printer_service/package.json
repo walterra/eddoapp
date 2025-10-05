@@ -1,0 +1,39 @@
+{
+  "name": "@eddo/printer-service",
+  "version": "0.1.0",
+  "description": "Thermal receipt printer service for daily briefings",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "cli": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@eddo/core-server": "workspace:*",
+    "@eddo/core-shared": "workspace:*",
+    "commander": "^12.1.0",
+    "dotenv-mono": "^1.3.14",
+    "node-thermal-printer": "^4.4.3",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "eslint": "^9.36.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "keywords": [
+    "printer",
+    "thermal",
+    "epson",
+    "briefing",
+    "receipt"
+  ],
+  "author": "Eddo App",
+  "license": "MIT"
+}
