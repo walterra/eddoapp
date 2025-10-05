@@ -1,6 +1,6 @@
 # in todo_board.tsx use tanstack query for fetchTimeTrackingActive similar with todo and activities.
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-10-05T16:56:36
 **Started:** 2025-10-05T16:58:00
 **Agent PID:** 81503
@@ -33,12 +33,12 @@ in todo_board.tsx use tanstack query for fetchTimeTrackingActive similar with to
 
 ## Success Criteria
 
-- [ ] Functional: New `useTimeTrackingActive` hook returns same data structure as current implementation (array of todo IDs)
-- [ ] Functional: Active time tracking IDs automatically update when todos change (via existing PouchDB changes feed)
-- [ ] Functional: Time tracking highlights in UI work identically to current behavior
-- [ ] Code quality: Hook follows same pattern as `useTodosByWeek` and `useActivitiesByWeek` (query key structure, enabled parameter, performance timing)
-- [ ] Code quality: All manual state management removed from `todo_board.tsx` (no `useState` for `timeTrackingActive`, no `useCallback` for fetch function)
-- [ ] User validation: Manual test confirms time tracking highlights update in real-time when starting/stopping time tracking on a todo
+- [x] Functional: New `useTimeTrackingActive` hook returns same data structure as current implementation (array of todo IDs)
+- [x] Functional: Active time tracking IDs automatically update when todos change (via existing PouchDB changes feed)
+- [x] Functional: Time tracking highlights in UI work identically to current behavior
+- [x] Code quality: Hook follows same pattern as `useTodosByWeek` and `useActivitiesByWeek` (query key structure, enabled parameter, performance timing)
+- [x] Code quality: All manual state management removed from `todo_board.tsx` (no `useState` for `timeTrackingActive`, no `useCallback` for fetch function)
+- [x] User validation: Manual test confirms time tracking highlights update in real-time when starting/stopping time tracking on a todo
 
 ## Implementation Plan
 
@@ -60,6 +60,6 @@ in todo_board.tsx use tanstack query for fetchTimeTrackingActive similar with to
 
 ### User Tests
 
-- [ ] User test: Start time tracking on a todo and verify it gets highlighted in the UI
-- [ ] User test: Stop time tracking and verify highlight is removed
-- [ ] User test: Verify multiple todos can have active time tracking simultaneously
+- [x] User test: Start time tracking on a todo and verify it gets highlighted in the UI
+- [x] User test: Stop time tracking and verify highlight is removed
+- [x] User test: Verify multiple todos can have active time tracking simultaneously
