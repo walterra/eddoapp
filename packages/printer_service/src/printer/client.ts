@@ -121,7 +121,7 @@ export async function printTestPage(): Promise<void> {
     printer.println('');
 
     // QR code for test
-    await printer.printQR('https://github.com/yourusername/eddoapp', {
+    await printer.printQR('https://github.com/walterra/eddoapp', {
       cellSize: 6,
       correction: 'M',
       model: 2,
