@@ -172,7 +172,7 @@ describe('TodoBoard', () => {
       // Verify correct query parameters
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
-          'todos',
+          'todos_by_due_date',
           'byDueDate',
           expect.objectContaining({
             startkey: currentStartOfWeek.toISOString(),
@@ -212,7 +212,7 @@ describe('TodoBoard', () => {
 
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
-          'todos',
+          'todos_by_time_tracking_active',
           'byTimeTrackingActive',
           { key: null },
         );
@@ -255,7 +255,7 @@ describe('TodoBoard', () => {
 
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
-          'todos',
+          'todos_by_active',
           'byActive',
           expect.objectContaining({
             startkey: currentStartOfWeek.toISOString(),

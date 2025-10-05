@@ -21,7 +21,7 @@ export interface IndexDefinition {
  */
 export const DESIGN_DOCS: DesignDocument[] = [
   {
-    _id: '_design/todos',
+    _id: '_design/todos_by_active',
     views: {
       byActive: {
         map: `function (doc) {
@@ -32,6 +32,11 @@ export const DESIGN_DOCS: DesignDocument[] = [
           }
         }`,
       },
+    },
+  },
+  {
+    _id: '_design/todos_by_due_date',
+    views: {
       byDueDate: {
         map: `function (doc) {
           if (doc.due) {
@@ -39,6 +44,11 @@ export const DESIGN_DOCS: DesignDocument[] = [
           }
         }`,
       },
+    },
+  },
+  {
+    _id: '_design/todos_by_time_tracking_active',
+    views: {
       byTimeTrackingActive: {
         map: `function (doc) {
           Object.entries(doc.active).forEach((d) => {

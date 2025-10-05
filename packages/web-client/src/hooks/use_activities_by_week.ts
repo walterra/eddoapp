@@ -37,12 +37,16 @@ export function useActivitiesByWeek({
     ],
     queryFn: async () => {
       console.time('fetchActivities');
-      const activities = await safeDb.safeQuery<Activity>('todos', 'byActive', {
-        descending: false,
-        endkey: endDate.toISOString(),
-        include_docs: false,
-        startkey: startDate.toISOString(),
-      });
+      const activities = await safeDb.safeQuery<Activity>(
+        'todos_by_active',
+        'byActive',
+        {
+          descending: false,
+          endkey: endDate.toISOString(),
+          include_docs: false,
+          startkey: startDate.toISOString(),
+        },
+      );
       console.timeEnd('fetchActivities');
       return activities;
     },
