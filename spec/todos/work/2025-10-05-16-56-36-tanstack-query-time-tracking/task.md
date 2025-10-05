@@ -1,7 +1,8 @@
 # in todo_board.tsx use tanstack query for fetchTimeTrackingActive similar with todo and activities.
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-10-05T16:56:36
+**Started:** 2025-10-05T16:58:00
 **Agent PID:** 81503
 
 ## Original Todo
@@ -43,8 +44,8 @@ in todo_board.tsx use tanstack query for fetchTimeTrackingActive similar with to
 
 ### Code Modifications
 
-- [ ] Create new hook file `packages/web-client/src/hooks/use_time_tracking_active.ts` with TanStack Query pattern
-- [ ] Update `packages/web-client/src/components/todo_board.tsx` to:
+- [x] Create new hook file `packages/web-client/src/hooks/use_time_tracking_active.ts` with TanStack Query pattern (packages/web-client/src/hooks/use_time_tracking_active.ts)
+- [x] Update `packages/web-client/src/components/todo_board.tsx` to: (packages/web-client/src/components/todo_board.tsx:16,60-72,331-333)
   - Import and use `useTimeTrackingActive` hook
   - Replace `timeTrackingActive` state with query result
   - Remove `fetchTimeTrackingActive` callback function
@@ -53,9 +54,9 @@ in todo_board.tsx use tanstack query for fetchTimeTrackingActive similar with to
 
 ### Automated Tests
 
-- [ ] Automated test: Verify `useTimeTrackingActive` hook returns expected data structure (array of IDs)
-- [ ] Automated test: Verify hook respects `enabled` parameter
-- [ ] Automated test: Verify query key structure matches pattern (`['todos', 'byTimeTrackingActive']`)
+- [x] Automated test: Verify `useTimeTrackingActive` hook returns expected data structure (array of IDs) (packages/web-client/src/hooks/use_time_tracking_active.test.ts:46-56)
+- [x] Automated test: Verify hook respects `enabled` parameter (packages/web-client/src/hooks/use_time_tracking_active.test.ts:58-69,71-82)
+- [x] Automated test: Verify query key structure matches pattern (`['todos', 'byTimeTrackingActive']`) (packages/web-client/src/hooks/use_time_tracking_active.test.ts:84-98)
 
 ### User Tests
 

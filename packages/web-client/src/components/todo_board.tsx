@@ -8,11 +8,12 @@ import {
 import { group } from 'd3-array';
 import { add, endOfWeek, format, startOfWeek } from 'date-fns';
 import { uniqBy } from 'lodash-es';
-import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { ensureDesignDocuments } from '../database_setup';
 import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
+import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
 import { useTodosByWeek } from '../hooks/use_todos_by_week';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
@@ -30,9 +31,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   selectedTags,
 }) => {
   const { safeDb, rawDb } = usePouchDb();
-  const [timeTrackingActive, setTimeTrackingActive] = useState<string[]>([
-    'hide-by-default',
-  ]);
   const [outdatedTodos, setOutdatedTodos] = useState<Todo[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
   // check integrity, e.g. if design docs are present
@@ -60,10 +58,19 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     enabled: isInitialized,
   });
 
+  const timeTrackingQuery = useTimeTrackingActive({
+    enabled: isInitialized,
+  });
+
   // Extract data from queries with useMemo to avoid new array references on every render
   const activities = useMemo(
     () => activitiesQuery.data ?? [],
     [activitiesQuery.data],
+  );
+
+  const timeTrackingActive = useMemo(
+    () => timeTrackingQuery.data ?? ['hide-by-default'],
+    [timeTrackingQuery.data],
   );
 
   // Filter to get only latest version todos - use query data directly to avoid reference issues
@@ -110,27 +117,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       }
     })();
   }, [isInitialized, safeDb]);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-    fetchTimeTrackingActive();
-  }, [isInitialized]);
-
-  const fetchTimeTrackingActive = useCallback(async () => {
-    try {
-      const resp = await safeDb.safeQuery<{ id: string }>(
-        'todos',
-        'byTimeTrackingActive',
-        {
-          key: null,
-        },
-      );
-      setTimeTrackingActive(resp.map((d) => d.id));
-    } catch (e) {
-      console.error('Not able to fetch active todos:', e);
-      setError(e as DatabaseError);
-    }
-  }, [safeDb]);
 
   useEffect(() => {
     if (!isInitialized || outdatedTodos.length === 0) return;
@@ -344,7 +330,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                                 return (
                                   <TodoListElement
                                     active={timeTrackingActive.some(
-                                      (d) => d === todo._id,
+                                      (d: string) => d === todo._id,
                                     )}
                                     activeDate={displayDate}
                                     activityOnly={
