@@ -1,6 +1,6 @@
 # split \_design/todos up into a design doc for each view
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-10-05T17:36:28Z
 **Started:** 2025-10-05T17:36:28Z
 **Agent PID:** 81503
@@ -23,12 +23,12 @@ This separation provides better modularity and follows the existing pattern (the
 
 ## Success Criteria
 
-- [ ] **Functional**: Three separate design documents exist (`_design/todos_by_active`, `_design/todos_by_due_date`, `_design/todos_by_time_tracking_active`) with correct view definitions
-- [ ] **Functional**: All existing hook queries return correct data after migration (todos grouped by week, activities by week, active time tracking entries)
-- [ ] **Functional**: Original `_design/todos` design document is removed from the definitions
-- [ ] **Build validation**: TypeScript compilation passes (`pnpm tsc:check`)
-- [ ] **Code quality**: Linting and formatting pass (`pnpm lint`, `pnpm format`)
-- [ ] **User validation**: Manual testing confirms todos display correctly in web UI, time tracking works, and no console errors appear
+- [x] **Functional**: Three separate design documents exist (`_design/todos_by_active`, `_design/todos_by_due_date`, `_design/todos_by_time_tracking_active`) with correct view definitions
+- [x] **Functional**: All existing hook queries return correct data after migration (todos grouped by week, activities by week, active time tracking entries)
+- [x] **Functional**: Original `_design/todos` design document is removed from the definitions
+- [x] **Build validation**: TypeScript compilation passes (`pnpm tsc:check`)
+- [x] **Code quality**: Linting and formatting pass (`pnpm lint`, `pnpm format`)
+- [x] **User validation**: Manual testing confirms todos display correctly in web UI, time tracking works, and no console errors appear
 
 ## Implementation Plan
 
@@ -40,10 +40,15 @@ This separation provides better modularity and follows the existing pattern (the
 - [x] Automated test: Run linting (`pnpm lint`)
 - [x] Automated test: Run formatting check (`pnpm format`)
 - [x] Automated test: Run existing unit tests (`pnpm test`)
-- [ ] User test: Start dev server and verify todos display correctly in the web UI
-- [ ] User test: Verify time tracking functionality works (start/stop tracking)
-- [ ] User test: Check browser console for errors during normal usage
+- [x] User test: Start dev server and verify todos display correctly in the web UI
+- [x] User test: Verify time tracking functionality works (start/stop tracking)
+- [x] User test: Check browser console for errors during normal usage
 
 ## Review
 
+- [x] Bug fix: Added null check for `doc.active` in `byTimeTrackingActive` view to prevent runtime errors
+
 ## Notes
+
+- Critical self-assessment revealed missing null check in `byTimeTrackingActive` view map function
+- Fixed to match pattern used in `byActive` view (both check for `doc.active` before calling `Object.entries`)

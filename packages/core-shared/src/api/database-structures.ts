@@ -51,11 +51,13 @@ export const DESIGN_DOCS: DesignDocument[] = [
     views: {
       byTimeTrackingActive: {
         map: `function (doc) {
-          Object.entries(doc.active).forEach((d) => {
-            if (d[1] === null) {
-              emit(null, { id: doc._id });
-            }
-          });
+          if (doc.active) {
+            Object.entries(doc.active).forEach((d) => {
+              if (d[1] === null) {
+                emit(null, { id: doc._id });
+              }
+            });
+          }
         }`,
       },
     },
