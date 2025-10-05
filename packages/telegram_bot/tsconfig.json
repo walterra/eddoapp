@@ -23,6 +23,9 @@
     },
     {
       "path": "../core-server"
+    },
+    {
+      "path": "../printer_service"
     }
   ]
 }

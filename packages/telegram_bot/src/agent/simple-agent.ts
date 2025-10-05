@@ -321,6 +321,36 @@ export class SimpleAgent {
 
               logger.info('✅ Briefing saved to file', { path: briefingPath });
 
+              // Auto-print to thermal printer if enabled
+              try {
+                // Dynamic import to avoid loading printer dependencies if not enabled
+                const printerModule = await import('@eddo/printer-service');
+
+                if (printerModule.appConfig.PRINTER_ENABLED) {
+                  logger.info(
+                    '🖨️ Attempting to print briefing to thermal printer',
+                  );
+
+                  await printerModule.printBriefing({
+                    content: briefingData.content,
+                    userId: briefingData.userId,
+                    timestamp: briefingData.timestamp,
+                  });
+
+                  logger.info('✅ Briefing printed successfully');
+                } else {
+                  logger.debug('🖨️ Printer disabled, skipping print');
+                }
+              } catch (printerError) {
+                // Don't fail briefing if print fails - just log the error
+                logger.error('❌ Failed to print briefing (non-fatal)', {
+                  error:
+                    printerError instanceof Error
+                      ? printerError.message
+                      : String(printerError),
+                });
+              }
+
               // Also call in-memory callbacks for same-process integrations
               for (const callback of briefingCallbacks) {
                 try {

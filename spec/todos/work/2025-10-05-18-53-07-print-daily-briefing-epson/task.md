@@ -9,9 +9,7 @@
 
 ### Architecture Decision: File-Based Briefing Sharing
 
-- Telegram bot and printer service run as separate processes, so in-memory event emitters won't work
-- Solution: Telegram bot writes briefing to `.claude/tmp/latest-briefing.json`
-- Printer CLI can load from file, or telegram bot can directly import printer functions
+- Telegram bot should import printer package to print briefing alongside sending it to telegram
 
 ### VS Code Auto-Formatting Issue
 
@@ -101,7 +99,9 @@ The printer will connect via network (Ethernet/Wi-Fi) for reliability.
 - [x] Create briefing loader helper (packages/printer_service/src/printer/briefing_loader.ts)
 - [x] Update CLI to load real briefings from file (packages/printer_service/src/cli.ts:95)
 - [x] Add @eddo/printer-service dependency to telegram bot (packages/telegram_bot/package.json:17)
-- [ ] Add auto-print logic to SimpleAgent when briefing is sent (packages/telegram_bot/src/agent/simple-agent.ts:~325) - IN PROGRESS
+- [x] Add auto-print logic to SimpleAgent when briefing is sent (packages/telegram_bot/src/agent/simple-agent.ts:324-350)
+- [x] Create printer-service index.ts to export functions (packages/printer_service/src/index.ts)
+- [x] Add TypeScript project references for printer_service (tsconfig.json, packages/telegram_bot/tsconfig.json, packages/printer_service/tsconfig.json)
 
 **Scheduling:**
 
