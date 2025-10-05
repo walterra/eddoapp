@@ -26,7 +26,7 @@ export function useTimeTrackingActive({
     queryFn: async () => {
       console.time('fetchTimeTrackingActive');
       const results = await safeDb.safeQuery<{ id: string }>(
-        'todos',
+        'todos_by_time_tracking_active',
         'byTimeTrackingActive',
         {
           key: null,

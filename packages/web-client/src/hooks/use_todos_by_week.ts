@@ -37,12 +37,16 @@ export function useTodosByWeek({
     ],
     queryFn: async () => {
       console.time('fetchTodos');
-      const todos = await safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-        descending: false,
-        endkey: endDate.toISOString(),
-        include_docs: false,
-        startkey: startDate.toISOString(),
-      });
+      const todos = await safeDb.safeQuery<Todo>(
+        'todos_by_due_date',
+        'byDueDate',
+        {
+          descending: false,
+          endkey: endDate.toISOString(),
+          include_docs: false,
+          startkey: startDate.toISOString(),
+        },
+      );
       console.timeEnd('fetchTodos');
       return todos;
     },

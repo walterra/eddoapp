@@ -120,7 +120,7 @@ describe('useTimeTrackingActive', () => {
 
     await waitFor(() =>
       expect(mockSafeDb.safeQuery).toHaveBeenCalledWith(
-        'todos',
+        'todos_by_time_tracking_active',
         'byTimeTrackingActive',
         {
           key: null,
