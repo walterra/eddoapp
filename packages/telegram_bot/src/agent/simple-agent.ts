@@ -13,6 +13,31 @@ import {
 } from '../utils/markdown.js';
 import { buildSystemPrompt } from './system-prompt.js';
 
+/**
+ * Callback for when a briefing is generated
+ */
+export type BriefingCallback = (briefing: {
+  content: string;
+  userId: string;
+  timestamp: string;
+}) => void | Promise<void>;
+
+let briefingCallbacks: BriefingCallback[] = [];
+
+/**
+ * Register a callback to be called when a briefing is generated
+ */
+export function onBriefingGenerated(callback: BriefingCallback): void {
+  briefingCallbacks.push(callback);
+}
+
+/**
+ * Remove a briefing callback
+ */
+export function offBriefingGenerated(callback: BriefingCallback): void {
+  briefingCallbacks = briefingCallbacks.filter((cb) => cb !== callback);
+}
+
 export interface AgentState {
   input: string;
   history: Array<{
@@ -101,6 +126,11 @@ export class SimpleAgent {
   ): Promise<string> {
     // Get MCP client (initialized at bot startup)
     const mcpClient = this.getMCPClientOrThrow();
+
+    // Detect if this is a briefing request
+    const isBriefingRequest = userInput.includes(
+      'Generate an ACTIONABLE daily briefing',
+    );
 
     // Start periodic typing for long operations
     const typingInterval = this.startPeriodicTyping(telegramContext);
@@ -261,6 +291,58 @@ export class SimpleAgent {
             iterationId,
             parseMode: replyOptions.parse_mode || 'none',
           });
+
+          // Save briefing content to file if this is a briefing
+          if (isBriefingRequest) {
+            const userId = telegramContext.from?.id?.toString() || 'unknown';
+            logger.info('📄 Saving briefing content to file', { userId });
+
+            try {
+              const briefingData = {
+                content: textToSend,
+                userId,
+                timestamp: new Date().toISOString(),
+              };
+
+              // Save to .claude/tmp/latest-briefing.json
+              const briefingPath = join(
+                process.cwd(),
+                '.claude',
+                'tmp',
+                'latest-briefing.json',
+              );
+              await mkdir(join(process.cwd(), '.claude', 'tmp'), {
+                recursive: true,
+              });
+              await writeFile(
+                briefingPath,
+                JSON.stringify(briefingData, null, 2),
+              );
+
+              logger.info('✅ Briefing saved to file', { path: briefingPath });
+
+              // Also call in-memory callbacks for same-process integrations
+              for (const callback of briefingCallbacks) {
+                try {
+                  await callback(briefingData);
+                } catch (callbackError) {
+                  logger.error('❌ Briefing callback failed', {
+                    error:
+                      callbackError instanceof Error
+                        ? callbackError.message
+                        : String(callbackError),
+                  });
+                }
+              }
+            } catch (briefingError) {
+              logger.error('❌ Failed to save briefing', {
+                error:
+                  briefingError instanceof Error
+                    ? briefingError.message
+                    : String(briefingError),
+              });
+            }
+          }
         } catch (error) {
           logger.error('❌ Failed to send message to Telegram', {
             iterationId,

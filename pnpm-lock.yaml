@@ -371,6 +371,9 @@ importers:
       '@eddo/core-shared':
         specifier: workspace:*
         version: link:../core-shared
+      '@eddo/printer-service':
+        specifier: workspace:*
+        version: link:../printer_service
       '@modelcontextprotocol/sdk':
         specifier: ^1.17.5
         version: 1.17.5

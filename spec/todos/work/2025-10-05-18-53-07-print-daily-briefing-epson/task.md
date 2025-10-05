@@ -5,6 +5,40 @@
 **Started:** 2025-10-05T18:57:00Z
 **Agent PID:** 81503
 
+## Notes
+
+### Architecture Decision: File-Based Briefing Sharing
+
+- Telegram bot and printer service run as separate processes, so in-memory event emitters won't work
+- Solution: Telegram bot writes briefing to `.claude/tmp/latest-briefing.json`
+- Printer CLI can load from file, or telegram bot can directly import printer functions
+
+### VS Code Auto-Formatting Issue
+
+- `.vscode/settings.json` has `"editor.formatOnSave": true` with `prettier-plugin-organize-imports`
+- This was removing imports when doing multi-step edits
+- Solution: Create complete helper modules first, then import and use them atomically
+
+### Current Status (Paused)
+
+- CLI commands fully working and tested with real printer (192.168.1.78)
+- Briefing file-based sharing implemented and working
+- Next step: Complete auto-print integration in SimpleAgent (line ~325 in simple-agent.ts)
+  - Need to add dynamic import of printer functions after briefing is saved
+  - Check PRINTER_ENABLED config before attempting print
+  - Handle errors gracefully (don't fail briefing if print fails)
+
+### Environment Configuration
+
+User must set in `.env`:
+
+```
+PRINTER_ENABLED=true
+PRINTER_IP_ADDRESS=192.168.1.78
+PRINTER_PORT=9100
+PRINTER_SCHEDULE_TIME=07:00
+```
+
 ## Original Todo
 
 print the daily briefing on a local Epson TM-m30III
@@ -61,10 +95,13 @@ The printer will connect via network (Ethernet/Wi-Fi) for reliability.
 
 **Shared Briefing Content Solution:**
 
-- [ ] Add briefing content broadcast to SimpleAgent.agentLoop() (packages/telegram_bot/src/agent/simple-agent.ts:~258)
-- [ ] Detect briefing requests by checking for DAILY_BRIEFING_REQUEST_MESSAGE (packages/telegram_bot/src/agent/simple-agent.ts)
-- [ ] Emit briefing event with content, userId, timestamp after Telegram send (packages/telegram_bot/src/agent/simple-agent.ts)
-- [ ] Create event listener in printer service to receive briefing content (packages/printer_service/src/index.ts)
+- [x] Add briefing content broadcast to SimpleAgent.agentLoop() (packages/telegram_bot/src/agent/simple-agent.ts:~295)
+- [x] Detect briefing requests by checking for DAILY_BRIEFING_REQUEST_MESSAGE (packages/telegram_bot/src/agent/simple-agent.ts:131)
+- [x] Save briefing to .claude/tmp/latest-briefing.json for file-based sharing (packages/telegram_bot/src/agent/simple-agent.ts:307)
+- [x] Create briefing loader helper (packages/printer_service/src/printer/briefing_loader.ts)
+- [x] Update CLI to load real briefings from file (packages/printer_service/src/cli.ts:95)
+- [x] Add @eddo/printer-service dependency to telegram bot (packages/telegram_bot/package.json:17)
+- [ ] Add auto-print logic to SimpleAgent when briefing is sent (packages/telegram_bot/src/agent/simple-agent.ts:~325) - IN PROGRESS
 
 **Scheduling:**
 
@@ -74,15 +111,15 @@ The printer will connect via network (Ethernet/Wi-Fi) for reliability.
 
 **Scripts:**
 
-- [ ] Add root scripts: pnpm dev:printer, pnpm build:printer (package.json)
+- [x] Add root scripts: pnpm dev:printer, pnpm build:printer (package.json:96,102)
 - [ ] Add printer service to main pnpm dev command (package.json)
 
 **Testing:**
 
 - [ ] Automated test: Printer connection test successfully detects Epson TM-m30III
 - [ ] Automated test: Markdown to thermal format conversion produces correct layout
-- [ ] Automated test: Event listener receives briefing content from SimpleAgent
-- [ ] User test: Run `pnpm printer test-connection` and verify connection success
-- [ ] User test: Run `pnpm printer test-page` and verify test page prints
-- [ ] User test: Run `pnpm printer print-briefing --user <id>` and verify briefing prints
+- [x] User test: Run `pnpm printer test-connection` and verify connection success - PASSED
+- [x] User test: Run `pnpm printer test-page` and verify test page prints - PASSED
+- [x] User test: Run `pnpm printer print-briefing --user <id>` and verify briefing prints - PASSED
+- [ ] User test: Verify `/briefing now` in Telegram auto-prints to printer
 - [ ] User test: Verify scheduled briefing prints at configured time with same content as Telegram message

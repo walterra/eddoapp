@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import {
+  loadLatestBriefing,
+  SAMPLE_BRIEFING,
+} from './printer/briefing_loader.js';
+import {
   printBriefing,
   printTestPage,
   testConnection,
@@ -81,35 +85,24 @@ program
     console.log(`Printing briefing for user: ${options.user}`);
 
     try {
-      // For now, use sample content if not provided
-      const sampleBriefing =
-        options.content ||
-        `
-🌅 Good morning! Here's your daily briefing:
+      let briefingContent: string;
 
-**📅 Today's Tasks** (3)
-• 15:00 Doctor appointment
-• Review project proposal
-• Buy groceries
+      // Use provided content, or load from file, or use sample
+      if (options.content) {
+        briefingContent = options.content;
+        console.log('📄 Using provided content');
+      } else {
+        const savedBriefing = await loadLatestBriefing();
+        if (savedBriefing) {
+          briefingContent = savedBriefing.content;
+          console.log(`📄 Using briefing from: ${savedBriefing.timestamp}`);
+        } else {
+          console.log('⚠️  No saved briefing found, using sample content');
+          briefingContent = SAMPLE_BRIEFING;
+        }
+      }
 
-**⚠️ Overdue** (2)
-• Fix authentication bug
-• Submit expense report
-
-**✅ Next Actions** (5)
-• Call client about contract
-• Update documentation
-• Review pull request
-• Test printer integration
-• Deploy to production
-
-**⏳ Active Time Tracking** (1)
-• Working on: Printer service implementation (Started 2h ago)
-
-Have a productive day!
-`;
-
-      const formattedContent = formatBriefingForPrint(sampleBriefing);
+      const formattedContent = formatBriefingForPrint(briefingContent);
 
       await printBriefing({
         content: formattedContent,
