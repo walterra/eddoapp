@@ -133,3 +133,27 @@ The printer will connect via network (Ethernet/Wi-Fi) for reliability.
 - [x] User test: Run `pnpm printer print-briefing --user <id>` and verify briefing prints ✅ PASSED
 - [x] User test: Verify `/briefing now` in Telegram auto-prints to printer ✅ PASSED
 - [x] User test: Verify scheduled briefing prints at configured time with same content as Telegram message ✅ PASSED
+
+## Review
+
+### Code Analysis Findings
+
+**Critical Issues Fixed:**
+
+- [x] Bug: Resource leak in `testConnection()` function - added `finally` block with `printer.clear()` (packages/printer_service/src/printer/client.ts:54,87-91)
+- [x] Bug: Time validation regex - now validates HH:MM range (00:00-23:59) (packages/printer_service/src/utils/config.ts:20-23)
+- [x] Bug: Word wrapping - now handles words longer than 48 chars by force-breaking (packages/printer_service/src/printer/formatter.ts:23-43)
+- [x] Bug: Marker replacement - now uses `replaceAll()` instead of `replace()` (packages/telegram_bot/src/agent/simple-agent.ts:248, packages/telegram_bot/src/scheduler/daily-briefing.ts:271)
+- [x] Bug: Marker not stripped before sending to Telegram - marker now removed before markdown conversion and sending (packages/telegram_bot/src/agent/simple-agent.ts:241-254)
+- [x] Bug: printBriefing preference not saving - added missing field to updatePreferencesSchema (packages/web-api/src/routes/users.ts:42)
+
+**Medium Priority Issues:**
+
+- [ ] Enhancement: Add network timeout handling for print operations (packages/printer_service/src/printer/client.ts:91-193)
+- [ ] Enhancement: Improve emoji stripping regex to cover all emoji ranges including flags, skin tones, ZWJ sequences (packages/printer_service/src/printer/formatter.ts:11-17)
+
+**Test Results After Fixes:**
+
+- ✅ TypeScript check: PASSED
+- ✅ Linting: PASSED
+- ✅ Unit tests: 375 passed | 2 skipped (377)

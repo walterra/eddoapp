@@ -51,6 +51,8 @@ export function createPrinterInstance(): ThermalPrinter {
  * Test printer connection
  */
 export async function testConnection(): Promise<PrinterConnectionResult> {
+  let printer: ThermalPrinter | null = null;
+
   try {
     if (!appConfig.PRINTER_IP_ADDRESS) {
       return {
@@ -59,7 +61,7 @@ export async function testConnection(): Promise<PrinterConnectionResult> {
       };
     }
 
-    const printer = createPrinterInstance();
+    printer = createPrinterInstance();
     const isConnected = await printer.isPrinterConnected();
 
     if (!isConnected) {
@@ -82,6 +84,10 @@ export async function testConnection(): Promise<PrinterConnectionResult> {
       connected: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
+  } finally {
+    if (printer) {
+      printer.clear();
+    }
   }
 }
 

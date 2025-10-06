@@ -238,10 +238,20 @@ export class SimpleAgent {
 
       if (conversationalPart) {
         try {
+          // Check if this is a briefing (contains the marker)
+          const hasBriefingMarker = conversationalPart.text.includes(
+            BRIEFING_CONTENT_MARKER,
+          );
+
+          // Strip the marker before converting and sending
+          const textWithoutMarker = hasBriefingMarker
+            ? conversationalPart.text.replaceAll(BRIEFING_CONTENT_MARKER, '')
+            : conversationalPart.text;
+
           // Convert to Telegram's legacy markdown format if needed
           const textToSend = conversationalPart.isMarkdown
-            ? convertToTelegramMarkdown(conversationalPart.text)
-            : conversationalPart.text;
+            ? convertToTelegramMarkdown(textWithoutMarker)
+            : textWithoutMarker;
 
           // Use standard Markdown parse mode
           const replyOptions = conversationalPart.isMarkdown
@@ -251,6 +261,7 @@ export class SimpleAgent {
           logger.debug('📤 Sending message to Telegram', {
             iterationId,
             parseMode: replyOptions.parse_mode || 'none',
+            hasBriefingMarker,
             originalText: conversationalPart.text.substring(0, 200) + '...',
             convertedText: textToSend.substring(0, 200) + '...',
             textLength: textToSend.length,
@@ -264,12 +275,24 @@ export class SimpleAgent {
           });
 
           // Auto-print briefing to thermal printer if enabled
-          // Detect actual briefing content by checking for the unique marker
-          if (conversationalPart.text.includes(BRIEFING_CONTENT_MARKER)) {
+          if (hasBriefingMarker) {
+            logger.info('🔍 Briefing marker detected', {
+              iterationId,
+              userId: telegramContext.from?.id?.toString(),
+            });
+
             // Check if user has printing enabled in their preferences
             const userWantsPrinting =
               telegramContext.session?.user?.preferences?.printBriefing ===
               true;
+
+            logger.info('🔍 User print preference check', {
+              iterationId,
+              userId: telegramContext.from?.id?.toString(),
+              printBriefing:
+                telegramContext.session?.user?.preferences?.printBriefing,
+              userWantsPrinting,
+            });
 
             if (userWantsPrinting) {
               try {
@@ -288,15 +311,10 @@ export class SimpleAgent {
                     },
                   );
 
-                  // Strip the marker from the content before printing
-                  const contentWithoutMarker = conversationalPart.text.replace(
-                    BRIEFING_CONTENT_MARKER,
-                    '',
-                  );
-
                   // Format content for thermal printer (emoji stripping, line wrapping, etc.)
+                  // textWithoutMarker already has the marker removed
                   const formattedContent =
-                    printerModule.formatBriefingForPrint(contentWithoutMarker);
+                    printerModule.formatBriefingForPrint(textWithoutMarker);
 
                   await printerModule.printBriefing({
                     content: formattedContent,

@@ -20,11 +20,29 @@ function stripEmojis(text: string): string {
  * Wrap text to fit thermal printer width
  */
 function wrapText(text: string, maxWidth: number = MAX_LINE_WIDTH): string[] {
+  if (text.trim() === '') {
+    return [''];
+  }
+
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
 
   for (const word of words) {
+    // Handle words longer than maxWidth by force-breaking them
+    if (word.length > maxWidth) {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = '';
+      }
+
+      // Break long word into chunks
+      for (let i = 0; i < word.length; i += maxWidth) {
+        lines.push(word.slice(i, i + maxWidth));
+      }
+      continue;
+    }
+
     const testLine = currentLine ? `${currentLine} ${word}` : word;
 
     if (testLine.length <= maxWidth) {

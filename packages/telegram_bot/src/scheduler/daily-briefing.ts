@@ -268,7 +268,7 @@ export class DailyBriefingScheduler {
 
       if (hasBriefingMarker) {
         // Strip the marker before sending to Telegram and printing
-        const briefingWithoutMarker = briefingMessage.replace(
+        const briefingWithoutMarker = briefingMessage.replaceAll(
           BRIEFING_CONTENT_MARKER,
           '',
         );
