@@ -17,14 +17,16 @@
 - This was removing imports when doing multi-step edits
 - Solution: Create complete helper modules first, then import and use them atomically
 
-### Current Status (Paused)
+### Current Status
 
-- CLI commands fully working and tested with real printer (192.168.1.78)
-- Briefing file-based sharing implemented and working
-- Next step: Complete auto-print integration in SimpleAgent (line ~325 in simple-agent.ts)
-  - Need to add dynamic import of printer functions after briefing is saved
-  - Check PRINTER_ENABLED config before attempting print
-  - Handle errors gracefully (don't fail briefing if print fails)
+- ✅ CLI commands fully working and tested with real printer (192.168.1.78)
+- ✅ Auto-print integration for manual `/briefing now` commands
+- ✅ Auto-print integration for scheduled briefings
+- ✅ Removed file-based sharing (no longer needed)
+- ✅ Fixed emoji printing by stripping all emojis
+- ✅ Uses LLM-generated marker (---BRIEFING-START---) to detect actual briefing content
+- ✅ Both manual and scheduled briefings use same marker-based detection
+- ✅ Printer errors are non-fatal (won't break briefing delivery)
 
 ### Environment Configuration
 
@@ -93,13 +95,16 @@ The printer will connect via network (Ethernet/Wi-Fi) for reliability.
 
 **Shared Briefing Content Solution:**
 
-- [x] Add briefing content broadcast to SimpleAgent.agentLoop() (packages/telegram_bot/src/agent/simple-agent.ts:~295)
+- [x] ~~Add briefing content broadcast to SimpleAgent.agentLoop()~~ REPLACED by direct auto-print integration
 - [x] Detect briefing requests by checking for DAILY_BRIEFING_REQUEST_MESSAGE (packages/telegram_bot/src/agent/simple-agent.ts:131)
-- [x] Save briefing to .claude/tmp/latest-briefing.json for file-based sharing (packages/telegram_bot/src/agent/simple-agent.ts:307)
-- [x] Create briefing loader helper (packages/printer_service/src/printer/briefing_loader.ts)
-- [x] Update CLI to load real briefings from file (packages/printer_service/src/cli.ts:95)
+- [x] ~~Save briefing to .claude/tmp/latest-briefing.json~~ REMOVED - no longer needed
+- [x] ~~Create briefing loader helper~~ REMOVED - file briefing_loader.ts deleted
+- [x] ~~Update CLI to load real briefings from file~~ REPLACED with sample briefing (packages/printer_service/src/cli.ts)
 - [x] Add @eddo/printer-service dependency to telegram bot (packages/telegram_bot/package.json:17)
-- [x] Add auto-print logic to SimpleAgent when briefing is sent (packages/telegram_bot/src/agent/simple-agent.ts:324-350)
+- [x] Add auto-print logic with iteration check to skip intro (packages/telegram_bot/src/agent/simple-agent.ts:270-305)
+- [x] Add emoji replacement system for thermal printer (packages/printer_service/src/printer/formatter.ts:8-64)
+- [x] Export formatBriefingForPrint function (packages/printer_service/src/index.ts:13)
+- [x] Format briefing content before printing (packages/telegram_bot/src/agent/simple-agent.ts:287-289)
 - [x] Create printer-service index.ts to export functions (packages/printer_service/src/index.ts)
 - [x] Add TypeScript project references for printer_service (tsconfig.json, packages/telegram_bot/tsconfig.json, packages/printer_service/tsconfig.json)
 

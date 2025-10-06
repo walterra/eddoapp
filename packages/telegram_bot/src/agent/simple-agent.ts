@@ -3,6 +3,7 @@ import { join } from 'path';
 
 import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
+import { BRIEFING_CONTENT_MARKER } from '../constants/briefing.js';
 import { getMCPClient } from '../mcp/client.js';
 import { extractUserContextForMCP } from '../mcp/user-context.js';
 import { logger } from '../utils/logger.js';
@@ -12,31 +13,6 @@ import {
   validateTelegramMarkdown,
 } from '../utils/markdown.js';
 import { buildSystemPrompt } from './system-prompt.js';
-
-/**
- * Callback for when a briefing is generated
- */
-export type BriefingCallback = (briefing: {
-  content: string;
-  userId: string;
-  timestamp: string;
-}) => void | Promise<void>;
-
-let briefingCallbacks: BriefingCallback[] = [];
-
-/**
- * Register a callback to be called when a briefing is generated
- */
-export function onBriefingGenerated(callback: BriefingCallback): void {
-  briefingCallbacks.push(callback);
-}
-
-/**
- * Remove a briefing callback
- */
-export function offBriefingGenerated(callback: BriefingCallback): void {
-  briefingCallbacks = briefingCallbacks.filter((cb) => cb !== callback);
-}
 
 export interface AgentState {
   input: string;
@@ -126,11 +102,6 @@ export class SimpleAgent {
   ): Promise<string> {
     // Get MCP client (initialized at bot startup)
     const mcpClient = this.getMCPClientOrThrow();
-
-    // Detect if this is a briefing request
-    const isBriefingRequest = userInput.includes(
-      'Generate an ACTIONABLE daily briefing',
-    );
 
     // Start periodic typing for long operations
     const typingInterval = this.startPeriodicTyping(telegramContext);
@@ -292,84 +263,52 @@ export class SimpleAgent {
             parseMode: replyOptions.parse_mode || 'none',
           });
 
-          // Save briefing content to file if this is a briefing
-          if (isBriefingRequest) {
-            const userId = telegramContext.from?.id?.toString() || 'unknown';
-            logger.info('📄 Saving briefing content to file', { userId });
-
+          // Auto-print briefing to thermal printer if enabled
+          // Detect actual briefing content by checking for the unique marker
+          if (conversationalPart.text.includes(BRIEFING_CONTENT_MARKER)) {
             try {
-              const briefingData = {
-                content: textToSend,
-                userId,
-                timestamp: new Date().toISOString(),
-              };
+              // Dynamic import to avoid loading printer dependencies if not enabled
+              const printerModule = await import('@eddo/printer-service');
 
-              // Save to .claude/tmp/latest-briefing.json
-              const briefingPath = join(
-                process.cwd(),
-                '.claude',
-                'tmp',
-                'latest-briefing.json',
-              );
-              await mkdir(join(process.cwd(), '.claude', 'tmp'), {
-                recursive: true,
-              });
-              await writeFile(
-                briefingPath,
-                JSON.stringify(briefingData, null, 2),
-              );
+              if (printerModule.appConfig.PRINTER_ENABLED) {
+                const userId =
+                  telegramContext.from?.id?.toString() || 'unknown';
 
-              logger.info('✅ Briefing saved to file', { path: briefingPath });
+                logger.info(
+                  '🖨️ Attempting to print briefing to thermal printer',
+                  {
+                    userId,
+                    iteration: iterationId,
+                  },
+                );
 
-              // Auto-print to thermal printer if enabled
-              try {
-                // Dynamic import to avoid loading printer dependencies if not enabled
-                const printerModule = await import('@eddo/printer-service');
+                // Strip the marker from the content before printing
+                const contentWithoutMarker = conversationalPart.text.replace(
+                  BRIEFING_CONTENT_MARKER,
+                  '',
+                );
 
-                if (printerModule.appConfig.PRINTER_ENABLED) {
-                  logger.info(
-                    '🖨️ Attempting to print briefing to thermal printer',
-                  );
+                // Format content for thermal printer (emoji stripping, line wrapping, etc.)
+                const formattedContent =
+                  printerModule.formatBriefingForPrint(contentWithoutMarker);
 
-                  await printerModule.printBriefing({
-                    content: briefingData.content,
-                    userId: briefingData.userId,
-                    timestamp: briefingData.timestamp,
-                  });
-
-                  logger.info('✅ Briefing printed successfully');
-                } else {
-                  logger.debug('🖨️ Printer disabled, skipping print');
-                }
-              } catch (printerError) {
-                // Don't fail briefing if print fails - just log the error
-                logger.error('❌ Failed to print briefing (non-fatal)', {
-                  error:
-                    printerError instanceof Error
-                      ? printerError.message
-                      : String(printerError),
+                await printerModule.printBriefing({
+                  content: formattedContent,
+                  userId,
+                  timestamp: new Date().toISOString(),
                 });
-              }
 
-              // Also call in-memory callbacks for same-process integrations
-              for (const callback of briefingCallbacks) {
-                try {
-                  await callback(briefingData);
-                } catch (callbackError) {
-                  logger.error('❌ Briefing callback failed', {
-                    error:
-                      callbackError instanceof Error
-                        ? callbackError.message
-                        : String(callbackError),
-                  });
-                }
+                logger.info('✅ Briefing printed successfully');
+              } else {
+                logger.debug('🖨️ Printer disabled, skipping print');
               }
-            } catch (briefingError) {
-              logger.error('❌ Failed to save briefing', {
+            } catch (printerError) {
+              // Don't fail briefing if print fails - just log the error
+              logger.error('❌ Failed to print briefing (non-fatal)', {
                 error:
-                  briefingError instanceof Error
-                    ? briefingError.message
-                    : String(briefingError),
+                  printerError instanceof Error
+                    ? printerError.message
+                    : String(printerError),
               });
             }
           }

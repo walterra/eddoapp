@@ -6,6 +6,17 @@
 const MAX_LINE_WIDTH = 48;
 
 /**
+ * Strip all emojis from text for thermal printer compatibility
+ */
+function stripEmojis(text: string): string {
+  // Remove all emojis - comprehensive regex covering all emoji ranges
+  return text.replace(
+    /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]/gu,
+    '',
+  );
+}
+
+/**
  * Wrap text to fit thermal printer width
  */
 function wrapText(text: string, maxWidth: number = MAX_LINE_WIDTH): string[] {
@@ -37,7 +48,8 @@ function wrapText(text: string, maxWidth: number = MAX_LINE_WIDTH): string[] {
  * Convert Telegram markdown to plain text suitable for thermal printing
  */
 export function formatForThermalPrinter(telegramMarkdown: string): string {
-  let formatted = telegramMarkdown;
+  // Strip emojis first
+  let formatted = stripEmojis(telegramMarkdown);
 
   // Remove Telegram-specific markdown formatting
   // Bold: *text* or **text**
@@ -86,16 +98,8 @@ export function formatForThermalPrinter(telegramMarkdown: string): string {
  * Format briefing with enhanced structure for thermal printer
  */
 export function formatBriefingForPrint(content: string): string {
-  // First convert markdown
+  // First convert markdown and replace emojis
   let formatted = formatForThermalPrinter(content);
-
-  // Add visual separators for sections
-  formatted = formatted.replace(
-    /^([\u{1F305}\u{1F4C5}\u{26A0}\u{2705}\u{23F3}\u{23F8}\u{1F4CB}\u{1F9E0}].+)$/gmu,
-    (match) => {
-      return `\n${match}\n${'-'.repeat(MAX_LINE_WIDTH)}`;
-    },
-  );
 
   // Format bullet points for better readability
   formatted = formatted.replace(/^[•·]/gm, '  -');

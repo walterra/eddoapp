@@ -1,16 +1,40 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import {
-  loadLatestBriefing,
-  SAMPLE_BRIEFING,
-} from './printer/briefing_loader.js';
-import {
   printBriefing,
   printTestPage,
   testConnection,
 } from './printer/client.js';
 import { formatBriefingForPrint } from './printer/formatter.js';
 import { appConfig } from './utils/config.js';
+
+/**
+ * Sample/mock briefing for testing
+ */
+const SAMPLE_BRIEFING = `
+🌅 Good morning! Here's your daily briefing:
+
+**📅 Today's Tasks** (3)
+• 15:00 Doctor appointment
+• Review project proposal
+• Buy groceries
+
+**⚠️ Overdue** (2)
+• Fix authentication bug
+• Submit expense report
+
+**✅ Next Actions** (5)
+• Call client about contract
+• Update documentation
+• Review pull request
+• Test printer integration
+• Deploy to production
+
+**⏳ Active Time Tracking** (1)
+• Working on: Printer service implementation (Started 2h ago)
+
+Have a productive day!
+`;
 
 const program = new Command();
 
@@ -87,19 +111,13 @@ program
     try {
       let briefingContent: string;
 
-      // Use provided content, or load from file, or use sample
+      // Use provided content or sample
       if (options.content) {
         briefingContent = options.content;
         console.log('📄 Using provided content');
       } else {
-        const savedBriefing = await loadLatestBriefing();
-        if (savedBriefing) {
-          briefingContent = savedBriefing.content;
-          console.log(`📄 Using briefing from: ${savedBriefing.timestamp}`);
-        } else {
-          console.log('⚠️  No saved briefing found, using sample content');
-          briefingContent = SAMPLE_BRIEFING;
-        }
+        console.log('📄 Using sample briefing content');
+        briefingContent = SAMPLE_BRIEFING;
       }
 
       const formattedContent = formatBriefingForPrint(briefingContent);

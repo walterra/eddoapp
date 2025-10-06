@@ -9,6 +9,9 @@ export {
   testConnection,
 } from './printer/client.js';
 
+// Export formatter functions
+export { formatBriefingForPrint } from './printer/formatter.js';
+
 // Export config
 export { appConfig } from './utils/config.js';
 
