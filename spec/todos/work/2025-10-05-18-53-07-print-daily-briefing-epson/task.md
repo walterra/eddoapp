@@ -1,9 +1,9 @@
 # print the daily briefing on a local Epson TM-m30III
 
-**Status:** Review
+**Status:** In Progress
 **Created:** 2025-10-05T18:53:07Z
 **Started:** 2025-10-05T18:57:00Z
-**Agent PID:** 81503
+**Agent PID:** 73299
 
 ## Notes
 
@@ -147,10 +147,10 @@ The printer will connect via network (Ethernet/Wi-Fi) for reliability.
 - [x] Bug: Marker not stripped before sending to Telegram - marker now removed before markdown conversion and sending (packages/telegram_bot/src/agent/simple-agent.ts:241-254)
 - [x] Bug: printBriefing preference not saving - added missing field to updatePreferencesSchema (packages/web-api/src/routes/users.ts:42)
 
-**Medium Priority Issues:**
+**Medium Priority Issues (COMPLETED):**
 
-- [ ] Enhancement: Add network timeout handling for print operations (packages/printer_service/src/printer/client.ts:91-193)
-- [ ] Enhancement: Improve emoji stripping regex to cover all emoji ranges including flags, skin tones, ZWJ sequences (packages/printer_service/src/printer/formatter.ts:11-17)
+- [x] Enhancement: Add network timeout handling for print operations - `printTestPage()` and `printBriefing()` now have explicit 10-second timeouts, `testConnection()` uses library's built-in 5-second timeout (packages/printer_service/src/printer/client.ts:54-223)
+- [x] Enhancement: Improve emoji stripping regex to cover all emoji ranges including flags, skin tones, ZWJ sequences (packages/printer_service/src/printer/formatter.ts:8-86)
 
 **Test Results After Fixes:**
 

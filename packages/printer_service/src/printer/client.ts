@@ -49,6 +49,7 @@ export function createPrinterInstance(): ThermalPrinter {
 
 /**
  * Test printer connection
+ * Uses library's built-in 5-second timeout (configured in createPrinterInstance)
  */
 export async function testConnection(): Promise<PrinterConnectionResult> {
   let printer: ThermalPrinter | null = null;
@@ -96,52 +97,68 @@ export async function testConnection(): Promise<PrinterConnectionResult> {
  */
 export async function printTestPage(): Promise<void> {
   const printer = createPrinterInstance();
+  const PRINT_TIMEOUT = 10000; // 10 seconds
+  let timeoutId: NodeJS.Timeout | null = null;
 
   try {
-    const isConnected = await printer.isPrinterConnected();
-    if (!isConnected) {
-      throw new Error('Printer not connected');
-    }
-
-    // Build test page
-    printer.alignCenter();
-    printer.setTextSize(1, 1);
-    printer.bold(true);
-    printer.println('EDDO PRINTER TEST');
-    printer.bold(false);
-    printer.setTextNormal();
-
-    printer.drawLine();
-
-    printer.alignLeft();
-    printer.println(`Date: ${new Date().toLocaleString()}`);
-    printer.println(
-      `Printer: ${appConfig.PRINTER_IP_ADDRESS}:${appConfig.PRINTER_PORT}`,
-    );
-
-    printer.drawLine();
-
-    printer.println('');
-    printer.alignCenter();
-    printer.println('Test page printed successfully!');
-    printer.println('');
-
-    // QR code for test
-    await printer.printQR('https://github.com/walterra/eddoapp', {
-      cellSize: 6,
-      correction: 'M',
-      model: 2,
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(
+        () => reject(new Error('Print operation timed out')),
+        PRINT_TIMEOUT,
+      );
     });
 
-    printer.newLine();
-    printer.cut();
+    const printPromise = async () => {
+      const isConnected = await printer.isPrinterConnected();
+      if (!isConnected) {
+        throw new Error('Printer not connected');
+      }
 
-    await printer.execute();
-    console.log('Test page printed successfully');
+      // Build test page
+      printer.alignCenter();
+      printer.setTextSize(1, 1);
+      printer.bold(true);
+      printer.println('EDDO PRINTER TEST');
+      printer.bold(false);
+      printer.setTextNormal();
+
+      printer.drawLine();
+
+      printer.alignLeft();
+      printer.println(`Date: ${new Date().toLocaleString()}`);
+      printer.println(
+        `Printer: ${appConfig.PRINTER_IP_ADDRESS}:${appConfig.PRINTER_PORT}`,
+      );
+
+      printer.drawLine();
+
+      printer.println('');
+      printer.alignCenter();
+      printer.println('Test page printed successfully!');
+      printer.println('');
+
+      // QR code for test
+      await printer.printQR('https://github.com/walterra/eddoapp', {
+        cellSize: 6,
+        correction: 'M',
+        model: 2,
+      });
+
+      printer.newLine();
+      printer.cut();
+
+      await printer.execute();
+      console.log('Test page printed successfully');
+    };
+
+    await Promise.race([printPromise(), timeoutPromise]);
   } catch (error) {
     console.error('Failed to print test page:', error);
     throw error;
   } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     printer.clear();
   }
 }
@@ -151,49 +168,65 @@ export async function printTestPage(): Promise<void> {
  */
 export async function printBriefing(options: PrintOptions): Promise<void> {
   const printer = createPrinterInstance();
+  const PRINT_TIMEOUT = 10000; // 10 seconds
+  let timeoutId: NodeJS.Timeout | null = null;
 
   try {
-    const isConnected = await printer.isPrinterConnected();
-    if (!isConnected) {
-      throw new Error('Printer not connected');
-    }
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(
+        () => reject(new Error('Print operation timed out')),
+        PRINT_TIMEOUT,
+      );
+    });
 
-    // Header
-    printer.alignCenter();
-    printer.setTextSize(1, 1);
-    printer.bold(true);
-    printer.println('DAILY BRIEFING');
-    printer.bold(false);
-    printer.setTextNormal();
+    const printPromise = async () => {
+      const isConnected = await printer.isPrinterConnected();
+      if (!isConnected) {
+        throw new Error('Printer not connected');
+      }
 
-    if (options.timestamp) {
-      printer.println(new Date(options.timestamp).toLocaleString());
-    }
+      // Header
+      printer.alignCenter();
+      printer.setTextSize(1, 1);
+      printer.bold(true);
+      printer.println('DAILY BRIEFING');
+      printer.bold(false);
+      printer.setTextNormal();
 
-    printer.drawLine();
+      if (options.timestamp) {
+        printer.println(new Date(options.timestamp).toLocaleString());
+      }
 
-    // Content (will be formatted by formatter)
-    printer.alignLeft();
-    printer.println(options.content);
+      printer.drawLine();
 
-    printer.drawLine();
+      // Content (will be formatted by formatter)
+      printer.alignLeft();
+      printer.println(options.content);
 
-    // Footer
-    printer.alignCenter();
-    printer.println('');
-    printer.setTextSize(0, 0);
-    printer.println('Eddo App - Daily Briefing');
-    printer.setTextNormal();
+      printer.drawLine();
 
-    printer.newLine();
-    printer.cut();
+      // Footer
+      printer.alignCenter();
+      printer.println('');
+      printer.setTextSize(0, 0);
+      printer.println('Eddo App - Daily Briefing');
+      printer.setTextNormal();
 
-    await printer.execute();
-    console.log('Briefing printed successfully');
+      printer.newLine();
+      printer.cut();
+
+      await printer.execute();
+      console.log('Briefing printed successfully');
+    };
+
+    await Promise.race([printPromise(), timeoutPromise]);
   } catch (error) {
     console.error('Failed to print briefing:', error);
     throw error;
   } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     printer.clear();
   }
 }

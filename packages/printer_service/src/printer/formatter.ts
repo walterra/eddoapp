@@ -7,13 +7,82 @@ const MAX_LINE_WIDTH = 48;
 
 /**
  * Strip all emojis from text for thermal printer compatibility
+ * Covers: emoticons, symbols, pictographs, transport, flags, skin tones, ZWJ sequences
  */
 function stripEmojis(text: string): string {
-  // Remove all emojis - comprehensive regex covering all emoji ranges
-  return text.replace(
-    /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]/gu,
-    '',
-  );
+  return text
+    .replace(
+      /[\u{1F600}-\u{1F64F}]/gu, // Emoticons
+      '',
+    )
+    .replace(
+      /[\u{1F300}-\u{1F5FF}]/gu, // Symbols & Pictographs
+      '',
+    )
+    .replace(
+      /[\u{1F680}-\u{1F6FF}]/gu, // Transport & Map
+      '',
+    )
+    .replace(
+      /[\u{1F700}-\u{1F77F}]/gu, // Alchemical Symbols
+      '',
+    )
+    .replace(
+      /[\u{1F780}-\u{1F7FF}]/gu, // Geometric Shapes Extended
+      '',
+    )
+    .replace(
+      /[\u{1F800}-\u{1F8FF}]/gu, // Supplemental Arrows-C
+      '',
+    )
+    .replace(
+      /[\u{1F900}-\u{1F9FF}]/gu, // Supplemental Symbols and Pictographs
+      '',
+    )
+    .replace(
+      /[\u{1FA00}-\u{1FA6F}]/gu, // Chess Symbols
+      '',
+    )
+    .replace(
+      /[\u{1FA70}-\u{1FAFF}]/gu, // Symbols and Pictographs Extended-A
+      '',
+    )
+    .replace(
+      /[\u{2600}-\u{26FF}]/gu, // Miscellaneous Symbols
+      '',
+    )
+    .replace(
+      /[\u{2700}-\u{27BF}]/gu, // Dingbats
+      '',
+    )
+    .replace(
+      /[\u{1F1E0}-\u{1F1FF}]/gu, // Regional Indicator Symbols (flags)
+      '',
+    )
+    .replace(
+      /[\u{FE00}-\u{FE0F}]/gu, // Variation Selectors
+      '',
+    )
+    .replace(
+      /[\u{1F000}-\u{1F02F}]/gu, // Mahjong Tiles
+      '',
+    )
+    .replace(
+      /[\u{1F0A0}-\u{1F0FF}]/gu, // Playing Cards
+      '',
+    )
+    .replace(
+      /[\u{E0020}-\u{E007F}]/gu, // Tags
+      '',
+    )
+    .replace(
+      /[\u{200D}]/gu, // Zero Width Joiner (for ZWJ sequences)
+      '',
+    )
+    .replace(
+      /[\u{1F3FB}-\u{1F3FF}]/gu, // Skin tone modifiers
+      '',
+    );
 }
 
 /**
