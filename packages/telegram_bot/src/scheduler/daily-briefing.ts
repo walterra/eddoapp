@@ -3,7 +3,10 @@ import type { Bot } from 'grammy';
 
 import { SimpleAgent } from '../agent/simple-agent.js';
 import type { BotContext } from '../bot/bot.js';
-import { DAILY_BRIEFING_REQUEST_MESSAGE } from '../constants/briefing.js';
+import {
+  BRIEFING_CONTENT_MARKER,
+  DAILY_BRIEFING_REQUEST_MESSAGE,
+} from '../constants/briefing.js';
 import { logger } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 
@@ -258,18 +261,92 @@ export class DailyBriefingScheduler {
       const briefingMessage =
         result.finalResponse || '❌ Failed to generate briefing';
 
-      // Send the briefing via Telegram
-      await this.bot.api.sendMessage(user.telegram_id, briefingMessage, {
-        parse_mode: 'Markdown',
-        link_preview_options: { is_disabled: true },
-      });
+      // Check if briefing contains the marker (indicates actual briefing content)
+      const hasBriefingMarker = briefingMessage.includes(
+        BRIEFING_CONTENT_MARKER,
+      );
 
-      logger.info('Daily briefing sent successfully via agent', {
-        userId: user._id,
-        username: user.username,
-        telegramId: user.telegram_id,
-        outputLength: briefingMessage.length,
-      });
+      if (hasBriefingMarker) {
+        // Strip the marker before sending to Telegram and printing
+        const briefingWithoutMarker = briefingMessage.replaceAll(
+          BRIEFING_CONTENT_MARKER,
+          '',
+        );
+
+        // Send to Telegram
+        await this.bot.api.sendMessage(
+          user.telegram_id,
+          briefingWithoutMarker,
+          {
+            parse_mode: 'Markdown',
+            link_preview_options: { is_disabled: true },
+          },
+        );
+
+        // Auto-print to thermal printer if enabled (both globally and for user)
+        const userWantsPrinting = user.preferences?.printBriefing === true;
+
+        if (userWantsPrinting) {
+          try {
+            // Dynamic import to avoid loading printer dependencies if not enabled
+            const printerModule = await import('@eddo/printer-service');
+
+            if (printerModule.appConfig.PRINTER_ENABLED) {
+              logger.info('🖨️ Printing scheduled briefing to thermal printer', {
+                userId: user._id,
+                username: user.username,
+              });
+
+              // Format content for thermal printer
+              const formattedContent = printerModule.formatBriefingForPrint(
+                briefingWithoutMarker,
+              );
+
+              await printerModule.printBriefing({
+                content: formattedContent,
+                userId: user._id,
+                timestamp: new Date().toISOString(),
+              });
+
+              logger.info('✅ Scheduled briefing printed successfully');
+            } else {
+              logger.debug(
+                '🖨️ Printer globally disabled (PRINTER_ENABLED=false)',
+              );
+            }
+          } catch (printerError) {
+            // Don't fail scheduled briefing if print fails
+            logger.error('❌ Failed to print scheduled briefing (non-fatal)', {
+              error:
+                printerError instanceof Error
+                  ? printerError.message
+                  : String(printerError),
+            });
+          }
+        } else {
+          logger.debug('🖨️ User has printing disabled, skipping print', {
+            userId: user._id,
+          });
+        }
+
+        logger.info('Daily briefing sent successfully via agent', {
+          userId: user._id,
+          username: user.username,
+          telegramId: user.telegram_id,
+          outputLength: briefingWithoutMarker.length,
+        });
+      } else {
+        // No marker found - just send the message as-is (fallback)
+        await this.bot.api.sendMessage(user.telegram_id, briefingMessage, {
+          parse_mode: 'Markdown',
+          link_preview_options: { is_disabled: true },
+        });
+
+        logger.warn('Briefing sent without marker (printer skipped)', {
+          userId: user._id,
+          username: user.username,
+        });
+      }
     } catch (error) {
       logger.error('Failed to generate or send briefing via agent', {
         userId: user._id,

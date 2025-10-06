@@ -3,6 +3,7 @@ import { join } from 'path';
 
 import { claudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
+import { BRIEFING_CONTENT_MARKER } from '../constants/briefing.js';
 import { getMCPClient } from '../mcp/client.js';
 import { extractUserContextForMCP } from '../mcp/user-context.js';
 import { logger } from '../utils/logger.js';
@@ -237,10 +238,20 @@ export class SimpleAgent {
 
       if (conversationalPart) {
         try {
+          // Check if this is a briefing (contains the marker)
+          const hasBriefingMarker = conversationalPart.text.includes(
+            BRIEFING_CONTENT_MARKER,
+          );
+
+          // Strip the marker before converting and sending
+          const textWithoutMarker = hasBriefingMarker
+            ? conversationalPart.text.replaceAll(BRIEFING_CONTENT_MARKER, '')
+            : conversationalPart.text;
+
           // Convert to Telegram's legacy markdown format if needed
           const textToSend = conversationalPart.isMarkdown
-            ? convertToTelegramMarkdown(conversationalPart.text)
-            : conversationalPart.text;
+            ? convertToTelegramMarkdown(textWithoutMarker)
+            : textWithoutMarker;
 
           // Use standard Markdown parse mode
           const replyOptions = conversationalPart.isMarkdown
@@ -250,6 +261,7 @@ export class SimpleAgent {
           logger.debug('📤 Sending message to Telegram', {
             iterationId,
             parseMode: replyOptions.parse_mode || 'none',
+            hasBriefingMarker,
             originalText: conversationalPart.text.substring(0, 200) + '...',
             convertedText: textToSend.substring(0, 200) + '...',
             textLength: textToSend.length,
@@ -261,6 +273,76 @@ export class SimpleAgent {
             iterationId,
             parseMode: replyOptions.parse_mode || 'none',
           });
+
+          // Auto-print briefing to thermal printer if enabled
+          if (hasBriefingMarker) {
+            logger.info('🔍 Briefing marker detected', {
+              iterationId,
+              userId: telegramContext.from?.id?.toString(),
+            });
+
+            // Check if user has printing enabled in their preferences
+            const userWantsPrinting =
+              telegramContext.session?.user?.preferences?.printBriefing ===
+              true;
+
+            logger.info('🔍 User print preference check', {
+              iterationId,
+              userId: telegramContext.from?.id?.toString(),
+              printBriefing:
+                telegramContext.session?.user?.preferences?.printBriefing,
+              userWantsPrinting,
+            });
+
+            if (userWantsPrinting) {
+              try {
+                // Dynamic import to avoid loading printer dependencies if not enabled
+                const printerModule = await import('@eddo/printer-service');
+
+                if (printerModule.appConfig.PRINTER_ENABLED) {
+                  const userId =
+                    telegramContext.from?.id?.toString() || 'unknown';
+
+                  logger.info(
+                    '🖨️ Attempting to print briefing to thermal printer',
+                    {
+                      userId,
+                      iteration: iterationId,
+                    },
+                  );
+
+                  // Format content for thermal printer (emoji stripping, line wrapping, etc.)
+                  // textWithoutMarker already has the marker removed
+                  const formattedContent =
+                    printerModule.formatBriefingForPrint(textWithoutMarker);
+
+                  await printerModule.printBriefing({
+                    content: formattedContent,
+                    userId,
+                    timestamp: new Date().toISOString(),
+                  });
+
+                  logger.info('✅ Briefing printed successfully');
+                } else {
+                  logger.debug(
+                    '🖨️ Printer globally disabled (PRINTER_ENABLED=false)',
+                  );
+                }
+              } catch (printerError) {
+                // Don't fail briefing if print fails - just log the error
+                logger.error('❌ Failed to print briefing (non-fatal)', {
+                  error:
+                    printerError instanceof Error
+                      ? printerError.message
+                      : String(printerError),
+                });
+              }
+            } else {
+              logger.debug('🖨️ User has printing disabled, skipping print', {
+                userId: telegramContext.from?.id?.toString(),
+              });
+            }
+          }
         } catch (error) {
           logger.error('❌ Failed to send message to Telegram', {
             iterationId,

@@ -5,6 +5,7 @@ import { useAuth } from './use_auth';
 interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string;
+  printBriefing?: boolean;
   timezone?: string;
 }
 
@@ -34,6 +35,7 @@ interface ChangePasswordData {
 interface UpdatePreferencesData {
   dailyBriefing?: boolean;
   briefingTime?: string;
+  printBriefing?: boolean;
   timezone?: string;
 }
 
