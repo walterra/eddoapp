@@ -27,6 +27,8 @@
 - ✅ Uses LLM-generated marker (---BRIEFING-START---) to detect actual briefing content
 - ✅ Both manual and scheduled briefings use same marker-based detection
 - ✅ Printer errors are non-fatal (won't break briefing delivery)
+- ✅ User preference for enabling/disabling printing (UI toggle in preferences)
+- ✅ Two-level control: global PRINTER_ENABLED env var + per-user printBriefing preference
 
 ### Environment Configuration
 

@@ -266,49 +266,62 @@ export class SimpleAgent {
           // Auto-print briefing to thermal printer if enabled
           // Detect actual briefing content by checking for the unique marker
           if (conversationalPart.text.includes(BRIEFING_CONTENT_MARKER)) {
-            try {
-              // Dynamic import to avoid loading printer dependencies if not enabled
-              const printerModule = await import('@eddo/printer-service');
+            // Check if user has printing enabled in their preferences
+            const userWantsPrinting =
+              telegramContext.session?.user?.preferences?.printBriefing ===
+              true;
 
-              if (printerModule.appConfig.PRINTER_ENABLED) {
-                const userId =
-                  telegramContext.from?.id?.toString() || 'unknown';
+            if (userWantsPrinting) {
+              try {
+                // Dynamic import to avoid loading printer dependencies if not enabled
+                const printerModule = await import('@eddo/printer-service');
 
-                logger.info(
-                  '🖨️ Attempting to print briefing to thermal printer',
-                  {
+                if (printerModule.appConfig.PRINTER_ENABLED) {
+                  const userId =
+                    telegramContext.from?.id?.toString() || 'unknown';
+
+                  logger.info(
+                    '🖨️ Attempting to print briefing to thermal printer',
+                    {
+                      userId,
+                      iteration: iterationId,
+                    },
+                  );
+
+                  // Strip the marker from the content before printing
+                  const contentWithoutMarker = conversationalPart.text.replace(
+                    BRIEFING_CONTENT_MARKER,
+                    '',
+                  );
+
+                  // Format content for thermal printer (emoji stripping, line wrapping, etc.)
+                  const formattedContent =
+                    printerModule.formatBriefingForPrint(contentWithoutMarker);
+
+                  await printerModule.printBriefing({
+                    content: formattedContent,
                     userId,
-                    iteration: iterationId,
-                  },
-                );
+                    timestamp: new Date().toISOString(),
+                  });
 
-                // Strip the marker from the content before printing
-                const contentWithoutMarker = conversationalPart.text.replace(
-                  BRIEFING_CONTENT_MARKER,
-                  '',
-                );
-
-                // Format content for thermal printer (emoji stripping, line wrapping, etc.)
-                const formattedContent =
-                  printerModule.formatBriefingForPrint(contentWithoutMarker);
-
-                await printerModule.printBriefing({
-                  content: formattedContent,
-                  userId,
-                  timestamp: new Date().toISOString(),
+                  logger.info('✅ Briefing printed successfully');
+                } else {
+                  logger.debug(
+                    '🖨️ Printer globally disabled (PRINTER_ENABLED=false)',
+                  );
+                }
+              } catch (printerError) {
+                // Don't fail briefing if print fails - just log the error
+                logger.error('❌ Failed to print briefing (non-fatal)', {
+                  error:
+                    printerError instanceof Error
+                      ? printerError.message
+                      : String(printerError),
                 });
-
-                logger.info('✅ Briefing printed successfully');
-              } else {
-                logger.debug('🖨️ Printer disabled, skipping print');
               }
-            } catch (printerError) {
-              // Don't fail briefing if print fails - just log the error
-              logger.error('❌ Failed to print briefing (non-fatal)', {
-                error:
-                  printerError instanceof Error
-                    ? printerError.message
-                    : String(printerError),
+            } else {
+              logger.debug('🖨️ User has printing disabled, skipping print', {
+                userId: telegramContext.from?.id?.toString(),
               });
             }
           }

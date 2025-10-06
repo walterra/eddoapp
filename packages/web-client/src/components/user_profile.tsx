@@ -38,6 +38,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
   // Preferences states
   const [dailyBriefing, setDailyBriefing] = useState(false);
   const [briefingTime, setBriefingTime] = useState('07:00');
+  const [printBriefing, setPrintBriefing] = useState(false);
 
   // Initialize form when profile loads
   useEffect(() => {
@@ -46,6 +47,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
       if (profile.preferences) {
         setDailyBriefing(profile.preferences.dailyBriefing);
         setBriefingTime(profile.preferences.briefingTime || '07:00');
+        setPrintBriefing(profile.preferences.printBriefing || false);
       }
     }
   }, [profile]);
@@ -207,6 +209,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
     const result = await updatePreferences({
       dailyBriefing,
       briefingTime,
+      printBriefing,
     });
 
     if (result.success) {
@@ -656,6 +659,20 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         checked={dailyBriefing}
                         disabled={isLoading}
                         onChange={setDailyBriefing}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Print Briefings</Label>
+                        <p className="text-xs text-gray-500">
+                          Auto-print briefings to thermal printer
+                        </p>
+                      </div>
+                      <ToggleSwitch
+                        checked={printBriefing}
+                        disabled={!dailyBriefing || isLoading}
+                        onChange={setPrintBriefing}
                       />
                     </div>
 

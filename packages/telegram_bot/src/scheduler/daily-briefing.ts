@@ -283,37 +283,49 @@ export class DailyBriefingScheduler {
           },
         );
 
-        // Auto-print to thermal printer if enabled
-        try {
-          // Dynamic import to avoid loading printer dependencies if not enabled
-          const printerModule = await import('@eddo/printer-service');
+        // Auto-print to thermal printer if enabled (both globally and for user)
+        const userWantsPrinting = user.preferences?.printBriefing === true;
 
-          if (printerModule.appConfig.PRINTER_ENABLED) {
-            logger.info('🖨️ Printing scheduled briefing to thermal printer', {
-              userId: user._id,
-              username: user.username,
+        if (userWantsPrinting) {
+          try {
+            // Dynamic import to avoid loading printer dependencies if not enabled
+            const printerModule = await import('@eddo/printer-service');
+
+            if (printerModule.appConfig.PRINTER_ENABLED) {
+              logger.info('🖨️ Printing scheduled briefing to thermal printer', {
+                userId: user._id,
+                username: user.username,
+              });
+
+              // Format content for thermal printer
+              const formattedContent = printerModule.formatBriefingForPrint(
+                briefingWithoutMarker,
+              );
+
+              await printerModule.printBriefing({
+                content: formattedContent,
+                userId: user._id,
+                timestamp: new Date().toISOString(),
+              });
+
+              logger.info('✅ Scheduled briefing printed successfully');
+            } else {
+              logger.debug(
+                '🖨️ Printer globally disabled (PRINTER_ENABLED=false)',
+              );
+            }
+          } catch (printerError) {
+            // Don't fail scheduled briefing if print fails
+            logger.error('❌ Failed to print scheduled briefing (non-fatal)', {
+              error:
+                printerError instanceof Error
+                  ? printerError.message
+                  : String(printerError),
             });
-
-            // Format content for thermal printer
-            const formattedContent = printerModule.formatBriefingForPrint(
-              briefingWithoutMarker,
-            );
-
-            await printerModule.printBriefing({
-              content: formattedContent,
-              userId: user._id,
-              timestamp: new Date().toISOString(),
-            });
-
-            logger.info('✅ Scheduled briefing printed successfully');
           }
-        } catch (printerError) {
-          // Don't fail scheduled briefing if print fails
-          logger.error('❌ Failed to print scheduled briefing (non-fatal)', {
-            error:
-              printerError instanceof Error
-                ? printerError.message
-                : String(printerError),
+        } else {
+          logger.debug('🖨️ User has printing disabled, skipping print', {
+            userId: user._id,
           });
         }
 

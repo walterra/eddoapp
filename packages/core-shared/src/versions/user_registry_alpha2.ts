@@ -7,6 +7,7 @@ type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string; // HH:MM format, defaults to 07:00
+  printBriefing?: boolean; // Enable/disable thermal printer output
   timezone?: string; // Future timezone support
 }
 
@@ -31,6 +32,7 @@ export function createDefaultUserPreferences(): UserPreferences {
   return {
     dailyBriefing: false,
     briefingTime: '07:00',
+    printBriefing: false,
     timezone: undefined,
   };
 }
