@@ -36,8 +36,8 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       nano:
-        specifier: ^10.1.4
-        version: 10.1.4
+        specifier: ^11.0.1
+        version: 11.0.1
       react:
         specifier: ^19.1.1
         version: 19.1.1
@@ -245,8 +245,8 @@ importers:
         specifier: github:marcocesarato/dotenv-mono#master
         version: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/deeaf072ac33a42d136a1e4763ee36511f917314
       nano:
-        specifier: ^10.1.4
-        version: 10.1.4
+        specifier: ^11.0.1
+        version: 11.0.1
       pouchdb-adapter-memory:
         specifier: ^9.0.0
         version: 9.0.0
@@ -298,8 +298,8 @@ importers:
         specifier: ^3.15.1
         version: 3.15.1
       nano:
-        specifier: ^10.1.4
-        version: 10.1.4
+        specifier: ^11.0.1
+        version: 11.0.1
       zod:
         specifier: ^3.25.67
         version: 3.25.76
@@ -2475,9 +2475,6 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.10.0:
-    resolution: {integrity: sha512-/1xYAC4MP/HEG+3duIhFr4ZQXR4sQXOIe+o6sdqzeykGLx6Upp/1p8MHqhINOvGeP7xyNHe7tsiJByc4SSVUxw==}
-
   axios@1.11.0:
     resolution: {integrity: sha512-1Lx3WLFQWm3ooKDYZD1eXmoGO9fxYQjrycfHFC8P0sCfQVXyROp0p9PFWBehewBOdCwHc+f/b8I0fMto5eSfwA==}
 
@@ -3451,22 +3448,9 @@ packages:
       debug:
         optional: true
 
-  follow-redirects@1.15.9:
-    resolution: {integrity: sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
-
-  form-data@4.0.3:
-    resolution: {integrity: sha512-qsITQPfmvMOSAdeyZ+12I1c+CKSstAFAwu+97zrnWAbIr5u8wfsExUzCesVLC8NgHuRUqNN4Zy6UPWUTRGslcA==}
-    engines: {node: '>= 6'}
 
   form-data@4.0.4:
     resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
@@ -4520,9 +4504,9 @@ packages:
   mute-stream@0.0.8:
     resolution: {integrity: sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==}
 
-  nano@10.1.4:
-    resolution: {integrity: sha512-bJOFIPLExIbF6mljnfExXX9Cub4W0puhDjVMp+qV40xl/DBvgKao7St4+6/GB6EoHZap7eFnrnx4mnp5KYgwJA==}
-    engines: {node: '>=14'}
+  nano@11.0.1:
+    resolution: {integrity: sha512-LVsUxvMTwq6vD9CvUWlOHPIUGJWa7W+QhA5KtqB5PouMrF5dQEUgxfBsPoslD1/JbeAWEWEW3iz0AEGoDd19bw==}
+    engines: {node: '>=20.0'}
 
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -4551,9 +4535,6 @@ packages:
 
   nice-try@1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
-
-  node-abort-controller@3.1.1:
-    resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -8131,14 +8112,6 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.10.0:
-    dependencies:
-      follow-redirects: 1.15.9
-      form-data: 4.0.3
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-
   axios@1.11.0(debug@4.4.3):
     dependencies:
       follow-redirects: 1.15.11(debug@4.4.3)
@@ -9377,19 +9350,9 @@ snapshots:
     optionalDependencies:
       debug: 4.4.3
 
-  follow-redirects@1.15.9: {}
-
   for-each@0.3.5:
     dependencies:
       is-callable: 1.2.7
-
-  form-data@4.0.3:
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      es-set-tostringtag: 2.1.0
-      hasown: 2.0.2
-      mime-types: 2.1.35
 
   form-data@4.0.4:
     dependencies:
@@ -10432,13 +10395,7 @@ snapshots:
 
   mute-stream@0.0.8: {}
 
-  nano@10.1.4:
-    dependencies:
-      axios: 1.10.0
-      node-abort-controller: 3.1.1
-      qs: 6.14.0
-    transitivePeerDependencies:
-      - debug
+  nano@11.0.1: {}
 
   nanoid@3.3.11: {}
 
@@ -10453,8 +10410,6 @@ snapshots:
   negotiator@1.0.0: {}
 
   nice-try@1.0.5: {}
-
-  node-abort-controller@3.1.1: {}
 
   node-domexception@1.0.0: {}
 
