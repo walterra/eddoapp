@@ -45,25 +45,25 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 
 ### Database & Core
 
-- [ ] Add missing index `version-context-completed-due-index` to database-structures.ts (packages/core-shared/src/api/database-structures.ts:86-102)
-- [ ] Add `completedFrom` and `completedTo` parameters to listTodos tool schema (packages/mcp_server/src/mcp-server.ts:298-327)
-- [ ] Add completion date range selector logic to listTodos (packages/mcp_server/src/mcp-server.ts:337-360)
-- [ ] Update index selection logic to handle completion date filters (packages/mcp_server/src/mcp-server.ts:369-380)
-- [ ] Update listTodos tool description to document new parameters (packages/mcp_server/src/mcp-server.ts:278-297)
+- [x] Add missing index `version-context-completed-due-index` to database-structures.ts (packages/core-shared/src/api/database-structures.ts:86-102)
+- [x] Add `completedFrom` and `completedTo` parameters to listTodos tool schema (packages/mcp_server/src/mcp-server.ts:298-327)
+- [x] Add completion date range selector logic to listTodos (packages/mcp_server/src/mcp-server.ts:337-360)
+- [x] Update index selection logic to handle completion date filters (packages/mcp_server/src/mcp-server.ts:369-380)
+- [x] Update listTodos tool description to document new parameters (packages/mcp_server/src/mcp-server.ts:278-297)
 
 ### Telegram Bot
 
-- [ ] Add RECAP_CONTENT_MARKER constant (packages/telegram_bot/src/constants/briefing.ts)
-- [ ] Add DAILY_RECAP_REQUEST_MESSAGE constant (packages/telegram_bot/src/constants/briefing.ts)
-- [ ] Add 'recap' case to handleBriefing switch statement (packages/telegram_bot/src/bot/commands/briefing.ts:~73)
-- [ ] Create generateBriefingRecap() helper function (packages/telegram_bot/src/bot/commands/briefing.ts)
-- [ ] Update briefing help text to include '/briefing recap' (packages/telegram_bot/src/bot/commands/briefing.ts:~75-83)
+- [x] Add RECAP_CONTENT_MARKER constant (packages/telegram_bot/src/constants/briefing.ts)
+- [x] Add DAILY_RECAP_REQUEST_MESSAGE constant (packages/telegram_bot/src/constants/briefing.ts)
+- [x] Add 'recap' case to handleBriefing switch statement (packages/telegram_bot/src/bot/commands/briefing.ts:~73)
+- [x] Create generateBriefingRecap() helper function (packages/telegram_bot/src/bot/commands/briefing.ts)
+- [x] Update briefing help text to include '/briefing recap' (packages/telegram_bot/src/bot/commands/briefing.ts:~75-83)
 
 ### Tests
 
-- [ ] Automated test: Add integration test for completedFrom/completedTo filtering (packages/mcp_server/src/integration-tests/suites/filtering-queries.test.ts)
-- [ ] Automated test: Verify completion date range queries work with existing indexes
-- [ ] Automated test: Test edge cases (no completed todos, invalid date ranges)
+- [x] Automated test: Add integration test for completedFrom/completedTo filtering (packages/mcp_server/src/integration-tests/suites/filtering-queries.test.ts)
+- [x] Automated test: Verify completion date range queries work with existing indexes
+- [x] Automated test: Test edge cases (no completed todos, invalid date ranges)
 - [ ] User test: Start Telegram bot and send `/briefing recap` command
 - [ ] User test: Complete some todos today and verify `/briefing recap` shows them
 - [ ] User test: Verify recap includes motivational summary and outlook for tomorrow

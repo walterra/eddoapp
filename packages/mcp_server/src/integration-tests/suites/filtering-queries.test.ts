@@ -178,6 +178,117 @@ describe('MCP Query and Filtering Integration', () => {
     });
   });
 
+  describe('Completion Date Range Filtering', () => {
+    it('should filter todos by completion date range', async () => {
+      const now = new Date();
+      const oneMinuteAgo = new Date(now.getTime() - 60000);
+      const oneMinuteFromNow = new Date(now.getTime() + 60000);
+
+      // Create some todos
+      const completedTodo1Response =
+        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+          ...createTestTodoData.withContext('work'),
+          title: 'Completed Todo 1',
+        });
+      const completedTodo1Id = completedTodo1Response.data!.id!;
+
+      const completedTodo2Response =
+        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+          ...createTestTodoData.withContext('work'),
+          title: 'Completed Todo 2',
+        });
+      const completedTodo2Id = completedTodo2Response.data!.id!;
+
+      await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withContext('work'),
+        title: 'Not Completed',
+      });
+
+      // Complete the todos (they will get current timestamp)
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: completedTodo1Id,
+        completed: true,
+      });
+
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: completedTodo2Id,
+        completed: true,
+      });
+
+      // Filter by completion date range (should include recently completed)
+      const completedInRange = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {
+          completedFrom: oneMinuteAgo.toISOString(),
+          completedTo: oneMinuteFromNow.toISOString(),
+        },
+      );
+
+      assert.expectTodoCount(completedInRange, 2);
+      const titles = completedInRange.map((t) => t.title);
+      expect(titles).toContain('Completed Todo 1');
+      expect(titles).toContain('Completed Todo 2');
+      expect(titles).not.toContain('Not Completed');
+
+      // Filter outside the range (should return empty)
+      const tomorrow = new Date(now.getTime() + 86400000);
+      const dayAfterTomorrow = new Date(now.getTime() + 172800000);
+      const completedOutsideRange = await assert.expectToolCallSuccess<
+        TodoAlpha3[]
+      >('listTodos', {
+        completedFrom: tomorrow.toISOString(),
+        completedTo: dayAfterTomorrow.toISOString(),
+      });
+
+      assert.expectTodoCount(completedOutsideRange, 0);
+    });
+
+    it('should combine completion date range with context filter', async () => {
+      const now = new Date();
+      const oneMinuteAgo = new Date(now.getTime() - 60000);
+      const oneMinuteFromNow = new Date(now.getTime() + 60000);
+
+      // Create completed todos in different contexts
+      const workTodoResponse = await assert.expectToolCallSuccess<MCPResponse>(
+        'createTodo',
+        {
+          ...createTestTodoData.withContext('work'),
+          title: 'Work Completed',
+        },
+      );
+      const workTodoId = workTodoResponse.data!.id!;
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: workTodoId,
+        completed: true,
+      });
+
+      const privateTodoResponse =
+        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+          ...createTestTodoData.withContext('private'),
+          title: 'Private Completed',
+        });
+      const privateTodoId = privateTodoResponse.data!.id!;
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: privateTodoId,
+        completed: true,
+      });
+
+      // Filter by completion date + work context
+      const workCompleted = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+        'listTodos',
+        {
+          context: 'work',
+          completedFrom: oneMinuteAgo.toISOString(),
+          completedTo: oneMinuteFromNow.toISOString(),
+        },
+      );
+
+      assert.expectTodoCount(workCompleted, 1);
+      expect(workCompleted[0].title).toBe('Work Completed');
+      assert.expectTodosFilteredByContext(workCompleted, 'work');
+    });
+  });
+
   describe('Date Range Filtering', () => {
     it('should filter todos by date range', async () => {
       const dateRange = testDates.range(1, 7); // Tomorrow to next week

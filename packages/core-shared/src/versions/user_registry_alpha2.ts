@@ -8,6 +8,9 @@ export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string; // HH:MM format, defaults to 07:00
   printBriefing?: boolean; // Enable/disable thermal printer output
+  dailyRecap: boolean;
+  recapTime?: string; // HH:MM format, defaults to 18:00
+  printRecap?: boolean; // Enable/disable thermal printer output for recap
   timezone?: string; // Future timezone support
 }
 
@@ -33,6 +36,9 @@ export function createDefaultUserPreferences(): UserPreferences {
     dailyBriefing: false,
     briefingTime: '07:00',
     printBriefing: false,
+    dailyRecap: false,
+    recapTime: '18:00',
+    printRecap: false,
     timezone: undefined,
   };
 }

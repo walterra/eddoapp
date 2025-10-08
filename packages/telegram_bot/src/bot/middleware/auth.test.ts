@@ -143,6 +143,8 @@ describe('Authentication Middleware', () => {
         preferences: {
           dailyBriefing: false,
           briefingTime: '07:00',
+          dailyRecap: false,
+          recapTime: '18:00',
         },
       });
       const mockCtx = createMockContext(123456789);
@@ -353,6 +355,8 @@ describe('Authentication Middleware', () => {
           preferences: {
             dailyBriefing: false,
             briefingTime: '07:00',
+            dailyRecap: false,
+            recapTime: '18:00',
           },
         });
 
