@@ -39,6 +39,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [dailyBriefing, setDailyBriefing] = useState(false);
   const [briefingTime, setBriefingTime] = useState('07:00');
   const [printBriefing, setPrintBriefing] = useState(false);
+  const [dailyRecap, setDailyRecap] = useState(false);
+  const [recapTime, setRecapTime] = useState('18:00');
+  const [printRecap, setPrintRecap] = useState(false);
 
   // Initialize form when profile loads
   useEffect(() => {
@@ -48,6 +51,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
         setDailyBriefing(profile.preferences.dailyBriefing);
         setBriefingTime(profile.preferences.briefingTime || '07:00');
         setPrintBriefing(profile.preferences.printBriefing || false);
+        setDailyRecap(profile.preferences.dailyRecap || false);
+        setRecapTime(profile.preferences.recapTime || '18:00');
+        setPrintRecap(profile.preferences.printRecap || false);
       }
     }
   }, [profile]);
@@ -210,6 +216,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
       dailyBriefing,
       briefingTime,
       printBriefing,
+      dailyRecap,
+      recapTime,
+      printRecap,
     });
 
     if (result.success) {
@@ -689,6 +698,65 @@ export function UserProfile({ onClose }: UserProfileProps) {
                       />
                       <p className="mt-1 text-xs text-gray-500">
                         Your preferred time for receiving daily briefings
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-medium text-gray-900">
+                        Daily Recaps
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Receive end-of-day recaps via Telegram bot with a
+                        motivational summary of your accomplishments and outlook
+                        for tomorrow.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Enable Daily Recaps</Label>
+                        <p className="text-xs text-gray-500">
+                          Get personalized evening summaries
+                        </p>
+                      </div>
+                      <ToggleSwitch
+                        checked={dailyRecap}
+                        disabled={isLoading}
+                        onChange={setDailyRecap}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Print Recaps</Label>
+                        <p className="text-xs text-gray-500">
+                          Auto-print recaps to thermal printer
+                        </p>
+                      </div>
+                      <ToggleSwitch
+                        checked={printRecap}
+                        disabled={!dailyRecap || isLoading}
+                        onChange={setPrintRecap}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="recapTime">Recap Time</Label>
+                      <TextInput
+                        disabled={!dailyRecap || isLoading}
+                        id="recapTime"
+                        onChange={(e) => setRecapTime(e.target.value)}
+                        pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+                        placeholder="18:00"
+                        type="time"
+                        value={recapTime}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Your preferred time for receiving daily recaps
                       </p>
                     </div>
                   </div>

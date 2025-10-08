@@ -78,6 +78,16 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 - [x] Add sendRecapToUser method (packages/telegram_bot/src/scheduler/daily-briefing.ts:454-548)
 - [x] Update getStatus to include sentRecapsToday (packages/telegram_bot/src/scheduler/daily-briefing.ts:553-567)
 
+### Web UI - User Preferences
+
+- [x] Add recap state variables to user_profile.tsx (packages/web-client/src/components/user_profile.tsx:42-44)
+- [x] Initialize recap preferences from profile (packages/web-client/src/components/user_profile.tsx:54-56)
+- [x] Add recap preferences to save handler (packages/web-client/src/components/user_profile.tsx:219-221)
+- [x] Add Daily Recaps UI section with toggles and time input (packages/web-client/src/components/user_profile.tsx:706-763)
+- [x] Update TypeScript interface in use_profile hook (packages/web-client/src/hooks/use_profile.ts:9-11,42-44)
+- [x] Update API validation schema to accept recap fields (packages/web-api/src/routes/users.ts:43-48)
+- [x] Fix user registration to include recap defaults (packages/web-api/src/routes/auth.ts:100-101)
+
 ### Tests
 
 - [x] Automated test: Add integration test for completedFrom/completedTo filtering (packages/mcp_server/src/integration-tests/suites/filtering-queries.test.ts:181-295)
@@ -86,9 +96,13 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 - [x] Fix test fixtures: Update user preferences in global-test-user.ts (packages/mcp_server/src/integration-tests/setup/global-test-user.ts:107-108)
 - [x] Fix test fixtures: Update user preferences in global.ts (packages/mcp_server/src/integration-tests/setup/global.ts:138-139)
 - [x] Fix test fixtures: Update auth middleware tests (packages/telegram_bot/src/bot/middleware/auth.test.ts:146-147,358-359)
+- [x] Automated test: TypeScript compilation check passes
+- [x] Automated test: Lint check passes
 - [ ] User test: Start Telegram bot and send `/briefing recap` command
 - [ ] User test: Complete some todos today and verify `/briefing recap` shows them
 - [ ] User test: Verify recap includes motivational summary and outlook for tomorrow
+- [ ] User test: Open web UI preferences, verify recap section displays correctly
+- [ ] User test: Toggle recap preferences and verify they save correctly
 
 ## Review
 

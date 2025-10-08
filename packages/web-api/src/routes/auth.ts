@@ -97,6 +97,8 @@ authApp.post('/register', async (c) => {
       preferences: {
         dailyBriefing: false,
         briefingTime: '07:00',
+        dailyRecap: false,
+        recapTime: '18:00',
       },
     });
 

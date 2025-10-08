@@ -6,6 +6,9 @@ interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string;
   printBriefing?: boolean;
+  dailyRecap: boolean;
+  recapTime?: string;
+  printRecap?: boolean;
   timezone?: string;
 }
 
@@ -36,6 +39,9 @@ interface UpdatePreferencesData {
   dailyBriefing?: boolean;
   briefingTime?: string;
   printBriefing?: boolean;
+  dailyRecap?: boolean;
+  recapTime?: string;
+  printRecap?: boolean;
   timezone?: string;
 }
 
