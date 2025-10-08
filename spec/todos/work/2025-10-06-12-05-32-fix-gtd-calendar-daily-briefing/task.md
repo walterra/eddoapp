@@ -1,7 +1,8 @@
 # no gtd:calendar events showed up in my daily briefing
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-10-06T12:05:32Z
+**Started:** 2025-10-06T12:08:00Z
 **Agent PID:** 73299
 
 ## Original Todo
@@ -34,6 +35,6 @@ But **it's missing** a query for `gtd:calendar` tagged items.
 
 ## Implementation Plan
 
-- [ ] Update `DAILY_BRIEFING_REQUEST_MESSAGE` to include gtd:calendar query (packages/telegram_bot/src/constants/briefing.ts:11-12)
+- [x] Update `DAILY_BRIEFING_REQUEST_MESSAGE` to include gtd:calendar query (packages/telegram_bot/src/constants/briefing.ts:11-12)
 - [ ] Automated test: Run briefing command and verify message includes calendar query instruction
 - [ ] User test: Create a gtd:calendar tagged todo for today and run `/briefing now` to verify it appears in the output
