@@ -1,6 +1,6 @@
 # show icons only on hover
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-10-08T15:15:00Z
 **Started:** 2025-10-08T15:20:00Z
 **Agent PID:** 73299
@@ -17,11 +17,11 @@ Implement hover-only visibility for action icons in the TodoListElement componen
 
 ## Success Criteria
 
-- [ ] Functional: Edit and time tracking icons hidden by default (opacity-0) on todo cards
-- [ ] Functional: Icons appear smoothly on hover over todo card with transition effect
-- [ ] Functional: Icons remain accessible via keyboard navigation (focus states reveal icons)
-- [ ] Functional: Hover behavior works correctly in both light and dark modes
-- [ ] User validation: Manual test confirms icons appear/disappear on hover in multiple browsers
+- [x] Functional: Edit and time tracking icons hidden by default (opacity-0) on todo cards
+- [x] Functional: Icons appear smoothly on hover over todo card with transition effect
+- [x] Functional: Icons remain accessible via keyboard navigation (focus states reveal icons)
+- [x] Functional: Hover behavior works correctly in both light and dark modes
+- [x] User validation: Manual test confirms icons appear/disappear on hover in multiple browsers
 
 ## Implementation Plan
 
@@ -31,8 +31,8 @@ Implement hover-only visibility for action icons in the TodoListElement componen
 - [x] Add `focus-within:opacity-100` to both buttons to ensure keyboard navigation reveals icons
 - [x] Fix pause button to always show (opacity-100) when time tracking is active (packages/web-client/src/components/todo_list_element.tsx:200-204)
 - [x] Automated test: Run `pnpm tsc:check` and `pnpm lint` to verify no type/lint errors
-- [ ] User test: Load web client, verify icons hidden by default on todo cards
-- [ ] User test: Verify pause button always visible when time tracking is active
-- [ ] User test: Hover over todo cards, verify icons appear smoothly with transition
-- [ ] User test: Use Tab key to navigate to buttons, verify icons appear on focus
-- [ ] User test: Test in dark mode, verify hover behavior works correctly
+- [x] User test: Load web client, verify icons hidden by default on todo cards
+- [x] User test: Verify pause button always visible when time tracking is active
+- [x] User test: Hover over todo cards, verify icons appear smoothly with transition
+- [x] User test: Use Tab key to navigate to buttons, verify icons appear on focus
+- [x] User test: Test in dark mode, verify hover behavior works correctly
