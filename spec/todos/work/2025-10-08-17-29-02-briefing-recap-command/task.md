@@ -51,19 +51,41 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 - [x] Update index selection logic to handle completion date filters (packages/mcp_server/src/mcp-server.ts:369-380)
 - [x] Update listTodos tool description to document new parameters (packages/mcp_server/src/mcp-server.ts:278-297)
 
-### Telegram Bot
+### Telegram Bot - Command
 
 - [x] Add RECAP_CONTENT_MARKER constant (packages/telegram_bot/src/constants/briefing.ts)
 - [x] Add DAILY_RECAP_REQUEST_MESSAGE constant (packages/telegram_bot/src/constants/briefing.ts)
-- [x] Add 'recap' case to handleBriefing switch statement (packages/telegram_bot/src/bot/commands/briefing.ts:~73)
-- [x] Create generateBriefingRecap() helper function (packages/telegram_bot/src/bot/commands/briefing.ts)
-- [x] Update briefing help text to include '/briefing recap' (packages/telegram_bot/src/bot/commands/briefing.ts:~75-83)
+- [x] Add 'recap' case to handleBriefing switch statement (packages/telegram_bot/src/bot/commands/briefing.ts:74)
+- [x] Create generateBriefingRecap() helper function (packages/telegram_bot/src/bot/commands/briefing.ts:270-308)
+- [x] Update briefing help text to include '/briefing recap' (packages/telegram_bot/src/bot/commands/briefing.ts:80-87)
+
+### Telegram Bot - Agent Integration
+
+- [x] Import RECAP_CONTENT_MARKER in simple-agent.ts (packages/telegram_bot/src/agent/simple-agent.ts:6-9)
+- [x] Add marker stripping logic for recaps (packages/telegram_bot/src/agent/simple-agent.ts:241-262)
+- [x] Add printing support for recaps (packages/telegram_bot/src/agent/simple-agent.ts:290-366)
+- [x] Update logging to include recap marker detection (packages/telegram_bot/src/agent/simple-agent.ts:273-281)
+
+### Telegram Bot - Scheduler
+
+- [x] Add recap preferences to UserPreferences interface (packages/core-shared/src/versions/user_registry_alpha2.ts:11-13)
+- [x] Update createDefaultUserPreferences with recap defaults (packages/core-shared/src/versions/user_registry_alpha2.ts:39-41)
+- [x] Import recap constants in scheduler (packages/telegram_bot/src/scheduler/daily-briefing.ts:9-10)
+- [x] Add sentRecapsToday Set to track sent recaps (packages/telegram_bot/src/scheduler/daily-briefing.ts:23)
+- [x] Reset recaps tracker on new day (packages/telegram_bot/src/scheduler/daily-briefing.ts:77)
+- [x] Add checkAndSendUserRecaps method (packages/telegram_bot/src/scheduler/daily-briefing.ts:368-401)
+- [x] Add checkUserRecapTime method (packages/telegram_bot/src/scheduler/daily-briefing.ts:406-449)
+- [x] Add sendRecapToUser method (packages/telegram_bot/src/scheduler/daily-briefing.ts:454-548)
+- [x] Update getStatus to include sentRecapsToday (packages/telegram_bot/src/scheduler/daily-briefing.ts:553-567)
 
 ### Tests
 
-- [x] Automated test: Add integration test for completedFrom/completedTo filtering (packages/mcp_server/src/integration-tests/suites/filtering-queries.test.ts)
+- [x] Automated test: Add integration test for completedFrom/completedTo filtering (packages/mcp_server/src/integration-tests/suites/filtering-queries.test.ts:181-295)
 - [x] Automated test: Verify completion date range queries work with existing indexes
 - [x] Automated test: Test edge cases (no completed todos, invalid date ranges)
+- [x] Fix test fixtures: Update user preferences in global-test-user.ts (packages/mcp_server/src/integration-tests/setup/global-test-user.ts:107-108)
+- [x] Fix test fixtures: Update user preferences in global.ts (packages/mcp_server/src/integration-tests/setup/global.ts:138-139)
+- [x] Fix test fixtures: Update auth middleware tests (packages/telegram_bot/src/bot/middleware/auth.test.ts:146-147,358-359)
 - [ ] User test: Start Telegram bot and send `/briefing recap` command
 - [ ] User test: Complete some todos today and verify `/briefing recap` shows them
 - [ ] User test: Verify recap includes motivational summary and outlook for tomorrow
@@ -71,3 +93,23 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 ## Review
 
 ## Notes
+
+### Prompt Engineering Iterations
+
+The DAILY_RECAP_REQUEST_MESSAGE went through several iterations to prevent hallucination:
+
+1. Initial version: Agent hallucinated recaps before calling MCP tools
+2. Added "DO NOT respond until..." - Still hallucinated
+3. Final solution: Two-message structure with explicit marker placement instructions
+   - First message: Brief acknowledgment only (under 10 words), NO marker
+   - Second message: Actual recap with marker at the beginning
+
+### Scheduler Architecture
+
+The scheduler follows the existing briefing pattern:
+
+- Checks every minute for users whose recap time has arrived
+- Default recap time: 18:00 (configurable per user)
+- Tracks sent recaps per day to avoid duplicates
+- Supports thermal printing if user enables `printRecap` preference
+- Uses the same agent infrastructure as briefings
