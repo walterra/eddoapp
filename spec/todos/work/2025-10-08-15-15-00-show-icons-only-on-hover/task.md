@@ -1,7 +1,8 @@
 # show icons only on hover
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-10-08T15:15:00Z
+**Started:** 2025-10-08T15:20:00Z
 **Agent PID:** 73299
 
 ## Original Todo
@@ -24,12 +25,14 @@ Implement hover-only visibility for action icons in the TodoListElement componen
 
 ## Implementation Plan
 
-- [ ] Add `group` class to todo card container div (packages/web-client/src/components/todo_list_element.tsx:~175)
-- [ ] Add `opacity-0 group-hover:opacity-100 transition-opacity duration-200` classes to play/pause button (packages/web-client/src/components/todo_list_element.tsx:~198)
-- [ ] Add `opacity-0 group-hover:opacity-100 transition-opacity duration-200` classes to edit button (packages/web-client/src/components/todo_list_element.tsx:~217)
-- [ ] Add `focus-within:opacity-100` to both buttons to ensure keyboard navigation reveals icons
-- [ ] Automated test: Run `pnpm tsc:check` and `pnpm lint` to verify no type/lint errors
+- [x] Add `group` class to todo card container div (packages/web-client/src/components/todo_list_element.tsx:139)
+- [x] Add `opacity-0 group-hover:opacity-100 transition-opacity duration-200` classes to play/pause button (packages/web-client/src/components/todo_list_element.tsx:200-204)
+- [x] Add `opacity-0 group-hover:opacity-100 transition-opacity duration-200` classes to edit button (packages/web-client/src/components/todo_list_element.tsx:222)
+- [x] Add `focus-within:opacity-100` to both buttons to ensure keyboard navigation reveals icons
+- [x] Fix pause button to always show (opacity-100) when time tracking is active (packages/web-client/src/components/todo_list_element.tsx:200-204)
+- [x] Automated test: Run `pnpm tsc:check` and `pnpm lint` to verify no type/lint errors
 - [ ] User test: Load web client, verify icons hidden by default on todo cards
+- [ ] User test: Verify pause button always visible when time tracking is active
 - [ ] User test: Hover over todo cards, verify icons appear smoothly with transition
 - [ ] User test: Use Tab key to navigate to buttons, verify icons appear on focus
 - [ ] User test: Test in dark mode, verify hover behavior works correctly
