@@ -136,7 +136,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
           </button>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="group flex items-center justify-between">
         <div className="text-base text-gray-900 dark:text-white">
           <div className="flex space-x-1">
             <div className="mx-1">
@@ -197,7 +197,11 @@ export const TodoListElement: FC<TodoListElementProps> = ({
             <>
               {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
                 <button
-                  className="rounded-lg py-0 pl-1 text-sm text-gray-400 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                  className={`rounded-lg py-0 pl-1 text-sm text-gray-400 transition-opacity duration-200 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300 ${
+                    thisButtonTimeTrackingActive
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+                  }`}
                   data-testid={
                     thisButtonTimeTrackingActive
                       ? 'pause-button'
@@ -215,7 +219,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                 </button>
               )}
               <button
-                className="rounded-lg py-0 pr-1 text-sm text-gray-400 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                className="rounded-lg py-0 pr-1 text-sm text-gray-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
                 data-testid="edit-button"
                 onClick={showEditModalButtonPressed}
                 type="button"
