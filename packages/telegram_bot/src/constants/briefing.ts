@@ -18,4 +18,24 @@ export const DAILY_BRIEFING_REQUEST_MESSAGE =
 export const RECAP_CONTENT_MARKER = '---RECAP-START---';
 
 export const DAILY_RECAP_REQUEST_MESSAGE =
-  'You will send TWO separate messages. FIRST MESSAGE: Send ONLY a brief acknowledgment that you are generating the recap (e.g., "Generating your daily recap..." or "Let me check what you accomplished today..."). Keep this under 10 words. DO NOT include the ---RECAP-START--- marker in the first message. DO NOT include any recap content in the first message. SECOND MESSAGE: After sending the first message, calculate today\'s date range: set start to today at 00:00:00.000Z and end to today at 23:59:59.999Z. Call these tools: 1) listTodos with completedFrom and completedTo for today\'s date range to get completed tasks, 2) getActiveTimeTracking for any ongoing work, 3) listTodos with tags gtd:next and completed false to preview upcoming tasks. Then generate an INSIGHTFUL daily recap with SPECIFIC completed task examples that includes: ACTUAL TITLES of completed tasks grouped by context (work/personal) with clean titles like "✅ Fixed authentication bug" or "✅ Completed project proposal" - DO NOT include IDs or technical identifiers in the display. Show 5-7 specific accomplishments if available. For time-tracked items, show duration if meaningful (e.g., "✅ Project X (2h 30m)"). Highlight productivity patterns and celebrate wins with an encouraging tone. End with a brief motivational outlook mentioning 2-3 SPECIFIC next actions for tomorrow. Make it mobile-friendly with clear, readable accomplishments. IMPORTANT: The ---RECAP-START--- marker goes ONLY in your SECOND message, at the very beginning, on its own line before the recap content.';
+  'You MUST send TWO separate messages:\n\n' +
+  '**FIRST MESSAGE (NO MARKER):**\n' +
+  '- Send ONLY a brief acknowledgment (under 10 words)\n' +
+  '- Examples: "Generating your daily recap..." or "Let me check what you accomplished today..."\n' +
+  '- DO NOT include the ---RECAP-START--- marker\n' +
+  '- DO NOT include any recap content\n\n' +
+  '**SECOND MESSAGE (WITH MARKER):**\n' +
+  '- Start with EXACTLY this marker on its own line: ---RECAP-START---\n' +
+  '- Then include the full recap content after the marker\n' +
+  "- Calculate today's date range: start at 00:00:00.000Z, end at 23:59:59.999Z\n" +
+  '- Call these tools: 1) listTodos with completedFrom/completedTo for today, 2) getActiveTimeTracking, 3) listTodos with tags gtd:next and completed false\n' +
+  '- Generate an INSIGHTFUL daily recap with SPECIFIC completed tasks:\n' +
+  '  • ACTUAL TITLES grouped by context (work/personal)\n' +
+  '  • Clean titles like "✅ Fixed authentication bug" or "✅ Completed project proposal"\n' +
+  '  • NO IDs or technical identifiers\n' +
+  '  • Show 5-7 specific accomplishments if available\n' +
+  '  • For time-tracked items, show duration if meaningful (e.g., "✅ Project X (2h 30m)")\n' +
+  '  • Highlight productivity patterns and celebrate wins with encouraging tone\n' +
+  '  • End with brief motivational outlook mentioning 2-3 SPECIFIC next actions for tomorrow\n' +
+  '  • Make it mobile-friendly with clear, readable accomplishments\n\n' +
+  'CRITICAL: The marker ---RECAP-START--- MUST be at the beginning of the SECOND message ONLY.';

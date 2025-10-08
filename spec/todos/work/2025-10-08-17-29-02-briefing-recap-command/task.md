@@ -101,8 +101,8 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 - [ ] User test: Start Telegram bot and send `/briefing recap` command
 - [ ] User test: Complete some todos today and verify `/briefing recap` shows them
 - [ ] User test: Verify recap includes motivational summary and outlook for tomorrow
-- [ ] User test: Open web UI preferences, verify recap section displays correctly
-- [ ] User test: Toggle recap preferences and verify they save correctly
+- [x] User test: Open web UI preferences, verify recap section displays correctly
+- [x] User test: Toggle recap preferences and verify they save correctly
 
 ## Review
 
@@ -114,9 +114,14 @@ The DAILY_RECAP_REQUEST_MESSAGE went through several iterations to prevent hallu
 
 1. Initial version: Agent hallucinated recaps before calling MCP tools
 2. Added "DO NOT respond until..." - Still hallucinated
-3. Final solution: Two-message structure with explicit marker placement instructions
+3. Two-message structure with explicit marker placement instructions
    - First message: Brief acknowledgment only (under 10 words), NO marker
    - Second message: Actual recap with marker at the beginning
+4. Improved formatting with clear section headers and bullet points
+   - Added **FIRST MESSAGE (NO MARKER):** and **SECOND MESSAGE (WITH MARKER):** headers
+   - Restructured as bulleted lists for better readability
+   - Added CRITICAL reminder at the end emphasizing marker placement
+   - Fixed issue where marker was appearing in first message instead of second
 
 ### Scheduler Architecture
 
