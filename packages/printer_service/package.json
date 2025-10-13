@@ -14,7 +14,7 @@
   "dependencies": {
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
-    "commander": "^12.1.0",
+    "commander": "^14.0.1",
     "dotenv-mono": "^1.3.14",
     "node-thermal-printer": "^4.4.3",
     "winston": "^3.11.0",
