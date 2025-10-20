@@ -428,13 +428,13 @@ importers:
         version: link:../core-shared
       '@hono/node-server':
         specifier: ^1.19.5
-        version: 1.19.5(hono@4.9.4)
+        version: 1.19.5(hono@4.9.12)
       bcryptjs:
         specifier: ^3.0.2
         version: 3.0.2
       hono:
-        specifier: ^4.9.4
-        version: 4.9.4
+        specifier: ^4.9.12
+        version: 4.9.12
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -3656,8 +3656,8 @@ packages:
     resolution: {integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==}
     engines: {node: '>=0.10.0'}
 
-  hono@4.9.4:
-    resolution: {integrity: sha512-61hl6MF6ojTl/8QSRu5ran6GXt+6zsngIUN95KzF5v5UjiX/xnrLR358BNRawwIRO49JwUqJqQe3Rb2v559R8Q==}
+  hono@4.9.12:
+    resolution: {integrity: sha512-SrTC0YxqPwnN7yKa8gg/giLyQ2pILCKoideIHbYbFQlWZjYt68D2A4Ae1hehO/aDQ6RmTcpqOV/O2yBtMzx/VQ==}
     engines: {node: '>=16.9.0'}
 
   hosted-git-info@2.8.9:
@@ -6883,9 +6883,9 @@ snapshots:
 
   '@grammyjs/types@3.22.1': {}
 
-  '@hono/node-server@1.19.5(hono@4.9.4)':
+  '@hono/node-server@1.19.5(hono@4.9.12)':
     dependencies:
-      hono: 4.9.4
+      hono: 4.9.12
 
   '@humanfs/core@0.19.1': {}
 
@@ -9559,7 +9559,7 @@ snapshots:
     dependencies:
       parse-passwd: 1.0.0
 
-  hono@4.9.4: {}
+  hono@4.9.12: {}
 
   hosted-git-info@2.8.9: {}
 
