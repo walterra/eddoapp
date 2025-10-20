@@ -36,8 +36,8 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       nano:
-        specifier: ^11.0.1
-        version: 11.0.1
+        specifier: ^11.0.2
+        version: 11.0.2
       react:
         specifier: ^19.1.1
         version: 19.1.1
@@ -245,8 +245,8 @@ importers:
         specifier: github:marcocesarato/dotenv-mono#master
         version: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/deeaf072ac33a42d136a1e4763ee36511f917314
       nano:
-        specifier: ^11.0.1
-        version: 11.0.1
+        specifier: ^11.0.2
+        version: 11.0.2
       pouchdb-adapter-memory:
         specifier: ^9.0.0
         version: 9.0.0
@@ -298,8 +298,8 @@ importers:
         specifier: ^3.17.0
         version: 3.17.0
       nano:
-        specifier: ^11.0.1
-        version: 11.0.1
+        specifier: ^11.0.2
+        version: 11.0.2
       zod:
         specifier: ^3.25.67
         version: 3.25.76
@@ -4491,8 +4491,8 @@ packages:
     resolution: {integrity: sha512-jtpsQDetTnvS2Ts1fiRdci5rx0VYws5jGyC+4IYOTnIQ/wwdf6JdomlHBwqC3bJYOvaKu0C2GSZ1A60anrYpaA==}
     engines: {node: '>=20.17'}
 
-  nano@11.0.1:
-    resolution: {integrity: sha512-LVsUxvMTwq6vD9CvUWlOHPIUGJWa7W+QhA5KtqB5PouMrF5dQEUgxfBsPoslD1/JbeAWEWEW3iz0AEGoDd19bw==}
+  nano@11.0.2:
+    resolution: {integrity: sha512-cHRIwdjQHwBlYXzCoIP/CqEPhoaXb6nwYBQRroG4LB/qJ9jxqD03IzJhhDmzUr2Ok8UUr9czS2KVME0xQ/dw7Q==}
     engines: {node: '>=20.0'}
 
   nanoid@3.3.11:
@@ -10357,7 +10357,7 @@ snapshots:
 
   nano-spawn@1.0.3: {}
 
-  nano@11.0.1: {}
+  nano@11.0.2: {}
 
   nanoid@3.3.11: {}
 
