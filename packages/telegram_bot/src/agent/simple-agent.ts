@@ -339,6 +339,7 @@ export class SimpleAgent {
                     content: formattedContent,
                     userId,
                     timestamp: new Date().toISOString(),
+                    type: hasRecapMarker ? 'recap' : 'briefing',
                   });
 
                   logger.info(`✅ ${contentType} printed successfully`);

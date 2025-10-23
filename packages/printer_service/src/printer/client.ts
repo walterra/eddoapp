@@ -25,6 +25,7 @@ export interface PrintOptions {
   content: string;
   userId?: string;
   timestamp?: string;
+  type?: 'briefing' | 'recap';
 }
 
 /**
@@ -186,10 +187,17 @@ export async function printBriefing(options: PrintOptions): Promise<void> {
       }
 
       // Header
+      const headerText =
+        options.type === 'recap' ? 'DAILY RECAP' : 'DAILY BRIEFING';
+      const footerText =
+        options.type === 'recap'
+          ? 'Eddo App - Daily Recap'
+          : 'Eddo App - Daily Briefing';
+
       printer.alignCenter();
       printer.setTextSize(1, 1);
       printer.bold(true);
-      printer.println('DAILY BRIEFING');
+      printer.println(headerText);
       printer.bold(false);
       printer.setTextNormal();
 
@@ -209,7 +217,7 @@ export async function printBriefing(options: PrintOptions): Promise<void> {
       printer.alignCenter();
       printer.println('');
       printer.setTextSize(0, 0);
-      printer.println('Eddo App - Daily Briefing');
+      printer.println(footerText);
       printer.setTextNormal();
 
       printer.newLine();

@@ -3,7 +3,7 @@ import { Context } from 'grammy';
 
 import {
   DAILY_BRIEFING_REQUEST_MESSAGE,
-  DAILY_RECAP_REQUEST_MESSAGE,
+  getRecapRequestMessage,
 } from '../../constants/briefing.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -283,7 +283,7 @@ async function generateBriefingRecap(
 
     // Use the agent to generate a recap by modifying the context message
     if (ctx.message) {
-      ctx.message.text = DAILY_RECAP_REQUEST_MESSAGE;
+      ctx.message.text = getRecapRequestMessage();
     }
 
     await handleMessage(ctx as BotContext);

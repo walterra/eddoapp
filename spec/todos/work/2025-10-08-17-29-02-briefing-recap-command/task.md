@@ -55,6 +55,9 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 
 - [x] Add RECAP_CONTENT_MARKER constant (packages/telegram_bot/src/constants/briefing.ts)
 - [x] Add DAILY_RECAP_REQUEST_MESSAGE constant (packages/telegram_bot/src/constants/briefing.ts)
+- [x] Add getRecapRequestMessage() helper for dynamic date injection (packages/telegram_bot/src/constants/briefing.ts:47-61)
+- [x] Update scheduler to use getRecapRequestMessage() (packages/telegram_bot/src/scheduler/daily-briefing.ts:471)
+- [x] Update command handler to use getRecapRequestMessage() (packages/telegram_bot/src/bot/commands/briefing.ts:283)
 - [x] Add 'recap' case to handleBriefing switch statement (packages/telegram_bot/src/bot/commands/briefing.ts:74)
 - [x] Create generateBriefingRecap() helper function (packages/telegram_bot/src/bot/commands/briefing.ts:270-308)
 - [x] Update briefing help text to include '/briefing recap' (packages/telegram_bot/src/bot/commands/briefing.ts:80-87)
@@ -87,6 +90,13 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 - [x] Update TypeScript interface in use_profile hook (packages/web-client/src/hooks/use_profile.ts:9-11,42-44)
 - [x] Update API validation schema to accept recap fields (packages/web-api/src/routes/users.ts:43-48)
 - [x] Fix user registration to include recap defaults (packages/web-api/src/routes/auth.ts:100-101)
+
+### Thermal Printer - Header/Footer
+
+- [x] Add type parameter to PrintOptions interface (packages/printer_service/src/printer/client.ts:28)
+- [x] Update printBriefing to use dynamic header/footer text (packages/printer_service/src/printer/client.ts:190-193)
+- [x] Pass type: 'recap' in scheduler recap printing (packages/telegram_bot/src/scheduler/daily-briefing.ts:519)
+- [x] Pass dynamic type in agent on-demand printing (packages/telegram_bot/src/agent/simple-agent.ts:342)
 
 ### Tests
 
@@ -122,6 +132,21 @@ The DAILY_RECAP_REQUEST_MESSAGE went through several iterations to prevent hallu
    - Restructured as bulleted lists for better readability
    - Added CRITICAL reminder at the end emphasizing marker placement
    - Fixed issue where marker was appearing in first message instead of second
+5. Dynamic date range injection eliminates LLM guesswork
+   - Created `getRecapRequestMessage()` helper function that injects actual ISO timestamps
+   - Replaced "Calculate today's date range" instruction with explicit date values
+   - Refactored from brittle string replacement to clean template literals
+   - Function calculates: today at 00:00:00.000 → 23:59:59.999 in ISO format
+   - Both scheduler and command handler call the helper for fresh timestamps on each execution
+6. Strict ASCII output for thermal printer compatibility
+   - Added explicit "FORMATTING RULES FOR THERMAL PRINTER" section to prompts
+   - Enforces NO EMOJIS policy (🎯 ✅ 🔥 📅 ⏰ etc. will not print correctly)
+   - Specifies ASCII-only characters: letters, numbers, punctuation, basic symbols
+   - Checkmarks: `[x]` for completed items, `[ ]` for unchecked
+   - Bullets: `-` or `*` for lists
+   - Section headers: Plain markdown without emojis
+   - Applied to both DAILY_BRIEFING_REQUEST_MESSAGE and getRecapRequestMessage()
+   - User-facing messages and logs still use emojis (not printed)
 
 ### Scheduler Architecture
 

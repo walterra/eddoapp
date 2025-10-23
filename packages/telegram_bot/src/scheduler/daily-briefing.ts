@@ -6,7 +6,7 @@ import type { BotContext } from '../bot/bot.js';
 import {
   BRIEFING_CONTENT_MARKER,
   DAILY_BRIEFING_REQUEST_MESSAGE,
-  DAILY_RECAP_REQUEST_MESSAGE,
+  getRecapRequestMessage,
   RECAP_CONTENT_MARKER,
 } from '../constants/briefing.js';
 import { logger } from '../utils/logger.js';
@@ -469,7 +469,7 @@ export class DailyBriefingScheduler {
       // Generate recap content using the agent
       const agent = new SimpleAgent();
 
-      const recapRequestMessage = DAILY_RECAP_REQUEST_MESSAGE;
+      const recapRequestMessage = getRecapRequestMessage();
 
       // Create a minimal bot context for the agent
       const mockContext = {
@@ -516,6 +516,7 @@ export class DailyBriefingScheduler {
                 content: formattedContent,
                 userId: user._id,
                 timestamp: new Date().toISOString(),
+                type: 'recap',
               });
 
               logger.info('✅ Recap printed successfully', {
