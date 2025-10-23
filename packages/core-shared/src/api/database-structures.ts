@@ -99,4 +99,9 @@ export const REQUIRED_INDEXES: IndexDefinition[] = [
     name: 'version-completed-due-index',
     type: 'json',
   },
+  {
+    index: { fields: ['version', 'context', 'completed', 'due'] },
+    name: 'version-context-completed-due-index',
+    type: 'json',
+  },
 ];

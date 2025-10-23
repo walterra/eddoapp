@@ -135,6 +135,8 @@ export async function setup() {
         preferences: {
           dailyBriefing: false,
           briefingTime: '07:00',
+          dailyRecap: false,
+          recapTime: '18:00',
         },
       });
       console.log(`✅ Global test user created: ${globalTestUser.username}`);

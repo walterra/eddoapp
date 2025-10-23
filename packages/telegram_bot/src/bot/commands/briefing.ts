@@ -1,7 +1,10 @@
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { Context } from 'grammy';
 
-import { DAILY_BRIEFING_REQUEST_MESSAGE } from '../../constants/briefing.js';
+import {
+  DAILY_BRIEFING_REQUEST_MESSAGE,
+  getRecapRequestMessage,
+} from '../../constants/briefing.js';
 import { logger } from '../../utils/logger.js';
 import {
   TelegramUser,
@@ -71,12 +74,17 @@ export async function handleBriefing(ctx: Context): Promise<void> {
         await generateBriefingNow(ctx, user);
         break;
 
+      case 'recap':
+        await generateBriefingRecap(ctx, user);
+        break;
+
       default:
         await ctx.reply(
           '❓ **Briefing Command Usage:**\n\n' +
             '`/briefing on` - Enable daily briefings\n' +
             '`/briefing off` - Disable daily briefings\n' +
             '`/briefing now` - Generate briefing immediately\n' +
+            '`/briefing recap` - Daily recap of completed tasks\n' +
             '`/briefing status` - Show current setting\n' +
             '`/briefing` - Show this help\n\n' +
             '💡 Daily briefings are sent at your preferred time with your todo summary.',
@@ -250,6 +258,49 @@ async function generateBriefingNow(
 
     await ctx.reply(
       '❌ **Sorry, there was an error generating your briefing.**\n\n' +
+        'This could be due to:\n' +
+        '• Temporary connectivity issues\n' +
+        '• AI service unavailability\n' +
+        '• Database access problems\n\n' +
+        'Please try again in a few moments, or contact support if the problem persists.',
+    );
+  }
+}
+
+/**
+ * Generate and send a daily recap immediately for a user using the agent
+ */
+async function generateBriefingRecap(
+  ctx: Context,
+  user: TelegramUser,
+): Promise<void> {
+  try {
+    logger.info('Generating daily recap via agent', {
+      userId: user._id,
+      username: user.username,
+      telegramId: user.telegram_id,
+    });
+
+    // Use the agent to generate a recap by modifying the context message
+    if (ctx.message) {
+      ctx.message.text = getRecapRequestMessage();
+    }
+
+    await handleMessage(ctx as BotContext);
+
+    logger.info('Daily recap generated via agent', {
+      userId: user._id,
+      username: user.username,
+      telegramId: user.telegram_id,
+    });
+  } catch (error) {
+    logger.error('Failed to generate daily recap via agent', {
+      userId: user._id,
+      error,
+    });
+
+    await ctx.reply(
+      '❌ **Sorry, there was an error generating your recap.**\n\n' +
         'This could be due to:\n' +
         '• Temporary connectivity issues\n' +
         '• AI service unavailability\n' +

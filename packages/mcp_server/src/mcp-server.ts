@@ -275,7 +275,7 @@ Usage examples:
 // List Todos Tool
 server.addTool({
   name: 'listTodos',
-  description: `List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), limit (number of results)
+  description: `List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), completedFrom/completedTo (ISO date strings for completion date range), limit (number of results)
 
 GTD-AWARE QUERY HANDLING:
 - "What's next?" → filter by gtd:next tags, prioritize by context
@@ -284,6 +284,7 @@ GTD-AWARE QUERY HANDLING:
 - "Someday items" → filter by gtd:someday tags
 - "What's my schedule?" / "Show appointments" → filter by gtd:calendar tags
 - "What's next at work?" → combine gtd:next + work context
+- "What did I complete today?" → use completedFrom/completedTo with today's date range
 
 Usage examples:
 - All todos: {}
@@ -294,7 +295,8 @@ Usage examples:
 - Appointments: {"tags": ["gtd:calendar"]}
 - Today's appointments: {"tags": ["gtd:calendar"], "dateFrom": "2025-07-15T00:00:00.000Z", "dateTo": "2025-07-15T23:59:59.999Z"}
 - Work projects: {"context": "work", "tags": ["gtd:project"]}
-- Combined filters: {"context": "work", "completed": false, "limit": 10}`,
+- Combined filters: {"context": "work", "completed": false, "limit": 10}
+- Completed today: {"completedFrom": "2025-07-15T00:00:00.000Z", "completedTo": "2025-07-15T23:59:59.999Z"}`,
   parameters: z.object({
     context: z
       .string()
@@ -309,11 +311,23 @@ Usage examples:
     dateFrom: z
       .string()
       .optional()
-      .describe('Start date filter in ISO format (inclusive)'),
+      .describe('Start date filter for due date in ISO format (inclusive)'),
     dateTo: z
       .string()
       .optional()
-      .describe('End date filter in ISO format (inclusive)'),
+      .describe('End date filter for due date in ISO format (inclusive)'),
+    completedFrom: z
+      .string()
+      .optional()
+      .describe(
+        'Start date filter for completion date in ISO format (inclusive)',
+      ),
+    completedTo: z
+      .string()
+      .optional()
+      .describe(
+        'End date filter for completion date in ISO format (inclusive)',
+      ),
     limit: z
       .number()
       .default(50)
@@ -341,7 +355,26 @@ Usage examples:
         selector.context = args.context;
       }
 
-      if (args.completed !== undefined) {
+      // Handle completion date range filters
+      if (args.completedFrom || args.completedTo) {
+        // Can't filter by completion date for uncompleted todos
+        if (args.completed === false) {
+          throw new Error(
+            'Cannot use completedFrom/completedTo with completed=false',
+          );
+        }
+        // Build range query for completed todos
+        selector.completed = {};
+        if (args.completedFrom) {
+          (selector.completed as Record<string, unknown>)['$gte'] =
+            args.completedFrom;
+        }
+        if (args.completedTo) {
+          (selector.completed as Record<string, unknown>)['$lte'] =
+            args.completedTo;
+        }
+      } else if (args.completed !== undefined) {
+        // Only apply boolean filter if no date range specified
         selector.completed = args.completed ? { $ne: null } : null;
       }
 
@@ -369,11 +402,14 @@ Usage examples:
       // Explicitly specify which index to use based on the query
       // This is required for CouchDB to use the correct index for sorting
       let use_index: string;
-      if (args.context && args.completed !== undefined) {
+      const hasCompletedFilter =
+        args.completed !== undefined || args.completedFrom || args.completedTo;
+
+      if (args.context && hasCompletedFilter) {
         use_index = 'version-context-completed-due-index';
       } else if (args.context) {
         use_index = 'version-context-due-index';
-      } else if (args.completed !== undefined) {
+      } else if (hasCompletedFilter) {
         use_index = 'version-completed-due-index';
       } else {
         use_index = 'version-due-index';

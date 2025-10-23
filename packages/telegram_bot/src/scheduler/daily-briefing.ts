@@ -6,6 +6,8 @@ import type { BotContext } from '../bot/bot.js';
 import {
   BRIEFING_CONTENT_MARKER,
   DAILY_BRIEFING_REQUEST_MESSAGE,
+  getRecapRequestMessage,
+  RECAP_CONTENT_MARKER,
 } from '../constants/briefing.js';
 import { logger } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
@@ -20,7 +22,8 @@ export class DailyBriefingScheduler {
   private checkIntervalMs: number;
   private intervalId: NodeJS.Timeout | null = null;
   private sentBriefingsToday: Set<string> = new Set(); // Track sent briefings by user ID per day
-  private currentDate: string | null = null; // Track current date to reset sent briefings
+  private sentRecapsToday: Set<string> = new Set(); // Track sent recaps by user ID per day
+  private currentDate: string | null = null; // Track current date to reset sent briefings/recaps
   private isRunning = false;
 
   constructor(config: DailyBriefingSchedulerConfig) {
@@ -70,19 +73,23 @@ export class DailyBriefingScheduler {
     const now = new Date();
     const todayDate = now.toISOString().split('T')[0];
 
-    // Reset sent briefings if it's a new day
+    // Reset sent briefings and recaps if it's a new day
     if (this.currentDate !== todayDate) {
       this.sentBriefingsToday.clear();
+      this.sentRecapsToday.clear();
       this.currentDate = todayDate;
-      logger.info('New day detected, reset sent briefings tracker', {
+      logger.info('New day detected, reset sent briefings/recaps tracker', {
         date: todayDate,
       });
     }
 
     try {
       await this.checkAndSendUserBriefings(now);
+      await this.checkAndSendUserRecaps(now);
     } catch (error) {
-      logger.error('Failed to check and send daily briefings', { error });
+      logger.error('Failed to check and send daily briefings/recaps', {
+        error,
+      });
     }
   }
 
@@ -358,18 +365,207 @@ export class DailyBriefingScheduler {
   }
 
   /**
+   * Check each user's recap time and send if it's time
+   */
+  private async checkAndSendUserRecaps(now: Date): Promise<void> {
+    const env = createEnv();
+    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    try {
+      // Get all active users with recaps enabled
+      const users = await userRegistry.list();
+      const recapUsers = users.filter(
+        (user) =>
+          user.status === 'active' &&
+          user.preferences?.dailyRecap === true &&
+          user.telegram_id,
+      );
+
+      logger.debug('Checking recap times for users', {
+        totalUsers: users.length,
+        recapUsers: recapUsers.length,
+        currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+      });
+
+      // Check each user's individual recap time
+      for (const user of recapUsers) {
+        await this.checkUserRecapTime(
+          user as TelegramUser,
+          currentHour,
+          currentMinute,
+        );
+      }
+    } catch (error) {
+      logger.error('Failed to check user recap times', { error });
+    }
+  }
+
+  /**
+   * Check if it's time to send a recap to a specific user
+   */
+  private async checkUserRecapTime(
+    user: TelegramUser,
+    currentHour: number,
+    currentMinute: number,
+  ): Promise<void> {
+    // Skip if already sent recap to this user today
+    if (this.sentRecapsToday.has(user._id)) {
+      return;
+    }
+
+    // Parse user's recap time (format: "HH:MM")
+    const recapTime = user.preferences?.recapTime || '18:00';
+    const [userHour, userMinute] = recapTime.split(':').map(Number);
+
+    // Check if it's the right time for this user (within 5-minute window)
+    const isRightHour = currentHour === userHour;
+    const isWithinWindow =
+      currentMinute >= userMinute && currentMinute < userMinute + 5;
+
+    if (isRightHour && isWithinWindow) {
+      logger.info('Sending recap to user at their preferred time', {
+        userId: user._id,
+        username: user.username,
+        recapTime,
+        currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+      });
+
+      try {
+        await this.sendRecapToUser(user);
+        this.sentRecapsToday.add(user._id);
+
+        logger.info('Successfully sent recap to user', {
+          userId: user._id,
+          username: user.username,
+        });
+      } catch (error) {
+        logger.error('Failed to send recap to user', {
+          userId: user._id,
+          username: user.username,
+          error,
+        });
+      }
+    }
+  }
+
+  /**
+   * Send a daily recap to a specific user
+   */
+  private async sendRecapToUser(user: TelegramUser): Promise<void> {
+    if (!user.telegram_id) {
+      logger.warn('User has no telegram_id', { userId: user._id });
+      return;
+    }
+
+    logger.info('Generating recap for user via agent', {
+      userId: user._id,
+      username: user.username,
+      telegramId: user.telegram_id,
+    });
+
+    try {
+      // Generate recap content using the agent
+      const agent = new SimpleAgent();
+
+      const recapRequestMessage = getRecapRequestMessage();
+
+      // Create a minimal bot context for the agent
+      const mockContext = {
+        from: { id: user.telegram_id },
+        message: { text: recapRequestMessage },
+      } as BotContext;
+
+      const result = await agent.execute(
+        recapRequestMessage,
+        user._id,
+        mockContext,
+      );
+      const recapMessage =
+        result.finalResponse || '❌ Failed to generate recap';
+
+      // Check if recap contains the marker (indicates actual recap content)
+      const hasRecapMarker = recapMessage.includes(RECAP_CONTENT_MARKER);
+
+      if (hasRecapMarker) {
+        // Strip the marker before sending
+        const cleanMessage = recapMessage.replaceAll(RECAP_CONTENT_MARKER, '');
+
+        await this.bot.api.sendMessage(user.telegram_id, cleanMessage, {
+          parse_mode: 'Markdown',
+        });
+
+        logger.info('Successfully sent recap to user', {
+          userId: user._id,
+          username: user.username,
+          telegramId: user.telegram_id,
+          messageLength: cleanMessage.length,
+        });
+
+        // Auto-print recap to thermal printer if enabled
+        if (user.preferences?.printRecap) {
+          try {
+            const printerModule = await import('@eddo/printer-service');
+
+            if (printerModule.appConfig.PRINTER_ENABLED) {
+              const formattedContent =
+                printerModule.formatBriefingForPrint(cleanMessage);
+
+              await printerModule.printBriefing({
+                content: formattedContent,
+                userId: user._id,
+                timestamp: new Date().toISOString(),
+                type: 'recap',
+              });
+
+              logger.info('✅ Recap printed successfully', {
+                userId: user._id,
+              });
+            }
+          } catch (printerError) {
+            logger.error('❌ Failed to print recap (non-fatal)', {
+              userId: user._id,
+              error:
+                printerError instanceof Error
+                  ? printerError.message
+                  : String(printerError),
+            });
+          }
+        }
+      } else {
+        logger.warn('Recap did not contain expected marker, sending anyway', {
+          userId: user._id,
+        });
+        await this.bot.api.sendMessage(user.telegram_id, recapMessage, {
+          parse_mode: 'Markdown',
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to generate or send recap', {
+        userId: user._id,
+        username: user.username,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Get scheduler status
    */
   getStatus(): {
     isRunning: boolean;
     currentDate: string | null;
     sentBriefingsToday: number;
+    sentRecapsToday: number;
     checkIntervalMs: number;
   } {
     return {
       isRunning: this.isRunning,
       currentDate: this.currentDate,
       sentBriefingsToday: this.sentBriefingsToday.size,
+      sentRecapsToday: this.sentRecapsToday.size,
       checkIntervalMs: this.checkIntervalMs,
     };
   }
