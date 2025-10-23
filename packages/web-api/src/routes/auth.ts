@@ -1,4 +1,5 @@
 import { createEnv, createUserRegistry } from '@eddo/core-server';
+import { createDefaultUserPreferences } from '@eddo/core-shared';
 // User registry types are implicitly used by the endpoints
 import { Hono } from 'hono';
 import jwt from 'jsonwebtoken';
@@ -94,12 +95,7 @@ authApp.post('/register', async (c) => {
       permissions: ['read', 'write'],
       status: 'active',
       version: 'alpha2',
-      preferences: {
-        dailyBriefing: false,
-        briefingTime: '07:00',
-        dailyRecap: false,
-        recapTime: '18:00',
-      },
+      preferences: createDefaultUserPreferences(),
     });
 
     // Create user database with design documents and indexes

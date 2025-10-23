@@ -355,7 +355,26 @@ Usage examples:
         selector.context = args.context;
       }
 
-      if (args.completed !== undefined) {
+      // Handle completion date range filters
+      if (args.completedFrom || args.completedTo) {
+        // Can't filter by completion date for uncompleted todos
+        if (args.completed === false) {
+          throw new Error(
+            'Cannot use completedFrom/completedTo with completed=false',
+          );
+        }
+        // Build range query for completed todos
+        selector.completed = {};
+        if (args.completedFrom) {
+          (selector.completed as Record<string, unknown>)['$gte'] =
+            args.completedFrom;
+        }
+        if (args.completedTo) {
+          (selector.completed as Record<string, unknown>)['$lte'] =
+            args.completedTo;
+        }
+      } else if (args.completed !== undefined) {
+        // Only apply boolean filter if no date range specified
         selector.completed = args.completed ? { $ne: null } : null;
       }
 
@@ -366,18 +385,6 @@ Usage examples:
         }
         if (args.dateTo) {
           (selector.due as Record<string, unknown>)['$lte'] = args.dateTo;
-        }
-      }
-
-      if (args.completedFrom || args.completedTo) {
-        selector.completed = selector.completed || {};
-        if (args.completedFrom) {
-          (selector.completed as Record<string, unknown>)['$gte'] =
-            args.completedFrom;
-        }
-        if (args.completedTo) {
-          (selector.completed as Record<string, unknown>)['$lte'] =
-            args.completedTo;
         }
       }
 
