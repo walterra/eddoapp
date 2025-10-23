@@ -1,9 +1,9 @@
 # /briefing recap command
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-10-08T17:29:02
 **Started:** 2025-10-08T17:29:02
-**Agent PID:** 73299
+**Agent PID:** 8705
 
 ## Original Todo
 
@@ -33,13 +33,13 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 
 ## Success Criteria
 
-- [ ] MCP tool: `listTodos` accepts `completedFrom` and `completedTo` ISO date parameters to filter by completion timestamp
-- [ ] MCP tool: Queries todos completed today using the extended parameters return only todos with `completed` timestamp in range
-- [ ] Telegram command: `/briefing recap` responds with a motivational summary of today's completed todos
-- [ ] Agent output: Summary includes specific todo titles (not just counts) grouped by context
-- [ ] Agent output: Includes brief outlook showing upcoming actionable tasks for tomorrow
-- [ ] Automated test: MCP tool integration test verifies completion date filtering works correctly
-- [ ] User validation: Send `/briefing recap` in Telegram and verify it shows today's completed todos with motivational message
+- [x] MCP tool: `listTodos` accepts `completedFrom` and `completedTo` ISO date parameters to filter by completion timestamp
+- [x] MCP tool: Queries todos completed today using the extended parameters return only todos with `completed` timestamp in range
+- [x] Telegram command: `/briefing recap` responds with a motivational summary of today's completed todos
+- [x] Agent output: Summary includes specific todo titles (not just counts) grouped by context
+- [x] Agent output: Includes brief outlook showing upcoming actionable tasks for tomorrow
+- [x] Automated test: MCP tool integration test verifies completion date filtering works correctly
+- [x] User validation: Send `/briefing recap` in Telegram and verify it shows today's completed todos with motivational message
 
 ## Implementation Plan
 
@@ -108,13 +108,25 @@ The implementation follows the existing `/briefing now` pattern but focuses on c
 - [x] Fix test fixtures: Update auth middleware tests (packages/telegram_bot/src/bot/middleware/auth.test.ts:146-147,358-359)
 - [x] Automated test: TypeScript compilation check passes
 - [x] Automated test: Lint check passes
-- [ ] User test: Start Telegram bot and send `/briefing recap` command
-- [ ] User test: Complete some todos today and verify `/briefing recap` shows them
-- [ ] User test: Verify recap includes motivational summary and outlook for tomorrow
+- [x] User test: Start Telegram bot and send `/briefing recap` command
+- [x] User test: Complete some todos today and verify `/briefing recap` shows them
+- [x] User test: Verify recap includes motivational summary and outlook for tomorrow
 - [x] User test: Open web UI preferences, verify recap section displays correctly
 - [x] User test: Toggle recap preferences and verify they save correctly
 
 ## Review
+
+### Critical Issues - FIXED
+
+- [x] Bug: MCP server selector overwrite (mcp-server.ts:358-379) - FIXED: Reordered logic to check completion date range first, prevents overwriting boolean filter. Added error for invalid combination (completed=false + date ranges).
+- [x] Bug: Missing `printBriefing` and `printRecap` in registration defaults (auth.ts:97) - FIXED: Now uses `createDefaultUserPreferences()` factory function for consistent defaults.
+
+### Follow-up Items (moved to spec/todo.md)
+
+All remaining issues have been documented in spec/todo.md under "Follow-up Items from /briefing recap Implementation" for future work:
+
+- High priority: Timezone handling, empty results handling, index optimization verification
+- Code quality & testing: Help text improvements, validation, test coverage gaps
 
 ## Notes
 
