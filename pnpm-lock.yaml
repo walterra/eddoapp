@@ -61,8 +61,8 @@ importers:
         specifier: ^19.0.0
         version: 19.8.1(@types/node@24.7.2)(typescript@5.8.3)
       '@commitlint/config-conventional':
-        specifier: ^19.0.0
-        version: 19.8.1
+        specifier: ^20.0.0
+        version: 20.0.0
       '@eddo/core-client':
         specifier: workspace:*
         version: link:packages/core-client
@@ -784,8 +784,8 @@ packages:
     engines: {node: '>=v18'}
     hasBin: true
 
-  '@commitlint/config-conventional@19.8.1':
-    resolution: {integrity: sha512-/AZHJL6F6B/G959CsMAzrPKKZjeEiAVifRyEwXxcT6qtqbPwGw+iQxmNS+Bu+i09OCtdNRW6pNpBvgPrtMr9EQ==}
+  '@commitlint/config-conventional@20.0.0':
+    resolution: {integrity: sha512-q7JroPIkDBtyOkVe9Bca0p7kAUYxZMxkrBArCfuD3yN4KjRAenP9PmYwnn7rsw8Q+hHq1QB2BRmBh0/Z19ZoJw==}
     engines: {node: '>=v18'}
 
   '@commitlint/config-validator@19.8.1':
@@ -2220,6 +2220,9 @@ packages:
 
   '@types/conventional-commits-parser@5.0.1':
     resolution: {integrity: sha512-7uz5EHdzz2TqoMfV7ee61Egf5y6NkcO4FB/1iCCQnbeiI1F3xzv3vK5dBCXUCLQgGYS+mUeigK1iKQzvED+QnQ==}
+
+  '@types/conventional-commits-parser@5.0.2':
+    resolution: {integrity: sha512-BgT2szDXnVypgpNxOK8aL5SGjUdaQbC++WZNjF1Qge3Og2+zhHj+RWhmehLhYyvQwqAmvezruVfOf8+3m74W+g==}
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -6852,9 +6855,9 @@ snapshots:
       - '@types/node'
       - typescript
 
-  '@commitlint/config-conventional@19.8.1':
+  '@commitlint/config-conventional@20.0.0':
     dependencies:
-      '@commitlint/types': 19.8.1
+      '@commitlint/types': 20.0.0
       conventional-changelog-conventionalcommits: 7.0.2
 
   '@commitlint/config-validator@19.8.1':
@@ -6987,9 +6990,8 @@ snapshots:
 
   '@commitlint/types@20.0.0':
     dependencies:
-      '@types/conventional-commits-parser': 5.0.1
+      '@types/conventional-commits-parser': 5.0.2
       chalk: 5.6.2
-    optional: true
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -7987,6 +7989,10 @@ snapshots:
       '@types/deep-eql': 4.0.2
 
   '@types/conventional-commits-parser@5.0.1':
+    dependencies:
+      '@types/node': 24.7.2
+
+  '@types/conventional-commits-parser@5.0.2':
     dependencies:
       '@types/node': 24.7.2
 
