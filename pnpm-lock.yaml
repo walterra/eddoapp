@@ -430,8 +430,8 @@ importers:
         specifier: ^1.19.5
         version: 1.19.5(hono@4.10.3)
       bcryptjs:
-        specifier: ^3.0.2
-        version: 3.0.2
+        specifier: ^3.0.3
+        version: 3.0.3
       hono:
         specifier: ^4.10.3
         version: 4.10.3
@@ -2807,8 +2807,8 @@ packages:
     resolution: {integrity: sha512-UYmTpOBwgPScZpS4A+YbapwWuBwasxvO/2IOHArSsAhL/+ZdmATBXTex3t+l2hXwLVYK382ibr/nKoY9GKe86w==}
     hasBin: true
 
-  bcryptjs@3.0.2:
-    resolution: {integrity: sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==}
+  bcryptjs@3.0.3:
+    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
     hasBin: true
 
   better-path-resolve@1.0.0:
@@ -7980,7 +7980,7 @@ snapshots:
 
   '@types/bcryptjs@3.0.0':
     dependencies:
-      bcryptjs: 3.0.2
+      bcryptjs: 3.0.3
 
   '@types/chai@5.2.2':
     dependencies:
@@ -8699,7 +8699,7 @@ snapshots:
 
   baseline-browser-mapping@2.8.18: {}
 
-  bcryptjs@3.0.2: {}
+  bcryptjs@3.0.3: {}
 
   better-path-resolve@1.0.0:
     dependencies:
