@@ -55,8 +55,8 @@ importers:
         specifier: ^2.27.1
         version: 2.29.7(@types/node@24.7.2)
       '@cloudant/couchbackup':
-        specifier: ^2.11.7
-        version: 2.11.9(@types/tough-cookie@4.0.5)(axios@1.11.0)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.2)(tough-cookie@6.0.0)
+        specifier: ^2.11.11
+        version: 2.11.11(@types/tough-cookie@4.0.5)(axios@1.13.2)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.3)(tough-cookie@6.0.0)
       '@commitlint/cli':
         specifier: ^19.0.0
         version: 19.8.1(@types/node@24.7.2)(typescript@5.8.3)
@@ -767,13 +767,13 @@ packages:
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
 
-  '@cloudant/couchbackup@2.11.9':
-    resolution: {integrity: sha512-fWcYrcw53i2yDOqAiFOEoqHnoh1fM8ToXFaU7Ky7EtABHiLTqVntaPMgmP4J0Q8n9u0k8CH5TJ5629vrqH5yPg==}
+  '@cloudant/couchbackup@2.11.11':
+    resolution: {integrity: sha512-akYdkNphtCIu476pBxNQdzV98iaF/x3fp0KsNBygRBQTH4Vr8YgH/m/cNS6jGt1LOBIlP4xe0m+LZ8o6RIn6NQ==}
     engines: {node: ^20 || ^22}
     hasBin: true
     peerDependencies:
-      axios: ^1.11.0
-      ibm-cloud-sdk-core: ^5.4.2
+      axios: ^1.12.2
+      ibm-cloud-sdk-core: ^5.4.3
 
   '@colors/colors@1.6.0':
     resolution: {integrity: sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA==}
@@ -1494,8 +1494,8 @@ packages:
   '@iarna/toml@2.2.5':
     resolution: {integrity: sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==}
 
-  '@ibm-cloud/cloudant@0.12.7':
-    resolution: {integrity: sha512-Vqqs8eevk0zyMmg4sqY4TX6SQ3DRMNz/X5fR3l07+qU3430vqOQjOihvQJ7excu/Xh7zqpMmQ+k7lAH9TizmaA==}
+  '@ibm-cloud/cloudant@0.12.10':
+    resolution: {integrity: sha512-tjvp8xzsT4fm2QvNjV0KcpQ+iyXDWsaVr/V7gVjBQ2QJ07ftwm9PME7cFzFdq4gsQ/wo0Y5gq0nuIBpiNRD9lw==}
     engines: {node: ^20 || ^22}
     peerDependencies:
       '@types/tough-cookie': ^4.0.0
@@ -2261,8 +2261,8 @@ packages:
   '@types/node@18.19.130':
     resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
 
-  '@types/node@20.19.9':
-    resolution: {integrity: sha512-cuVNgarYWZqxRJDQHEB58GEONhOK79QVR/qYx4S7kcUObQvUwvFnYxJuuHUKm2aieN9X3yZB4LZsuYNU1Qphsw==}
+  '@types/node@20.19.19':
+    resolution: {integrity: sha512-pb1Uqj5WJP7wrcbLU7Ru4QtA0+3kAXrkutGiD26wUKzSMgNNaPARTUDQmElUXp64kh3cWdou3Q0C7qwwxqSFmg==}
 
   '@types/node@24.7.2':
     resolution: {integrity: sha512-/NbVmcGTP+lj5oa4yiYxxeBjRivKQ5Ns1eSZeB99ExsEQ6rX5XYU1Zy/gGxY/ilqtD4Etx9mKyrPxZRetiahhA==}
@@ -2801,8 +2801,8 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.11.0:
-    resolution: {integrity: sha512-1Lx3WLFQWm3ooKDYZD1eXmoGO9fxYQjrycfHFC8P0sCfQVXyROp0p9PFWBehewBOdCwHc+f/b8I0fMto5eSfwA==}
+  axios@1.13.2:
+    resolution: {integrity: sha512-VPk9ebNqPcy5lRGuSlKx752IlDatOjT9paPlm8A7yOuW2Fbvp4X3JznJtT4f0GzGLLiWE9W8onz51SqLYwzGaA==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -3018,10 +3018,6 @@ packages:
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
-
-  commander@14.0.0:
-    resolution: {integrity: sha512-2uM9rYjPvyq39NwLRqaiLtWHyDC1FvryJDa2ATTVims5YAS4PupsEQsDvP14FqhFr0P49CYDugi59xaxJlTXRA==}
-    engines: {node: '>=20'}
 
   commander@14.0.1:
     resolution: {integrity: sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==}
@@ -3789,8 +3785,8 @@ packages:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
 
-  form-data@4.0.4:
-    resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
+  form-data@4.0.5:
+    resolution: {integrity: sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==}
     engines: {node: '>= 6'}
 
   formatly@0.3.0:
@@ -4030,8 +4026,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  ibm-cloud-sdk-core@5.4.2:
-    resolution: {integrity: sha512-5VFkKYU/vSIWFJTVt392XEdPmiEwUJqhxjn1MRO3lfELyU2FB+yYi8brbmXUgq+D1acHR1fpS7tIJ6IlnrR9Cg==}
+  ibm-cloud-sdk-core@5.4.3:
+    resolution: {integrity: sha512-D0lvClcoCp/HXyaFlCbOT4aTYgGyeIb4ncxZpxRuiuw7Eo79C6c49W53+8WJRD9nxzT5vrIdaky3NBcTdBtaEg==}
     engines: {node: '>=18'}
 
   iconv-lite@0.4.24:
@@ -6835,13 +6831,13 @@ snapshots:
       human-id: 4.1.1
       prettier: 2.8.8
 
-  '@cloudant/couchbackup@2.11.9(@types/tough-cookie@4.0.5)(axios@1.11.0)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.2)(tough-cookie@6.0.0)':
+  '@cloudant/couchbackup@2.11.11(@types/tough-cookie@4.0.5)(axios@1.13.2)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.3)(tough-cookie@6.0.0)':
     dependencies:
-      '@ibm-cloud/cloudant': 0.12.7(@types/tough-cookie@4.0.5)(extend@3.0.2)(tough-cookie@6.0.0)
-      axios: 1.11.0(debug@4.4.3)
-      commander: 14.0.0
-      debug: 4.4.1
-      ibm-cloud-sdk-core: 5.4.2
+      '@ibm-cloud/cloudant': 0.12.10(@types/tough-cookie@4.0.5)(extend@3.0.2)(tough-cookie@6.0.0)
+      axios: 1.13.2(debug@4.4.3)
+      commander: 14.0.1
+      debug: 4.4.3
+      ibm-cloud-sdk-core: 5.4.3
     transitivePeerDependencies:
       - '@types/tough-cookie'
       - extend
@@ -7399,12 +7395,12 @@ snapshots:
 
   '@iarna/toml@2.2.5': {}
 
-  '@ibm-cloud/cloudant@0.12.7(@types/tough-cookie@4.0.5)(extend@3.0.2)(tough-cookie@6.0.0)':
+  '@ibm-cloud/cloudant@0.12.10(@types/tough-cookie@4.0.5)(extend@3.0.2)(tough-cookie@6.0.0)':
     dependencies:
-      '@types/node': 20.19.9
+      '@types/node': 20.19.19
       '@types/tough-cookie': 4.0.5
       extend: 3.0.2
-      ibm-cloud-sdk-core: 5.4.2
+      ibm-cloud-sdk-core: 5.4.3
       tough-cookie: 6.0.0
     transitivePeerDependencies:
       - supports-color
@@ -8037,7 +8033,7 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
-  '@types/node@20.19.9':
+  '@types/node@20.19.19':
     dependencies:
       undici-types: 6.21.0
 
@@ -8699,10 +8695,10 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.11.0(debug@4.4.3):
+  axios@1.13.2(debug@4.4.3):
     dependencies:
       follow-redirects: 1.15.11(debug@4.4.3)
-      form-data: 4.0.4
+      form-data: 4.0.5
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -8932,8 +8928,6 @@ snapshots:
   combined-stream@1.0.8:
     dependencies:
       delayed-stream: 1.0.0
-
-  commander@14.0.0: {}
 
   commander@14.0.1: {}
 
@@ -9964,7 +9958,7 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
-  form-data@4.0.4:
+  form-data@4.0.5:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
@@ -10226,22 +10220,22 @@ snapshots:
 
   husky@9.1.7: {}
 
-  ibm-cloud-sdk-core@5.4.2:
+  ibm-cloud-sdk-core@5.4.3:
     dependencies:
       '@types/debug': 4.1.12
       '@types/node': 18.19.130
       '@types/tough-cookie': 4.0.5
-      axios: 1.11.0(debug@4.4.3)
+      axios: 1.13.2(debug@4.4.3)
       camelcase: 6.3.0
       debug: 4.4.3
       dotenv: 16.6.1
       extend: 3.0.2
       file-type: 16.5.4
-      form-data: 4.0.4
+      form-data: 4.0.5
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.11.0)
+      retry-axios: 2.6.0(axios@1.13.2)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -11699,9 +11693,9 @@ snapshots:
       onetime: 7.0.0
       signal-exit: 4.1.0
 
-  retry-axios@2.6.0(axios@1.11.0):
+  retry-axios@2.6.0(axios@1.13.2):
     dependencies:
-      axios: 1.11.0(debug@4.4.3)
+      axios: 1.13.2(debug@4.4.3)
 
   reusify@1.1.0: {}
 

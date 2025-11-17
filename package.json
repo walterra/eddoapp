@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
-    "@cloudant/couchbackup": "^2.11.7",
+    "@cloudant/couchbackup": "^2.11.11",
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eddo/core-client": "workspace:*",
