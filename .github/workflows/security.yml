@@ -131,7 +131,7 @@ jobs:
     
     steps:
       - name: Download security artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: security-reports
           path: ./security-reports
