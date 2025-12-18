@@ -5,11 +5,11 @@
  * Discovers and orchestrates available commands
  */
 
-import { Command } from 'commander';
-import prompts from 'prompts';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import fs from 'fs';
 import path from 'path';
+import prompts from 'prompts';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,13 +52,15 @@ const SCRIPTS: Record<string, ScriptInfo> = {
 
 async function listAvailableScripts(): Promise<void> {
   console.log(chalk.blue('\n📋 Available EdDoApp Scripts\n'));
-  
+
   Object.values(SCRIPTS).forEach((script) => {
     const status = fs.existsSync(path.join(__dirname, script.file)) ? '✅' : '❌';
     const interactive = script.hasInteractive ? chalk.gray('(interactive)') : '';
-    console.log(`  ${status} ${chalk.cyan(script.name.padEnd(20))} ${script.description} ${interactive}`);
+    console.log(
+      `  ${status} ${chalk.cyan(script.name.padEnd(20))} ${script.description} ${interactive}`,
+    );
   });
-  
+
   console.log('\nUsage:');
   console.log(`  ${chalk.gray('pnpm cli <script-name> [options]')}`);
   console.log(`  ${chalk.gray('pnpm cli                     # Interactive mode')}`);
@@ -67,10 +69,10 @@ async function listAvailableScripts(): Promise<void> {
 
 async function runInteractiveMode(): Promise<void> {
   console.log(chalk.blue('\n🚀 EdDoApp CLI - Interactive Mode\n'));
-  
+
   // Filter to only show existing scripts
   const availableScripts = Object.values(SCRIPTS).filter((script) =>
-    fs.existsSync(path.join(__dirname, script.file))
+    fs.existsSync(path.join(__dirname, script.file)),
   );
 
   if (availableScripts.length === 0) {
@@ -99,7 +101,7 @@ async function runInteractiveMode(): Promise<void> {
 
 async function runScript(scriptName: string, args: string[]): Promise<void> {
   const script = SCRIPTS[scriptName];
-  
+
   if (!script) {
     console.error(chalk.red(`Unknown script: ${scriptName}`));
     console.log('\nAvailable scripts:');
@@ -110,7 +112,7 @@ async function runScript(scriptName: string, args: string[]): Promise<void> {
   }
 
   const scriptPath = path.join(__dirname, script.file);
-  
+
   if (!fs.existsSync(scriptPath)) {
     console.error(chalk.red(`Script file not found: ${scriptPath}`));
     process.exit(1);
@@ -122,7 +124,7 @@ async function runScript(scriptName: string, args: string[]): Promise<void> {
   try {
     // Dynamic import and execution
     const module = await import(scriptPath);
-    
+
     // Most scripts are designed to run when imported, but we can also
     // call specific functions if they export them
     if (scriptName === 'backup' && module.performBackup) {
@@ -132,7 +134,7 @@ async function runScript(scriptName: string, args: string[]): Promise<void> {
         stdio: 'inherit',
         cwd: process.cwd(),
       });
-      
+
       child.on('exit', (code) => {
         process.exit(code || 0);
       });
@@ -143,7 +145,7 @@ async function runScript(scriptName: string, args: string[]): Promise<void> {
         stdio: 'inherit',
         cwd: process.cwd(),
       });
-      
+
       child.on('exit', (code) => {
         process.exit(code || 0);
       });
@@ -184,16 +186,17 @@ program
   });
 
 // Handle help command specially
-program.command('help [command]')
+program
+  .command('help [command]')
   .description('display help for command')
   .action(async (command) => {
     if (command && SCRIPTS[command]) {
       const script = SCRIPTS[command];
       console.log(chalk.blue(`\n${script.name} - ${script.description}\n`));
-      
+
       // Run the script with --help to show its specific help
       const { spawn } = await import('child_process');
-      const child = spawn('tsx', [path.join(__dirname, script.file), '--help'], {
+      const _child = spawn('tsx', [path.join(__dirname, script.file), '--help'], {
         stdio: 'inherit',
       });
     } else {
@@ -206,4 +209,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   program.parse();
 }
 
-export { runScript, listAvailableScripts };
+export { listAvailableScripts, runScript };

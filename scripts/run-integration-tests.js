@@ -12,16 +12,14 @@ async function runIntegrationTests() {
   try {
     // Start the MCP server
     console.log('🚀 Starting MCP test server...');
-    serverProcess = spawn('pnpm', [
-      '--filter', '@eddo/mcp-server', 'start:test'
-    ], {
+    serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
       env: {
         ...process.env,
         COUCHDB_TEST_DB_NAME: 'todos-test',
         MCP_TEST_PORT: '3003',
-        NODE_ENV: 'test'
+        NODE_ENV: 'test',
       },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
 
     // Pipe server output but filter out the exit error
@@ -45,7 +43,7 @@ async function runIntegrationTests() {
     // Run the tests
     console.log('🧪 Running integration tests...');
     const testProcess = spawn('vitest', ['run', 'packages/mcp_server/src/integration-tests'], {
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
     // Wait for tests to complete
@@ -55,16 +53,15 @@ async function runIntegrationTests() {
         resolve();
       });
     });
-
   } finally {
     // Clean up the server process
     if (serverProcess) {
       console.log('🛑 Stopping MCP test server...');
       serverProcess.kill('SIGTERM');
-      
+
       // Give it a moment to shut down gracefully
       await setTimeout(500);
-      
+
       // Force kill if still running
       if (!serverProcess.killed) {
         serverProcess.kill('SIGKILL');

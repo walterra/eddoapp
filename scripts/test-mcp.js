@@ -43,7 +43,7 @@ async function testMcpTool(toolName, args = {}) {
         capabilities: {
           tools: {},
         },
-      }
+      },
     );
 
     console.log('🔌 Connecting to MCP server...');
@@ -53,10 +53,10 @@ async function testMcpTool(toolName, args = {}) {
     console.log('🔍 Discovering available tools...');
     const toolsResponse = await client.listTools();
     console.log(`📋 Found ${toolsResponse.tools.length} tools`);
-    
+
     // List available tools
     console.log('Available tools:');
-    toolsResponse.tools.forEach(tool => {
+    toolsResponse.tools.forEach((tool) => {
       console.log(`  - ${tool.name}: ${tool.description}`);
     });
     console.log('');
@@ -84,7 +84,6 @@ async function testMcpTool(toolName, args = {}) {
     }
 
     console.log('='.repeat(80));
-
   } catch (error) {
     console.error('❌ Test failed:', error.message);
     if (error.stack) {

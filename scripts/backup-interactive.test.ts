@@ -3,8 +3,7 @@
  * Run manually with: npx tsx scripts/backup-interactive.test.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import fs from 'fs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getBackupConfig } from './backup-interactive.js';
 
 // Mock dependencies
@@ -72,7 +71,7 @@ describe('backup-interactive', () => {
         timeout: 60000,
         dryRun: false,
       });
-      
+
       expect(prompts.default).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({ name: 'database' }),
@@ -80,7 +79,7 @@ describe('backup-interactive', () => {
           expect.objectContaining({ name: 'parallelism' }),
           expect.objectContaining({ name: 'timeout' }),
         ]),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -99,15 +98,13 @@ describe('backup-interactive', () => {
       await getBackupConfig(options);
 
       expect(prompts.default).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'backupDir' }),
-        ]),
-        expect.any(Object)
+        expect.arrayContaining([expect.objectContaining({ name: 'backupDir' })]),
+        expect.any(Object),
       );
-      
+
       // Should not prompt for already provided values
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as any[];
-      const promptNames = calls.map(call => call.name);
+      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
+      const promptNames = calls.map((call) => call.name);
       expect(promptNames).not.toContain('database');
       expect(promptNames).not.toContain('parallelism');
       expect(promptNames).not.toContain('timeout');
@@ -118,7 +115,7 @@ describe('backup-interactive', () => {
       const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
         throw new Error('Process exit called');
       });
-      
+
       const mockCancel = vi.fn(() => {
         console.log('Backup cancelled.');
         process.exit(0);
@@ -146,9 +143,9 @@ describe('backup-interactive', () => {
 
       await getBackupConfig({});
 
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as any[];
-      const parallelismPrompt = calls.find(call => call.name === 'parallelism');
-      
+      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
+      const parallelismPrompt = calls.find((call) => call.name === 'parallelism');
+
       expect(parallelismPrompt).toBeDefined();
       expect(parallelismPrompt.min).toBe(1);
       expect(parallelismPrompt.max).toBe(10);
@@ -165,9 +162,9 @@ describe('backup-interactive', () => {
 
       await getBackupConfig({});
 
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as any[];
-      const timeoutPrompt = calls.find(call => call.name === 'timeout');
-      
+      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
+      const timeoutPrompt = calls.find((call) => call.name === 'timeout');
+
       expect(timeoutPrompt).toBeDefined();
       expect(timeoutPrompt.min).toBe(10000);
     });

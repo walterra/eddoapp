@@ -2,9 +2,12 @@
  * Shared utilities for backup and restore operations
  */
 
+import type {
+  BackupOptions as CouchBackupOptions,
+  RestoreOptions as CouchRestoreOptions,
+} from '@cloudant/couchbackup';
 import fs from 'fs';
 import path from 'path';
-import type { BackupOptions as CouchBackupOptions, RestoreOptions as CouchRestoreOptions } from '@cloudant/couchbackup';
 
 export interface BackupOptions extends CouchBackupOptions {
   parallelism?: number;
@@ -51,7 +54,10 @@ export function ensureBackupDir(backupDir: string = DEFAULT_CONFIG.backupDir): v
 /**
  * Generate backup filename with timestamp
  */
-export function generateBackupFilename(database: string, backupDir: string = DEFAULT_CONFIG.backupDir): string {
+export function generateBackupFilename(
+  database: string,
+  backupDir: string = DEFAULT_CONFIG.backupDir,
+): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   return path.join(backupDir, `${database}-${timestamp}.json`);
 }
@@ -59,12 +65,16 @@ export function generateBackupFilename(database: string, backupDir: string = DEF
 /**
  * Get latest backup file for a database
  */
-export function getLatestBackupFile(database: string, backupDir: string = DEFAULT_CONFIG.backupDir): string {
+export function getLatestBackupFile(
+  database: string,
+  backupDir: string = DEFAULT_CONFIG.backupDir,
+): string {
   if (!fs.existsSync(backupDir)) {
     throw new Error(`Backup directory does not exist: ${backupDir}`);
   }
 
-  const files = fs.readdirSync(backupDir)
+  const files = fs
+    .readdirSync(backupDir)
     .filter((file) => file.startsWith(`${database}-`) && file.endsWith('.json'))
     .sort()
     .reverse();
@@ -84,12 +94,13 @@ export function getAllBackupFiles(backupDir: string = DEFAULT_CONFIG.backupDir):
     return [];
   }
 
-  return fs.readdirSync(backupDir)
+  return fs
+    .readdirSync(backupDir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => {
       const fullPath = path.join(backupDir, file);
       const stats = fs.statSync(fullPath);
-      
+
       // Parse database name and timestamp from filename
       const match = file.match(/^(.+?)-([\d-T]+Z)\.json$/);
       if (!match) {
@@ -112,14 +123,15 @@ export function getAllBackupFiles(backupDir: string = DEFAULT_CONFIG.backupDir):
  */
 export async function checkDatabaseExists(
   dbName: string,
-  couchdbUrl: string
+  couchdbUrl: string,
 ): Promise<DatabaseInfo> {
   try {
     const url = new URL(couchdbUrl);
     const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
+    const credentials =
+      url.username && url.password
+        ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+        : null;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -144,25 +156,24 @@ export async function checkDatabaseExists(
 
     const dbInfo = await response.json();
     return { exists: true, docCount: dbInfo.doc_count || 0 };
-    
   } catch (error) {
-    throw new Error(`Failed to check database: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to check database: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
 /**
  * Recreate database (delete if exists, then create)
  */
-export async function recreateDatabase(
-  dbName: string,
-  couchdbUrl: string
-): Promise<void> {
+export async function recreateDatabase(dbName: string, couchdbUrl: string): Promise<void> {
   try {
     const url = new URL(couchdbUrl);
     const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
+    const credentials =
+      url.username && url.password
+        ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+        : null;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -191,9 +202,10 @@ export async function recreateDatabase(
     if (!createResponse.ok) {
       throw new Error(`Failed to create database: ${createResponse.statusText}`);
     }
-
   } catch (error) {
-    throw new Error(`Failed to recreate database: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to recreate database: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -233,10 +245,12 @@ export function formatDuration(ms: number): string {
 /**
  * Parse backup filename to extract metadata
  */
-export function parseBackupFilename(filename: string): { database: string; timestamp: string } | null {
+export function parseBackupFilename(
+  filename: string,
+): { database: string; timestamp: string } | null {
   const basename = path.basename(filename, '.json');
   const match = basename.match(/^(.+?)-([\d-T]+Z)$/);
-  
+
   if (!match) {
     return null;
   }
@@ -274,14 +288,15 @@ export function createRestoreOptions(overrides?: Partial<RestoreOptions>): Resto
  */
 export async function getReplicationStatus(
   replicationId: string,
-  couchdbUrl: string
-): Promise<any> {
+  couchdbUrl: string,
+): Promise<unknown> {
   try {
     const url = new URL(couchdbUrl);
     const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
+    const credentials =
+      url.username && url.password
+        ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+        : null;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -301,22 +316,24 @@ export async function getReplicationStatus(
     }
 
     return await response.json();
-    
   } catch (error) {
-    throw new Error(`Failed to get replication status: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get replication status: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
 /**
  * List all active replications
  */
-export async function listActiveReplications(couchdbUrl: string): Promise<any[]> {
+export async function listActiveReplications(couchdbUrl: string): Promise<unknown[]> {
   try {
     const url = new URL(couchdbUrl);
     const baseUrl = `${url.protocol}//${url.host}`;
-    const credentials = url.username && url.password 
-      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-      : null;
+    const credentials =
+      url.username && url.password
+        ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+        : null;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -337,8 +354,9 @@ export async function listActiveReplications(couchdbUrl: string): Promise<any[]>
 
     const data = await response.json();
     return data.jobs || [];
-    
   } catch (error) {
-    throw new Error(`Failed to list replications: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to list replications: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }

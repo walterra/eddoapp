@@ -5,23 +5,21 @@
  * Supports both interactive prompts and direct command-line arguments
  */
 
-import fs from 'fs';
-import path from 'path';
-import { Command } from 'commander';
-import prompts from 'prompts';
-import ora from 'ora';
-import chalk from 'chalk';
 import couchbackup from '@cloudant/couchbackup';
-import { validateEnv, getCouchDbConfig, getAvailableDatabases } from '@eddo/core-server/config';
-import { 
-  ensureBackupDir, 
-  generateBackupFilename, 
-  formatFileSize,
-  formatDuration,
+import { getAvailableDatabases, getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
+import chalk from 'chalk';
+import { Command } from 'commander';
+import fs from 'fs';
+import ora from 'ora';
+import path from 'path';
+import prompts from 'prompts';
+import {
   createBackupOptions,
-  getAllBackupFiles,
   DEFAULT_CONFIG,
-  type BackupOptions
+  ensureBackupDir,
+  formatFileSize,
+  generateBackupFilename,
+  getAllBackupFiles,
 } from './backup-utils.js';
 
 interface BackupConfig {
@@ -36,7 +34,7 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
   // Environment configuration
   const env = validateEnv(process.env);
   const couchConfig = getCouchDbConfig(env);
-  
+
   // Default values
   const defaults: BackupConfig = {
     database: couchConfig.dbName,
@@ -53,9 +51,9 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
 
   // Otherwise, prompt for missing values
   console.log(chalk.blue('\n🗄️  CouchDB Interactive Backup\n'));
-  
+
   const questions: prompts.PromptObject[] = [];
-  
+
   if (!options.database) {
     // Discover available databases
     const spinner = ora('Discovering available databases...').start();
@@ -65,7 +63,7 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
     if (availableDatabases.length === 0) {
       console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
       console.log(chalk.gray('Falling back to manual input...'));
-      
+
       questions.push({
         type: 'text',
         name: 'database',
@@ -74,10 +72,10 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
       });
     } else {
       console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
-      
+
       // Add option to enter custom database name
       const databaseChoices = [
-        ...availableDatabases.map(db => ({
+        ...availableDatabases.map((db) => ({
           title: db,
           value: db,
           description: db === defaults.database ? '(current default)' : '',
@@ -94,12 +92,12 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
         name: 'database',
         message: 'Select database to backup:',
         choices: databaseChoices,
-        initial: availableDatabases.findIndex(db => db === defaults.database),
+        initial: availableDatabases.findIndex((db) => db === defaults.database),
       });
 
       // If user selects custom, ask for manual input
       questions.push({
-        type: (prev: string) => prev === '__custom__' ? 'text' : null,
+        type: (prev: string) => (prev === '__custom__' ? 'text' : null),
         name: 'customDatabase',
         message: 'Enter database name:',
         initial: defaults.database,
@@ -156,19 +154,25 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
 async function listExistingBackups(backupDir: string, database: string): Promise<string[]> {
   const allBackups = getAllBackupFiles(backupDir);
   return allBackups
-    .filter(backup => backup.database === database)
-    .map(backup => path.basename(backup.path));
+    .filter((backup) => backup.database === database)
+    .map((backup) => path.basename(backup.path));
 }
 
 async function performBackup(config: BackupConfig, isInteractive: boolean = true): Promise<void> {
   const env = validateEnv(process.env);
   const couchConfig = getCouchDbConfig(env);
-  
+
   // Use the database from config, not from env
-  const dbUrl = couchConfig.fullUrl.replace(couchConfig.dbName, config.database || couchConfig.dbName);
-  
+  const dbUrl = couchConfig.fullUrl.replace(
+    couchConfig.dbName,
+    config.database || couchConfig.dbName,
+  );
+
   // Show existing backups
-  const existingBackups = await listExistingBackups(config.backupDir, config.database || couchConfig.dbName);
+  const existingBackups = await listExistingBackups(
+    config.backupDir,
+    config.database || couchConfig.dbName,
+  );
   if (existingBackups.length > 0) {
     console.log(chalk.gray('\nExisting backups:'));
     existingBackups.slice(0, 5).forEach((file) => {
@@ -213,14 +217,13 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
     }
   }
 
-
   // Start backup with progress indicator
   const spinner = ora('Starting backup...').start();
-  
+
   try {
     const startTime = Date.now();
     const writeStream = fs.createWriteStream(backupFile);
-    
+
     const options = createBackupOptions({
       parallelism: config.parallelism,
       requestTimeout: config.timeout,
@@ -228,7 +231,7 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
     });
 
     let documentsProcessed = 0;
-    let lastUpdate = Date.now();
+    const _lastUpdate = Date.now();
 
     // Update spinner with progress
     const updateProgress = setInterval(() => {
@@ -237,19 +240,14 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
     }, 1000);
 
     await new Promise<void>((resolve, reject) => {
-      const backup = couchbackup.backup(
-        dbUrl,
-        writeStream,
-        options,
-        (err: Error | null) => {
-          clearInterval(updateProgress);
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
+      const backup = couchbackup.backup(dbUrl, writeStream, options, (err: Error | null) => {
+        clearInterval(updateProgress);
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
         }
-      );
+      });
 
       // Track progress
       backup.on('changes', (batch: number) => {
@@ -262,18 +260,17 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
     // Display backup statistics
     const stats = fs.statSync(backupFile);
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    
+
     console.log('\n' + chalk.bold('Backup Summary:'));
     console.log(`  File: ${chalk.cyan(backupFile)}`);
     console.log(`  Size: ${chalk.cyan(formatFileSize(stats.size))}`);
     console.log(`  Documents: ${chalk.cyan(documentsProcessed)}`);
     console.log(`  Duration: ${chalk.cyan(duration + 's')}`);
-    
+
     // Log file info
     if (fs.existsSync(`${backupFile}.log`)) {
       console.log(`  Log: ${chalk.gray(`${backupFile}.log`)}`);
     }
-
   } catch (error) {
     spinner.fail(chalk.red('Backup failed!'));
     console.error(chalk.red('\nError:'), error instanceof Error ? error.message : String(error));
@@ -290,23 +287,35 @@ program
   .version('1.0.0')
   .option('-d, --database <name>', 'database name to backup')
   .option('-b, --backup-dir <path>', 'backup directory', DEFAULT_CONFIG.backupDir)
-  .option('-p, --parallelism <number>', 'number of parallel connections', (val) => parseInt(val, 10), DEFAULT_CONFIG.parallelism)
-  .option('-t, --timeout <ms>', 'request timeout in milliseconds', (val) => parseInt(val, 10), DEFAULT_CONFIG.timeout)
+  .option(
+    '-p, --parallelism <number>',
+    'number of parallel connections',
+    (val) => parseInt(val, 10),
+    DEFAULT_CONFIG.parallelism,
+  )
+  .option(
+    '-t, --timeout <ms>',
+    'request timeout in milliseconds',
+    (val) => parseInt(val, 10),
+    DEFAULT_CONFIG.timeout,
+  )
   .option('--dry-run', 'show what would be done without performing backup')
   .option('--no-interactive', 'disable interactive prompts')
   .action(async (options) => {
     try {
       let config: BackupConfig;
-      
+
       if (options.interactive) {
         config = await getBackupConfig(options);
       } else {
         // In non-interactive mode, require explicit database parameter
         if (!options.database) {
-          throw new Error('Database parameter is required in non-interactive mode. Use --database <name> or run without --no-interactive');
+          throw new Error(
+            'Database parameter is required in non-interactive mode. Use --database <name> or run without --no-interactive',
+          );
         }
-        
-        config = { 
+
+        config = {
           database: options.database,
           backupDir: options.backupDir || DEFAULT_CONFIG.backupDir,
           parallelism: options.parallelism ?? DEFAULT_CONFIG.parallelism,
@@ -314,7 +323,7 @@ program
           dryRun: options.dryRun || false,
         };
       }
-      
+
       await performBackup(config, options.interactive);
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
@@ -327,4 +336,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   program.parse();
 }
 
-export { performBackup, getBackupConfig };
+export { getBackupConfig, performBackup };
