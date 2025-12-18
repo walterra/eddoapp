@@ -23,3 +23,15 @@
 - Add Zod datetime validation for date parameters in MCP tool
 - Add test for `completed: true` + date range combination
 - Update test fixtures to include `printBriefing`/`printRecap` fields
+
+### Aspirational Code Quality Standards
+
+These are quality improvements to consider for future development:
+
+- Result/Either pattern for functional error handling
+- Structured logging with correlation IDs
+- AbortController signal handling for cancellable async operations
+- Integration tests with TestContainers for external dependencies
+- Property-based testing with fast-check for edge cases
+- OpenTelemetry spans with proper error recording and semantic conventions
+- Graceful shutdown with cleanup hooks

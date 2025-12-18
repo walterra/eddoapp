@@ -128,24 +128,51 @@ interface TodoAlpha3 {
   - `bot/`: Telegram bot handlers and commands
   - `mcp/`: MCP client integration
 
-## Code Style
+## Documentation Maintenance
 
-- CRITICAL: Prefer functional style with factories instead of object-oriented style, no classes
-- CRITICAL: Avoid inline types, create interfaces and type definitions instead
-- Use minimal/lightweight TypeScript-style JSDoc to document code
-- Use snake_case for filenames
-- Use camelCase for variables/functions, PascalCase for components/types
-- Single quotes, trailing commas
+Keep `README.md` up to date when making changes. The README is end-user focused (installation, usage, configuration) while CLAUDE.md is agent-focused (debugging, restrictions, architecture).
+
+## Technical Writing Style
+
+Technical writer for documentation and JSDoc comments, direct factual statements only, no filler words (very/really/quite/just/simply/basically/actually/literally/comprehensive), no hedging (probably/maybe/might/could/should), no obvious phrases (please note/it's important to/keep in mind), start with present tense verbs (fetches/calculates/returns), state what not how, one line when possible, omit self-evident type information, active voice only, remove redundant phrases (in order to→to, completely finished→finished), every adjective must add information, sentences under 20 words, if removing a word preserves meaning remove it, strip all decoration keep only information.
+
+## Coding style
+
+### Required Standards
+
+- **CRITICAL**: Prefer functional style with factories instead of object-oriented style, no classes
+- **CRITICAL**: Avoid inline types, create interfaces and type definitions instead
+- Production-grade TypeScript with strict type safety, zero implicit any
+- Use minimal/lightweight TypeScript-style JSDoc to document code with @param and @return tags
+- Functional programming patterns with immutable data structures
+- Custom error classes extending Error for domain-specific errors
+- Dependency injection for testability
+- Single responsibility principle with functions under 50 lines and files under 300 lines
+- async/await with proper error handling
+- Exhaustive union type checking with never fallbacks
+- Unit tests with 70% branch coverage using arrange-act-assert pattern
 - Tests use describe/it pattern with Vitest
 - Place test files alongside implementation with .test.ts/.test.tsx extension
+- ESLint strict ruleset with no-explicit-any rule enabled
+- ESLint complexity guards (max-lines:300, max-lines-per-function:50, complexity:10, max-depth:3, max-params:4, max-nested-callbacks:4, max-statements:30)
+- Prettier formatting with 2-space indent and 100-char line width
+- Single quotes, trailing commas
+- Semantic versioning with Changesets following conventional commits
+- Configuration validation using Zod schemas with descriptive error messages
+- Meaningful variable names following domain language (no abbreviations except widely known acronyms)
+- Pure functions with no side effects marked with readonly parameters
+- Defensive programming with input validation at boundaries
+- SOLID principles adherence
+- Feature-based module organization over type-based
+- TypeScript configuration: --strict true --target ES2022 --moduleResolution bundler --isolatedModules true
+- Use snake_case for filenames
+- Use camelCase for variables/functions, PascalCase for components/types
 - Use typed imports and exports with TypeScript
 - Use explicit return types for functions
-- Follow existing import sorting (uses @trivago/prettier-plugin-sort-imports)
+- Follow existing import sorting (uses prettier-plugin-organize-imports)
 - Use TailwindCSS for styling
-- Use try/catch for error handling with console.error
 - Use Prettier for formatting with existing config
 - **Always run the proper scripts for linting and formatting before manually fixing code style issues**
-- TypeScript: do not use `any`.
 
 ## Git Rules
 
