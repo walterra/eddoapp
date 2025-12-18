@@ -7,10 +7,12 @@ import {
 import { group } from 'd3-array';
 import {
   add,
+  endOfDay,
   endOfMonth,
   endOfWeek,
   endOfYear,
   format,
+  startOfDay,
   startOfMonth,
   startOfWeek,
   startOfYear,
@@ -59,6 +61,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
 
     switch (selectedTimeRange.type) {
+      case 'current-day':
+        return {
+          startDate: add(startOfDay(currentDate), { hours: 2 }),
+          endDate: add(endOfDay(currentDate), { hours: 2 }),
+        };
       case 'current-week':
         return {
           startDate: currentStartOfWeek,

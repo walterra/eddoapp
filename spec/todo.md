@@ -1,3 +1,4 @@
+- Filter state not persisted
 - proper timezone support
 - the gtd tags like `gtd:next` should be a `gtd` attribute on todos just like context and be stored just `next`, will trigger creating TodoAlpha5
 - peristent chat history for telegram-bot

@@ -58,6 +58,8 @@ export const AddTodo: FC<AddTodoProps> = ({
 
   function getPeriodLabel(): string {
     switch (selectedTimeRange.type) {
+      case 'current-day':
+        return format(currentDate, 'MMM d, yyyy');
       case 'current-week':
         return `CW${currentCalendarWeek}`;
       case 'current-month':
@@ -80,6 +82,9 @@ export const AddTodo: FC<AddTodoProps> = ({
 
   function previousPeriodClickHandler() {
     switch (selectedTimeRange.type) {
+      case 'current-day':
+        setCurrentDate(sub(currentDate, { days: 1 }));
+        break;
       case 'current-week':
         setCurrentDate(sub(currentDate, { weeks: 1 }));
         break;
@@ -104,6 +109,9 @@ export const AddTodo: FC<AddTodoProps> = ({
 
   function nextPeriodClickHandler() {
     switch (selectedTimeRange.type) {
+      case 'current-day':
+        setCurrentDate(add(currentDate, { days: 1 }));
+        break;
       case 'current-week':
         setCurrentDate(add(currentDate, { weeks: 1 }));
         break;

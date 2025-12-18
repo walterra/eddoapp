@@ -2,6 +2,7 @@ import { type FC, useState } from 'react';
 import { MdFilterList } from 'react-icons/md';
 
 export type TimeRangeType =
+  | 'current-day'
   | 'current-week'
   | 'current-month'
   | 'current-year'
@@ -28,6 +29,7 @@ export const TimeRangeFilter: FC<TimeRangeFilterProps> = ({
   const [customEndDate, setCustomEndDate] = useState('');
 
   const timeRangeOptions: { value: TimeRangeType; label: string }[] = [
+    { value: 'current-day', label: 'Current day' },
     { value: 'current-week', label: 'Current week' },
     { value: 'current-month', label: 'Current month' },
     { value: 'current-year', label: 'Current year' },
