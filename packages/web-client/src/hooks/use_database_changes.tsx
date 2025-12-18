@@ -2,14 +2,7 @@
  * Database changes provider - single PouchDB listener for the entire app
  */
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  type FC,
-  type ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { type FC, type ReactNode, createContext, useContext, useEffect, useState } from 'react';
 
 import { usePouchDb } from '../pouch_db';
 
@@ -20,13 +13,9 @@ interface DatabaseChangesContextType {
   isListening: boolean;
 }
 
-const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(
-  null,
-);
+const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(null);
 
-export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const { changes } = usePouchDb();
   const queryClient = useQueryClient();
   const [changeCount, setChangeCount] = useState(0);
@@ -79,9 +68,7 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({
 export const useDatabaseChanges = (): DatabaseChangesContextType => {
   const context = useContext(DatabaseChangesContext);
   if (!context) {
-    throw new Error(
-      'useDatabaseChanges must be used within a DatabaseChangesProvider',
-    );
+    throw new Error('useDatabaseChanges must be used within a DatabaseChangesProvider');
   }
   return context;
 };

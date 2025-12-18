@@ -47,9 +47,7 @@ export class MCPAssertions {
     const availableToolNames = tools.map((t) => t.name);
 
     for (const toolName of toolNames) {
-      expect(availableToolNames, `Tool '${toolName}' should exist`).toContain(
-        toolName,
-      );
+      expect(availableToolNames, `Tool '${toolName}' should exist`).toContain(toolName);
     }
   }
 
@@ -80,8 +78,7 @@ export class MCPAssertions {
         // This is an expected error condition in the new format
         if (expectedErrorPattern) {
           const errorResult = result as { error?: unknown; summary?: unknown };
-          const errorText =
-            errorResult.error || errorResult.summary || JSON.stringify(result);
+          const errorText = errorResult.error || errorResult.summary || JSON.stringify(result);
           if (typeof expectedErrorPattern === 'string') {
             expect(errorText).toContain(expectedErrorPattern);
           } else {
@@ -109,8 +106,7 @@ export class MCPAssertions {
     } catch (error) {
       // If it throws an error (as expected), verify the error message if pattern provided
       if (expectedErrorPattern) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         if (typeof expectedErrorPattern === 'string') {
           expect(errorMessage).toContain(expectedErrorPattern);
         } else {
@@ -145,19 +141,13 @@ export class MCPAssertions {
     const todoObj = todo as Record<string, unknown>;
 
     // Validate completed can be string or null
-    expect(
-      todoObj.completed === null || typeof todoObj.completed === 'string',
-    ).toBe(true);
+    expect(todoObj.completed === null || typeof todoObj.completed === 'string').toBe(true);
 
     // Validate link can be string or null
-    expect(todoObj.link === null || typeof todoObj.link === 'string').toBe(
-      true,
-    );
+    expect(todoObj.link === null || typeof todoObj.link === 'string').toBe(true);
 
     // Validate repeat can be number or null
-    expect(todoObj.repeat === null || typeof todoObj.repeat === 'number').toBe(
-      true,
-    );
+    expect(todoObj.repeat === null || typeof todoObj.repeat === 'number').toBe(true);
 
     // Validate _id is ISO timestamp format
     expect(() => new Date(todoObj._id as string)).not.toThrow();
@@ -166,11 +156,7 @@ export class MCPAssertions {
     expect(() => new Date(todoObj.due as string)).not.toThrow();
 
     // Validate tags are strings
-    expect(
-      (todoObj.tags as unknown[]).every(
-        (tag: unknown) => typeof tag === 'string',
-      ),
-    ).toBe(true);
+    expect((todoObj.tags as unknown[]).every((tag: unknown) => typeof tag === 'string')).toBe(true);
 
     // Validate context is valid
     expect(['work', 'private', 'personal']).toContain(todoObj.context);
@@ -193,10 +179,7 @@ export class MCPAssertions {
   /**
    * Assert that a todo has specific properties
    */
-  expectTodoProperties(
-    todo: TodoAlpha3,
-    expectedProperties: Partial<TodoAlpha3>,
-  ): void {
+  expectTodoProperties(todo: TodoAlpha3, expectedProperties: Partial<TodoAlpha3>): void {
     for (const [key, value] of Object.entries(expectedProperties)) {
       if (key === 'tags' && Array.isArray(value)) {
         expect(todo.tags).toEqual(expect.arrayContaining(value));
@@ -209,10 +192,7 @@ export class MCPAssertions {
   /**
    * Assert that todos are filtered correctly by context
    */
-  expectTodosFilteredByContext(
-    todos: TodoAlpha3[],
-    expectedContext: string,
-  ): void {
+  expectTodosFilteredByContext(todos: TodoAlpha3[], expectedContext: string): void {
     this.expectValidTodos(todos);
     todos.forEach((todo) => {
       expect(todo.context).toBe(expectedContext);
@@ -222,10 +202,7 @@ export class MCPAssertions {
   /**
    * Assert that todos are filtered correctly by completion status
    */
-  expectTodosFilteredByCompletion(
-    todos: TodoAlpha3[],
-    expectedCompleted: boolean,
-  ): void {
+  expectTodosFilteredByCompletion(todos: TodoAlpha3[], expectedCompleted: boolean): void {
     this.expectValidTodos(todos);
     todos.forEach((todo) => {
       if (expectedCompleted) {
@@ -239,11 +216,7 @@ export class MCPAssertions {
   /**
    * Assert that todos are within a date range
    */
-  expectTodosInDateRange(
-    todos: TodoAlpha3[],
-    startDate: string,
-    endDate: string,
-  ): void {
+  expectTodosInDateRange(todos: TodoAlpha3[], startDate: string, endDate: string): void {
     this.expectValidTodos(todos);
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -288,9 +261,7 @@ export class MCPAssertions {
   expectHasActiveTimeTracking(todo: TodoAlpha3): void {
     this.expectValidTodo(todo);
 
-    const activeEntries = Object.entries(todo.active).filter(
-      ([_, end]) => end === null,
-    );
+    const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
     expect(activeEntries.length).toBeGreaterThan(0);
 
     // Verify the timestamp key is valid
@@ -305,19 +276,14 @@ export class MCPAssertions {
   expectHasNoActiveTimeTracking(todo: TodoAlpha3): void {
     this.expectValidTodo(todo);
 
-    const activeEntries = Object.entries(todo.active).filter(
-      ([_, end]) => end === null,
-    );
+    const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
     expect(activeEntries).toHaveLength(0);
   }
 
   /**
    * Assert that server info contains expected sections
    */
-  expectValidServerInfo(
-    serverInfo: unknown,
-    expectedSections?: string[],
-  ): void {
+  expectValidServerInfo(serverInfo: unknown, expectedSections?: string[]): void {
     expect(serverInfo).toBeDefined();
     expect(typeof serverInfo).toBe('object');
 
@@ -340,9 +306,7 @@ export class MCPAssertions {
     }
 
     // Each tag should have a count
-    for (const [tag, count] of Object.entries(
-      tagStats as Record<string, unknown>,
-    )) {
+    for (const [tag, count] of Object.entries(tagStats as Record<string, unknown>)) {
       expect(typeof tag).toBe('string');
       expect(typeof count).toBe('number');
       expect(count).toBeGreaterThan(0);
@@ -354,14 +318,10 @@ export class MCPAssertions {
    */
   expectTodoCount(todos: TodoAlpha3[], expectedCount: number): void {
     if (todos.length !== expectedCount) {
-      console.error(
-        `❌ Todo count mismatch. Expected: ${expectedCount}, Actual: ${todos.length}`,
-      );
+      console.error(`❌ Todo count mismatch. Expected: ${expectedCount}, Actual: ${todos.length}`);
       console.error('Found todos:');
       todos.forEach((todo, index) => {
-        console.error(
-          `  ${index + 1}. ${todo.title} (id: ${todo._id}, context: ${todo.context})`,
-        );
+        console.error(`  ${index + 1}. ${todo.title} (id: ${todo._id}, context: ${todo.context})`);
       });
     }
     expect(todos).toHaveLength(expectedCount);

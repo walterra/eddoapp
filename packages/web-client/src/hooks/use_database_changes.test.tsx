@@ -1,12 +1,6 @@
 import { type Todo } from '@eddo/core-client';
 import { act, renderHook } from '@testing-library/react';
-import {
-  type ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { type PouchDbContextType } from '../pouch_db_types';
@@ -20,9 +14,7 @@ interface DatabaseChangesContextType {
   isListening: boolean;
 }
 
-const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(
-  null,
-);
+const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(null);
 
 const TestDatabaseChangesProvider = ({
   children,
@@ -72,9 +64,7 @@ const TestDatabaseChangesProvider = ({
 const useDatabaseChanges = (): DatabaseChangesContextType => {
   const context = useContext(DatabaseChangesContext);
   if (!context) {
-    throw new Error(
-      'useDatabaseChanges must be used within a DatabaseChangesProvider',
-    );
+    throw new Error('useDatabaseChanges must be used within a DatabaseChangesProvider');
   }
   return context;
 };
@@ -105,9 +95,7 @@ describe('useDatabaseChanges Hook', () => {
       try {
         expect(() => {
           renderHook(() => useDatabaseChanges());
-        }).toThrow(
-          'useDatabaseChanges must be used within a DatabaseChangesProvider',
-        );
+        }).toThrow('useDatabaseChanges must be used within a DatabaseChangesProvider');
       } finally {
         console.error = originalError;
       }

@@ -60,10 +60,7 @@ export class DatabaseSetup {
   /**
    * Create or update a single design document with retry logic
    */
-  async createDesignDocument(
-    designDoc: DesignDocument,
-    maxRetries: number = 3,
-  ): Promise<void> {
+  async createDesignDocument(designDoc: DesignDocument, maxRetries: number = 3): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.db.insert(designDoc);
@@ -98,23 +95,15 @@ export class DatabaseSetup {
               console.warn(
                 `⚠️  Document conflict for ${designDoc._id}, attempt ${attempt}/${maxRetries}, retrying...`,
               );
-              await new Promise((resolve) =>
-                setTimeout(resolve, 200 * attempt),
-              );
+              await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
               continue;
             } else {
-              console.error(
-                `❌ Failed to update design document ${designDoc._id}:`,
-                updateError,
-              );
+              console.error(`❌ Failed to update design document ${designDoc._id}:`, updateError);
               throw updateError;
             }
           }
         } else {
-          console.error(
-            `❌ Failed to create design document ${designDoc._id}:`,
-            error,
-          );
+          console.error(`❌ Failed to create design document ${designDoc._id}:`, error);
           throw error;
         }
       }
@@ -242,12 +231,7 @@ export class DatabaseSetup {
       await this.couch.db.create(this.dbName);
       console.log(`🏗️  Created database: ${this.dbName}`);
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 412
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 412) {
         console.log(`ℹ️  Database already exists: ${this.dbName}`);
       } else {
         throw error;
@@ -274,18 +258,10 @@ export class DatabaseSetup {
       await this.couch.db.destroy(this.dbName);
       console.log(`🗑️  Destroyed database: ${this.dbName}`);
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
         console.log(`ℹ️  Database ${this.dbName} doesn't exist`);
       } else {
-        console.warn(
-          `Warning: Failed to destroy database ${this.dbName}:`,
-          error,
-        );
+        console.warn(`Warning: Failed to destroy database ${this.dbName}:`, error);
       }
     }
 
@@ -301,9 +277,7 @@ export class DatabaseSetup {
   /**
    * Wait for database destruction to complete
    */
-  private async waitForDatabaseDestruction(
-    maxRetries: number = 15,
-  ): Promise<void> {
+  private async waitForDatabaseDestruction(maxRetries: number = 15): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.couch.db.get(this.dbName);
@@ -326,9 +300,7 @@ export class DatabaseSetup {
         }
       }
     }
-    console.warn(
-      `⚠️  Database destruction verification timed out for: ${this.dbName}`,
-    );
+    console.warn(`⚠️  Database destruction verification timed out for: ${this.dbName}`);
   }
 
   /**

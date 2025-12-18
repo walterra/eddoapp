@@ -91,15 +91,11 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
 
   // Format date safely for Markdown
   const lastActivity = ctx.session?.lastActivity
-    ? new Date(ctx.session.lastActivity)
-        .toISOString()
-        .slice(0, 19)
-        .replace('T', ' ')
+    ? new Date(ctx.session.lastActivity).toISOString().slice(0, 19).replace('T', ' ')
     : 'Unknown';
 
   // Escape special characters for Markdown
-  const escapeMarkdown = (text: string) =>
-    text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+  const escapeMarkdown = (text: string) => text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
   // Format connection metrics
   const mcpStatusLine = `🔌 MCP Server: ${escapeMarkdown(connectionInfo.state)}`;

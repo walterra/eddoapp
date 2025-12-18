@@ -1,9 +1,6 @@
 import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
-import {
-  isTelegramUserAuthorized,
-  lookupUserByTelegramId,
-} from '../../utils/user-lookup.js';
+import { isTelegramUserAuthorized, lookupUserByTelegramId } from '../../utils/user-lookup.js';
 import type { BotContext } from '../bot.js';
 
 interface AuthFailureRecord {
@@ -58,10 +55,7 @@ export function isRateLimited(userId: number): boolean {
   const now = Date.now();
 
   // Check if user has exceeded failure limit and is still in penalty period
-  if (
-    record.count >= MAX_AUTH_FAILURES &&
-    now - record.lastFailure < RATE_LIMIT_DURATION_MS
-  ) {
+  if (record.count >= MAX_AUTH_FAILURES && now - record.lastFailure < RATE_LIMIT_DURATION_MS) {
     return true;
   }
 
@@ -103,10 +97,7 @@ export async function isUserAuthorized(userId: number): Promise<boolean> {
   }
 }
 
-export async function authMiddleware(
-  ctx: BotContext,
-  next: () => Promise<void>,
-): Promise<void> {
+export async function authMiddleware(ctx: BotContext, next: () => Promise<void>): Promise<void> {
   const userId = ctx.from?.id;
   const username = ctx.from?.username;
 

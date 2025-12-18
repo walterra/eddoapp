@@ -55,9 +55,7 @@ async function initializeGlobalTestUser(): Promise<void> {
     const { validateEnv, createTestUserRegistry } = coreServer;
 
     if (!createTestUserRegistry) {
-      throw new Error(
-        'createTestUserRegistry is not available in @eddo/core-server',
-      );
+      throw new Error('createTestUserRegistry is not available in @eddo/core-server');
     }
 
     const env = validateEnv(process.env);
@@ -81,14 +79,10 @@ async function initializeGlobalTestUser(): Promise<void> {
       telegramId: '123456789',
     };
 
-    console.log(
-      `🔄 GLOBAL SETUP: Created global test user object: ${globalTestUser.username}`,
-    );
+    console.log(`🔄 GLOBAL SETUP: Created global test user object: ${globalTestUser.username}`);
 
     // Check if test user already exists (cleanup from previous run)
-    const existingUser = await userRegistry.findByUsername(
-      globalTestUser.username,
-    );
+    const existingUser = await userRegistry.findByUsername(globalTestUser.username);
     if (!existingUser) {
       await userRegistry.create({
         username: globalTestUser.username,
@@ -110,9 +104,7 @@ async function initializeGlobalTestUser(): Promise<void> {
       });
       console.log(`✅ Global test user created: ${globalTestUser.username}`);
     } else {
-      console.log(
-        `✅ Global test user already exists: ${globalTestUser.username}`,
-      );
+      console.log(`✅ Global test user already exists: ${globalTestUser.username}`);
     }
 
     console.log('✅ Global test user initialization complete');

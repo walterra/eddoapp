@@ -1,8 +1,4 @@
-import {
-  DatabaseHealthMonitor,
-  getUserDbName,
-  validateClientEnv,
-} from '@eddo/core-client';
+import { DatabaseHealthMonitor, getUserDbName, validateClientEnv } from '@eddo/core-client';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import { useContext } from 'react';

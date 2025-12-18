@@ -71,9 +71,7 @@ export function createBot(): Bot<BotContext> {
       });
 
       // Send error message to user
-      await ctx.reply(
-        'Sorry, I encountered an error processing your request. Please try again.',
-      );
+      await ctx.reply('Sorry, I encountered an error processing your request. Please try again.');
     }
 
     const duration = Date.now() - start;

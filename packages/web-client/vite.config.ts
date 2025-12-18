@@ -27,10 +27,7 @@ export default defineConfig(({ mode }) => {
         '@eddo/core-client': resolve(__dirname, '../core-client/src'),
         '@eddo/core-server': resolve(__dirname, '../core-server/src'),
         '@eddo/core-shared': resolve(__dirname, '../core-shared/src'),
-        'tailwindcss/version.js': resolve(
-          __dirname,
-          'src/tailwindcss-version-shim.js',
-        ),
+        'tailwindcss/version.js': resolve(__dirname, 'src/tailwindcss-version-shim.js'),
       },
     },
     css: {

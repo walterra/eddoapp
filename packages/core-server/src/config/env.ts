@@ -5,9 +5,7 @@ import { z } from 'zod';
  */
 export const envSchema = z.object({
   // Node environment
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
@@ -36,9 +34,7 @@ export const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
 
   // Bot Configuration
-  BOT_PERSONA_ID: z
-    .enum(['butler', 'gtd_coach', 'zen_master'])
-    .default('butler'),
+  BOT_PERSONA_ID: z.enum(['butler', 'gtd_coach', 'zen_master']).default('butler'),
   LLM_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
 
   // Claude Code SDK Configuration
@@ -49,10 +45,7 @@ export const envSchema = z.object({
 
   // Web API Configuration
   PORT: z.coerce.number().default(3000),
-  JWT_SECRET: z
-    .string()
-    .min(32, 'JWT secret must be at least 32 characters')
-    .optional(),
+  JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters').optional(),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 });
 

@@ -9,9 +9,7 @@
  * generateStableKey('todo', '2025-06-20', 'high') // 'todo-2025-06-20-high'
  * generateStableKey('session', null, 'active') // 'session-active'
  */
-export function generateStableKey(
-  ...parts: (string | number | null | undefined)[]
-): string {
+export function generateStableKey(...parts: (string | number | null | undefined)[]): string {
   return parts
     .filter((part) => part != null)
     .map((part) => String(part))

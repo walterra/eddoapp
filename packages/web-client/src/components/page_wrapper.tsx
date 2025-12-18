@@ -12,11 +12,7 @@ interface PageWrapperProps {
   isAuthenticated: boolean;
 }
 
-export const PageWrapper: FC<PageWrapperProps> = ({
-  children,
-  logout,
-  isAuthenticated,
-}) => {
+export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenticated }) => {
   const { healthCheck } = useDatabaseHealth();
   const { rawDb } = usePouchDb();
   const [showProfile, setShowProfile] = useState(false);
@@ -56,11 +52,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({
             <div className="flex items-center space-x-4">
               {isAuthenticated && (
                 <div className="flex space-x-2">
-                  <Button
-                    color="gray"
-                    onClick={() => setShowProfile(true)}
-                    size="sm"
-                  >
+                  <Button color="gray" onClick={() => setShowProfile(true)} size="sm">
                     Profile
                   </Button>
                   <Button color="gray" onClick={logout} size="sm">

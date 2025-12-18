@@ -6,16 +6,11 @@ interface TagDisplayProps {
   maxTags?: number;
 }
 
-export const TagDisplay: FC<TagDisplayProps> = ({
-  tags,
-  size = 'xs',
-  maxTags,
-}) => {
+export const TagDisplay: FC<TagDisplayProps> = ({ tags, size = 'xs', maxTags }) => {
   if (tags.length === 0) return null;
 
   const displayTags = maxTags ? tags.slice(0, maxTags) : tags;
-  const remainingCount =
-    maxTags && tags.length > maxTags ? tags.length - maxTags : 0;
+  const remainingCount = maxTags && tags.length > maxTags ? tags.length - maxTags : 0;
 
   const sizeClasses = {
     xs: 'px-1.5 py-0.5 text-xs',

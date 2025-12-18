@@ -36,9 +36,7 @@ app.use(
 );
 
 // Health check
-app.get('/health', (c) =>
-  c.json({ status: 'ok', timestamp: new Date().toISOString() }),
-);
+app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // Auth routes (no JWT required)
 app.route('/auth', authRoutes);
@@ -84,10 +82,7 @@ if (!isDevelopment) {
       });
     } catch (error) {
       console.error('Error proxying to Vite dev server:', error);
-      return c.text(
-        "Vite dev server not available. Make sure it's running on port 5173.",
-        502,
-      );
+      return c.text("Vite dev server not available. Make sure it's running on port 5173.", 502);
     }
   });
 }

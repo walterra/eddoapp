@@ -41,12 +41,7 @@ describe('DatabaseErrorMessage', () => {
       render(<DatabaseErrorMessage error={error} />);
 
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass(
-        'mb-4',
-        'flex',
-        'items-center',
-        'justify-between',
-      );
+      expect(alert).toHaveClass('mb-4', 'flex', 'items-center', 'justify-between');
     });
 
     it('applies custom className when provided', () => {
@@ -73,18 +68,14 @@ describe('DatabaseErrorMessage', () => {
       const error = createError(DatabaseErrorType.NETWORK_ERROR);
       render(<DatabaseErrorMessage error={error} />);
 
-      expect(
-        screen.getByText('Network error. Changes may not be saved.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Network error. Changes may not be saved.')).toBeInTheDocument();
     });
 
     it('displays quota exceeded message', () => {
       const error = createError(DatabaseErrorType.QUOTA_EXCEEDED);
       render(<DatabaseErrorMessage error={error} />);
 
-      expect(
-        screen.getByText('Storage full. Cannot save changes.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Storage full. Cannot save changes.')).toBeInTheDocument();
     });
 
     it('displays sync conflict message', () => {
@@ -92,23 +83,15 @@ describe('DatabaseErrorMessage', () => {
       render(<DatabaseErrorMessage error={error} />);
 
       expect(
-        screen.getByText(
-          'Sync conflict. Please refresh to see latest changes.',
-        ),
+        screen.getByText('Sync conflict. Please refresh to see latest changes.'),
       ).toBeInTheDocument();
     });
 
     it('displays operation failed message with operation', () => {
-      const error = createError(
-        DatabaseErrorType.OPERATION_FAILED,
-        true,
-        'delete',
-      );
+      const error = createError(DatabaseErrorType.OPERATION_FAILED, true, 'delete');
       render(<DatabaseErrorMessage error={error} />);
 
-      expect(
-        screen.getByText('Failed to delete. Please try again.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Failed to delete. Please try again.')).toBeInTheDocument();
     });
 
     it('displays operation failed message without operation', () => {
@@ -131,9 +114,7 @@ describe('DatabaseErrorMessage', () => {
       const error = createError('UNKNOWN_ERROR' as DatabaseErrorType);
       render(<DatabaseErrorMessage error={error} />);
 
-      expect(
-        screen.getByText('An error occurred. Please try again.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('An error occurred. Please try again.')).toBeInTheDocument();
     });
   });
 
@@ -151,11 +132,7 @@ describe('DatabaseErrorMessage', () => {
       render(<DatabaseErrorMessage error={error} />);
 
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass(
-        'bg-yellow-50',
-        'border-yellow-200',
-        'text-yellow-800',
-      );
+      expect(alert).toHaveClass('bg-yellow-50', 'border-yellow-200', 'text-yellow-800');
     });
 
     it('applies red styling for non-retryable network errors', () => {

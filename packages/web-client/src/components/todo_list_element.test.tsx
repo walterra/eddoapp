@@ -5,12 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
-import {
-  createTestTodo,
-  populateTestDatabase,
-  renderWithPouchDb,
-  testTodos,
-} from '../test-utils';
+import { createTestTodo, populateTestDatabase, renderWithPouchDb, testTodos } from '../test-utils';
 import { TodoListElement } from './todo_list_element';
 
 // Mock child components to avoid complex dependencies
@@ -36,9 +31,7 @@ vi.mock('./tag_display', () => ({
 }));
 
 vi.mock('./formatted_message', () => ({
-  FormattedMessage: ({ message }: { message: string }) => (
-    <span>{message}</span>
-  ),
+  FormattedMessage: ({ message }: { message: string }) => <span>{message}</span>,
 }));
 
 // Mock the useActiveTimer hook to control timer behavior
@@ -70,10 +63,7 @@ describe('TodoListElement', () => {
   describe('Basic Rendering', () => {
     it('renders todo title', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -82,10 +72,7 @@ describe('TodoListElement', () => {
 
     it('renders with link when todo has link', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.withLink as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.withLink as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -96,10 +83,7 @@ describe('TodoListElement', () => {
 
     it('renders tags when todo has tags', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.withTags as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.withTags as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -109,11 +93,7 @@ describe('TodoListElement', () => {
 
     it('applies active styling when active prop is true', () => {
       const { container } = renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          active={true}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} active={true} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -124,10 +104,7 @@ describe('TodoListElement', () => {
 
     it('shows completed styling for completed todos', () => {
       const { container } = renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.completed as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.completed as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -141,10 +118,7 @@ describe('TodoListElement', () => {
   describe('Checkbox Functionality', () => {
     it('renders checkbox checked for completed todos', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.completed as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.completed as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -154,10 +128,7 @@ describe('TodoListElement', () => {
 
     it('renders checkbox unchecked for incomplete todos', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -185,10 +156,9 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+        testDb: testDb.contextValue,
+      });
 
       const checkbox = screen.getByRole('checkbox');
       await user.click(checkbox);
@@ -206,10 +176,9 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(testTodos.repeating._id);
 
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+        testDb: testDb.contextValue,
+      });
 
       const checkbox = screen.getByRole('checkbox');
       await user.click(checkbox);
@@ -233,10 +202,9 @@ describe('TodoListElement', () => {
       await populateTestDatabase(testDb.db, [testTodos.active]);
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+        testDb: testDb.contextValue,
+      });
 
       const checkbox = screen.getByRole('checkbox');
 
@@ -256,15 +224,10 @@ describe('TodoListElement', () => {
       const user = userEvent.setup();
 
       // Mock safePut to simulate an error
-      testDb.contextValue.safeDb.safePut = vi
-        .fn()
-        .mockRejectedValue(new Error('Database error'));
+      testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(new Error('Database error'));
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -280,15 +243,10 @@ describe('TodoListElement', () => {
     it('allows dismissing error messages', async () => {
       const user = userEvent.setup();
 
-      testDb.contextValue.safeDb.safePut = vi
-        .fn()
-        .mockRejectedValue(new Error('Database error'));
+      testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(new Error('Database error'));
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -302,9 +260,7 @@ describe('TodoListElement', () => {
       const dismissButton = screen.getByRole('button', { name: '×' });
       await user.click(dismissButton);
 
-      expect(
-        screen.queryByText('Failed to update todo'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Failed to update todo')).not.toBeInTheDocument();
     });
   });
 
@@ -319,20 +275,16 @@ describe('TodoListElement', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={todoWithoutTracking} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoWithoutTracking} />, {
+        testDb: testDb.contextValue,
+      });
 
       expect(screen.getByTestId('play-button')).toBeInTheDocument();
     });
 
     it('shows pause button for todos with active time tracking', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -366,11 +318,7 @@ describe('TodoListElement', () => {
       } as TodoAlpha3;
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          timeTrackingActive={true}
-          todo={todoWithoutTracking}
-        />,
+        <TodoListElement {...defaultProps} timeTrackingActive={true} todo={todoWithoutTracking} />,
         { testDb: testDb.contextValue },
       );
 
@@ -405,10 +353,9 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(todoWithoutTracking._id);
 
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+        testDb: testDb.contextValue,
+      });
 
       // Find and click the play button
       const playButton = screen.getByTestId('play-button');
@@ -428,10 +375,9 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+        testDb: testDb.contextValue,
+      });
 
       // Find and click the pause button
       const pauseButton = screen.getByTestId('pause-button');
@@ -457,11 +403,7 @@ describe('TodoListElement', () => {
       } as TodoAlpha3;
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          activeDate="2025-07-12"
-          todo={todoWithDuration}
-        />,
+        <TodoListElement {...defaultProps} activeDate="2025-07-12" todo={todoWithDuration} />,
         { testDb: testDb.contextValue },
       );
 
@@ -471,15 +413,10 @@ describe('TodoListElement', () => {
     it('handles time tracking errors gracefully', async () => {
       const user = userEvent.setup();
 
-      testDb.contextValue.safeDb.safePut = vi
-        .fn()
-        .mockRejectedValue(new Error('Database error'));
+      testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(new Error('Database error'));
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -496,10 +433,7 @@ describe('TodoListElement', () => {
   describe('Edit Modal', () => {
     it('shows edit button', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -525,10 +459,7 @@ describe('TodoListElement', () => {
       const user = userEvent.setup();
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -544,10 +475,7 @@ describe('TodoListElement', () => {
 
     it('prevents default behavior on edit button click', () => {
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -577,10 +505,7 @@ describe('TodoListElement', () => {
       testDb.contextValue.safeDb.safePut = vi.fn().mockReturnValue(putPromise);
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -612,10 +537,7 @@ describe('TodoListElement', () => {
       testDb.contextValue.safeDb.safePut = mockSafePut;
 
       renderWithPouchDb(
-        <TodoListElement
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 

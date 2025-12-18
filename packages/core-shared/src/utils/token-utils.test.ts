@@ -48,22 +48,19 @@ describe('token-utils', () => {
   describe('isTokenExpired', () => {
     it('should return false for a non-expired token', () => {
       // Token expires at 2024-01-01T13:00:00Z (1 hour from mock time)
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTQwMDB9.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTQwMDB9.signature';
       expect(isTokenExpired(token)).toBe(false);
     });
 
     it('should return true for an expired token', () => {
       // Token expired at 2024-01-01T11:00:00Z (1 hour before mock time)
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMDY4MDB9.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMDY4MDB9.signature';
       expect(isTokenExpired(token)).toBe(true);
     });
 
     it('should return true for a token expiring exactly now', () => {
       // Token expires at exactly 2024-01-01T12:00:00Z
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTA0MDB9.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTA0MDB9.signature';
       expect(isTokenExpired(token)).toBe(true);
     });
 
@@ -74,8 +71,7 @@ describe('token-utils', () => {
 
     it('should return true for tokens without exp claim', () => {
       // Token without exp: { "sub": "1234567890" }
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature';
       expect(isTokenExpired(token)).toBe(true);
     });
   });
@@ -83,8 +79,7 @@ describe('token-utils', () => {
   describe('getTokenExpiration', () => {
     it('should return the expiration date for a valid token', () => {
       // Token expires at 2024-01-01T13:00:00Z
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTQwMDB9.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTQwMDB9.signature';
       const expiration = getTokenExpiration(token);
 
       expect(expiration).toEqual(new Date('2024-01-01T13:00:00Z'));
@@ -96,8 +91,7 @@ describe('token-utils', () => {
     });
 
     it('should return null for tokens without exp claim', () => {
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature';
       expect(getTokenExpiration(token)).toBeNull();
     });
   });
@@ -105,8 +99,7 @@ describe('token-utils', () => {
   describe('getTokenTimeRemaining', () => {
     it('should return milliseconds remaining for non-expired token', () => {
       // Token expires at 2024-01-01T13:00:00Z (1 hour from mock time)
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTQwMDB9.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMTQwMDB9.signature';
       const remaining = getTokenTimeRemaining(token);
 
       expect(remaining).toBe(3600000); // 1 hour in milliseconds
@@ -114,8 +107,7 @@ describe('token-utils', () => {
 
     it('should return 0 for expired tokens', () => {
       // Token expired at 2024-01-01T11:00:00Z
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMDY4MDB9.signature';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQxMDY4MDB9.signature';
       expect(getTokenTimeRemaining(token)).toBe(0);
     });
 

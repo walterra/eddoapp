@@ -13,9 +13,7 @@ interface MarkdownValidationResult {
  * Validates if a string is valid markdown using marked parser
  * If marked can parse it without errors, it's considered valid
  */
-export function validateTelegramMarkdown(
-  text: string,
-): MarkdownValidationResult {
+export function validateTelegramMarkdown(text: string): MarkdownValidationResult {
   if (!text || typeof text !== 'string') {
     return { isValid: false, error: 'Empty or invalid text' };
   }

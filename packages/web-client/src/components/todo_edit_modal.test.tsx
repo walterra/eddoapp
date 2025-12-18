@@ -1,8 +1,4 @@
-import {
-  type DatabaseError,
-  DatabaseErrorType,
-  type TodoAlpha3,
-} from '@eddo/core-client';
+import { type DatabaseError, DatabaseErrorType, type TodoAlpha3 } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,12 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../test-polyfill';
 import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
-import {
-  createTestTodo,
-  populateTestDatabase,
-  renderWithPouchDb,
-  testTodos,
-} from '../test-utils';
+import { createTestTodo, populateTestDatabase, renderWithPouchDb, testTodos } from '../test-utils';
 import { TodoEditModal } from './todo_edit_modal';
 
 // Mock child components to avoid complex dependencies
@@ -128,9 +119,7 @@ describe('TodoEditModal', () => {
       });
 
       expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Delete' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     });
   });
 
@@ -182,10 +171,9 @@ describe('TodoEditModal', () => {
         ...testTodos.withLink,
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithLink} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithLink} />, {
+        testDb: testDb.contextValue,
+      });
 
       const linkInput = screen.getByLabelText('Link');
       expect(linkInput).toHaveValue('https://example.com');
@@ -219,10 +207,9 @@ describe('TodoEditModal', () => {
         due: '2025-07-12T23:59:59.999Z',
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithTime} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTime} />, {
+        testDb: testDb.contextValue,
+      });
 
       await user.click(screen.getByRole('button', { name: 'Set to today' }));
 
@@ -251,10 +238,9 @@ describe('TodoEditModal', () => {
         ...testTodos.repeating,
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithRepeat} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithRepeat} />, {
+        testDb: testDb.contextValue,
+      });
 
       const repeatInput = screen.getByLabelText('Repeat');
       expect(repeatInput).toHaveValue('1');
@@ -303,17 +289,12 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithTracking} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+        testDb: testDb.contextValue,
+      });
 
-      expect(
-        screen.getByDisplayValue('2025-07-12T14:00:00.000Z'),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByDisplayValue('2025-07-12T15:00:00.000Z'),
-      ).toBeInTheDocument();
+      expect(screen.getByDisplayValue('2025-07-12T14:00:00.000Z')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('2025-07-12T15:00:00.000Z')).toBeInTheDocument();
       expect(screen.getByText('1h')).toBeInTheDocument();
     });
 
@@ -329,10 +310,9 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithTracking} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+        testDb: testDb.contextValue,
+      });
 
       const fromInput = screen.getByDisplayValue('2025-07-12T14:00:00.000Z');
       fireEvent.change(fromInput, {
@@ -355,10 +335,9 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithTracking} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+        testDb: testDb.contextValue,
+      });
 
       const toInput = screen.getByDisplayValue('2025-07-12T15:00:00.000Z');
       fireEvent.change(toInput, {
@@ -384,10 +363,9 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithTracking} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+        testDb: testDb.contextValue,
+      });
 
       const fromInput = screen.getByDisplayValue('2025-07-12T14:00:00.000Z');
       await user.clear(fromInput);
@@ -405,11 +383,7 @@ describe('TodoEditModal', () => {
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
       renderWithPouchDb(
-        <TodoEditModal
-          {...defaultProps}
-          onClose={onClose}
-          todo={todoFromDb as TodoAlpha3}
-        />,
+        <TodoEditModal {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -439,11 +413,7 @@ describe('TodoEditModal', () => {
       const todoFromDb = await testDb.db.get(testTodos.repeating._id);
 
       renderWithPouchDb(
-        <TodoEditModal
-          {...defaultProps}
-          onClose={onClose}
-          todo={todoFromDb as TodoAlpha3}
-        />,
+        <TodoEditModal {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -480,12 +450,8 @@ describe('TodoEditModal', () => {
       user.click(saveButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: 'Saving...' }),
-        ).toBeInTheDocument();
-        expect(
-          screen.getByRole('button', { name: 'Saving...' }),
-        ).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Saving...' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
       });
 
       resolveSave!();
@@ -504,10 +470,9 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={todoWithTracking} />,
-        { testDb: testDb.contextValue },
-      );
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+        testDb: testDb.contextValue,
+      });
 
       // Make time tracking invalid
       const fromInput = screen.getByDisplayValue('2025-07-12T14:00:00.000Z');
@@ -558,9 +523,7 @@ describe('TodoEditModal', () => {
       await user.click(screen.getByRole('button', { name: 'Save' }));
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/this todo was modified by another device/i),
-        ).toBeInTheDocument();
+        expect(screen.getByText(/this todo was modified by another device/i)).toBeInTheDocument();
       });
     });
   });
@@ -573,11 +536,7 @@ describe('TodoEditModal', () => {
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
       renderWithPouchDb(
-        <TodoEditModal
-          {...defaultProps}
-          onClose={onClose}
-          todo={todoFromDb as TodoAlpha3}
-        />,
+        <TodoEditModal {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -603,9 +562,7 @@ describe('TodoEditModal', () => {
       const deletePromise = new Promise<void>((resolve) => {
         resolveDelete = resolve;
       });
-      testDb.contextValue.safeDb.safeRemove = vi
-        .fn()
-        .mockReturnValue(deletePromise);
+      testDb.contextValue.safeDb.safeRemove = vi.fn().mockReturnValue(deletePromise);
 
       renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -615,12 +572,8 @@ describe('TodoEditModal', () => {
       user.click(deleteButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: 'Deleting...' }),
-        ).toBeInTheDocument();
-        expect(
-          screen.getByRole('button', { name: 'Deleting...' }),
-        ).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Deleting...' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Deleting...' })).toBeDisabled();
       });
 
       resolveDelete!();
@@ -635,9 +588,7 @@ describe('TodoEditModal', () => {
         retryable: true,
       };
 
-      testDb.contextValue.safeDb.safeRemove = vi
-        .fn()
-        .mockRejectedValue(mockError);
+      testDb.contextValue.safeDb.safeRemove = vi.fn().mockRejectedValue(mockError);
 
       renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -719,22 +670,14 @@ describe('TodoEditModal', () => {
   describe('Modal State Management', () => {
     it('resets edited todo when todo prop changes', () => {
       const { rerender } = renderWithPouchDb(
-        <TodoEditModal
-          {...defaultProps}
-          todo={testTodos.active as TodoAlpha3}
-        />,
+        <TodoEditModal {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
       expect(screen.getByDisplayValue('Active Todo')).toBeInTheDocument();
 
       // Change the todo prop
-      rerender(
-        <TodoEditModal
-          {...defaultProps}
-          todo={testTodos.withTags as TodoAlpha3}
-        />,
-      );
+      rerender(<TodoEditModal {...defaultProps} todo={testTodos.withTags as TodoAlpha3} />);
 
       expect(screen.getByDisplayValue('Tagged Todo')).toBeInTheDocument();
     });
@@ -751,10 +694,9 @@ describe('TodoEditModal', () => {
       expect(titleInput).toHaveValue('Modified Title');
 
       // Re-render with same props should maintain the edited state
-      const { rerender } = renderWithPouchDb(
-        <TodoEditModal {...defaultProps} />,
-        { testDb: testDb.contextValue },
-      );
+      const { rerender } = renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
 
       rerender(<TodoEditModal {...defaultProps} />);
 

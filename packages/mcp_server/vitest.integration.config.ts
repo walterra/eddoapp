@@ -37,8 +37,7 @@ export default defineConfig({
       // Allow custom test database URL
       COUCHDB_TEST_URL: process.env.COUCHDB_TEST_URL,
       // Add required COUCHDB_URL from .env file
-      COUCHDB_URL:
-        process.env.COUCHDB_URL || 'http://admin:password@localhost:5984',
+      COUCHDB_URL: process.env.COUCHDB_URL || 'http://admin:password@localhost:5984',
     },
 
     // Enable debugging to see what's happening

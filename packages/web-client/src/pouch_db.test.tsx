@@ -52,9 +52,7 @@ describe('PouchDB Context and Hook', () => {
 
     it('should return context when used within provider', () => {
       const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <PouchDbContext.Provider value={testContext}>
-          {children}
-        </PouchDbContext.Provider>
+        <PouchDbContext.Provider value={testContext}>{children}</PouchDbContext.Provider>
       );
 
       const { result } = renderHook(() => usePouchDb(), { wrapper });
@@ -96,9 +94,7 @@ describe('PouchDB Context and Hook', () => {
 
   describe('Real database operations integration', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <PouchDbContext.Provider value={testContext}>
-        {children}
-      </PouchDbContext.Provider>
+      <PouchDbContext.Provider value={testContext}>{children}</PouchDbContext.Provider>
     );
 
     it('should perform real database put and get operations', async () => {
@@ -144,17 +140,14 @@ describe('PouchDB Context and Hook', () => {
       const { result } = renderHook(() => usePouchDb(), { wrapper });
 
       // This should not throw
-      const healthCheck =
-        await result.current.healthMonitor.performHealthCheck();
+      const healthCheck = await result.current.healthMonitor.performHealthCheck();
       expect(healthCheck).toBeDefined();
     });
   });
 
   describe('Health monitoring with real database', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <PouchDbContext.Provider value={testContext}>
-        {children}
-      </PouchDbContext.Provider>
+      <PouchDbContext.Provider value={testContext}>{children}</PouchDbContext.Provider>
     );
 
     it('should return current metrics for memory database', () => {
@@ -168,9 +161,7 @@ describe('PouchDB Context and Hook', () => {
 
   describe('Changes feed with real database', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <PouchDbContext.Provider value={testContext}>
-        {children}
-      </PouchDbContext.Provider>
+      <PouchDbContext.Provider value={testContext}>{children}</PouchDbContext.Provider>
     );
 
     it('should provide working changes function', async () => {

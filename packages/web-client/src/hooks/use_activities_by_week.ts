@@ -29,24 +29,15 @@ export function useActivitiesByWeek({
   const { safeDb } = usePouchDb();
 
   return useQuery({
-    queryKey: [
-      'activities',
-      'byActive',
-      startDate.toISOString(),
-      endDate.toISOString(),
-    ],
+    queryKey: ['activities', 'byActive', startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
       console.time('fetchActivities');
-      const activities = await safeDb.safeQuery<Activity>(
-        'todos_by_active',
-        'byActive',
-        {
-          descending: false,
-          endkey: endDate.toISOString(),
-          include_docs: false,
-          startkey: startDate.toISOString(),
-        },
-      );
+      const activities = await safeDb.safeQuery<Activity>('todos_by_active', 'byActive', {
+        descending: false,
+        endkey: endDate.toISOString(),
+        include_docs: false,
+        startkey: startDate.toISOString(),
+      });
       console.timeEnd('fetchActivities');
       return activities;
     },

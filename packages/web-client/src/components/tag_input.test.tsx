@@ -20,16 +20,8 @@ describe('TagInput', () => {
     });
 
     it('renders with custom placeholder', () => {
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          placeholder="Custom placeholder"
-          tags={[]}
-        />,
-      );
-      expect(
-        screen.getByPlaceholderText('Custom placeholder'),
-      ).toBeInTheDocument();
+      render(<TagInput onChange={mockOnChange} placeholder="Custom placeholder" tags={[]} />);
+      expect(screen.getByPlaceholderText('Custom placeholder')).toBeInTheDocument();
     });
 
     it('displays existing tags', () => {
@@ -141,13 +133,7 @@ describe('TagInput', () => {
 
     it('shows suggestions when typing', async () => {
       const user = userEvent.setup();
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          suggestions={suggestions}
-          tags={[]}
-        />,
-      );
+      render(<TagInput onChange={mockOnChange} suggestions={suggestions} tags={[]} />);
 
       const input = screen.getByRole('textbox');
       await user.type(input, 'wo');
@@ -157,13 +143,7 @@ describe('TagInput', () => {
 
     it('filters suggestions based on input', async () => {
       const user = userEvent.setup();
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          suggestions={suggestions}
-          tags={[]}
-        />,
-      );
+      render(<TagInput onChange={mockOnChange} suggestions={suggestions} tags={[]} />);
 
       const input = screen.getByRole('textbox');
       await user.type(input, 'urg');
@@ -174,13 +154,7 @@ describe('TagInput', () => {
 
     it('excludes already selected tags from suggestions', async () => {
       const user = userEvent.setup();
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          suggestions={suggestions}
-          tags={['work']}
-        />,
-      );
+      render(<TagInput onChange={mockOnChange} suggestions={suggestions} tags={['work']} />);
 
       const input = screen.getByRole('textbox');
       await user.type(input, 'w');
@@ -189,8 +163,7 @@ describe('TagInput', () => {
       // but not in the suggestions dropdown
       const suggestionButtons = screen.queryAllByRole('button');
       const workSuggestion = suggestionButtons.find(
-        (button) =>
-          button.textContent === 'work' && !button.textContent?.includes('×'),
+        (button) => button.textContent === 'work' && !button.textContent?.includes('×'),
       );
       expect(workSuggestion).toBeUndefined();
     });
@@ -198,13 +171,7 @@ describe('TagInput', () => {
     it('adds tag when suggestion is clicked', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          suggestions={suggestions}
-          tags={[]}
-        />,
-      );
+      render(<TagInput onChange={mockOnChange} suggestions={suggestions} tags={[]} />);
 
       const input = screen.getByRole('textbox');
 
@@ -215,8 +182,7 @@ describe('TagInput', () => {
       await waitFor(() => {
         const suggestionButtons = screen.queryAllByRole('button');
         const workButton = suggestionButtons.find(
-          (btn) =>
-            btn.textContent === 'work' && btn.className.includes('w-full'),
+          (btn) => btn.textContent === 'work' && btn.className.includes('w-full'),
         );
         expect(workButton).toBeDefined();
       });
@@ -231,13 +197,7 @@ describe('TagInput', () => {
     it('shows maximum 5 suggestions', async () => {
       const user = userEvent.setup();
       const manySuggestions = Array.from({ length: 10 }, (_, i) => `tag${i}`);
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          suggestions={manySuggestions}
-          tags={[]}
-        />,
-      );
+      render(<TagInput onChange={mockOnChange} suggestions={manySuggestions} tags={[]} />);
 
       const input = screen.getByRole('textbox');
       await user.type(input, 'tag');
@@ -249,13 +209,7 @@ describe('TagInput', () => {
 
     it('shows suggestions on focus if input has value', async () => {
       const user = userEvent.setup();
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          suggestions={suggestions}
-          tags={[]}
-        />,
-      );
+      render(<TagInput onChange={mockOnChange} suggestions={suggestions} tags={[]} />);
 
       const input = screen.getByRole('textbox');
       await user.type(input, 'wo');
@@ -267,13 +221,7 @@ describe('TagInput', () => {
 
     it('hides suggestions when Escape is pressed', async () => {
       const user = userEvent.setup();
-      render(
-        <TagInput
-          onChange={mockOnChange}
-          suggestions={suggestions}
-          tags={[]}
-        />,
-      );
+      render(<TagInput onChange={mockOnChange} suggestions={suggestions} tags={[]} />);
 
       const input = screen.getByRole('textbox');
       await user.type(input, 'wo');

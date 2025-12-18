@@ -44,11 +44,7 @@ export class EddoAgent {
     });
 
     try {
-      const result = await this.workflow.execute(
-        userMessage,
-        userId,
-        telegramContext,
-      );
+      const result = await this.workflow.execute(userMessage, userId, telegramContext);
 
       const duration = Date.now() - startTime;
       logger.info('Agent processing completed', {

@@ -154,7 +154,7 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 - Tests use describe/it pattern with Vitest
 - Place test files alongside implementation with .test.ts/.test.tsx extension
 - ESLint strict ruleset with no-explicit-any rule enabled
-- ESLint complexity guards (max-lines:300, max-lines-per-function:50, complexity:10, max-depth:3, max-params:4, max-nested-callbacks:4, max-statements:30)
+- ESLint complexity guards as warnings (max-lines:300, max-lines-per-function:50, complexity:10, max-depth:3, max-params:4, max-nested-callbacks:4, max-statements:30) - set to warn to allow gradual improvement
 - Prettier formatting with 2-space indent and 100-char line width
 - Single quotes, trailing commas
 - Semantic versioning with Changesets following conventional commits

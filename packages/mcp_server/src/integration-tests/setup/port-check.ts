@@ -8,12 +8,7 @@ export async function checkPortAvailable(port: number): Promise<boolean> {
     const server = net.createServer();
 
     server.once('error', (err: unknown) => {
-      if (
-        err &&
-        typeof err === 'object' &&
-        'code' in err &&
-        err.code === 'EADDRINUSE'
-      ) {
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'EADDRINUSE') {
         resolve(false);
       } else {
         resolve(false);

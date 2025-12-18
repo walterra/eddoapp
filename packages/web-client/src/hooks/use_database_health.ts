@@ -24,9 +24,7 @@ export interface DatabaseHealthState {
  */
 export const useDatabaseHealth = (): DatabaseHealthState => {
   const { healthMonitor } = usePouchDb();
-  const [healthCheck, setHealthCheck] = useState<DatabaseHealthCheck | null>(
-    null,
-  );
+  const [healthCheck, setHealthCheck] = useState<DatabaseHealthCheck | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
 
   useEffect(() => {

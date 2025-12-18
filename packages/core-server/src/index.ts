@@ -79,16 +79,8 @@ export {
 } from './config';
 
 // Server-specific API
-export {
-  createDatabase,
-  type DatabaseConfig,
-  type DatabaseFactory,
-} from './api/database-factory';
-export {
-  UserRegistry,
-  createTestUserRegistry,
-  createUserRegistry,
-} from './api/user-registry';
+export { createDatabase, type DatabaseConfig, type DatabaseFactory } from './api/database-factory';
+export { UserRegistry, createTestUserRegistry, createUserRegistry } from './api/user-registry';
 
 // Server-specific utilities
 export {

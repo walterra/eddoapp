@@ -21,32 +21,19 @@ interface UseTodosByWeekParams {
  * @param enabled - Whether the query should run (default: true if safeDb exists)
  * @returns TanStack Query result with todos data, loading, and error states
  */
-export function useTodosByWeek({
-  startDate,
-  endDate,
-  enabled = true,
-}: UseTodosByWeekParams) {
+export function useTodosByWeek({ startDate, endDate, enabled = true }: UseTodosByWeekParams) {
   const { safeDb } = usePouchDb();
 
   return useQuery({
-    queryKey: [
-      'todos',
-      'byDueDate',
-      startDate.toISOString(),
-      endDate.toISOString(),
-    ],
+    queryKey: ['todos', 'byDueDate', startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
       console.time('fetchTodos');
-      const todos = await safeDb.safeQuery<Todo>(
-        'todos_by_due_date',
-        'byDueDate',
-        {
-          descending: false,
-          endkey: endDate.toISOString(),
-          include_docs: false,
-          startkey: startDate.toISOString(),
-        },
-      );
+      const todos = await safeDb.safeQuery<Todo>('todos_by_due_date', 'byDueDate', {
+        descending: false,
+        endkey: endDate.toISOString(),
+        include_docs: false,
+        startkey: startDate.toISOString(),
+      });
       console.timeEnd('fetchTodos');
       return todos;
     },

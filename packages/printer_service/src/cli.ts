@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import {
-  printBriefing,
-  printTestPage,
-  testConnection,
-} from './printer/client.js';
+import { printBriefing, printTestPage, testConnection } from './printer/client.js';
 import { formatBriefingForPrint } from './printer/formatter.js';
 import { appConfig } from './utils/config.js';
 
@@ -38,10 +34,7 @@ Have a productive day!
 
 const program = new Command();
 
-program
-  .name('printer')
-  .description('Eddo Printer Service CLI')
-  .version('0.1.0');
+program.name('printer').description('Eddo Printer Service CLI').version('0.1.0');
 
 /**
  * Test printer connection
@@ -63,9 +56,7 @@ program
         console.log('');
         console.log('Printer Information:');
         console.log(`  Type: ${result.printerInfo.type}`);
-        console.log(
-          `  Address: ${result.printerInfo.ipAddress}:${result.printerInfo.port}`,
-        );
+        console.log(`  Address: ${result.printerInfo.ipAddress}:${result.printerInfo.port}`);
       }
     } else {
       console.error('❌ Printer connection failed');

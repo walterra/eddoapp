@@ -1,9 +1,5 @@
 import { createBot } from './bot/bot.js';
-import {
-  handleBriefing,
-  handleBriefingOff,
-  handleBriefingOn,
-} from './bot/commands/briefing.js';
+import { handleBriefing, handleBriefingOff, handleBriefingOn } from './bot/commands/briefing.js';
 import { handleLink, handleUnlink } from './bot/commands/link.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
@@ -13,8 +9,7 @@ import { appConfig } from './utils/config.js';
 import { logger } from './utils/logger.js';
 
 // Global references for cleanup
-let globalScheduler: ReturnType<typeof createDailyBriefingScheduler> | null =
-  null;
+let globalScheduler: ReturnType<typeof createDailyBriefingScheduler> | null = null;
 
 /**
  * Main application entry point
@@ -79,9 +74,7 @@ async function main(): Promise<void> {
 
     logger.info('🎩 Eddo Bot is now running and ready to serve!');
     logger.info('📡 Connect your Telegram bot and start chatting!');
-    logger.info(
-      '🌅 Daily briefings will be sent at user-preferred times to opted-in users',
-    );
+    logger.info('🌅 Daily briefings will be sent at user-preferred times to opted-in users');
   } catch (error) {
     logger.error('Failed to start bot', { error });
     process.exit(1);

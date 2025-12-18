@@ -156,9 +156,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
   },
 
   /** Create or update a document */
-  safePut: async <T>(
-    doc: T & { _id: string },
-  ): Promise<T & { _rev: string }> => {
+  safePut: async <T>(doc: T & { _id: string }): Promise<T & { _rev: string }> => {
     try {
       const result = await withRetry(() => db.put(doc), 'put', doc._id);
 
@@ -178,9 +176,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
   },
 
   /** Fetch multiple documents with options */
-  safeAllDocs: async <T>(
-    options: PouchDB.Core.AllDocsOptions = {},
-  ): Promise<T[]> => {
+  safeAllDocs: async <T>(options: PouchDB.Core.AllDocsOptions = {}): Promise<T[]> => {
     try {
       const result = await withRetry(
         () => db.allDocs({ include_docs: true, ...options }),
@@ -199,10 +195,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
   ): Promise<(T & { _rev: string })[]> => {
     try {
       const results = (await withRetry(
-        () =>
-          db.bulkDocs(
-            docs as PouchDB.Core.PutDocument<Record<string, unknown>>[],
-          ),
+        () => db.bulkDocs(docs as PouchDB.Core.PutDocument<Record<string, unknown>>[]),
         'bulkDocs',
       )) as Array<{ ok: boolean; id: string; rev: string } | { error: string }>;
 
@@ -240,10 +233,7 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
   safeQuery: async <T>(
     designDoc: string,
     viewName: string,
-    options: PouchDB.Query.Options<
-      Record<string, unknown>,
-      Record<string, unknown>
-    > = {},
+    options: PouchDB.Query.Options<Record<string, unknown>, Record<string, unknown>> = {},
   ): Promise<T[]> => {
     try {
       const result = await withRetry(

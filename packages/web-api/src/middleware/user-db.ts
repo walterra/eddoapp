@@ -1,8 +1,4 @@
-import {
-  createEnv,
-  createUserRegistry,
-  getUserDatabaseName,
-} from '@eddo/core-server';
+import { createEnv, createUserRegistry, getUserDatabaseName } from '@eddo/core-server';
 import { createMiddleware } from 'hono/factory';
 import jwt from 'jsonwebtoken';
 
@@ -146,12 +142,9 @@ export async function proxyUserCouchDBRequest(
     });
   } catch (error) {
     console.error('User CouchDB proxy error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Database connection failed' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
+    return new Response(JSON.stringify({ error: 'Database connection failed' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

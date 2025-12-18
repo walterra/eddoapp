@@ -138,9 +138,7 @@ export interface WorkflowState {
 /**
  * Node function type for LangGraph nodes
  */
-export type WorkflowNode = (
-  state: WorkflowState,
-) => Promise<Partial<WorkflowState>>;
+export type WorkflowNode = (state: WorkflowState) => Promise<Partial<WorkflowState>>;
 
 /**
  * Routing function type for conditional edges

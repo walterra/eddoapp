@@ -29,9 +29,7 @@ interface UserRegistryExtendedOperations {
   createUserContext: (entry: UserRegistryEntry) => UserContext;
 }
 
-interface UserRegistryInstance
-  extends UserRegistryOperations,
-    UserRegistryExtendedOperations {}
+interface UserRegistryInstance extends UserRegistryOperations, UserRegistryExtendedOperations {}
 
 /**
  * Create a user registry instance with all operations
@@ -53,20 +51,16 @@ export function createUserRegistry(
 
   return {
     findByUsername: (username: string) => findByUsername(context, username),
-    findByTelegramId: (telegramId: number) =>
-      findByTelegramId(context, telegramId),
+    findByTelegramId: (telegramId: number) => findByTelegramId(context, telegramId),
     findByEmail: (email: string) => findByEmail(context, email),
-    create: (entry: Omit<UserRegistryEntry, '_id' | '_rev'>) =>
-      create(context, entry),
-    update: (id: string, updates: Partial<UserRegistryEntry>) =>
-      update(context, id, updates),
+    create: (entry: Omit<UserRegistryEntry, '_id' | '_rev'>) => create(context, entry),
+    update: (id: string, updates: Partial<UserRegistryEntry>) => update(context, id, updates),
     list: () => list(context),
     delete: (id: string) => deleteEntry(context, id),
     ensureDatabase: () => ensureDatabase(context),
     setupDesignDocuments: () => setupDesignDocuments(context),
     createUserContext: (entry: UserRegistryEntry) => createUserContext(entry),
-    ensureUserDatabase: (username: string) =>
-      ensureUserDatabase(context, username),
+    ensureUserDatabase: (username: string) => ensureUserDatabase(context, username),
     getUserDatabase: (username: string) => getUserDatabase(context, username),
   };
 }
@@ -79,12 +73,7 @@ async function ensureDatabase(context: UserRegistryContext): Promise<void> {
   try {
     await context.couchConnection.db.get(dbName);
   } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 404
-    ) {
+    if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
       // Database doesn't exist, create it
       await context.couchConnection.db.create(dbName);
       console.log(`Created user registry database: ${dbName}`);
@@ -105,12 +94,7 @@ async function findByUsername(
     const doc = await context.db.get(id);
     return migrateIfNeeded(context, doc as UserRegistryEntry);
   } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 404
-    ) {
+    if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
       return null;
     }
     throw error;
@@ -135,12 +119,7 @@ async function findByTelegramId(
     const doc = result.rows[0].doc;
     return doc ? migrateIfNeeded(context, doc as UserRegistryEntry) : null;
   } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 404
-    ) {
+    if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
       return null;
     }
     throw error;
@@ -165,12 +144,7 @@ async function findByEmail(
     const doc = result.rows[0].doc;
     return doc ? migrateIfNeeded(context, doc as UserRegistryEntry) : null;
   } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 404
-    ) {
+    if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
       return null;
     }
     throw error;
@@ -224,19 +198,14 @@ async function update(
   return { ...updated, _rev: result.rev };
 }
 
-async function list(
-  context: UserRegistryContext,
-): Promise<UserRegistryEntry[]> {
+async function list(context: UserRegistryContext): Promise<UserRegistryEntry[]> {
   const result = await context.db.list({ include_docs: true });
   return result.rows
     .filter((row) => row.doc && !row.id.startsWith('_design/'))
     .map((row) => migrateIfNeeded(context, row.doc! as UserRegistryEntry));
 }
 
-async function deleteEntry(
-  context: UserRegistryContext,
-  id: string,
-): Promise<void> {
+async function deleteEntry(context: UserRegistryContext, id: string): Promise<void> {
   const existing = await context.db.get(id);
   await context.db.destroy(id, existing._rev!);
 }
@@ -276,20 +245,12 @@ function migrateIfNeeded(
 /**
  * Ensure user database exists for a user
  */
-async function ensureUserDatabase(
-  context: UserRegistryContext,
-  username: string,
-): Promise<void> {
+async function ensureUserDatabase(context: UserRegistryContext, username: string): Promise<void> {
   const dbName = getUserDatabaseName(context.env, username);
   try {
     await context.couchConnection.db.get(dbName);
   } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'statusCode' in error &&
-      error.statusCode === 404
-    ) {
+    if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
       // Database doesn't exist, create it
       await context.couchConnection.db.create(dbName);
       console.log(`Created user database: ${dbName}`);
@@ -313,9 +274,7 @@ function getUserDatabase(
 /**
  * Setup design documents for user registry
  */
-async function setupDesignDocuments(
-  context: UserRegistryContext,
-): Promise<void> {
+async function setupDesignDocuments(context: UserRegistryContext): Promise<void> {
   const designDoc = {
     _id: '_design/queries',
     views: {
@@ -365,12 +324,7 @@ async function setupDesignDocuments(
       console.log('Created design document: _design/queries');
       break; // Success, exit retry loop
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 409
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 409) {
         try {
           // Design document exists, try to update it
           const existing = await context.db.get('_design/queries');
@@ -389,9 +343,7 @@ async function setupDesignDocuments(
               console.warn(
                 `Design document conflict (attempt ${attempt}/${maxRetries}), retrying...`,
               );
-              await new Promise((resolve) =>
-                setTimeout(resolve, 200 * attempt),
-              );
+              await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
               continue;
             } else {
               console.error('Design document update failed after retries');
@@ -432,22 +384,13 @@ export async function createTestUserRegistry(
   async function ensureTestDatabase(): Promise<void> {
     try {
       await couchConnection.db.get(testConfig.dbName);
-      console.log(
-        `Test user registry database already exists: ${testConfig.dbName}`,
-      );
+      console.log(`Test user registry database already exists: ${testConfig.dbName}`);
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
         // Database doesn't exist, create it
         try {
           await couchConnection.db.create(testConfig.dbName);
-          console.log(
-            `Created test user registry database: ${testConfig.dbName}`,
-          );
+          console.log(`Created test user registry database: ${testConfig.dbName}`);
         } catch (createError: unknown) {
           if (
             createError &&
@@ -456,9 +399,7 @@ export async function createTestUserRegistry(
             createError.statusCode === 412
           ) {
             // Database already exists, which is fine
-            console.log(
-              `Test user registry database already exists: ${testConfig.dbName}`,
-            );
+            console.log(`Test user registry database already exists: ${testConfig.dbName}`);
           } else {
             throw createError;
           }
@@ -472,19 +413,16 @@ export async function createTestUserRegistry(
   return {
     create: (entry: CreateUserRegistryEntry) => create(context, entry),
     findByUsername: (username: string) => findByUsername(context, username),
-    findByTelegramId: (telegramId: number) =>
-      findByTelegramId(context, telegramId),
+    findByTelegramId: (telegramId: number) => findByTelegramId(context, telegramId),
     findByEmail: (email: string) => findByEmail(context, email),
-    update: (id: string, updates: UpdateUserRegistryEntry) =>
-      update(context, id, updates),
+    update: (id: string, updates: UpdateUserRegistryEntry) => update(context, id, updates),
     list: () => list(context),
     delete: (id: string) => deleteEntry(context, id),
     setupDatabase: async () => {
       await ensureTestDatabase();
       await setupDesignDocuments(context);
     },
-    ensureUserDatabase: (username: string) =>
-      ensureUserDatabase(context, username),
+    ensureUserDatabase: (username: string) => ensureUserDatabase(context, username),
     getUserDatabase: (username: string) => getUserDatabase(context, username),
   };
 }

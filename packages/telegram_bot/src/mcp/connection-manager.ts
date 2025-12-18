@@ -61,12 +61,8 @@ export class MCPConnectionManager {
    */
   getMetrics(): ConnectionMetrics {
     // Update total uptime if currently connected
-    if (
-      this.state === ConnectionState.CONNECTED &&
-      this.metrics.currentSessionStart
-    ) {
-      const sessionUptime =
-        Date.now() - this.metrics.currentSessionStart.getTime();
+    if (this.state === ConnectionState.CONNECTED && this.metrics.currentSessionStart) {
+      const sessionUptime = Date.now() - this.metrics.currentSessionStart.getTime();
       return {
         ...this.metrics,
         totalUptime: this.metrics.totalUptime + sessionUptime,
@@ -116,16 +112,13 @@ export class MCPConnectionManager {
       });
 
       // Create transport without API key - authentication handled per-request
-      this.transport = new StreamableHTTPClientTransport(
-        new URL(appConfig.MCP_SERVER_URL),
-        {
-          requestInit: {
-            headers: {
-              'Content-Type': 'application/json',
-            },
+      this.transport = new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
+        requestInit: {
+          headers: {
+            'Content-Type': 'application/json',
           },
         },
-      );
+      });
 
       // Create client
       this.client = new Client(
@@ -243,8 +236,7 @@ export class MCPConnectionManager {
   private async handleConnectionFailure(): Promise<void> {
     // Update metrics
     if (this.metrics.currentSessionStart) {
-      const sessionUptime =
-        Date.now() - this.metrics.currentSessionStart.getTime();
+      const sessionUptime = Date.now() - this.metrics.currentSessionStart.getTime();
       this.metrics.totalUptime += sessionUptime;
       this.metrics.currentSessionStart = undefined;
     }
@@ -335,19 +327,16 @@ export class MCPConnectionManager {
 
     try {
       // Create a user-specific transport for this request
-      const userTransport = new StreamableHTTPClientTransport(
-        new URL(appConfig.MCP_SERVER_URL),
-        {
-          requestInit: {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-User-ID': userContext.username,
-              'X-Database-Name': userContext.databaseName,
-              'X-Telegram-ID': userContext.telegramId.toString(),
-            },
+      const userTransport = new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
+        requestInit: {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': userContext.username,
+            'X-Database-Name': userContext.databaseName,
+            'X-Telegram-ID': userContext.telegramId.toString(),
           },
         },
-      );
+      });
 
       // Create a temporary client with user-specific authentication
       const userClient = new Client(
@@ -461,8 +450,7 @@ export class MCPConnectionManager {
 
     // Update final metrics
     if (this.metrics.currentSessionStart) {
-      const sessionUptime =
-        Date.now() - this.metrics.currentSessionStart.getTime();
+      const sessionUptime = Date.now() - this.metrics.currentSessionStart.getTime();
       this.metrics.totalUptime += sessionUptime;
       this.metrics.currentSessionStart = undefined;
     }

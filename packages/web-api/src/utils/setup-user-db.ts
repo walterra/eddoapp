@@ -1,13 +1,5 @@
-import {
-  createEnv,
-  createUserRegistry,
-  getUserDatabaseName,
-} from '@eddo/core-server';
-import {
-  DESIGN_DOCS,
-  REQUIRED_INDEXES,
-  type DesignDocument,
-} from '@eddo/core-shared';
+import { createEnv, createUserRegistry, getUserDatabaseName } from '@eddo/core-server';
+import { DESIGN_DOCS, REQUIRED_INDEXES, type DesignDocument } from '@eddo/core-shared';
 import type { DocumentScope } from 'nano';
 
 /**
@@ -32,9 +24,7 @@ export async function setupUserDatabase(username: string): Promise<void> {
   if (!userRegistry.getUserDatabase) {
     throw new Error('User registry does not support user database operations');
   }
-  const userDb = userRegistry.getUserDatabase(username) as DocumentScope<
-    Record<string, unknown>
-  >;
+  const userDb = userRegistry.getUserDatabase(username) as DocumentScope<Record<string, unknown>>;
 
   // Setup design documents
   await setupDesignDocuments(userDb);
@@ -48,9 +38,7 @@ export async function setupUserDatabase(username: string): Promise<void> {
 /**
  * Create design documents in the user database
  */
-async function setupDesignDocuments(
-  db: DocumentScope<Record<string, unknown>>,
-): Promise<void> {
+async function setupDesignDocuments(db: DocumentScope<Record<string, unknown>>): Promise<void> {
   console.log('📝 Setting up design documents...');
 
   for (const designDoc of DESIGN_DOCS) {
@@ -73,8 +61,7 @@ async function setupDesignDocuments(
 
       // Check if update is needed
       const needsUpdate =
-        !existingDoc ||
-        JSON.stringify(existingDoc.views) !== JSON.stringify(designDoc.views);
+        !existingDoc || JSON.stringify(existingDoc.views) !== JSON.stringify(designDoc.views);
 
       if (needsUpdate) {
         // Update or create the design document
@@ -89,10 +76,7 @@ async function setupDesignDocuments(
         console.log(`✅ Design document ${designDoc._id} already up to date`);
       }
     } catch (error) {
-      console.error(
-        `❌ Failed to setup design document ${designDoc._id}:`,
-        error,
-      );
+      console.error(`❌ Failed to setup design document ${designDoc._id}:`, error);
       throw error;
     }
   }
@@ -102,9 +86,7 @@ async function setupDesignDocuments(
  * Create indexes in the user database
  * Uses nano's built-in createIndex method
  */
-async function setupIndexes(
-  db: DocumentScope<Record<string, unknown>>,
-): Promise<void> {
+async function setupIndexes(db: DocumentScope<Record<string, unknown>>): Promise<void> {
   console.log('🔍 Setting up indexes...');
 
   for (const indexDef of REQUIRED_INDEXES) {
@@ -168,13 +150,9 @@ export async function verifyUserDatabase(username: string): Promise<boolean> {
 
   try {
     if (!userRegistry.getUserDatabase) {
-      throw new Error(
-        'User registry does not support user database operations',
-      );
+      throw new Error('User registry does not support user database operations');
     }
-    const userDb = userRegistry.getUserDatabase(username) as DocumentScope<
-      Record<string, unknown>
-    >;
+    const userDb = userRegistry.getUserDatabase(username) as DocumentScope<Record<string, unknown>>;
 
     // Check design documents
     for (const designDoc of DESIGN_DOCS) {
@@ -190,10 +168,7 @@ export async function verifyUserDatabase(username: string): Promise<boolean> {
     console.log(`✅ User database verification passed for: ${username}`);
     return true;
   } catch (error) {
-    console.error(
-      `❌ User database verification failed for ${username}:`,
-      error,
-    );
+    console.error(`❌ User database verification failed for ${username}:`, error);
     return false;
   }
 }

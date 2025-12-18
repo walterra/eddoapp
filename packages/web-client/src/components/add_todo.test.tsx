@@ -39,13 +39,7 @@ vi.mock('../hooks/use_tags', () => ({
 
 // Mock child components that might have complex dependencies
 vi.mock('./database_error_message', () => ({
-  DatabaseErrorMessage: ({
-    error,
-    onDismiss,
-  }: {
-    error: DatabaseError;
-    onDismiss: () => void;
-  }) => (
+  DatabaseErrorMessage: ({ error, onDismiss }: { error: DatabaseError; onDismiss: () => void }) => (
     <div data-testid="error-message">
       {error.message}
       <button onClick={onDismiss}>Dismiss</button>
@@ -124,9 +118,7 @@ describe('AddTodo Component', () => {
       expect(screen.getByLabelText('New todo')).toBeInTheDocument();
       expect(screen.getByLabelText('Link')).toBeInTheDocument();
       expect(screen.getByLabelText('Due date')).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Add todo' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add todo' })).toBeInTheDocument();
     });
 
     it('should display current calendar week', () => {
@@ -149,9 +141,7 @@ describe('AddTodo Component', () => {
 
       render(<AddTodo {...defaultProps} />);
 
-      const dueDateInput = screen.getByLabelText(
-        'Due date',
-      ) as HTMLInputElement;
+      const dueDateInput = screen.getByLabelText('Due date') as HTMLInputElement;
       const expectedDate = format(mockToday, 'yyyy-MM-dd');
       expect(dueDateInput.value).toBe(expectedDate);
 
@@ -189,12 +179,8 @@ describe('AddTodo Component', () => {
 
       // Find navigation buttons by their SVG content
       const buttons = screen.getAllByRole('button');
-      const prevButton = buttons.find((button) =>
-        button.querySelector('svg path[d*="10.8284"]'),
-      );
-      const nextButton = buttons.find((button) =>
-        button.querySelector('svg path[d*="13.1717"]'),
-      );
+      const prevButton = buttons.find((button) => button.querySelector('svg path[d*="10.8284"]'));
+      const nextButton = buttons.find((button) => button.querySelector('svg path[d*="13.1717"]'));
 
       expect(prevButton).toBeDefined();
       expect(nextButton).toBeDefined();
@@ -264,9 +250,7 @@ describe('AddTodo Component', () => {
       const user = userEvent.setup();
 
       // Make the database operation take some time
-      mockSafePut.mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100)),
-      );
+      mockSafePut.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
       render(<AddTodo {...defaultProps} />);
 
@@ -276,16 +260,12 @@ describe('AddTodo Component', () => {
       await user.click(submitButton);
 
       // Check for loading state
-      expect(
-        screen.getByRole('button', { name: 'Adding...' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Adding...' })).toBeInTheDocument();
 
       // Wait for completion
       await waitFor(
         () => {
-          expect(
-            screen.getByRole('button', { name: 'Add todo' }),
-          ).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: 'Add todo' })).toBeInTheDocument();
         },
         { timeout: 200 },
       );
@@ -295,10 +275,7 @@ describe('AddTodo Component', () => {
       const user = userEvent.setup();
       render(<AddTodo {...defaultProps} />);
 
-      await user.type(
-        screen.getByLabelText('New todo'),
-        'Test todo without link',
-      );
+      await user.type(screen.getByLabelText('New todo'), 'Test todo without link');
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       await waitFor(() => {
@@ -334,9 +311,7 @@ describe('AddTodo Component', () => {
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       await waitFor(() => {
-        expect(screen.getByTestId('error-message')).toHaveTextContent(
-          /invalid date format/i,
-        );
+        expect(screen.getByTestId('error-message')).toHaveTextContent(/invalid date format/i);
       });
     });
 
@@ -351,9 +326,7 @@ describe('AddTodo Component', () => {
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       await waitFor(() => {
-        expect(screen.getByTestId('error-message')).toHaveTextContent(
-          /invalid date format/i,
-        );
+        expect(screen.getByTestId('error-message')).toHaveTextContent(/invalid date format/i);
       });
     });
   });
@@ -378,9 +351,7 @@ describe('AddTodo Component', () => {
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       await waitFor(() => {
-        expect(screen.getByTestId('error-message')).toHaveTextContent(
-          'Failed to save todo',
-        );
+        expect(screen.getByTestId('error-message')).toHaveTextContent('Failed to save todo');
       });
     });
 
@@ -396,9 +367,7 @@ describe('AddTodo Component', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('error-message')).toBeInTheDocument();
-        expect(
-          screen.getByRole('button', { name: 'Dismiss' }),
-        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
       });
     });
 
@@ -483,9 +452,7 @@ describe('AddTodo Component', () => {
 
         // Verify the structure of the call
         const callArgs = mockSafePut.mock.calls[0][0];
-        expect(callArgs._id).toMatch(
-          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-        );
+        expect(callArgs._id).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
         expect(callArgs.due).toMatch(/^\d{4}-\d{2}-\d{2}T23:59:59\.999Z$/);
       });
     });

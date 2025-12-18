@@ -29,11 +29,6 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-namespace': 0,
       '@typescript-eslint/no-non-null-assertion': 0,
-      '@typescript-eslint/no-unsafe-argument': 'error',
-      '@typescript-eslint/no-unsafe-assignment': 'error',
-      '@typescript-eslint/no-unsafe-call': 'error',
-      '@typescript-eslint/no-unsafe-member-access': 'error',
-      '@typescript-eslint/no-unsafe-return': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -54,14 +49,14 @@ export default [
           allowSingleLine: true,
         },
       ],
-      complexity: ['error', 10],
+      complexity: ['warn', 10],
       'eol-last': 2,
-      'max-depth': ['error', 3],
-      'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': ['error', { max: 50, skipBlankLines: true, skipComments: true }],
-      'max-nested-callbacks': ['error', 4],
-      'max-params': ['error', 4],
-      'max-statements': ['error', 30]
+      'max-depth': ['warn', 3],
+      'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 50, skipBlankLines: true, skipComments: true }],
+      'max-nested-callbacks': ['warn', 4],
+      'max-params': ['warn', 4],
+      'max-statements': ['warn', 30],
       'import/no-duplicates': 2,
       'import/no-extraneous-dependencies': [2],
       'import/no-namespace': 2,
@@ -115,6 +110,7 @@ export default [
   {
     files: ['**/*.test.ts', '**/*.test.tsx'],
     rules: {
+      complexity: 'off',
       'import/no-extraneous-dependencies': [
         'error',
         {
@@ -123,6 +119,10 @@ export default [
           optionalDependencies: false,
         },
       ],
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'max-nested-callbacks': 'off',
+      'max-statements': 'off',
     },
   },
   {

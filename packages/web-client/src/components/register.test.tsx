@@ -23,43 +23,31 @@ describe('Register Component', () => {
     it('renders registration form with all fields', () => {
       render(<Register {...defaultProps} />);
 
-      expect(
-        screen.getByText('Create your Eddo App account'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Create your Eddo App account')).toBeInTheDocument();
       expect(screen.getByLabelText('Username*')).toBeInTheDocument();
       expect(screen.getByLabelText('Email*')).toBeInTheDocument();
       expect(screen.getByLabelText('Password*')).toBeInTheDocument();
       expect(screen.getByLabelText('Confirm Password*')).toBeInTheDocument();
-      expect(
-        screen.getByLabelText('Telegram ID (optional)'),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Create account' }),
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Telegram ID (optional)')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
     });
 
     it('renders back to login link', () => {
       render(<Register {...defaultProps} />);
 
       expect(screen.getByText('Already have an account?')).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Sign in' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
     });
 
     it('shows helper text for form fields', () => {
       render(<Register {...defaultProps} />);
 
       expect(
-        screen.getByText(
-          '3-20 characters, letters, numbers, and underscores only',
-        ),
+        screen.getByText('3-20 characters, letters, numbers, and underscores only'),
       ).toBeInTheDocument();
       expect(screen.getByText('Minimum 8 characters')).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'Optional: Link your Telegram account for bot integration',
-        ),
+        screen.getByText('Optional: Link your Telegram account for bot integration'),
       ).toBeInTheDocument();
     });
   });
@@ -147,9 +135,7 @@ describe('Register Component', () => {
       });
       await user.click(submitButton);
 
-      expect(
-        screen.getByText('Please fill in all required fields'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Please fill in all required fields')).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
@@ -160,19 +146,14 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'ab');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
       });
       await user.click(submitButton);
 
-      expect(
-        screen.getByText('Username must be between 3 and 20 characters'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Username must be between 3 and 20 characters')).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
@@ -183,19 +164,14 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'a'.repeat(21));
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
       });
       await user.click(submitButton);
 
-      expect(
-        screen.getByText('Username must be between 3 and 20 characters'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Username must be between 3 and 20 characters')).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
@@ -206,10 +182,7 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'test-user');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
@@ -217,9 +190,7 @@ describe('Register Component', () => {
       await user.click(submitButton);
 
       expect(
-        screen.getByText(
-          'Username can only contain letters, numbers, and underscores',
-        ),
+        screen.getByText('Username can only contain letters, numbers, and underscores'),
       ).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
@@ -231,10 +202,7 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'invalid-email');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const emailInput = screen.getByLabelText('Email*') as HTMLInputElement;
 
@@ -248,9 +216,7 @@ describe('Register Component', () => {
       // If HTML5 validation allows it through, check that our custom validation caught it
       try {
         await waitFor(() => {
-          expect(
-            screen.getByText('Please enter a valid email address'),
-          ).toBeInTheDocument();
+          expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument();
         });
         // Our custom validation caught it
       } catch {
@@ -277,9 +243,7 @@ describe('Register Component', () => {
       });
       await user.click(submitButton);
 
-      expect(
-        screen.getByText('Password must be at least 8 characters long'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Password must be at least 8 characters long')).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
@@ -290,10 +254,7 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'differentpassword',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'differentpassword');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
@@ -311,23 +272,15 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
-      await user.type(
-        screen.getByLabelText('Telegram ID (optional)'),
-        'notanumber',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
+      await user.type(screen.getByLabelText('Telegram ID (optional)'), 'notanumber');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
       });
       await user.click(submitButton);
 
-      expect(
-        screen.getByText('Telegram ID must be a valid number'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Telegram ID must be a valid number')).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
   });
@@ -342,10 +295,7 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
@@ -371,14 +321,8 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
-      await user.type(
-        screen.getByLabelText('Telegram ID (optional)'),
-        '123456789',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
+      await user.type(screen.getByLabelText('Telegram ID (optional)'), '123456789');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
@@ -407,10 +351,7 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
@@ -431,10 +372,7 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
@@ -456,26 +394,20 @@ describe('Register Component', () => {
       expect(screen.getByLabelText('Password*')).toBeDisabled();
       expect(screen.getByLabelText('Confirm Password*')).toBeDisabled();
       expect(screen.getByLabelText('Telegram ID (optional)')).toBeDisabled();
-      expect(
-        screen.getByRole('button', { name: 'Creating account...' }),
-      ).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Creating account...' })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled();
     });
 
     it('shows "Creating account..." text when authenticating', () => {
       render(<Register {...defaultProps} isAuthenticating={true} />);
 
-      expect(
-        screen.getByRole('button', { name: 'Creating account...' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Creating account...' })).toBeInTheDocument();
     });
 
     it('shows "Create account" text when not authenticating', () => {
       render(<Register {...defaultProps} isAuthenticating={false} />);
 
-      expect(
-        screen.getByRole('button', { name: 'Create account' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
     });
   });
 
@@ -492,10 +424,7 @@ describe('Register Component', () => {
       await user.type(screen.getByLabelText('Username*'), 'testuser');
       await user.type(screen.getByLabelText('Email*'), 'test@example.com');
       await user.type(screen.getByLabelText('Password*'), 'password123');
-      await user.type(
-        screen.getByLabelText('Confirm Password*'),
-        'password123',
-      );
+      await user.type(screen.getByLabelText('Confirm Password*'), 'password123');
 
       const submitButton = screen.getByRole('button', {
         name: 'Create account',
@@ -510,9 +439,7 @@ describe('Register Component', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.queryByText('Username already exists'),
-        ).not.toBeInTheDocument();
+        expect(screen.queryByText('Username already exists')).not.toBeInTheDocument();
       });
     });
   });
@@ -525,21 +452,17 @@ describe('Register Component', () => {
       expect(screen.getByLabelText('Email*')).toBeInTheDocument();
       expect(screen.getByLabelText('Password*')).toBeInTheDocument();
       expect(screen.getByLabelText('Confirm Password*')).toBeInTheDocument();
-      expect(
-        screen.getByLabelText('Telegram ID (optional)'),
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Telegram ID (optional)')).toBeInTheDocument();
     });
 
     it('has proper button types', () => {
       render(<Register {...defaultProps} />);
 
-      expect(
-        screen.getByRole('button', { name: 'Create account' }),
-      ).toHaveAttribute('type', 'submit');
-      expect(screen.getByRole('button', { name: 'Sign in' })).toHaveAttribute(
+      expect(screen.getByRole('button', { name: 'Create account' })).toHaveAttribute(
         'type',
-        'button',
+        'submit',
       );
+      expect(screen.getByRole('button', { name: 'Sign in' })).toHaveAttribute('type', 'button');
     });
   });
 });

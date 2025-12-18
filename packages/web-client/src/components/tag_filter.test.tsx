@@ -17,11 +17,7 @@ describe('TagFilter', () => {
   describe('Basic rendering', () => {
     it('renders nothing when no available tags', () => {
       const { container } = render(
-        <TagFilter
-          availableTags={[]}
-          onTagsChange={mockOnTagsChange}
-          selectedTags={[]}
-        />,
+        <TagFilter availableTags={[]} onTagsChange={mockOnTagsChange} selectedTags={[]} />,
       );
       expect(container.firstChild).toBeNull();
     });
@@ -85,9 +81,7 @@ describe('TagFilter', () => {
       );
 
       await user.click(screen.getByText('Filter by tags'));
-      expect(
-        screen.getByRole('heading', { name: 'Filter by tags' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Filter by tags' })).toBeInTheDocument();
     });
 
     it('closes dropdown when filter button is clicked again', async () => {
@@ -104,9 +98,7 @@ describe('TagFilter', () => {
       await user.click(filterButton);
       await user.click(filterButton);
 
-      expect(
-        screen.queryByRole('heading', { name: 'Filter by tags' }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Filter by tags' })).not.toBeInTheDocument();
     });
 
     it.skip('closes dropdown when clicking outside', async () => {
@@ -126,15 +118,11 @@ describe('TagFilter', () => {
       );
 
       await user.click(screen.getByText('Filter by tags'));
-      expect(
-        screen.getByRole('heading', { name: 'Filter by tags' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Filter by tags' })).toBeInTheDocument();
 
       await user.click(screen.getByTestId('outside'));
 
-      expect(
-        screen.queryByRole('heading', { name: 'Filter by tags' }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Filter by tags' })).not.toBeInTheDocument();
     });
 
     it('displays all available tags in dropdown', async () => {
@@ -331,9 +319,7 @@ describe('TagFilter', () => {
       await user.click(screen.getByText('Filter by tags'));
 
       // Main filter button
-      expect(
-        screen.getByRole('button', { name: /Filter by tags/ }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Filter by tags/ })).toBeInTheDocument();
 
       // Tag buttons
       availableTags.forEach((tag) => {

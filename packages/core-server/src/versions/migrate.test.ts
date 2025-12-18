@@ -3,10 +3,7 @@ import {
   createTestTodoAlpha2,
   createTestTodoAlpha3,
 } from '@eddo/core-shared/api/test-utils';
-import {
-  isLatestVersion,
-  migrateTodo,
-} from '@eddo/core-shared/versions/migrate';
+import { isLatestVersion, migrateTodo } from '@eddo/core-shared/versions/migrate';
 import { type TodoAlpha1 } from '@eddo/core-shared/versions/todo_alpha1';
 import { type TodoAlpha2 } from '@eddo/core-shared/versions/todo_alpha2';
 import { type TodoAlpha3 } from '@eddo/core-shared/versions/todo_alpha3';

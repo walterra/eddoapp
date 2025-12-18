@@ -253,12 +253,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
       <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <div className="text-center">
-            <h3 className="text-xl font-medium text-gray-900">
-              Profile not found
-            </h3>
-            <p className="mt-2 text-sm text-gray-600">
-              Unable to load your profile information.
-            </p>
+            <h3 className="text-xl font-medium text-gray-900">Profile not found</h3>
+            <p className="mt-2 text-sm text-gray-600">Unable to load your profile information.</p>
             {onClose && (
               <Button className="mt-4" onClick={onClose}>
                 Go Back
@@ -285,9 +281,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
         {/* Tab Navigation */}
         <div className="mb-6 border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            {(
-              ['profile', 'security', 'integrations', 'preferences'] as const
-            ).map((tab) => (
+            {(['profile', 'security', 'integrations', 'preferences'] as const).map((tab) => (
               <button
                 className={`border-b-2 px-1 py-2 text-sm font-medium ${
                   activeTab === tab
@@ -307,9 +301,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
         {(success || error || formError) && (
           <div className="mb-6">
             {success && (
-              <div className="rounded-lg bg-green-100 p-4 text-sm text-green-700">
-                {success}
-              </div>
+              <div className="rounded-lg bg-green-100 p-4 text-sm text-green-700">{success}</div>
             )}
             {(error || formError) && (
               <div className="rounded-lg bg-red-100 p-4 text-sm text-red-700">
@@ -324,9 +316,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
           <Card>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Profile Information
-                </h2>
+                <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
                 <Button
                   color={editMode ? 'gray' : 'blue'}
                   disabled={isLoading}
@@ -346,9 +336,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                     type="text"
                     value={profile.username}
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Username cannot be changed
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">Username cannot be changed</p>
                 </div>
 
                 <div>
@@ -410,9 +398,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
 
               {editMode && (
                 <div className="space-y-4 border-t pt-6">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Change Password (Optional)
-                  </h3>
+                  <h3 className="text-lg font-medium text-gray-900">Change Password (Optional)</h3>
 
                   <div>
                     <Label htmlFor="currentPassword">Current Password</Label>
@@ -437,15 +423,11 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         type="password"
                         value={newPassword}
                       />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Minimum 8 characters
-                      </p>
+                      <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
                     </div>
 
                     <div>
-                      <Label htmlFor="confirmPassword">
-                        Confirm New Password
-                      </Label>
+                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
                       <TextInput
                         disabled={isLoading}
                         id="confirmPassword"
@@ -461,18 +443,10 @@ export function UserProfile({ onClose }: UserProfileProps) {
 
               {editMode && (
                 <div className="flex justify-end space-x-4 border-t pt-6">
-                  <Button
-                    color="gray"
-                    disabled={isLoading}
-                    onClick={handleEditToggle}
-                  >
+                  <Button color="gray" disabled={isLoading} onClick={handleEditToggle}>
                     Cancel
                   </Button>
-                  <Button
-                    color="blue"
-                    disabled={isLoading}
-                    onClick={handleSaveProfile}
-                  >
+                  <Button color="blue" disabled={isLoading} onClick={handleSaveProfile}>
                     {isLoading ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
@@ -486,9 +460,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
           <div className="space-y-6">
             <Card>
               <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Change Password
-                </h2>
+                <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
 
                 <div className="space-y-4">
                   <div>
@@ -516,15 +488,11 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         type="password"
                         value={newPassword}
                       />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Minimum 8 characters
-                      </p>
+                      <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
                     </div>
 
                     <div>
-                      <Label htmlFor="secConfirmPassword">
-                        Confirm New Password
-                      </Label>
+                      <Label htmlFor="secConfirmPassword">Confirm New Password</Label>
                       <TextInput
                         disabled={isLoading}
                         id="secConfirmPassword"
@@ -537,11 +505,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                     </div>
                   </div>
 
-                  <Button
-                    color="blue"
-                    disabled={isLoading}
-                    onClick={handleChangePassword}
-                  >
+                  <Button color="blue" disabled={isLoading} onClick={handleChangePassword}>
                     {isLoading ? 'Changing Password...' : 'Change Password'}
                   </Button>
                 </div>
@@ -554,17 +518,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
         {activeTab === 'integrations' && (
           <Card>
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">
-                External Integrations
-              </h2>
+              <h2 className="text-xl font-semibold text-gray-900">External Integrations</h2>
 
               <div className="space-y-4">
                 <div className="rounded-lg border p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-gray-900">
-                        Telegram Bot
-                      </h3>
+                      <h3 className="font-medium text-gray-900">Telegram Bot</h3>
                       <p className="text-sm text-gray-600">
                         {profile.telegramId
                           ? `Connected to Telegram ID: ${profile.telegramId}`
@@ -573,11 +533,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                     </div>
 
                     {profile.telegramId ? (
-                      <Button
-                        color="red"
-                        disabled={isLoading}
-                        onClick={handleUnlinkTelegram}
-                      >
+                      <Button color="red" disabled={isLoading} onClick={handleUnlinkTelegram}>
                         {isLoading ? 'Unlinking...' : 'Unlink'}
                       </Button>
                     ) : null}
@@ -586,12 +542,10 @@ export function UserProfile({ onClose }: UserProfileProps) {
                   {!profile.telegramId && (
                     <div className="mt-4 space-y-4 border-t pt-4">
                       <div>
-                        <h4 className="font-medium text-gray-900">
-                          Link Telegram Account
-                        </h4>
+                        <h4 className="font-medium text-gray-900">Link Telegram Account</h4>
                         <p className="text-sm text-gray-600">
-                          Enter your Telegram ID to link your account. You can
-                          get your Telegram ID by messaging the bot.
+                          Enter your Telegram ID to link your account. You can get your Telegram ID
+                          by messaging the bot.
                         </p>
                       </div>
 
@@ -639,30 +593,23 @@ export function UserProfile({ onClose }: UserProfileProps) {
         {activeTab === 'preferences' && (
           <Card>
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Preferences
-              </h2>
+              <h2 className="text-xl font-semibold text-gray-900">Preferences</h2>
 
               <div className="space-y-6">
                 <div className="rounded-lg border p-4">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-medium text-gray-900">
-                        Daily Briefings
-                      </h3>
+                      <h3 className="font-medium text-gray-900">Daily Briefings</h3>
                       <p className="text-sm text-gray-600">
-                        Receive daily briefings via Telegram bot at your
-                        preferred time with your todo summary, upcoming tasks,
-                        and time tracking.
+                        Receive daily briefings via Telegram bot at your preferred time with your
+                        todo summary, upcoming tasks, and time tracking.
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Enable Daily Briefings</Label>
-                        <p className="text-xs text-gray-500">
-                          Get personalized morning summaries
-                        </p>
+                        <p className="text-xs text-gray-500">Get personalized morning summaries</p>
                       </div>
                       <ToggleSwitch
                         checked={dailyBriefing}
@@ -706,22 +653,17 @@ export function UserProfile({ onClose }: UserProfileProps) {
                 <div className="rounded-lg border p-4">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-medium text-gray-900">
-                        Daily Recaps
-                      </h3>
+                      <h3 className="font-medium text-gray-900">Daily Recaps</h3>
                       <p className="text-sm text-gray-600">
-                        Receive end-of-day recaps via Telegram bot with a
-                        motivational summary of your accomplishments and outlook
-                        for tomorrow.
+                        Receive end-of-day recaps via Telegram bot with a motivational summary of
+                        your accomplishments and outlook for tomorrow.
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Enable Daily Recaps</Label>
-                        <p className="text-xs text-gray-500">
-                          Get personalized evening summaries
-                        </p>
+                        <p className="text-xs text-gray-500">Get personalized evening summaries</p>
                       </div>
                       <ToggleSwitch
                         checked={dailyRecap}
@@ -763,11 +705,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button
-                    color="blue"
-                    disabled={isLoading}
-                    onClick={handleUpdatePreferences}
-                  >
+                  <Button color="blue" disabled={isLoading} onClick={handleUpdatePreferences}>
                     {isLoading ? 'Saving...' : 'Save Preferences'}
                   </Button>
                 </div>

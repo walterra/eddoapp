@@ -1,8 +1,4 @@
-import {
-  type DatabaseError,
-  DatabaseErrorType,
-  NewTodo,
-} from '@eddo/core-client';
+import { type DatabaseError, DatabaseErrorType, NewTodo } from '@eddo/core-client';
 import { add, format, getISOWeek, sub } from 'date-fns';
 import { Button, TextInput } from 'flowbite-react';
 import { type FC, useState } from 'react';
@@ -32,9 +28,7 @@ export const AddTodo: FC<AddTodoProps> = ({
   const { allTags } = useTags();
 
   const [todoContext, setTodoContext] = useState(CONTEXT_DEFAULT);
-  const [todoDue, setTodoDue] = useState(
-    new Date().toISOString().split('T')[0],
-  );
+  const [todoDue, setTodoDue] = useState(new Date().toISOString().split('T')[0]);
   const [todoLink, setTodoLink] = useState('');
   const [todoTitle, setTodoTitle] = useState('');
   const [todoTags, setTodoTags] = useState<string[]>([]);
@@ -117,9 +111,7 @@ export const AddTodo: FC<AddTodoProps> = ({
 
   return (
     <form onSubmit={addTodoHandler}>
-      {error && (
-        <DatabaseErrorMessage error={error} onDismiss={() => setError(null)} />
-      )}
+      {error && <DatabaseErrorMessage error={error} onDismiss={() => setError(null)} />}
       <div className="block items-center justify-between border-b border-gray-200 bg-white py-4 sm:flex lg:mt-1.5 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center divide-x divide-gray-100 dark:divide-gray-700">
           <div className="pr-3">
@@ -178,23 +170,13 @@ export const AddTodo: FC<AddTodoProps> = ({
             onTagsChange={setSelectedTags}
             selectedTags={selectedTags}
           />
-          <Button
-            className="p-0"
-            color="gray"
-            onClick={previousWeekClickHandler}
-            size="xs"
-          >
+          <Button className="p-0" color="gray" onClick={previousWeekClickHandler} size="xs">
             <RiArrowLeftSLine size="2em" />
           </Button>{' '}
           <span className="font-semibold text-gray-900 dark:text-white">
             CW{currentCalendarWeek}
           </span>{' '}
-          <Button
-            className="p-0"
-            color="gray"
-            onClick={nextWeekClickHandler}
-            size="xs"
-          >
+          <Button className="p-0" color="gray" onClick={nextWeekClickHandler} size="xs">
             <RiArrowRightSLine size="2em" />
           </Button>
         </div>

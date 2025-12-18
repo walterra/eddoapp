@@ -4,9 +4,7 @@ import { generateStableKey } from './generate_stable_key';
 
 describe('generateStableKey', () => {
   it('should create stable keys from multiple string parts', () => {
-    expect(generateStableKey('work', '2025-06-18', 'task')).toBe(
-      'work-2025-06-18-task',
-    );
+    expect(generateStableKey('work', '2025-06-18', 'task')).toBe('work-2025-06-18-task');
   });
 
   it('should handle null and undefined values by filtering them out', () => {
@@ -16,9 +14,7 @@ describe('generateStableKey', () => {
   });
 
   it('should handle mixed types (string, number)', () => {
-    expect(generateStableKey('todo', 123, 'completed')).toBe(
-      'todo-123-completed',
-    );
+    expect(generateStableKey('todo', 123, 'completed')).toBe('todo-123-completed');
   });
 
   it('should handle empty input', () => {

@@ -32,10 +32,7 @@ export class MCPTestServer {
     const testPort = process.env.MCP_TEST_PORT || '3003';
 
     this.config = {
-      serverUrl:
-        config.serverUrl ||
-        process.env.MCP_TEST_URL ||
-        `http://localhost:${testPort}/mcp`,
+      serverUrl: config.serverUrl || process.env.MCP_TEST_URL || `http://localhost:${testPort}/mcp`,
       clientName: config.clientName || 'integration-test-client',
       clientVersion: config.clientVersion || '1.0.0',
       timeout: config.timeout || 30000,
@@ -63,18 +60,15 @@ export class MCPTestServer {
     await this.ensureTestUser();
 
     // Create transport with user authentication headers for test isolation
-    this.transport = new StreamableHTTPClientTransport(
-      new URL(this.config.serverUrl),
-      {
-        requestInit: {
-          headers: {
-            'X-User-ID': this.testUser!.username,
-            'X-Database-Name': this.testUser!.dbName,
-            'X-Telegram-ID': this.testUser!.telegramId,
-          },
+    this.transport = new StreamableHTTPClientTransport(new URL(this.config.serverUrl), {
+      requestInit: {
+        headers: {
+          'X-User-ID': this.testUser!.username,
+          'X-Database-Name': this.testUser!.dbName,
+          'X-Telegram-ID': this.testUser!.telegramId,
         },
       },
-    );
+    });
 
     // Create client
     this.client = new Client(
@@ -92,10 +86,7 @@ export class MCPTestServer {
     // Connect with timeout
     const connectPromise = this.client.connect(this.transport);
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(
-        () => reject(new Error('Connection timeout')),
-        this.config.timeout,
-      );
+      setTimeout(() => reject(new Error('Connection timeout')), this.config.timeout);
     });
 
     await Promise.race([connectPromise, timeoutPromise]);
@@ -132,10 +123,7 @@ export class MCPTestServer {
     }));
   }
 
-  async callTool(
-    name: string,
-    args: Record<string, unknown> = {},
-  ): Promise<unknown> {
+  async callTool(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
     const client = this.getClient();
     const result = await client.callTool({
       name,
@@ -143,14 +131,8 @@ export class MCPTestServer {
     });
 
     // Extract text content from response
-    if (
-      result.content &&
-      Array.isArray(result.content) &&
-      result.content.length > 0
-    ) {
-      const textContent = result.content.find(
-        (c: { type: string }) => c.type === 'text',
-      );
+    if (result.content && Array.isArray(result.content) && result.content.length > 0) {
+      const textContent = result.content.find((c: { type: string }) => c.type === 'text');
       if (textContent) {
         return this.parseToolResponse(textContent.text, name);
       }
@@ -181,9 +163,7 @@ export class MCPTestServer {
         if (LIST_TOOLS.includes(toolName)) {
           // Check if this is an error response
           if (parsed.error) {
-            console.warn(
-              `⚠️  Tool ${toolName} returned error: ${parsed.error}`,
-            );
+            console.warn(`⚠️  Tool ${toolName} returned error: ${parsed.error}`);
             return [];
           }
 
@@ -194,9 +174,7 @@ export class MCPTestServer {
             // Backwards compatibility - if already an array
             return parsed;
           } else {
-            console.warn(
-              `⚠️  Tool ${toolName} returned unexpected format: ${typeof parsed}`,
-            );
+            console.warn(`⚠️  Tool ${toolName} returned unexpected format: ${typeof parsed}`);
             return [];
           }
         } else if (toolName === 'getUserInfo') {
@@ -230,9 +208,7 @@ export class MCPTestServer {
 
   async resetTestData(): Promise<void> {
     // With per-API-key databases via X-API-Key header, each test gets complete isolation
-    console.log(
-      `🔄 Test using isolated database for API key: ${this.testApiKey}`,
-    );
+    console.log(`🔄 Test using isolated database for API key: ${this.testApiKey}`);
 
     // Clear all existing documents first
     await this.clearAllDocuments();
@@ -264,17 +240,13 @@ export class MCPTestServer {
 
   private async clearAllDocuments(): Promise<void> {
     // Always use direct database cleanup for reliability
-    console.log(
-      '🔧 Using direct database cleanup for bulletproof test isolation',
-    );
+    console.log('🔧 Using direct database cleanup for bulletproof test isolation');
     await this.forceCleanupDatabase();
   }
 
   private async forceCleanupDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import(
-        '@eddo/core-server'
-      );
+      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/core-server');
       const nano = await import('nano');
 
       const env = validateEnv(process.env);
@@ -306,12 +278,7 @@ export class MCPTestServer {
         console.log('✅ Force cleanup completed');
       }
     } catch (error) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
         console.log('🔧 Database does not exist yet - no cleanup needed');
       } else {
         console.error('❌ Force cleanup failed:', error);
@@ -325,10 +292,7 @@ export class MCPTestServer {
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
-  async waitForServer(
-    maxAttempts: number = 20,
-    delayMs: number = 500,
-  ): Promise<void> {
+  async waitForServer(maxAttempts: number = 20, delayMs: number = 500): Promise<void> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         await this.start();

@@ -25,9 +25,7 @@ async function main() {
   try {
     switch (command) {
       case 'setup':
-        console.log(
-          '🚀 Setting up database with indexes and design documents...',
-        );
+        console.log('🚀 Setting up database with indexes and design documents...');
         await dbSetup.setupDatabase();
         console.log('✅ Database setup complete');
         break;

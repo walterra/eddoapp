@@ -75,9 +75,7 @@ describe('MCPConnectionManager', () => {
     });
 
     it('should handle connection failure', async () => {
-      const { Client } = await import(
-        '@modelcontextprotocol/sdk/client/index.js'
-      );
+      const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
       // @ts-expect-error - Mocking external SDK for testing purposes
       vi.mocked(Client).mockImplementationOnce(() => ({
         connect: vi.fn().mockRejectedValue(new Error('Connection refused')),
@@ -117,9 +115,9 @@ describe('MCPConnectionManager', () => {
     });
 
     it('should throw error when invoking tools while disconnected', async () => {
-      await expect(
-        manager.invoke('test-tool', { param: 'value' }),
-      ).rejects.toThrow('Cannot invoke tool: connection state is DISCONNECTED');
+      await expect(manager.invoke('test-tool', { param: 'value' })).rejects.toThrow(
+        'Cannot invoke tool: connection state is DISCONNECTED',
+      );
     });
   });
 
@@ -129,9 +127,7 @@ describe('MCPConnectionManager', () => {
     });
 
     it('should perform health checks periodically', async () => {
-      const { Client } = await import(
-        '@modelcontextprotocol/sdk/client/index.js'
-      );
+      const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
       const mockClient = vi.mocked(Client);
 
       await manager.initialize();
@@ -177,11 +173,7 @@ describe('MCPConnectionManager', () => {
   describe('Connection State Management', () => {
     it('should handle concurrent operations gracefully', async () => {
       // Start multiple initialize calls concurrently
-      const promises = [
-        manager.initialize(),
-        manager.initialize(),
-        manager.initialize(),
-      ];
+      const promises = [manager.initialize(), manager.initialize(), manager.initialize()];
 
       await Promise.all(promises);
 
@@ -202,9 +194,7 @@ describe('MCPConnectionManager', () => {
 
   describe('Error Classification', () => {
     it('should identify connection errors correctly', async () => {
-      const { Client } = await import(
-        '@modelcontextprotocol/sdk/client/index.js'
-      );
+      const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
       const mockClient = vi.mocked(Client);
 
       await manager.initialize();
@@ -212,13 +202,9 @@ describe('MCPConnectionManager', () => {
       const instance = mockClient.mock.results[0].value;
 
       // Test a connection error
-      vi.mocked(instance.callTool).mockRejectedValueOnce(
-        new Error('ECONNREFUSED'),
-      );
+      vi.mocked(instance.callTool).mockRejectedValueOnce(new Error('ECONNREFUSED'));
 
-      await expect(manager.invoke('test-tool', {})).rejects.toThrow(
-        'ECONNREFUSED',
-      );
+      await expect(manager.invoke('test-tool', {})).rejects.toThrow('ECONNREFUSED');
     });
   });
 });

@@ -34,10 +34,10 @@ describe('MCP Query and Filtering Integration', () => {
         createTestTodoData.withContext('work'),
       );
 
-      const _workTodo2 = await assert.expectToolCallSuccess<TodoAlpha3>(
-        'createTodo',
-        { ...createTestTodoData.withContext('work'), title: 'Work Todo 2' },
-      );
+      const _workTodo2 = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', {
+        ...createTestTodoData.withContext('work'),
+        title: 'Work Todo 2',
+      });
 
       const _privateTodo = await assert.expectToolCallSuccess<TodoAlpha3>(
         'createTodo',
@@ -50,38 +50,32 @@ describe('MCP Query and Filtering Integration', () => {
       );
 
       // Filter by work context
-      const workTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { context: 'work' },
-      );
+      const workTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'work',
+      });
 
       assert.expectValidTodos(workTodos);
       assert.expectTodoCount(workTodos, 2);
       assert.expectTodosFilteredByContext(workTodos, 'work');
 
       // Filter by private context
-      const privateTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { context: 'private' },
-      );
+      const privateTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'private',
+      });
 
       assert.expectTodoCount(privateTodos, 1);
       assert.expectTodosFilteredByContext(privateTodos, 'private');
 
       // Filter by personal context
-      const personalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { context: 'personal' },
-      );
+      const personalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'personal',
+      });
 
       assert.expectTodoCount(personalTodos, 1);
       assert.expectTodosFilteredByContext(personalTodos, 'personal');
 
       // Verify all todos returned without filter
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {},
-      );
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
 
       assert.expectTodoCount(allTodos, 4);
     });
@@ -102,10 +96,10 @@ describe('MCP Query and Filtering Integration', () => {
       );
       const todo2Id = todo2Response.data!.id!;
 
-      const todo3Response = await assert.expectToolCallSuccess<MCPResponse>(
-        'createTodo',
-        { ...createTestTodoData.basic(), title: 'Third Todo' },
-      );
+      const todo3Response = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.basic(),
+        title: 'Third Todo',
+      });
       const _todo3Id = todo3Response.data!.id!;
 
       // Complete one todo
@@ -115,20 +109,18 @@ describe('MCP Query and Filtering Integration', () => {
       });
 
       // Filter for active (incomplete) todos
-      const activeTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { completed: false },
-      );
+      const activeTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        completed: false,
+      });
 
       assert.expectValidTodos(activeTodos);
       assert.expectTodoCount(activeTodos, 2);
       assert.expectTodosFilteredByCompletion(activeTodos, false);
 
       // Filter for completed todos
-      const completedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { completed: true },
-      );
+      const completedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        completed: true,
+      });
 
       assert.expectTodoCount(completedTodos, 1);
       assert.expectTodosFilteredByCompletion(completedTodos, true);
@@ -143,10 +135,10 @@ describe('MCP Query and Filtering Integration', () => {
       );
       const workTodo1Id = workTodo1Response.data!.id!;
 
-      const workTodo2Response = await assert.expectToolCallSuccess<MCPResponse>(
-        'createTodo',
-        { ...createTestTodoData.withContext('work'), title: 'Work Todo 2' },
-      );
+      const workTodo2Response = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withContext('work'),
+        title: 'Work Todo 2',
+      });
       const workTodo2Id = workTodo2Response.data!.id!;
 
       // Complete one work todo
@@ -156,10 +148,10 @@ describe('MCP Query and Filtering Integration', () => {
       });
 
       // Filter for active work todos
-      const activeWorkTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { context: 'work', completed: false },
-      );
+      const activeWorkTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'work',
+        completed: false,
+      });
 
       assert.expectTodoCount(activeWorkTodos, 1);
       assert.expectTodosFilteredByContext(activeWorkTodos, 'work');
@@ -167,9 +159,10 @@ describe('MCP Query and Filtering Integration', () => {
       expect(activeWorkTodos[0]._id).toBe(workTodo2Id);
 
       // Filter for completed work todos
-      const completedWorkTodos = await assert.expectToolCallSuccess<
-        TodoAlpha3[]
-      >('listTodos', { context: 'work', completed: true });
+      const completedWorkTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'work',
+        completed: true,
+      });
 
       assert.expectTodoCount(completedWorkTodos, 1);
       assert.expectTodosFilteredByContext(completedWorkTodos, 'work');
@@ -185,18 +178,16 @@ describe('MCP Query and Filtering Integration', () => {
       const oneMinuteFromNow = new Date(now.getTime() + 60000);
 
       // Create some todos
-      const completedTodo1Response =
-        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
-          ...createTestTodoData.withContext('work'),
-          title: 'Completed Todo 1',
-        });
+      const completedTodo1Response = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withContext('work'),
+        title: 'Completed Todo 1',
+      });
       const completedTodo1Id = completedTodo1Response.data!.id!;
 
-      const completedTodo2Response =
-        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
-          ...createTestTodoData.withContext('work'),
-          title: 'Completed Todo 2',
-        });
+      const completedTodo2Response = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withContext('work'),
+        title: 'Completed Todo 2',
+      });
       const completedTodo2Id = completedTodo2Response.data!.id!;
 
       await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
@@ -216,13 +207,10 @@ describe('MCP Query and Filtering Integration', () => {
       });
 
       // Filter by completion date range (should include recently completed)
-      const completedInRange = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {
-          completedFrom: oneMinuteAgo.toISOString(),
-          completedTo: oneMinuteFromNow.toISOString(),
-        },
-      );
+      const completedInRange = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        completedFrom: oneMinuteAgo.toISOString(),
+        completedTo: oneMinuteFromNow.toISOString(),
+      });
 
       assert.expectTodoCount(completedInRange, 2);
       const titles = completedInRange.map((t) => t.title);
@@ -233,9 +221,7 @@ describe('MCP Query and Filtering Integration', () => {
       // Filter outside the range (should return empty)
       const tomorrow = new Date(now.getTime() + 86400000);
       const dayAfterTomorrow = new Date(now.getTime() + 172800000);
-      const completedOutsideRange = await assert.expectToolCallSuccess<
-        TodoAlpha3[]
-      >('listTodos', {
+      const completedOutsideRange = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
         completedFrom: tomorrow.toISOString(),
         completedTo: dayAfterTomorrow.toISOString(),
       });
@@ -249,24 +235,20 @@ describe('MCP Query and Filtering Integration', () => {
       const oneMinuteFromNow = new Date(now.getTime() + 60000);
 
       // Create completed todos in different contexts
-      const workTodoResponse = await assert.expectToolCallSuccess<MCPResponse>(
-        'createTodo',
-        {
-          ...createTestTodoData.withContext('work'),
-          title: 'Work Completed',
-        },
-      );
+      const workTodoResponse = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withContext('work'),
+        title: 'Work Completed',
+      });
       const workTodoId = workTodoResponse.data!.id!;
       await assert.expectToolCallSuccess('toggleTodoCompletion', {
         id: workTodoId,
         completed: true,
       });
 
-      const privateTodoResponse =
-        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
-          ...createTestTodoData.withContext('private'),
-          title: 'Private Completed',
-        });
+      const privateTodoResponse = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withContext('private'),
+        title: 'Private Completed',
+      });
       const privateTodoId = privateTodoResponse.data!.id!;
       await assert.expectToolCallSuccess('toggleTodoCompletion', {
         id: privateTodoId,
@@ -274,14 +256,11 @@ describe('MCP Query and Filtering Integration', () => {
       });
 
       // Filter by completion date + work context
-      const workCompleted = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {
-          context: 'work',
-          completedFrom: oneMinuteAgo.toISOString(),
-          completedTo: oneMinuteFromNow.toISOString(),
-        },
-      );
+      const workCompleted = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'work',
+        completedFrom: oneMinuteAgo.toISOString(),
+        completedTo: oneMinuteFromNow.toISOString(),
+      });
 
       assert.expectTodoCount(workCompleted, 1);
       expect(workCompleted[0].title).toBe('Work Completed');
@@ -319,20 +298,13 @@ describe('MCP Query and Filtering Integration', () => {
       const pastTodoId = pastResponse.data!.id!;
 
       // Filter by date range (tomorrow to next week)
-      const rangeFiltered = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {
-          dateFrom: dateRange.start,
-          dateTo: dateRange.end,
-        },
-      );
+      const rangeFiltered = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        dateFrom: dateRange.start,
+        dateTo: dateRange.end,
+      });
 
       assert.expectValidTodos(rangeFiltered);
-      assert.expectTodosInDateRange(
-        rangeFiltered,
-        dateRange.start,
-        dateRange.end,
-      );
+      assert.expectTodosInDateRange(rangeFiltered, dateRange.start, dateRange.end);
 
       // Should contain tomorrow and next week todos, not today or past
       const filteredIds = rangeFiltered.map((t) => t._id);
@@ -361,9 +333,7 @@ describe('MCP Query and Filtering Integration', () => {
       );
 
       // Filter for single date (start and end same)
-      const singleDateFiltered = await assert.expectToolCallSuccess<
-        TodoAlpha3[]
-      >('listTodos', {
+      const singleDateFiltered = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
         dateFrom: targetDate,
         dateTo: targetDate,
       });
@@ -382,30 +352,18 @@ describe('MCP Query and Filtering Integration', () => {
       }
 
       // Test different limits
-      const limit3 = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { limit: 3 },
-      );
+      const limit3 = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', { limit: 3 });
       assert.expectTodoCount(limit3, 3);
 
-      const limit5 = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { limit: 5 },
-      );
+      const limit5 = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', { limit: 5 });
       assert.expectTodoCount(limit5, 5);
 
-      const limit0 = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { limit: 0 },
-      );
+      const limit0 = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', { limit: 0 });
       // Limit 0 should return all or none depending on implementation
       expect(limit0.length).toBeGreaterThanOrEqual(0);
 
       // No limit should return all
-      const noLimit = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {},
-      );
+      const noLimit = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
       assert.expectTodoCount(noLimit, 10);
     });
 
@@ -413,23 +371,17 @@ describe('MCP Query and Filtering Integration', () => {
       // Create todos with different due dates
       const todos: TodoAlpha3[] = [];
       for (let i = 0; i < 5; i++) {
-        const todo = await assert.expectToolCallSuccess<TodoAlpha3>(
-          'createTodo',
-          {
-            ...createTestTodoData.basic(),
-            title: `Order Test ${i + 1}`,
-            due: testDates.range(i, i).start, // Different due dates
-          },
-        );
+        const todo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', {
+          ...createTestTodoData.basic(),
+          title: `Order Test ${i + 1}`,
+          due: testDates.range(i, i).start, // Different due dates
+        });
         todos.push(todo);
       }
 
       // Query multiple times to ensure consistent ordering (by due date ascending)
       for (let i = 0; i < 3; i++) {
-        const queried = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-          'listTodos',
-          {},
-        );
+        const queried = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
         // Verify they are sorted by due date in ascending order
         for (let j = 1; j < queried.length; j++) {
           const prevDue = new Date(queried[j - 1].due);
@@ -446,21 +398,25 @@ describe('MCP Query and Filtering Integration', () => {
 
       // Create test data matrix
       // Work context, active, tomorrow
-      const workActiveTomorrowResponse =
-        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+      const workActiveTomorrowResponse = await assert.expectToolCallSuccess<MCPResponse>(
+        'createTodo',
+        {
           ...createTestTodoData.withContext('work'),
           due: targetDate,
           title: 'Work Active Tomorrow',
-        });
+        },
+      );
       const workActiveTomorrowId = workActiveTomorrowResponse.data!.id!;
 
       // Work context, completed, tomorrow
-      const workCompletedTomorrowResponse =
-        await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+      const workCompletedTomorrowResponse = await assert.expectToolCallSuccess<MCPResponse>(
+        'createTodo',
+        {
           ...createTestTodoData.withContext('work'),
           due: targetDate,
           title: 'Work Completed Tomorrow',
-        });
+        },
+      );
       const workCompletedTomorrowId = workCompletedTomorrowResponse.data!.id!;
       await assert.expectToolCallSuccess('toggleTodoCompletion', {
         id: workCompletedTomorrowId,
@@ -482,15 +438,12 @@ describe('MCP Query and Filtering Integration', () => {
       });
 
       // Complex filter: work context, active, tomorrow
-      const complexFiltered = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {
-          context: 'work',
-          completed: false,
-          dateFrom: targetDate,
-          dateTo: targetDate,
-        },
-      );
+      const complexFiltered = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'work',
+        completed: false,
+        dateFrom: targetDate,
+        dateTo: targetDate,
+      });
 
       assert.expectTodoCount(complexFiltered, 1);
       expect(complexFiltered[0]._id).toBe(workActiveTomorrowId);
@@ -507,14 +460,11 @@ describe('MCP Query and Filtering Integration', () => {
       const matchingTodos: TodoAlpha3[] = [];
       for (let i = 0; i < 5; i++) {
         await new Promise((resolve) => setTimeout(resolve, 10)); // Ensure different timestamps
-        const todo = await assert.expectToolCallSuccess<TodoAlpha3>(
-          'createTodo',
-          {
-            ...createTestTodoData.withContext('work'),
-            due: targetDate,
-            title: `Multi-filter Test ${i + 1}`,
-          },
-        );
+        const todo = await assert.expectToolCallSuccess<TodoAlpha3>('createTodo', {
+          ...createTestTodoData.withContext('work'),
+          due: targetDate,
+          title: `Multi-filter Test ${i + 1}`,
+        });
         matchingTodos.push(todo);
       }
 
@@ -525,16 +475,13 @@ describe('MCP Query and Filtering Integration', () => {
       );
 
       // Apply all filters with limit
-      const complexWithLimit = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {
-          context: 'work',
-          completed: false,
-          dateFrom: targetDate,
-          dateTo: targetDate,
-          limit: 3,
-        },
-      );
+      const complexWithLimit = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'work',
+        completed: false,
+        dateFrom: targetDate,
+        dateTo: targetDate,
+        limit: 3,
+      });
 
       assert.expectTodoCount(complexWithLimit, 3);
       assert.expectTodosFilteredByContext(complexWithLimit, 'work');
@@ -546,36 +493,26 @@ describe('MCP Query and Filtering Integration', () => {
   describe('Edge Cases', () => {
     it('should return empty array for no matches', async () => {
       // Create some todos
-      await assert.expectToolCallSuccess(
-        'createTodo',
-        createTestTodoData.withContext('work'),
-      );
+      await assert.expectToolCallSuccess('createTodo', createTestTodoData.withContext('work'));
 
       // Filter for non-existent context
-      const noMatches = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        { context: 'nonexistent' },
-      );
+      const noMatches = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        context: 'nonexistent',
+      });
 
       assert.expectTodoCount(noMatches, 0);
     });
 
     it('should handle invalid date ranges gracefully', async () => {
       // Create a todo
-      await assert.expectToolCallSuccess(
-        'createTodo',
-        createTestTodoData.basic(),
-      );
+      await assert.expectToolCallSuccess('createTodo', createTestTodoData.basic());
 
       // Test with invalid date format (should error or return empty)
       try {
-        const result = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-          'listTodos',
-          {
-            dateFrom: 'invalid-date',
-            dateTo: testDates.tomorrow(),
-          },
-        );
+        const result = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+          dateFrom: 'invalid-date',
+          dateTo: testDates.tomorrow(),
+        });
         // If it doesn't throw, should return empty or all todos
         expect(Array.isArray(result)).toBe(true);
       } catch (error) {
@@ -585,19 +522,13 @@ describe('MCP Query and Filtering Integration', () => {
     });
 
     it('should handle start date after end date', async () => {
-      await assert.expectToolCallSuccess(
-        'createTodo',
-        createTestTodoData.basic(),
-      );
+      await assert.expectToolCallSuccess('createTodo', createTestTodoData.basic());
 
       // Start date after end date
-      const result = await assert.expectToolCallSuccess<TodoAlpha3[]>(
-        'listTodos',
-        {
-          dateFrom: testDates.nextWeek(),
-          dateTo: testDates.today(),
-        },
-      );
+      const result = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        dateFrom: testDates.nextWeek(),
+        dateTo: testDates.today(),
+      });
 
       // Should return empty array for invalid range
       assert.expectTodoCount(result, 0);

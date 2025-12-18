@@ -11,10 +11,7 @@ export const useAuth = () => {
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const authenticate = async (
-    username: string,
-    password: string,
-  ): Promise<boolean> => {
+  const authenticate = async (username: string, password: string): Promise<boolean> => {
     setIsAuthenticating(true);
     try {
       const response = await fetch('/auth/login', {

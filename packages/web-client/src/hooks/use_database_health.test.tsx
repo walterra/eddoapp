@@ -26,11 +26,7 @@ describe('useDatabaseHealth', () => {
   const renderHookWithContext = () => {
     return renderHook(() => useDatabaseHealth(), {
       wrapper: ({ children }) =>
-        createElement(
-          PouchDbContext.Provider,
-          { value: contextValue },
-          children,
-        ),
+        createElement(PouchDbContext.Provider, { value: contextValue }, children),
     });
   };
 
@@ -245,9 +241,7 @@ describe('useDatabaseHealth', () => {
         .mockRejectedValue(error);
 
       await act(async () => {
-        await expect(result.current.performHealthCheck()).rejects.toThrow(
-          'Health check failed',
-        );
+        await expect(result.current.performHealthCheck()).rejects.toThrow('Health check failed');
       });
 
       expect(performHealthCheckSpy).toHaveBeenCalledTimes(1);
@@ -256,14 +250,8 @@ describe('useDatabaseHealth', () => {
 
   describe('Cleanup', () => {
     it('removes listener when component unmounts', () => {
-      const removeListenerSpy = vi.spyOn(
-        contextValue.healthMonitor,
-        'removeListener',
-      );
-      const addListenerSpy = vi.spyOn(
-        contextValue.healthMonitor,
-        'addListener',
-      );
+      const removeListenerSpy = vi.spyOn(contextValue.healthMonitor, 'removeListener');
+      const addListenerSpy = vi.spyOn(contextValue.healthMonitor, 'addListener');
 
       const { unmount } = renderHookWithContext();
 
@@ -272,9 +260,7 @@ describe('useDatabaseHealth', () => {
       unmount();
 
       expect(removeListenerSpy).toHaveBeenCalledTimes(1);
-      expect(removeListenerSpy).toHaveBeenCalledWith(
-        addListenerSpy.mock.calls[0][0],
-      );
+      expect(removeListenerSpy).toHaveBeenCalledWith(addListenerSpy.mock.calls[0][0]);
     });
 
     it('removes the same listener that was added', () => {

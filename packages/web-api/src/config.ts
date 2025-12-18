@@ -1,8 +1,4 @@
-import {
-  getCouchDbConfig,
-  getEffectiveDbName,
-  validateEnv,
-} from '@eddo/core-server';
+import { getCouchDbConfig, getEffectiveDbName, validateEnv } from '@eddo/core-server';
 import 'dotenv-mono/load';
 
 // Use the core environment validation for all configuration
@@ -11,9 +7,7 @@ const env = validateEnv(process.env);
 export const config = {
   nodeEnv: env.NODE_ENV,
   port: env.PORT,
-  jwtSecret:
-    env.JWT_SECRET ||
-    'development-secret-key-at-least-32-characters-long-for-dev-only',
+  jwtSecret: env.JWT_SECRET || 'development-secret-key-at-least-32-characters-long-for-dev-only',
   corsOrigin: env.CORS_ORIGIN,
 
   // Use core CouchDB configuration

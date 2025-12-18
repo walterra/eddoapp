@@ -21,8 +21,7 @@ export const TagInput: FC<TagInputProps> = ({
 
   const filteredSuggestions = suggestions.filter(
     (suggestion) =>
-      suggestion.toLowerCase().includes(inputValue.toLowerCase()) &&
-      !tags.includes(suggestion),
+      suggestion.toLowerCase().includes(inputValue.toLowerCase()) && !tags.includes(suggestion),
   );
 
   const addTag = (tag: string) => {
@@ -121,9 +120,7 @@ export const TagInput: FC<TagInputProps> = ({
           className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
           onChange={handleInputChange}
           onFocus={() => {
-            setShowSuggestions(
-              inputValue.length > 0 && filteredSuggestions.length > 0,
-            );
+            setShowSuggestions(inputValue.length > 0 && filteredSuggestions.length > 0);
             setSelectedSuggestionIndex(-1);
           }}
           onKeyDown={handleKeyDown}
@@ -142,9 +139,7 @@ export const TagInput: FC<TagInputProps> = ({
           {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
             <button
               className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
-                index === selectedSuggestionIndex
-                  ? 'bg-blue-100 dark:bg-blue-900'
-                  : ''
+                index === selectedSuggestionIndex ? 'bg-blue-100 dark:bg-blue-900' : ''
               }`}
               key={suggestion}
               onClick={() => handleSuggestionClick(suggestion)}

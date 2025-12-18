@@ -1,13 +1,7 @@
 import { type TodoAlpha3 } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { renderHook, waitFor } from '@testing-library/react';
-import {
-  type ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PouchDbContext, type PouchDbContextType } from '../pouch_db_types';
@@ -21,9 +15,7 @@ interface DatabaseChangesContextType {
   isListening: boolean;
 }
 
-const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(
-  null,
-);
+const DatabaseChangesContext = createContext<DatabaseChangesContextType | null>(null);
 
 const TestDatabaseChangesProvider = ({
   children,
@@ -81,9 +73,7 @@ vi.mock('./use_database_changes', () => ({
   useDatabaseChanges: () => {
     const context = useContext(DatabaseChangesContext);
     if (!context) {
-      throw new Error(
-        'useDatabaseChanges must be used within a DatabaseChangesProvider',
-      );
+      throw new Error('useDatabaseChanges must be used within a DatabaseChangesProvider');
     }
     return context;
   },
@@ -115,11 +105,7 @@ describe('useTags', () => {
     });
   };
 
-  const createTestTodo = (
-    id: string,
-    tags: string[] = [],
-    title = 'Test Todo',
-  ): TodoAlpha3 =>
+  const createTestTodo = (id: string, tags: string[] = [], title = 'Test Todo'): TodoAlpha3 =>
     ({
       _id: id,
       active: {},
@@ -157,13 +143,7 @@ describe('useTags', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.allTags).toEqual([
-        'meeting',
-        'personal',
-        'shopping',
-        'urgent',
-        'work',
-      ]);
+      expect(result.current.allTags).toEqual(['meeting', 'personal', 'shopping', 'urgent', 'work']);
       expect(result.current.error).toBeNull();
     });
 
@@ -192,18 +172,11 @@ describe('useTags', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.allTags).toEqual([
-        'alpha',
-        'beta',
-        'gamma',
-        'zebra',
-      ]);
+      expect(result.current.allTags).toEqual(['alpha', 'beta', 'gamma', 'zebra']);
     });
 
     it('trims whitespace from tags', async () => {
-      await testDb.put(
-        createTestTodo('todo1', ['  work  ', ' urgent', 'home ']),
-      );
+      await testDb.put(createTestTodo('todo1', ['  work  ', ' urgent', 'home ']));
       await testDb.put(createTestTodo('todo2', [' work ', '  meeting  ']));
 
       const { result } = renderHookWithContext();
@@ -212,12 +185,7 @@ describe('useTags', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.allTags).toEqual([
-        'home',
-        'meeting',
-        'urgent',
-        'work',
-      ]);
+      expect(result.current.allTags).toEqual(['home', 'meeting', 'urgent', 'work']);
     });
 
     it('filters out empty tags after trimming', async () => {
@@ -230,12 +198,7 @@ describe('useTags', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.allTags).toEqual([
-        'meeting',
-        'personal',
-        'urgent',
-        'work',
-      ]);
+      expect(result.current.allTags).toEqual(['meeting', 'personal', 'urgent', 'work']);
     });
 
     it('handles non-array tags gracefully', async () => {
@@ -269,9 +232,7 @@ describe('useTags', () => {
 
   describe('Error handling', () => {
     it('handles database errors gracefully', async () => {
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Mock safeAllDocs to throw an error
       const mockError = new Error('Database connection failed');
@@ -285,18 +246,13 @@ describe('useTags', () => {
 
       expect(result.current.allTags).toEqual([]);
       expect(result.current.error).toEqual(mockError);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to fetch tags:',
-        mockError,
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch tags:', mockError);
 
       consoleSpy.mockRestore();
     });
 
     it.skip('resets error on successful refetch', async () => {
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // First, simulate an error
       const mockError = new Error('Network error');
@@ -444,13 +400,7 @@ describe('useTags', () => {
 
     it('handles unicode and emoji tags', async () => {
       await testDb.put(
-        createTestTodo('todo1', [
-          '🔥urgent',
-          '📝notes',
-          'français',
-          '日本語',
-          'español',
-        ]),
+        createTestTodo('todo1', ['🔥urgent', '📝notes', 'français', '日本語', 'español']),
       );
 
       const { result } = renderHookWithContext();

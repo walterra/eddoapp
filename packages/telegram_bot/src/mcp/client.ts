@@ -36,10 +36,7 @@ let connectionManager: MCPConnectionManager | null = null;
  */
 export async function setupMCPIntegration(): Promise<MCPClient> {
   // Return existing instance if already initialized
-  if (
-    mcpClientInstance &&
-    connectionManager?.getState() === ConnectionState.CONNECTED
-  ) {
+  if (mcpClientInstance && connectionManager?.getState() === ConnectionState.CONNECTED) {
     logger.info('Returning existing MCP client instance');
     return mcpClientInstance;
   }
@@ -102,22 +99,14 @@ export async function setupMCPIntegration(): Promise<MCPClient> {
 
     // Provide more specific error messages based on failure type
     if (error instanceof Error) {
-      if (
-        error.message.includes('connect') ||
-        error.message.includes('ECONNREFUSED')
-      ) {
+      if (error.message.includes('connect') || error.message.includes('ECONNREFUSED')) {
         throw new Error(
           `Failed to connect to MCP server at ${appConfig.MCP_SERVER_URL}: ${error.message}`,
         );
       } else if (error.message.includes('listTools')) {
         throw new Error(`Failed to discover MCP tools: ${error.message}`);
-      } else if (
-        error.message.includes('401') ||
-        error.message.includes('403')
-      ) {
-        throw new Error(
-          `MCP authentication failed. Check your API key: ${error.message}`,
-        );
+      } else if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error(`MCP authentication failed. Check your API key: ${error.message}`);
       }
     }
 
