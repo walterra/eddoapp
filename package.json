@@ -104,7 +104,7 @@
     "printer": "pnpm --filter @eddo/printer-service cli",
     "format": "prettier --write ./packages",
     "lint:format": "prettier --cache --check ./packages",
-    "lint": "eslint --cache ./packages --ignore-pattern '**/dist/**'",
+    "lint": "eslint --cache ./packages ./scripts --ignore-pattern '**/dist/**'",
     "test": "pnpm test:unit",
     "test:unit": "vitest run packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
     "test:integration": "node scripts/run-integration-tests.js",

@@ -5,25 +5,22 @@
  * Supports both interactive prompts and direct command-line arguments
  */
 
-import fs from 'fs';
-import path from 'path';
-import { Command } from 'commander';
-import prompts from 'prompts';
-import ora from 'ora';
-import chalk from 'chalk';
 import couchbackup from '@cloudant/couchbackup';
-import { validateEnv, getCouchDbConfig, getAvailableDatabases } from '@eddo/core-server/config';
-import { 
-  getAllBackupFiles,
-  checkDatabaseExists,
-  recreateDatabase,
-  formatFileSize,
-  formatDuration,
-  parseBackupFilename,
+import { getAvailableDatabases, getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
+import chalk from 'chalk';
+import { Command } from 'commander';
+import fs from 'fs';
+import ora from 'ora';
+import path from 'path';
+import prompts from 'prompts';
+import {
   createRestoreOptions,
   DEFAULT_CONFIG,
-  type RestoreOptions,
-  type BackupFileInfo as BackupFileInfoBase
+  formatDuration,
+  formatFileSize,
+  getAllBackupFiles,
+  recreateDatabase,
+  type BackupFileInfo as BackupFileInfoBase,
 } from './backup-utils.js';
 
 interface RestoreConfig {
@@ -42,14 +39,13 @@ interface BackupFileInfo extends BackupFileInfoBase {
   age: string;
 }
 
-
 function getBackupFiles(backupDir: string): BackupFileInfo[] {
   const allBackups = getAllBackupFiles(backupDir);
-  
-  return allBackups.map(backup => {
+
+  return allBackups.map((backup) => {
     const stats = fs.statSync(backup.path);
     const age = getRelativeTime(stats.mtime);
-    
+
     return {
       filename: path.basename(backup.path),
       fullPath: backup.path,
@@ -82,7 +78,7 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
   // Environment configuration
   const env = validateEnv(process.env);
   const couchConfig = getCouchDbConfig(env);
-  
+
   // Default values
   const defaults: RestoreConfig = {
     database: couchConfig.dbName,
@@ -100,9 +96,9 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
 
   // Otherwise, prompt for missing values
   console.log(chalk.blue('\n🔄 CouchDB Interactive Restore\n'));
-  
+
   const questions: prompts.PromptObject[] = [];
-  
+
   // Database selection
   if (!options.database) {
     const spinner = ora('Discovering available databases...').start();
@@ -112,7 +108,7 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
     if (availableDatabases.length === 0) {
       console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
       console.log(chalk.gray('Falling back to manual input...'));
-      
+
       questions.push({
         type: 'text',
         name: 'database',
@@ -121,9 +117,9 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
       });
     } else {
       console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
-      
+
       const databaseChoices = [
-        ...availableDatabases.map(db => ({
+        ...availableDatabases.map((db) => ({
           title: db,
           value: db,
           description: db === defaults.database ? '(current default)' : '',
@@ -140,11 +136,11 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
         name: 'database',
         message: 'Select target database for restore:',
         choices: databaseChoices,
-        initial: availableDatabases.findIndex(db => db === defaults.database),
+        initial: availableDatabases.findIndex((db) => db === defaults.database),
       });
 
       questions.push({
-        type: (prev: string) => prev === '__custom__' ? 'text' : null,
+        type: (prev: string) => (prev === '__custom__' ? 'text' : null),
         name: 'customDatabase',
         message: 'Enter database name:',
         initial: defaults.database,
@@ -155,11 +151,11 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
   // Backup file selection
   if (!options.backupFile) {
     const backupFiles = getBackupFiles(options.backupDir || defaults.backupDir);
-    
+
     if (backupFiles.length === 0) {
       console.log(chalk.yellow('⚠️  No backup files found'));
       console.log(chalk.gray('Please specify backup file path manually...'));
-      
+
       questions.push({
         type: 'text',
         name: 'backupFile',
@@ -172,9 +168,9 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
       });
     } else {
       console.log(chalk.green(`✅ Found ${backupFiles.length} backup file(s)`));
-      
+
       const backupChoices = [
-        ...backupFiles.map(backup => ({
+        ...backupFiles.map((backup) => ({
           title: `${backup.filename}`,
           value: backup.fullPath,
           description: `${backup.database} | ${backup.size} | ${backup.age}`,
@@ -194,7 +190,7 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
       });
 
       questions.push({
-        type: (prev: string) => prev === '__custom__' ? 'text' : null,
+        type: (prev: string) => (prev === '__custom__' ? 'text' : null),
         name: 'customBackupFile',
         message: 'Enter backup file path:',
         validate: (value: string) => {
@@ -259,17 +255,20 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
 async function performRestore(config: RestoreConfig, isInteractive: boolean = true): Promise<void> {
   const env = validateEnv(process.env);
   const couchConfig = getCouchDbConfig(env);
-  
+
   // Use the database from config
-  const dbUrl = couchConfig.fullUrl.replace(couchConfig.dbName, config.database || couchConfig.dbName);
-  
+  const dbUrl = couchConfig.fullUrl.replace(
+    couchConfig.dbName,
+    config.database || couchConfig.dbName,
+  );
+
   if (!config.backupFile || !fs.existsSync(config.backupFile)) {
     throw new Error(`Backup file does not exist: ${config.backupFile}`);
   }
 
   // Show restore summary
   const backupStats = fs.statSync(config.backupFile);
-  
+
   console.log('\n' + chalk.bold('Restore Configuration:'));
   console.log(`  Backup File: ${chalk.cyan(config.backupFile)}`);
   console.log(`  File Size: ${chalk.cyan(formatFileSize(backupStats.size))}`);
@@ -294,7 +293,10 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
     await recreateDatabase(config.database!, env.COUCHDB_URL);
     spinner.succeed(chalk.green(`Recreated empty target database: ${config.database}`));
   } catch (error) {
-    console.error(chalk.red('Failed to recreate target database:'), error instanceof Error ? error.message : String(error));
+    console.error(
+      chalk.red('Failed to recreate target database:'),
+      error instanceof Error ? error.message : String(error),
+    );
     process.exit(1);
   }
 
@@ -303,7 +305,9 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
     const { finalConfirm } = await prompts({
       type: 'confirm',
       name: 'finalConfirm',
-      message: chalk.red('⚠️  WARNING: This will REPLACE ALL DATA in the target database. Are you absolutely sure?'),
+      message: chalk.red(
+        '⚠️  WARNING: This will REPLACE ALL DATA in the target database. Are you absolutely sure?',
+      ),
       initial: false,
     });
 
@@ -315,11 +319,11 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
 
   // Start restore with progress indicator
   const spinner = ora('Starting restore...').start();
-  
+
   try {
     const startTime = Date.now();
     const readStream = fs.createReadStream(config.backupFile);
-    
+
     const options = createRestoreOptions({
       parallelism: config.parallelism,
       requestTimeout: config.timeout,
@@ -333,19 +337,14 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
     }, 1000);
 
     await new Promise<void>((resolve, reject) => {
-      couchbackup.restore(
-        readStream,
-        dbUrl,
-        options,
-        (err: Error | null) => {
-          clearInterval(updateProgress);
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
+      couchbackup.restore(readStream, dbUrl, options, (err: Error | null) => {
+        clearInterval(updateProgress);
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
         }
-      );
+      });
 
       // Note: The readStream 'data' event won't give us accurate document count
       // as it's raw file chunks, not individual documents
@@ -355,17 +354,16 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
 
     // Display restore statistics
     const duration = Date.now() - startTime;
-    
+
     console.log('\n' + chalk.bold('Restore Summary:'));
     console.log(`  Source: ${chalk.cyan(config.backupFile)}`);
     console.log(`  Target: ${chalk.cyan(config.database)}`);
     console.log(`  Duration: ${chalk.cyan(formatDuration(duration))}`);
-    
+
     // Log file info
     if (fs.existsSync(`${config.backupFile}.restore.log`)) {
       console.log(`  Log: ${chalk.gray(`${config.backupFile}.restore.log`)}`);
     }
-
   } catch (error) {
     spinner.fail(chalk.red('Restore failed!'));
     console.error(chalk.red('\nError:'), error instanceof Error ? error.message : String(error));
@@ -383,24 +381,36 @@ program
   .option('-d, --database <name>', 'target database name for restore')
   .option('-f, --backup-file <path>', 'backup file to restore from')
   .option('-b, --backup-dir <path>', 'backup directory to search', DEFAULT_CONFIG.backupDir)
-  .option('-p, --parallelism <number>', 'number of parallel connections', (val) => parseInt(val, 10), DEFAULT_CONFIG.parallelism)
-  .option('-t, --timeout <ms>', 'request timeout in milliseconds', (val) => parseInt(val, 10), DEFAULT_CONFIG.timeout)
+  .option(
+    '-p, --parallelism <number>',
+    'number of parallel connections',
+    (val) => parseInt(val, 10),
+    DEFAULT_CONFIG.parallelism,
+  )
+  .option(
+    '-t, --timeout <ms>',
+    'request timeout in milliseconds',
+    (val) => parseInt(val, 10),
+    DEFAULT_CONFIG.timeout,
+  )
   .option('--dry-run', 'show what would be done without performing restore')
   .option('--force-overwrite', 'skip overwrite confirmation prompts')
   .option('--no-interactive', 'disable interactive prompts')
   .action(async (options) => {
     try {
       let config: RestoreConfig;
-      
+
       if (options.interactive) {
         config = await getRestoreConfig(options);
       } else {
         // In non-interactive mode, require explicit backup file parameter
         if (!options.backupFile) {
-          throw new Error('Backup file parameter is required in non-interactive mode. Use --backup-file <path> or run without --no-interactive');
+          throw new Error(
+            'Backup file parameter is required in non-interactive mode. Use --backup-file <path> or run without --no-interactive',
+          );
         }
-        
-        config = { 
+
+        config = {
           database: options.database || getCouchDbConfig(validateEnv(process.env)).dbName,
           backupFile: options.backupFile,
           backupDir: options.backupDir || DEFAULT_CONFIG.backupDir,
@@ -410,7 +420,7 @@ program
           forceOverwrite: options.forceOverwrite || false,
         };
       }
-      
+
       await performRestore(config, options.interactive);
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
@@ -423,4 +433,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   program.parse();
 }
 
-export { performRestore, getRestoreConfig };
+export { getRestoreConfig, performRestore };

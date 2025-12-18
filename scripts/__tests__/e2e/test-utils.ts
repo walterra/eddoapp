@@ -2,7 +2,7 @@
  * E2E Test Utilities
  * Provides helper functions for setting up and cleaning up CouchDB databases in e2e tests
  */
-import { validateEnv, getTestCouchDbConfig, cleanupDatabasesByPattern } from '@eddo/core-server';
+import { cleanupDatabasesByPattern, getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
 import nano from 'nano';
 
 /**
@@ -20,7 +20,7 @@ export function generateTestDbName(prefix: string): string {
 export function createTestEnv(customDbName?: string) {
   const env = validateEnv(process.env);
   const testCouchConfig = getTestCouchDbConfig(env);
-  
+
   return {
     ...process.env,
     COUCHDB_URL: testCouchConfig.url,
@@ -50,12 +50,7 @@ export class TestDatabaseManager {
       this.createdDatabases.add(dbName);
       console.log(`📁 Created test database: ${dbName}`);
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 412
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 412) {
         // Database already exists
         this.createdDatabases.add(dbName);
         console.log(`📁 Test database already exists: ${dbName}`);
@@ -82,12 +77,7 @@ export class TestDatabaseManager {
       this.createdDatabases.delete(dbName);
       console.log(`🗑️  Deleted test database: ${dbName}`);
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
         // Database doesn't exist
         console.log(`ℹ️  Test database doesn't exist: ${dbName}`);
       } else {
@@ -111,11 +101,13 @@ export class TestDatabaseManager {
    * Clean up all test databases matching pattern, including untracked ones
    * This is useful for cleaning up databases created by external scripts
    */
-  async cleanupAllTestDatabases(options: { dryRun?: boolean; verbose?: boolean } = {}): Promise<void> {
+  async cleanupAllTestDatabases(
+    options: { dryRun?: boolean; verbose?: boolean } = {},
+  ): Promise<void> {
     try {
       // Clean up tracked databases first
       await this.cleanupAll();
-      
+
       // Clean up any remaining test databases using pattern matching
       const testDatabasePattern = /^test-/;
       const result = await cleanupDatabasesByPattern(testDatabasePattern, {
@@ -123,14 +115,14 @@ export class TestDatabaseManager {
         verbose: options.verbose || false,
         force: true, // Force cleanup for test databases
       });
-      
+
       if (options.verbose) {
         console.log(`🧹 Pattern-based cleanup completed:`);
         console.log(`  Cleaned: ${result.summary.cleaned}`);
         console.log(`  Skipped: ${result.summary.skipped}`);
         console.log(`  Errors: ${result.summary.errors}`);
       }
-      
+
       if (result.errors.length > 0) {
         console.warn(`⚠️  Some databases could not be cleaned up:`, result.errors);
       }
@@ -143,7 +135,11 @@ export class TestDatabaseManager {
   /**
    * Wait for database to be fully created/deleted (useful for timing-sensitive tests)
    */
-  async waitForDatabase(dbName: string, shouldExist: boolean, maxRetries: number = 10): Promise<void> {
+  async waitForDatabase(
+    dbName: string,
+    shouldExist: boolean,
+    maxRetries: number = 10,
+  ): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.couch.db.get(dbName);
@@ -151,7 +147,7 @@ export class TestDatabaseManager {
           return; // Database exists as expected
         }
         // Database exists but shouldn't - wait and retry
-        await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+        await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
       } catch (error: unknown) {
         if (
           error &&
@@ -163,19 +159,21 @@ export class TestDatabaseManager {
             return; // Database doesn't exist as expected
           }
           // Database doesn't exist but should - wait and retry
-          await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
         } else {
           throw error;
         }
       }
     }
-    throw new Error(`Database ${dbName} ${shouldExist ? 'creation' : 'deletion'} verification timed out`);
+    throw new Error(
+      `Database ${dbName} ${shouldExist ? 'creation' : 'deletion'} verification timed out`,
+    );
   }
 
   /**
    * Add sample data to a test database
    */
-  async addSampleData(dbName: string, docs: any[]): Promise<void> {
+  async addSampleData(dbName: string, docs: Record<string, unknown>[]): Promise<void> {
     const db = this.couch.db.use(dbName);
     for (const doc of docs) {
       try {
@@ -195,12 +193,7 @@ export class TestDatabaseManager {
       await this.couch.db.get(dbName);
       return true;
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
         return false;
       }
       throw error;
@@ -213,7 +206,7 @@ export class TestDatabaseManager {
   async getTestDatabases(): Promise<string[]> {
     try {
       const allDbs = await this.couch.db.list();
-      return allDbs.filter(db => db.startsWith('test-'));
+      return allDbs.filter((db) => db.startsWith('test-'));
     } catch (error) {
       console.warn('⚠️  Failed to list databases:', error);
       return [];

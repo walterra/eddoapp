@@ -1,9 +1,14 @@
 import { runner } from 'clet';
 import fs from 'fs';
-import path from 'path';
 import os from 'os';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { TestDatabaseManager, generateTestDbName, createTestEnv, SAMPLE_TODO_DOCS } from './test-utils';
+import path from 'path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  createTestEnv,
+  generateTestDbName,
+  SAMPLE_TODO_DOCS,
+  TestDatabaseManager,
+} from './test-utils';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '../../..');
 const BACKUP_SCRIPT = path.join(PROJECT_ROOT, 'scripts', 'backup-interactive.ts');
@@ -13,14 +18,14 @@ describe('Restore Interactive E2E', () => {
   let testDir: string;
   let backupDir: string;
   let dbManager: TestDatabaseManager;
-  
+
   beforeEach(() => {
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-test-'));
     backupDir = path.join(testDir, 'backups');
     fs.mkdirSync(backupDir, { recursive: true });
     dbManager = new TestDatabaseManager();
   });
-  
+
   afterEach(async () => {
     await dbManager.cleanupAll();
     if (fs.existsSync(testDir)) {
@@ -44,12 +49,21 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+      ])
       .stdout(/Backup Summary:/)
       .code(0);
 
     // Step 3: Find the backup file
-    const backupFiles = fs.readdirSync(backupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
@@ -57,7 +71,15 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', backupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        backupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .stdout(new RegExp(targetDbName))
       .code(0);
@@ -78,7 +100,16 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', targetDbName, '--backup-file', mockBackupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--dry-run',
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        mockBackupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Dry run mode/)
       .stdout(new RegExp(targetDbName))
       .code(0);
@@ -97,11 +128,18 @@ describe('Restore Interactive E2E', () => {
     const targetDbName = generateTestDbName('file-check-test');
     const nonExistentFile = path.join(testDir, 'nonexistent.json');
     const testEnv = createTestEnv();
-    
+
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', nonExistentFile])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        nonExistentFile,
+      ])
       .stderr(/does not exist|not found/)
       .code(1);
   }, 30000);
@@ -121,18 +159,39 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+      ])
       .stdout(/Backup Summary:/)
       .code(0);
 
-    const backupFiles = fs.readdirSync(backupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     const backupFile = path.join(backupDir, backupFiles[0]);
 
     // Test restore with custom parameters
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', backupFile, '--parallelism', '3', '--timeout', '60000', '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        backupFile,
+        '--parallelism',
+        '3',
+        '--timeout',
+        '60000',
+        '--force-overwrite',
+      ])
       .stdout(/Restore Configuration:/)
       .stdout(new RegExp(targetDbName))
       .stdout(/Parallelism: 3/)
@@ -153,7 +212,14 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', mockBackupFile])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        mockBackupFile,
+      ])
       .stdout(/Restore cancelled - force overwrite not confirmed/)
       .code(0);
   }, 30000);
@@ -176,33 +242,56 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', customBackupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        customBackupDir,
+      ])
       .stdout(/Backup Summary:/)
       .code(0);
 
-    const backupFiles = fs.readdirSync(customBackupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(customBackupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     const backupFile = path.join(customBackupDir, backupFiles[0]);
 
     // Test restore from custom directory
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', backupFile, '--backup-dir', customBackupDir, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        backupFile,
+        '--backup-dir',
+        customBackupDir,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .code(0);
   }, 45000);
 
-  it.skipIf(process.env.CI)('should handle user cancellation in interactive mode', async () => {
-    const testEnv = createTestEnv();
+  it.skipIf(process.env.CI)(
+    'should handle user cancellation in interactive mode',
+    async () => {
+      const testEnv = createTestEnv();
 
-    await runner()
-      .env(testEnv)
-      .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT])
-      .stdin(/Select target database for restore:/, '\x03') // Ctrl+C to cancel
-      .stdout(/Restore cancelled/i)
-      .code(0); // prompts library exits with 0 when cancelled
-  }, 30000);
+      await runner()
+        .env(testEnv)
+        .cwd(PROJECT_ROOT)
+        .spawn('tsx', [RESTORE_SCRIPT])
+        .stdin(/Select target database for restore:/, '\x03') // Ctrl+C to cancel
+        .stdout(/Restore cancelled/i)
+        .code(0); // prompts library exits with 0 when cancelled
+    },
+    30000,
+  );
 
   it('should validate parallelism parameter range', async () => {
     const sourceDbName = generateTestDbName('parallelism-source');
@@ -219,17 +308,36 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+      ])
       .stdout(/Backup Summary:/)
       .code(0);
 
-    const backupFiles = fs.readdirSync(backupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     const backupFile = path.join(backupDir, backupFiles[0]);
 
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', backupFile, '--parallelism', '8', '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        backupFile,
+        '--parallelism',
+        '8',
+        '--force-overwrite',
+      ])
       .stdout(/Parallelism: 8/)
       .stdout(/Restore Summary:/)
       .code(0);
@@ -262,7 +370,15 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', invalidBackupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        invalidBackupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .code(0);
 
@@ -275,14 +391,14 @@ describe('Restore Interactive E2E - File Discovery', () => {
   let testDir: string;
   let backupDir: string;
   let dbManager: TestDatabaseManager;
-  
+
   beforeEach(() => {
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-discovery-test-'));
     backupDir = path.join(testDir, 'backups');
     fs.mkdirSync(backupDir, { recursive: true });
     dbManager = new TestDatabaseManager();
   });
-  
+
   afterEach(async () => {
     await dbManager.cleanupAll();
     if (fs.existsSync(testDir)) {
@@ -300,21 +416,28 @@ describe('Restore Interactive E2E - File Discovery', () => {
 
     // Create multiple source databases and their backups
     const databases = [`${sourceDbName}-dev`, `${sourceDbName}-prod`, `${sourceDbName}-test`];
-    
+
     for (const dbName of databases) {
       await dbManager.createTestDatabase(dbName);
       await dbManager.addSampleData(dbName, [SAMPLE_TODO_DOCS[0]]);
-      
+
       await runner()
         .env(testEnv)
         .cwd(PROJECT_ROOT)
-        .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', dbName, '--backup-dir', backupDir])
+        .spawn('tsx', [
+          BACKUP_SCRIPT,
+          '--no-interactive',
+          '--database',
+          dbName,
+          '--backup-dir',
+          backupDir,
+        ])
         .stdout(/Backup Summary:/)
         .code(0);
     }
 
     // Verify multiple backup files were created
-    const backupFiles = fs.readdirSync(backupDir).filter(f => f.endsWith('.json'));
+    const backupFiles = fs.readdirSync(backupDir).filter((f) => f.endsWith('.json'));
     expect(backupFiles.length).toBe(3);
 
     // Test restore using one of the backup files
@@ -322,47 +445,70 @@ describe('Restore Interactive E2E - File Discovery', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', selectedBackupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        selectedBackupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .code(0);
   }, 60000);
 
-  it.skipIf(process.env.CI)('should discover backup files in directory', async () => {
-    const sourceDbName = generateTestDbName('interactive-discovery');
-    const testEnv = createTestEnv();
+  it.skipIf(process.env.CI)(
+    'should discover backup files in directory',
+    async () => {
+      const sourceDbName = generateTestDbName('interactive-discovery');
+      const testEnv = createTestEnv();
 
-    // Create a real backup file
-    await dbManager.createTestDatabase(sourceDbName);
-    await dbManager.addSampleData(sourceDbName, [SAMPLE_TODO_DOCS[0]]);
+      // Create a real backup file
+      await dbManager.createTestDatabase(sourceDbName);
+      await dbManager.addSampleData(sourceDbName, [SAMPLE_TODO_DOCS[0]]);
 
-    await runner()
-      .env(testEnv)
-      .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
-      .stdout(/Backup Summary:/)
-      .code(0);
+      await runner()
+        .env(testEnv)
+        .cwd(PROJECT_ROOT)
+        .spawn('tsx', [
+          BACKUP_SCRIPT,
+          '--no-interactive',
+          '--database',
+          sourceDbName,
+          '--backup-dir',
+          backupDir,
+        ])
+        .stdout(/Backup Summary:/)
+        .code(0);
 
-    // Start the command and cancel immediately to test file discovery
-    await runner()
-      .env(testEnv)
-      .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', backupDir])
-      .stdin(/Select target database for restore:/, '\x03') // Cancel after discovery
-      .stdout(/Restore cancelled/i)
-      .code(0);
-  }, 45000);
+      // Start the command and cancel immediately to test file discovery
+      await runner()
+        .env(testEnv)
+        .cwd(PROJECT_ROOT)
+        .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', backupDir])
+        .stdin(/Select target database for restore:/, '\x03') // Cancel after discovery
+        .stdout(/Restore cancelled/i)
+        .code(0);
+    },
+    45000,
+  );
 
-  it.skipIf(process.env.CI)('should handle empty backup directory', async () => {
-    const emptyBackupDir = path.join(testDir, 'empty');
-    fs.mkdirSync(emptyBackupDir, { recursive: true });
-    const testEnv = createTestEnv();
+  it.skipIf(process.env.CI)(
+    'should handle empty backup directory',
+    async () => {
+      const emptyBackupDir = path.join(testDir, 'empty');
+      fs.mkdirSync(emptyBackupDir, { recursive: true });
+      const testEnv = createTestEnv();
 
-    await runner()
-      .env(testEnv)
-      .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', emptyBackupDir])
-      .stdin(/Select target database for restore:/, '\x03') // Cancel at first prompt
-      .stdout(/Restore cancelled/i)
-      .code(0);
-  }, 30000);
+      await runner()
+        .env(testEnv)
+        .cwd(PROJECT_ROOT)
+        .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', emptyBackupDir])
+        .stdin(/Select target database for restore:/, '\x03') // Cancel at first prompt
+        .stdout(/Restore cancelled/i)
+        .code(0);
+    },
+    30000,
+  );
 });

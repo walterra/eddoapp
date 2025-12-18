@@ -139,4 +139,18 @@ export default [
       'no-undef': 'off',
     },
   },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
+    },
+  },
 ];

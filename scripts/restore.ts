@@ -5,17 +5,16 @@
  * Restores CouchDB database from a JSON backup file
  */
 
-import fs from 'fs';
 import couchbackup from '@cloudant/couchbackup';
-import { validateEnv, getCouchDbConfig } from '@eddo/core-server/config';
-import { 
-  getLatestBackupFile,
+import { getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
+import fs from 'fs';
+import {
   checkDatabaseExists,
-  recreateDatabase,
-  formatFileSize,
   createRestoreOptions,
   DEFAULT_CONFIG,
-  type RestoreOptions
+  formatFileSize,
+  getLatestBackupFile,
+  recreateDatabase,
 } from './backup-utils.js';
 
 // Environment configuration using shared validation
@@ -25,27 +24,32 @@ const couchConfig = getCouchDbConfig(env);
 // Additional restore-specific configuration
 const BACKUP_DIR = process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir;
 
-
-
-
-async function restore(backupFile?: string, database?: string, force: boolean = false): Promise<void> {
+async function restore(
+  backupFile?: string,
+  database?: string,
+  force: boolean = false,
+): Promise<void> {
   try {
     const dbName = database || couchConfig.dbName;
     const restoreFile = backupFile || getLatestBackupFile(dbName, BACKUP_DIR);
-    
+
     if (!fs.existsSync(restoreFile)) {
       throw new Error(`Backup file does not exist: ${restoreFile}`);
     }
 
     // Check if database exists and has documents
     const { exists, docCount } = await checkDatabaseExists(dbName, env.COUCHDB_URL);
-    
+
     if (exists && docCount > 0 && !force) {
-      console.error(`Error: Database '${dbName}' already exists and contains ${docCount} documents.`);
+      console.error(
+        `Error: Database '${dbName}' already exists and contains ${docCount} documents.`,
+      );
       console.error('This restore operation would overwrite existing data.');
       console.error('');
       console.error('To proceed anyway, use the --force parameter:');
-      console.error(`  pnpm tsx scripts/restore.ts ${backupFile || ''} ${database ? `--database ${database}` : ''} --force`.trim());
+      console.error(
+        `  pnpm tsx scripts/restore.ts ${backupFile || ''} ${database ? `--database ${database}` : ''} --force`.trim(),
+      );
       process.exit(1);
     }
 
@@ -55,18 +59,20 @@ async function restore(backupFile?: string, database?: string, force: boolean = 
     console.log(`Starting restore of ${dbName} database...`);
     console.log(`Source: ${restoreFile}`);
     console.log(`Destination: ${dbUrl}`);
-    
+
     if (exists && docCount > 0) {
-      console.log(`Warning: Overwriting existing database with ${docCount} documents (--force was used)`);
+      console.log(
+        `Warning: Overwriting existing database with ${docCount} documents (--force was used)`,
+      );
     }
 
     // Recreate the database to ensure it's empty
     await recreateDatabase(dbName, env.COUCHDB_URL);
 
     const readStream = fs.createReadStream(restoreFile);
-    
+
     const options = createRestoreOptions({
-      logfile: `${restoreFile}.restore.log`
+      logfile: `${restoreFile}.restore.log`,
     });
 
     // Log file stats for debugging
@@ -74,34 +80,28 @@ async function restore(backupFile?: string, database?: string, force: boolean = 
     console.log(`Backup file size: ${formatFileSize(fileStats.size)}`);
 
     await new Promise<void>((resolve, reject) => {
-      couchbackup.restore(
-        readStream,
-        dbUrl,
-        options,
-        (err: Error | null, data?: unknown) => {
-          if (err) {
-            reject(err);
-          } else {
-            console.log('Restore process completed');
-            resolve();
-          }
+      couchbackup.restore(readStream, dbUrl, options, (err: Error | null, _data?: unknown) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.log('Restore process completed');
+          resolve();
         }
-      );
+      });
     });
 
     console.log(`Restore completed successfully from: ${restoreFile}`);
-    
+
     // Check if log file exists and show any errors
     if (fs.existsSync(`${restoreFile}.restore.log`)) {
       console.log(`Log file created: ${restoreFile}.restore.log`);
     }
-    
+
     // Verify the restored database
     const { exists: verifyExists, docCount: verifyDocCount } = await checkDatabaseExists(dbName);
     if (verifyExists) {
       console.log(`Verified: Database '${dbName}' now contains ${verifyDocCount} documents`);
     }
-    
   } catch (error) {
     console.error('Restore failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
@@ -114,7 +114,7 @@ function parseArgs() {
   let backupFile: string | undefined;
   let database: string | undefined;
   let force: boolean = false;
-  
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--database' || arg === '-d') {
@@ -147,20 +147,22 @@ Examples:
       backupFile = arg;
     }
   }
-  
+
   return { backupFile, database, force };
 }
 
 // Run restore if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
-  
+
   // If no arguments provided, delegate to interactive restore
   if (args.length === 0) {
     console.log('No arguments provided, starting interactive restore...\n');
-    import('./restore-interactive.js').then(({ performRestore, getRestoreConfig }) => {
-      return getRestoreConfig({}).then(config => performRestore(config, true));
-    }).catch(console.error);
+    import('./restore-interactive.js')
+      .then(({ performRestore, getRestoreConfig }) => {
+        return getRestoreConfig({}).then((config) => performRestore(config, true));
+      })
+      .catch(console.error);
   } else {
     const { backupFile, database, force } = parseArgs();
     restore(backupFile, database, force).catch(console.error);

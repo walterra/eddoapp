@@ -5,16 +5,16 @@
  * Backs up CouchDB database to a JSON file
  */
 
-import fs from 'fs';
-import { dotenvLoad } from 'dotenv-mono';
 import couchbackup from '@cloudant/couchbackup';
-import { validateEnv, getCouchDbConfig } from '@eddo/core-server/config';
+import { getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
+import { dotenvLoad } from 'dotenv-mono';
+import fs from 'fs';
 import {
-  ensureBackupDir,
-  generateBackupFilename,
-  formatFileSize,
   createBackupOptions,
-  DEFAULT_CONFIG
+  DEFAULT_CONFIG,
+  ensureBackupDir,
+  formatFileSize,
+  generateBackupFilename,
 } from './backup-utils.js';
 
 // Load environment variables
@@ -48,22 +48,17 @@ async function backup(database?: string): Promise<void> {
     const writeStream = fs.createWriteStream(backupFile);
 
     const options = createBackupOptions({
-      logfile: `${backupFile}.log`
+      logfile: `${backupFile}.log`,
     });
 
     await new Promise<void>((resolve, reject) => {
-      couchbackup.backup(
-        dbUrl,
-        writeStream,
-        options,
-        (err: Error | null, data?: unknown) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
+      couchbackup.backup(dbUrl, writeStream, options, (err: Error | null, _data?: unknown) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
         }
-      );
+      });
     });
 
     console.log(`Backup completed successfully: ${backupFile}`);
@@ -71,7 +66,6 @@ async function backup(database?: string): Promise<void> {
     // Display backup file size
     const stats = fs.statSync(backupFile);
     console.log(`Backup size: ${formatFileSize(stats.size)}`);
-
   } catch (error) {
     console.error('Backup failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
@@ -81,14 +75,14 @@ async function backup(database?: string): Promise<void> {
 // Add basic CLI argument parsing
 function parseArgs(): { showHelp: boolean; database?: string; backupDir?: string } {
   const args = process.argv.slice(2);
-  
+
   if (args.includes('--help') || args.includes('-h')) {
     return { showHelp: true };
   }
-  
-  const databaseIndex = args.findIndex(arg => arg === '--database' || arg === '-d');
-  const backupDirIndex = args.findIndex(arg => arg === '--backup-dir' || arg === '-b');
-  
+
+  const databaseIndex = args.findIndex((arg) => arg === '--database' || arg === '-d');
+  const backupDirIndex = args.findIndex((arg) => arg === '--backup-dir' || arg === '-b');
+
   return {
     showHelp: false,
     database: databaseIndex >= 0 ? args[databaseIndex + 1] : undefined,
@@ -119,12 +113,12 @@ Note: For more advanced features, use 'pnpm backup:interactive'
 // Run backup if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = parseArgs();
-  
+
   if (args.showHelp) {
     showHelp();
     process.exit(0);
   }
-  
+
   // Override backup directory if specified
   if (args.backupDir) {
     process.env.BACKUP_DIR = args.backupDir;

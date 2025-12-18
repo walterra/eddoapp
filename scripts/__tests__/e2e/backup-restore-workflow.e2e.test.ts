@@ -1,9 +1,14 @@
 import { runner } from 'clet';
 import fs from 'fs';
-import path from 'path';
 import os from 'os';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { TestDatabaseManager, generateTestDbName, createTestEnv, SAMPLE_TODO_DOCS } from './test-utils';
+import path from 'path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  createTestEnv,
+  generateTestDbName,
+  SAMPLE_TODO_DOCS,
+  TestDatabaseManager,
+} from './test-utils';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '../../..');
 const BACKUP_SCRIPT = path.join(PROJECT_ROOT, 'scripts', 'backup-interactive.ts');
@@ -13,14 +18,14 @@ describe('Backup-Restore Workflow E2E', () => {
   let testDir: string;
   let backupDir: string;
   let dbManager: TestDatabaseManager;
-  
+
   beforeEach(() => {
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-test-'));
     backupDir = path.join(testDir, 'backups');
     fs.mkdirSync(backupDir, { recursive: true });
     dbManager = new TestDatabaseManager();
   });
-  
+
   afterEach(async () => {
     await dbManager.cleanupAll();
     if (fs.existsSync(testDir)) {
@@ -44,13 +49,22 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+      ])
       .stdout(/Backup Summary:/)
       .stdout(new RegExp(sourceDbName))
       .code(0);
 
     // Step 3: Find the created backup file
-    const backupFiles = fs.readdirSync(backupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
@@ -65,7 +79,15 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', backupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        backupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .stdout(new RegExp(targetDbName))
       .code(0);
@@ -92,14 +114,27 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir, '--parallelism', customParallelism.toString(), '--timeout', customTimeout.toString()])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+        '--parallelism',
+        customParallelism.toString(),
+        '--timeout',
+        customTimeout.toString(),
+      ])
       .stdout(/Parallelism: 4/)
       .stdout(/Timeout: 60000ms/)
       .stdout(/Backup Summary:/)
       .code(0);
 
     // Find backup file
-    const backupFiles = fs.readdirSync(backupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
@@ -107,7 +142,19 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', backupFile, '--parallelism', customParallelism.toString(), '--timeout', customTimeout.toString(), '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        backupFile,
+        '--parallelism',
+        customParallelism.toString(),
+        '--timeout',
+        customTimeout.toString(),
+        '--force-overwrite',
+      ])
       .stdout(/Parallelism: 4/)
       .stdout(/Timeout: 60000ms/)
       .stdout(/Restore Summary:/)
@@ -117,10 +164,10 @@ describe('Backup-Restore Workflow E2E', () => {
   it('should handle invalid backup file format during restore', async () => {
     const targetDbName = generateTestDbName('invalid-backup-test');
     const testEnv = createTestEnv();
-    
+
     // Track the target database that will be created by the restore script
     dbManager.trackDatabase(targetDbName);
-    
+
     // Create an invalid backup file
     const invalidBackupFile = path.join(backupDir, 'invalid-backup.json');
     fs.writeFileSync(invalidBackupFile, 'invalid json content');
@@ -129,7 +176,15 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', invalidBackupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        invalidBackupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .code(0);
 
@@ -140,7 +195,7 @@ describe('Backup-Restore Workflow E2E', () => {
     const sourceDbName = generateTestDbName('multi-backup');
     const targetDbName = generateTestDbName('multi-backup-restored');
     const testEnv = createTestEnv();
-    
+
     // Step 1: Create source database with sample data
     await dbManager.createTestDatabase(sourceDbName);
     await dbManager.addSampleData(sourceDbName, SAMPLE_TODO_DOCS);
@@ -152,22 +207,38 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+      ])
       .stdout(/Backup Summary:/)
       .code(0);
 
     // Step 3: Wait a moment and create second backup
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+      ])
       .stdout(/Backup Summary:/)
       .stdout(/Existing backups:/)
       .code(0);
 
     // Step 4: Verify multiple backup files exist
-    const backupFiles = fs.readdirSync(backupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(2);
 
     // Step 5: Restore using the latest backup file
@@ -175,7 +246,15 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', latestBackupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        latestBackupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .code(0);
   }, 75000);
@@ -185,7 +264,7 @@ describe('Backup-Restore Workflow E2E', () => {
     const targetDbName = generateTestDbName('subdir-test-restored');
     const subdirBackupDir = path.join(backupDir, 'subdir');
     const testEnv = createTestEnv();
-    
+
     fs.mkdirSync(subdirBackupDir, { recursive: true });
 
     // Step 1: Create source database with sample data
@@ -199,14 +278,23 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--database', sourceDbName, '--backup-dir', subdirBackupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        subdirBackupDir,
+      ])
       .stdout(/Backup Summary:/)
       .code(0);
 
     expect(fs.existsSync(subdirBackupDir)).toBe(true);
-    
+
     // Step 3: Find backup file in subdirectory
-    const backupFiles = fs.readdirSync(subdirBackupDir).filter(f => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(subdirBackupDir)
+      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(subdirBackupDir, backupFiles[0]);
 
@@ -214,11 +302,19 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName, '--backup-file', backupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        backupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Restore Summary:/)
       .code(0);
   }, 60000);
-  
+
   it('should test dry-run functionality', async () => {
     const sourceDbName = generateTestDbName('dry-run-test');
     const targetDbName = generateTestDbName('dry-run-test-restored');
@@ -228,7 +324,15 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [BACKUP_SCRIPT, '--dry-run', '--no-interactive', '--database', sourceDbName, '--backup-dir', backupDir])
+      .spawn('tsx', [
+        BACKUP_SCRIPT,
+        '--dry-run',
+        '--no-interactive',
+        '--database',
+        sourceDbName,
+        '--backup-dir',
+        backupDir,
+      ])
       .stdout(/Dry run mode/)
       .stdout(new RegExp(sourceDbName))
       .code(0);
@@ -246,7 +350,16 @@ describe('Backup-Restore Workflow E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--dry-run', '--no-interactive', '--database', targetDbName, '--backup-file', mockBackupFile, '--force-overwrite'])
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--dry-run',
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        mockBackupFile,
+        '--force-overwrite',
+      ])
       .stdout(/Dry run mode/)
       .stdout(new RegExp(targetDbName))
       .code(0);

@@ -5,9 +5,9 @@
  * Tests basic configuration and validation without actual backup
  */
 
+import { getAvailableDatabases, validateEnv } from '@eddo/core-server/config';
 import chalk from 'chalk';
 import { getBackupConfig } from './backup-interactive.js';
-import { validateEnv, getAvailableDatabases } from '@eddo/core-server/config';
 
 async function testDatabaseDiscovery(): Promise<void> {
   console.log(chalk.blue('\n🧪 Testing Database Discovery\n'));
@@ -15,9 +15,9 @@ async function testDatabaseDiscovery(): Promise<void> {
   try {
     const env = validateEnv(process.env);
     console.log(chalk.cyan('Discovering available databases...'));
-    
+
     const databases = await getAvailableDatabases(env);
-    
+
     if (databases.length === 0) {
       console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
       console.log(chalk.gray('Make sure CouchDB is running and accessible'));
@@ -45,7 +45,7 @@ async function testConfigGeneration(): Promise<void> {
       timeout: 30000,
       dryRun: true,
     });
-    
+
     console.log('✅ Full config test passed');
     console.log(`   Database: ${fullConfig.database}`);
     console.log(`   Backup Dir: ${fullConfig.backupDir}`);
@@ -56,7 +56,7 @@ async function testConfigGeneration(): Promise<void> {
     // Test 2: Partial configuration (this will prompt interactively)
     console.log(chalk.cyan('\nTest 2: Interactive mode (will prompt)'));
     console.log(chalk.gray('Run with --no-interactive to skip this test'));
-    
+
     if (!process.argv.includes('--no-interactive')) {
       const interactiveConfig = await getBackupConfig({
         database: 'interactive-test',
@@ -68,7 +68,6 @@ async function testConfigGeneration(): Promise<void> {
     }
 
     console.log(chalk.green('\n✅ All CLI tests passed!'));
-    
   } catch (error) {
     console.error(chalk.red('❌ Test failed:'), error);
     process.exit(1);
@@ -77,14 +76,14 @@ async function testConfigGeneration(): Promise<void> {
 
 async function testCLIHelp(): Promise<void> {
   console.log(chalk.blue('\n🧪 Testing CLI Help Output\n'));
-  
+
   const { spawn } = await import('child_process');
-  
+
   console.log(chalk.cyan('Testing backup-interactive --help:'));
   const backupHelpProcess = spawn('tsx', ['scripts/backup-interactive.ts', '--help'], {
     stdio: 'inherit',
   });
-  
+
   backupHelpProcess.on('close', (code) => {
     if (code === 0) {
       console.log(chalk.green('✅ Backup help command works'));
@@ -97,7 +96,7 @@ async function testCLIHelp(): Promise<void> {
   const restoreHelpProcess = spawn('tsx', ['scripts/restore-interactive.ts', '--help'], {
     stdio: 'inherit',
   });
-  
+
   restoreHelpProcess.on('close', (code) => {
     if (code === 0) {
       console.log(chalk.green('✅ Restore help command works'));
@@ -116,15 +115,15 @@ const testHelp = args.includes('--help-test') || args.length === 0;
 if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(chalk.blue('🚀 CLI Testing Suite'));
   console.log(chalk.gray('Options: --database, --config, --help-test, --no-interactive\n'));
-  
+
   if (testDatabase) {
     await testDatabaseDiscovery();
   }
-  
+
   if (testConfig) {
     await testConfigGeneration();
   }
-  
+
   if (testHelp) {
     await testCLIHelp();
   }

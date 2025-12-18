@@ -5,16 +5,16 @@
  * Replicates data from source to target database (one-way sync)
  */
 
+import { getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
+import chalk from 'chalk';
 import nano from 'nano';
 import ora from 'ora';
-import chalk from 'chalk';
-import { validateEnv, getCouchDbConfig } from '@eddo/core-server/config';
 import { checkDatabaseExists, formatDuration } from './backup-utils.js';
 
 // Parse command line arguments
 function parseArgs(): { source: string; target: string; continuous?: boolean } {
   const args = process.argv.slice(2);
-  
+
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`
 ${chalk.bold('CouchDB Replication Script')}
@@ -48,11 +48,11 @@ Examples:
 
 async function replicate(): Promise<void> {
   const { source, target, continuous } = parseArgs();
-  
+
   // Environment configuration using shared validation
   const env = validateEnv(process.env);
   const couchConfig = getCouchDbConfig(env);
-  
+
   const spinner = ora();
 
   try {
@@ -65,21 +65,21 @@ async function replicate(): Promise<void> {
     // Check if source database exists
     spinner.start('Checking source database...');
     const sourceInfo = await checkDatabaseExists(source, couchConfig.url);
-    
+
     if (!sourceInfo.exists) {
       spinner.fail(chalk.red(`Source database '${source}' does not exist`));
       process.exit(1);
     }
-    
+
     spinner.succeed(`Source database '${source}' found (${sourceInfo.docCount} documents)`);
 
     // Check if target database exists
     spinner.start('Checking target database...');
     const targetInfo = await checkDatabaseExists(target, couchConfig.url);
-    
+
     if (!targetInfo.exists) {
       spinner.warn(chalk.yellow(`Target database '${target}' does not exist`));
-      
+
       // Create target database
       spinner.start(`Creating target database '${target}'...`);
       const couch = nano(couchConfig.url);
@@ -92,9 +92,9 @@ async function replicate(): Promise<void> {
     // Start replication
     spinner.start('Starting replication...');
     const startTime = Date.now();
-    
+
     const couch = nano(couchConfig.url);
-    
+
     // Create replication options
     const replicationOpts: nano.DatabaseReplicateOptions = {
       create_target: false, // We already handle this above
@@ -103,17 +103,17 @@ async function replicate(): Promise<void> {
 
     // Perform replication
     const result = await couch.db.replicate(source, target, replicationOpts);
-    
+
     const duration = Date.now() - startTime;
     spinner.succeed(`Replication ${continuous ? 'started' : 'completed'} successfully`);
 
     // Display results
     console.log();
     console.log(chalk.bold('📊 Replication Summary:'));
-    
+
     if (result.ok) {
       console.log(`Status: ${chalk.green('✓ Success')}`);
-      
+
       if (result.history && result.history.length > 0) {
         const history = result.history[0];
         console.log(`Documents written: ${chalk.cyan(history.docs_written || 0)}`);
@@ -121,13 +121,13 @@ async function replicate(): Promise<void> {
         console.log(`Missing documents: ${chalk.cyan(history.missing_checked || 0)}`);
         console.log(`Errors: ${chalk.red(history.doc_write_failures || 0)}`);
       }
-      
+
       if (continuous) {
         console.log(`\n${chalk.yellow('ℹ️  Continuous replication is running in the background')}`);
         console.log(`Replication ID: ${chalk.cyan(result._id || 'N/A')}`);
       } else {
         console.log(`Duration: ${chalk.cyan(formatDuration(duration))}`);
-        
+
         // Check final document count
         const finalTargetInfo = await checkDatabaseExists(target, couchConfig.url);
         console.log(`\nTarget database now has ${chalk.cyan(finalTargetInfo.docCount)} documents`);
@@ -138,20 +138,21 @@ async function replicate(): Promise<void> {
         console.log(`Errors: ${chalk.red(JSON.stringify(result.errors, null, 2))}`);
       }
     }
-
   } catch (error) {
     spinner.fail('Replication failed');
     console.error(chalk.red('\nError:'), error instanceof Error ? error.message : String(error));
-    
+
     // Provide helpful error messages
     if (error instanceof Error) {
       if (error.message.includes('ECONNREFUSED')) {
         console.error(chalk.yellow('\nℹ️  Make sure CouchDB is running and accessible'));
       } else if (error.message.includes('unauthorized')) {
-        console.error(chalk.yellow('\nℹ️  Check your CouchDB credentials in the environment variables'));
+        console.error(
+          chalk.yellow('\nℹ️  Check your CouchDB credentials in the environment variables'),
+        );
       }
     }
-    
+
     process.exit(1);
   }
 }

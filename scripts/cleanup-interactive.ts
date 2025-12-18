@@ -1,11 +1,11 @@
 #!/usr/bin/env tsx
 
-import { Command } from 'commander';
-import prompts from 'prompts';
 import chalk from 'chalk';
-import ora from 'ora';
+import { Command } from 'commander';
 import nano from 'nano';
-import { validateEnv, getCouchDbConfig } from '../packages/core-server/src/config/env.js';
+import ora from 'ora';
+import prompts from 'prompts';
+import { getCouchDbConfig, validateEnv } from '../packages/core-server/src/config/env.js';
 
 interface CleanupConfig {
   mode: 'all' | 'pattern' | 'age' | 'custom';
@@ -45,7 +45,7 @@ async function main() {
     // Environment configuration using shared validation
     const env = validateEnv(process.env);
     const couchConfig = getCouchDbConfig(env);
-    
+
     // Auto-detect mode based on provided options
     let mode: CleanupConfig['mode'] = options.mode as CleanupConfig['mode'];
     if (options.pattern && mode === 'all') {
@@ -54,7 +54,7 @@ async function main() {
     if (options.databases && mode === 'all') {
       mode = 'custom';
     }
-    
+
     const config: CleanupConfig = {
       mode,
       pattern: options.pattern,
@@ -65,28 +65,34 @@ async function main() {
     };
 
     if (!config.force) {
-      console.log(chalk.yellow('⚠️  This tool will delete databases. Make sure you have backups if needed.\n'));
+      console.log(
+        chalk.yellow(
+          '⚠️  This tool will delete databases. Make sure you have backups if needed.\n',
+        ),
+      );
     }
 
     await runCleanup(couchConfig, config);
   } catch (error) {
     console.error(chalk.red('\nError:'), error instanceof Error ? error.message : String(error));
-    
+
     if (error instanceof Error) {
       if (error.message.includes('ECONNREFUSED')) {
         console.error(chalk.yellow('\nℹ️  Make sure CouchDB is running and accessible'));
       } else if (error.message.includes('unauthorized')) {
-        console.error(chalk.yellow('\nℹ️  Check your CouchDB credentials in the environment variables'));
+        console.error(
+          chalk.yellow('\nℹ️  Check your CouchDB credentials in the environment variables'),
+        );
       }
     }
-    
+
     process.exit(1);
   }
 }
 
 async function runCleanup(couchConfig: { url: string; dbName: string }, config: CleanupConfig) {
   const couch = nano(couchConfig.url);
-  
+
   // Discover available databases
   const spinner = ora('Discovering databases...').start();
   const allDatabases = await getAvailableDatabases(couchConfig.url);
@@ -94,17 +100,19 @@ async function runCleanup(couchConfig: { url: string; dbName: string }, config: 
 
   // Get database info for all databases
   const databaseInfos = await getDatabaseInfos(couchConfig.url, allDatabases);
-  
+
   // Filter databases based on cleanup config
   const targetDatabases = await filterDatabases(databaseInfos, config);
-  
+
   if (targetDatabases.length === 0) {
     console.log(chalk.green('\n✅ No databases match the cleanup criteria'));
     return;
   }
 
   // Show what will be cleaned up
-  console.log(chalk.cyan(`\n📋 Databases to ${config.dryRun ? 'be cleaned (dry-run)' : 'clean up'}:`));
+  console.log(
+    chalk.cyan(`\n📋 Databases to ${config.dryRun ? 'be cleaned (dry-run)' : 'clean up'}:`),
+  );
   targetDatabases.forEach((db, index) => {
     const sizeStr = (db.diskSize / 1024 / 1024).toFixed(2);
     console.log(`  ${index + 1}. ${db.name} (${db.docCount} docs, ${sizeStr} MB)`);
@@ -137,9 +145,10 @@ async function runCleanup(couchConfig: { url: string; dbName: string }, config: 
 async function getAvailableDatabases(couchdbUrl: string): Promise<string[]> {
   const url = new URL(couchdbUrl);
   const baseUrl = `${url.protocol}//${url.host}`;
-  const credentials = url.username && url.password 
-    ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-    : null;
+  const credentials =
+    url.username && url.password
+      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+      : null;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -150,13 +159,13 @@ async function getAvailableDatabases(couchdbUrl: string): Promise<string[]> {
   }
 
   const response = await fetch(`${baseUrl}/_all_dbs`, { headers });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to fetch databases: ${response.status} ${response.statusText}`);
   }
-  
+
   const databases: string[] = await response.json();
-  
+
   // Filter out system databases (those starting with _)
   return databases.filter((db) => !db.startsWith('_'));
 }
@@ -164,9 +173,10 @@ async function getAvailableDatabases(couchdbUrl: string): Promise<string[]> {
 async function getDatabaseInfos(couchdbUrl: string, databases: string[]): Promise<DatabaseInfo[]> {
   const url = new URL(couchdbUrl);
   const baseUrl = `${url.protocol}//${url.host}`;
-  const credentials = url.username && url.password 
-    ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
-    : null;
+  const credentials =
+    url.username && url.password
+      ? Buffer.from(`${url.username}:${url.password}`).toString('base64')
+      : null;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -196,7 +206,11 @@ async function getDatabaseInfos(couchdbUrl: string, databases: string[]): Promis
       }
     } catch (error) {
       // Skip databases we can't access
-      console.warn(chalk.yellow(`⚠️  Could not access database '${dbName}': ${error instanceof Error ? error.message : String(error)}`));
+      console.warn(
+        chalk.yellow(
+          `⚠️  Could not access database '${dbName}': ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
     }
   }
 
@@ -204,39 +218,37 @@ async function getDatabaseInfos(couchdbUrl: string, databases: string[]): Promis
 }
 
 function isTestDatabase(dbName: string): boolean {
-  const testPatterns = [
-    /^eddo_test_/,
-    /^test-/,
-    /^todos-test/,
-    /^test_/,
-  ];
+  const testPatterns = [/^eddo_test_/, /^test-/, /^todos-test/, /^test_/];
 
-  return testPatterns.some(pattern => pattern.test(dbName));
+  return testPatterns.some((pattern) => pattern.test(dbName));
 }
 
-async function filterDatabases(databaseInfos: DatabaseInfo[], config: CleanupConfig): Promise<DatabaseInfo[]> {
+async function filterDatabases(
+  databaseInfos: DatabaseInfo[],
+  config: CleanupConfig,
+): Promise<DatabaseInfo[]> {
   let filtered = databaseInfos;
 
   if (config.mode === 'all') {
     // Only include test databases
-    filtered = filtered.filter(db => db.isTestDatabase);
+    filtered = filtered.filter((db) => db.isTestDatabase);
   } else if (config.mode === 'pattern' && config.pattern) {
     // Convert glob pattern to regex
     const regexPattern = config.pattern
-      .replace(/\*/g, '.*')  // * becomes .*
-      .replace(/\?/g, '.')   // ? becomes .
-      .replace(/\./g, '\\.')  // Escape literal dots
+      .replace(/\*/g, '.*') // * becomes .*
+      .replace(/\?/g, '.') // ? becomes .
+      .replace(/\./g, '\\.') // Escape literal dots
       .replace(/\\\.\*/g, '.*'); // Restore .* for our * conversion
-    
+
     const regex = new RegExp(`^${regexPattern}$`);
-    filtered = filtered.filter(db => regex.test(db.name));
+    filtered = filtered.filter((db) => regex.test(db.name));
   } else if (config.mode === 'custom' && config.databases) {
-    filtered = filtered.filter(db => config.databases!.includes(db.name));
+    filtered = filtered.filter((db) => config.databases!.includes(db.name));
   }
 
   // If not in interactive mode, let user refine selection
   if (!config.force && filtered.length > 0) {
-    const choices = filtered.map(db => ({
+    const choices = filtered.map((db) => ({
       title: `${db.name} (${db.docCount} docs)`,
       value: db.name,
       selected: true,
@@ -254,7 +266,7 @@ async function filterDatabases(databaseInfos: DatabaseInfo[], config: CleanupCon
       return [];
     }
 
-    filtered = filtered.filter(db => selectedDatabases.includes(db.name));
+    filtered = filtered.filter((db) => selectedDatabases.includes(db.name));
   }
 
   return filtered;
@@ -262,7 +274,7 @@ async function filterDatabases(databaseInfos: DatabaseInfo[], config: CleanupCon
 
 async function performCleanup(couch: nano.ServerScope, databases: DatabaseInfo[]): Promise<void> {
   const spinner = ora('Cleaning up databases...').start();
-  
+
   let deletedCount = 0;
   let failedCount = 0;
 
@@ -273,16 +285,20 @@ async function performCleanup(couch: nano.ServerScope, databases: DatabaseInfo[]
       spinner.text = `Deleted ${deletedCount}/${databases.length} databases...`;
     } catch (error) {
       failedCount++;
-      console.warn(chalk.yellow(`⚠️  Failed to delete '${db.name}': ${error instanceof Error ? error.message : String(error)}`));
+      console.warn(
+        chalk.yellow(
+          `⚠️  Failed to delete '${db.name}': ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
     }
   }
 
   spinner.succeed(`Cleanup complete: ${deletedCount} deleted, ${failedCount} failed`);
-  
+
   if (deletedCount > 0) {
     console.log(chalk.green(`\n✅ Successfully deleted ${deletedCount} database(s)`));
   }
-  
+
   if (failedCount > 0) {
     console.log(chalk.yellow(`\n⚠️  Failed to delete ${failedCount} database(s)`));
   }

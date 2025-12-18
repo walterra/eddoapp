@@ -5,15 +5,10 @@
  * Restores CouchDB database from a NDJSON (Newline Delimited JSON) backup file
  */
 
-import fs from 'fs';
+import { getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
 import { dotenvLoad } from 'dotenv-mono';
-import { validateEnv, getCouchDbConfig } from '@eddo/core-server/config';
-import {
-  checkDatabaseExists,
-  recreateDatabase,
-  formatFileSize,
-  type DatabaseInfo
-} from './backup-utils.js';
+import fs from 'fs';
+import { checkDatabaseExists, formatFileSize, recreateDatabase } from './backup-utils.js';
 
 // Load environment variables
 dotenvLoad();
@@ -38,7 +33,7 @@ function parseNdjsonFile(filePath: string): unknown[] {
   }
 
   const content = fs.readFileSync(filePath, 'utf8');
-  const lines = content.split('\n').filter(line => line.trim());
+  const lines = content.split('\n').filter((line) => line.trim());
 
   if (lines.length === 0) {
     throw new Error(`NDJSON file is empty: ${filePath}`);
@@ -65,7 +60,7 @@ function parseNdjsonFile(filePath: string): unknown[] {
 
   if (errors.length > 0) {
     console.error(`Found ${errors.length} malformed JSON lines:`);
-    errors.slice(0, 5).forEach(err => console.error(`  ${err}`));
+    errors.slice(0, 5).forEach((err) => console.error(`  ${err}`));
     if (errors.length > 5) {
       console.error(`  ... and ${errors.length - 5} more errors`);
     }
@@ -84,8 +79,8 @@ function getAuthHeaders(couchConfig: ReturnType<typeof getCouchDbConfig>): Recor
   if (url.username && url.password) {
     const auth = Buffer.from(`${url.username}:${url.password}`).toString('base64');
     return {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json'
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
     };
   }
   return { 'Content-Type': 'application/json' };
@@ -104,9 +99,13 @@ function getCleanUrl(dbName: string, couchConfig: ReturnType<typeof getCouchDbCo
 /**
  * Perform bulk insert of documents using CouchDB _bulk_docs endpoint
  */
-async function bulkInsertDocuments(docs: unknown[], dbName: string, couchConfig: ReturnType<typeof getCouchDbConfig>): Promise<void> {
+async function bulkInsertDocuments(
+  docs: unknown[],
+  dbName: string,
+  couchConfig: ReturnType<typeof getCouchDbConfig>,
+): Promise<void> {
   const bulkDoc: BulkDocsRequest = {
-    docs: docs
+    docs,
   };
 
   const cleanUrl = getCleanUrl(dbName, couchConfig);
@@ -117,22 +116,22 @@ async function bulkInsertDocuments(docs: unknown[], dbName: string, couchConfig:
   const response = await fetch(`${cleanUrl}/_bulk_docs`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(bulkDoc)
+    body: JSON.stringify(bulkDoc),
   });
 
   if (!response.ok) {
     throw new Error(`Bulk insert failed: ${response.status} ${response.statusText}`);
   }
 
-  const result = await response.json() as BulkDocsResponse[];
+  const result = (await response.json()) as BulkDocsResponse[];
 
   // Check for individual document errors
-  const errors = result.filter(doc => doc.error);
-  const successes = result.filter(doc => !doc.error);
+  const errors = result.filter((doc) => doc.error);
+  const successes = result.filter((doc) => !doc.error);
 
   if (errors.length > 0) {
     console.error(`${errors.length} documents failed to insert:`);
-    errors.slice(0, 5).forEach(err => {
+    errors.slice(0, 5).forEach((err) => {
       console.error(`  ID: ${err.id}, Error: ${err.error}, Reason: ${err.reason}`);
     });
     if (errors.length > 5) {
@@ -150,7 +149,12 @@ async function bulkInsertDocuments(docs: unknown[], dbName: string, couchConfig:
 /**
  * Main restore function
  */
-async function restoreNdjson(ndjsonFile: string, database?: string, force: boolean = false, append: boolean = false): Promise<void> {
+async function restoreNdjson(
+  ndjsonFile: string,
+  database?: string,
+  force: boolean = false,
+  append: boolean = false,
+): Promise<void> {
   try {
     // Check file exists first before environment validation
     if (!fs.existsSync(ndjsonFile)) {
@@ -184,18 +188,26 @@ async function restoreNdjson(ndjsonFile: string, database?: string, force: boole
     } else {
       // In restore mode, warn about overwriting existing data
       if (exists && docCount > 0 && !force) {
-        console.error(`Error: Database '${dbName}' already exists and contains ${docCount} documents.`);
+        console.error(
+          `Error: Database '${dbName}' already exists and contains ${docCount} documents.`,
+        );
         console.error('This restore operation would overwrite existing data.');
         console.error('');
         console.error('To proceed anyway, use the --force parameter:');
-        console.error(`  pnpm restore:ndjson ${ndjsonFile} ${database ? `--database ${database}` : ''} --force`.trim());
+        console.error(
+          `  pnpm restore:ndjson ${ndjsonFile} ${database ? `--database ${database}` : ''} --force`.trim(),
+        );
         console.error('Or use --append to add documents to the existing database:');
-        console.error(`  pnpm restore:ndjson ${ndjsonFile} ${database ? `--database ${database}` : ''} --append`.trim());
+        console.error(
+          `  pnpm restore:ndjson ${ndjsonFile} ${database ? `--database ${database}` : ''} --append`.trim(),
+        );
         process.exit(1);
       }
 
       if (exists && docCount > 0) {
-        console.log(`Warning: Overwriting existing database with ${docCount} documents (--force was used)`);
+        console.log(
+          `Warning: Overwriting existing database with ${docCount} documents (--force was used)`,
+        );
       }
     }
 
@@ -216,11 +228,13 @@ async function restoreNdjson(ndjsonFile: string, database?: string, force: boole
     console.log(`NDJSON ${operation} completed successfully!`);
 
     // Verify the restored database
-    const { exists: verifyExists, docCount: verifyDocCount } = await checkDatabaseExists(dbName, env.COUCHDB_URL);
+    const { exists: verifyExists, docCount: verifyDocCount } = await checkDatabaseExists(
+      dbName,
+      env.COUCHDB_URL,
+    );
     if (verifyExists) {
       console.log(`Verified: Database '${dbName}' now contains ${verifyDocCount} documents`);
     }
-
   } catch (error) {
     console.error('NDJSON restore failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
