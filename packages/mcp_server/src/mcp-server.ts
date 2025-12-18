@@ -5,6 +5,7 @@
 import {
   type TodoAlpha3,
   getCouchDbConfig,
+  getRepeatTodo,
   getTestCouchDbConfig,
   validateEnv,
 } from '@eddo/core-server';
@@ -172,7 +173,7 @@ Usage examples:
       .nullable()
       .default(null)
       .describe(
-        'Number of days to repeat this todo after completion. Set to null (default) for no repeat. When completed, a new todo will be created with due date shifted by this many days',
+        'Number of days to repeat this todo. Set to null (default) for no repeat. Behavior depends on tags: gtd:calendar repeats from original due date (e.g., monthly bills), gtd:habit or no tag repeats from completion date (e.g., exercise every N days)',
       ),
     link: z
       .string()
@@ -528,7 +529,9 @@ IMPORTANT: Pass update fields directly as parameters, NOT wrapped in nested obje
       .number()
       .nullable()
       .optional()
-      .describe('Updated repeat interval in days (null to disable repeat)'),
+      .describe(
+        'Updated repeat interval in days (null to disable repeat). Behavior: gtd:calendar repeats from due date, gtd:habit or no tag repeats from completion date',
+      ),
     link: z
       .string()
       .nullable()
@@ -637,26 +640,17 @@ server.addTool({
         // Handle repeating todos
         if (todo.repeat) {
           context.log.info('Creating repeat todo', { repeatDays: todo.repeat });
-          const newDueDate = new Date(todo.due);
-          newDueDate.setDate(newDueDate.getDate() + todo.repeat);
-
-          const newTodo = {
-            ...todo,
-            _id: new Date().toISOString(),
-            completed: null,
-            active: {},
-            due: newDueDate.toISOString(),
-          };
-          delete (newTodo as Record<string, unknown>)._rev;
+          const newTodo = getRepeatTodo(todo);
 
           const startTime = Date.now();
-          await db.insert(newTodo);
+          await db.insert(newTodo as TodoAlpha3);
           await db.insert(todo);
           const executionTime = Date.now() - startTime;
 
           context.log.info('Todo completed and repeated', {
             original: todo.title,
-            newDue: newDueDate.toISOString(),
+            newDue: newTodo.due,
+            repeatType: todo.tags.includes('gtd:calendar') ? 'calendar' : 'habit',
           });
 
           return JSON.stringify({
@@ -665,8 +659,9 @@ server.addTool({
               original_id: todo._id,
               original_title: todo.title,
               new_todo_id: newTodo._id,
-              new_due_date: newDueDate.toISOString(),
+              new_due_date: newTodo.due,
               repeat_interval: todo.repeat,
+              repeat_type: todo.tags.includes('gtd:calendar') ? 'calendar' : 'habit',
             },
             metadata: {
               execution_time: `${executionTime.toFixed(2)}ms`,
