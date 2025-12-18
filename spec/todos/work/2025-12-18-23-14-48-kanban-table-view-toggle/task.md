@@ -189,31 +189,33 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 **Dense Kanban Styling (Kanban View):**
 
 - TodoListElement card changes:
-  - Reduced card padding from `px-1 py-1` to `px-1 py-0.5`
+  - Adjusted card padding from `px-1 py-1` to `px-2 py-1` (slightly more padding for better readability)
   - Changed from shadow to border (`border border-gray-200`)
   - Changed from `rounded-lg` to `rounded`
   - Reduced card spacing from `mb-2` to `mb-1`
   - Changed title font from `text-sm` to `text-xs`
-  - Reduced horizontal spacing from `space-x-1` to `space-x-0.5`
-  - Reduced margin from `mx-1` to `mx-0.5`
-  - Reduced tag spacing from `mt-1` to `mt-0.5`
-  - Reduced button sizes from `1.3em` to `1.1em`
-  - Changed button padding from `py-0 pl-1` to `p-0.5`
-  - Changed button style from `rounded-lg` to `rounded`
-  - Reduced focus ring from `focus:ring-4` to `focus:ring-2`
-  - Reduced button gap from `space-x-1` to `space-x-0.5`
-  - Changed error margin from `mb-2` to `mb-1` and padding from `py-1` to `py-0.5`
+  - Main container: `items-start` instead of `items-center` (top-aligned layout)
+  - Content spacing: `space-x-1` (balanced between checkbox and title)
+  - Checkbox alignment: `-ml-1 mr-0.5` (negative left margin to align checkbox with top padding)
+  - Tag spacing: `mt-1` (adequate space above tags)
+  - Action buttons alignment: `-mr-0.5 -mt-0.5` (positioned in top-right to match checkbox in top-left)
+  - Button container: `items-start` (align to top instead of center)
+  - Button sizes: `1.3em` with `p-0.5` padding (matches checkbox size and padding)
+  - Simplified hover states to text color change only
+  - Removed focus ring styles (cleaner minimal look)
+  - Button gap: `space-x-0.5 items-start` (tight spacing, top-aligned)
+  - Changed error margin from `mb-2` to `mb-1` and padding to `py-1`
 - TodoBoard column changes:
   - Reduced column width from `24rem` to `20rem` (eddo.css)
-  - Changed context header from `py-4 text-base` to `pb-1 pt-2 text-xs uppercase tracking-wide`
-  - Reduced column spacing from `space-x-4` to `space-x-2`
+  - Changed context header: `pb-2 pt-2 text-xs uppercase tracking-wide` (more bottom padding)
+  - Column spacing: `space-x-3` (better separation between columns)
   - Reduced column bottom margin from `mb-6` to `mb-4`
   - Reduced todo list spacing from `space-y-4` to `space-y-2`
   - Reduced todo list bottom margin from `mb-4` to `mb-2`
-  - Added date header styling: `mb-0.5 text-xs font-medium`
-  - Reduced date header margin from `mx-1` to `mx-0.5`
+  - Date header styling: `mb-1 text-xs font-medium` (more space before todos)
+  - Removed margins from date header elements (cleaner look)
   - Removed shadow from container
-  - Changed context header margin from `mx-1` to `mx-0.5`
+  - Removed margins from context header elements
 
 ### Current Implementation Details
 

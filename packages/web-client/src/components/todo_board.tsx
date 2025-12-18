@@ -341,7 +341,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden">
-              <div className="mb-4 flex items-start justify-start space-x-2 px-4">
+              <div className="mb-4 flex items-start justify-start space-x-3 px-4">
                 {groupedByContextByDate.map(([context, contextTodos]) => {
                   const todosByDate = Array.from(contextTodos);
 
@@ -359,12 +359,12 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
                   return (
                     <div className="eddo-w-kanban" key={context}>
-                      <div className="pt-2 pb-1 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
+                      <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
                         <div className="flex items-center justify-between">
-                          <div className="mx-0.5">
+                          <div>
                             <FormattedMessage message={context} />
                           </div>
-                          <div className="mx-0.5 text-xs text-gray-500 dark:text-gray-400">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
                             {durationByContext[context]}
                           </div>
                         </div>
@@ -401,11 +401,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
                           return (
                             <div key={`${context}_${todoDate}`}>
-                              <div className="mb-0.5 flex items-center justify-between text-xs">
-                                <div className="mx-0.5 font-medium text-gray-600 dark:text-gray-400">
+                              <div className="mb-1 flex items-center justify-between text-xs">
+                                <div className="font-medium text-gray-600 dark:text-gray-400">
                                   {displayDate}
                                 </div>
-                                <div className="mx-0.5 text-xs text-gray-500 dark:text-gray-500">
+                                <div className="text-xs text-gray-500 dark:text-gray-500">
                                   {durationForDate}
                                 </div>
                               </div>
