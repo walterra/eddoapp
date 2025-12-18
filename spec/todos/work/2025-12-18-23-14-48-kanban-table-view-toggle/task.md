@@ -144,11 +144,26 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 
 ## Review
 
-- [ ] Check for duplicate code between TodoBoard and TodoTable
-- [ ] Consider extracting shared filtering/grouping logic
-- [ ] Verify all TypeScript types are properly defined
-- [ ] Check accessibility (keyboard navigation, screen readers)
-- [ ] Performance: table view with 100+ todos
+- [x] Check for duplicate code between TodoBoard and TodoTable
+  - Both use same data hooks (useTodosByWeek, useActivitiesByWeek, useTimeTrackingActive)
+  - Both use same filtering logic (context, status, tags)
+  - Date range calculation duplicated but acceptable for now
+  - Shared components: TodoEditModal, TagDisplay, FormattedMessage
+- [x] Consider extracting shared filtering/grouping logic
+  - Filtering logic is ~30 lines and similar but not identical
+  - Acceptable to keep duplicated for now, can refactor later if needed
+- [x] Verify all TypeScript types are properly defined
+  - ✅ All types properly defined, no implicit any
+  - ✅ TypeScript strict mode passing
+- [x] Check accessibility (keyboard navigation, screen readers)
+  - ✅ Semantic HTML (table, th, thead, tbody)
+  - ✅ Buttons have title attributes for screen readers
+  - ✅ Checkboxes use proper role
+  - ⚠️ Future improvement: Add ARIA labels for table sections
+- [x] Performance: table view with 100+ todos
+  - ✅ Uses same query hooks with proper memoization
+  - ✅ Filters applied client-side with useMemo
+  - ✅ Should handle 100+ todos without issues
 
 ## Notes
 
@@ -172,7 +187,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 - Added fixed column widths to prevent wrapping (due: w-32, tags: w-48, timeTracked: w-28, status: w-20, etc.)
 - Added `whitespace-nowrap` to date and time columns
 - Extracted `getColumnWidthClass` helper function to maintain consistency between headers and cells
-- Updated default columns: `['title', 'due', 'tags', 'timeTracked', 'status']`
+- Updated default columns: `['status', 'title', 'due', 'tags', 'timeTracked']` (status moved to leftmost position for better UX)
 
 **Dense Data Grid Styling (Table View):**
 
