@@ -12,7 +12,7 @@
     "pnpm": ">=7.1.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.5",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",
     "dotenv-mono": "github:marcocesarato/dotenv-mono#master",
@@ -29,15 +29,13 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
-    "@cloudant/couchbackup": "^2.11.7",
+    "@cloudant/couchbackup": "^2.11.12",
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eddo/core-client": "workspace:*",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
     "@eslint/js": "^9.35.0",
-    "commitizen": "^4.3.0",
-    "cz-conventional-changelog": "^3.3.0",
     "@swc/core": "^1.13.21",
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/typography": "^0.5.19",
@@ -57,6 +55,8 @@
     "chalk": "^5.6.2",
     "clet": "^1.0.1",
     "commander": "^14.0.1",
+    "commitizen": "^4.3.0",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.38.0",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
@@ -144,5 +144,10 @@
     ">0.2%",
     "not dead",
     "not op_mini all"
-  ]
+  ],
+  "pnpm": {
+    "overrides": {
+      "jws": ">=4.0.0"
+    }
+  }
 }

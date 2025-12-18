@@ -127,9 +127,7 @@ export class MCPConnectionManager {
           version: '1.0.0',
         },
         {
-          capabilities: {
-            tools: {},
-          },
+          capabilities: {},
         },
       );
 
@@ -345,9 +343,7 @@ export class MCPConnectionManager {
           version: '1.0.0',
         },
         {
-          capabilities: {
-            tools: {},
-          },
+          capabilities: {},
         },
       );
 

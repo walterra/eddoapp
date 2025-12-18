@@ -15,7 +15,7 @@
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
     "@eddo/printer-service": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.17.5",
+    "@modelcontextprotocol/sdk": "^1.24.0",
     "dotenv-mono": "^1.3.14",
     "fastmcp": "^3.17.0",
     "grammy": "^1.38.3",

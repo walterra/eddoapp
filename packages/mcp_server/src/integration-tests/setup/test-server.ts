@@ -77,9 +77,7 @@ export class MCPTestServer {
         version: this.config.clientVersion,
       },
       {
-        capabilities: {
-          tools: {},
-        },
+        capabilities: {},
       },
     );
 
