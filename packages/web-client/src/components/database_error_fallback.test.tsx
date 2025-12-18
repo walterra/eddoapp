@@ -42,9 +42,7 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       // The card is nested - find the inner card div
-      const cardElement = screen
-        .getByText('Database Error')
-        .closest('.bg-white');
+      const cardElement = screen.getByText('Database Error').closest('.bg-white');
       expect(cardElement).toHaveClass('bg-white', 'shadow-lg', 'rounded-lg');
     });
   });
@@ -66,9 +64,7 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       expect(
-        screen.getByText(
-          'Storage quota exceeded. Please clear some data to continue.',
-        ),
+        screen.getByText('Storage quota exceeded. Please clear some data to continue.'),
       ).toBeInTheDocument();
     });
 
@@ -77,9 +73,7 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       expect(
-        screen.getByText(
-          'Data conflict detected. Your changes may need to be merged.',
-        ),
+        screen.getByText('Data conflict detected. Your changes may need to be merged.'),
       ).toBeInTheDocument();
     });
 
@@ -88,9 +82,7 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       expect(
-        screen.getByText(
-          'Failed to initialize the database. Please refresh the page.',
-        ),
+        screen.getByText('Failed to initialize the database. Please refresh the page.'),
       ).toBeInTheDocument();
     });
 
@@ -108,9 +100,7 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       expect(
-        screen.getByText(
-          'Database corruption detected. Please contact support.',
-        ),
+        screen.getByText('Database corruption detected. Please contact support.'),
       ).toBeInTheDocument();
     });
 
@@ -118,9 +108,7 @@ describe('DatabaseErrorFallback', () => {
       const error = createError('UNKNOWN_ERROR' as DatabaseErrorType);
       render(<DatabaseErrorFallback error={error} />);
 
-      expect(
-        screen.getByText('A database error occurred. Please try again.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('A database error occurred. Please try again.')).toBeInTheDocument();
     });
   });
 
@@ -128,11 +116,7 @@ describe('DatabaseErrorFallback', () => {
     it('shows retry button for retryable errors when onRetry provided', () => {
       const error = createError(DatabaseErrorType.NETWORK_ERROR, true);
       render(
-        <DatabaseErrorFallback
-          error={error}
-          onDismiss={mockOnDismiss}
-          onRetry={mockOnRetry}
-        />,
+        <DatabaseErrorFallback error={error} onDismiss={mockOnDismiss} onRetry={mockOnRetry} />,
       );
 
       expect(screen.getByText('Try Again')).toBeInTheDocument();
@@ -141,11 +125,7 @@ describe('DatabaseErrorFallback', () => {
     it('does not show retry button for non-retryable errors', () => {
       const error = createError(DatabaseErrorType.CORRUPTION, false);
       render(
-        <DatabaseErrorFallback
-          error={error}
-          onDismiss={mockOnDismiss}
-          onRetry={mockOnRetry}
-        />,
+        <DatabaseErrorFallback error={error} onDismiss={mockOnDismiss} onRetry={mockOnRetry} />,
       );
 
       expect(screen.queryByText('Try Again')).not.toBeInTheDocument();
@@ -182,11 +162,7 @@ describe('DatabaseErrorFallback', () => {
     it('shows multiple buttons when applicable', () => {
       const error = createError(DatabaseErrorType.QUOTA_EXCEEDED, true);
       render(
-        <DatabaseErrorFallback
-          error={error}
-          onDismiss={mockOnDismiss}
-          onRetry={mockOnRetry}
-        />,
+        <DatabaseErrorFallback error={error} onDismiss={mockOnDismiss} onRetry={mockOnRetry} />,
       );
 
       expect(screen.getByText('Try Again')).toBeInTheDocument();
@@ -269,27 +245,17 @@ describe('DatabaseErrorFallback', () => {
       const error = createError(DatabaseErrorType.NETWORK_ERROR);
       render(<DatabaseErrorFallback error={error} />);
 
-      expect(
-        screen.getByRole('heading', { name: 'Database Error' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Database Error' })).toBeInTheDocument();
     });
 
     it('has proper button accessibility', () => {
       const error = createError(DatabaseErrorType.NETWORK_ERROR, true);
       render(
-        <DatabaseErrorFallback
-          error={error}
-          onDismiss={mockOnDismiss}
-          onRetry={mockOnRetry}
-        />,
+        <DatabaseErrorFallback error={error} onDismiss={mockOnDismiss} onRetry={mockOnRetry} />,
       );
 
-      expect(
-        screen.getByRole('button', { name: 'Try Again' }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Dismiss' }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Try Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
     });
 
     it('has accessible warning icon', () => {
@@ -320,11 +286,7 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       const cleanupButton = screen.getByText('Free Up Space');
-      expect(cleanupButton).toHaveClass(
-        'bg-gray-200',
-        'text-gray-700',
-        'hover:bg-gray-300',
-      );
+      expect(cleanupButton).toHaveClass('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
     });
 
     it('applies correct styling to dismiss button', () => {
@@ -332,11 +294,7 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} onDismiss={mockOnDismiss} />);
 
       const dismissButton = screen.getByText('Dismiss');
-      expect(dismissButton).toHaveClass(
-        'border-gray-300',
-        'text-gray-600',
-        'hover:bg-gray-50',
-      );
+      expect(dismissButton).toHaveClass('border-gray-300', 'text-gray-600', 'hover:bg-gray-50');
     });
   });
 });

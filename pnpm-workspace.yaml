@@ -5,6 +5,7 @@ packages:
 onlyBuiltDependencies:
   - '@swc/core'
   - '@tailwindcss/oxide'
+  - dotenv-mono
   - esbuild
   - leveldown
   - oxc-resolver

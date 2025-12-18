@@ -14,9 +14,12 @@ interface DatabaseHealthIndicatorProps {
   databaseName?: string;
 }
 
-export const DatabaseHealthIndicator: React.FC<
-  DatabaseHealthIndicatorProps
-> = ({ healthCheck, showDetails = false, className = '', databaseName }) => {
+export const DatabaseHealthIndicator: React.FC<DatabaseHealthIndicatorProps> = ({
+  healthCheck,
+  showDetails = false,
+  className = '',
+  databaseName,
+}) => {
   if (!healthCheck) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
@@ -60,26 +63,16 @@ export const DatabaseHealthIndicator: React.FC<
     }).format(date);
   };
 
-  const criticalIssues = healthCheck.issues.filter(
-    (issue) => issue.severity === 'critical',
-  );
-  const highIssues = healthCheck.issues.filter(
-    (issue) => issue.severity === 'high',
-  );
+  const criticalIssues = healthCheck.issues.filter((issue) => issue.severity === 'critical');
+  const highIssues = healthCheck.issues.filter((issue) => issue.severity === 'high');
 
   return (
     <div className={`${className}`}>
       <div className="flex items-center gap-2">
-        <div
-          className={`h-2 w-2 rounded-full ${getStatusColor(healthCheck.status)}`}
-        ></div>
-        <span className="text-sm font-medium">
-          {getStatusText(healthCheck.status)}
-        </span>
+        <div className={`h-2 w-2 rounded-full ${getStatusColor(healthCheck.status)}`}></div>
+        <span className="text-sm font-medium">{getStatusText(healthCheck.status)}</span>
         {healthCheck.metrics.lastResponseTime && (
-          <span className="text-xs text-gray-500">
-            ({healthCheck.metrics.lastResponseTime}ms)
-          </span>
+          <span className="text-xs text-gray-500">({healthCheck.metrics.lastResponseTime}ms)</span>
         )}
       </div>
 

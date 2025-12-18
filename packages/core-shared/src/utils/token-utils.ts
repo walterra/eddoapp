@@ -3,9 +3,7 @@
  * @param token - The JWT token string
  * @returns The decoded payload or null if invalid
  */
-export const decodeJwtPayload = (
-  token: string,
-): Record<string, unknown> | null => {
+export const decodeJwtPayload = (token: string): Record<string, unknown> | null => {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) {

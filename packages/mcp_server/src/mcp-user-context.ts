@@ -33,9 +33,7 @@ export class UserContextManager {
    * Get database name for current user context
    */
   getDatabaseName(): string {
-    return this.currentUserId
-      ? `${this.baseDbName}_user_${this.currentUserId}`
-      : this.baseDbName;
+    return this.currentUserId ? `${this.baseDbName}_user_${this.currentUserId}` : this.baseDbName;
   }
 
   /**
@@ -54,12 +52,7 @@ export class UserContextManager {
     try {
       await this.couchConnection.db.get(dbName);
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
         // Database doesn't exist, create it
         await this.couchConnection.db.create(dbName);
         console.log(`Created user database: ${dbName}`);

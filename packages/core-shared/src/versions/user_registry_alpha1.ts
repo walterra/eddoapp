@@ -21,9 +21,7 @@ export interface UserRegistryEntryAlpha1 {
   version: 'alpha1';
 }
 
-export function isUserRegistryEntryAlpha1(
-  arg: unknown,
-): arg is UserRegistryEntryAlpha1 {
+export function isUserRegistryEntryAlpha1(arg: unknown): arg is UserRegistryEntryAlpha1 {
   return (
     typeof arg === 'object' &&
     !isNil(arg) &&

@@ -26,20 +26,14 @@ interface TodoBoardProps {
   selectedTags: string[];
 }
 
-export const TodoBoard: FC<TodoBoardProps> = ({
-  currentDate,
-  selectedTags,
-}) => {
+export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => {
   const { safeDb, rawDb } = usePouchDb();
   const [outdatedTodos, setOutdatedTodos] = useState<Todo[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
   // check integrity, e.g. if design docs are present
   const [isInitialized, setIsInitialized] = useState(false);
   // TODO The 'add' is a CEST quick fix
-  const currentStartOfWeek = add(
-    startOfWeek(currentDate, { weekStartsOn: 1 }),
-    { hours: 2 },
-  );
+  const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
   // TODO The 'add' is a CEST quick fix
   const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
     hours: 2,
@@ -63,10 +57,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   });
 
   // Extract data from queries with useMemo to avoid new array references on every render
-  const activities = useMemo(
-    () => activitiesQuery.data ?? [],
-    [activitiesQuery.data],
-  );
+  const activities = useMemo(() => activitiesQuery.data ?? [], [activitiesQuery.data]);
 
   const timeTrackingActive = useMemo(
     () => timeTrackingQuery.data ?? ['hide-by-default'],
@@ -75,17 +66,13 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
   // Filter to get only latest version todos - use query data directly to avoid reference issues
   const todos = useMemo(
-    () =>
-      (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
+    () => (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
     [todosQuery.data],
   );
 
   // Track outdated todos for migration (if needed) - use useMemo to avoid infinite loop
   const outdatedTodosMemo = useMemo(
-    () =>
-      (todosQuery.data ?? []).filter(
-        (d: Todo) => !isLatestVersion(d),
-      ) as Todo[],
+    () => (todosQuery.data ?? []).filter((d: Todo) => !isLatestVersion(d)) as Todo[],
     [todosQuery.data],
   );
 
@@ -134,9 +121,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   const filteredActivities = useMemo(() => {
     return activities.filter((a) => {
       // TODO The 'split' is a CEST quick fix
-      return !todos.some(
-        (t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0],
-      );
+      return !todos.some((t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0]);
     });
   }, [activities, todos]);
 
@@ -146,9 +131,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     }
 
     return todos.filter((todo) => {
-      return selectedTags.some((selectedTag) =>
-        todo.tags.includes(selectedTag),
-      );
+      return selectedTags.some((selectedTag) => todo.tags.includes(selectedTag));
     });
   }, [todos, selectedTags]);
 
@@ -179,9 +162,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
   const durationByContext = useMemo(() => {
     return Object.fromEntries(
-      Array.from(
-        group(activities, (d) => d.doc.context ?? CONTEXT_DEFAULT),
-      ).map((d) => [d[0], getFormattedDurationForActivities(d[1])]),
+      Array.from(group(activities, (d) => d.doc.context ?? CONTEXT_DEFAULT)).map((d) => [
+        d[0],
+        getFormattedDurationForActivities(d[1]),
+      ]),
     );
   }, [activities]);
 
@@ -199,8 +183,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   }, [activities]);
 
   const dataStr =
-    'data:text/json;charset=utf-8,' +
-    encodeURIComponent(JSON.stringify(todos, null, 2));
+    'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(todos, null, 2));
 
   // Combine manual error state with query errors
   const displayError = error || (queryError as DatabaseError);
@@ -231,10 +214,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       {/* Show inline error if we have data */}
       {displayError && todos.length > 0 && (
         <div className="px-4 pt-2">
-          <DatabaseErrorMessage
-            error={displayError}
-            onDismiss={() => setError(null)}
-          />
+          <DatabaseErrorMessage error={displayError} onDismiss={() => setError(null)} />
         </div>
       )}
 
@@ -248,9 +228,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
                   todosByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
 
-                  const activitiesByMapDate = durationByContextByDate.find(
-                    (d) => d[0] === context,
-                  );
+                  const activitiesByMapDate = durationByContextByDate.find((d) => d[0] === context);
 
                   const activityDurationByDate = activitiesByMapDate
                     ? Array.from(activitiesByMapDate[1]).map((d) => [
@@ -258,9 +236,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                         getFormattedDurationForActivities(d[1]),
                       ])
                     : [];
-                  activityDurationByDate.sort((a, b) =>
-                    ('' + a[0]).localeCompare(b[0]),
-                  );
+                  activityDurationByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
 
                   return (
                     <div className="eddo-w-kanban" key={context}>
@@ -275,22 +251,15 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                         </div>
                       </div>
 
-                      <div
-                        className="eddo-w-kanban mb-4 space-y-4"
-                        id="kanban-list-1"
-                      >
+                      <div className="eddo-w-kanban mb-4 space-y-4" id="kanban-list-1">
                         {todosByDate.map(([todoDate, allTodosForDate]) => {
                           const todosForDate = uniqBy(allTodosForDate, (d) => {
                             return isLatestVersion(d) ? d._id : d.id;
                           });
 
                           todosForDate.sort((a, b) => {
-                            const aTitle = isLatestVersion(a)
-                              ? a.title
-                              : a.doc.title;
-                            const bTitle = isLatestVersion(b)
-                              ? b.title
-                              : b.doc.title;
+                            const aTitle = isLatestVersion(a) ? a.title : a.doc.title;
+                            const bTitle = isLatestVersion(b) ? b.title : b.doc.title;
 
                             return ('' + aTitle).localeCompare(bTitle);
                           });
@@ -298,18 +267,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                           let displayDate = '';
 
                           try {
-                            displayDate = format(
-                              new Date(todoDate),
-                              'yyyy-MM-dd',
-                            );
+                            displayDate = format(new Date(todoDate), 'yyyy-MM-dd');
                           } catch (_e) {
                             displayDate = format(new Date(), 'yyyy-MM-dd');
                           }
 
-                          const activityDurationItem =
-                            activityDurationByDate.find(
-                              (d) => d[0] === displayDate,
-                            );
+                          const activityDurationItem = activityDurationByDate.find(
+                            (d) => d[0] === displayDate,
+                          );
 
                           const durationForDate = activityDurationItem
                             ? activityDurationItem[1]
@@ -319,9 +284,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                             <div key={`${context}_${todoDate}`}>
                               <div className="flex items-center justify-between">
                                 <div className="mx-1">{displayDate}</div>
-                                <div className="mx-1 text-xs text-gray-400">
-                                  {durationForDate}
-                                </div>
+                                <div className="mx-1 text-xs text-gray-400">{durationForDate}</div>
                               </div>
                               {todosForDate.map((todoOrActivity) => {
                                 const todo = isLatestVersion(todoOrActivity)
@@ -329,17 +292,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                                   : todoOrActivity.doc;
                                 return (
                                   <TodoListElement
-                                    active={timeTrackingActive.some(
-                                      (d: string) => d === todo._id,
-                                    )}
+                                    active={timeTrackingActive.some((d: string) => d === todo._id)}
                                     activeDate={displayDate}
-                                    activityOnly={
-                                      !isLatestVersion(todoOrActivity)
-                                    }
+                                    activityOnly={!isLatestVersion(todoOrActivity)}
                                     key={todo._id}
-                                    timeTrackingActive={
-                                      timeTrackingActive.length > 0
-                                    }
+                                    timeTrackingActive={timeTrackingActive.length > 0}
                                     todo={todo}
                                   />
                                 );

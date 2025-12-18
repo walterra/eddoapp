@@ -34,7 +34,7 @@ jobs:
           node-version: 22.x
       - uses: pnpm/action-setup@v4.1.0
         with:
-          version: 8
+          version: 10
           run_install: false
       - name: Get pnpm store directory
         shell: bash
@@ -47,7 +47,7 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Wait for CouchDB
         run: |

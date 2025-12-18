@@ -107,9 +107,7 @@ export class DailyBriefingScheduler {
       const users = await userRegistry.list();
       const briefingUsers = users.filter(
         (user) =>
-          user.status === 'active' &&
-          user.preferences?.dailyBriefing === true &&
-          user.telegram_id,
+          user.status === 'active' && user.preferences?.dailyBriefing === true && user.telegram_id,
       );
 
       logger.debug('Checking briefing times for users', {
@@ -121,11 +119,7 @@ export class DailyBriefingScheduler {
       // Check each user's individual briefing time
       for (const user of briefingUsers) {
         // Type assertion is safe because we filtered for users with telegram_id
-        await this.checkUserBriefingTime(
-          user as TelegramUser,
-          currentHour,
-          currentMinute,
-        );
+        await this.checkUserBriefingTime(user as TelegramUser, currentHour, currentMinute);
       }
     } catch (error) {
       logger.error('Failed to check user briefing times', { error });
@@ -151,8 +145,7 @@ export class DailyBriefingScheduler {
 
     // Check if it's the right time for this user (within 5-minute window)
     const isRightHour = currentHour === userHour;
-    const isWithinWindow =
-      currentMinute >= userMinute && currentMinute < userMinute + 5;
+    const isWithinWindow = currentMinute >= userMinute && currentMinute < userMinute + 5;
 
     if (isRightHour && isWithinWindow) {
       logger.info('Sending briefing to user at their preferred time', {
@@ -191,9 +184,7 @@ export class DailyBriefingScheduler {
     const users = await userRegistry.list();
     const briefingUsers = users.filter(
       (user) =>
-        user.status === 'active' &&
-        user.telegram_id &&
-        user.preferences?.dailyBriefing === true,
+        user.status === 'active' && user.telegram_id && user.preferences?.dailyBriefing === true,
     );
 
     if (briefingUsers.length === 0) {
@@ -260,35 +251,21 @@ export class DailyBriefingScheduler {
         message: { text: briefingRequestMessage },
       } as BotContext; // Type assertion for simplified mock
 
-      const result = await agent.execute(
-        briefingRequestMessage,
-        user._id,
-        mockContext,
-      );
-      const briefingMessage =
-        result.finalResponse || '❌ Failed to generate briefing';
+      const result = await agent.execute(briefingRequestMessage, user._id, mockContext);
+      const briefingMessage = result.finalResponse || '❌ Failed to generate briefing';
 
       // Check if briefing contains the marker (indicates actual briefing content)
-      const hasBriefingMarker = briefingMessage.includes(
-        BRIEFING_CONTENT_MARKER,
-      );
+      const hasBriefingMarker = briefingMessage.includes(BRIEFING_CONTENT_MARKER);
 
       if (hasBriefingMarker) {
         // Strip the marker before sending to Telegram and printing
-        const briefingWithoutMarker = briefingMessage.replaceAll(
-          BRIEFING_CONTENT_MARKER,
-          '',
-        );
+        const briefingWithoutMarker = briefingMessage.replaceAll(BRIEFING_CONTENT_MARKER, '');
 
         // Send to Telegram
-        await this.bot.api.sendMessage(
-          user.telegram_id,
-          briefingWithoutMarker,
-          {
-            parse_mode: 'Markdown',
-            link_preview_options: { is_disabled: true },
-          },
-        );
+        await this.bot.api.sendMessage(user.telegram_id, briefingWithoutMarker, {
+          parse_mode: 'Markdown',
+          link_preview_options: { is_disabled: true },
+        });
 
         // Auto-print to thermal printer if enabled (both globally and for user)
         const userWantsPrinting = user.preferences?.printBriefing === true;
@@ -305,9 +282,7 @@ export class DailyBriefingScheduler {
               });
 
               // Format content for thermal printer
-              const formattedContent = printerModule.formatBriefingForPrint(
-                briefingWithoutMarker,
-              );
+              const formattedContent = printerModule.formatBriefingForPrint(briefingWithoutMarker);
 
               await printerModule.printBriefing({
                 content: formattedContent,
@@ -317,17 +292,12 @@ export class DailyBriefingScheduler {
 
               logger.info('✅ Scheduled briefing printed successfully');
             } else {
-              logger.debug(
-                '🖨️ Printer globally disabled (PRINTER_ENABLED=false)',
-              );
+              logger.debug('🖨️ Printer globally disabled (PRINTER_ENABLED=false)');
             }
           } catch (printerError) {
             // Don't fail scheduled briefing if print fails
             logger.error('❌ Failed to print scheduled briefing (non-fatal)', {
-              error:
-                printerError instanceof Error
-                  ? printerError.message
-                  : String(printerError),
+              error: printerError instanceof Error ? printerError.message : String(printerError),
             });
           }
         } else {
@@ -378,9 +348,7 @@ export class DailyBriefingScheduler {
       const users = await userRegistry.list();
       const recapUsers = users.filter(
         (user) =>
-          user.status === 'active' &&
-          user.preferences?.dailyRecap === true &&
-          user.telegram_id,
+          user.status === 'active' && user.preferences?.dailyRecap === true && user.telegram_id,
       );
 
       logger.debug('Checking recap times for users', {
@@ -391,11 +359,7 @@ export class DailyBriefingScheduler {
 
       // Check each user's individual recap time
       for (const user of recapUsers) {
-        await this.checkUserRecapTime(
-          user as TelegramUser,
-          currentHour,
-          currentMinute,
-        );
+        await this.checkUserRecapTime(user as TelegramUser, currentHour, currentMinute);
       }
     } catch (error) {
       logger.error('Failed to check user recap times', { error });
@@ -421,8 +385,7 @@ export class DailyBriefingScheduler {
 
     // Check if it's the right time for this user (within 5-minute window)
     const isRightHour = currentHour === userHour;
-    const isWithinWindow =
-      currentMinute >= userMinute && currentMinute < userMinute + 5;
+    const isWithinWindow = currentMinute >= userMinute && currentMinute < userMinute + 5;
 
     if (isRightHour && isWithinWindow) {
       logger.info('Sending recap to user at their preferred time', {
@@ -477,13 +440,8 @@ export class DailyBriefingScheduler {
         message: { text: recapRequestMessage },
       } as BotContext;
 
-      const result = await agent.execute(
-        recapRequestMessage,
-        user._id,
-        mockContext,
-      );
-      const recapMessage =
-        result.finalResponse || '❌ Failed to generate recap';
+      const result = await agent.execute(recapRequestMessage, user._id, mockContext);
+      const recapMessage = result.finalResponse || '❌ Failed to generate recap';
 
       // Check if recap contains the marker (indicates actual recap content)
       const hasRecapMarker = recapMessage.includes(RECAP_CONTENT_MARKER);
@@ -509,8 +467,7 @@ export class DailyBriefingScheduler {
             const printerModule = await import('@eddo/printer-service');
 
             if (printerModule.appConfig.PRINTER_ENABLED) {
-              const formattedContent =
-                printerModule.formatBriefingForPrint(cleanMessage);
+              const formattedContent = printerModule.formatBriefingForPrint(cleanMessage);
 
               await printerModule.printBriefing({
                 content: formattedContent,
@@ -526,10 +483,7 @@ export class DailyBriefingScheduler {
           } catch (printerError) {
             logger.error('❌ Failed to print recap (non-fatal)', {
               userId: user._id,
-              error:
-                printerError instanceof Error
-                  ? printerError.message
-                  : String(printerError),
+              error: printerError instanceof Error ? printerError.message : String(printerError),
             });
           }
         }

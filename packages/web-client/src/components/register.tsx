@@ -12,11 +12,7 @@ interface RegisterProps {
   onBackToLogin: () => void;
 }
 
-export function Register({
-  onRegister,
-  isAuthenticating,
-  onBackToLogin,
-}: RegisterProps) {
+export function Register({ onRegister, isAuthenticating, onBackToLogin }: RegisterProps) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,12 +63,7 @@ export function Register({
     }
 
     const telegramIdNumber = telegramId ? parseInt(telegramId, 10) : undefined;
-    const result = await onRegister(
-      username,
-      email,
-      password,
-      telegramIdNumber,
-    );
+    const result = await onRegister(username, email, password, telegramIdNumber);
 
     if (!result.success) {
       setError(result.error || 'Registration failed');
@@ -84,9 +75,7 @@ export function Register({
       <Card className="w-full max-w-md">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
-            <h3 className="text-xl font-medium text-gray-900">
-              Create your Eddo App account
-            </h3>
+            <h3 className="text-xl font-medium text-gray-900">Create your Eddo App account</h3>
             <p className="mt-1 text-sm text-gray-600">
               Already have an account?{' '}
               <button
@@ -101,9 +90,7 @@ export function Register({
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
-              {error}
-            </div>
+            <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">{error}</div>
           )}
 
           <div>
@@ -177,12 +164,7 @@ export function Register({
             </p>
           </div>
 
-          <Button
-            className="w-full"
-            color="blue"
-            disabled={isAuthenticating}
-            type="submit"
-          >
+          <Button className="w-full" color="blue" disabled={isAuthenticating} type="submit">
             {isAuthenticating ? 'Creating account...' : 'Create account'}
           </Button>
         </form>

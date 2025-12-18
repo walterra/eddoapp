@@ -6,10 +6,7 @@ import {
   getRecapRequestMessage,
 } from '../../constants/briefing.js';
 import { logger } from '../../utils/logger.js';
-import {
-  TelegramUser,
-  lookupUserByTelegramId,
-} from '../../utils/user-lookup.js';
+import { TelegramUser, lookupUserByTelegramId } from '../../utils/user-lookup.js';
 import type { BotContext } from '../bot.js';
 import { handleMessage } from '../handlers/message.js';
 
@@ -106,10 +103,7 @@ export async function handleBriefing(ctx: Context): Promise<void> {
 /**
  * Enable daily briefings for a user
  */
-async function enableDailyBriefing(
-  ctx: Context,
-  user: TelegramUser,
-): Promise<void> {
+async function enableDailyBriefing(ctx: Context, user: TelegramUser): Promise<void> {
   try {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
@@ -156,10 +150,7 @@ async function enableDailyBriefing(
 /**
  * Disable daily briefings for a user
  */
-async function disableDailyBriefing(
-  ctx: Context,
-  user: TelegramUser,
-): Promise<void> {
+async function disableDailyBriefing(ctx: Context, user: TelegramUser): Promise<void> {
   try {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
@@ -199,10 +190,7 @@ async function disableDailyBriefing(
 /**
  * Show current briefing status for a user
  */
-async function showBriefingStatus(
-  ctx: Context,
-  user: TelegramUser,
-): Promise<void> {
+async function showBriefingStatus(ctx: Context, user: TelegramUser): Promise<void> {
   const isEnabled = user.preferences?.dailyBriefing === true;
   const briefingTime = user.preferences?.briefingTime || '07:00';
 
@@ -217,8 +205,7 @@ async function showBriefingStatus(
         isEnabled
           ? '🌅 You will receive daily briefings with your todo summary.\n\n' +
             'Use `/briefing off` to disable.'
-          : '📵 Daily briefings are currently disabled.\n\n' +
-            'Use `/briefing on` to enable them.'
+          : '📵 Daily briefings are currently disabled.\n\n' + 'Use `/briefing on` to enable them.'
       }\n\n` +
       `💡 You can also manage this in the web app under Profile → Preferences.`,
   );
@@ -227,10 +214,7 @@ async function showBriefingStatus(
 /**
  * Generate and send a briefing immediately for a user using the agent
  */
-async function generateBriefingNow(
-  ctx: Context,
-  user: TelegramUser,
-): Promise<void> {
+async function generateBriefingNow(ctx: Context, user: TelegramUser): Promise<void> {
   try {
     logger.info('Generating on-demand briefing via agent', {
       userId: user._id,
@@ -270,10 +254,7 @@ async function generateBriefingNow(
 /**
  * Generate and send a daily recap immediately for a user using the agent
  */
-async function generateBriefingRecap(
-  ctx: Context,
-  user: TelegramUser,
-): Promise<void> {
+async function generateBriefingRecap(ctx: Context, user: TelegramUser): Promise<void> {
   try {
     logger.info('Generating daily recap via agent', {
       userId: user._id,

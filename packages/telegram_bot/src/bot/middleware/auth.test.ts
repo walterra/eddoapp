@@ -75,9 +75,7 @@ describe('Authentication Middleware', () => {
     });
 
     it('should return false when lookup throws error', async () => {
-      vi.mocked(mockIsTelegramUserAuthorized).mockRejectedValue(
-        new Error('Lookup failed'),
-      );
+      vi.mocked(mockIsTelegramUserAuthorized).mockRejectedValue(new Error('Lookup failed'));
       expect(await isUserAuthorized(123456789)).toBe(false);
     });
   });
@@ -91,13 +89,10 @@ describe('Authentication Middleware', () => {
         '❌ Unable to verify your identity. Please try again.',
       );
       expect(nextMock).not.toHaveBeenCalled();
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Authentication failed: No user ID available',
-        {
-          chat: 12345,
-          messageText: 'test message',
-        },
-      );
+      expect(mockLogger.warn).toHaveBeenCalledWith('Authentication failed: No user ID available', {
+        chat: 12345,
+        messageText: 'test message',
+      });
     });
 
     it('should reject unauthorized users with remaining attempts message', async () => {

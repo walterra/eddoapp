@@ -61,12 +61,8 @@ export class MCPConnectionManager {
    */
   getMetrics(): ConnectionMetrics {
     // Update total uptime if currently connected
-    if (
-      this.state === ConnectionState.CONNECTED &&
-      this.metrics.currentSessionStart
-    ) {
-      const sessionUptime =
-        Date.now() - this.metrics.currentSessionStart.getTime();
+    if (this.state === ConnectionState.CONNECTED && this.metrics.currentSessionStart) {
+      const sessionUptime = Date.now() - this.metrics.currentSessionStart.getTime();
       return {
         ...this.metrics,
         totalUptime: this.metrics.totalUptime + sessionUptime,
@@ -116,29 +112,19 @@ export class MCPConnectionManager {
       });
 
       // Create transport without API key - authentication handled per-request
-      this.transport = new StreamableHTTPClientTransport(
-        new URL(appConfig.MCP_SERVER_URL),
-        {
-          requestInit: {
-            headers: {
-              'Content-Type': 'application/json',
-            },
+      this.transport = new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
+        requestInit: {
+          headers: {
+            'Content-Type': 'application/json',
           },
         },
-      );
+      });
 
       // Create client
-      this.client = new Client(
-        {
-          name: 'eddo-telegram-bot',
-          version: '1.0.0',
-        },
-        {
-          capabilities: {
-            tools: {},
-          },
-        },
-      );
+      this.client = new Client({
+        name: 'eddo-telegram-bot',
+        version: '1.0.0',
+      });
 
       // Connect to server
       await this.client.connect(this.transport);
@@ -243,8 +229,7 @@ export class MCPConnectionManager {
   private async handleConnectionFailure(): Promise<void> {
     // Update metrics
     if (this.metrics.currentSessionStart) {
-      const sessionUptime =
-        Date.now() - this.metrics.currentSessionStart.getTime();
+      const sessionUptime = Date.now() - this.metrics.currentSessionStart.getTime();
       this.metrics.totalUptime += sessionUptime;
       this.metrics.currentSessionStart = undefined;
     }
@@ -335,32 +320,22 @@ export class MCPConnectionManager {
 
     try {
       // Create a user-specific transport for this request
-      const userTransport = new StreamableHTTPClientTransport(
-        new URL(appConfig.MCP_SERVER_URL),
-        {
-          requestInit: {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-User-ID': userContext.username,
-              'X-Database-Name': userContext.databaseName,
-              'X-Telegram-ID': userContext.telegramId.toString(),
-            },
+      const userTransport = new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
+        requestInit: {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': userContext.username,
+            'X-Database-Name': userContext.databaseName,
+            'X-Telegram-ID': userContext.telegramId.toString(),
           },
         },
-      );
+      });
 
       // Create a temporary client with user-specific authentication
-      const userClient = new Client(
-        {
-          name: 'eddo-telegram-bot',
-          version: '1.0.0',
-        },
-        {
-          capabilities: {
-            tools: {},
-          },
-        },
-      );
+      const userClient = new Client({
+        name: 'eddo-telegram-bot',
+        version: '1.0.0',
+      });
 
       // Connect the user-specific client
       await userClient.connect(userTransport);
@@ -461,8 +436,7 @@ export class MCPConnectionManager {
 
     // Update final metrics
     if (this.metrics.currentSessionStart) {
-      const sessionUptime =
-        Date.now() - this.metrics.currentSessionStart.getTime();
+      const sessionUptime = Date.now() - this.metrics.currentSessionStart.getTime();
       this.metrics.totalUptime += sessionUptime;
       this.metrics.currentSessionStart = undefined;
     }

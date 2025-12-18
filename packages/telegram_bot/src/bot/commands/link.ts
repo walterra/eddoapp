@@ -42,30 +42,24 @@ Need help? Contact support or check the web app documentation.`;
   const linkCode = parts[1].trim();
 
   if (!linkCode) {
-    await ctx.reply(
-      'Please provide a valid linking code. Use: `/link YOUR_CODE`',
-      {
-        parse_mode: 'Markdown',
-      },
-    );
+    await ctx.reply('Please provide a valid linking code. Use: `/link YOUR_CODE`', {
+      parse_mode: 'Markdown',
+    });
     return;
   }
 
   try {
     // Call the web API to link the account
-    const response = await fetch(
-      `${appConfig.WEB_API_BASE_URL}/api/auth/link-telegram`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          linkCode,
-          telegramId: userId,
-        }),
+    const response = await fetch(`${appConfig.WEB_API_BASE_URL}/api/auth/link-telegram`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        linkCode,
+        telegramId: userId,
+      }),
+    });
 
     const data = await response.json();
 
@@ -81,16 +75,13 @@ Need help? Contact support or check the web app documentation.`;
 
       if (response.status === 400) {
         errorMessage += 'The linking code is invalid or has expired.\n\n';
-        errorMessage +=
-          '🔄 Please generate a new code from your web profile and try again.';
+        errorMessage += '🔄 Please generate a new code from your web profile and try again.';
       } else if (response.status === 409) {
-        errorMessage +=
-          'This Telegram account is already linked to another user.\n\n';
+        errorMessage += 'This Telegram account is already linked to another user.\n\n';
         errorMessage += '📞 If this is an error, please contact support.';
       } else {
         errorMessage += `${data.error || 'Unknown error occurred'}\n\n`;
-        errorMessage +=
-          '🔄 Please try again or contact support if the problem persists.';
+        errorMessage += '🔄 Please try again or contact support if the problem persists.';
       }
 
       await ctx.reply(errorMessage, { parse_mode: 'Markdown' });

@@ -98,14 +98,7 @@ function AuthenticatedApp({
 }
 
 export function Eddo() {
-  const {
-    username,
-    isAuthenticated,
-    authenticate,
-    register,
-    logout,
-    isAuthenticating,
-  } = useAuth();
+  const { username, isAuthenticated, authenticate, register, logout, isAuthenticating } = useAuth();
 
   // Create user-specific PouchDB context when authenticated
   const pouchDbContext = useMemo(() => {

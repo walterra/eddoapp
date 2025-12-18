@@ -4,12 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
 import { config } from '../config';
-import {
-  hashPassword,
-  validateEmail,
-  validatePassword,
-  verifyPassword,
-} from '../utils/crypto';
+import { hashPassword, validateEmail, validatePassword, verifyPassword } from '../utils/crypto';
 
 const usersApp = new Hono();
 
@@ -119,8 +114,7 @@ usersApp.put('/profile', async (c) => {
 
   try {
     const body = await c.req.json();
-    const { email, currentPassword, newPassword } =
-      updateProfileSchema.parse(body);
+    const { email, currentPassword, newPassword } = updateProfileSchema.parse(body);
 
     const user = await userRegistry.findByUsername(userToken.username);
     if (!user) {
@@ -151,17 +145,11 @@ usersApp.put('/profile', async (c) => {
     // Update password if provided
     if (newPassword) {
       if (!currentPassword) {
-        return c.json(
-          { error: 'Current password required to change password' },
-          400,
-        );
+        return c.json({ error: 'Current password required to change password' }, 400);
       }
 
       // Verify current password
-      const isCurrentPasswordValid = await verifyPassword(
-        currentPassword,
-        user.password_hash,
-      );
+      const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password_hash);
       if (!isCurrentPasswordValid) {
         return c.json({ error: 'Current password is incorrect' }, 400);
       }
@@ -224,10 +212,7 @@ usersApp.post('/change-password', async (c) => {
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await verifyPassword(
-      currentPassword,
-      user.password_hash,
-    );
+    const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password_hash);
     if (!isCurrentPasswordValid) {
       return c.json({ error: 'Current password is incorrect' }, 400);
     }
@@ -286,10 +271,7 @@ usersApp.post('/telegram-link', async (c) => {
     // Check if Telegram ID is already linked to another account
     const existingTelegram = await userRegistry.findByTelegramId(telegramId);
     if (existingTelegram) {
-      return c.json(
-        { error: 'Telegram ID already linked to another account' },
-        409,
-      );
+      return c.json({ error: 'Telegram ID already linked to another account' }, 409);
     }
 
     // Update user with Telegram ID

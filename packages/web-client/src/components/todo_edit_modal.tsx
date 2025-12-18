@@ -28,11 +28,7 @@ interface TodoEditModalProps {
   todo: Todo;
 }
 
-export const TodoEditModal: FC<TodoEditModalProps> = ({
-  onClose,
-  show,
-  todo,
-}) => {
+export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) => {
   const { safeDb } = usePouchDb();
   const { allTags } = useTags();
 
@@ -45,9 +41,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
     setEditedTodo(todo);
   }, [todo]);
 
-  async function deleteButtonPressed(
-    event: React.FormEvent<HTMLButtonElement>,
-  ) {
+  async function deleteButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
     setError(null);
     setIsDeleting(true);
@@ -63,9 +57,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
     }
   }
 
-  async function editSaveButtonPressed(
-    event: React.FormEvent<HTMLButtonElement>,
-  ) {
+  async function editSaveButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
     setError(null);
     setIsSaving(true);
@@ -139,12 +131,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
                   onClick={() => setError(null)}
                   type="button"
                 >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       d="M6 18L18 6M6 6l12 12"
                       strokeLinecap="round"
@@ -281,8 +268,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
               onChange={(e) =>
                 setEditedTodo((editedTodo) => ({
                   ...editedTodo,
-                  repeat:
-                    e.target.value !== '' ? parseInt(e.target.value, 10) : null,
+                  repeat: e.target.value !== '' ? parseInt(e.target.value, 10) : null,
                 }))
               }
               placeholder="days"
@@ -301,10 +287,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
               onChange={() =>
                 setEditedTodo((editedTodo) => ({
                   ...editedTodo,
-                  completed:
-                    editedTodo.completed === null
-                      ? new Date().toISOString()
-                      : null,
+                  completed: editedTodo.completed === null ? new Date().toISOString() : null,
                 }))
               }
             />
@@ -379,11 +362,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({
             </Button>
           </div>
           <div>
-            <Button
-              color="red"
-              disabled={isSaving || isDeleting}
-              onClick={deleteButtonPressed}
-            >
+            <Button color="red" disabled={isSaving || isDeleting} onClick={deleteButtonPressed}>
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>

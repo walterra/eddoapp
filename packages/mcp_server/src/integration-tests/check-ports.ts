@@ -16,12 +16,8 @@ async function main() {
     process.exit(0);
   } else {
     console.error(`\n❌ Port ${testPort} is already in use!`);
-    console.error(
-      `\nPlease stop any running MCP servers before running tests.`,
-    );
-    console.error(
-      `You can check what's using the port with: lsof -i :${testPort}`,
-    );
+    console.error(`\nPlease stop any running MCP servers before running tests.`);
+    console.error(`You can check what's using the port with: lsof -i :${testPort}`);
     console.error(`\nCommon causes:`);
     console.error(`- A previous test run didn't clean up properly`);
     console.error(`- You have an MCP server running in another terminal`);

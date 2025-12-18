@@ -10,8 +10,6 @@ export interface TodoAlpha1 {
 
 export function isTodoAlpha1(arg: unknown): arg is TodoAlpha1 {
   return (
-    typeof arg === 'object' &&
-    !isNil(arg) &&
-    !Object.prototype.hasOwnProperty.call(arg, 'version')
+    typeof arg === 'object' && !isNil(arg) && !Object.prototype.hasOwnProperty.call(arg, 'version')
   );
 }

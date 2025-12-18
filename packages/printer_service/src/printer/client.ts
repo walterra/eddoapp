@@ -1,8 +1,4 @@
-import {
-  CharacterSet,
-  PrinterTypes,
-  ThermalPrinter,
-} from 'node-thermal-printer';
+import { CharacterSet, PrinterTypes, ThermalPrinter } from 'node-thermal-printer';
 import { appConfig } from '../utils/config.js';
 
 /**
@@ -103,10 +99,7 @@ export async function printTestPage(): Promise<void> {
 
   try {
     const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(
-        () => reject(new Error('Print operation timed out')),
-        PRINT_TIMEOUT,
-      );
+      timeoutId = setTimeout(() => reject(new Error('Print operation timed out')), PRINT_TIMEOUT);
     });
 
     const printPromise = async () => {
@@ -127,9 +120,7 @@ export async function printTestPage(): Promise<void> {
 
       printer.alignLeft();
       printer.println(`Date: ${new Date().toLocaleString()}`);
-      printer.println(
-        `Printer: ${appConfig.PRINTER_IP_ADDRESS}:${appConfig.PRINTER_PORT}`,
-      );
+      printer.println(`Printer: ${appConfig.PRINTER_IP_ADDRESS}:${appConfig.PRINTER_PORT}`);
 
       printer.drawLine();
 
@@ -174,10 +165,7 @@ export async function printBriefing(options: PrintOptions): Promise<void> {
 
   try {
     const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(
-        () => reject(new Error('Print operation timed out')),
-        PRINT_TIMEOUT,
-      );
+      timeoutId = setTimeout(() => reject(new Error('Print operation timed out')), PRINT_TIMEOUT);
     });
 
     const printPromise = async () => {
@@ -187,12 +175,9 @@ export async function printBriefing(options: PrintOptions): Promise<void> {
       }
 
       // Header
-      const headerText =
-        options.type === 'recap' ? 'DAILY RECAP' : 'DAILY BRIEFING';
+      const headerText = options.type === 'recap' ? 'DAILY RECAP' : 'DAILY BRIEFING';
       const footerText =
-        options.type === 'recap'
-          ? 'Eddo App - Daily Recap'
-          : 'Eddo App - Daily Briefing';
+        options.type === 'recap' ? 'Eddo App - Daily Recap' : 'Eddo App - Daily Briefing';
 
       printer.alignCenter();
       printer.setTextSize(1, 1);

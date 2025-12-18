@@ -17,10 +17,7 @@ const printerConfigSchema = z.object({
   PRINTER_PORT: z.coerce.number().default(9100),
   PRINTER_SCHEDULE_TIME: z
     .string()
-    .regex(
-      /^([01]\d|2[0-3]):[0-5]\d$/,
-      'Schedule time must be in HH:MM format (00:00-23:59)',
-    )
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Schedule time must be in HH:MM format (00:00-23:59)')
     .default('07:00'),
 });
 

@@ -63,16 +63,12 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     }
   }
 
-  function showEditModalButtonPressed(
-    event: React.FormEvent<HTMLButtonElement>,
-  ) {
+  function showEditModalButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
     setShowEditModal(true);
   }
 
-  async function timeTrackingButtonPressed(
-    event: React.FormEvent<HTMLButtonElement>,
-  ) {
+  async function timeTrackingButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
     if (isUpdating) return;
 
@@ -87,9 +83,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     ) {
       updatedActive[new Date().toISOString()] = null;
     } else {
-      const activeEntry = Object.entries(updatedActive).find(
-        (d) => d[1] === null,
-      );
+      const activeEntry = Object.entries(updatedActive).find((d) => d[1] === null);
       if (activeEntry) {
         updatedActive[activeEntry[0]] = new Date().toISOString();
       }
@@ -107,9 +101,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     }
   }
 
-  const thisButtonTimeTrackingActive = Object.values(todo.active).some(
-    (d) => d === null,
-  );
+  const thisButtonTimeTrackingActive = Object.values(todo.active).some((d) => d === null);
 
   const activeDuration = useMemo(() => {
     // Force recalculation when activeCounter changes
@@ -125,13 +117,8 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     >
       {error && (
         <div className="mb-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs dark:border-red-700 dark:bg-red-900">
-          <span className="text-red-700 dark:text-red-200">
-            Failed to update todo
-          </span>
-          <button
-            className="ml-2 text-red-600 hover:text-red-500"
-            onClick={() => setError(null)}
-          >
+          <span className="text-red-700 dark:text-red-200">Failed to update todo</span>
+          <button className="ml-2 text-red-600 hover:text-red-500" onClick={() => setError(null)}>
             ×
           </button>
         </div>
@@ -186,10 +173,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
 
         <div className="flex space-x-1">
           {activeDuration > 0 && (
-            <span
-              className="text-xs text-gray-400"
-              data-counter={activeCounter}
-            >
+            <span className="text-xs text-gray-400" data-counter={activeCounter}>
               {getFormattedDuration(activeDuration)}
             </span>
           )}
@@ -202,11 +186,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                       ? 'opacity-100'
                       : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
                   }`}
-                  data-testid={
-                    thisButtonTimeTrackingActive
-                      ? 'pause-button'
-                      : 'play-button'
-                  }
+                  data-testid={thisButtonTimeTrackingActive ? 'pause-button' : 'play-button'}
                   disabled={isUpdating}
                   onClick={timeTrackingButtonPressed}
                   type="button"
@@ -230,11 +210,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
           )}
         </div>
       </div>
-      <TodoEditModal
-        onClose={() => setShowEditModal(false)}
-        show={showEditModal}
-        todo={todo}
-      />
+      <TodoEditModal onClose={() => setShowEditModal(false)} show={showEditModal} todo={todo} />
     </div>
   );
 };

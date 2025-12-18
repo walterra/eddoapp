@@ -14,15 +14,12 @@ export interface UserPreferences {
   timezone?: string; // Future timezone support
 }
 
-export interface UserRegistryEntryAlpha2
-  extends Omit<UserRegistryEntryAlpha1, 'version'> {
+export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
   preferences: UserPreferences;
   version: 'alpha2';
 }
 
-export function isUserRegistryEntryAlpha2(
-  arg: unknown,
-): arg is UserRegistryEntryAlpha2 {
+export function isUserRegistryEntryAlpha2(arg: unknown): arg is UserRegistryEntryAlpha2 {
   return (
     typeof arg === 'object' &&
     !isNil(arg) &&

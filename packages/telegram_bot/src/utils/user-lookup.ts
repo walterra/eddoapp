@@ -40,18 +40,12 @@ setInterval(() => {
 /**
  * Look up a user by their Telegram ID in the user registry
  */
-export async function lookupUserByTelegramId(
-  telegramId: number,
-): Promise<TelegramUser | null> {
+export async function lookupUserByTelegramId(telegramId: number): Promise<TelegramUser | null> {
   // Check cache first
   const cached = userCache.get(telegramId);
   const cacheTime = cacheTimestamps.get(telegramId);
 
-  if (
-    cached !== undefined &&
-    cacheTime &&
-    Date.now() - cacheTime < CACHE_TTL_MS
-  ) {
+  if (cached !== undefined && cacheTime && Date.now() - cacheTime < CACHE_TTL_MS) {
     logger.debug('User lookup cache hit', {
       telegramId,
       username: cached?.username,
@@ -126,9 +120,7 @@ export async function lookupUserByTelegramId(
 /**
  * Check if a Telegram user is authorized to use the bot
  */
-export async function isTelegramUserAuthorized(
-  telegramId: number,
-): Promise<boolean> {
+export async function isTelegramUserAuthorized(telegramId: number): Promise<boolean> {
   const user = await lookupUserByTelegramId(telegramId);
   return user !== null;
 }

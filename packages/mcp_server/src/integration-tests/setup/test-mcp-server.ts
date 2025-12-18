@@ -26,9 +26,7 @@ export class TestMCPServerInstance {
   constructor(port?: number, pollingConfig?: ServerPollingConfig) {
     // Use environment variable or fallback to a random port to avoid conflicts
     this.port =
-      port ||
-      Number(process.env.MCP_TEST_PORT) ||
-      3003 + Math.floor(Math.random() * 1000);
+      port || Number(process.env.MCP_TEST_PORT) || 3003 + Math.floor(Math.random() * 1000);
 
     this.pollingConfig = {
       maxAttempts: pollingConfig?.maxAttempts ?? 30,
@@ -62,20 +60,16 @@ export class TestMCPServerInstance {
       console.log(`📦 Using test database: ${env.COUCHDB_TEST_DB_NAME}`);
 
       // Start the MCP server using the dedicated test script
-      this.serverProcess = spawn(
-        'pnpm',
-        ['--filter', '@eddo/mcp-server', 'start:test'],
-        {
-          env: {
-            ...process.env,
-            NODE_ENV: 'test',
-            COUCHDB_TEST_DB_NAME: 'todos-test',
-            MCP_TEST_PORT: this.port.toString(),
-          },
-          stdio: ['ignore', 'pipe', 'pipe'],
-          cwd: process.cwd(),
+      this.serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
+        env: {
+          ...process.env,
+          NODE_ENV: 'test',
+          COUCHDB_TEST_DB_NAME: 'todos-test',
+          MCP_TEST_PORT: this.port.toString(),
         },
-      );
+        stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: process.cwd(),
+      });
 
       // Reset state flags
       this.serverReady = false;
@@ -170,9 +164,7 @@ export class TestMCPServerInstance {
           'statusCode' in error &&
           error.statusCode === 404
         ) {
-          console.log(
-            `ℹ️  Test database doesn't exist: ${couchDbConfig.dbName}`,
-          );
+          console.log(`ℹ️  Test database doesn't exist: ${couchDbConfig.dbName}`);
         } else {
           console.warn('Warning: Failed to clear test database:', error);
         }
@@ -229,10 +221,7 @@ export class TestMCPServerInstance {
         try {
           const healthCheckUrl = `http://localhost:${this.port}/mcp`;
           const controller = new AbortController();
-          const timeoutId = setTimeout(
-            () => controller.abort(),
-            this.pollingConfig.pollIntervalMs,
-          );
+          const timeoutId = setTimeout(() => controller.abort(), this.pollingConfig.pollIntervalMs);
 
           const response = await fetch(healthCheckUrl, {
             method: 'POST',
@@ -259,9 +248,7 @@ export class TestMCPServerInstance {
           clearTimeout(timeoutId);
 
           if (response.ok) {
-            console.log(
-              `✅ Server HTTP endpoint ready after ${attempts} attempts`,
-            );
+            console.log(`✅ Server HTTP endpoint ready after ${attempts} attempts`);
             return;
           }
         } catch (_error) {
@@ -271,15 +258,11 @@ export class TestMCPServerInstance {
 
       // Check overall timeout
       if (Date.now() - startTime > this.pollingConfig.startupTimeoutMs) {
-        throw new Error(
-          `Server startup timeout after ${this.pollingConfig.startupTimeoutMs}ms`,
-        );
+        throw new Error(`Server startup timeout after ${this.pollingConfig.startupTimeoutMs}ms`);
       }
 
       // Wait before next attempt
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.pollingConfig.pollIntervalMs),
-      );
+      await new Promise((resolve) => setTimeout(resolve, this.pollingConfig.pollIntervalMs));
     }
 
     throw new Error(

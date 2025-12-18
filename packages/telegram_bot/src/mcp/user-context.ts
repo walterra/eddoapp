@@ -14,9 +14,7 @@ export interface MCPUserContext {
 /**
  * Extract user context from bot session for MCP operations
  */
-export async function extractUserContextForMCP(
-  ctx: BotContext,
-): Promise<MCPUserContext | null> {
+export async function extractUserContextForMCP(ctx: BotContext): Promise<MCPUserContext | null> {
   const telegramId = ctx.from?.id;
 
   if (!telegramId) {
@@ -68,9 +66,7 @@ export async function extractUserContextForMCP(
 /**
  * Create MCP headers with user authentication
  */
-export function createMCPHeaders(
-  userContext: MCPUserContext,
-): Record<string, string> {
+export function createMCPHeaders(userContext: MCPUserContext): Record<string, string> {
   return {
     'Content-Type': 'application/json',
     'X-User-ID': userContext.username,

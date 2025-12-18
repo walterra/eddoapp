@@ -101,10 +101,7 @@ export const createSafeDbOperationsWithHealth = (
     return async (
       designDoc: string,
       viewName: string,
-      options?: PouchDB.Query.Options<
-        Record<string, unknown>,
-        Record<string, unknown>
-      >,
+      options?: PouchDB.Query.Options<Record<string, unknown>, Record<string, unknown>>,
     ): Promise<T[]> => {
       const startTime = Date.now();
       try {

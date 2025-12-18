@@ -7,11 +7,7 @@ interface LoginProps {
   onGoToRegister: () => void;
 }
 
-export function Login({
-  onLogin,
-  isAuthenticating,
-  onGoToRegister,
-}: LoginProps) {
+export function Login({ onLogin, isAuthenticating, onGoToRegister }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,9 +32,7 @@ export function Login({
       <Card className="w-full max-w-md">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
-            <h3 className="text-xl font-medium text-gray-900">
-              Sign in to Eddo App
-            </h3>
+            <h3 className="text-xl font-medium text-gray-900">Sign in to Eddo App</h3>
             <p className="mt-1 text-sm text-gray-600">
               Don&apos;t have an account?{' '}
               <button
@@ -53,9 +47,7 @@ export function Login({
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">
-              {error}
-            </div>
+            <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">{error}</div>
           )}
 
           <div>
@@ -82,12 +74,7 @@ export function Login({
             />
           </div>
 
-          <Button
-            className="w-full"
-            color="blue"
-            disabled={isAuthenticating}
-            type="submit"
-          >
+          <Button className="w-full" color="blue" disabled={isAuthenticating} type="submit">
             {isAuthenticating ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>

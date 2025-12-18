@@ -16,9 +16,7 @@ interface UseTimeTrackingActiveParams {
  * @param enabled - Whether the query should run (default: true if safeDb exists)
  * @returns TanStack Query result with active todo IDs, loading, and error states
  */
-export function useTimeTrackingActive({
-  enabled = true,
-}: UseTimeTrackingActiveParams = {}) {
+export function useTimeTrackingActive({ enabled = true }: UseTimeTrackingActiveParams = {}) {
   const { safeDb } = usePouchDb();
 
   return useQuery({

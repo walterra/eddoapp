@@ -34,9 +34,7 @@ export const TestWrapper = ({
   children: ReactNode;
   testDb?: PouchDbContextType;
 }) => {
-  const { contextValue } = testDb
-    ? { contextValue: testDb }
-    : createTestPouchDb();
+  const { contextValue } = testDb ? { contextValue: testDb } : createTestPouchDb();
 
   // Create a new QueryClient for each test to avoid state leakage
   const queryClient = new QueryClient({
@@ -50,9 +48,7 @@ export const TestWrapper = ({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <PouchDbContext.Provider value={contextValue}>
-        {children}
-      </PouchDbContext.Provider>
+      <PouchDbContext.Provider value={contextValue}>{children}</PouchDbContext.Provider>
     </QueryClientProvider>
   );
 };
@@ -65,9 +61,7 @@ export const renderWithPouchDb = (
   const { testDb, ...renderOptions } = options || {};
 
   return render(ui, {
-    wrapper: ({ children }) => (
-      <TestWrapper testDb={testDb}>{children}</TestWrapper>
-    ),
+    wrapper: ({ children }) => <TestWrapper testDb={testDb}>{children}</TestWrapper>,
     ...renderOptions,
   });
 };

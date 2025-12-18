@@ -31,12 +31,7 @@ export class TestLock {
         console.log(`✅ [${this.testId}] Test lock acquired`);
         return;
       } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'code' in error &&
-          error.code === 'EEXIST'
-        ) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST') {
           // Lock file exists, check if it's stale
           try {
             const lockContent = await fs.readFile(LOCK_FILE, 'utf8');
@@ -45,17 +40,13 @@ export class TestLock {
 
             // If lock is older than 30 seconds, consider it stale
             if (lockAge > 30000) {
-              console.warn(
-                `⚠️  [${this.testId}] Removing stale lock (${lockAge}ms old)`,
-              );
+              console.warn(`⚠️  [${this.testId}] Removing stale lock (${lockAge}ms old)`);
               await fs.unlink(LOCK_FILE);
               continue;
             }
 
             // Wait and retry
-            console.log(
-              `⏳ [${this.testId}] Waiting for lock held by: ${lockContent}`,
-            );
+            console.log(`⏳ [${this.testId}] Waiting for lock held by: ${lockContent}`);
             await new Promise((resolve) => setTimeout(resolve, 100));
           } catch (_readError) {
             // Lock file disappeared, retry
@@ -82,17 +73,10 @@ export class TestLock {
         await fs.unlink(LOCK_FILE);
         console.log(`🔓 [${this.testId}] Test lock released`);
       } else {
-        console.warn(
-          `⚠️  [${this.testId}] Lock ownership changed, not releasing`,
-        );
+        console.warn(`⚠️  [${this.testId}] Lock ownership changed, not releasing`);
       }
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        error.code !== 'ENOENT'
-      ) {
+      if (error && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
         console.error(`❌ [${this.testId}] Failed to release lock:`, error);
       }
     }

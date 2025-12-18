@@ -119,11 +119,9 @@ export class TestDatabaseCleanup {
     // Check if it's a user database
     if (isUserDatabase(databaseName, this.env)) {
       info.type = 'user';
-      info.username =
-        extractUsernameFromDatabaseName(databaseName, this.env) || undefined;
+      info.username = extractUsernameFromDatabaseName(databaseName, this.env) || undefined;
       info.prefix = getDatabasePrefix(this.env);
-      info.isTestDatabase =
-        this.env.NODE_ENV === 'test' || databaseName.includes('test');
+      info.isTestDatabase = this.env.NODE_ENV === 'test' || databaseName.includes('test');
       return info;
     }
 
@@ -131,8 +129,7 @@ export class TestDatabaseCleanup {
     if (isUserRegistryDatabase(databaseName, this.env)) {
       info.type = 'user_registry';
       info.prefix = getDatabasePrefix(this.env);
-      info.isTestDatabase =
-        this.env.NODE_ENV === 'test' || databaseName.includes('test');
+      info.isTestDatabase = this.env.NODE_ENV === 'test' || databaseName.includes('test');
       return info;
     }
 
@@ -225,12 +222,7 @@ export class TestDatabaseCleanup {
       this.log(`🗑️  Deleted database: ${databaseName}`);
       return true;
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
         this.log(`ℹ️  Database ${databaseName} doesn't exist`);
         return true; // Consider it successful if it doesn't exist
       }
@@ -374,15 +366,11 @@ export class TestDatabaseCleanup {
 
     try {
       const allDatabases = await this.getAllDatabases();
-      const matchingDatabases = allDatabases.filter((dbName) =>
-        pattern.test(dbName),
-      );
+      const matchingDatabases = allDatabases.filter((dbName) => pattern.test(dbName));
 
       result.summary.total = matchingDatabases.length;
 
-      this.log(
-        `Found ${matchingDatabases.length} databases matching pattern: ${pattern}`,
-      );
+      this.log(`Found ${matchingDatabases.length} databases matching pattern: ${pattern}`);
 
       for (const dbName of matchingDatabases) {
         const info = this.classifyDatabase(dbName);
@@ -439,18 +427,14 @@ export class TestDatabaseCleanup {
 /**
  * Factory function to create a test cleanup instance
  */
-export function createTestCleanup(
-  options: TestCleanupOptions = {},
-): TestDatabaseCleanup {
+export function createTestCleanup(options: TestCleanupOptions = {}): TestDatabaseCleanup {
   return new TestDatabaseCleanup(options);
 }
 
 /**
  * Quick cleanup function for common test scenarios
  */
-export async function quickCleanup(
-  options: TestCleanupOptions = {},
-): Promise<CleanupResult> {
+export async function quickCleanup(options: TestCleanupOptions = {}): Promise<CleanupResult> {
   const cleanup = createTestCleanup(options);
   return await cleanup.cleanupTestDatabases();
 }
@@ -480,9 +464,7 @@ export async function cleanupDatabasesByPattern(
 /**
  * Get a report of all databases
  */
-export async function getDatabaseReport(
-  options: TestCleanupOptions = {},
-): Promise<DatabaseInfo[]> {
+export async function getDatabaseReport(options: TestCleanupOptions = {}): Promise<DatabaseInfo[]> {
   const cleanup = createTestCleanup(options);
   return await cleanup.getDatabaseReport();
 }

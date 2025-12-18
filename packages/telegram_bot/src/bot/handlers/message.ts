@@ -35,11 +35,7 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     });
 
     // Process the message through the agent workflow
-    const result = await agent.processMessage(
-      messageText,
-      userId.toString(),
-      ctx,
-    );
+    const result = await agent.processMessage(messageText, userId.toString(), ctx);
 
     // Log the result
     if (result.success) {

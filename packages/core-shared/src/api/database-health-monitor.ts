@@ -17,10 +17,7 @@ export class DatabaseHealthMonitor {
   private listeners: ((healthCheck: DatabaseHealthCheck) => void)[] = [];
   private currentMetrics: DatabaseHealthMetrics;
 
-  constructor(
-    db: PouchDB.Database,
-    config: Partial<DatabaseHealthConfig> = {},
-  ) {
+  constructor(db: PouchDB.Database, config: Partial<DatabaseHealthConfig> = {}) {
     this.db = db;
     this.config = { ...DEFAULT_HEALTH_CONFIG, ...config };
     this.currentMetrics = this.initializeMetrics();
@@ -111,13 +108,9 @@ export class DatabaseHealthMonitor {
       if (responseTime > this.config.performanceThreshold) {
         issues.push({
           type: 'performance',
-          severity:
-            responseTime > this.config.performanceThreshold * 2
-              ? 'high'
-              : 'medium',
+          severity: responseTime > this.config.performanceThreshold * 2 ? 'high' : 'medium',
           message: `Database response time is ${responseTime}ms, exceeding threshold of ${this.config.performanceThreshold}ms`,
-          resolution:
-            'Consider optimizing database queries or checking network conditions',
+          resolution: 'Consider optimizing database queries or checking network conditions',
           autoResolvable: false,
         });
       }
@@ -127,10 +120,7 @@ export class DatabaseHealthMonitor {
         const storageQuota = await this.checkStorageQuota();
         this.currentMetrics.storageQuota = storageQuota;
 
-        if (
-          storageQuota &&
-          storageQuota.percentage >= this.config.storageCriticalThreshold
-        ) {
+        if (storageQuota && storageQuota.percentage >= this.config.storageCriticalThreshold) {
           issues.push({
             type: 'storage',
             severity: 'critical',
@@ -138,10 +128,7 @@ export class DatabaseHealthMonitor {
             resolution: 'Delete unnecessary data or increase storage quota',
             autoResolvable: false,
           });
-        } else if (
-          storageQuota &&
-          storageQuota.percentage >= this.config.storageWarningThreshold
-        ) {
+        } else if (storageQuota && storageQuota.percentage >= this.config.storageWarningThreshold) {
           issues.push({
             type: 'storage',
             severity: 'medium',
@@ -166,8 +153,7 @@ export class DatabaseHealthMonitor {
       issues.push({
         type: 'connectivity',
         severity:
-          this.currentMetrics.consecutiveFailures >=
-          this.config.maxConsecutiveFailures
+          this.currentMetrics.consecutiveFailures >= this.config.maxConsecutiveFailures
             ? 'critical'
             : 'high',
         message: `Database connection failed: ${dbError.message}`,
@@ -292,9 +278,7 @@ export class DatabaseHealthMonitor {
   /**
    * Update sync status from external sync handler
    */
-  updateSyncStatus(
-    status: 'connected' | 'disconnected' | 'syncing' | 'error',
-  ): void {
+  updateSyncStatus(status: 'connected' | 'disconnected' | 'syncing' | 'error'): void {
     this.currentMetrics.syncStatus = status;
   }
 

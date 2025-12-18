@@ -17,6 +17,14 @@ export default defineConfig({
     ],
     exclude: ['**/*.e2e.test.ts', '**/integration-tests/**'],
     testTimeout: 10000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
     projects: [
       {
         name: 'unit',

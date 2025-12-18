@@ -14,15 +14,11 @@ import {
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
-export function isLatestUserRegistryVersion(
-  entry: unknown,
-): entry is UserRegistryEntryAlpha2 {
+export function isLatestUserRegistryVersion(entry: unknown): entry is UserRegistryEntryAlpha2 {
   return isUserRegistryEntryAlpha2(entry);
 }
 
-export function migrateUserRegistryEntry(
-  entry: unknown,
-): UserRegistryEntryAlpha2 {
+export function migrateUserRegistryEntry(entry: unknown): UserRegistryEntryAlpha2 {
   if (isUserRegistryEntryAlpha2(entry)) {
     return entry;
   }
@@ -49,9 +45,7 @@ function isLegacyUserRegistryEntry(arg: unknown): boolean {
   );
 }
 
-function migrateAlpha1ToAlpha2(
-  entry: UserRegistryEntryAlpha1,
-): UserRegistryEntryAlpha2 {
+function migrateAlpha1ToAlpha2(entry: UserRegistryEntryAlpha1): UserRegistryEntryAlpha2 {
   const now = new Date().toISOString();
 
   return {
@@ -72,8 +66,7 @@ function migrateLegacyToAlpha1(entry: UnknownObject): UserRegistryEntryAlpha1 {
     username: entry.username as string,
     email: (entry.email as string) || '',
     password_hash: (entry.password_hash as string) || '',
-    database_name:
-      (entry.database_name as string) || `eddo_user_${entry.username}`,
+    database_name: (entry.database_name as string) || `eddo_user_${entry.username}`,
     created_at: (entry.created_at as string) || now,
     updated_at: (entry.updated_at as string) || now,
     permissions: (entry.permissions as UserPermissions) || ['read', 'write'],

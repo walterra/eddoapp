@@ -6,9 +6,7 @@ import { z } from 'zod';
  */
 export const clientEnvSchema = z.object({
   // Node environment
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
 /**
@@ -23,10 +21,7 @@ export type ClientEnv = z.infer<typeof clientEnvSchema>;
 export function validateClientEnv(env: unknown): ClientEnv {
   const result = clientEnvSchema.safeParse(env);
   if (!result.success) {
-    console.warn(
-      'Client environment validation failed, using defaults:',
-      result.error.message,
-    );
+    console.warn('Client environment validation failed, using defaults:', result.error.message);
     return {
       NODE_ENV: 'development',
     };

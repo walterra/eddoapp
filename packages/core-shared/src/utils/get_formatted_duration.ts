@@ -39,15 +39,9 @@ export function getFormattedDuration(duration: number): string {
 }
 
 export function getFormattedDurationForTodos(todos: Todo[]): string {
-  return getFormattedDuration(
-    getActiveDuration(getActiveRecordForTodos(todos)),
-  );
+  return getFormattedDuration(getActiveDuration(getActiveRecordForTodos(todos)));
 }
 
-export function getFormattedDurationForActivities(
-  activities: Activity[],
-): string {
-  return getFormattedDuration(
-    getActiveDuration(getActiveRecordForActivities(activities)),
-  );
+export function getFormattedDurationForActivities(activities: Activity[]): string {
+  return getFormattedDuration(getActiveDuration(getActiveRecordForActivities(activities)));
 }

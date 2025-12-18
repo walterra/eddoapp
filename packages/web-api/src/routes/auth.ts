@@ -44,8 +44,7 @@ const linkTelegramSchema = z.object({
 authApp.post('/register', async (c) => {
   try {
     const body = await c.req.json();
-    const { username, email, password, telegramId } =
-      registerSchema.parse(body);
+    const { username, email, password, telegramId } = registerSchema.parse(body);
 
     // Validate input
     const usernameValidation = validateUsername(username);
@@ -288,10 +287,7 @@ authApp.post('/link-telegram', async (c) => {
     // Check if Telegram ID is already linked
     const existingTelegram = await userRegistry.findByTelegramId(telegramId);
     if (existingTelegram) {
-      return c.json(
-        { error: 'Telegram ID already linked to another account' },
-        409,
-      );
+      return c.json({ error: 'Telegram ID already linked to another account' }, 409);
     }
 
     // Find user and update with Telegram ID

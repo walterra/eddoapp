@@ -1,8 +1,4 @@
-import {
-  createEnv,
-  createTestUserRegistry,
-  createUserRegistry,
-} from '@eddo/core-server';
+import { createEnv, createTestUserRegistry, createUserRegistry } from '@eddo/core-server';
 
 /**
  * Authentication result for MCP server
@@ -126,11 +122,7 @@ export async function validateUserContext(
       });
     }
 
-    if (
-      telegramId &&
-      user.telegram_id &&
-      parseInt(telegramId) !== user.telegram_id
-    ) {
+    if (telegramId && user.telegram_id && parseInt(telegramId) !== user.telegram_id) {
       console.warn('Telegram ID mismatch in headers', {
         provided: telegramId,
         actual: user.telegram_id,

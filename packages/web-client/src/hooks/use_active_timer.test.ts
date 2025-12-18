@@ -93,10 +93,9 @@ describe('useActiveTimer', () => {
   });
 
   it('should not create multiple timers on rerender', () => {
-    const { rerender } = renderHook(
-      ({ active }: { active: boolean }) => useActiveTimer(active),
-      { initialProps: { active: true } },
-    );
+    const { rerender } = renderHook(({ active }: { active: boolean }) => useActiveTimer(active), {
+      initialProps: { active: true },
+    });
 
     expect(vi.getTimerCount()).toBe(1);
 

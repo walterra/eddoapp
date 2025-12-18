@@ -38,13 +38,7 @@ dbProxyApp.all('/*', async (c) => {
   const userDbContext = getUserDatabaseContext(c);
 
   // Route to user-specific database
-  const response = await proxyUserCouchDBRequest(
-    userDbContext,
-    method,
-    fullPath,
-    body,
-    headers,
-  );
+  const response = await proxyUserCouchDBRequest(userDbContext, method, fullPath, body, headers);
   return response;
 });
 

@@ -29,8 +29,7 @@ type UserSession = {
 };
 
 // Initialize nano connection
-const couchDbConfig =
-  env.NODE_ENV === 'test' ? getTestCouchDbConfig(env) : getCouchDbConfig(env);
+const couchDbConfig = env.NODE_ENV === 'test' ? getTestCouchDbConfig(env) : getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
 
 // Create server with authentication
@@ -48,8 +47,7 @@ const server = new FastMCP<UserSession>({
     console.log('MCP authentication request');
 
     // Check if user headers are provided
-    const username =
-      request.headers['x-user-id'] || request.headers['X-User-ID'];
+    const username = request.headers['x-user-id'] || request.headers['X-User-ID'];
 
     if (!username) {
       // No user headers - this is likely a connection handshake
@@ -73,9 +71,7 @@ const server = new FastMCP<UserSession>({
 });
 
 // Helper to get user's database from context
-function getUserDb(context: {
-  session?: UserSession;
-}): nano.DocumentScope<TodoAlpha3> {
+function getUserDb(context: { session?: UserSession }): nano.DocumentScope<TodoAlpha3> {
   if (!context.session) {
     throw new Error('No user session available');
   }
@@ -152,9 +148,7 @@ Usage examples:
     description: z
       .string()
       .default('')
-      .describe(
-        'Detailed description or notes for the todo. Can include markdown formatting',
-      ),
+      .describe('Detailed description or notes for the todo. Can include markdown formatting'),
     context: z
       .string()
       .default('private')
@@ -216,8 +210,7 @@ Usage examples:
     });
 
     const now = new Date().toISOString();
-    const dueDate =
-      args.due || new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
+    const dueDate = args.due || new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
 
     const newTodo: Omit<TodoAlpha3, '_rev'> = {
       _id: now,
@@ -298,10 +291,7 @@ Usage examples:
 - Combined filters: {"context": "work", "completed": false, "limit": 10}
 - Completed today: {"completedFrom": "2025-07-15T00:00:00.000Z", "completedTo": "2025-07-15T23:59:59.999Z"}`,
   parameters: z.object({
-    context: z
-      .string()
-      .optional()
-      .describe('Filter todos by GTD context (e.g. "work", "private")'),
+    context: z.string().optional().describe('Filter todos by GTD context (e.g. "work", "private")'),
     completed: z
       .boolean()
       .optional()
@@ -319,19 +309,12 @@ Usage examples:
     completedFrom: z
       .string()
       .optional()
-      .describe(
-        'Start date filter for completion date in ISO format (inclusive)',
-      ),
+      .describe('Start date filter for completion date in ISO format (inclusive)'),
     completedTo: z
       .string()
       .optional()
-      .describe(
-        'End date filter for completion date in ISO format (inclusive)',
-      ),
-    limit: z
-      .number()
-      .default(50)
-      .describe('Maximum number of todos to return (default: 50)'),
+      .describe('End date filter for completion date in ISO format (inclusive)'),
+    limit: z.number().default(50).describe('Maximum number of todos to return (default: 50)'),
     tags: z
       .array(z.string())
       .optional()
@@ -359,19 +342,15 @@ Usage examples:
       if (args.completedFrom || args.completedTo) {
         // Can't filter by completion date for uncompleted todos
         if (args.completed === false) {
-          throw new Error(
-            'Cannot use completedFrom/completedTo with completed=false',
-          );
+          throw new Error('Cannot use completedFrom/completedTo with completed=false');
         }
         // Build range query for completed todos
         selector.completed = {};
         if (args.completedFrom) {
-          (selector.completed as Record<string, unknown>)['$gte'] =
-            args.completedFrom;
+          (selector.completed as Record<string, unknown>)['$gte'] = args.completedFrom;
         }
         if (args.completedTo) {
-          (selector.completed as Record<string, unknown>)['$lte'] =
-            args.completedTo;
+          (selector.completed as Record<string, unknown>)['$lte'] = args.completedTo;
         }
       } else if (args.completed !== undefined) {
         // Only apply boolean filter if no date range specified
@@ -452,10 +431,7 @@ Usage examples:
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       // If database doesn't exist, return empty result instead of throwing error
-      if (
-        message.includes('Database does not exist') ||
-        message.includes('no_db_file')
-      ) {
+      if (message.includes('Database does not exist') || message.includes('no_db_file')) {
         context.log.info('Database does not exist, returning empty result');
         return JSON.stringify({
           summary: 'No todos found - database not initialized',
@@ -542,13 +518,8 @@ IMPORTANT: Pass update fields directly as parameters, NOT wrapped in nested obje
   parameters: z.object({
     id: z
       .string()
-      .describe(
-        'The unique identifier of the todo to update (ISO timestamp of creation)',
-      ),
-    title: z
-      .string()
-      .optional()
-      .describe('Updated title/name of the todo item'),
+      .describe('The unique identifier of the todo to update (ISO timestamp of creation)'),
+    title: z.string().optional().describe('Updated title/name of the todo item'),
     description: z.string().optional().describe('Updated description or notes'),
     context: z.string().optional().describe('Updated GTD context category'),
     due: z.string().optional().describe('Updated due date in ISO format'),
@@ -624,9 +595,7 @@ IMPORTANT: Pass update fields directly as parameters, NOT wrapped in nested obje
         metadata: {
           operation: 'update',
           timestamp: new Date().toISOString(),
-          error_type: message.includes('not found')
-            ? 'not_found'
-            : 'database_error',
+          error_type: message.includes('not found') ? 'not_found' : 'database_error',
         },
       });
     }
@@ -640,12 +609,8 @@ server.addTool({
   parameters: z.object({
     id: z
       .string()
-      .describe(
-        'The unique identifier of the todo to toggle (ISO timestamp of creation)',
-      ),
-    completed: z
-      .boolean()
-      .describe('true to mark as completed, false to mark as incomplete'),
+      .describe('The unique identifier of the todo to toggle (ISO timestamp of creation)'),
+    completed: z.boolean().describe('true to mark as completed, false to mark as incomplete'),
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
@@ -752,9 +717,7 @@ server.addTool({
         metadata: {
           operation: 'toggle_completion',
           timestamp: new Date().toISOString(),
-          error_type: message.includes('not found')
-            ? 'not_found'
-            : 'database_error',
+          error_type: message.includes('not found') ? 'not_found' : 'database_error',
         },
       });
     }
@@ -768,9 +731,7 @@ server.addTool({
   parameters: z.object({
     id: z
       .string()
-      .describe(
-        'The unique identifier of the todo to delete (ISO timestamp of creation)',
-      ),
+      .describe('The unique identifier of the todo to delete (ISO timestamp of creation)'),
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
@@ -821,9 +782,7 @@ server.addTool({
         metadata: {
           operation: 'delete',
           timestamp: new Date().toISOString(),
-          error_type: message.includes('not found')
-            ? 'not_found'
-            : 'database_error',
+          error_type: message.includes('not found') ? 'not_found' : 'database_error',
         },
       });
     }
@@ -899,9 +858,7 @@ server.addTool({
         metadata: {
           operation: 'start_time_tracking',
           timestamp: new Date().toISOString(),
-          error_type: message.includes('not found')
-            ? 'not_found'
-            : 'database_error',
+          error_type: message.includes('not found') ? 'not_found' : 'database_error',
         },
       });
     }
@@ -937,9 +894,7 @@ server.addTool({
       const operationStartTime = Date.now();
 
       // Find the active tracking session (value is null)
-      const activeSession = Object.entries(todo.active).find(
-        ([_, end]) => end === null,
-      );
+      const activeSession = Object.entries(todo.active).find(([_, end]) => end === null);
 
       if (activeSession) {
         const startTime = activeSession[0];
@@ -954,8 +909,7 @@ server.addTool({
           endTime: now,
         });
 
-        const duration =
-          new Date(now).getTime() - new Date(startTime).getTime();
+        const duration = new Date(now).getTime() - new Date(startTime).getTime();
 
         return JSON.stringify({
           summary: 'Time tracking stopped',
@@ -1010,9 +964,7 @@ server.addTool({
         metadata: {
           operation: 'stop_time_tracking',
           timestamp: new Date().toISOString(),
-          error_type: message.includes('not found')
-            ? 'not_found'
-            : 'database_error',
+          error_type: message.includes('not found') ? 'not_found' : 'database_error',
         },
       });
     }
@@ -1025,9 +977,7 @@ server.addTool({
   description: 'Get todos with active time tracking',
   parameters: z
     .object({})
-    .describe(
-      'No parameters required - returns all todos with active time tracking',
-    ),
+    .describe('No parameters required - returns all todos with active time tracking'),
   execute: async (_args, context) => {
     const db = getUserDb(context);
 
@@ -1059,9 +1009,7 @@ server.addTool({
         summary: `Found ${activeTodos.length} todos with active time tracking`,
         data: activeTodos.map((todo) => ({
           ...todo,
-          active_session_count: Object.values(todo.active).filter(
-            (end) => end === null,
-          ).length,
+          active_session_count: Object.values(todo.active).filter((end) => end === null).length,
         })),
         metadata: {
           execution_time: `${executionTime.toFixed(2)}ms`,
@@ -1101,14 +1049,7 @@ server.addTool({
     'Get comprehensive information about the Eddo MCP server with authentication, including data model, available tools, and usage examples',
   parameters: z.object({
     section: z
-      .enum([
-        'overview',
-        'datamodel',
-        'examples',
-        'tagstats',
-        'memories',
-        'all',
-      ])
+      .enum(['overview', 'datamodel', 'examples', 'tagstats', 'memories', 'all'])
       .default('all')
       .describe('Specific section of documentation to retrieve'),
   }),
@@ -1134,17 +1075,13 @@ server.addTool({
         // Sort by count (descending) and get top 10
         const sortedTags = result.rows
           .sort((a, b) =>
-            typeof a.value === 'number' && typeof b.value === 'number'
-              ? b.value - a.value
-              : 0,
+            typeof a.value === 'number' && typeof b.value === 'number' ? b.value - a.value : 0,
           )
           .slice(0, 10);
 
         const tagList =
           sortedTags.length > 0
-            ? sortedTags
-                .map((row) => `- **${row.key}**: ${row.value} uses`)
-                .join('\n')
+            ? sortedTags.map((row) => `- **${row.key}**: ${row.value} uses`).join('\n')
             : '- No tags found';
 
         tagStatsSection = `# Top Used Tags
@@ -1174,14 +1111,10 @@ Error retrieving tag statistics: ${error}`;
 
         const memories = memoryResult.docs || [];
         // Sort by _id (creation timestamp) in descending order in JavaScript
-        const sortedMemories = memories.sort((a, b) =>
-          b._id.localeCompare(a._id),
-        );
+        const sortedMemories = memories.sort((a, b) => b._id.localeCompare(a._id));
         const memoryList =
           sortedMemories.length > 0
-            ? sortedMemories
-                .map((todo) => `- ${todo.title}: ${todo.description}`)
-                .join('\n')
+            ? sortedMemories.map((todo) => `- ${todo.title}: ${todo.description}`).join('\n')
             : '- No memories found';
 
         memoriesSection = `# User Memories
@@ -1308,16 +1241,12 @@ export async function startMcpServer(port: number = 3001) {
     // Note: We can't test specific user databases here since they're created on-demand
     try {
       const defaultDbName =
-        env.NODE_ENV === 'test'
-          ? getTestCouchDbConfig(env).dbName
-          : getCouchDbConfig(env).dbName;
+        env.NODE_ENV === 'test' ? getTestCouchDbConfig(env).dbName : getCouchDbConfig(env).dbName;
       const defaultDb = couch.db.use(defaultDbName);
       const info = await defaultDb.info();
       console.log(`✅ Connected to CouchDB (verified with ${info.db_name})`);
     } catch (error: unknown) {
-      console.error(
-        '❌ Failed to connect to database. Ensure CouchDB is running.',
-      );
+      console.error('❌ Failed to connect to database. Ensure CouchDB is running.');
       throw error;
     }
 
@@ -1348,8 +1277,7 @@ export async function startMcpServer(port: number = 3001) {
 // Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   // Use custom port from environment in test mode
-  const port =
-    env.NODE_ENV === 'test' && env.MCP_TEST_PORT ? env.MCP_TEST_PORT : 3001;
+  const port = env.NODE_ENV === 'test' && env.MCP_TEST_PORT ? env.MCP_TEST_PORT : 3001;
   startMcpServer(port).catch((error) => {
     console.error('Failed to start MCP server:', error);
     process.exit(1);

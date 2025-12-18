@@ -44,10 +44,9 @@ describe('MCP Analytics Integration', () => {
 
   describe('Server Information', () => {
     it('should provide server information with all sections', async () => {
-      const serverInfo = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'all' },
-      );
+      const serverInfo = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'all',
+      });
 
       // Server returns markdown string, not object
       expect(serverInfo).toBeDefined();
@@ -78,10 +77,9 @@ describe('MCP Analytics Integration', () => {
       });
 
       // Get tag statistics
-      const tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      const tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
 
       expect(typeof tagStatsResponse).toBe('string');
       expect(tagStatsResponse).toContain('# Top Used Tags');
@@ -99,10 +97,9 @@ describe('MCP Analytics Integration', () => {
 
     it('should handle empty tag statistics', async () => {
       // No todos with tags
-      const tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      const tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
 
       // Should return markdown string
       expect(typeof tagStatsResponse).toBe('string');
@@ -137,10 +134,9 @@ describe('MCP Analytics Integration', () => {
         });
       }
 
-      const tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      const tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
 
       const tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
@@ -157,20 +153,16 @@ describe('MCP Analytics Integration', () => {
 
     it('should update tag statistics when todos are modified', async () => {
       // Create todo with initial tags
-      const createResponse = await assert.expectToolCallSuccess<MCPResponse>(
-        'createTodo',
-        {
-          ...createTestTodoData.withTags(['initial', 'tag']),
-          title: 'Modifiable Todo',
-        },
-      );
+      const createResponse = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withTags(['initial', 'tag']),
+        title: 'Modifiable Todo',
+      });
       const todoId = createResponse.data!.id!;
 
       // Check initial stats
-      let tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      let tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       let tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
       expect(tagStats.initial).toBe(1);
@@ -183,10 +175,9 @@ describe('MCP Analytics Integration', () => {
       });
 
       // Check updated stats
-      tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
       expect(tagStats.updated).toBe(1);
@@ -197,13 +188,10 @@ describe('MCP Analytics Integration', () => {
 
     it('should update tag statistics when todos are deleted', async () => {
       // Create todos with tags
-      const createResponse1 = await assert.expectToolCallSuccess<MCPResponse>(
-        'createTodo',
-        {
-          ...createTestTodoData.withTags(['delete-test', 'common']),
-          title: 'Todo to Delete',
-        },
-      );
+      const createResponse1 = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withTags(['delete-test', 'common']),
+        title: 'Todo to Delete',
+      });
       const todoId1 = createResponse1.data!.id!;
 
       await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
@@ -212,10 +200,9 @@ describe('MCP Analytics Integration', () => {
       });
 
       // Check initial stats
-      let tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      let tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       let tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
       expect(tagStats['delete-test']).toBe(1);
@@ -226,10 +213,9 @@ describe('MCP Analytics Integration', () => {
       await assert.expectToolCallSuccess<string>('deleteTodo', { id: todoId1 });
 
       // Check updated stats
-      tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
       expect(tagStats['delete-test']).toBeUndefined(); // Should be removed or 0
@@ -239,20 +225,16 @@ describe('MCP Analytics Integration', () => {
 
     it('should handle tag statistics with completion status changes', async () => {
       // Create todo with tags
-      const createResponse = await assert.expectToolCallSuccess<MCPResponse>(
-        'createTodo',
-        {
-          ...createTestTodoData.withTags(['completion-test']),
-          title: 'Completion Test',
-        },
-      );
+      const createResponse = await assert.expectToolCallSuccess<MCPResponse>('createTodo', {
+        ...createTestTodoData.withTags(['completion-test']),
+        title: 'Completion Test',
+      });
       const todoId = createResponse.data!.id!;
 
       // Check initial stats
-      let tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      let tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       let tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
       expect(tagStats['completion-test']).toBe(1);
@@ -264,10 +246,9 @@ describe('MCP Analytics Integration', () => {
       });
 
       // Tag stats should still include completed todos
-      tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
       expect(tagStats['completion-test']).toBe(1);
@@ -279,10 +260,9 @@ describe('MCP Analytics Integration', () => {
       });
 
       // Stats should remain the same
-      tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 
       expect(tagStats['completion-test']).toBe(1);
@@ -291,14 +271,7 @@ describe('MCP Analytics Integration', () => {
 
   describe('Performance and Scalability', () => {
     it('should handle tag statistics for many todos efficiently', async () => {
-      const tagPool = [
-        'urgent',
-        'project',
-        'meeting',
-        'development',
-        'research',
-        'testing',
-      ];
+      const tagPool = ['urgent', 'project', 'meeting', 'development', 'research', 'testing'];
 
       // Create many todos with random tag combinations
       const todoCount = 50;
@@ -330,10 +303,9 @@ describe('MCP Analytics Integration', () => {
 
       // Measure performance of tag stats query
       const startTime = Date.now();
-      const tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      const tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
       const endTime = Date.now();
 
       // Should complete in reasonable time (less than 5 seconds)
@@ -359,10 +331,7 @@ describe('MCP Analytics Integration', () => {
     });
 
     it('should handle server info requests with no parameters', async () => {
-      const serverInfo = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        {},
-      );
+      const serverInfo = await assert.expectToolCallSuccess<string>('getServerInfo', {});
 
       // Should return default (all) sections
       expect(serverInfo).toBeDefined();
@@ -403,10 +372,9 @@ describe('MCP Analytics Integration', () => {
         });
       }
 
-      const tagStatsResponse = await assert.expectToolCallSuccess<string>(
-        'getServerInfo',
-        { section: 'tagstats' },
-      );
+      const tagStatsResponse = await assert.expectToolCallSuccess<string>('getServerInfo', {
+        section: 'tagstats',
+      });
 
       const tagStats = parseTagStatsFromMarkdown(tagStatsResponse);
 

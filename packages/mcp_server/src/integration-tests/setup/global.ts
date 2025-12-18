@@ -38,9 +38,7 @@ export async function setup() {
       return setTimeout(cb, ms);
     });
 
-  console.log(
-    '🚀 MCP Integration Test Suite - Server should already be running',
-  );
+  console.log('🚀 MCP Integration Test Suite - Server should already be running');
 
   // Set up test database infrastructure once (indexes, design documents)
   console.log('🏗️  Setting up shared test database infrastructure...');
@@ -51,41 +49,26 @@ export async function setup() {
   await dbSetup.resetDatabase();
 
   // Set up test user registry and create shared test user
-  console.log(
-    '👤 Setting up test user registry and creating shared test user...',
-  );
+  console.log('👤 Setting up test user registry and creating shared test user...');
 
   try {
-    const { validateEnv, createTestUserRegistry } = await import(
-      '@eddo/core-server'
-    );
+    const { validateEnv, createTestUserRegistry } = await import('@eddo/core-server');
 
     const env = validateEnv(process.env);
     console.log('🔄 GLOBAL SETUP: Environment validated');
 
     // Clean up existing test user registry database first
-    console.log(
-      '🔄 GLOBAL SETUP: Cleaning up existing test user registry database...',
-    );
+    console.log('🔄 GLOBAL SETUP: Cleaning up existing test user registry database...');
     const nano = await import('nano');
     const couch = nano.default(env.COUCHDB_URL);
     const testUserRegistryDbName = 'todos-test_user_registry';
 
     try {
       await couch.db.destroy(testUserRegistryDbName);
-      console.log(
-        '🔄 GLOBAL SETUP: Existing test user registry database deleted',
-      );
+      console.log('🔄 GLOBAL SETUP: Existing test user registry database deleted');
     } catch (error) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'statusCode' in error &&
-        error.statusCode === 404
-      ) {
-        console.log(
-          '🔄 GLOBAL SETUP: Test user registry database does not exist',
-        );
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404) {
+        console.log('🔄 GLOBAL SETUP: Test user registry database does not exist');
       } else {
         console.warn(
           '🔄 GLOBAL SETUP: Failed to delete existing test user registry database:',
@@ -112,14 +95,10 @@ export async function setup() {
       telegramId: '123456789',
     };
 
-    console.log(
-      `🔄 GLOBAL SETUP: Created global test user object: ${globalTestUser.username}`,
-    );
+    console.log(`🔄 GLOBAL SETUP: Created global test user object: ${globalTestUser.username}`);
 
     // Check if test user already exists (cleanup from previous run)
-    const existingUser = await userRegistry.findByUsername(
-      globalTestUser.username,
-    );
+    const existingUser = await userRegistry.findByUsername(globalTestUser.username);
     if (!existingUser) {
       await userRegistry.create({
         username: globalTestUser.username,
@@ -141,9 +120,7 @@ export async function setup() {
       });
       console.log(`✅ Global test user created: ${globalTestUser.username}`);
     } else {
-      console.log(
-        `✅ Global test user already exists: ${globalTestUser.username}`,
-      );
+      console.log(`✅ Global test user already exists: ${globalTestUser.username}`);
     }
   } catch (error) {
     console.error('❌ GLOBAL SETUP ERROR:', error);
@@ -172,9 +149,7 @@ export function getGlobalTestUser() {
     globalTestUser ? 'exists' : 'null',
   );
   if (!globalTestUser) {
-    throw new Error(
-      'Global test user not initialized. Make sure beforeAll has run.',
-    );
+    throw new Error('Global test user not initialized. Make sure beforeAll has run.');
   }
   return globalTestUser;
 }

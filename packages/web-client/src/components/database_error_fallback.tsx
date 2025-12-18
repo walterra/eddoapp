@@ -83,9 +83,7 @@ export function DatabaseErrorFallback({
           <span aria-label="Warning" className="mr-3 text-4xl" role="img">
             ⚠️
           </span>
-          <h3 className="text-xl font-semibold text-gray-900">
-            Database Error
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-900">Database Error</h3>
         </div>
 
         <p className="mb-6 text-gray-700">{getErrorMessage(error)}</p>

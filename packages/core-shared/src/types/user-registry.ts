@@ -1,7 +1,4 @@
-import {
-  type UserPermissions,
-  type UserStatus,
-} from '../versions/user_registry_alpha1';
+import { type UserPermissions, type UserStatus } from '../versions/user_registry_alpha1';
 import { type UserRegistryEntryAlpha2 } from '../versions/user_registry_alpha2';
 
 export type NewUserRegistryEntry = Omit<UserRegistryEntryAlpha2, '_rev'>;
@@ -17,10 +14,7 @@ export interface UserRegistryOperations {
   findByTelegramId(telegramId: number): Promise<UserRegistryEntry | null>;
   findByEmail(email: string): Promise<UserRegistryEntry | null>;
   create(entry: CreateUserRegistryEntry): Promise<UserRegistryEntry>;
-  update(
-    id: string,
-    updates: UpdateUserRegistryEntry,
-  ): Promise<UserRegistryEntry>;
+  update(id: string, updates: UpdateUserRegistryEntry): Promise<UserRegistryEntry>;
   list(): Promise<UserRegistryEntry[]>;
   delete(id: string): Promise<void>;
   setupDatabase?: () => Promise<void>;

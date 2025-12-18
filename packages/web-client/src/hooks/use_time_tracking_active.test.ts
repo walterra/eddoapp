@@ -70,10 +70,7 @@ describe('useTimeTrackingActive', () => {
   });
 
   it('should respect enabled parameter when false', () => {
-    const { result } = renderHook(
-      () => useTimeTrackingActive({ enabled: false }),
-      { wrapper },
-    );
+    const { result } = renderHook(() => useTimeTrackingActive({ enabled: false }), { wrapper });
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.isPending).toBe(true);
@@ -84,10 +81,7 @@ describe('useTimeTrackingActive', () => {
   it('should respect enabled parameter when true', async () => {
     mockSafeDb.safeQuery.mockResolvedValue([{ id: 'todo-1' }]);
 
-    const { result } = renderHook(
-      () => useTimeTrackingActive({ enabled: true }),
-      { wrapper },
-    );
+    const { result } = renderHook(() => useTimeTrackingActive({ enabled: true }), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
