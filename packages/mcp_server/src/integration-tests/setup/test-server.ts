@@ -206,8 +206,7 @@ export class MCPTestServer {
 
   async resetTestData(): Promise<void> {
     // With per-API-key databases via X-API-Key header, each test gets complete isolation
-    const redactedKey = this.testApiKey.slice(0, 8) + '...' + this.testApiKey.slice(-4);
-    console.log(`🔄 Test using isolated database for API key: ${redactedKey}`);
+    console.log('🔄 Test using isolated database with unique API key');
 
     // Clear all existing documents first
     await this.clearAllDocuments();
