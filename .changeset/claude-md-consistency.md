@@ -9,4 +9,4 @@
 '@eddoapp/web-client': patch
 ---
 
-Enhance code quality standards with relaxed ESLint rules, update dependencies for security, fix API key logging and markdown escaping bugs, and upgrade CI to pnpm v10
+Update ESLint rules, dependencies, and CI configuration
