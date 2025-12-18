@@ -49,33 +49,67 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   const { safeDb, rawDb } = usePouchDb();
   const [outdatedTodos, setOutdatedTodos] = useState<Todo[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // avoid multiple fetches with debouncing
-  const isFetching = useRef(false);
-  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // check integrity, e.g. if design docs are present
   const [isInitialized, setIsInitialized] = useState(false);
-  // TODO The 'add' is a CEST quick fix
-  const currentStartOfWeek = add(
-    startOfWeek(currentDate, { weekStartsOn: 1 }),
-    { hours: 2 },
-  );
-  // TODO The 'add' is a CEST quick fix
-  const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
-    hours: 2,
-  });
+
+  // Calculate date range based on selected time range
+  const { startDate, endDate } = useMemo(() => {
+    // TODO The 'add' is a CEST quick fix
+    const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
+    const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
+
+    switch (selectedTimeRange.type) {
+      case 'current-week':
+        return {
+          startDate: currentStartOfWeek,
+          endDate: currentEndOfWeek,
+        };
+      case 'current-month':
+        return {
+          startDate: add(startOfMonth(currentDate), { hours: 2 }),
+          endDate: add(endOfMonth(currentDate), { hours: 2 }),
+        };
+      case 'current-year':
+        return {
+          startDate: add(startOfYear(currentDate), { hours: 2 }),
+          endDate: add(endOfYear(currentDate), { hours: 2 }),
+        };
+      case 'custom':
+        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+          return {
+            startDate: new Date(selectedTimeRange.startDate + 'T00:00:00'),
+            endDate: new Date(selectedTimeRange.endDate + 'T23:59:59'),
+          };
+        }
+        // Fallback to current week if custom dates are invalid
+        return {
+          startDate: currentStartOfWeek,
+          endDate: currentEndOfWeek,
+        };
+      case 'all-time':
+        // Use a very wide date range for all-time
+        return {
+          startDate: new Date('2000-01-01'),
+          endDate: new Date('2099-12-31'),
+        };
+      default:
+        return {
+          startDate: currentStartOfWeek,
+          endDate: currentEndOfWeek,
+        };
+    }
+  }, [currentDate, selectedTimeRange]);
 
   // Use TanStack Query hooks for data fetching - only enable after initialization
   const todosQuery = useTodosByWeek({
-    startDate: currentStartOfWeek,
-    endDate: currentEndOfWeek,
+    startDate,
+    endDate,
     enabled: isInitialized,
   });
 
   const activitiesQuery = useActivitiesByWeek({
-    startDate: currentStartOfWeek,
-    endDate: currentEndOfWeek,
+    startDate,
+    endDate,
     enabled: isInitialized,
   });
 
@@ -84,10 +118,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   });
 
   // Extract data from queries with useMemo to avoid new array references on every render
-  const activities = useMemo(
-    () => activitiesQuery.data ?? [],
-    [activitiesQuery.data],
-  );
+  const activities = useMemo(() => activitiesQuery.data ?? [], [activitiesQuery.data]);
 
   const timeTrackingActive = useMemo(
     () => timeTrackingQuery.data ?? ['hide-by-default'],
@@ -96,17 +127,13 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
   // Filter to get only latest version todos - use query data directly to avoid reference issues
   const todos = useMemo(
-    () =>
-      (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
+    () => (todosQuery.data ?? []).filter((d: Todo) => isLatestVersion(d)) as Todo[],
     [todosQuery.data],
   );
 
   // Track outdated todos for migration (if needed) - use useMemo to avoid infinite loop
   const outdatedTodosMemo = useMemo(
-    () =>
-      (todosQuery.data ?? []).filter(
-        (d: Todo) => !isLatestVersion(d),
-      ) as Todo[],
+    () => (todosQuery.data ?? []).filter((d: Todo) => !isLatestVersion(d)) as Todo[],
     [todosQuery.data],
   );
 
@@ -138,226 +165,6 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       }
     })();
   }, [isInitialized, safeDb, rawDb]);
-
-  useEffect(() => {
-    console.log('🎯 useEffect triggered for fetchTodos', {
-      isInitialized,
-      currentDate: currentDate.toISOString(),
-      changeCount,
-      selectedTimeRange: selectedTimeRange.type,
-      selectedContexts: selectedContexts.length,
-      selectedStatus,
-      selectedTags: selectedTags.length,
-    });
-
-    if (!isInitialized || outdatedTodos.length === 0) {
-      console.log('⏸️ Skipping fetch - not initialized');
-      return;
-    }
-
-    console.log('⏰ Debouncing fetch request...');
-
-    // Clear any existing timeout
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
-    }
-
-    // Set a new timeout to debounce the fetch
-    fetchTimeoutRef.current = setTimeout(() => {
-      fetchTodos();
-      fetchTimeTrackingActive();
-    }, 100);
-  }, [
-    currentDate,
-    isInitialized,
-    changeCount,
-    selectedTags,
-    selectedContexts,
-    selectedStatus,
-    selectedTimeRange,
-  ]);
-
-  const fetchTimeTrackingActive = useCallback(async () => {
-    try {
-      const resp = await safeDb.safeQuery<{ id: string }>(
-        'todos',
-        'byTimeTrackingActive',
-        {
-          key: null,
-        },
-      );
-      setTimeTrackingActive(resp.map((d) => d.id));
-    } catch (e) {
-      console.error('Not able to fetch active todos:', e);
-      setError(e as DatabaseError);
-    }
-  }, [safeDb]);
-
-  const fetchTodos = useCallback(async () => {
-    console.log('🔄 fetchTodos called', {
-      isFetching: isFetching.current,
-      timestamp: new Date().toISOString(),
-    });
-
-    if (isFetching.current) {
-      console.log('⏳ Already fetching, skipping duplicate request');
-      return;
-    }
-
-    isFetching.current = true;
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.time('fetchTodos-total');
-
-      // Calculate date range inline to avoid dependency issues
-      const currentStartOfWeek = add(
-        startOfWeek(currentDate, { weekStartsOn: 1 }),
-        { hours: 2 },
-      );
-      const currentEndOfWeek = add(
-        endOfWeek(currentDate, { weekStartsOn: 1 }),
-        {
-          hours: 2,
-        },
-      );
-
-      let dateRange = null;
-      switch (selectedTimeRange.type) {
-        case 'current-week':
-          dateRange = {
-            startDate: currentStartOfWeek.toISOString(),
-            endDate: currentEndOfWeek.toISOString(),
-          };
-          break;
-        case 'current-month':
-          dateRange = {
-            startDate: add(startOfMonth(currentDate), {
-              hours: 2,
-            }).toISOString(),
-            endDate: add(endOfMonth(currentDate), { hours: 2 }).toISOString(),
-          };
-          break;
-        case 'current-year':
-          dateRange = {
-            startDate: add(startOfYear(currentDate), {
-              hours: 2,
-            }).toISOString(),
-            endDate: add(endOfYear(currentDate), { hours: 2 }).toISOString(),
-          };
-          break;
-        case 'custom':
-          if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
-            dateRange = {
-              startDate: new Date(
-                selectedTimeRange.startDate + 'T00:00:00',
-              ).toISOString(),
-              endDate: new Date(
-                selectedTimeRange.endDate + 'T23:59:59',
-              ).toISOString(),
-            };
-          }
-          break;
-        case 'all-time':
-          dateRange = null;
-          break;
-        default:
-          dateRange = {
-            startDate: currentStartOfWeek.toISOString(),
-            endDate: currentEndOfWeek.toISOString(),
-          };
-      }
-      let newTodos: (Todo | unknown)[] = [];
-      let newActivities: Activity[] = [];
-
-      console.log('📅 Date Range Calculated:', {
-        currentDate: currentDate.toISOString(),
-        dateRange: dateRange
-          ? `${dateRange.startDate} to ${dateRange.endDate}`
-          : 'ALL-TIME',
-        selectedTimeRange: selectedTimeRange.type,
-        weekNumber: format(currentDate, 'w'),
-        year: format(currentDate, 'yyyy'),
-        startOfWeekRaw: startOfWeek(currentDate, {
-          weekStartsOn: 1,
-        }).toISOString(),
-        endOfWeekRaw: endOfWeek(currentDate, { weekStartsOn: 1 }).toISOString(),
-      });
-
-      // Use parallel queries for better performance
-      console.time('parallel-queries');
-
-      const [todosResult, activitiesResult] = await Promise.all([
-        // Query todos
-        dateRange
-          ? safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-              descending: false,
-              endkey: dateRange.endDate,
-              include_docs: false,
-              startkey: dateRange.startDate,
-            })
-          : safeDb.safeQuery<Todo>('todos', 'byDueDate', {
-              descending: false,
-              include_docs: false,
-            }),
-
-        // Query activities
-        dateRange
-          ? safeDb.safeQuery<Activity>('todos', 'byActive', {
-              descending: false,
-              endkey: dateRange.endDate,
-              include_docs: false,
-              startkey: dateRange.startDate,
-            })
-          : safeDb.safeQuery<Activity>('todos', 'byActive', {
-              descending: false,
-              include_docs: false,
-            }),
-      ]);
-
-      newTodos = todosResult;
-      newActivities = activitiesResult;
-
-      console.timeEnd('parallel-queries');
-      console.log(
-        `✅ Parallel queries returned ${newTodos.length} todos and ${newActivities.length} activities`,
-      );
-
-      console.time('state-updates');
-      console.log('🔄 Setting state...');
-      setOutdatedTodos([]); // Views now filter by version - no outdated docs returned
-      setTodos(newTodos as Todo[]); // Views ensure only alpha3 docs are returned
-      setActivities(newActivities);
-      console.timeEnd('state-updates');
-
-      console.timeEnd('fetchTodos-total');
-    } catch (err) {
-      console.error('Failed to fetch todos:', err);
-      setError(err as DatabaseError);
-
-      // Show user-friendly error message
-      if ((err as DatabaseError).type === DatabaseErrorType.NETWORK_ERROR) {
-        // We're in offline mode, keep existing data
-        console.log('Working in offline mode');
-      }
-    } finally {
-      console.log('🏁 fetchTodos completing', {
-        timestamp: new Date().toISOString(),
-      });
-
-      isFetching.current = false;
-      setIsLoading(false);
-    }
-  }, [
-    safeDb,
-    rawDb,
-    currentDate,
-    selectedContexts,
-    selectedStatus,
-    selectedTimeRange,
-    selectedTags,
-  ]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -400,9 +207,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     // Tag filtering
     if (selectedTags.length > 0) {
       filtered = filtered.filter((todo) => {
-        return selectedTags.some((selectedTag) =>
-          todo.tags.includes(selectedTag),
-        );
+        return selectedTags.some((selectedTag) => todo.tags.includes(selectedTag));
       });
     }
 
@@ -433,9 +238,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
       // Tag filtering
       if (selectedTags.length > 0) {
-        if (
-          !selectedTags.some((selectedTag) => todo.tags.includes(selectedTag))
-        ) {
+        if (!selectedTags.some((selectedTag) => todo.tags.includes(selectedTag))) {
           return false;
         }
       }
@@ -471,9 +274,10 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
   const durationByContext = useMemo(() => {
     return Object.fromEntries(
-      Array.from(
-        group(activities, (d) => d.doc.context ?? CONTEXT_DEFAULT),
-      ).map((d) => [d[0], getFormattedDurationForActivities(d[1])]),
+      Array.from(group(activities, (d) => d.doc.context ?? CONTEXT_DEFAULT)).map((d) => [
+        d[0],
+        getFormattedDurationForActivities(d[1]),
+      ]),
     );
   }, [activities]);
 
@@ -491,8 +295,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
   }, [activities]);
 
   const dataStr =
-    'data:text/json;charset=utf-8,' +
-    encodeURIComponent(JSON.stringify(todos, null, 2));
+    'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(todos, null, 2));
 
   // Combine manual error state with query errors
   const displayError = error || (queryError as DatabaseError);
@@ -523,10 +326,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       {/* Show inline error if we have data */}
       {displayError && todos.length > 0 && (
         <div className="px-4 pt-2">
-          <DatabaseErrorMessage
-            error={displayError}
-            onDismiss={() => setError(null)}
-          />
+          <DatabaseErrorMessage error={displayError} onDismiss={() => setError(null)} />
         </div>
       )}
 
@@ -540,9 +340,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
                   todosByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
 
-                  const activitiesByMapDate = durationByContextByDate.find(
-                    (d) => d[0] === context,
-                  );
+                  const activitiesByMapDate = durationByContextByDate.find((d) => d[0] === context);
 
                   const activityDurationByDate = activitiesByMapDate
                     ? Array.from(activitiesByMapDate[1]).map((d) => [
@@ -550,9 +348,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                         getFormattedDurationForActivities(d[1]),
                       ])
                     : [];
-                  activityDurationByDate.sort((a, b) =>
-                    ('' + a[0]).localeCompare(b[0]),
-                  );
+                  activityDurationByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
 
                   return (
                     <div className="eddo-w-kanban" key={context}>
@@ -567,22 +363,15 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                         </div>
                       </div>
 
-                      <div
-                        className="eddo-w-kanban mb-4 space-y-4"
-                        id="kanban-list-1"
-                      >
+                      <div className="eddo-w-kanban mb-4 space-y-4" id="kanban-list-1">
                         {todosByDate.map(([todoDate, allTodosForDate]) => {
                           const todosForDate = uniqBy(allTodosForDate, (d) => {
                             return isLatestVersion(d) ? d._id : d.id;
                           });
 
                           todosForDate.sort((a, b) => {
-                            const aTitle = isLatestVersion(a)
-                              ? a.title
-                              : a.doc.title;
-                            const bTitle = isLatestVersion(b)
-                              ? b.title
-                              : b.doc.title;
+                            const aTitle = isLatestVersion(a) ? a.title : a.doc.title;
+                            const bTitle = isLatestVersion(b) ? b.title : b.doc.title;
 
                             return ('' + aTitle).localeCompare(bTitle);
                           });
@@ -590,18 +379,14 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                           let displayDate = '';
 
                           try {
-                            displayDate = format(
-                              new Date(todoDate),
-                              'yyyy-MM-dd',
-                            );
+                            displayDate = format(new Date(todoDate), 'yyyy-MM-dd');
                           } catch (_e) {
                             displayDate = format(new Date(), 'yyyy-MM-dd');
                           }
 
-                          const activityDurationItem =
-                            activityDurationByDate.find(
-                              (d) => d[0] === displayDate,
-                            );
+                          const activityDurationItem = activityDurationByDate.find(
+                            (d) => d[0] === displayDate,
+                          );
 
                           const durationForDate = activityDurationItem
                             ? activityDurationItem[1]
@@ -611,9 +396,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                             <div key={`${context}_${todoDate}`}>
                               <div className="flex items-center justify-between">
                                 <div className="mx-1">{displayDate}</div>
-                                <div className="mx-1 text-xs text-gray-400">
-                                  {durationForDate}
-                                </div>
+                                <div className="mx-1 text-xs text-gray-400">{durationForDate}</div>
                               </div>
                               {todosForDate.map((todoOrActivity) => {
                                 const todo = isLatestVersion(todoOrActivity)
@@ -621,17 +404,11 @@ export const TodoBoard: FC<TodoBoardProps> = ({
                                   : todoOrActivity.doc;
                                 return (
                                   <TodoListElement
-                                    active={timeTrackingActive.some(
-                                      (d: string) => d === todo._id,
-                                    )}
+                                    active={timeTrackingActive.some((d: string) => d === todo._id)}
                                     activeDate={displayDate}
-                                    activityOnly={
-                                      !isLatestVersion(todoOrActivity)
-                                    }
+                                    activityOnly={!isLatestVersion(todoOrActivity)}
                                     key={todo._id}
-                                    timeTrackingActive={
-                                      timeTrackingActive.length > 0
-                                    }
+                                    timeTrackingActive={timeTrackingActive.length > 0}
                                     todo={todo}
                                   />
                                 );

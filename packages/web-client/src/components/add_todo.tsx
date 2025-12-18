@@ -1,8 +1,4 @@
-import {
-  type DatabaseError,
-  DatabaseErrorType,
-  NewTodo,
-} from '@eddo/core-client';
+import { type DatabaseError, DatabaseErrorType, NewTodo } from '@eddo/core-client';
 import { add, format, getISOWeek, sub } from 'date-fns';
 import { Button, TextInput } from 'flowbite-react';
 import { type FC, useState } from 'react';
@@ -51,9 +47,7 @@ export const AddTodo: FC<AddTodoProps> = ({
   const { allContexts } = useEddoContexts();
 
   const [todoContext, setTodoContext] = useState(CONTEXT_DEFAULT);
-  const [todoDue, setTodoDue] = useState(
-    new Date().toISOString().split('T')[0],
-  );
+  const [todoDue, setTodoDue] = useState(new Date().toISOString().split('T')[0]);
   const [todoLink, setTodoLink] = useState('');
   const [todoTitle, setTodoTitle] = useState('');
   const [todoTags, setTodoTags] = useState<string[]>([]);
@@ -73,10 +67,7 @@ export const AddTodo: FC<AddTodoProps> = ({
       case 'custom':
         if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
           const start = format(new Date(selectedTimeRange.startDate), 'MMM d');
-          const end = format(
-            new Date(selectedTimeRange.endDate),
-            'MMM d, yyyy',
-          );
+          const end = format(new Date(selectedTimeRange.endDate), 'MMM d, yyyy');
           return `${start} - ${end}`;
         }
         return 'Custom Range';
@@ -104,9 +95,7 @@ export const AddTodo: FC<AddTodoProps> = ({
           const start = new Date(selectedTimeRange.startDate);
           const end = new Date(selectedTimeRange.endDate);
           const durationMs = end.getTime() - start.getTime();
-          setCurrentDate(
-            sub(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }),
-          );
+          setCurrentDate(sub(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }));
         }
         break;
       // all-time doesn't have navigation
@@ -130,9 +119,7 @@ export const AddTodo: FC<AddTodoProps> = ({
           const start = new Date(selectedTimeRange.startDate);
           const end = new Date(selectedTimeRange.endDate);
           const durationMs = end.getTime() - start.getTime();
-          setCurrentDate(
-            add(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }),
-          );
+          setCurrentDate(add(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }));
         }
         break;
       // all-time doesn't have navigation
@@ -205,9 +192,7 @@ export const AddTodo: FC<AddTodoProps> = ({
 
   return (
     <form onSubmit={addTodoHandler}>
-      {error && (
-        <DatabaseErrorMessage error={error} onDismiss={() => setError(null)} />
-      )}
+      {error && <DatabaseErrorMessage error={error} onDismiss={() => setError(null)} />}
       <div className="block items-center justify-between border-b border-gray-200 bg-white py-4 sm:flex lg:mt-1.5 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center divide-x divide-gray-100 dark:divide-gray-700">
           <div className="pr-3">
@@ -265,10 +250,7 @@ export const AddTodo: FC<AddTodoProps> = ({
             onTimeRangeChange={setSelectedTimeRange}
             selectedTimeRange={selectedTimeRange}
           />
-          <StatusFilter
-            onStatusChange={setSelectedStatus}
-            selectedStatus={selectedStatus}
-          />
+          <StatusFilter onStatusChange={setSelectedStatus} selectedStatus={selectedStatus} />
           <EddoContextFilter
             availableContexts={allContexts}
             onContextsChange={setSelectedContexts}
@@ -281,23 +263,13 @@ export const AddTodo: FC<AddTodoProps> = ({
           />
           {selectedTimeRange.type !== 'all-time' && (
             <>
-              <Button
-                className="p-0"
-                color="gray"
-                onClick={previousPeriodClickHandler}
-                size="xs"
-              >
+              <Button className="p-0" color="gray" onClick={previousPeriodClickHandler} size="xs">
                 <RiArrowLeftSLine size="2em" />
               </Button>{' '}
               <span className="font-semibold text-gray-900 dark:text-white">
                 {getPeriodLabel()}
               </span>{' '}
-              <Button
-                className="p-0"
-                color="gray"
-                onClick={nextPeriodClickHandler}
-                size="xs"
-              >
+              <Button className="p-0" color="gray" onClick={nextPeriodClickHandler} size="xs">
                 <RiArrowRightSLine size="2em" />
               </Button>
             </>

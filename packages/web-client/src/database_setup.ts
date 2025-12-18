@@ -5,11 +5,7 @@
 // @ts-expect-error - Used for type namespace access
 import type PouchDB from 'pouchdb-browser';
 
-import {
-  DESIGN_DOCS,
-  REQUIRED_INDEXES,
-  type DesignDocument,
-} from '@eddo/core-shared';
+import { DESIGN_DOCS, REQUIRED_INDEXES, type DesignDocument } from '@eddo/core-shared';
 
 import type { SafeDbOperations } from './api/safe-db-operations';
 
@@ -32,14 +28,10 @@ export async function ensureDesignDocuments(
 
         // Check if update is needed - compare views
         needsUpdate =
-          !existingDoc ||
-          JSON.stringify(existingDoc.views) !==
-            JSON.stringify(expectedDoc.views);
+          !existingDoc || JSON.stringify(existingDoc.views) !== JSON.stringify(expectedDoc.views);
       } catch (_getErr) {
         // Document doesn't exist - need to create it
-        console.log(
-          `Design document ${expectedDoc._id} not found, will create`,
-        );
+        console.log(`Design document ${expectedDoc._id} not found, will create`);
         needsUpdate = true;
         existingDoc = null;
       }
@@ -53,9 +45,7 @@ export async function ensureDesignDocuments(
           try {
             // Refresh the existing doc in case of concurrent updates
             if (retryCount > 0 && existingDoc) {
-              existingDoc = await safeDb.safeGet<DesignDocument>(
-                expectedDoc._id,
-              );
+              existingDoc = await safeDb.safeGet<DesignDocument>(expectedDoc._id);
             }
 
             const docToSave = {
@@ -69,18 +59,13 @@ export async function ensureDesignDocuments(
             );
             break; // Success - exit retry loop
           } catch (putErr: unknown) {
-            if (
-              (putErr as Error).message?.includes('conflict') &&
-              retryCount < maxRetries - 1
-            ) {
+            if ((putErr as Error).message?.includes('conflict') && retryCount < maxRetries - 1) {
               retryCount++;
               console.log(
                 `Retrying design document update ${expectedDoc._id} (attempt ${retryCount + 1})`,
               );
               // Short delay before retry
-              await new Promise((resolve) =>
-                setTimeout(resolve, 100 * retryCount),
-              );
+              await new Promise((resolve) => setTimeout(resolve, 100 * retryCount));
             } else {
               throw putErr; // Re-throw if not a conflict or max retries reached
             }
@@ -107,9 +92,7 @@ async function createIndexes(db: PouchDB.Database): Promise<void> {
   console.log('🔍 Creating indexes...');
 
   if (!db || typeof db.createIndex !== 'function') {
-    console.warn(
-      '⚠️  Database does not support createIndex. Skipping index creation.',
-    );
+    console.warn('⚠️  Database does not support createIndex. Skipping index creation.');
     return;
   }
 

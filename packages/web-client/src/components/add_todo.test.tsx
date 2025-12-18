@@ -1,12 +1,14 @@
 import { type DatabaseError, DatabaseErrorType } from '@eddo/core-client';
 import '@testing-library/jest-dom';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { format } from 'date-fns';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import '../test-polyfill';
+import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
+import { renderWithPouchDb } from '../test-utils';
 import { AddTodo } from './add_todo';
 
 // Mock date-fns to make tests deterministic
@@ -17,16 +19,6 @@ vi.mock('date-fns', async () => {
     getISOWeek: vi.fn(() => 28), // Mock current week
   };
 });
-
-// Mock the PouchDB hook
-const mockSafePut = vi.fn();
-vi.mock('../pouch_db', () => ({
-  usePouchDb: () => ({
-    safeDb: {
-      safePut: mockSafePut,
-    },
-  }),
-}));
 
 // Mock the useTags hook
 vi.mock('../hooks/use_tags', () => ({
@@ -93,6 +85,10 @@ vi.mock('./tag_input', () => ({
 }));
 
 describe('AddTodo Component', () => {
+  let testDb: ReturnType<typeof createTestPouchDb>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let safePutSpy: any;
+
   const mockCurrentDate = new Date('2025-07-12T10:00:00.000Z');
   const defaultProps = {
     currentDate: mockCurrentDate,
@@ -108,17 +104,23 @@ describe('AddTodo Component', () => {
   };
 
   beforeEach(() => {
+    testDb = createTestPouchDb();
+    safePutSpy = vi
+      .spyOn(testDb.contextValue.safeDb, 'safePut')
+      .mockResolvedValue({ _rev: '1-abc' } as never);
     vi.clearAllMocks();
-    mockSafePut.mockResolvedValue({});
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.clearAllTimers();
+    if (testDb?.db) {
+      await destroyTestPouchDb(testDb.db);
+    }
   });
 
   describe('Form Rendering', () => {
     it('should render all form fields', () => {
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       expect(screen.getByLabelText('Context')).toBeInTheDocument();
       expect(screen.getByLabelText('New todo')).toBeInTheDocument();
@@ -128,13 +130,13 @@ describe('AddTodo Component', () => {
     });
 
     it('should display current calendar week', () => {
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       expect(screen.getByText('CW28')).toBeInTheDocument();
     });
 
     it('should have default context value', () => {
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       const contextInput = screen.getByLabelText('Context') as HTMLInputElement;
       expect(contextInput.value).toBe(CONTEXT_DEFAULT);
@@ -145,7 +147,7 @@ describe('AddTodo Component', () => {
       const mockToday = new Date('2025-07-16T12:00:00.000Z');
       vi.setSystemTime(mockToday);
 
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       const dueDateInput = screen.getByLabelText('Due date') as HTMLInputElement;
       const expectedDate = format(mockToday, 'yyyy-MM-dd');
@@ -158,7 +160,7 @@ describe('AddTodo Component', () => {
   describe('Form Interaction', () => {
     it('should update form fields when user types', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       const contextInput = screen.getByLabelText('Context');
       const todoInput = screen.getByLabelText('New todo');
@@ -181,7 +183,9 @@ describe('AddTodo Component', () => {
     it('should call setCurrentDate when navigating weeks', async () => {
       const user = userEvent.setup();
       const setCurrentDate = vi.fn();
-      render(<AddTodo {...defaultProps} setCurrentDate={setCurrentDate} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} setCurrentDate={setCurrentDate} />, {
+        testDb: testDb.contextValue,
+      });
 
       // Find navigation buttons by their SVG content
       const buttons = screen.getAllByRole('button');
@@ -202,7 +206,7 @@ describe('AddTodo Component', () => {
   describe('Form Submission', () => {
     it('should create todo with valid form data', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       // Fill out form
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -215,7 +219,7 @@ describe('AddTodo Component', () => {
 
       // Verify safePut was called with correct data
       await waitFor(() => {
-        expect(mockSafePut).toHaveBeenCalledWith(
+        expect(safePutSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'Test todo',
             context: 'work',
@@ -233,7 +237,7 @@ describe('AddTodo Component', () => {
 
     it('should reset form after successful submission', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       // Fill out form
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -256,9 +260,9 @@ describe('AddTodo Component', () => {
       const user = userEvent.setup();
 
       // Make the database operation take some time
-      mockSafePut.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      safePutSpy.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
 
@@ -279,13 +283,13 @@ describe('AddTodo Component', () => {
 
     it('should handle null link when link field is empty', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo without link');
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       await waitFor(() => {
-        expect(mockSafePut).toHaveBeenCalledWith(
+        expect(safePutSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             link: null,
           }),
@@ -297,18 +301,18 @@ describe('AddTodo Component', () => {
   describe('Form Validation', () => {
     it('should not submit when title is empty', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       // Try to submit with empty title
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       // Verify safePut was not called
-      expect(mockSafePut).not.toHaveBeenCalled();
+      expect(safePutSpy).not.toHaveBeenCalled();
     });
 
     it('should show error for invalid date format', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
       await user.clear(screen.getByLabelText('Due date'));
@@ -323,7 +327,7 @@ describe('AddTodo Component', () => {
 
     it('should validate due date format correctly', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
       await user.clear(screen.getByLabelText('Due date'));
@@ -349,9 +353,9 @@ describe('AddTodo Component', () => {
         retryable: true,
       };
 
-      mockSafePut.mockRejectedValue(mockError);
+      safePutSpy.mockRejectedValue(mockError);
 
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
@@ -363,7 +367,7 @@ describe('AddTodo Component', () => {
 
     it('should display error message with dismiss button', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       // Trigger validation error
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -379,7 +383,7 @@ describe('AddTodo Component', () => {
 
     it('should clear previous errors on new submission attempt', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       // First submission with error
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -404,7 +408,7 @@ describe('AddTodo Component', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels on form inputs', () => {
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       expect(screen.getByLabelText('Context')).toBeInTheDocument();
       expect(screen.getByLabelText('New todo')).toBeInTheDocument();
@@ -414,7 +418,7 @@ describe('AddTodo Component', () => {
 
     it('should be submittable via keyboard', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       const todoInput = screen.getByLabelText('New todo');
       await user.type(todoInput, 'Keyboard test todo');
@@ -423,7 +427,7 @@ describe('AddTodo Component', () => {
       await user.keyboard('{Enter}');
 
       await waitFor(() => {
-        expect(mockSafePut).toHaveBeenCalledWith(
+        expect(safePutSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'Keyboard test todo',
           }),
@@ -435,7 +439,7 @@ describe('AddTodo Component', () => {
   describe('Alpha3 Schema Compliance', () => {
     it('should create todo with correct alpha3 schema', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Schema test');
       await user.clear(screen.getByLabelText('Context'));
@@ -443,7 +447,7 @@ describe('AddTodo Component', () => {
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       await waitFor(() => {
-        expect(mockSafePut).toHaveBeenCalledWith(
+        expect(safePutSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'Schema test',
             context: 'test-context',
@@ -457,7 +461,7 @@ describe('AddTodo Component', () => {
         );
 
         // Verify the structure of the call
-        const callArgs = mockSafePut.mock.calls[0][0];
+        const callArgs = safePutSpy.mock.calls[0][0] as { _id: string; due: string };
         expect(callArgs._id).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
         expect(callArgs.due).toMatch(/^\d{4}-\d{2}-\d{2}T23:59:59\.999Z$/);
       });
@@ -465,7 +469,7 @@ describe('AddTodo Component', () => {
 
     it('should handle tags correctly', async () => {
       const user = userEvent.setup();
-      render(<AddTodo {...defaultProps} />);
+      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Todo with tags');
 
@@ -474,7 +478,7 @@ describe('AddTodo Component', () => {
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
 
       await waitFor(() => {
-        expect(mockSafePut).toHaveBeenCalledWith(
+        expect(safePutSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'Todo with tags',
             tags: [], // Default empty tags for now since our mock isn't perfect

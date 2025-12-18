@@ -36,9 +36,7 @@ export const TimeRangeFilter: FC<TimeRangeFilterProps> = ({
   ];
 
   const getCurrentTimeRangeLabel = () => {
-    const option = timeRangeOptions.find(
-      (opt) => opt.value === selectedTimeRange.type,
-    );
+    const option = timeRangeOptions.find((opt) => opt.value === selectedTimeRange.type);
     if (
       selectedTimeRange.type === 'custom' &&
       selectedTimeRange.startDate &&
@@ -89,15 +87,10 @@ export const TimeRangeFilter: FC<TimeRangeFilterProps> = ({
 
       {isOpen && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full z-20 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-600 dark:bg-gray-800">
             <div className="mb-2">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Time range
-              </h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Time range</h3>
             </div>
 
             <div className="space-y-1">

@@ -8,10 +8,7 @@ interface StatusFilterProps {
   onStatusChange: (status: CompletionStatus) => void;
 }
 
-export const StatusFilter: FC<StatusFilterProps> = ({
-  selectedStatus,
-  onStatusChange,
-}) => {
+export const StatusFilter: FC<StatusFilterProps> = ({ selectedStatus, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const statusOptions: { value: CompletionStatus; label: string }[] = [
@@ -21,8 +18,7 @@ export const StatusFilter: FC<StatusFilterProps> = ({
   ];
 
   const currentStatusLabel =
-    statusOptions.find((option) => option.value === selectedStatus)?.label ||
-    'All todos';
+    statusOptions.find((option) => option.value === selectedStatus)?.label || 'All todos';
 
   return (
     <div className="relative">
@@ -41,10 +37,7 @@ export const StatusFilter: FC<StatusFilterProps> = ({
 
       {isOpen && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full z-20 mt-1 w-48 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-600 dark:bg-gray-800">
             <div className="space-y-1">
               {statusOptions.map((option) => (

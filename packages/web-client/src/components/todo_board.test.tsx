@@ -6,11 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../test-polyfill';
 import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
-import {
-  createTestTodo,
-  populateTestDatabase,
-  renderWithPouchDb,
-} from '../test-utils';
+import { createTestTodo, populateTestDatabase, renderWithPouchDb } from '../test-utils';
 import { TodoBoard } from './todo_board';
 
 // Mock child components to isolate TodoBoard testing
@@ -62,13 +58,7 @@ vi.mock('./database_error_fallback', () => ({
 }));
 
 vi.mock('./database_error_message', () => ({
-  DatabaseErrorMessage: ({
-    error,
-    onDismiss,
-  }: {
-    error: DatabaseError;
-    onDismiss: () => void;
-  }) => (
+  DatabaseErrorMessage: ({ error, onDismiss }: { error: DatabaseError; onDismiss: () => void }) => (
     <div data-testid="database-error-message">
       <div data-testid="inline-error-type">{error.type}</div>
       <button data-testid="dismiss-inline-error" onClick={onDismiss}>
@@ -90,20 +80,21 @@ vi.mock('../database_setup', () => ({
 }));
 
 // Mock useDatabaseChanges hook
-vi.mock('../hooks/use_database_changes', () => ({
-  useDatabaseChanges: vi.fn().mockReturnValue({
-    changeCount: 0,
-    isListening: true,
-  }),
-}));
+vi.mock('../hooks/use_database_changes', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks/use_database_changes')>();
+  return {
+    ...actual,
+    useDatabaseChanges: vi.fn().mockReturnValue({
+      changeCount: 0,
+      isListening: true,
+    }),
+  };
+});
 
 describe('TodoBoard', () => {
   let testDb: ReturnType<typeof createTestPouchDb>;
   const currentDate = new Date('2025-01-15T10:00:00.000Z'); // Wednesday
-  const currentStartOfWeek = add(
-    startOfWeek(currentDate, { weekStartsOn: 1 }),
-    { hours: 2 },
-  );
+  const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
   const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
     hours: 2,
   });
@@ -192,10 +183,7 @@ describe('TodoBoard', () => {
     });
 
     it('should fetch time tracking active todos', async () => {
-      const activeTodos = [
-        { id: '2025-01-15T10:00:00.000Z' },
-        { id: '2025-01-15T11:00:00.000Z' },
-      ];
+      const activeTodos = [{ id: '2025-01-15T10:00:00.000Z' }, { id: '2025-01-15T11:00:00.000Z' }];
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
@@ -296,14 +284,12 @@ describe('TodoBoard', () => {
         }),
       ];
 
-      testDb.contextValue.safeDb.safeQuery = vi
-        .fn()
-        .mockImplementation((_designDoc, viewName) => {
-          if (viewName === 'byDueDate') {
-            return Promise.resolve(todos);
-          }
-          return Promise.resolve([]);
-        });
+      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation((_designDoc, viewName) => {
+        if (viewName === 'byDueDate') {
+          return Promise.resolve(todos);
+        }
+        return Promise.resolve([]);
+      });
 
       const { rerender } = renderWithPouchDb(
         <TodoBoard {...defaultProps} selectedTags={['work']} />,
@@ -324,9 +310,7 @@ describe('TodoBoard', () => {
       });
 
       // Test with multiple tags
-      rerender(
-        <TodoBoard {...defaultProps} selectedTags={['work', 'personal']} />,
-      );
+      rerender(<TodoBoard {...defaultProps} selectedTags={['work', 'personal']} />);
 
       await waitFor(() => {
         expect(
@@ -380,14 +364,12 @@ describe('TodoBoard', () => {
         }),
       ];
 
-      testDb.contextValue.safeDb.safeQuery = vi
-        .fn()
-        .mockImplementation((_designDoc, viewName) => {
-          if (viewName === 'byDueDate') {
-            return Promise.resolve(todos);
-          }
-          return Promise.resolve([]);
-        });
+      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation((_designDoc, viewName) => {
+        if (viewName === 'byDueDate') {
+          return Promise.resolve(todos);
+        }
+        return Promise.resolve([]);
+      });
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -431,14 +413,12 @@ describe('TodoBoard', () => {
         version: 'alpha3' as const,
       };
 
-      testDb.contextValue.safeDb.safeQuery = vi
-        .fn()
-        .mockImplementation((_designDoc, viewName) => {
-          if (viewName === 'byDueDate') {
-            return Promise.resolve([todoWithoutContext]);
-          }
-          return Promise.resolve([]);
-        });
+      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation((_designDoc, viewName) => {
+        if (viewName === 'byDueDate') {
+          return Promise.resolve([todoWithoutContext]);
+        }
+        return Promise.resolve([]);
+      });
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -471,12 +451,8 @@ describe('TodoBoard', () => {
       });
 
       await waitFor(() => {
-        expect(
-          screen.getByTestId('database-error-fallback'),
-        ).toBeInTheDocument();
-        expect(screen.getByTestId('error-type')).toHaveTextContent(
-          DatabaseErrorType.NETWORK_ERROR,
-        );
+        expect(screen.getByTestId('database-error-fallback')).toBeInTheDocument();
+        expect(screen.getByTestId('error-type')).toHaveTextContent(DatabaseErrorType.NETWORK_ERROR);
       });
     });
 
@@ -496,9 +472,7 @@ describe('TodoBoard', () => {
       });
 
       await waitFor(() => {
-        expect(
-          screen.getByTestId('database-error-fallback'),
-        ).toBeInTheDocument();
+        expect(screen.getByTestId('database-error-fallback')).toBeInTheDocument();
       });
 
       // Click dismiss
@@ -507,9 +481,7 @@ describe('TodoBoard', () => {
 
       // Error should be dismissed (component will re-render without error state)
       await waitFor(() => {
-        expect(
-          screen.queryByTestId('database-error-fallback'),
-        ).not.toBeInTheDocument();
+        expect(screen.queryByTestId('database-error-fallback')).not.toBeInTheDocument();
       });
     });
 
@@ -535,9 +507,7 @@ describe('TodoBoard', () => {
       });
 
       await waitFor(() => {
-        expect(
-          screen.getByTestId('database-error-fallback'),
-        ).toBeInTheDocument();
+        expect(screen.getByTestId('database-error-fallback')).toBeInTheDocument();
       });
 
       // Setup retry to succeed
@@ -549,9 +519,7 @@ describe('TodoBoard', () => {
 
       // Error should be cleared and new fetch attempted
       await waitFor(() => {
-        expect(
-          screen.queryByTestId('database-error-fallback'),
-        ).not.toBeInTheDocument();
+        expect(screen.queryByTestId('database-error-fallback')).not.toBeInTheDocument();
       });
     });
   });
@@ -563,18 +531,14 @@ describe('TodoBoard', () => {
         resolvePromise = resolve;
       });
 
-      testDb.contextValue.safeDb.safeQuery = vi
-        .fn()
-        .mockReturnValue(fetchPromise);
+      testDb.contextValue.safeDb.safeQuery = vi.fn().mockReturnValue(fetchPromise);
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
       // During loading, no error fallback should be shown
-      expect(
-        screen.queryByTestId('database-error-fallback'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId('database-error-fallback')).not.toBeInTheDocument();
 
       // Resolve the promise
       resolvePromise!([]);
@@ -594,14 +558,12 @@ describe('TodoBoard', () => {
         }),
       ];
 
-      testDb.contextValue.safeDb.safeQuery = vi
-        .fn()
-        .mockImplementation((_designDoc, viewName) => {
-          if (viewName === 'byDueDate') {
-            return Promise.resolve(todos);
-          }
-          return Promise.resolve([]);
-        });
+      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation((_designDoc, viewName) => {
+        if (viewName === 'byDueDate') {
+          return Promise.resolve(todos);
+        }
+        return Promise.resolve([]);
+      });
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -611,10 +573,7 @@ describe('TodoBoard', () => {
         const downloadLink = screen.getByText('download json');
         expect(downloadLink).toBeInTheDocument();
         expect(downloadLink).toHaveAttribute('download', 'todos.json');
-        expect(downloadLink).toHaveAttribute(
-          'href',
-          expect.stringContaining('data:text/json'),
-        );
+        expect(downloadLink).toHaveAttribute('href', expect.stringContaining('data:text/json'));
       });
     });
   });
@@ -639,9 +598,7 @@ describe('TodoBoard', () => {
       rerender(<TodoBoard {...defaultProps} currentDate={newDate} />);
 
       await waitFor(() => {
-        expect(mockSafeQuery.mock.calls.length).toBeGreaterThan(
-          initialCallCount,
-        );
+        expect(mockSafeQuery.mock.calls.length).toBeGreaterThan(initialCallCount);
       });
     });
 
@@ -668,9 +625,7 @@ describe('TodoBoard', () => {
 
       // Allow for some variance in call count due to component lifecycle
       // The important thing is it shouldn't increase dramatically (like +3 for a new week)
-      expect(mockSafeQuery.mock.calls.length).toBeLessThanOrEqual(
-        initialCallCount + 3,
-      );
+      expect(mockSafeQuery.mock.calls.length).toBeLessThanOrEqual(initialCallCount + 3);
     });
   });
 });
