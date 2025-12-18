@@ -1,0 +1,179 @@
+# Feature: option to switch between kanban view and a table view
+
+**Status:** Refining
+**Created:** 2025-12-18-23-14-48
+**Agent PID:** 98482
+
+## Description
+
+Add a table view option alongside the existing kanban board, inspired by Airtable/GitHub Projects. Users can toggle between views, customize visible columns, and maintain full feature parity (time tracking, inline edit, checkboxes). View preference and column selection are persisted in user settings. Default view is kanban.
+
+**Success Criteria:**
+
+- Toggle between kanban and table views from filters toolbar
+- Table view groups todos by context (like kanban)
+- Column picker dropdown to select visible columns
+- All kanban features work in table view (edit, time tracking, complete, tags)
+- View preference saved to user settings and persists across sessions
+- Default view is kanban for new users
+- Responsive design works on different screen sizes
+
+## Implementation Plan
+
+### 1. Backend: Extend User Preferences Schema
+
+- [ ] Add view preferences to UserPreferences interface (packages/core-shared/src/versions/user_registry_alpha2.ts:7-17)
+  - Add `viewMode?: 'kanban' | 'table'`
+  - Add `tableColumns?: string[]` for visible columns
+- [ ] Update createDefaultUserPreferences() to include defaults (packages/core-shared/src/versions/user_registry_alpha2.ts:31-40)
+- [ ] Update isUserRegistryEntryAlpha2 validation if needed
+
+### 2. Frontend: View Preference Hook
+
+- [ ] Create useViewPreferences hook (packages/web-client/src/hooks/use_view_preferences.ts)
+  - Get viewMode and tableColumns from profile
+  - Update viewMode via updatePreferences API
+  - Update tableColumns via updatePreferences API
+  - Provide loading/error states
+
+### 3. UI: View Toggle Component
+
+- [ ] Create ViewModeToggle component (packages/web-client/src/components/view_mode_toggle.tsx)
+  - Icon toggle buttons for kanban/table (use react-icons: MdViewKanban, MdTableChart)
+  - Highlight active view
+  - Call updatePreferences on toggle
+  - Show loading state during update
+
+### 4. UI: Column Picker Component
+
+- [ ] Create ColumnPicker component (packages/web-client/src/components/column_picker.tsx)
+  - Dropdown with checkboxes for each available column
+  - Columns: Title, Context, Due Date, Tags, Time Tracked, Status, Completed Date, Repeat, Link, Description
+  - Save selection to preferences on change
+  - Only shown in table view mode
+  - Follow pattern from status_filter.tsx
+
+### 5. UI: Table View Component
+
+- [ ] Create TodoTable component (packages/web-client/src/components/todo_table.tsx)
+  - Accept same props as TodoBoard (currentDate, selectedTags, selectedContexts, selectedStatus, selectedTimeRange)
+  - Group by context like kanban (collapsible sections)
+  - Render only selected columns from preferences
+  - Responsive table layout with horizontal scroll on mobile
+  - Show context headers with time totals
+  - Support all kanban features:
+    - Inline checkbox for completion
+    - Time tracking play/pause buttons
+    - Edit button to open TodoEditModal
+    - Tag display
+    - Links
+- [ ] Reuse existing components: TodoEditModal, TagDisplay, FormattedMessage
+- [ ] Share data fetching logic with TodoBoard (extract to hooks if needed)
+
+### 6. Integration: Update Filters and Main App
+
+- [ ] Add ViewModeToggle to TodoFilters component (packages/web-client/src/components/todo_filters.tsx:140)
+  - Position after time range filter
+- [ ] Add ColumnPicker to TodoFilters component (conditional on table mode)
+- [ ] Update eddo.tsx to conditionally render TodoBoard or TodoTable (packages/web-client/src/eddo.tsx:102-109)
+  - Get viewMode from useViewPreferences
+  - Render TodoTable when viewMode === 'table'
+  - Pass same props to both components
+
+### 7. Styling
+
+- [ ] Add table-specific styles to eddo.css if needed
+- [ ] Ensure dark mode support for all new components
+- [ ] Test responsive behavior on mobile/tablet/desktop
+
+### 8. Testing
+
+- [ ] Automated test: ViewModeToggle component (packages/web-client/src/components/view_mode_toggle.test.tsx)
+  - Renders both icon buttons
+  - Highlights active view
+  - Calls onViewChange when clicked
+  - Shows loading state
+- [ ] Automated test: ColumnPicker component (packages/web-client/src/components/column_picker.test.tsx)
+  - Renders all column options
+  - Toggles column selection
+  - Calls onChange with updated columns
+  - Persists open/closed state
+- [ ] Automated test: TodoTable component (packages/web-client/src/components/todo_table.test.tsx)
+  - Renders todos grouped by context
+  - Shows only selected columns
+  - Renders time tracking controls
+  - Opens edit modal on edit button click
+  - Updates todo on checkbox toggle
+- [ ] Automated test: useViewPreferences hook (packages/web-client/src/hooks/use_view_preferences.test.ts)
+  - Returns current preferences
+  - Updates viewMode
+  - Updates tableColumns
+  - Handles loading/error states
+- [ ] User test: Toggle between views and verify persistence
+  - Start in kanban view (default)
+  - Click table view toggle
+  - Verify table view appears
+  - Refresh page
+  - Verify table view persists
+  - Toggle back to kanban
+  - Refresh page
+  - Verify kanban persists
+- [ ] User test: Column picker functionality
+  - Open column picker in table view
+  - Deselect "Description" column
+  - Verify description column disappears
+  - Refresh page
+  - Verify column selection persists
+  - Reselect description
+  - Verify column reappears
+- [ ] User test: Table view feature parity
+  - In table view, complete a todo via checkbox
+  - Start time tracking on a todo
+  - Stop time tracking
+  - Edit a todo (title, tags, dates)
+  - Verify all changes saved correctly
+  - Click a link on a todo
+  - Verify link opens in new tab
+- [ ] User test: Responsive table view
+  - Test on mobile (< 640px)
+  - Test on tablet (640-1024px)
+  - Test on desktop (> 1024px)
+  - Verify horizontal scroll works on small screens
+  - Verify table is readable at all sizes
+
+## Review
+
+- [ ] Check for duplicate code between TodoBoard and TodoTable
+- [ ] Consider extracting shared filtering/grouping logic
+- [ ] Verify all TypeScript types are properly defined
+- [ ] Check accessibility (keyboard navigation, screen readers)
+- [ ] Performance: table view with 100+ todos
+
+## Notes
+
+### Current Implementation Details
+
+**Kanban View (TodoBoard):**
+
+- Groups todos by context → date
+- Fixed column width: 24rem (`.eddo-w-kanban`)
+- Uses hooks: useTodosByWeek, useActivitiesByWeek, useTimeTrackingActive
+- Filters: tags, contexts, status, time ranges
+- Features: checkboxes, time tracking, edit modal, tags, links
+
+**User Preferences:**
+
+- Stored server-side via `/api/users/preferences` endpoint
+- Uses `useProfile` hook for CRUD operations
+- Schema in `packages/core-shared/src/versions/user_registry_alpha2.ts`
+
+**UI Patterns:**
+
+- Filter components use custom dropdowns (no external library)
+- Icons from react-icons (Bi*, Ri*, Md\* packages)
+- Dark mode via Tailwind classes
+- Flowbite-react for some components (Button, Checkbox)
+
+**Related Todo:**
+
+- Remove duplicate: "alternative layout option instead of the kanban board: condensed table, sections instead of boards"
