@@ -94,8 +94,9 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
     ? new Date(ctx.session.lastActivity).toISOString().slice(0, 19).replace('T', ' ')
     : 'Unknown';
 
-  // Escape special characters for Markdown
-  const escapeMarkdown = (text: string) => text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+  // Escape special characters for Markdown (escape backslashes first to prevent double-escaping)
+  const escapeMarkdown = (text: string) =>
+    text.replace(/\\/g, '\\\\').replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
   // Format connection metrics
   const mcpStatusLine = `🔌 MCP Server: ${escapeMarkdown(connectionInfo.state)}`;
