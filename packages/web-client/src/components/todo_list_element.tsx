@@ -113,10 +113,10 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     <div
       className={`${
         active ? 'border-2 border-sky-600' : ''
-      }mb-2 flex max-w-md transform flex-col rounded-lg bg-white px-1 py-1 shadow dark:bg-gray-800`}
+      }mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-1 py-0.5 dark:border-gray-700 dark:bg-gray-800`}
     >
       {error && (
-        <div className="mb-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs dark:border-red-700 dark:bg-red-900">
+        <div className="mb-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs dark:border-red-700 dark:bg-red-900">
           <span className="text-red-700 dark:text-red-200">Failed to update todo</span>
           <button className="ml-2 text-red-600 hover:text-red-500" onClick={() => setError(null)}>
             ×
@@ -124,9 +124,9 @@ export const TodoListElement: FC<TodoListElementProps> = ({
         </div>
       )}
       <div className="group flex items-center justify-between">
-        <div className="text-base text-gray-900 dark:text-white">
-          <div className="flex space-x-1">
-            <div className="mx-1">
+        <div className="text-xs text-gray-900 dark:text-white">
+          <div className="flex space-x-0.5">
+            <div className="mx-0.5">
               {!activityOnly && (
                 <Checkbox
                   className="checkbox checkbox-xs text-gray-400"
@@ -142,7 +142,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
             <div>
               <span
                 className={[
-                  'text-sm',
+                  'text-xs',
                   todo.completed || activityOnly ? 'text-gray-400' : '',
                   todo.completed ? 'line-through' : '',
                 ]
@@ -163,7 +163,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                 )}
               </span>
               {todo.tags.length > 0 && (
-                <div className="mt-1">
+                <div className="mt-0.5">
                   <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
                 </div>
               )}
@@ -171,7 +171,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
           </div>
         </div>
 
-        <div className="flex space-x-1">
+        <div className="flex space-x-0.5">
           {activeDuration > 0 && (
             <span className="text-xs text-gray-400" data-counter={activeCounter}>
               {getFormattedDuration(activeDuration)}
@@ -181,7 +181,7 @@ export const TodoListElement: FC<TodoListElementProps> = ({
             <>
               {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
                 <button
-                  className={`rounded-lg py-0 pl-1 text-sm text-gray-400 transition-opacity duration-200 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300 ${
+                  className={`rounded p-0.5 text-xs text-gray-400 transition-opacity duration-200 hover:bg-gray-100 focus:ring-2 focus:ring-gray-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300 ${
                     thisButtonTimeTrackingActive
                       ? 'opacity-100'
                       : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
@@ -192,19 +192,19 @@ export const TodoListElement: FC<TodoListElementProps> = ({
                   type="button"
                 >
                   {thisButtonTimeTrackingActive ? (
-                    <BiPauseCircle size="1.3em" />
+                    <BiPauseCircle size="1.1em" />
                   ) : (
-                    <BiPlayCircle size="1.3em" />
+                    <BiPlayCircle size="1.1em" />
                   )}
                 </button>
               )}
               <button
-                className="rounded-lg py-0 pr-1 text-sm text-gray-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100 hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
+                className="rounded p-0.5 text-xs text-gray-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100 hover:bg-gray-100 focus:ring-2 focus:ring-gray-200 focus:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-300"
                 data-testid="edit-button"
                 onClick={showEditModalButtonPressed}
                 type="button"
               >
-                <BiEdit size="1.3em" />
+                <BiEdit size="1.1em" />
               </button>
             </>
           )}

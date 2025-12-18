@@ -174,7 +174,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 - Extracted `getColumnWidthClass` helper function to maintain consistency between headers and cells
 - Updated default columns: `['title', 'due', 'tags', 'timeTracked', 'status']`
 
-**Dense Data Grid Styling:**
+**Dense Data Grid Styling (Table View):**
 
 - Reduced cell padding from `px-4 py-3` to `px-2 py-1` for compact rows
 - Changed font size from `text-sm` to `text-xs` throughout table
@@ -185,6 +185,35 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 - Reduced gap between action buttons from `gap-1` to `gap-0.5`
 - Removed shadow from table containers (cleaner look)
 - Changed rounded-lg to rounded for table containers
+
+**Dense Kanban Styling (Kanban View):**
+
+- TodoListElement card changes:
+  - Reduced card padding from `px-1 py-1` to `px-1 py-0.5`
+  - Changed from shadow to border (`border border-gray-200`)
+  - Changed from `rounded-lg` to `rounded`
+  - Reduced card spacing from `mb-2` to `mb-1`
+  - Changed title font from `text-sm` to `text-xs`
+  - Reduced horizontal spacing from `space-x-1` to `space-x-0.5`
+  - Reduced margin from `mx-1` to `mx-0.5`
+  - Reduced tag spacing from `mt-1` to `mt-0.5`
+  - Reduced button sizes from `1.3em` to `1.1em`
+  - Changed button padding from `py-0 pl-1` to `p-0.5`
+  - Changed button style from `rounded-lg` to `rounded`
+  - Reduced focus ring from `focus:ring-4` to `focus:ring-2`
+  - Reduced button gap from `space-x-1` to `space-x-0.5`
+  - Changed error margin from `mb-2` to `mb-1` and padding from `py-1` to `py-0.5`
+- TodoBoard column changes:
+  - Reduced column width from `24rem` to `20rem` (eddo.css)
+  - Changed context header from `py-4 text-base` to `pb-1 pt-2 text-xs uppercase tracking-wide`
+  - Reduced column spacing from `space-x-4` to `space-x-2`
+  - Reduced column bottom margin from `mb-6` to `mb-4`
+  - Reduced todo list spacing from `space-y-4` to `space-y-2`
+  - Reduced todo list bottom margin from `mb-4` to `mb-2`
+  - Added date header styling: `mb-0.5 text-xs font-medium`
+  - Reduced date header margin from `mx-1` to `mx-0.5`
+  - Removed shadow from container
+  - Changed context header margin from `mx-1` to `mx-0.5`
 
 ### Current Implementation Details
 
