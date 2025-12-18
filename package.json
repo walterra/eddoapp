@@ -139,7 +139,7 @@
     "changeset:add": "changeset add",
     "changeset:status": "changeset status",
     "version": "node scripts/version-packages.js",
-    "release": "pnpm build && changeset publish"
+    "version-packages": "node scripts/version-packages.js"
   },
   "browserslist": [
     ">0.2%",
@@ -150,5 +150,6 @@
     "overrides": {
       "jws": ">=4.0.0"
     }
-  }
+  },
+  "private": true
 }

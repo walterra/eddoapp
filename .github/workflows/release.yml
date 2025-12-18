@@ -15,9 +15,17 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout Repo
         uses: actions/checkout@v5
         with:
+          token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
       - name: Setup Node.js 22.x
@@ -33,24 +41,29 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Get version for PR title
+      - name: Get Release Version
+        id: release-version
         run: |
-          pnpm changeset status --output=release.json > /dev/null 2>&1 || true
+          pnpm changeset status --output=release.json 2>/dev/null || true
           if [ -f release.json ]; then
-            VERSION=$(jq -r '.releases[0].newVersion // "packages"' release.json)
-            echo "NEW_VERSION=$VERSION" >> "$GITHUB_ENV"
+            VERSION=$(jq -r '.releases[0].newVersion // empty' release.json)
             rm release.json
+            if [ -n "$VERSION" ]; then
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+              echo "title=release v$VERSION" >> $GITHUB_OUTPUT
+            else
+              echo "title=chore: release" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "NEW_VERSION=packages" >> "$GITHUB_ENV"
+            echo "title=chore: release" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Release Pull Request or Create GitHub Release
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: pnpm release
+          title: ${{ steps.release-version.outputs.title }}
+          version: pnpm version-packages
           createGithubReleases: true
-          version: node scripts/version-packages.js
-          title: "chore: release v${{env.NEW_VERSION}}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
