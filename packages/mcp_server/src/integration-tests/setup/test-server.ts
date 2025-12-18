@@ -71,13 +71,10 @@ export class MCPTestServer {
     });
 
     // Create client
-    this.client = new Client(
-      {
-        name: this.config.clientName,
-        version: this.config.clientVersion,
-      },
-      {},
-    );
+    this.client = new Client({
+      name: this.config.clientName,
+      version: this.config.clientVersion,
+    });
 
     // Connect with timeout
     const connectPromise = this.client.connect(this.transport);

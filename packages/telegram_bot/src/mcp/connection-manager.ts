@@ -121,13 +121,10 @@ export class MCPConnectionManager {
       });
 
       // Create client
-      this.client = new Client(
-        {
-          name: 'eddo-telegram-bot',
-          version: '1.0.0',
-        },
-        {},
-      );
+      this.client = new Client({
+        name: 'eddo-telegram-bot',
+        version: '1.0.0',
+      });
 
       // Connect to server
       await this.client.connect(this.transport);
@@ -335,13 +332,10 @@ export class MCPConnectionManager {
       });
 
       // Create a temporary client with user-specific authentication
-      const userClient = new Client(
-        {
-          name: 'eddo-telegram-bot',
-          version: '1.0.0',
-        },
-        {},
-      );
+      const userClient = new Client({
+        name: 'eddo-telegram-bot',
+        version: '1.0.0',
+      });
 
       // Connect the user-specific client
       await userClient.connect(userTransport);
