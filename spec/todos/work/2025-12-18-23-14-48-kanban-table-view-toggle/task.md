@@ -1,7 +1,8 @@
 # Feature: option to switch between kanban view and a table view
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-12-18-23-14-48
+**Started:** 2025-12-18-23-22-45
 **Agent PID:** 98482
 
 ## Description
@@ -22,15 +23,15 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 
 ### 1. Backend: Extend User Preferences Schema
 
-- [ ] Add view preferences to UserPreferences interface (packages/core-shared/src/versions/user_registry_alpha2.ts:7-17)
+- [x] Add view preferences to UserPreferences interface (packages/core-shared/src/versions/user_registry_alpha2.ts:7-17)
   - Add `viewMode?: 'kanban' | 'table'`
   - Add `tableColumns?: string[]` for visible columns
-- [ ] Update createDefaultUserPreferences() to include defaults (packages/core-shared/src/versions/user_registry_alpha2.ts:31-40)
-- [ ] Update isUserRegistryEntryAlpha2 validation if needed
+- [x] Update createDefaultUserPreferences() to include defaults (packages/core-shared/src/versions/user_registry_alpha2.ts:31-40)
+- [x] Update isUserRegistryEntryAlpha2 validation if needed
 
 ### 2. Frontend: View Preference Hook
 
-- [ ] Create useViewPreferences hook (packages/web-client/src/hooks/use_view_preferences.ts)
+- [x] Create useViewPreferences hook (packages/web-client/src/hooks/use_view_preferences.ts)
   - Get viewMode and tableColumns from profile
   - Update viewMode via updatePreferences API
   - Update tableColumns via updatePreferences API
@@ -38,7 +39,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 
 ### 3. UI: View Toggle Component
 
-- [ ] Create ViewModeToggle component (packages/web-client/src/components/view_mode_toggle.tsx)
+- [x] Create ViewModeToggle component (packages/web-client/src/components/view_mode_toggle.tsx)
   - Icon toggle buttons for kanban/table (use react-icons: MdViewKanban, MdTableChart)
   - Highlight active view
   - Call updatePreferences on toggle
@@ -46,7 +47,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 
 ### 4. UI: Column Picker Component
 
-- [ ] Create ColumnPicker component (packages/web-client/src/components/column_picker.tsx)
+- [x] Create ColumnPicker component (packages/web-client/src/components/column_picker.tsx)
   - Dropdown with checkboxes for each available column
   - Columns: Title, Context, Due Date, Tags, Time Tracked, Status, Completed Date, Repeat, Link, Description
   - Save selection to preferences on change
@@ -55,7 +56,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 
 ### 5. UI: Table View Component
 
-- [ ] Create TodoTable component (packages/web-client/src/components/todo_table.tsx)
+- [x] Create TodoTable component (packages/web-client/src/components/todo_table.tsx)
   - Accept same props as TodoBoard (currentDate, selectedTags, selectedContexts, selectedStatus, selectedTimeRange)
   - Group by context like kanban (collapsible sections)
   - Render only selected columns from preferences
@@ -67,33 +68,33 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
     - Edit button to open TodoEditModal
     - Tag display
     - Links
-- [ ] Reuse existing components: TodoEditModal, TagDisplay, FormattedMessage
-- [ ] Share data fetching logic with TodoBoard (extract to hooks if needed)
+- [x] Reuse existing components: TodoEditModal, TagDisplay, FormattedMessage
+- [x] Share data fetching logic with TodoBoard (extract to hooks if needed)
 
 ### 6. Integration: Update Filters and Main App
 
-- [ ] Add ViewModeToggle to TodoFilters component (packages/web-client/src/components/todo_filters.tsx:140)
+- [x] Add ViewModeToggle to TodoFilters component (packages/web-client/src/components/todo_filters.tsx:140)
   - Position after time range filter
-- [ ] Add ColumnPicker to TodoFilters component (conditional on table mode)
-- [ ] Update eddo.tsx to conditionally render TodoBoard or TodoTable (packages/web-client/src/eddo.tsx:102-109)
+- [x] Add ColumnPicker to TodoFilters component (conditional on table mode)
+- [x] Update eddo.tsx to conditionally render TodoBoard or TodoTable (packages/web-client/src/eddo.tsx:102-109)
   - Get viewMode from useViewPreferences
   - Render TodoTable when viewMode === 'table'
   - Pass same props to both components
 
 ### 7. Styling
 
-- [ ] Add table-specific styles to eddo.css if needed
-- [ ] Ensure dark mode support for all new components
-- [ ] Test responsive behavior on mobile/tablet/desktop
+- [x] Add table-specific styles to eddo.css if needed
+- [x] Ensure dark mode support for all new components
+- [x] Test responsive behavior on mobile/tablet/desktop
 
 ### 8. Testing
 
-- [ ] Automated test: ViewModeToggle component (packages/web-client/src/components/view_mode_toggle.test.tsx)
+- [x] Automated test: ViewModeToggle component (packages/web-client/src/components/view_mode_toggle.test.tsx)
   - Renders both icon buttons
   - Highlights active view
   - Calls onViewChange when clicked
   - Shows loading state
-- [ ] Automated test: ColumnPicker component (packages/web-client/src/components/column_picker.test.tsx)
+- [x] Automated test: ColumnPicker component (packages/web-client/src/components/column_picker.test.tsx)
   - Renders all column options
   - Toggles column selection
   - Calls onChange with updated columns
@@ -104,7 +105,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
   - Renders time tracking controls
   - Opens edit modal on edit button click
   - Updates todo on checkbox toggle
-- [ ] Automated test: useViewPreferences hook (packages/web-client/src/hooks/use_view_preferences.test.ts)
+- [x] Automated test: useViewPreferences hook (packages/web-client/src/hooks/use_view_preferences.test.ts)
   - Returns current preferences
   - Updates viewMode
   - Updates tableColumns
@@ -150,6 +151,28 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
 - [ ] Performance: table view with 100+ todos
 
 ## Notes
+
+### Bug Fixes
+
+**Toggle Button Not Working:**
+
+- Issue: Server-side `updatePreferencesSchema` in `packages/web-api/src/routes/users.ts` didn't include `viewMode` and `tableColumns` fields
+- Fix: Added `viewMode: z.enum(['kanban', 'table']).optional()` and `tableColumns: z.array(z.string()).optional()` to the schema
+- Result: Preferences now save correctly and persist across sessions
+
+**React Key Warning in TodoTable:**
+
+- Issue: "Each child in a list should have a unique key prop" when rendering table cells
+- Fix: Wrapped `renderCell(columnId)` in `<Fragment key={columnId}>` when mapping over selectedColumns in TodoRow
+- Result: React warning eliminated
+
+**Table Layout Improvements:**
+
+- Removed redundant "Context" column from default table columns (already grouped by context)
+- Added fixed column widths to prevent wrapping (due: w-32, tags: w-48, timeTracked: w-28, status: w-20, etc.)
+- Added `whitespace-nowrap` to date and time columns
+- Extracted `getColumnWidthClass` helper function to maintain consistency between headers and cells
+- Updated default columns: `['title', 'due', 'tags', 'timeTracked', 'status']`
 
 ### Current Implementation Details
 
