@@ -190,6 +190,30 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 
 This project uses **Changesets** for automated CHANGELOG generation and version management, with **Commitizen** and **Commitlint** for enforcing conventional commits. Do not run changesets or commits by yourself, do them only when user explictly asks for it.
 
+## Changesets
+
+**Do NOT use `yarn changeset`** - it's interactive. Create files directly:
+
+```markdown
+# .changeset/<descriptive-name>.md
+
+---
+
+"shc2es": patch|minor|major
+
+---
+
+Concise single-line description for CHANGELOG.md (not implementation details)
+```
+
+**Guidelines for changeset messages:**
+
+- ✅ **Good**: "Add Jest testing infrastructure with 70% coverage thresholds and automated CI testing"
+- ❌ **Bad**: Listing every file changed, configuration option, or implementation detail
+- Focus on **user-facing value** or **high-level feature addition**
+- Keep it **one line** when possible (two max)
+- Think: "What would a user want to see in release notes?"
+
 **Pre-commit hooks automatically run**:
 
 - `lint-staged` - formats and lints staged files
