@@ -9,6 +9,7 @@ import { Register } from './components/register';
 import type { CompletionStatus } from './components/status_filter';
 import type { TimeRange } from './components/time_range_filter';
 import { TodoBoard } from './components/todo_board';
+import { TodoFilters } from './components/todo_filters';
 import { createQueryClient } from './config/query_client';
 import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
@@ -92,7 +93,8 @@ function AuthenticatedApp({
       <CouchdbSyncProvider />
       <HealthMonitor />
       <PageWrapper isAuthenticated={isAuthenticated} logout={logout}>
-        <AddTodo
+        <AddTodo />
+        <TodoFilters
           currentDate={currentDate}
           selectedContexts={selectedContexts}
           selectedStatus={selectedStatus}

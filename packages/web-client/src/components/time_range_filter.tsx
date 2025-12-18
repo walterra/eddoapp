@@ -29,10 +29,10 @@ export const TimeRangeFilter: FC<TimeRangeFilterProps> = ({
   const [customEndDate, setCustomEndDate] = useState('');
 
   const timeRangeOptions: { value: TimeRangeType; label: string }[] = [
-    { value: 'current-day', label: 'Current day' },
-    { value: 'current-week', label: 'Current week' },
-    { value: 'current-month', label: 'Current month' },
-    { value: 'current-year', label: 'Current year' },
+    { value: 'current-day', label: 'Day' },
+    { value: 'current-week', label: 'Week' },
+    { value: 'current-month', label: 'Month' },
+    { value: 'current-year', label: 'Year' },
     { value: 'all-time', label: 'All time' },
     { value: 'custom', label: 'Custom range' },
   ];
@@ -46,7 +46,7 @@ export const TimeRangeFilter: FC<TimeRangeFilterProps> = ({
     ) {
       return `${selectedTimeRange.startDate} to ${selectedTimeRange.endDate}`;
     }
-    return option?.label || 'Current week';
+    return option?.label || 'Week';
   };
 
   const handleTimeRangeSelect = (type: TimeRangeType) => {

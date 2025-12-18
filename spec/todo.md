@@ -1,3 +1,4 @@
+- feature: option to switch between the existing kanban view and a table view
 - Filter state not persisted
 - proper timezone support
 - the gtd tags like `gtd:next` should be a `gtd` attribute on todos just like context and be stored just `next`, will trigger creating TodoAlpha5
