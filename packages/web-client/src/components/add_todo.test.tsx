@@ -89,20 +89,6 @@ describe('AddTodo Component', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let safePutSpy: any;
 
-  const mockCurrentDate = new Date('2025-07-12T10:00:00.000Z');
-  const defaultProps = {
-    currentDate: mockCurrentDate,
-    setCurrentDate: vi.fn(),
-    selectedTags: [],
-    setSelectedTags: vi.fn(),
-    selectedContexts: [],
-    setSelectedContexts: vi.fn(),
-    selectedStatus: 'all' as const,
-    setSelectedStatus: vi.fn(),
-    selectedTimeRange: { type: 'current-week' as const },
-    setSelectedTimeRange: vi.fn(),
-  };
-
   beforeEach(() => {
     testDb = createTestPouchDb();
     safePutSpy = vi
@@ -120,7 +106,7 @@ describe('AddTodo Component', () => {
 
   describe('Form Rendering', () => {
     it('should render all form fields', () => {
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       expect(screen.getByLabelText('Context')).toBeInTheDocument();
       expect(screen.getByLabelText('New todo')).toBeInTheDocument();
@@ -129,14 +115,8 @@ describe('AddTodo Component', () => {
       expect(screen.getByRole('button', { name: 'Add todo' })).toBeInTheDocument();
     });
 
-    it('should display current calendar week', () => {
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
-
-      expect(screen.getByText('CW28')).toBeInTheDocument();
-    });
-
     it('should have default context value', () => {
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       const contextInput = screen.getByLabelText('Context') as HTMLInputElement;
       expect(contextInput.value).toBe(CONTEXT_DEFAULT);
@@ -147,7 +127,7 @@ describe('AddTodo Component', () => {
       const mockToday = new Date('2025-07-16T12:00:00.000Z');
       vi.setSystemTime(mockToday);
 
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       const dueDateInput = screen.getByLabelText('Due date') as HTMLInputElement;
       const expectedDate = format(mockToday, 'yyyy-MM-dd');
@@ -160,7 +140,7 @@ describe('AddTodo Component', () => {
   describe('Form Interaction', () => {
     it('should update form fields when user types', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       const contextInput = screen.getByLabelText('Context');
       const todoInput = screen.getByLabelText('New todo');
@@ -179,34 +159,12 @@ describe('AddTodo Component', () => {
       expect(linkInput).toHaveValue('https://example.com');
       expect(dueDateInput).toHaveValue('2025-07-15');
     });
-
-    it('should call setCurrentDate when navigating weeks', async () => {
-      const user = userEvent.setup();
-      const setCurrentDate = vi.fn();
-      renderWithPouchDb(<AddTodo {...defaultProps} setCurrentDate={setCurrentDate} />, {
-        testDb: testDb.contextValue,
-      });
-
-      // Find navigation buttons by their SVG content
-      const buttons = screen.getAllByRole('button');
-      const prevButton = buttons.find((button) => button.querySelector('svg path[d*="10.8284"]'));
-      const nextButton = buttons.find((button) => button.querySelector('svg path[d*="13.1717"]'));
-
-      expect(prevButton).toBeDefined();
-      expect(nextButton).toBeDefined();
-
-      await user.click(prevButton!);
-      expect(setCurrentDate).toHaveBeenCalledTimes(1);
-
-      await user.click(nextButton!);
-      expect(setCurrentDate).toHaveBeenCalledTimes(2);
-    });
   });
 
   describe('Form Submission', () => {
     it('should create todo with valid form data', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       // Fill out form
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -237,7 +195,7 @@ describe('AddTodo Component', () => {
 
     it('should reset form after successful submission', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       // Fill out form
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -262,7 +220,7 @@ describe('AddTodo Component', () => {
       // Make the database operation take some time
       safePutSpy.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
 
@@ -283,7 +241,7 @@ describe('AddTodo Component', () => {
 
     it('should handle null link when link field is empty', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo without link');
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
@@ -301,7 +259,7 @@ describe('AddTodo Component', () => {
   describe('Form Validation', () => {
     it('should not submit when title is empty', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       // Try to submit with empty title
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
@@ -312,7 +270,7 @@ describe('AddTodo Component', () => {
 
     it('should show error for invalid date format', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
       await user.clear(screen.getByLabelText('Due date'));
@@ -327,7 +285,7 @@ describe('AddTodo Component', () => {
 
     it('should validate due date format correctly', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
       await user.clear(screen.getByLabelText('Due date'));
@@ -355,7 +313,7 @@ describe('AddTodo Component', () => {
 
       safePutSpy.mockRejectedValue(mockError);
 
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
       await user.click(screen.getByRole('button', { name: 'Add todo' }));
@@ -367,7 +325,7 @@ describe('AddTodo Component', () => {
 
     it('should display error message with dismiss button', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       // Trigger validation error
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -383,7 +341,7 @@ describe('AddTodo Component', () => {
 
     it('should clear previous errors on new submission attempt', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       // First submission with error
       await user.type(screen.getByLabelText('New todo'), 'Test todo');
@@ -408,7 +366,7 @@ describe('AddTodo Component', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels on form inputs', () => {
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       expect(screen.getByLabelText('Context')).toBeInTheDocument();
       expect(screen.getByLabelText('New todo')).toBeInTheDocument();
@@ -418,7 +376,7 @@ describe('AddTodo Component', () => {
 
     it('should be submittable via keyboard', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       const todoInput = screen.getByLabelText('New todo');
       await user.type(todoInput, 'Keyboard test todo');
@@ -439,7 +397,7 @@ describe('AddTodo Component', () => {
   describe('Alpha3 Schema Compliance', () => {
     it('should create todo with correct alpha3 schema', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Schema test');
       await user.clear(screen.getByLabelText('Context'));
@@ -469,7 +427,7 @@ describe('AddTodo Component', () => {
 
     it('should handle tags correctly', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<AddTodo {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(<AddTodo />, { testDb: testDb.contextValue });
 
       await user.type(screen.getByLabelText('New todo'), 'Todo with tags');
 

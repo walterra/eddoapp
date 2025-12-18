@@ -40,7 +40,7 @@ export const TagFilter: FC<TagFilterProps> = ({ availableTags, selectedTags, onT
         type="button"
       >
         <MdFilterList size="1.2em" />
-        <span>Filter by tags</span>
+        <span>Tags</span>
         {selectedTags.length > 0 && (
           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-800 dark:text-blue-200">
             {selectedTags.length}
@@ -53,9 +53,7 @@ export const TagFilter: FC<TagFilterProps> = ({ availableTags, selectedTags, onT
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full z-20 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-600 dark:bg-gray-800">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Filter by tags
-              </h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Tags</h3>
               {selectedTags.length > 0 && (
                 <button
                   className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"

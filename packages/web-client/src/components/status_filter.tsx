@@ -12,13 +12,13 @@ export const StatusFilter: FC<StatusFilterProps> = ({ selectedStatus, onStatusCh
   const [isOpen, setIsOpen] = useState(false);
 
   const statusOptions: { value: CompletionStatus; label: string }[] = [
-    { value: 'all', label: 'All todos' },
-    { value: 'incomplete', label: 'Incomplete only' },
-    { value: 'completed', label: 'Completed only' },
+    { value: 'all', label: 'All' },
+    { value: 'incomplete', label: 'Incomplete' },
+    { value: 'completed', label: 'Completed' },
   ];
 
   const currentStatusLabel =
-    statusOptions.find((option) => option.value === selectedStatus)?.label || 'All todos';
+    statusOptions.find((option) => option.value === selectedStatus)?.label || 'All';
 
   return (
     <div className="relative">
