@@ -1,8 +1,9 @@
 # Feature: option to switch between kanban view and a table view
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-12-18-23-14-48
 **Started:** 2025-12-18-23-22-45
+**Completed:** 2025-12-19-00-16-49
 **Agent PID:** 98482
 
 ## Description
