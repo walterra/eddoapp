@@ -152,14 +152,14 @@ const TodoRow: FC<TodoRowProps> = ({
 
   const renderCell = (columnId: string) => {
     const widthClass = getColumnWidthClass(columnId);
-    const baseClass = 'px-4 py-3';
+    const baseClass = 'px-2 py-1';
 
     switch (columnId) {
       case 'title':
         return (
-          <td className={`${baseClass} text-sm ${widthClass}`}>
+          <td className={`${baseClass} text-xs ${widthClass}`}>
             {error && (
-              <div className="mb-1 text-xs text-red-600 dark:text-red-400">Failed to update</div>
+              <div className="mb-0.5 text-xs text-red-600 dark:text-red-400">Failed to update</div>
             )}
             <span
               className={[
@@ -185,14 +185,14 @@ const TodoRow: FC<TodoRowProps> = ({
         );
       case 'context':
         return (
-          <td className={`${baseClass} text-sm text-gray-700 dark:text-gray-300 ${widthClass}`}>
+          <td className={`${baseClass} text-xs text-gray-700 dark:text-gray-300 ${widthClass}`}>
             <FormattedMessage message={todo.context || CONTEXT_DEFAULT} />
           </td>
         );
       case 'due':
         return (
           <td
-            className={`${baseClass} text-sm whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+            className={`${baseClass} text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
           >
             {format(new Date(todo.due), 'yyyy-MM-dd')}
           </td>
@@ -200,13 +200,17 @@ const TodoRow: FC<TodoRowProps> = ({
       case 'tags':
         return (
           <td className={`${baseClass} ${widthClass}`}>
-            {todo.tags.length > 0 ? <TagDisplay maxTags={3} size="xs" tags={todo.tags} /> : '-'}
+            {todo.tags.length > 0 ? (
+              <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
+            ) : (
+              <span className="text-xs text-gray-400">-</span>
+            )}
           </td>
         );
       case 'timeTracked':
         return (
           <td
-            className={`${baseClass} text-sm whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+            className={`${baseClass} text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
           >
             {activeDuration > 0 ? getFormattedDuration(activeDuration) : '-'}
           </td>
@@ -225,7 +229,7 @@ const TodoRow: FC<TodoRowProps> = ({
       case 'completed':
         return (
           <td
-            className={`${baseClass} text-sm whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+            className={`${baseClass} text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
           >
             {todo.completed ? format(new Date(todo.completed), 'yyyy-MM-dd HH:mm') : '-'}
           </td>
@@ -233,14 +237,14 @@ const TodoRow: FC<TodoRowProps> = ({
       case 'repeat':
         return (
           <td
-            className={`${baseClass} text-sm whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+            className={`${baseClass} text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
           >
             {todo.repeat ? `${todo.repeat} days` : '-'}
           </td>
         );
       case 'link':
         return (
-          <td className={`${baseClass} text-sm ${widthClass}`}>
+          <td className={`${baseClass} text-xs ${widthClass}`}>
             {todo.link ? (
               <a
                 className="text-blue-600 hover:underline dark:text-blue-500"
@@ -257,7 +261,7 @@ const TodoRow: FC<TodoRowProps> = ({
         );
       case 'description':
         return (
-          <td className={`${baseClass} text-sm text-gray-700 dark:text-gray-300 ${widthClass}`}>
+          <td className={`${baseClass} text-xs text-gray-700 dark:text-gray-300 ${widthClass}`}>
             {todo.description || '-'}
           </td>
         );
@@ -272,30 +276,30 @@ const TodoRow: FC<TodoRowProps> = ({
         {selectedColumns.map((columnId) => (
           <Fragment key={columnId}>{renderCell(columnId)}</Fragment>
         ))}
-        <td className="w-24 px-4 py-3">
-          <div className="flex items-center gap-1">
+        <td className="w-24 px-2 py-1">
+          <div className="flex items-center gap-0.5">
             {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
               <button
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+                className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
                 disabled={isUpdating}
                 onClick={toggleTimeTracking}
                 title={thisButtonTimeTrackingActive ? 'Pause' : 'Start'}
                 type="button"
               >
                 {thisButtonTimeTrackingActive ? (
-                  <BiPauseCircle size="1.3em" />
+                  <BiPauseCircle size="1.1em" />
                 ) : (
-                  <BiPlayCircle size="1.3em" />
+                  <BiPlayCircle size="1.1em" />
                 )}
               </button>
             )}
             <button
-              className="rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+              className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => setShowEditModal(true)}
               title="Edit"
               type="button"
             >
-              <BiEdit size="1.3em" />
+              <BiEdit size="1.1em" />
             </button>
           </div>
         </td>
@@ -486,21 +490,23 @@ export const TodoTable: FC<TodoTableProps> = ({
 
       <div className="overflow-x-auto px-4 py-2">
         {groupedByContext.map(([context, contextTodos]) => (
-          <div className="mb-6" key={context}>
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-300">
+          <div className="mb-4" key={context}>
+            <div className="mb-1 flex items-center justify-between">
+              <h3 className="text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
                 <FormattedMessage message={context} />
               </h3>
-              <span className="text-xs text-gray-400">{durationByContext[context]}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {durationByContext[context]}
+              </span>
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+            <div className="overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     {selectedColumns.map((columnId) => (
                       <th
-                        className={`px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
+                        className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
                         key={columnId}
                         scope="col"
                       >
@@ -508,7 +514,7 @@ export const TodoTable: FC<TodoTableProps> = ({
                       </th>
                     ))}
                     <th
-                      className="w-24 px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+                      className="w-24 px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
                       scope="col"
                     >
                       Actions
