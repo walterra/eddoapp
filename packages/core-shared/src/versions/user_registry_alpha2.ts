@@ -12,6 +12,8 @@ export interface UserPreferences {
   recapTime?: string; // HH:MM format, defaults to 18:00
   printRecap?: boolean; // Enable/disable thermal printer output for recap
   timezone?: string; // Future timezone support
+  viewMode?: 'kanban' | 'table'; // Todo view preference, defaults to kanban
+  tableColumns?: string[]; // Selected columns for table view
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
@@ -37,5 +39,7 @@ export function createDefaultUserPreferences(): UserPreferences {
     recapTime: '18:00',
     printRecap: false,
     timezone: undefined,
+    viewMode: 'kanban',
+    tableColumns: ['title', 'due', 'tags', 'timeTracked', 'status'],
   };
 }

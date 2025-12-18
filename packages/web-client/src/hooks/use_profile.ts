@@ -10,6 +10,8 @@ interface UserPreferences {
   recapTime?: string;
   printRecap?: boolean;
   timezone?: string;
+  viewMode?: 'kanban' | 'table';
+  tableColumns?: string[];
 }
 
 interface UserProfile {
@@ -43,6 +45,8 @@ interface UpdatePreferencesData {
   recapTime?: string;
   printRecap?: boolean;
   timezone?: string;
+  viewMode?: 'kanban' | 'table';
+  tableColumns?: string[];
 }
 
 export const useProfile = () => {

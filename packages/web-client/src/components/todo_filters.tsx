@@ -5,12 +5,15 @@ import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 
 import { useEddoContexts } from '../hooks/use_eddo_contexts';
 import { useTags } from '../hooks/use_tags';
+import type { ViewMode } from '../hooks/use_view_preferences';
+import { ColumnPicker } from './column_picker';
 import { EddoContextFilter } from './eddo_context_filter';
 import type { CompletionStatus } from './status_filter';
 import { StatusFilter } from './status_filter';
 import { TagFilter } from './tag_filter';
 import type { TimeRange } from './time_range_filter';
 import { TimeRangeFilter } from './time_range_filter';
+import { ViewModeToggle } from './view_mode_toggle';
 
 interface TodoFiltersProps {
   currentDate: Date;
@@ -23,6 +26,11 @@ interface TodoFiltersProps {
   setSelectedStatus: (status: CompletionStatus) => void;
   selectedTimeRange: TimeRange;
   setSelectedTimeRange: (timeRange: TimeRange) => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+  tableColumns: string[];
+  onTableColumnsChange: (columns: string[]) => void;
+  isViewPrefsLoading?: boolean;
 }
 
 export const TodoFilters: FC<TodoFiltersProps> = ({
@@ -36,6 +44,11 @@ export const TodoFilters: FC<TodoFiltersProps> = ({
   setSelectedStatus,
   selectedTimeRange,
   setSelectedTimeRange,
+  viewMode,
+  onViewModeChange,
+  tableColumns,
+  onTableColumnsChange,
+  isViewPrefsLoading = false,
 }) => {
   const { allTags } = useTags();
   const { allContexts } = useEddoContexts();
@@ -122,6 +135,14 @@ export const TodoFilters: FC<TodoFiltersProps> = ({
 
   return (
     <div className="flex items-center space-x-3 border-b border-gray-200 bg-white pb-4 dark:border-gray-700 dark:bg-gray-800">
+      <ViewModeToggle
+        isLoading={isViewPrefsLoading}
+        onViewModeChange={onViewModeChange}
+        viewMode={viewMode}
+      />
+      {viewMode === 'table' && (
+        <ColumnPicker onColumnsChange={onTableColumnsChange} selectedColumns={tableColumns} />
+      )}
       <TimeRangeFilter
         onTimeRangeChange={setSelectedTimeRange}
         selectedTimeRange={selectedTimeRange}

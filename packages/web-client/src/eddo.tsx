@@ -10,11 +10,13 @@ import type { CompletionStatus } from './components/status_filter';
 import type { TimeRange } from './components/time_range_filter';
 import { TodoBoard } from './components/todo_board';
 import { TodoFilters } from './components/todo_filters';
+import { TodoTable } from './components/todo_table';
 import { createQueryClient } from './config/query_client';
 import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
+import { useViewPreferences } from './hooks/use_view_preferences';
 import { createUserPouchDbContext } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
 
@@ -62,6 +64,23 @@ function AuthenticatedApp({
   });
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
+  // View preferences
+  const {
+    viewMode,
+    tableColumns,
+    isLoading: isViewPrefsLoading,
+    setViewMode,
+    setTableColumns,
+  } = useViewPreferences();
+
+  const handleViewModeChange = async (mode: typeof viewMode) => {
+    await setViewMode(mode);
+  };
+
+  const handleTableColumnsChange = async (columns: string[]) => {
+    await setTableColumns(columns);
+  };
+
   // Reset authMode to 'login' when user logs out
   useEffect(() => {
     if (!isAuthenticated) {
@@ -96,6 +115,9 @@ function AuthenticatedApp({
         <AddTodo />
         <TodoFilters
           currentDate={currentDate}
+          isViewPrefsLoading={isViewPrefsLoading}
+          onTableColumnsChange={handleTableColumnsChange}
+          onViewModeChange={handleViewModeChange}
           selectedContexts={selectedContexts}
           selectedStatus={selectedStatus}
           selectedTags={selectedTags}
@@ -105,14 +127,27 @@ function AuthenticatedApp({
           setSelectedStatus={setSelectedStatus}
           setSelectedTags={setSelectedTags}
           setSelectedTimeRange={setSelectedTimeRange}
+          tableColumns={tableColumns}
+          viewMode={viewMode}
         />
-        <TodoBoard
-          currentDate={currentDate}
-          selectedContexts={selectedContexts}
-          selectedStatus={selectedStatus}
-          selectedTags={selectedTags}
-          selectedTimeRange={selectedTimeRange}
-        />
+        {viewMode === 'kanban' ? (
+          <TodoBoard
+            currentDate={currentDate}
+            selectedContexts={selectedContexts}
+            selectedStatus={selectedStatus}
+            selectedTags={selectedTags}
+            selectedTimeRange={selectedTimeRange}
+          />
+        ) : (
+          <TodoTable
+            currentDate={currentDate}
+            selectedColumns={tableColumns}
+            selectedContexts={selectedContexts}
+            selectedStatus={selectedStatus}
+            selectedTags={selectedTags}
+            selectedTimeRange={selectedTimeRange}
+          />
+        )}
       </PageWrapper>
     </DatabaseChangesProvider>
   );

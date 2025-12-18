@@ -340,8 +340,8 @@ export const TodoBoard: FC<TodoBoardProps> = ({
       <div className="mt-2 flex flex-col">
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
-            <div className="overflow-hidden shadow">
-              <div className="mb-6 flex items-start justify-start space-x-4 px-4">
+            <div className="overflow-hidden">
+              <div className="mb-4 flex items-start justify-start space-x-3 px-4">
                 {groupedByContextByDate.map(([context, contextTodos]) => {
                   const todosByDate = Array.from(contextTodos);
 
@@ -359,18 +359,18 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
                   return (
                     <div className="eddo-w-kanban" key={context}>
-                      <div className="py-4 text-base font-semibold text-gray-900 dark:text-gray-300">
+                      <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
                         <div className="flex items-center justify-between">
-                          <div className="mx-1">
+                          <div>
                             <FormattedMessage message={context} />
                           </div>
-                          <div className="mx-1 text-xs text-gray-400">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
                             {durationByContext[context]}
                           </div>
                         </div>
                       </div>
 
-                      <div className="eddo-w-kanban mb-4 space-y-4" id="kanban-list-1">
+                      <div className="eddo-w-kanban mb-2 space-y-2" id="kanban-list-1">
                         {todosByDate.map(([todoDate, allTodosForDate]) => {
                           const todosForDate = uniqBy(allTodosForDate, (d) => {
                             return isLatestVersion(d) ? d._id : d.id;
@@ -401,9 +401,13 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
                           return (
                             <div key={`${context}_${todoDate}`}>
-                              <div className="flex items-center justify-between">
-                                <div className="mx-1">{displayDate}</div>
-                                <div className="mx-1 text-xs text-gray-400">{durationForDate}</div>
+                              <div className="mb-1 flex items-center justify-between text-xs">
+                                <div className="font-medium text-gray-600 dark:text-gray-400">
+                                  {displayDate}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-500">
+                                  {durationForDate}
+                                </div>
                               </div>
                               {todosForDate.map((todoOrActivity) => {
                                 const todo = isLatestVersion(todoOrActivity)
