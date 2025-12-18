@@ -1,6 +1,6 @@
 # Put add-todo and filters-section on separate rows
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-12-18-22-40-40
 **Started:** 2025-12-18-22-42-08
 **Agent PID:** 98482
@@ -33,6 +33,12 @@ Restructure the AddTodo component layout to display the add-todo form inputs and
 - [x] **Mobile Responsive Behavior**: Filters now always visible on all screen sizes (decision: keep this behavior)
 - [x] **Code Organization**: Extracted filters into separate `todo_filters.tsx` component for better separation of concerns
 - [x] **Test Coverage**: Created `todo_filters.test.tsx` with 5 tests covering rendering and navigation
+
+## PR
+
+**Branch:** separate-add-todo-filters
+**PR:** https://github.com/walterra/eddoapp/pull/266
+**Commit:** a33972c
 
 ## Notes
 
