@@ -6,6 +6,8 @@ import { AddTodo } from './components/add_todo';
 import { Login } from './components/login';
 import { PageWrapper } from './components/page_wrapper';
 import { Register } from './components/register';
+import type { CompletionStatus } from './components/status_filter';
+import type { TimeRange } from './components/time_range_filter';
 import { TodoBoard } from './components/todo_board';
 import { createQueryClient } from './config/query_client';
 import { useAuth } from './hooks/use_auth';
@@ -52,6 +54,11 @@ function AuthenticatedApp({
 }: AuthenticatedAppProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedContexts, setSelectedContexts] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<CompletionStatus>('all');
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>({
+    type: 'current-week',
+  });
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   // Reset authMode to 'login' when user logs out
@@ -87,11 +94,23 @@ function AuthenticatedApp({
       <PageWrapper isAuthenticated={isAuthenticated} logout={logout}>
         <AddTodo
           currentDate={currentDate}
+          selectedContexts={selectedContexts}
+          selectedStatus={selectedStatus}
           selectedTags={selectedTags}
+          selectedTimeRange={selectedTimeRange}
           setCurrentDate={setCurrentDate}
+          setSelectedContexts={setSelectedContexts}
+          setSelectedStatus={setSelectedStatus}
           setSelectedTags={setSelectedTags}
+          setSelectedTimeRange={setSelectedTimeRange}
         />
-        <TodoBoard currentDate={currentDate} selectedTags={selectedTags} />
+        <TodoBoard
+          currentDate={currentDate}
+          selectedContexts={selectedContexts}
+          selectedStatus={selectedStatus}
+          selectedTags={selectedTags}
+          selectedTimeRange={selectedTimeRange}
+        />
       </PageWrapper>
     </DatabaseChangesProvider>
   );

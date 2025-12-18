@@ -3,10 +3,20 @@ import {
   type Todo,
   getFormattedDurationForActivities,
   isLatestVersion,
-  migrateTodo,
 } from '@eddo/core-client';
 import { group } from 'd3-array';
-import { add, endOfWeek, format, startOfWeek } from 'date-fns';
+import {
+  add,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  endOfYear,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+} from 'date-fns';
 import { uniqBy } from 'lodash-es';
 import { type FC, useEffect, useMemo, useState } from 'react';
 
@@ -19,36 +29,94 @@ import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
 import { FormattedMessage } from './formatted_message';
+import type { CompletionStatus } from './status_filter';
+import type { TimeRange } from './time_range_filter';
 import { TodoListElement } from './todo_list_element';
 
 interface TodoBoardProps {
   currentDate: Date;
   selectedTags: string[];
+  selectedContexts: string[];
+  selectedStatus: CompletionStatus;
+  selectedTimeRange: TimeRange;
 }
 
-export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => {
+export const TodoBoard: FC<TodoBoardProps> = ({
+  currentDate,
+  selectedTags,
+  selectedContexts,
+  selectedStatus,
+  selectedTimeRange,
+}) => {
   const { safeDb, rawDb } = usePouchDb();
   const [outdatedTodos, setOutdatedTodos] = useState<Todo[]>([]);
   const [error, setError] = useState<DatabaseError | null>(null);
   // check integrity, e.g. if design docs are present
   const [isInitialized, setIsInitialized] = useState(false);
-  // TODO The 'add' is a CEST quick fix
-  const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
-  // TODO The 'add' is a CEST quick fix
-  const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
-    hours: 2,
-  });
+
+  // Calculate date range based on selected time range
+  const { startDate, endDate } = useMemo(() => {
+    // TODO The 'add' is a CEST quick fix
+    const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
+    const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
+
+    switch (selectedTimeRange.type) {
+      case 'current-day':
+        return {
+          startDate: add(startOfDay(currentDate), { hours: 2 }),
+          endDate: add(endOfDay(currentDate), { hours: 2 }),
+        };
+      case 'current-week':
+        return {
+          startDate: currentStartOfWeek,
+          endDate: currentEndOfWeek,
+        };
+      case 'current-month':
+        return {
+          startDate: add(startOfMonth(currentDate), { hours: 2 }),
+          endDate: add(endOfMonth(currentDate), { hours: 2 }),
+        };
+      case 'current-year':
+        return {
+          startDate: add(startOfYear(currentDate), { hours: 2 }),
+          endDate: add(endOfYear(currentDate), { hours: 2 }),
+        };
+      case 'custom':
+        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
+          return {
+            startDate: new Date(selectedTimeRange.startDate + 'T00:00:00'),
+            endDate: new Date(selectedTimeRange.endDate + 'T23:59:59'),
+          };
+        }
+        // Fallback to current week if custom dates are invalid
+        return {
+          startDate: currentStartOfWeek,
+          endDate: currentEndOfWeek,
+        };
+      case 'all-time':
+        // Use a very wide date range for all-time
+        return {
+          startDate: new Date('2000-01-01'),
+          endDate: new Date('2099-12-31'),
+        };
+      default:
+        return {
+          startDate: currentStartOfWeek,
+          endDate: currentEndOfWeek,
+        };
+    }
+  }, [currentDate, selectedTimeRange]);
 
   // Use TanStack Query hooks for data fetching - only enable after initialization
   const todosQuery = useTodosByWeek({
-    startDate: currentStartOfWeek,
-    endDate: currentEndOfWeek,
+    startDate,
+    endDate,
     enabled: isInitialized,
   });
 
   const activitiesQuery = useActivitiesByWeek({
-    startDate: currentStartOfWeek,
-    endDate: currentEndOfWeek,
+    startDate,
+    endDate,
     enabled: isInitialized,
   });
 
@@ -103,37 +171,88 @@ export const TodoBoard: FC<TodoBoardProps> = ({ currentDate, selectedTags }) => 
         setIsInitialized(true);
       }
     })();
-  }, [isInitialized, safeDb]);
+  }, [isInitialized, safeDb, rawDb]);
 
   useEffect(() => {
-    if (!isInitialized || outdatedTodos.length === 0) return;
+    if (!isInitialized) return;
 
-    (async () => {
-      try {
-        await safeDb.safeBulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
-      } catch (err) {
-        console.error('Failed to migrate outdated todos:', err);
-        setError(err as DatabaseError);
-      }
-    })();
+    // Migration disabled for now
+    // TODO: Re-enable when needed
+    // (async () => {
+    //   try {
+    //     await safeDb.safeBulkDocs(outdatedTodos.map((d) => migrateTodo(d)));
+    //   } catch (err) {
+    //     console.error('Failed to migrate outdated todos:', err);
+    //     setError(err as DatabaseError);
+    //   }
+    // })();
   }, [outdatedTodos, isInitialized, safeDb]);
 
-  const filteredActivities = useMemo(() => {
-    return activities.filter((a) => {
-      // TODO The 'split' is a CEST quick fix
-      return !todos.some((t) => a.id === t._id && a.from.split('T')[0] === t.due.split('T')[0]);
-    });
-  }, [activities, todos]);
-
   const filteredTodos = useMemo(() => {
-    if (selectedTags.length === 0) {
-      return todos;
+    let filtered = todos;
+
+    // Apply client-side filtering as fallback/additional filtering
+    // Context filtering (if not handled by database query)
+    if (selectedContexts.length > 0) {
+      filtered = filtered.filter((todo) => {
+        return selectedContexts.includes(todo.context || CONTEXT_DEFAULT);
+      });
     }
 
-    return todos.filter((todo) => {
-      return selectedTags.some((selectedTag) => todo.tags.includes(selectedTag));
+    // Status filtering (if not handled by database query)
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter((todo) => {
+        if (selectedStatus === 'completed') {
+          return todo.completed !== null;
+        } else if (selectedStatus === 'incomplete') {
+          return todo.completed === null;
+        }
+        return true;
+      });
+    }
+
+    // Tag filtering
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((todo) => {
+        return selectedTags.some((selectedTag) => todo.tags.includes(selectedTag));
+      });
+    }
+
+    return filtered;
+  }, [todos, selectedTags, selectedContexts, selectedStatus]);
+
+  const filteredActivities = useMemo(() => {
+    return activities.filter((activity) => {
+      const todo = activity.doc;
+
+      // Apply same filtering logic as filteredTodos
+      // Context filtering
+      if (selectedContexts.length > 0) {
+        if (!selectedContexts.includes(todo.context || CONTEXT_DEFAULT)) {
+          return false;
+        }
+      }
+
+      // Status filtering
+      if (selectedStatus !== 'all') {
+        if (selectedStatus === 'completed' && todo.completed === null) {
+          return false;
+        }
+        if (selectedStatus === 'incomplete' && todo.completed !== null) {
+          return false;
+        }
+      }
+
+      // Tag filtering
+      if (selectedTags.length > 0) {
+        if (!selectedTags.some((selectedTag) => todo.tags.includes(selectedTag))) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [todos, selectedTags]);
+  }, [activities, selectedContexts, selectedStatus, selectedTags]);
 
   const groupedByContextByDate = useMemo(() => {
     const grouped = Array.from(
