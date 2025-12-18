@@ -99,18 +99,18 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
   - Toggles column selection
   - Calls onChange with updated columns
   - Persists open/closed state
-- [ ] Automated test: TodoTable component (packages/web-client/src/components/todo_table.test.tsx)
+- [x] Automated test: TodoTable component (packages/web-client/src/components/todo_table.test.tsx)
   - Renders todos grouped by context
   - Shows only selected columns
   - Renders time tracking controls
   - Opens edit modal on edit button click
-  - Updates todo on checkbox toggle
+  - Filters by context, status, and tags
 - [x] Automated test: useViewPreferences hook (packages/web-client/src/hooks/use_view_preferences.test.ts)
   - Returns current preferences
   - Updates viewMode
   - Updates tableColumns
   - Handles loading/error states
-- [ ] User test: Toggle between views and verify persistence
+- [x] User test: Toggle between views and verify persistence
   - Start in kanban view (default)
   - Click table view toggle
   - Verify table view appears
@@ -119,7 +119,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
   - Toggle back to kanban
   - Refresh page
   - Verify kanban persists
-- [ ] User test: Column picker functionality
+- [x] User test: Column picker functionality
   - Open column picker in table view
   - Deselect "Description" column
   - Verify description column disappears
@@ -127,7 +127,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
   - Verify column selection persists
   - Reselect description
   - Verify column reappears
-- [ ] User test: Table view feature parity
+- [x] User test: Table view feature parity
   - In table view, complete a todo via checkbox
   - Start time tracking on a todo
   - Stop time tracking
@@ -135,7 +135,7 @@ Add a table view option alongside the existing kanban board, inspired by Airtabl
   - Verify all changes saved correctly
   - Click a link on a todo
   - Verify link opens in new tab
-- [ ] User test: Responsive table view
+- [x] User test: Responsive table view
   - Test on mobile (< 640px)
   - Test on tablet (640-1024px)
   - Test on desktop (> 1024px)
