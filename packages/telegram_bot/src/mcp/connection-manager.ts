@@ -126,9 +126,7 @@ export class MCPConnectionManager {
           name: 'eddo-telegram-bot',
           version: '1.0.0',
         },
-        {
-          capabilities: {},
-        },
+        {},
       );
 
       // Connect to server
@@ -342,9 +340,7 @@ export class MCPConnectionManager {
           name: 'eddo-telegram-bot',
           version: '1.0.0',
         },
-        {
-          capabilities: {},
-        },
+        {},
       );
 
       // Connect the user-specific client

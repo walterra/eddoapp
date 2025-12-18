@@ -76,9 +76,7 @@ export class MCPTestServer {
         name: this.config.clientName,
         version: this.config.clientVersion,
       },
-      {
-        capabilities: {},
-      },
+      {},
     );
 
     // Connect with timeout
