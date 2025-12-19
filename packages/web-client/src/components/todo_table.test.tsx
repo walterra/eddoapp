@@ -160,7 +160,7 @@ describe('TodoTable', () => {
       await waitFor(() => {
         expect(screen.getByText('Title')).toBeInTheDocument();
         expect(screen.getByText('Due Date')).toBeInTheDocument();
-        expect(screen.getByText('Status')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
         expect(screen.queryByText('Tags')).not.toBeInTheDocument();
       });
     });
@@ -186,6 +186,36 @@ describe('TodoTable', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Actions')).toBeInTheDocument();
+      });
+    });
+
+    it('should render status column first when included', async () => {
+      vi.mocked(useTodosByWeek).mockReturnValue({
+        data: [
+          createTestTodo({
+            _id: '2025-01-13T10:00:00.000Z',
+            title: 'Test',
+            context: 'work',
+            due: '2025-01-13T10:00:00.000Z',
+          }),
+        ],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useTodosByWeek>);
+
+      renderWithPouchDb(
+        <TodoTable {...defaultProps} selectedColumns={['title', 'due', 'status']} />,
+        { testDb: testDb.contextValue },
+      );
+
+      await waitFor(() => {
+        const headers = screen.getAllByRole('columnheader');
+        // First column should be status (empty header), then title, due, actions
+        expect(headers[0].textContent).toBe('');
+        expect(headers[1].textContent).toBe('Title');
+        expect(headers[2].textContent).toBe('Due Date');
+        expect(headers[3].textContent).toBe('Actions');
       });
     });
   });
