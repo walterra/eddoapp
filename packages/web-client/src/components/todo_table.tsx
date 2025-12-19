@@ -46,13 +46,22 @@ const getColumnWidthClass = (columnId: string): string => {
     due: 'w-32',
     tags: 'w-48',
     timeTracked: 'w-28',
-    status: 'w-20',
+    status: 'w-10',
     completed: 'w-40',
     repeat: 'w-24',
     link: 'w-20',
     description: 'max-w-md',
   };
   return widths[columnId] || '';
+};
+
+const reorderColumnsWithStatusFirst = (columns: string[]): string[] => {
+  const hasStatus = columns.includes('status');
+  if (!hasStatus) {
+    return columns;
+  }
+  const otherColumns = columns.filter((col) => col !== 'status');
+  return ['status', ...otherColumns];
 };
 
 interface TodoTableProps {
@@ -270,14 +279,16 @@ const TodoRow: FC<TodoRowProps> = ({
     }
   };
 
+  const orderedColumns = reorderColumnsWithStatusFirst(selectedColumns);
+
   return (
     <>
       <tr className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700">
-        {selectedColumns.map((columnId) => (
+        {orderedColumns.map((columnId) => (
           <Fragment key={columnId}>{renderCell(columnId)}</Fragment>
         ))}
         <td className="w-24 px-2 py-1">
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center justify-end gap-0.5">
             {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
               <button
                 className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -465,13 +476,13 @@ export const TodoTable: FC<TodoTableProps> = ({
       due: 'Due Date',
       tags: 'Tags',
       timeTracked: 'Time Tracked',
-      status: 'Status',
+      status: '',
       completed: 'Completed',
       repeat: 'Repeat',
       link: 'Link',
       description: 'Description',
     };
-    return labels[columnId] || columnId;
+    return columnId in labels ? labels[columnId] : columnId;
   };
 
   const handleUpdate = () => {
@@ -504,7 +515,7 @@ export const TodoTable: FC<TodoTableProps> = ({
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    {selectedColumns.map((columnId) => (
+                    {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
                       <th
                         className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
                         key={columnId}
@@ -514,7 +525,7 @@ export const TodoTable: FC<TodoTableProps> = ({
                       </th>
                     ))}
                     <th
-                      className="w-24 px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                      className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
                       scope="col"
                     >
                       Actions
