@@ -13,6 +13,74 @@
 - **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses https://github.com/w3cj/stoker
 - **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
 
+## E2E Test Flakiness & Stream Handling Issues
+
+### Critical: Fix Backup/Restore Stream Management
+
+**Context:** E2E tests for backup-interactive.ts fail intermittently in CI due to improper stream handling and timeout management. Quick fix applied: increased test timeouts from 30s to 60s.
+
+**Root Causes:**
+
+1. WriteStream never explicitly closed or error-handled in backup operations
+2. ReadStream in restore operations lacks proper error handling
+3. No timeout guards around Promise wrappers for couchbackup callbacks
+4. Orphaned setInterval when backup Promise times out before callback fires
+5. No verification that streams finish/close successfully
+
+**Proper Fixes Required:**
+
+Files affected:
+
+- `scripts/backup-interactive.ts` (lines 220-280)
+- `scripts/restore-interactive.ts` (similar patterns)
+
+```typescript
+// Add to backup-interactive.ts
+const writeStream = fs.createWriteStream(backupFile);
+
+// 1. Add stream error handler
+writeStream.on('error', (err) => {
+  clearInterval(updateProgress);
+  reject(err);
+});
+
+// 2. Add timeout guard (buffer beyond requestTimeout)
+const timeoutId = setTimeout(() => {
+  clearInterval(updateProgress);
+  writeStream.destroy();
+  reject(new Error(`Backup timed out after ${config.timeout}ms`));
+}, config.timeout + 5000);
+
+// 3. Ensure cleanup in Promise
+await new Promise<void>((resolve, reject) => {
+  const backup = couchbackup.backup(dbUrl, writeStream, options, (err) => {
+    clearInterval(updateProgress);
+    clearTimeout(timeoutId);
+    if (err) reject(err);
+    else resolve();
+  });
+
+  backup.on('changes', (batch) => {
+    documentsProcessed += batch;
+  });
+});
+
+// 4. Wait for stream to finish
+await new Promise((resolve, reject) => {
+  writeStream.on('finish', resolve);
+  writeStream.on('error', reject);
+  writeStream.end();
+});
+```
+
+**Alternative:** Use `stream.pipeline()` for automatic error propagation and cleanup
+
+**Testing:**
+
+- Add unit tests for stream error scenarios
+- Add integration tests with artificial timeouts
+- Consider `retry: 2` in CI config for e2e tests
+
 ## Follow-up Items from /briefing recap Implementation
 
 ### High Priority
