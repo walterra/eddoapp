@@ -18,6 +18,7 @@ export function createTestTodoAlpha3(
     repeat: overrides.repeat ?? null,
     tags: overrides.tags ?? [],
     active: overrides.active ?? {},
+    externalId: overrides.externalId ?? null,
     link: overrides.link ?? null,
     version: 'alpha3',
   };

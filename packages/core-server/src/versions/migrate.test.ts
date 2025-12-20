@@ -50,6 +50,7 @@ describe('Database Migration Functions', () => {
       expect(result.title).toBe('Test Todo');
       expect(result.description).toBe(''); // Alpha1 has no description
       expect(result.active).toEqual({});
+      expect(result.externalId).toBe(null);
       expect(result.link).toBe(null);
       expect(result.due).toBe('2025-01-01T23:59:59.999Z'); // Generated from _id
       expect(result.context).toBe('work');
@@ -73,6 +74,7 @@ describe('Database Migration Functions', () => {
 
       expect(result.version).toBe('alpha3');
       expect(result.active).toEqual({ '2025-01-01': 'start' });
+      expect(result.externalId).toBe(null);
       expect(result.link).toBe(null);
     });
 
@@ -159,6 +161,7 @@ describe('Database Migration Functions', () => {
 
       const updatedDoc = await db.get<TodoAlpha3>(alpha2Doc._id);
       expect(updatedDoc.version).toBe('alpha3');
+      expect(updatedDoc.externalId).toBe(null);
       expect(updatedDoc.link).toBe(null);
       expect(updatedDoc.active).toEqual({
         '2025-01-01': 'start',

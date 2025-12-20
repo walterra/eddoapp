@@ -94,6 +94,7 @@ describe('TodoEditModal', () => {
       expect(screen.getByLabelText('Context')).toBeInTheDocument();
       expect(screen.getByLabelText('Todo')).toBeInTheDocument();
       expect(screen.getByLabelText('Link')).toBeInTheDocument();
+      expect(screen.getByLabelText('External ID')).toBeInTheDocument();
       expect(screen.getByLabelText('Due date')).toBeInTheDocument();
       expect(screen.getByLabelText('Repeat')).toBeInTheDocument();
       expect(screen.getByLabelText('Completed')).toBeInTheDocument();
@@ -180,6 +181,39 @@ describe('TodoEditModal', () => {
 
       await user.clear(linkInput);
       expect(linkInput).toHaveValue('');
+    });
+
+    it('updates externalId field', async () => {
+      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
+
+      const externalIdInput = screen.getByLabelText('External ID');
+      fireEvent.change(externalIdInput, {
+        target: { value: 'github:walterra/eddoapp/issues/123' },
+      });
+
+      await waitFor(() => {
+        expect(externalIdInput).toHaveValue('github:walterra/eddoapp/issues/123');
+      });
+    });
+
+    it('clears externalId when empty string is entered', async () => {
+      const user = userEvent.setup();
+      const todoWithExternalId = {
+        ...testTodos.active,
+        externalId: 'github:owner/repo/issues/1',
+      } as TodoAlpha3;
+
+      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithExternalId} />, {
+        testDb: testDb.contextValue,
+      });
+
+      const externalIdInput = screen.getByLabelText('External ID');
+      expect(externalIdInput).toHaveValue('github:owner/repo/issues/1');
+
+      await user.clear(externalIdInput);
+      expect(externalIdInput).toHaveValue('');
     });
 
     it('updates due date field', async () => {
