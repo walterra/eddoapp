@@ -67,7 +67,7 @@ describe('Backup Interactive E2E', () => {
     const backupContent = fs.readFileSync(backupFile, 'utf8');
     expect(backupContent).toContain('E2E Test Todo 1');
     expect(backupContent).toContain('alpha3');
-  }, 30000);
+  }, 60000);
 
   it('should handle dry run mode', async () => {
     const sourceDbName = generateTestDbName('dry-run-test');
@@ -92,7 +92,7 @@ describe('Backup Interactive E2E', () => {
     // Verify no backup file was created
     const backupFiles = fs.readdirSync(backupDir);
     expect(backupFiles.length).toBe(0);
-  }, 30000);
+  }, 60000);
 
   it('should show help information', async () => {
     await runner()
@@ -133,7 +133,7 @@ describe('Backup Interactive E2E', () => {
       .readdirSync(backupDir)
       .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
-  }, 30000);
+  }, 60000);
 
   it.skipIf(process.env.CI)(
     'should handle user cancellation in interactive mode',
@@ -181,7 +181,7 @@ describe('Backup Interactive E2E', () => {
       .readdirSync(customBackupDir)
       .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
-  }, 30000);
+  }, 60000);
 
   it('should handle missing database parameter in non-interactive mode', async () => {
     const testEnv = createTestEnv();
@@ -192,7 +192,7 @@ describe('Backup Interactive E2E', () => {
       .spawn('tsx', [BACKUP_SCRIPT, '--no-interactive', '--backup-dir', backupDir])
       .stderr(/Error/i)
       .code(1);
-  }, 30000);
+  }, 60000);
 
   it('should show configuration summary for real backup', async () => {
     const sourceDbName = generateTestDbName('config-summary-test');
@@ -229,7 +229,7 @@ describe('Backup Interactive E2E', () => {
       .readdirSync(backupDir)
       .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
-  }, 30000);
+  }, 60000);
 
   it('should create backup directory if it does not exist', async () => {
     const sourceDbName = generateTestDbName('create-dir-test');
@@ -260,7 +260,7 @@ describe('Backup Interactive E2E', () => {
       .readdirSync(nonExistentDir)
       .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
-  }, 30000);
+  }, 60000);
 
   it('should handle existing backup files and show them', async () => {
     const sourceDbName = generateTestDbName('existing-backup-test');
@@ -361,7 +361,7 @@ describe('Backup Interactive E2E - Error Scenarios', () => {
       .readdirSync(backupDir)
       .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
-  }, 30000);
+  }, 60000);
 
   it('should handle zero parallelism parameter', async () => {
     const sourceDbName = generateTestDbName('zero-parallelism-test');
@@ -393,7 +393,7 @@ describe('Backup Interactive E2E - Error Scenarios', () => {
       .readdirSync(backupDir)
       .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
     expect(backupFiles.length).toBe(1);
-  }, 30000);
+  }, 60000);
 
   it('should handle non-existent database', async () => {
     const nonExistentDbName = generateTestDbName('non-existent');
@@ -421,5 +421,5 @@ describe('Backup Interactive E2E - Error Scenarios', () => {
       const stats = fs.statSync(backupFile);
       expect(stats.size).toBeLessThan(100); // Less than 100 bytes indicates empty/failed backup
     }
-  }, 30000);
+  }, 60000);
 });

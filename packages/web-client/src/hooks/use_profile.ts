@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from './use_auth';
 
@@ -50,10 +50,8 @@ interface UpdatePreferencesData {
 }
 
 export const useProfile = () => {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { authToken } = useAuth();
+  const queryClient = useQueryClient();
 
   const getAuthHeaders = () => {
     if (!authToken?.token) {
@@ -65,39 +63,43 @@ export const useProfile = () => {
     };
   };
 
-  const fetchProfile = async (): Promise<{
-    success: boolean;
-    error?: string;
-  }> => {
-    if (!authToken?.token) {
-      return { success: false, error: 'No authentication token' };
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
+  // Fetch profile using React Query
+  const {
+    data: profile,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async (): Promise<UserProfile> => {
       const response = await fetch('/api/users/profile', {
         method: 'GET',
         headers: getAuthHeaders(),
       });
 
-      if (response.ok) {
-        const profileData = await response.json();
-        setProfile(profileData);
-        return { success: true };
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to fetch profile';
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
+        throw new Error(errorData.error || 'Failed to fetch profile');
       }
-    } catch (_error) {
-      const errorMessage = 'Network error occurred';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
+
+      return response.json();
+    },
+    enabled: !!authToken?.token,
+    retry: 1,
+  });
+
+  const error = queryError ? (queryError as Error).message : null;
+
+  // Legacy fetchProfile for backward compatibility
+  const fetchProfile = async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    try {
+      await refetch();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
     }
   };
 
@@ -108,9 +110,6 @@ export const useProfile = () => {
       return { success: false, error: 'No authentication token' };
     }
 
-    setIsLoading(true);
-    setError(null);
-
     try {
       const response = await fetch('/api/users/profile', {
         method: 'PUT',
@@ -119,21 +118,17 @@ export const useProfile = () => {
       });
 
       if (response.ok) {
-        // Refetch profile to get updated data
-        await fetchProfile();
+        // Invalidate and refetch profile
+        await queryClient.invalidateQueries({ queryKey: ['profile'] });
         return { success: true };
       } else {
         const errorData = await response.json();
         const errorMessage = errorData.error || 'Failed to update profile';
-        setError(errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (_error) {
       const errorMessage = 'Network error occurred';
-      setError(errorMessage);
       return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -143,9 +138,6 @@ export const useProfile = () => {
     if (!authToken?.token) {
       return { success: false, error: 'No authentication token' };
     }
-
-    setIsLoading(true);
-    setError(null);
 
     try {
       const response = await fetch('/api/users/change-password', {
@@ -159,15 +151,11 @@ export const useProfile = () => {
       } else {
         const errorData = await response.json();
         const errorMessage = errorData.error || 'Failed to change password';
-        setError(errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (_error) {
       const errorMessage = 'Network error occurred';
-      setError(errorMessage);
       return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -181,9 +169,6 @@ export const useProfile = () => {
       return { success: false, error: 'No authentication token' };
     }
 
-    setIsLoading(true);
-    setError(null);
-
     try {
       const response = await fetch('/api/users/telegram-link', {
         method: 'POST',
@@ -192,21 +177,17 @@ export const useProfile = () => {
       });
 
       if (response.ok) {
-        // Refetch profile to get updated data
-        await fetchProfile();
+        // Invalidate and refetch profile
+        await queryClient.invalidateQueries({ queryKey: ['profile'] });
         return { success: true };
       } else {
         const errorData = await response.json();
         const errorMessage = errorData.error || 'Failed to link Telegram';
-        setError(errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (_error) {
       const errorMessage = 'Network error occurred';
-      setError(errorMessage);
       return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -218,9 +199,6 @@ export const useProfile = () => {
       return { success: false, error: 'No authentication token' };
     }
 
-    setIsLoading(true);
-    setError(null);
-
     try {
       const response = await fetch('/api/users/telegram-link', {
         method: 'DELETE',
@@ -228,23 +206,41 @@ export const useProfile = () => {
       });
 
       if (response.ok) {
-        // Refetch profile to get updated data
-        await fetchProfile();
+        // Invalidate and refetch profile
+        await queryClient.invalidateQueries({ queryKey: ['profile'] });
         return { success: true };
       } else {
         const errorData = await response.json();
         const errorMessage = errorData.error || 'Failed to unlink Telegram';
-        setError(errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (_error) {
       const errorMessage = 'Network error occurred';
-      setError(errorMessage);
       return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  // Update preferences using React Query mutation
+  const preferencesMutation = useMutation({
+    mutationFn: async (preferencesData: UpdatePreferencesData) => {
+      const response = await fetch('/api/users/preferences', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(preferencesData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update preferences');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate profile query to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
 
   const updatePreferences = async (
     preferencesData: UpdatePreferencesData,
@@ -253,51 +249,17 @@ export const useProfile = () => {
       return { success: false, error: 'Not authenticated' };
     }
 
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch('/api/users/preferences', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken.token}`,
-        },
-        body: JSON.stringify(preferencesData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to update preferences';
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
-      }
-
-      // Refresh profile to get updated data
-      await fetchProfile();
+      await preferencesMutation.mutateAsync(preferencesData);
       return { success: true };
-    } catch (error) {
-      console.error('Preferences update error:', error);
-      const errorMessage = 'Network error occurred';
-      setError(errorMessage);
+    } catch (err) {
+      const errorMessage = (err as Error).message || 'Failed to update preferences';
       return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Fetch profile when auth token changes
-  useEffect(() => {
-    if (authToken?.token) {
-      fetchProfile();
-    } else {
-      setProfile(null);
-      setError(null);
-    }
-  }, [authToken?.token]);
-
   return {
-    profile,
+    profile: profile || null,
     isLoading,
     error,
     fetchProfile,
@@ -306,6 +268,6 @@ export const useProfile = () => {
     linkTelegram,
     unlinkTelegram,
     updatePreferences,
-    clearError: () => setError(null),
+    clearError: () => queryClient.resetQueries({ queryKey: ['profile'] }),
   };
 };

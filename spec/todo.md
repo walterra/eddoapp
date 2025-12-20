@@ -1,3 +1,9 @@
+- Add PouchDB sync for user_registry database (real-time preference updates across tabs/devices)
+  - Create `/api/registry` proxy endpoint with filtered replication (user sees only their own doc)
+  - Add second PouchDB instance in web-client for user_registry
+  - Extend DatabaseChangesProvider to listen to both databases (todos + registry)
+  - Update `use_profile.ts` to read/write directly to PouchDB instead of REST API
+  - Enables: multi-tab sync, cross-device sync, Telegram bot preference updates reflected in web UI
 - Filter state not persisted
 - proper timezone support
 - the gtd tags like `gtd:next` should be a `gtd` attribute on todos just like context and be stored just `next`, will trigger creating TodoAlpha5
@@ -6,6 +12,74 @@
 - eddo*user_registry is the couchdb user registry. eddo_user*\* are the todos for each user. looks like a prefix naming clash. what if someone registered with a username "registry"?
 - **ADD ERROR HANDLING**: Implement Stoker middleware for consistent error responses https://github.com/w3cj/stoker
 - **OPTIMIZE PERFORMANCE**: Add proper caching headers and asset optimization
+
+## E2E Test Flakiness & Stream Handling Issues
+
+### Critical: Fix Backup/Restore Stream Management
+
+**Context:** E2E tests for backup-interactive.ts fail intermittently in CI due to improper stream handling and timeout management. Quick fix applied: increased test timeouts from 30s to 60s.
+
+**Root Causes:**
+
+1. WriteStream never explicitly closed or error-handled in backup operations
+2. ReadStream in restore operations lacks proper error handling
+3. No timeout guards around Promise wrappers for couchbackup callbacks
+4. Orphaned setInterval when backup Promise times out before callback fires
+5. No verification that streams finish/close successfully
+
+**Proper Fixes Required:**
+
+Files affected:
+
+- `scripts/backup-interactive.ts` (lines 220-280)
+- `scripts/restore-interactive.ts` (similar patterns)
+
+```typescript
+// Add to backup-interactive.ts
+const writeStream = fs.createWriteStream(backupFile);
+
+// 1. Add stream error handler
+writeStream.on('error', (err) => {
+  clearInterval(updateProgress);
+  reject(err);
+});
+
+// 2. Add timeout guard (buffer beyond requestTimeout)
+const timeoutId = setTimeout(() => {
+  clearInterval(updateProgress);
+  writeStream.destroy();
+  reject(new Error(`Backup timed out after ${config.timeout}ms`));
+}, config.timeout + 5000);
+
+// 3. Ensure cleanup in Promise
+await new Promise<void>((resolve, reject) => {
+  const backup = couchbackup.backup(dbUrl, writeStream, options, (err) => {
+    clearInterval(updateProgress);
+    clearTimeout(timeoutId);
+    if (err) reject(err);
+    else resolve();
+  });
+
+  backup.on('changes', (batch) => {
+    documentsProcessed += batch;
+  });
+});
+
+// 4. Wait for stream to finish
+await new Promise((resolve, reject) => {
+  writeStream.on('finish', resolve);
+  writeStream.on('error', reject);
+  writeStream.end();
+});
+```
+
+**Alternative:** Use `stream.pipeline()` for automatic error propagation and cleanup
+
+**Testing:**
+
+- Add unit tests for stream error scenarios
+- Add integration tests with artificial timeouts
+- Consider `retry: 2` in CI config for e2e tests
 
 ## Follow-up Items from /briefing recap Implementation
 
