@@ -182,6 +182,13 @@ Usage examples:
       .describe(
         'Optional URL or reference link related to this todo. Can be used for documentation, tickets, or external resources',
       ),
+    externalId: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe(
+        'Optional external system ID for syncing with other todo systems. Format: "system:identifier" (e.g., "github:owner/repo/issues/123" for GitHub issues). Used for deduplication during periodic imports.',
+      ),
   }),
   execute: async (args, context) => {
     // Ensure user database exists (for test isolation)
@@ -223,6 +230,7 @@ Usage examples:
       completed: null,
       active: {},
       repeat: args.repeat,
+      externalId: args.externalId,
       link: args.link,
       version: 'alpha3',
     };
@@ -269,7 +277,7 @@ Usage examples:
 // List Todos Tool
 server.addTool({
   name: 'listTodos',
-  description: `List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), completedFrom/completedTo (ISO date strings for completion date range), limit (number of results)
+  description: `List todos with optional filters from the authenticated user's database. Available filters: context (GTD context), completed (boolean), dateFrom/dateTo (ISO date strings for due date range), completedFrom/completedTo (ISO date strings for completion date range), externalId (exact match for external system ID), limit (number of results)
 
 GTD-AWARE QUERY HANDLING:
 - "What's next?" → filter by gtd:next tags, prioritize by context
@@ -322,6 +330,12 @@ Usage examples:
       .describe(
         'Filter by specific tags (e.g., ["gtd:next"] for next actions, ["gtd:project"] for projects)',
       ),
+    externalId: z
+      .string()
+      .optional()
+      .describe(
+        'Filter by exact external system ID (e.g., "github:owner/repo/issues/123"). For finding all GitHub todos, use listTodos without filters and filter client-side.',
+      ),
   }),
   execute: async (args, context) => {
     const db = getUserDb(context);
@@ -370,6 +384,11 @@ Usage examples:
 
       if (args.tags && args.tags.length > 0) {
         selector.tags = { $in: args.tags };
+      }
+
+      if (args.externalId) {
+        // Exact match only (prefix matching requires externalId index)
+        selector.externalId = args.externalId;
       }
 
       // Build query with explicit sorting and index specification

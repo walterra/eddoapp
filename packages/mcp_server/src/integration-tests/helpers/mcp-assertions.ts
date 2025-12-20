@@ -12,6 +12,7 @@ export interface TodoAlpha3 {
   context: string;
   description: string;
   due: string;
+  externalId?: string | null;
   link: string | null;
   repeat: number | null;
   tags: string[];

@@ -207,6 +207,24 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) =
           </div>
           <div>
             <div className="mb-2 block">
+              <Label htmlFor="eddoTodoExternalId">External ID</Label>
+            </div>
+            <TextInput
+              aria-label="External ID"
+              id="eddoTodoExternalId"
+              onChange={(e) =>
+                setEditedTodo((editedTodo) => ({
+                  ...editedTodo,
+                  externalId: e.target.value !== '' ? e.target.value : null,
+                }))
+              }
+              placeholder="github:owner/repo/issues/123"
+              type="text"
+              value={editedTodo.externalId ?? ''}
+            />
+          </div>
+          <div>
+            <div className="mb-2 block">
               <Label htmlFor="eddoTodoTags">Tags</Label>
             </div>
             <TagInput

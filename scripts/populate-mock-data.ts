@@ -171,7 +171,31 @@ function generateStarfleetTodos(): TodoAlpha3[] {
       context: 'science',
       due: getDate(21, 15, 0),
     }, // Future
+
+    // GitHub-synced issues (examples of external ID tracking)
+    {
+      title: 'Fix transporter buffer overflow',
+      context: 'engineering',
+      due: getDate(1, 16, 0),
+    },
+    {
+      title: 'Update tricorder firmware',
+      context: 'engineering',
+      due: getDate(3, 14, 30),
+    },
+    {
+      title: 'Investigate replicator malfunction',
+      context: 'engineering',
+      due: getDate(5, 11, 0),
+    },
   ];
+
+  // GitHub issue mapping for synced todos
+  const githubIssues: Record<string, string> = {
+    'Fix transporter buffer overflow': 'github:starfleet/enterprise/issues/1701',
+    'Update tricorder firmware': 'github:starfleet/equipment/issues/4742',
+    'Investigate replicator malfunction': 'github:starfleet/operations/issues/2063',
+  };
 
   // Convert to TodoAlpha3 format
   todoData.forEach((todo) => {
@@ -188,6 +212,7 @@ function generateStarfleetTodos(): TodoAlpha3[] {
       active: {},
       completed: Math.random() > 0.8 ? new Date().toISOString() : null, // 20% completed
       repeat: todo.title.includes('Weekly') ? 7 : null, // Weekly recurring items
+      externalId: githubIssues[todo.title] || null,
       link: null,
     };
 
