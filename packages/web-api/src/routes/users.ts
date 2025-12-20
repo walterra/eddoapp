@@ -44,6 +44,24 @@ const updatePreferencesSchema = z.object({
   timezone: z.string().optional(),
   viewMode: z.enum(['kanban', 'table']).optional(),
   tableColumns: z.array(z.string()).optional(),
+  selectedTags: z.array(z.string()).optional(),
+  selectedContexts: z.array(z.string()).optional(),
+  selectedStatus: z.enum(['all', 'completed', 'incomplete']).optional(),
+  selectedTimeRange: z
+    .object({
+      type: z.enum([
+        'current-day',
+        'current-week',
+        'current-month',
+        'current-year',
+        'all-time',
+        'custom',
+      ]),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    })
+    .optional(),
+  currentDate: z.string().optional(),
 });
 
 interface JwtTokenPayload {

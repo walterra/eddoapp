@@ -14,6 +14,15 @@ export interface UserPreferences {
   timezone?: string; // Future timezone support
   viewMode?: 'kanban' | 'table'; // Todo view preference, defaults to kanban
   tableColumns?: string[]; // Selected columns for table view
+  selectedTags?: string[]; // Filter: selected tags
+  selectedContexts?: string[]; // Filter: selected contexts
+  selectedStatus?: 'all' | 'completed' | 'incomplete'; // Filter: completion status
+  selectedTimeRange?: {
+    type: 'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  }; // Filter: time range
+  currentDate?: string; // Filter: current date for navigation (ISO string)
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
@@ -41,5 +50,10 @@ export function createDefaultUserPreferences(): UserPreferences {
     timezone: undefined,
     viewMode: 'kanban',
     tableColumns: ['title', 'due', 'tags', 'timeTracked', 'status'],
+    selectedTags: [],
+    selectedContexts: [],
+    selectedStatus: 'all',
+    selectedTimeRange: { type: 'current-week' },
+    currentDate: undefined,
   };
 }
