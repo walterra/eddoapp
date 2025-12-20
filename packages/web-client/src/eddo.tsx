@@ -16,6 +16,7 @@ import { useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
+import { useFilterPreferences } from './hooks/use_filter_preferences';
 import { useViewPreferences } from './hooks/use_view_preferences';
 import { createUserPouchDbContext } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
@@ -55,13 +56,6 @@ function AuthenticatedApp({
   isAuthenticated,
   isAuthenticating,
 }: AuthenticatedAppProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedContexts, setSelectedContexts] = useState<string[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<CompletionStatus>('all');
-  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>({
-    type: 'current-week',
-  });
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   // View preferences
@@ -73,12 +67,47 @@ function AuthenticatedApp({
     setTableColumns,
   } = useViewPreferences();
 
+  // Filter preferences
+  const {
+    currentDate,
+    selectedTags,
+    selectedContexts,
+    selectedStatus,
+    selectedTimeRange,
+    setCurrentDate,
+    setSelectedTags,
+    setSelectedContexts,
+    setSelectedStatus,
+    setSelectedTimeRange,
+  } = useFilterPreferences();
+
   const handleViewModeChange = async (mode: typeof viewMode) => {
     await setViewMode(mode);
   };
 
   const handleTableColumnsChange = async (columns: string[]) => {
     await setTableColumns(columns);
+  };
+
+  // Wrapper functions for filter preferences (async updates in background)
+  const handleCurrentDateChange = (date: Date) => {
+    setCurrentDate(date);
+  };
+
+  const handleSelectedTagsChange = (tags: string[]) => {
+    setSelectedTags(tags);
+  };
+
+  const handleSelectedContextsChange = (contexts: string[]) => {
+    setSelectedContexts(contexts);
+  };
+
+  const handleSelectedStatusChange = (status: CompletionStatus) => {
+    setSelectedStatus(status);
+  };
+
+  const handleSelectedTimeRangeChange = (timeRange: TimeRange) => {
+    setSelectedTimeRange(timeRange);
   };
 
   // Reset authMode to 'login' when user logs out
@@ -122,11 +151,11 @@ function AuthenticatedApp({
           selectedStatus={selectedStatus}
           selectedTags={selectedTags}
           selectedTimeRange={selectedTimeRange}
-          setCurrentDate={setCurrentDate}
-          setSelectedContexts={setSelectedContexts}
-          setSelectedStatus={setSelectedStatus}
-          setSelectedTags={setSelectedTags}
-          setSelectedTimeRange={setSelectedTimeRange}
+          setCurrentDate={handleCurrentDateChange}
+          setSelectedContexts={handleSelectedContextsChange}
+          setSelectedStatus={handleSelectedStatusChange}
+          setSelectedTags={handleSelectedTagsChange}
+          setSelectedTimeRange={handleSelectedTimeRangeChange}
           tableColumns={tableColumns}
           viewMode={viewMode}
         />

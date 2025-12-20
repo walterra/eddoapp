@@ -12,6 +12,15 @@ interface UserPreferences {
   timezone?: string;
   viewMode?: 'kanban' | 'table';
   tableColumns?: string[];
+  selectedTags?: string[];
+  selectedContexts?: string[];
+  selectedStatus?: 'all' | 'completed' | 'incomplete';
+  selectedTimeRange?: {
+    type: 'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  };
+  currentDate?: string;
 }
 
 interface UserProfile {
@@ -47,6 +56,15 @@ interface UpdatePreferencesData {
   timezone?: string;
   viewMode?: 'kanban' | 'table';
   tableColumns?: string[];
+  selectedTags?: string[];
+  selectedContexts?: string[];
+  selectedStatus?: 'all' | 'completed' | 'incomplete';
+  selectedTimeRange?: {
+    type: 'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  };
+  currentDate?: string;
 }
 
 export const useProfile = () => {
