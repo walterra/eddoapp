@@ -4,8 +4,9 @@
   - Extend DatabaseChangesProvider to listen to both databases (todos + registry)
   - Update `use_profile.ts` to read/write directly to PouchDB instead of REST API
   - Enables: multi-tab sync, cross-device sync, Telegram bot preference updates reflected in web UI
-- Filter state not persisted
+
 - proper timezone support
+
 - the gtd tags like `gtd:next` should be a `gtd` attribute on todos just like context and be stored just `next`, will trigger creating TodoAlpha5
 - peristent chat history for telegram-bot
 - chat interface in the web-ui
