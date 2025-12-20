@@ -188,7 +188,7 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 
 ## CHANGELOG & Release Workflow
 
-This project uses **Changesets** for automated CHANGELOG generation and version management, with **Commitizen** and **Commitlint** for enforcing conventional commits. Do not run changesets or commits by yourself, do them only when user explictly asks for it.
+This project uses **Changesets** for automated CHANGELOG generation and version management, with **Commitizen** and **Commitlint** for enforcing conventional commits. Do not run changesets or commits by yourself, do them only when user explictly asks for it. replace "@eddo/\*" in the markdown file with the appropriate packages (one or more).
 
 ## Changesets
 
@@ -199,7 +199,7 @@ This project uses **Changesets** for automated CHANGELOG generation and version 
 
 ---
 
-"shc2es": patch|minor|major
+"@eddo/\*": patch|minor|major
 
 ---
 
