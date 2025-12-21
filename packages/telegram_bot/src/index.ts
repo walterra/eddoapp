@@ -1,5 +1,6 @@
 import { createBot } from './bot/bot.js';
 import { handleBriefing, handleBriefingOff, handleBriefingOn } from './bot/commands/briefing.js';
+import { handleGithub } from './bot/commands/github.js';
 import { handleLink, handleUnlink } from './bot/commands/link.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
@@ -43,6 +44,9 @@ async function main(): Promise<void> {
     bot.command('briefing', handleBriefing);
     bot.command('briefing_on', handleBriefingOn); // Legacy compatibility
     bot.command('briefing_off', handleBriefingOff); // Legacy compatibility
+
+    // Register GitHub sync commands
+    bot.command('github', handleGithub);
 
     // Register message handler for general text with agent workflow
     bot.on('message:text', handleMessage);

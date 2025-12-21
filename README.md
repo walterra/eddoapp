@@ -19,6 +19,7 @@ The app is inspired by an offline/notebook based approach that has been refined 
 - **Time Tracking**: Start/pause timers for individual todos with daily summaries
 - **Offline-First**: PouchDB provides local storage with real-time sync capabilities
 - **AI Integration**: Telegram bot with Claude AI for natural language todo management
+- **GitHub Issue Sync**: Automatic one-way sync of GitHub issues to todos with deduplication
 - **MCP Server**: Programmatic access via Model Context Protocol
 - **Data Migration**: Automatic schema versioning and migration system
 
@@ -67,8 +68,29 @@ AI-powered bot with **agentic loop architecture** that understands complex, mult
 - **Natural language processing**: "Add a work todo for tomorrow's meeting and set a reminder"
 - **Autonomous task execution**: Can break down complex requests into multiple actions
 - **Dynamic tool selection**: Chooses appropriate MCP tools based on user intent
+- **Daily briefings**: Scheduled todo summaries at your preferred time
+- **GitHub integration**: Configure GitHub issue sync via bot commands
 
 Set `TELEGRAM_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables to get started.
+
+#### GitHub Issue Sync
+
+Automatically sync your GitHub issues to Eddo todos:
+
+1. **Create a GitHub Personal Access Token** at https://github.com/settings/tokens
+   - Select scope: `repo` (for private repos) or `public_repo`
+2. **Configure via Telegram bot**: `/github token ghp_your_token`
+3. **Enable sync**: `/github on`
+4. **Check status**: `/github status`
+
+Issues sync periodically (default: hourly) with:
+
+- **Initial sync**: Only open issues (avoids old closed issues)
+- **Ongoing syncs**: Issues updated since sync enabled (max lookback prevents syncing ancient history)
+- Deduplication via external ID tracking
+- Automatic completion when issues are closed
+- Update detection for title and description changes
+- Customizable context and tag assignment
 
 ### MCP Server
 

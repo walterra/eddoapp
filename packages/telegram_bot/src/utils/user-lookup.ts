@@ -38,6 +38,15 @@ setInterval(() => {
 }, 60 * 1000); // Clean up every minute
 
 /**
+ * Invalidate cache for a specific user (call after updating user data)
+ */
+export function invalidateUserCache(telegramId: number): void {
+  userCache.delete(telegramId);
+  cacheTimestamps.delete(telegramId);
+  logger.debug('User cache invalidated', { telegramId });
+}
+
+/**
  * Look up a user by their Telegram ID in the user registry
  */
 export async function lookupUserByTelegramId(telegramId: number): Promise<TelegramUser | null> {

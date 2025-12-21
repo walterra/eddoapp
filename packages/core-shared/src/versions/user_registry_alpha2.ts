@@ -29,6 +29,7 @@ export interface UserPreferences {
   githubSyncContext?: string; // Context to assign synced issues, defaults to "work"
   githubSyncTags?: string[]; // Tags to add to synced issues, defaults to ["github"]
   githubLastSync?: string; // ISO timestamp of last successful sync
+  githubSyncStartedAt?: string; // ISO timestamp when sync was first enabled (max lookback)
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
@@ -67,5 +68,6 @@ export function createDefaultUserPreferences(): UserPreferences {
     githubSyncContext: 'work',
     githubSyncTags: ['github'],
     githubLastSync: undefined,
+    githubSyncStartedAt: undefined,
   };
 }
