@@ -58,13 +58,30 @@ jobs:
             echo "title=chore: release" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Release Pull Request or Create GitHub Release
+      - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v1
         with:
           title: ${{ steps.release-version.outputs.title }}
           commit: "chore: version packages"
           version: pnpm version-packages
-          createGithubReleases: true
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Create Aggregated GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          VERSION=$(jq -r '.[0].version' <<< '${{ steps.changesets.outputs.publishedPackages }}')
+          RELEASE_NOTES=$(node scripts/aggregate-changelog.js)
+          
+          # Create git tag
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin "v${VERSION}"
+          
+          # Create GitHub release with aggregated notes
+          gh release create "v${VERSION}" \
+            --title "Release v${VERSION}" \
+            --notes "${RELEASE_NOTES}"
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

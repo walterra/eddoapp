@@ -265,7 +265,7 @@ This project uses **Changesets** for automated CHANGELOG generation and version 
 
 ---
 
-"@eddo/\*": patch|minor|major
+"eddo-app": patch|minor|major
 
 ---
 
@@ -289,6 +289,32 @@ Concise single-line description for CHANGELOG.md (not implementation details)
 
 - `commitlint` - ensures conventional commit format
 - Invalid commits are rejected with helpful error messages
+
+### Versioning Strategy
+
+**Synced versioning** - all packages share the same version number:
+
+- ✅ All packages move together (0.1.0 → 0.2.0)
+- ✅ One version for the entire application
+- ✅ Simpler releases and changelogs
+- ❌ Individual package versions don't make sense for this tightly-coupled app
+
+**Important for changesets:**
+
+- Always specify `"eddo-app"` as the package (root package)
+- Version bump applies to ALL packages automatically via fixed versioning config
+- Don't list individual packages (`@eddo/web-client`, `@eddo/web-api`, etc.)
+- Changes to any package should reference `"eddo-app"` in the changeset
+
+### Release Process
+
+1. Merge release PR (created automatically by changesets/action)
+2. Workflow automatically:
+   - Creates git tag (e.g., `v0.2.0`)
+   - Generates aggregated changelog from all packages
+   - Creates GitHub release with combined release notes
+
+Test aggregated changelog locally: `pnpm changeset:aggregate`
 
 ## AI Agent Development Guidelines
 
