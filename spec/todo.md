@@ -1,3 +1,5 @@
+- make calendar navigation text clickable to return to current week/month/day
+
 - Add PouchDB sync for user_registry database (real-time preference updates across tabs/devices)
   - Create `/api/registry` proxy endpoint with filtered replication (user sees only their own doc)
   - Add second PouchDB instance in web-client for user_registry

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
 import { config } from '../config';
+import { getGithubScheduler } from '../index';
 import { hashPassword, validateEmail, validatePassword, verifyPassword } from '../utils/crypto';
 
 const usersApp = new Hono();
@@ -62,6 +63,10 @@ const updatePreferencesSchema = z.object({
     })
     .optional(),
   currentDate: z.string().optional(),
+  githubSync: z.boolean().optional(),
+  githubToken: z.string().nullable().optional(),
+  githubSyncInterval: z.number().int().positive().optional(),
+  githubSyncTags: z.array(z.string()).optional(),
 });
 
 interface JwtTokenPayload {
@@ -394,6 +399,33 @@ usersApp.put('/preferences', async (c) => {
       return c.json({ error: 'Invalid preferences format' }, 400);
     }
     return c.json({ error: 'Failed to update preferences' }, 500);
+  }
+});
+
+// Force GitHub sync
+usersApp.post('/github-resync', async (c) => {
+  try {
+    const payload = c.get('jwtPayload') as jwt.JwtPayload;
+    const userId = `user_${payload.username}`;
+
+    console.log('[GitHub Resync] Force resync requested', { userId, username: payload.username });
+
+    const scheduler = getGithubScheduler();
+    await scheduler.syncUser(userId, true); // forceResync = true
+
+    console.log('[GitHub Resync] Resync completed successfully', {
+      userId,
+      username: payload.username,
+    });
+
+    return c.json({
+      success: true,
+      message: 'GitHub resync completed successfully',
+    });
+  } catch (error) {
+    console.error('[GitHub Resync] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to resync GitHub issues';
+    return c.json({ error: errorMessage }, 500);
   }
 });
 

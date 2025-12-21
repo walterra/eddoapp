@@ -6,9 +6,11 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { jwt } from 'hono/jwt';
 import { logger } from 'hono/logger';
+import nano from 'nano';
 import path from 'path';
 
 import { config } from './config';
+import { createGithubSyncScheduler } from './github/sync-scheduler';
 import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
 import { userRoutes } from './routes/users';
@@ -90,6 +92,17 @@ if (!isDevelopment) {
 const port = config.port;
 console.log(`Server starting on port ${port}`);
 
+// GitHub sync scheduler instance (initialized after database setup)
+let githubSchedulerInstance: ReturnType<typeof createGithubSyncScheduler> | null = null;
+
+// Export getter for scheduler instance
+export function getGithubScheduler() {
+  if (!githubSchedulerInstance) {
+    throw new Error('GitHub scheduler not initialized yet');
+  }
+  return githubSchedulerInstance;
+}
+
 // Initialize database
 async function initializeDatabase() {
   try {
@@ -111,6 +124,25 @@ async function initializeDatabase() {
 
 // Initialize database before starting server
 initializeDatabase().then(() => {
+  // Initialize GitHub sync scheduler
+  const env = createEnv();
+  const couch = nano(env.COUCHDB_URL);
+
+  githubSchedulerInstance = createGithubSyncScheduler({
+    checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute (matches smallest user interval)
+    logger: {
+      info: (msg, meta) => console.log('[GitHub Sync]', msg, meta || ''),
+      warn: (msg, meta) => console.warn('[GitHub Sync]', msg, meta || ''),
+      error: (msg, meta) => console.error('[GitHub Sync]', msg, meta || ''),
+      debug: (msg, meta) => console.debug('[GitHub Sync]', msg, meta || ''),
+    },
+    getUserDb: (dbName: string) => couch.db.use(dbName),
+  });
+
+  // Start GitHub sync scheduler
+  githubSchedulerInstance.start();
+  console.log('✅ GitHub sync scheduler started');
+
   // Start server with graceful shutdown
   const server = serve({
     fetch: app.fetch,
@@ -122,6 +154,12 @@ initializeDatabase().then(() => {
   // Graceful shutdown handling
   const gracefulShutdown = (signal: string) => {
     console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+
+    // Stop GitHub sync scheduler
+    if (githubSchedulerInstance) {
+      githubSchedulerInstance.stop();
+      console.log('✅ GitHub sync scheduler stopped');
+    }
 
     // Close the server
     server.close(() => {

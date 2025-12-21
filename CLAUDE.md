@@ -127,6 +127,72 @@ interface TodoAlpha3 {
   - `ai/`: Claude integration and persona management
   - `bot/`: Telegram bot handlers and commands
   - `mcp/`: MCP client integration
+- `packages/web-api/src/github/`: GitHub issue sync integration
+  - `client.ts`: GitHub API client with Octokit
+  - `sync-scheduler.ts`: Periodic sync scheduler
+  - `types.ts`: GitHub API type definitions
+
+### GitHub Issue Sync Architecture
+
+**Location**: `packages/web-api/src/github/`
+
+**Purpose**: One-way sync of user's GitHub issues into Eddo todos with deduplication tracking
+
+**Components**:
+
+- **GithubClient**: Factory-based GitHub API client using Octokit
+  - Fetches issues via `/user/issues` endpoint
+  - Maps GitHub issues to TodoAlpha3 structure
+  - Generates consistent external IDs: `github:owner/repo/issues/123`
+  - Handles pagination (100 issues per page, max 100 pages)
+  - Error handling for 401/403/404 and rate limits (5000 req/hr)
+- **GithubSyncScheduler**: Periodic sync service following DailyBriefingScheduler pattern
+  - Runs in web-api process (not telegram-bot for reliability)
+  - Checks every 5 minutes for users needing sync
+  - Per-user sync intervals (default 60 minutes, configurable)
+  - Deduplication via `externalId` field in TodoAlpha3
+  - Updates existing todos when GitHub issues change
+  - Marks todos completed when GitHub issues close
+- **User Configuration**: Stored in UserPreferences (user_registry_alpha2)
+  - `githubSync`: boolean - enable/disable
+  - `githubToken`: string - PAT with `repo` or `public_repo` scope
+  - `githubSyncInterval`: number - minutes between syncs
+  - `githubSyncTags`: string[] - tags to add to synced todos
+  - `githubLastSync`: string - ISO timestamp of last sync
+  - `githubSyncStartedAt`: string - ISO timestamp when sync enabled (max lookback)
+  - Context: Automatically set from repository full_name (e.g., "elastic/kibana", "walterra/d3-milestones")
+
+**Telegram Bot Commands**:
+
+- `/github` - Show help and current status
+- `/github on` - Enable automatic sync
+- `/github off` - Disable sync
+- `/github token <pat>` - Set GitHub Personal Access Token (auto-deletes message for security)
+- `/github status` - View current configuration
+
+**Note:** Manual sync trigger removed - sync runs automatically via scheduler based on user's interval setting
+
+**Security**:
+
+- Token validation (checks `ghp_` or `github_pat_` prefix)
+- Token masking in logs (shows first 7 + last 4 chars)
+- Auto-delete bot messages containing tokens
+- Rate limit handling with helpful error messages
+
+**Data Flow**:
+
+1. User sets GitHub PAT via Telegram bot
+2. User enables sync → sets `githubSyncStartedAt` timestamp (max lookback)
+3. Scheduler checks user preferences every 5 minutes
+4. If sync interval elapsed, fetches issues from GitHub API:
+   - **Initial sync** (no `githubLastSync`): Fetches only **open** issues
+   - **Subsequent syncs**: Fetches **all** issues updated since `githubSyncStartedAt`
+5. Queries existing todos by `externalId` to detect duplicates
+6. Creates new todos or updates existing ones
+7. Marks todos completed when GitHub issues close
+8. Updates `githubLastSync` timestamp
+
+**Testing**: Mock GitHub API responses, verify deduplication, update detection, error handling
 
 ## Documentation Maintenance
 
