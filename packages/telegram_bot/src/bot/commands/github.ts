@@ -112,7 +112,8 @@ async function showGithubHelp(ctx: Context, user: TelegramUser): Promise<void> {
       '`/github` - Show this help\n\n' +
       '**Current Status:**\n' +
       `${isEnabled ? '✅' : '❌'} Sync: ${isEnabled ? 'Enabled' : 'Disabled'}\n` +
-      `${hasToken ? '🔑' : '❌'} Token: ${hasToken ? 'Set' : 'Not set'}\n\n` +
+      `${hasToken ? '🔑' : '❌'} Token: ${hasToken ? 'Set' : 'Not set'}\n` +
+      `📁 Context: Each repo uses its full path (e.g., elastic/kibana)\n\n` +
       '**Setup Instructions:**\n' +
       '1. Create a GitHub Personal Access Token at:\n' +
       '   https://github.com/settings/tokens\n' +
@@ -168,16 +169,16 @@ async function enableGithubSync(ctx: Context, user: TelegramUser): Promise<void>
     });
 
     const syncInterval = user.preferences?.githubSyncInterval || 60;
-    const context = user.preferences?.githubSyncContext || 'work';
 
     await ctx.reply(
       '✅ **GitHub sync enabled!**\n\n' +
         `⏱ Sync interval: Every ${syncInterval} minutes\n` +
-        `📁 Context: ${context}\n` +
-        `🏷 Tags: ${(user.preferences?.githubSyncTags || ['github']).join(', ')}\n\n` +
+        `🏷 Tags: ${(user.preferences?.githubSyncTags || ['github']).join(', ')}\n` +
+        `📁 Context: Uses full repository path (e.g., "elastic/kibana")\n\n` +
         '**What gets synced:**\n' +
         '• All your GitHub issues (assigned, created, mentioned)\n' +
         '• Issue title, description, and labels\n' +
+        '• Each repository creates its own context\n' +
         '• Closed issues marked as completed\n' +
         '• Updates to existing issues\n\n' +
         '💡 Issues sync automatically based on your interval.\n' +
@@ -330,7 +331,6 @@ async function showGithubStatus(ctx: Context, user: TelegramUser): Promise<void>
   const hasToken = Boolean(user.preferences?.githubToken);
   const token = user.preferences?.githubToken;
   const syncInterval = user.preferences?.githubSyncInterval || 60;
-  const context = user.preferences?.githubSyncContext || 'work';
   const tags = user.preferences?.githubSyncTags || ['github'];
   const lastSync = user.preferences?.githubLastSync;
 
@@ -356,8 +356,8 @@ async function showGithubStatus(ctx: Context, user: TelegramUser): Promise<void>
       `${statusEmoji} **Status:** ${statusText}\n` +
       `${tokenStatus}\n` +
       `⏱ **Interval:** Every ${syncInterval} minutes\n` +
-      `📁 **Context:** ${context}\n` +
       `🏷 **Tags:** ${tags.join(', ')}\n` +
+      `📁 **Context:** Full repository path (auto)\n` +
       `🕰 **Last sync:** ${lastSyncText}\n\n` +
       `${
         isEnabled && hasToken

@@ -87,10 +87,11 @@ Issues sync periodically (default: hourly) with:
 
 - **Initial sync**: Only open issues (avoids old closed issues)
 - **Ongoing syncs**: Issues updated since sync enabled (max lookback prevents syncing ancient history)
+- **Context assignment**: Each repository becomes its own context (e.g., `elastic/kibana`, `walterra/d3-milestones`)
 - Deduplication via external ID tracking
 - Automatic completion when issues are closed
 - Update detection for title and description changes
-- Customizable context and tag assignment
+- Customizable tag assignment
 
 ### MCP Server
 

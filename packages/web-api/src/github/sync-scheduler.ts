@@ -118,7 +118,6 @@ export class GithubSyncScheduler {
     database_name: string;
     preferences?: {
       githubToken?: string | null;
-      githubSyncContext?: string;
       githubSyncTags?: string[];
       githubLastSync?: string;
       githubSyncStartedAt?: string;
@@ -152,9 +151,7 @@ export class GithubSyncScheduler {
         since: isInitialSync ? undefined : syncStartedAt,
       });
 
-      const context = user.preferences?.githubSyncContext || 'work';
       const tags = user.preferences?.githubSyncTags || ['github'];
-
       const db = this.getUserDb(user.database_name);
 
       // Process each issue
@@ -163,6 +160,10 @@ export class GithubSyncScheduler {
       let completed = 0;
 
       for (const issue of issues) {
+        // Use full repository path as context
+        // e.g., "walterra/d3-milestones", "elastic/kibana"
+        const context = issue.repository.full_name;
+
         const result = await this.processIssue(db, issue, context, tags, githubClient);
         if (result === 'created') created++;
         else if (result === 'updated') updated++;

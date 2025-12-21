@@ -157,10 +157,10 @@ interface TodoAlpha3 {
   - `githubSync`: boolean - enable/disable
   - `githubToken`: string - PAT with `repo` or `public_repo` scope
   - `githubSyncInterval`: number - minutes between syncs
-  - `githubSyncContext`: string - context for synced todos
   - `githubSyncTags`: string[] - tags to add to synced todos
   - `githubLastSync`: string - ISO timestamp of last sync
   - `githubSyncStartedAt`: string - ISO timestamp when sync enabled (max lookback)
+  - Context: Automatically set from repository full_name (e.g., "elastic/kibana", "walterra/d3-milestones")
 
 **Telegram Bot Commands**:
 

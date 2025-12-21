@@ -15,7 +15,6 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences).toHaveProperty('githubSync');
       expect(preferences).toHaveProperty('githubToken');
       expect(preferences).toHaveProperty('githubSyncInterval');
-      expect(preferences).toHaveProperty('githubSyncContext');
       expect(preferences).toHaveProperty('githubSyncTags');
       expect(preferences).toHaveProperty('githubLastSync');
       expect(preferences).toHaveProperty('githubSyncStartedAt');
@@ -27,7 +26,6 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences.githubSync).toBe(false);
       expect(preferences.githubToken).toBe(null);
       expect(preferences.githubSyncInterval).toBe(60);
-      expect(preferences.githubSyncContext).toBe('work');
       expect(preferences.githubSyncTags).toEqual(['github']);
       expect(preferences.githubLastSync).toBeUndefined();
       expect(preferences.githubSyncStartedAt).toBeUndefined();
@@ -39,7 +37,6 @@ describe('UserRegistryAlpha2', () => {
         githubSync: true,
         githubToken: 'ghp_test_token_12345',
         githubSyncInterval: 30,
-        githubSyncContext: 'private',
         githubSyncTags: ['github', 'external'],
         githubLastSync: '2025-12-21T09:00:00.000Z',
       };
@@ -47,7 +44,6 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences.githubSync).toBe(true);
       expect(preferences.githubToken).toBe('ghp_test_token_12345');
       expect(preferences.githubSyncInterval).toBe(30);
-      expect(preferences.githubSyncContext).toBe('private');
       expect(preferences.githubSyncTags).toEqual(['github', 'external']);
       expect(preferences.githubLastSync).toBe('2025-12-21T09:00:00.000Z');
     });
