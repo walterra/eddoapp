@@ -129,7 +129,7 @@ initializeDatabase().then(() => {
   const couch = nano(env.COUCHDB_URL);
 
   githubSchedulerInstance = createGithubSyncScheduler({
-    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
+    checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute (matches smallest user interval)
     logger: {
       info: (msg, meta) => console.log('[GitHub Sync]', msg, meta || ''),
       warn: (msg, meta) => console.warn('[GitHub Sync]', msg, meta || ''),

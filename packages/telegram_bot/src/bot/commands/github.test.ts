@@ -1,7 +1,7 @@
 /**
  * Tests for GitHub bot commands
  */
-import type { Env, UserRegistry } from '@eddo/core-server';
+import type { Env } from '@eddo/core-server';
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { Context } from 'grammy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -82,7 +82,9 @@ describe('GitHub Bot Commands', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(createEnv).mockReturnValue(mockEnv as Env);
-    vi.mocked(createUserRegistry).mockReturnValue(mockUserRegistry as unknown as UserRegistry);
+    vi.mocked(createUserRegistry).mockReturnValue(
+      mockUserRegistry as unknown as ReturnType<typeof createUserRegistry>,
+    );
     vi.mocked(lookupUserByTelegramId).mockResolvedValue(mockUser);
   });
 

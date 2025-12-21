@@ -9,6 +9,45 @@ import { createGithubClient } from './client.js';
 import { findTodoByExternalId, shouldSyncUser } from './sync-utils.js';
 import type { GithubIssue } from './types.js';
 
+/**
+ * Compares two todos for equality, ignoring PouchDB metadata fields
+ * Returns true if todos are meaningfully different
+ * Exported for testing
+ */
+export function hasTodoChanged(
+  existing: TodoAlpha3,
+  updated: Partial<TodoAlpha3> & { _id: string; _rev: string },
+): boolean {
+  // Compare all content fields (ignore _id and _rev)
+  const fieldsToCompare: (keyof TodoAlpha3)[] = [
+    'title',
+    'description',
+    'context',
+    'due',
+    'tags',
+    'active',
+    'completed',
+    'repeat',
+    'link',
+  ];
+
+  for (const field of fieldsToCompare) {
+    const existingValue = existing[field];
+    const updatedValue = updated[field];
+
+    // Deep comparison for objects and arrays
+    if (field === 'tags' || field === 'active') {
+      if (JSON.stringify(existingValue) !== JSON.stringify(updatedValue)) {
+        return true;
+      }
+    } else if (existingValue !== updatedValue) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 interface GithubSyncSchedulerConfig {
   checkIntervalMs: number; // How often to check for users needing sync
   logger: {
@@ -243,36 +282,47 @@ export class GithubSyncScheduler {
     // Force resync: Recreate todo using mapIssueToTodo but preserve user edits
     if (forceResync) {
       const freshTodo = githubClient.mapIssueToTodo(issue, context, tags);
-      await db.insert({
+      const updatedTodo = {
         ...freshTodo,
         _id: existingTodo._id,
         _rev: existingTodo._rev,
         active: existingTodo.active, // Preserve time tracking
         repeat: existingTodo.repeat, // Preserve repeat settings
         completed: existingTodo.completed || freshTodo.completed, // Preserve completion status
-      } as TodoAlpha3);
-      return 'updated';
+      } as TodoAlpha3;
+
+      // Only update if something actually changed
+      if (hasTodoChanged(existingTodo, updatedTodo)) {
+        await db.insert(updatedTodo);
+        return 'updated';
+      }
+      return 'unchanged';
     }
 
     // Check if issue was closed
     if (issue.state === 'closed' && !existingTodo.completed) {
-      await db.insert({
+      const updatedTodo = {
         ...existingTodo,
         completed: issue.closed_at || new Date().toISOString(),
-      });
-      return 'completed';
+      };
+
+      // Only update if completion status changed (should always be true here, but double-check)
+      if (hasTodoChanged(existingTodo, updatedTodo)) {
+        await db.insert(updatedTodo);
+        return 'completed';
+      }
     }
 
     // Check if issue needs update (title or description changed)
-    const needsUpdate =
-      existingTodo.title !== issue.title || existingTodo.description !== (issue.body || '');
+    const updatedTodo = {
+      ...existingTodo,
+      title: issue.title,
+      description: issue.body || '',
+    };
 
-    if (needsUpdate) {
-      await db.insert({
-        ...existingTodo,
-        title: issue.title,
-        description: issue.body || '',
-      });
+    // Only update if something actually changed
+    if (hasTodoChanged(existingTodo, updatedTodo)) {
+      await db.insert(updatedTodo);
       return 'updated';
     }
 

@@ -63,6 +63,10 @@ const updatePreferencesSchema = z.object({
     })
     .optional(),
   currentDate: z.string().optional(),
+  githubSync: z.boolean().optional(),
+  githubToken: z.string().nullable().optional(),
+  githubSyncInterval: z.number().int().positive().optional(),
+  githubSyncTags: z.array(z.string()).optional(),
 });
 
 interface JwtTokenPayload {

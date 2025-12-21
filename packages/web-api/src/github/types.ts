@@ -26,14 +26,18 @@ export interface GithubIssue {
   user: {
     login: string;
   };
+  pull_request?: {
+    // Present if this is a pull request (Search API returns both issues and PRs)
+    url: string;
+  };
 }
 
 export interface GithubIssueListParams {
   state?: 'open' | 'closed' | 'all';
-  filter?: 'assigned' | 'created' | 'mentioned' | 'subscribed' | 'all';
+  filter?: 'assigned' | 'created' | 'mentioned' | 'subscribed' | 'all'; // Deprecated: Using Search API now (always assignee:@me)
   sort?: 'created' | 'updated' | 'comments';
   direction?: 'asc' | 'desc';
-  since?: string; // ISO 8601 timestamp
+  since?: string; // ISO 8601 timestamp (YYYY-MM-DDTHH:MM:SSZ)
   per_page?: number;
   page?: number;
 }
