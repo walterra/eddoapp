@@ -535,7 +535,7 @@ export const TodoTable: FC<TodoTableProps> = ({
                 <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                   {contextTodos.map((todo) => (
                     <TodoRow
-                      activeDate={format(new Date(todo.due), 'yyyy-MM-dd')}
+                      activeDate={format(currentDate, 'yyyy-MM-dd')}
                       key={`${todo._id}-${refreshKey}`}
                       onUpdate={handleUpdate}
                       selectedColumns={selectedColumns}
