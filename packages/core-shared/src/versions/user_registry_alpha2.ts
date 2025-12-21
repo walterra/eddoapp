@@ -26,7 +26,7 @@ export interface UserPreferences {
   githubSync?: boolean; // Enable/disable GitHub issue sync
   githubToken?: string | null; // GitHub Personal Access Token (encrypted in production)
   githubSyncInterval?: number; // Minutes between syncs, defaults to 60
-  githubSyncTags?: string[]; // Tags to add to synced issues, defaults to ["github"]
+  githubSyncTags?: string[]; // Tags to add to synced issues, defaults to ["github", "gtd:next"]
   githubLastSync?: string; // ISO timestamp of last successful sync
   githubSyncStartedAt?: string; // ISO timestamp when sync was first enabled (max lookback)
 }
@@ -64,7 +64,7 @@ export function createDefaultUserPreferences(): UserPreferences {
     githubSync: false,
     githubToken: null,
     githubSyncInterval: 60,
-    githubSyncTags: ['github'],
+    githubSyncTags: ['github', 'gtd:next'],
     githubLastSync: undefined,
     githubSyncStartedAt: undefined,
   };

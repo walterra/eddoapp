@@ -173,7 +173,7 @@ async function enableGithubSync(ctx: Context, user: TelegramUser): Promise<void>
     await ctx.reply(
       '✅ **GitHub sync enabled!**\n\n' +
         `⏱ Sync interval: Every ${syncInterval} minutes\n` +
-        `🏷 Tags: ${(user.preferences?.githubSyncTags || ['github']).join(', ')}\n` +
+        `🏷 Tags: ${(user.preferences?.githubSyncTags || ['github', 'gtd:next']).join(', ')}\n` +
         `📁 Context: Uses full repository path (e.g., "elastic/kibana")\n\n` +
         '**What gets synced:**\n' +
         '• All your GitHub issues (assigned, created, mentioned)\n' +
@@ -331,7 +331,7 @@ async function showGithubStatus(ctx: Context, user: TelegramUser): Promise<void>
   const hasToken = Boolean(user.preferences?.githubToken);
   const token = user.preferences?.githubToken;
   const syncInterval = user.preferences?.githubSyncInterval || 60;
-  const tags = user.preferences?.githubSyncTags || ['github'];
+  const tags = user.preferences?.githubSyncTags || ['github', 'gtd:next'];
   const lastSync = user.preferences?.githubLastSync;
 
   const statusEmoji = isEnabled ? '✅' : '❌';

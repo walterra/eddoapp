@@ -26,7 +26,7 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences.githubSync).toBe(false);
       expect(preferences.githubToken).toBe(null);
       expect(preferences.githubSyncInterval).toBe(60);
-      expect(preferences.githubSyncTags).toEqual(['github']);
+      expect(preferences.githubSyncTags).toEqual(['github', 'gtd:next']);
       expect(preferences.githubLastSync).toBeUndefined();
       expect(preferences.githubSyncStartedAt).toBeUndefined();
     });

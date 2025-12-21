@@ -174,7 +174,7 @@ export class GithubSyncScheduler {
         since: isInitialSync ? undefined : syncStartedAt,
       });
 
-      const tags = user.preferences?.githubSyncTags || ['github'];
+      const tags = user.preferences?.githubSyncTags || ['github', 'gtd:next'];
       const db = this.getUserDb(user.database_name);
 
       // Process each issue

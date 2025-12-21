@@ -66,7 +66,7 @@ describe('GitHub Bot Commands', () => {
       githubSync: false,
       githubToken: null,
       githubSyncInterval: 60,
-      githubSyncTags: ['github'],
+      githubSyncTags: ['github', 'gtd:next'],
       githubLastSync: undefined,
       githubSyncStartedAt: undefined,
     },

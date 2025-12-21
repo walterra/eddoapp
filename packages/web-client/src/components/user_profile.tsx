@@ -50,7 +50,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [githubSync, setGithubSync] = useState(false);
   const [githubToken, setGithubToken] = useState('');
   const [githubSyncInterval, setGithubSyncInterval] = useState(60);
-  const [githubSyncTags, setGithubSyncTags] = useState('github');
+  const [githubSyncTags, setGithubSyncTags] = useState('github, gtd:next');
   const [isResyncing, setIsResyncing] = useState(false);
 
   // Initialize form when profile loads
@@ -67,7 +67,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
         setGithubSync(profile.preferences.githubSync || false);
         setGithubToken(profile.preferences.githubToken || '');
         setGithubSyncInterval(profile.preferences.githubSyncInterval || 60);
-        setGithubSyncTags(profile.preferences.githubSyncTags?.join(', ') || 'github');
+        setGithubSyncTags(profile.preferences.githubSyncTags?.join(', ') || 'github, gtd:next');
       }
     }
   }, [profile]);
@@ -740,7 +740,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         disabled={!githubSync || isLoading}
                         id="githubSyncTags"
                         onChange={(e) => setGithubSyncTags(e.target.value)}
-                        placeholder="github, issue"
+                        placeholder="github, gtd:next"
                         type="text"
                         value={githubSyncTags}
                       />
