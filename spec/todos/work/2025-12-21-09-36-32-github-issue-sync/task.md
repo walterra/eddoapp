@@ -3,6 +3,7 @@
 **Status:** In Progress
 **Created:** 2025-12-21-09-36-32
 **Started:** 2025-12-21-09-57-48
+**Current Phase:** Phase 7 - Web UI Integration
 **Agent PID:** 98482
 
 ## Description
@@ -108,21 +109,30 @@ One-way periodic sync of a user's GitHub issues into Eddo as todos, tracked via 
 
 ### Phase 7: Web UI Integration (packages/web-client/src/components)
 
-- [ ] Add GitHub sync section to user_profile.tsx integrations tab
+- [x] Add GitHub sync section to user_profile.tsx integrations tab
   - Enable/disable toggle for githubSync
   - GitHub token input field (password type, masked display)
-  - Sync interval dropdown (15/30/60/120 minutes)
-  - Context selector for synced todos
-  - Tags input for synced todos
-  - Last sync timestamp display
-  - Manual sync trigger button
-- [ ] Update use_profile.ts hook to handle GitHub preferences
-- [ ] Add token validation on client side
-- [ ] Show sync status indicator (last sync, next sync)
-- [ ] Display warning when token is invalid/expired
+  - Sync interval dropdown (1/5/15/30/60/120/240 minutes)
+  - Tags input for synced todos (comma-separated)
+  - Last sync timestamp display (when available)
+  - Save button for GitHub settings
+  - Force Resync button (re-fetches all issues without deleting existing todos)
+- [x] Update use_profile.ts hook to handle GitHub preferences
+- [x] Add token validation on client side (format check for ghp*/github_pat* prefix)
+- [x] Show sync status indicator (last sync timestamp when available)
+- [x] Add Force Resync functionality
+  - API endpoint: POST /api/users/github-resync
+  - Re-runs sync as if first time (fetches all issues)
+  - Does NOT delete existing todos (only creates/updates)
+  - Confirmation dialog before executing
+  - Requires GitHub sync to be enabled
+- [x] Use GitHub issue created_at as initial due date
+  - User can edit due date freely after initial sync
+  - Subsequent syncs preserve user's edited due date (only updates title/description)
 - [ ] Automated test: Verify preference updates via profile UI
-- [ ] User test: Configure GitHub sync via web UI
+- [x] User test: Configure GitHub sync via web UI
 - [ ] User test: Verify preferences sync between web UI and Telegram bot
+- [x] User test: Test Force Resync button - Successfully populated due dates for 786 GitHub issues
 
 ## Review
 
@@ -163,6 +173,51 @@ One-way periodic sync of a user's GitHub issues into Eddo as todos, tracked via 
 - Improved maintainability: utility functions are independently testable
 
 ### Bugs Fixed
+
+**Due Date Implementation**:
+
+- Changed GitHub issue `due` field from empty string to `issue.created_at`
+- Rationale: Users can see when issues were created, can edit due dates as needed
+- On subsequent syncs, user-edited due dates are preserved (only title/description updated)
+- File: `packages/web-api/src/github/client.ts:38`
+
+**Force Resync Implementation**:
+
+- Added public method `syncUser(userId, forceResync)` to GithubSyncScheduler
+- Force resync behaves like initial sync (fetches all issues, no `since` parameter)
+- Does NOT delete any existing todos - only creates new ones and updates existing
+- **Key improvement**: Force resync recreates todos using `mapIssueToTodo()` helper
+  - Gets fresh data from GitHub (title, description, due date from created_at, tags from labels)
+  - Preserves user edits: `_id`, `_rev`, `active` (time tracking), `repeat`, `completed`
+  - Pattern: `{ ...freshTodo, _id, _rev, active, repeat, completed }`
+  - Ensures due dates get populated on existing todos with empty due dates
+- API endpoint: `POST /api/users/github-resync` (requires JWT authentication)
+- UI: "Force Resync" button in GitHub integration section with confirmation dialog
+- **Tested successfully**: Force resync populated due dates for 786 existing GitHub issues
+- Files modified:
+  - `packages/web-api/src/github/sync-scheduler.ts` - Added public syncUser method and force resync logic
+  - `packages/web-api/src/index.ts` - Exported getGithubScheduler() function
+  - `packages/web-api/src/routes/users.ts` - Added /github-resync endpoint
+  - `packages/web-client/src/components/user_profile.tsx` - Added Force Resync button and handler
+
+**Phase 7: Web UI Implementation**:
+
+- Added GitHub Integration section to Integrations tab in user profile
+- Includes:
+  - Enable/disable toggle for GitHub sync
+  - Password-masked token input field with link to GitHub token creation page
+  - Sync interval dropdown (1min, 5min, 15min, 30min, 1hr, 2hr, 4hr)
+  - Tags input for labeling synced todos (comma-separated)
+  - Last sync timestamp display (when available)
+  - Save button for GitHub settings
+  - Explanatory text: "Each repository becomes its own context (e.g., 'walterra/eddoapp')"
+- Client-side token validation (checks for ghp* or github_pat* prefix)
+- State management integrated with existing profile hook
+- Auto-initializes from user preferences on load
+- **Correction**: Removed `githubSyncContext` field - context is automatically set to repository full name (e.g., "elastic/kibana")
+- Files modified:
+  - `packages/web-client/src/components/user_profile.tsx` - Added GitHub UI section
+  - `packages/web-client/src/hooks/use_profile.ts` - Extended type definitions
 
 **User Cache Stale Data Bug**:
 

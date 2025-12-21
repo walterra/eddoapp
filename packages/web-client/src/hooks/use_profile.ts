@@ -21,6 +21,12 @@ interface UserPreferences {
     endDate?: string;
   };
   currentDate?: string;
+  githubSync?: boolean;
+  githubToken?: string | null;
+  githubSyncInterval?: number;
+  githubSyncTags?: string[];
+  githubLastSync?: string;
+  githubSyncStartedAt?: string;
 }
 
 interface UserProfile {
@@ -65,6 +71,10 @@ interface UpdatePreferencesData {
     endDate?: string;
   };
   currentDate?: string;
+  githubSync?: boolean;
+  githubToken?: string | null;
+  githubSyncInterval?: number;
+  githubSyncTags?: string[];
 }
 
 export const useProfile = () => {

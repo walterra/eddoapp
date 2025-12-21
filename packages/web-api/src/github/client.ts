@@ -39,7 +39,7 @@ export function mapIssueToTodo(
     completed: issue.state === 'closed' && issue.closed_at ? issue.closed_at : null,
     context,
     description: issue.body || '',
-    due: '', // GitHub issues don't have due dates
+    due: issue.created_at, // Use GitHub issue creation date as initial due date
     externalId: generateExternalId(issue),
     link: issue.html_url,
     repeat: null,

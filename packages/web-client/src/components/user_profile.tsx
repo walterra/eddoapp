@@ -1,6 +1,7 @@
 import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 
+import { useAuth } from '../hooks/use_auth';
 import { useProfile } from '../hooks/use_profile';
 import { ToggleSwitch } from './toggle_switch';
 
@@ -20,6 +21,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
     updatePreferences,
     clearError,
   } = useProfile();
+
+  const { authToken } = useAuth();
 
   const [activeTab, setActiveTab] = useState<
     'profile' | 'security' | 'integrations' | 'preferences'
@@ -43,6 +46,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [recapTime, setRecapTime] = useState('18:00');
   const [printRecap, setPrintRecap] = useState(false);
 
+  // GitHub integration states
+  const [githubSync, setGithubSync] = useState(false);
+  const [githubToken, setGithubToken] = useState('');
+  const [githubSyncInterval, setGithubSyncInterval] = useState(60);
+  const [githubSyncTags, setGithubSyncTags] = useState('github');
+  const [isResyncing, setIsResyncing] = useState(false);
+
   // Initialize form when profile loads
   useEffect(() => {
     if (profile) {
@@ -54,6 +64,10 @@ export function UserProfile({ onClose }: UserProfileProps) {
         setDailyRecap(profile.preferences.dailyRecap || false);
         setRecapTime(profile.preferences.recapTime || '18:00');
         setPrintRecap(profile.preferences.printRecap || false);
+        setGithubSync(profile.preferences.githubSync || false);
+        setGithubToken(profile.preferences.githubToken || '');
+        setGithubSyncInterval(profile.preferences.githubSyncInterval || 60);
+        setGithubSyncTags(profile.preferences.githubSyncTags?.join(', ') || 'github');
       }
     }
   }, [profile]);
@@ -225,6 +239,71 @@ export function UserProfile({ onClose }: UserProfileProps) {
       setSuccess('Preferences updated successfully');
     } else {
       setFormError(result.error || 'Failed to update preferences');
+    }
+  };
+
+  const handleUpdateGithubPreferences = async () => {
+    setFormError('');
+    setSuccess(null);
+
+    // Validate GitHub token format if provided
+    if (githubToken && !githubToken.match(/^(ghp_|github_pat_)/)) {
+      setFormError('Invalid GitHub token format. Token should start with ghp_ or github_pat_');
+      return;
+    }
+
+    const result = await updatePreferences({
+      githubSync,
+      githubToken: githubToken || null,
+      githubSyncInterval,
+      githubSyncTags: githubSyncTags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    });
+
+    if (result.success) {
+      setSuccess('GitHub sync settings updated successfully');
+    } else {
+      setFormError(result.error || 'Failed to update GitHub sync settings');
+    }
+  };
+
+  const handleForceResync = async () => {
+    if (!authToken?.token) {
+      setFormError('Not authenticated');
+      return;
+    }
+
+    if (
+      !confirm('Force resync will re-fetch all GitHub issues. This may take a while. Continue?')
+    ) {
+      return;
+    }
+
+    setFormError('');
+    setSuccess(null);
+    setIsResyncing(true);
+
+    try {
+      const response = await fetch('/api/users/github-resync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken.token}`,
+        },
+      });
+
+      if (response.ok) {
+        setSuccess('GitHub resync completed successfully! Refresh the page to see updates.');
+      } else {
+        const errorData = await response.json();
+        setFormError(errorData.error || 'Failed to resync GitHub issues');
+      }
+    } catch (_error) {
+      setFormError('Network error occurred during resync');
+    } finally {
+      setIsResyncing(false);
     }
   };
 
@@ -583,6 +662,116 @@ export function UserProfile({ onClose }: UserProfileProps) {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* GitHub Integration */}
+                <div className="rounded-lg border p-4">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-medium text-gray-900">GitHub Issue Sync</h3>
+                      <p className="text-sm text-gray-600">
+                        Automatically sync your GitHub issues as todos. Issues are synced
+                        periodically and assigned to a context.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Enable GitHub Sync</Label>
+                        <p className="text-xs text-gray-500">Sync GitHub issues to todos</p>
+                      </div>
+                      <ToggleSwitch
+                        checked={githubSync}
+                        disabled={isLoading}
+                        onChange={setGithubSync}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="githubToken">GitHub Personal Access Token</Label>
+                      <TextInput
+                        disabled={isLoading}
+                        id="githubToken"
+                        onChange={(e) => setGithubToken(e.target.value)}
+                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        type="password"
+                        value={githubToken}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Required for syncing private repositories. Token needs <code>repo</code>{' '}
+                        scope.{' '}
+                        <a
+                          className="text-blue-600 hover:underline"
+                          href="https://github.com/settings/tokens/new"
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          Create token
+                        </a>
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="githubSyncInterval">Sync Interval</Label>
+                      <select
+                        className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                        disabled={!githubSync || isLoading}
+                        id="githubSyncInterval"
+                        onChange={(e) => setGithubSyncInterval(Number(e.target.value))}
+                        value={githubSyncInterval}
+                      >
+                        <option value={1}>1 minute</option>
+                        <option value={5}>5 minutes</option>
+                        <option value={15}>15 minutes</option>
+                        <option value={30}>30 minutes</option>
+                        <option value={60}>1 hour</option>
+                        <option value={120}>2 hours</option>
+                        <option value={240}>4 hours</option>
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        How often to check for new/updated GitHub issues. Each repository becomes
+                        its own context (e.g., &quot;walterra/eddoapp&quot;).
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="githubSyncTags">Tags</Label>
+                      <TextInput
+                        disabled={!githubSync || isLoading}
+                        id="githubSyncTags"
+                        onChange={(e) => setGithubSyncTags(e.target.value)}
+                        placeholder="github, issue"
+                        type="text"
+                        value={githubSyncTags}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Comma-separated tags to add to synced todos
+                      </p>
+                    </div>
+
+                    {profile.preferences?.githubLastSync && (
+                      <div className="text-sm text-gray-600">
+                        <strong>Last sync:</strong> {formatDate(profile.preferences.githubLastSync)}
+                      </div>
+                    )}
+
+                    <div className="flex justify-between gap-4 border-t pt-4">
+                      <Button
+                        color="gray"
+                        disabled={isResyncing || !githubSync}
+                        onClick={handleForceResync}
+                      >
+                        {isResyncing ? 'Resyncing...' : 'Force Resync'}
+                      </Button>
+                      <Button
+                        color="blue"
+                        disabled={isLoading}
+                        onClick={handleUpdateGithubPreferences}
+                      >
+                        {isLoading ? 'Saving...' : 'Save GitHub Settings'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

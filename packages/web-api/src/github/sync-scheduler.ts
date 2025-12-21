@@ -112,17 +112,40 @@ export class GithubSyncScheduler {
   /**
    * Sync GitHub issues for a specific user
    */
-  private async syncUserIssues(user: {
-    _id: string;
-    username: string;
-    database_name: string;
-    preferences?: {
-      githubToken?: string | null;
-      githubSyncTags?: string[];
-      githubLastSync?: string;
-      githubSyncStartedAt?: string;
-    };
-  }): Promise<void> {
+  /**
+   * Sync GitHub issues for a specific user (public method for manual trigger)
+   */
+  public async syncUser(userId: string, forceResync = false): Promise<void> {
+    const env = createEnv();
+    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+    const users = await userRegistry.list();
+    const user = users.find((u) => u._id === userId);
+
+    if (!user) {
+      throw new Error(`User not found: ${userId}`);
+    }
+
+    if (!user.preferences?.githubSync) {
+      throw new Error('GitHub sync not enabled for user');
+    }
+
+    await this.syncUserIssues(user, forceResync);
+  }
+
+  private async syncUserIssues(
+    user: {
+      _id: string;
+      username: string;
+      database_name: string;
+      preferences?: {
+        githubToken?: string | null;
+        githubSyncTags?: string[];
+        githubLastSync?: string;
+        githubSyncStartedAt?: string;
+      };
+    },
+    forceResync = false,
+  ): Promise<void> {
     const token = user.preferences?.githubToken;
     if (!token) {
       this.logger.warn('User has GitHub sync enabled but no token', {
@@ -131,7 +154,7 @@ export class GithubSyncScheduler {
       return;
     }
 
-    const isInitialSync = !user.preferences?.githubLastSync;
+    const isInitialSync = forceResync || !user.preferences?.githubLastSync;
 
     this.logger.info('Starting GitHub sync for user', {
       userId: user._id,
@@ -164,7 +187,7 @@ export class GithubSyncScheduler {
         // e.g., "walterra/d3-milestones", "elastic/kibana"
         const context = issue.repository.full_name;
 
-        const result = await this.processIssue(db, issue, context, tags, githubClient);
+        const result = await this.processIssue(db, issue, context, tags, githubClient, forceResync);
         if (result === 'created') created++;
         else if (result === 'updated') updated++;
         else if (result === 'completed') completed++;
@@ -203,6 +226,7 @@ export class GithubSyncScheduler {
     context: string,
     tags: string[],
     githubClient: ReturnType<typeof createGithubClient>,
+    forceResync = false,
   ): Promise<'created' | 'updated' | 'completed' | 'unchanged'> {
     const externalId = githubClient.generateExternalId(issue);
 
@@ -214,6 +238,20 @@ export class GithubSyncScheduler {
       const newTodo = githubClient.mapIssueToTodo(issue, context, tags);
       await db.insert(newTodo as TodoAlpha3);
       return 'created';
+    }
+
+    // Force resync: Recreate todo using mapIssueToTodo but preserve user edits
+    if (forceResync) {
+      const freshTodo = githubClient.mapIssueToTodo(issue, context, tags);
+      await db.insert({
+        ...freshTodo,
+        _id: existingTodo._id,
+        _rev: existingTodo._rev,
+        active: existingTodo.active, // Preserve time tracking
+        repeat: existingTodo.repeat, // Preserve repeat settings
+        completed: existingTodo.completed || freshTodo.completed, // Preserve completion status
+      } as TodoAlpha3);
+      return 'updated';
     }
 
     // Check if issue was closed

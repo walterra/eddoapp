@@ -92,6 +92,17 @@ if (!isDevelopment) {
 const port = config.port;
 console.log(`Server starting on port ${port}`);
 
+// GitHub sync scheduler instance (initialized after database setup)
+let githubSchedulerInstance: ReturnType<typeof createGithubSyncScheduler> | null = null;
+
+// Export getter for scheduler instance
+export function getGithubScheduler() {
+  if (!githubSchedulerInstance) {
+    throw new Error('GitHub scheduler not initialized yet');
+  }
+  return githubSchedulerInstance;
+}
+
 // Initialize database
 async function initializeDatabase() {
   try {
@@ -117,7 +128,7 @@ initializeDatabase().then(() => {
   const env = createEnv();
   const couch = nano(env.COUCHDB_URL);
 
-  const githubScheduler = createGithubSyncScheduler({
+  githubSchedulerInstance = createGithubSyncScheduler({
     checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
     logger: {
       info: (msg, meta) => console.log('[GitHub Sync]', msg, meta || ''),
@@ -129,7 +140,7 @@ initializeDatabase().then(() => {
   });
 
   // Start GitHub sync scheduler
-  githubScheduler.start();
+  githubSchedulerInstance.start();
   console.log('✅ GitHub sync scheduler started');
 
   // Start server with graceful shutdown
@@ -145,8 +156,10 @@ initializeDatabase().then(() => {
     console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
 
     // Stop GitHub sync scheduler
-    githubScheduler.stop();
-    console.log('✅ GitHub sync scheduler stopped');
+    if (githubSchedulerInstance) {
+      githubSchedulerInstance.stop();
+      console.log('✅ GitHub sync scheduler stopped');
+    }
 
     // Close the server
     server.close(() => {
