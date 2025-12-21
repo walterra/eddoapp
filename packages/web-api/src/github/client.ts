@@ -132,7 +132,7 @@ export function createGithubClient(
      */
     async fetchUserIssues(params: GithubIssueListParams = {}): Promise<GithubIssue[]> {
       const defaultParams: GithubIssueListParams = {
-        filter: 'all',
+        filter: 'assigned',
         state: 'all',
         sort: 'updated',
         direction: 'desc',

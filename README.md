@@ -19,7 +19,7 @@ The app is inspired by an offline/notebook based approach that has been refined 
 - **Time Tracking**: Start/pause timers for individual todos with daily summaries
 - **Offline-First**: PouchDB provides local storage with real-time sync capabilities
 - **AI Integration**: Telegram bot with Claude AI for natural language todo management
-- **GitHub Issue Sync**: Automatic one-way sync of GitHub issues to todos with deduplication
+- **GitHub Issue Sync**: Automatic one-way sync of GitHub issues assigned to you to todos with deduplication
 - **MCP Server**: Programmatic access via Model Context Protocol
 - **Data Migration**: Automatic schema versioning and migration system
 
@@ -75,7 +75,7 @@ Set `TELEGRAM_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables to get st
 
 #### GitHub Issue Sync
 
-Automatically sync your GitHub issues to Eddo todos:
+Automatically sync GitHub issues **assigned to you** to Eddo todos:
 
 1. **Create a GitHub Personal Access Token** at https://github.com/settings/tokens
    - Select scope: `repo` (for private repos) or `public_repo`

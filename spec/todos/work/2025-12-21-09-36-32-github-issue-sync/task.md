@@ -181,6 +181,30 @@ One-way periodic sync of a user's GitHub issues into Eddo as todos, tracked via 
 - On subsequent syncs, user-edited due dates are preserved (only title/description updated)
 - File: `packages/web-api/src/github/client.ts:38`
 
+**Default Tags Implementation**:
+
+- Changed default `githubSyncTags` from `['github']` to `['github', 'gtd:next']`
+- Rationale: New synced issues automatically tagged for GTD next actions workflow
+- Users can customize tags via Web UI or Telegram bot preferences
+- Files updated:
+  - `packages/core-shared/src/versions/user_registry_alpha2.ts` - Default preference
+  - `packages/web-api/src/github/sync-scheduler.ts` - Sync logic fallback
+  - `packages/telegram_bot/src/bot/commands/github.ts` - Telegram bot display and fallback
+  - `packages/web-client/src/components/user_profile.tsx` - UI defaults and placeholder
+  - Tests updated to match new default
+
+**Issue Filter Implementation**:
+
+- Changed GitHub API `filter` parameter from `'all'` to `'assigned'`
+- Rationale: Sync only issues assigned to user, not created/mentioned/subscribed
+- GitHub API filter options:
+  - `assigned` - Issues assigned to authenticated user ✅ (now using this)
+  - `created` - Issues created by authenticated user
+  - `mentioned` - Issues mentioning authenticated user
+  - `subscribed` - Issues user is subscribed to
+  - `all` - All of the above
+- File: `packages/web-api/src/github/client.ts:136`
+
 **Force Resync Implementation**:
 
 - Added public method `syncUser(userId, forceResync)` to GithubSyncScheduler

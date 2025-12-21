@@ -69,7 +69,7 @@ describe('GitHub Client', () => {
       expect(todo.completed).toBe(null);
       expect(todo.version).toBe('alpha3');
       expect(todo.active).toEqual({});
-      expect(todo.due).toBe('');
+      expect(todo.due).toBe('2025-12-20T10:00:00Z');
       expect(todo.repeat).toBe(null);
     });
 
