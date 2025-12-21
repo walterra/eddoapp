@@ -203,7 +203,7 @@ const TodoRow: FC<TodoRowProps> = ({
           <td
             className={`${baseClass} text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
           >
-            {format(new Date(todo.due), 'yyyy-MM-dd')}
+            {todo.due.split('T')[0]}
           </td>
         );
       case 'tags':

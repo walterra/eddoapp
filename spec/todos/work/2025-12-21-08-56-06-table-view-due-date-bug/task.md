@@ -43,6 +43,10 @@ Example from screenshot:
   - Change FROM: `activeDate={format(new Date(todo.due), 'yyyy-MM-dd')}`
   - Change TO: `activeDate={format(currentDate, 'yyyy-MM-dd')}`
   - This mirrors todo_board.tsx behavior (line 427: uses displayDate from grouping)
+- [x] Fix due date display to use brittle parsing (packages/web-client/src/components/todo_table.tsx:206)
+  - Change FROM: `{format(new Date(todo.due), 'yyyy-MM-dd')}`
+  - Change TO: `{todo.due.split('T')[0]}`
+  - Matches todo_board.tsx pattern (line 312: uses .split('T')[0])
 - [x] Run lint/format: `pnpm lint && pnpm format`
 - [x] Run tests: `pnpm vitest:run packages/web-client/src/components/todo_table.test.tsx`
 - [ ] User test: View Day mode, start time tracking on a todo, verify:
@@ -75,7 +79,16 @@ Example from screenshot:
 
 **Implementation completed:**
 
-- Changed line 538: `activeDate={format(currentDate, 'yyyy-MM-dd')}`
+- Changed line 538: `activeDate={format(currentDate, 'yyyy-MM-dd')}` (TIME TRACKED fix)
+- Changed line 206: `{todo.due.split('T')[0]}` (DUE DATE display fix)
+- Both changes match todo_board.tsx patterns (brittle parsing for consistency)
 - Lint passed (only pre-existing warnings)
 - Format passed (all files unchanged)
 - All 9 tests passed in todo_table.test.tsx
+
+**User validation:**
+
+- First screenshot: TIME TRACKED showed "-" (bug)
+- Second screenshot: TIME TRACKED shows "5s" (fixed ✅)
+- Second screenshot revealed DUE DATE showing "2025-12-22" instead of "2025-12-21"
+- Applied second fix using `.split('T')[0]` pattern from board
