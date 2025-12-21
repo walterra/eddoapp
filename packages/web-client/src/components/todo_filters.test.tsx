@@ -129,5 +129,23 @@ describe('TodoFilters Component', () => {
         expect(setCurrentDate).toHaveBeenCalledTimes(1);
       }
     });
+
+    it('should reset to current date when clicking period label', async () => {
+      const user = userEvent.setup();
+      const setCurrentDate = vi.fn();
+      const pastDate = new Date('2024-01-15T10:00:00.000Z');
+      const props = { ...defaultProps, currentDate: pastDate, setCurrentDate };
+
+      renderWithPouchDb(<TodoFilters {...props} />, { testDb: testDb.contextValue });
+
+      const periodLabel = screen.getByTitle('Return to current period');
+      await user.click(periodLabel);
+
+      expect(setCurrentDate).toHaveBeenCalledTimes(1);
+      const calledDate = setCurrentDate.mock.calls[0][0];
+      expect(calledDate).toBeInstanceOf(Date);
+      // Verify it's a recent date (within 1 second of now)
+      expect(Math.abs(calledDate.getTime() - Date.now())).toBeLessThan(1000);
+    });
   });
 });

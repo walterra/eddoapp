@@ -133,6 +133,10 @@ export const TodoFilters: FC<TodoFiltersProps> = ({
     }
   }
 
+  function resetToCurrentPeriod() {
+    setCurrentDate(new Date());
+  }
+
   return (
     <div className="flex items-center space-x-3 border-b border-gray-200 bg-white pb-4 dark:border-gray-700 dark:bg-gray-800">
       <ViewModeToggle
@@ -163,7 +167,14 @@ export const TodoFilters: FC<TodoFiltersProps> = ({
           <Button className="p-0" color="gray" onClick={previousPeriodClickHandler} size="xs">
             <RiArrowLeftSLine size="2em" />
           </Button>{' '}
-          <span className="font-semibold text-gray-900 dark:text-white">{getPeriodLabel()}</span>{' '}
+          <button
+            className="cursor-pointer font-semibold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
+            onClick={resetToCurrentPeriod}
+            title="Return to current period"
+            type="button"
+          >
+            {getPeriodLabel()}
+          </button>{' '}
           <Button className="p-0" color="gray" onClick={nextPeriodClickHandler} size="xs">
             <RiArrowRightSLine size="2em" />
           </Button>
