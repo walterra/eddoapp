@@ -1,6 +1,6 @@
 # Table View Date Filtering and Time Tracking Bugs in Day Mode
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-12-21-08-56-06
 **Started:** 2025-12-21-09-00-15
 **Agent PID:** 98482
@@ -49,14 +49,26 @@ Example from screenshot:
   - Matches todo_board.tsx pattern (line 312: uses .split('T')[0])
 - [x] Run lint/format: `pnpm lint && pnpm format`
 - [x] Run tests: `pnpm vitest:run packages/web-client/src/components/todo_table.test.tsx`
-- [ ] User test: View Day mode, start time tracking on a todo, verify:
-  - TIME TRACKED column shows duration for currently viewed date
-  - Matches behavior of Kanban view
+- [x] User test: View Day mode, start time tracking on a todo, verify:
+  - TIME TRACKED column shows duration for currently viewed date ✅
+  - DUE DATE column displays correct date without timezone offset ✅
+  - Matches behavior of Kanban view ✅
 
 ## Review
 
-- [ ] Verify date boundary logic matches todo_board.tsx (should already match)
-- [ ] Document that proper timezone fix is a separate todo
+- [x] Verify date boundary logic matches todo_board.tsx
+  - Both use `add({ hours: 2 })` CEST hack consistently ✅
+  - Date ranges calculated identically in both views ✅
+- [x] Check for other date formatting issues
+  - Only remaining `format(new Date(...))` is for "completed" column with time (HH:mm) ✅
+  - This is correct - timestamps need full Date parsing for time component ✅
+- [x] Verify .split('T')[0] pattern consistency
+  - Used consistently across: todo_board.tsx, todo_table.tsx, add_todo.tsx, todo_edit_modal.tsx ✅
+  - Pattern matches source of truth (todo_board.tsx) ✅
+- [x] Edge cases considered
+  - Completed timestamp formatting: uses Date parsing (correct for HH:mm) ✅
+  - Custom date range: already uses proper string parsing without hours offset ✅
+- [x] Document that proper timezone fix is a separate todo ✅
 
 ## Notes
 
@@ -92,3 +104,12 @@ Example from screenshot:
 - Second screenshot: TIME TRACKED shows "5s" (fixed ✅)
 - Second screenshot revealed DUE DATE showing "2025-12-22" instead of "2025-12-21"
 - Applied second fix using `.split('T')[0]` pattern from board
+- **VERIFIED BY USER:** Both TIME TRACKED and DUE DATE columns now display correctly ✅
+
+**Final validation:**
+
+- All 33 test files passed (448 tests)
+- No new lint warnings introduced
+- Code formatted correctly
+- Behavior matches todo_board.tsx (source of truth)
+- Ready for completion
