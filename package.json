@@ -138,8 +138,10 @@
     "changeset": "changeset",
     "changeset:add": "changeset add",
     "changeset:status": "changeset status",
+    "changeset:aggregate": "node scripts/aggregate-changelog.js",
     "version": "node scripts/version-packages.js",
-    "version-packages": "node scripts/version-packages.js"
+    "version-packages": "node scripts/version-packages.js",
+    "publish": "echo 'No npm publish - tags and releases handled by changesets action'"
   },
   "browserslist": [
     ">0.2%",

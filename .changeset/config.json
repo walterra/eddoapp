@@ -1,8 +1,25 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
-  "changelog": "@changesets/cli/changelog",
+  "changelog": [
+    "@changesets/changelog-github",
+    {
+      "repo": "walterra/eddoapp"
+    }
+  ],
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "eddo-app",
+      "@eddo/core-client",
+      "@eddo/core-server",
+      "@eddo/core-shared",
+      "@eddo/mcp-server",
+      "@eddo/printer-service",
+      "@eddo/telegram-bot",
+      "@eddo/web-api",
+      "@eddo/web-client"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
