@@ -23,6 +23,12 @@ export interface UserPreferences {
     endDate?: string;
   }; // Filter: time range
   currentDate?: string; // Filter: current date for navigation (ISO string)
+  githubSync?: boolean; // Enable/disable GitHub issue sync
+  githubToken?: string | null; // GitHub Personal Access Token (encrypted in production)
+  githubSyncInterval?: number; // Minutes between syncs, defaults to 60
+  githubSyncContext?: string; // Context to assign synced issues, defaults to "work"
+  githubSyncTags?: string[]; // Tags to add to synced issues, defaults to ["github"]
+  githubLastSync?: string; // ISO timestamp of last successful sync
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
@@ -55,5 +61,11 @@ export function createDefaultUserPreferences(): UserPreferences {
     selectedStatus: 'all',
     selectedTimeRange: { type: 'current-week' },
     currentDate: undefined,
+    githubSync: false,
+    githubToken: null,
+    githubSyncInterval: 60,
+    githubSyncContext: 'work',
+    githubSyncTags: ['github'],
+    githubLastSync: undefined,
   };
 }
