@@ -6,6 +6,7 @@ import { createEnv, createUserRegistry, type TodoAlpha3 } from '@eddo/core-serve
 import type nano from 'nano';
 
 import { createGithubClient } from './client.js';
+import { isRateLimitError, type RateLimitError } from './rate-limit.js';
 import { findTodoByExternalId, shouldSyncUser } from './sync-utils.js';
 import type { GithubIssue } from './types.js';
 
@@ -247,6 +248,21 @@ export class GithubSyncScheduler {
         completed,
       });
     } catch (error) {
+      // Handle rate limit errors specially
+      if (isRateLimitError(error)) {
+        const rateLimitError = error as RateLimitError;
+        this.logger.warn('GitHub sync hit rate limit', {
+          userId: user._id,
+          username: user.username,
+          error: rateLimitError.message,
+          resetTime: rateLimitError.resetTime,
+          rateLimitInfo: rateLimitError.rateLimitInfo,
+        });
+
+        throw rateLimitError;
+      }
+
+      // Handle other errors
       this.logger.error('Failed to sync GitHub issues', {
         userId: user._id,
         username: user.username,

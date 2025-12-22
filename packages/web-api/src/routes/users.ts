@@ -424,6 +424,26 @@ usersApp.post('/github-resync', async (c) => {
     });
   } catch (error) {
     console.error('[GitHub Resync] Error:', error);
+
+    // Check if it's a rate limit error with additional info
+    if (error instanceof Error) {
+      const rateLimitError = error as Error & {
+        rateLimitInfo?: { resetDate: Date };
+        resetTime?: string;
+      };
+
+      if (rateLimitError.message.includes('rate limit')) {
+        return c.json(
+          {
+            error: rateLimitError.message,
+            rateLimitError: true,
+            resetTime: rateLimitError.resetTime,
+          },
+          429, // HTTP 429 Too Many Requests
+        );
+      }
+    }
+
     const errorMessage = error instanceof Error ? error.message : 'Failed to resync GitHub issues';
     return c.json({ error: errorMessage }, 500);
   }

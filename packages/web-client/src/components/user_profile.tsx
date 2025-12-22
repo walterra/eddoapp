@@ -298,7 +298,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
         setSuccess('GitHub resync completed successfully! Refresh the page to see updates.');
       } else {
         const errorData = await response.json();
-        setFormError(errorData.error || 'Failed to resync GitHub issues');
+
+        // Handle rate limit errors specially
+        if (errorData.rateLimitError && errorData.resetTime) {
+          setFormError(`${errorData.error}\n\nYou can try again ${errorData.resetTime}.`);
+        } else {
+          setFormError(errorData.error || 'Failed to resync GitHub issues');
+        }
       }
     } catch (_error) {
       setFormError('Network error occurred during resync');
