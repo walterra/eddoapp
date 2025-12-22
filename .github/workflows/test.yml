@@ -12,20 +12,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      couchdb:
-        image: couchdb:3
-        ports:
-          - 5984:5984
-        env:
-          COUCHDB_USER: admin
-          COUCHDB_PASSWORD: testpassword
-        options: >-
-          --health-cmd "curl -f http://localhost:5984/"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v5
       - name: Use Node.js 22.x
@@ -49,31 +35,16 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Wait for CouchDB
-        run: |
-          until curl -f http://admin:testpassword@localhost:5984/; do
-            echo "Waiting for CouchDB..."
-            sleep 2
-          done
-          echo "CouchDB is ready!"
-      - name: Setup test database
-        run: |
-          curl -X PUT http://admin:testpassword@localhost:5984/todos-test
-          echo "Test database created!"
       - name: TypeScript check
         run: pnpm tsc:check
       - name: Run unit tests
         run: pnpm test:unit
       - name: Run integration tests
         env:
-          COUCHDB_URL: http://admin:testpassword@localhost:5984
-          COUCHDB_TEST_URL: http://admin:testpassword@localhost:5984
           CI: true
         run: pnpm test:integration
       - name: Run e2e tests
         env:
-          COUCHDB_URL: http://admin:testpassword@localhost:5984
-          COUCHDB_TEST_URL: http://admin:testpassword@localhost:5984
           CI: true
         run: pnpm test:e2e
       - name: Lint

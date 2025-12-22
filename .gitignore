@@ -8,3 +8,4 @@ tsconfig.tsbuildinfo
 packages/telegram_bot/logs/
 logs/
 backups/
+.testcontainer-url
