@@ -21,8 +21,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       dotenv-mono:
-        specifier: github:marcocesarato/dotenv-mono#master
-        version: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/deeaf072ac33a42d136a1e4763ee36511f917314
+        specifier: ^1.5.1
+        version: 1.5.1
       events:
         specifier: ^3.3.0
         version: 3.3.0
@@ -257,8 +257,8 @@ importers:
         specifier: workspace:*
         version: link:../core-shared
       dotenv-mono:
-        specifier: github:marcocesarato/dotenv-mono#master
-        version: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/deeaf072ac33a42d136a1e4763ee36511f917314
+        specifier: ^1.5.1
+        version: 1.5.1
       nano:
         specifier: ^11.0.3
         version: 11.0.3
@@ -310,7 +310,7 @@ importers:
         specifier: workspace:*
         version: link:../core-shared
       dotenv-mono:
-        specifier: ^1.3.14
+        specifier: ^1.5.1
         version: 1.5.1
       fastmcp:
         specifier: ^3.25.4
@@ -350,7 +350,7 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       dotenv-mono:
-        specifier: ^1.3.14
+        specifier: ^1.5.1
         version: 1.5.1
       node-thermal-printer:
         specifier: ^4.4.3
@@ -396,7 +396,7 @@ importers:
         specifier: ^1.25.1
         version: 1.25.1(hono@4.10.3)(zod@3.25.76)
       dotenv-mono:
-        specifier: ^1.3.14
+        specifier: ^1.5.1
         version: 1.5.1
       fastmcp:
         specifier: ^3.25.4
@@ -3622,11 +3622,6 @@ packages:
 
   dotenv-mono@1.5.1:
     resolution: {integrity: sha512-dt7bK/WKQvL0gcdTxjI7wD4MhVR5F4bCk70XMAgnrbWN3fdhpyhWCypYbZalr/vjLURLA7Ib9/VCzazRLJnp1Q==}
-    hasBin: true
-
-  dotenv-mono@https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/deeaf072ac33a42d136a1e4763ee36511f917314:
-    resolution: {tarball: https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/deeaf072ac33a42d136a1e4763ee36511f917314}
-    version: 1.5.1
     hasBin: true
 
   dotenv@16.6.1:
@@ -10133,13 +10128,6 @@ snapshots:
       dotenv: 16.6.1
 
   dotenv-mono@1.5.1:
-    dependencies:
-      cross-spawn: 7.0.6
-      dotenv: 17.2.2
-      dotenv-expand: 12.0.2
-      minimist: 1.2.8
-
-  dotenv-mono@https://codeload.github.com/marcocesarato/dotenv-mono/tar.gz/deeaf072ac33a42d136a1e4763ee36511f917314:
     dependencies:
       cross-spawn: 7.0.6
       dotenv: 17.2.2
