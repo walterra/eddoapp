@@ -104,4 +104,14 @@ export const REQUIRED_INDEXES: IndexDefinition[] = [
     name: 'version-context-completed-due-index',
     type: 'json',
   },
+  {
+    index: { fields: ['externalId'] },
+    name: 'externalId-index',
+    type: 'json',
+  },
+  {
+    index: { fields: ['tags'] },
+    name: 'tags-index',
+    type: 'json',
+  },
 ];

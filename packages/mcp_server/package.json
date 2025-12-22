@@ -6,6 +6,7 @@
   "main": "dist/mcp-server.js",
   "dependencies": {
     "@eddo/core-server": "workspace:*",
+    "@eddo/core-shared": "workspace:*",
     "dotenv-mono": "^1.3.14",
     "fastmcp": "^3.25.4",
     "nano": "^11.0.3",
