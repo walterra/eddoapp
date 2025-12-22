@@ -154,7 +154,19 @@
   "pnpm": {
     "overrides": {
       "jws": ">=4.0.0"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "@tailwindcss/oxide",
+      "cpu-features",
+      "dotenv-mono",
+      "esbuild",
+      "leveldown",
+      "oxc-resolver",
+      "protobufjs",
+      "ssh2",
+      "unrs-resolver"
+    ]
   },
   "private": true
 }
