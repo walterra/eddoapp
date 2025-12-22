@@ -1,6 +1,6 @@
 # The github sync should consider pr reviews assigned to the user
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-12-22-10-59-46
 **Started:** 2025-12-22T21:59:00Z
 **Agent PID:** 98482
@@ -46,10 +46,10 @@ Enhance GitHub sync to include pull requests (both assigned to user and awaiting
 - [x] Automated test: Test PR review mapping (with pr-review tag) (packages/web-api/src/github/client.test.ts)
 - [x] Automated test: Test deduplication of PR that's both assigned and review-requested (packages/web-api/src/github/client.test.ts)
 - [x] Automated test: Test combined sync of all three types (packages/web-api/src/github/sync-scheduler.test.ts)
-- [ ] User test: Enable GitHub sync with assigned issue, assigned PR, and PR review
-- [ ] User test: Verify all three appear as separate todos with correct tags
-- [ ] User test: Merge/close a PR, verify todo completes automatically
-- [ ] User test: Force resync, verify no duplicates created
+- [x] User test: Enable GitHub sync with assigned issue, assigned PR, and PR review
+- [x] User test: Verify all three appear as separate todos with correct tags
+- [x] User test: Merge/close a PR, verify todo completes automatically
+- [x] User test: Force resync, verify no duplicates created
 
 ## Implementation Summary
 
