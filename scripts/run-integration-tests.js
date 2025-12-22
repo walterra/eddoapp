@@ -15,7 +15,6 @@ async function runIntegrationTests() {
     serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
       env: {
         ...process.env,
-        COUCHDB_TEST_DB_NAME: 'todos-test',
         MCP_TEST_PORT: '3003',
         NODE_ENV: 'test',
       },

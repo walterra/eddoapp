@@ -33,8 +33,8 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
       MCP_TEST_PORT: process.env.MCP_TEST_PORT || '3003',
-      COUCHDB_TEST_DB_NAME: 'todos-test',
       // COUCHDB_URL is set by testcontainer globalSetup
+      // Tests use same DB_NAME as dev since containers are isolated
     },
 
     // Enable debugging to see what's happening

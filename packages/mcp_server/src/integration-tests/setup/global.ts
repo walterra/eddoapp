@@ -67,7 +67,6 @@ export async function setup() {
 
   // Set test environment variables
   process.env.NODE_ENV = 'test';
-  process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
   process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
   // Check if test port is available

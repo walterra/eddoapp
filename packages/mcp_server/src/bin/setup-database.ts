@@ -68,8 +68,7 @@ Commands:
 Environment Variables:
   NODE_ENV               - Environment (development/test/production)
   COUCHDB_URL           - CouchDB server URL
-  COUCHDB_DB_NAME       - Database name
-  COUCHDB_TEST_DB_NAME  - Test database name (when NODE_ENV=test)
+  COUCHDB_DB_NAME       - Database name (same for all environments with testcontainers)
         `);
         process.exit(1);
     }

@@ -54,17 +54,15 @@ export class TestMCPServerInstance {
 
       // Set test environment variables before starting
       process.env.NODE_ENV = 'test';
-      process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
 
       const env = validateEnv(process.env);
-      console.log(`📦 Using test database: ${env.COUCHDB_TEST_DB_NAME}`);
+      console.log(`📦 Using test database: ${env.COUCHDB_DB_NAME}`);
 
       // Start the MCP server using the dedicated test script
       this.serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
         env: {
           ...process.env,
           NODE_ENV: 'test',
-          COUCHDB_TEST_DB_NAME: 'todos-test',
           MCP_TEST_PORT: this.port.toString(),
         },
         stdio: ['ignore', 'pipe', 'pipe'],
