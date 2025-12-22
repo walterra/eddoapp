@@ -21,15 +21,20 @@ export async function setup() {
       '../../../../../test/global-testcontainer-setup.js'
     );
     const config = loadTestcontainerConfig();
-    if (config) {
-      console.log('🔄 GLOBAL SETUP: Loaded testcontainer config:', config.url);
-      // Give container a moment to be fully ready for connections
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } else {
-      console.warn('⚠️  GLOBAL SETUP: No testcontainer config found, using environment variables');
+    if (!config) {
+      console.error('❌ GLOBAL SETUP: Testcontainer config not found!');
+      console.error('   This means the globalSetup failed to start the CouchDB container.');
+      console.error(
+        '   Check that Docker is running and testcontainer setup completed successfully.',
+      );
+      throw new Error('Testcontainer config not found - integration tests require testcontainers');
     }
+    console.log('🔄 GLOBAL SETUP: Loaded testcontainer config:', config.url);
+    // Give container a moment to be fully ready for connections
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
-    console.warn('⚠️  GLOBAL SETUP: Failed to load testcontainer config:', error);
+    console.error('❌ GLOBAL SETUP: Failed to load testcontainer config:', error);
+    throw error;
   }
 
   // Set test environment variables
