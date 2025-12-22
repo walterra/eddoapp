@@ -110,7 +110,7 @@
     "lint": "eslint --cache ./packages ./scripts --ignore-pattern '**/dist/**'",
     "test": "pnpm test:unit",
     "test:unit": "vitest run packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
-    "test:integration": "node scripts/run-integration-tests.js",
+    "test:integration": "tsx scripts/run-integration-tests.ts",
     "test:e2e": "vitest run scripts/__tests__/e2e",
     "test:all": "npm-run-all --parallel tsc:check test:unit test:integration test:e2e lint lint:format",
     "test:mcp": "node scripts/test-mcp.js",

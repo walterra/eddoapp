@@ -1,22 +1,26 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
  * Run integration tests with proper server lifecycle management
  */
-import { spawn } from 'child_process';
+import { type ChildProcess, spawn } from 'child_process';
 import { setTimeout } from 'timers/promises';
 
-async function runIntegrationTests() {
-  let serverProcess;
+async function runIntegrationTests(): Promise<void> {
+  let serverProcess: ChildProcess | undefined;
   let testExitCode = 0;
-  let containerSetup;
+  let containerSetup: { teardown: () => Promise<void> } | undefined;
 
   try {
     // Start testcontainer first
     console.log('🐳 Starting CouchDB testcontainer...');
-    const { setupTestcontainer, teardownTestcontainer } = await import(
-      '../test/global-testcontainer-setup.js'
+    const { setupTestcontainer, teardownTestcontainer, loadTestcontainerConfig } = await import(
+      '../test/global-testcontainer-setup'
     );
     await setupTestcontainer();
+
+    // Override COUCHDB_URL with testcontainer URL to ensure complete isolation
+    loadTestcontainerConfig();
+
     containerSetup = { teardown: teardownTestcontainer };
 
     // Start the MCP server (COUCHDB_URL set by setupTestcontainer)
@@ -31,14 +35,14 @@ async function runIntegrationTests() {
     });
 
     // Pipe server output but filter out the exit error
-    serverProcess.stdout.on('data', (data) => {
+    serverProcess.stdout?.on('data', (data: Buffer) => {
       const output = data.toString();
       if (!output.includes('ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL')) {
         process.stdout.write(output);
       }
     });
 
-    serverProcess.stderr.on('data', (data) => {
+    serverProcess.stderr?.on('data', (data: Buffer) => {
       const output = data.toString();
       if (!output.includes('ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL')) {
         process.stderr.write(output);
@@ -55,7 +59,7 @@ async function runIntegrationTests() {
     });
 
     // Wait for tests to complete
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       testProcess.on('exit', (code) => {
         testExitCode = code || 0;
         resolve();
@@ -87,7 +91,7 @@ async function runIntegrationTests() {
 }
 
 // Run the tests
-runIntegrationTests().catch((error) => {
+runIntegrationTests().catch((error: Error) => {
   console.error('❌ Integration test runner failed:', error);
   process.exit(1);
 });
