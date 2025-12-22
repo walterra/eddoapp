@@ -4,6 +4,12 @@
 import type { TodoAlpha3 } from '@eddo/core-shared';
 import { Octokit } from '@octokit/rest';
 
+import {
+  createRateLimitManager,
+  type RateLimitManager,
+  type RateLimitManagerConfig,
+} from './rate-limit-manager.js';
+import { extractRateLimitHeaders, formatResetTime } from './rate-limit.js';
 import type { GithubApiError, GithubIssue, GithubIssueListParams } from './types.js';
 
 export interface GithubClientConfig {
@@ -150,11 +156,8 @@ async function fetchAllPagesForQuery(
   octokit: Octokit,
   searchQuery: string,
   params: GithubIssueListParams,
-  logger: {
-    info: (msg: string, meta?: unknown) => void;
-    warn: (msg: string, meta?: unknown) => void;
-    error: (msg: string, meta?: unknown) => void;
-  },
+  logger: RateLimitManagerConfig['logger'],
+  rateLimitManager: RateLimitManager,
 ): Promise<GithubIssue[]> {
   const allItems: GithubIssue[] = [];
   let page = 1;
@@ -174,13 +177,20 @@ async function fetchAllPagesForQuery(
         order: sortOrder,
       });
 
-      const response = await octokit.search.issuesAndPullRequests({
-        q: searchQuery,
-        sort: sortField,
-        order: sortOrder,
-        per_page: perPage,
-        page,
-      });
+      const response = await rateLimitManager.executeWithRateLimit(() =>
+        octokit.search.issuesAndPullRequests({
+          q: searchQuery,
+          sort: sortField,
+          order: sortOrder,
+          per_page: perPage,
+          page,
+        }),
+      );
+
+      // Extract and log rate limit info
+      const rateLimitInfo = extractRateLimitHeaders(
+        response.headers as Record<string, string | number | undefined>,
+      );
 
       // Transform to GithubIssue format (includes both issues and PRs)
       const items = response.data.items.map((item) => transformSearchResult(item));
@@ -189,8 +199,10 @@ async function fetchAllPagesForQuery(
         page,
         totalCount: response.data.total_count,
         itemsCount: items.length,
-        rateLimit: response.headers['x-ratelimit-remaining'],
-        rateLimitReset: response.headers['x-ratelimit-reset'],
+        rateLimit: rateLimitInfo?.remaining ?? 'unknown',
+        rateLimitReset: rateLimitInfo?.resetDate
+          ? formatResetTime(rateLimitInfo.resetDate)
+          : 'unknown',
       });
 
       if (items.length === 0) {
@@ -237,11 +249,12 @@ async function fetchAllPagesForQuery(
  */
 export function createGithubClient(
   config: GithubClientConfig,
-  logger: {
-    info: (msg: string, meta?: unknown) => void;
-    warn: (msg: string, meta?: unknown) => void;
-    error: (msg: string, meta?: unknown) => void;
-  } = console,
+  logger: RateLimitManagerConfig['logger'] = {
+    info: console.log,
+    warn: console.warn,
+    error: console.error,
+    debug: console.debug,
+  },
 ): GithubClient {
   // Mask token in logs (show first 7 and last 4 chars)
   const maskedToken = config.token
@@ -253,6 +266,15 @@ export function createGithubClient(
   const octokit = new Octokit({
     auth: config.token,
     userAgent: 'eddo-github-sync/1.0.0',
+  });
+
+  // Create rate limit manager
+  const rateLimitManager = createRateLimitManager({
+    maxRetries: 3,
+    baseDelayMs: 1000,
+    minRequestIntervalMs: 100,
+    warningThresholdPercent: 20,
+    logger,
   });
 
   return {
@@ -284,6 +306,7 @@ export function createGithubClient(
           assignedQuery,
           defaultParams,
           logger,
+          rateLimitManager,
         );
 
         // Fetch PR reviews (PRs where user is requested reviewer)
@@ -293,6 +316,7 @@ export function createGithubClient(
           reviewQuery,
           defaultParams,
           logger,
+          rateLimitManager,
         );
 
         // Mark review items with a flag so we can add 'pr-review' tag later
@@ -331,7 +355,10 @@ export function createGithubClient(
 
         return allItems;
       } catch (error) {
-        const apiError = error as GithubApiError;
+        const apiError = error as GithubApiError & {
+          rateLimitInfo?: { resetDate: Date };
+          resetTime?: string;
+        };
 
         // Handle specific error cases
         if (apiError.response?.status === 401) {
@@ -339,7 +366,19 @@ export function createGithubClient(
         } else if (apiError.response?.status === 403) {
           const rateLimitError = apiError.response.data.message.includes('rate limit');
           if (rateLimitError) {
-            throw new Error('GitHub API rate limit exceeded. Please try again later.');
+            // Get reset time from rate limit manager or error
+            const lastRateLimitInfo = rateLimitManager.getLastRateLimitInfo();
+            const resetTime =
+              apiError.resetTime ||
+              (lastRateLimitInfo ? formatResetTime(lastRateLimitInfo.resetDate) : 'later');
+
+            const errorMsg = `GitHub API rate limit exceeded. Please try again ${resetTime}.`;
+            logger.error('GitHub API rate limit exceeded', {
+              resetTime,
+              rateLimitInfo: lastRateLimitInfo,
+            });
+
+            throw new Error(errorMsg);
           }
           throw new Error('Access forbidden. Check token permissions.');
         } else if (apiError.response?.status === 404) {

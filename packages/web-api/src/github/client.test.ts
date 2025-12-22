@@ -8,6 +8,7 @@ describe('GitHub Client', () => {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    debug: vi.fn(),
   };
 
   const mockIssue: GithubIssue = {

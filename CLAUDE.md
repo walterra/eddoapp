@@ -179,6 +179,33 @@ interface TodoAlpha3 {
 - Auto-delete bot messages containing tokens
 - Rate limit handling with helpful error messages
 
+**Rate Limit Handling**:
+
+Comprehensive GitHub API rate limit management to prevent errors and provide better UX:
+
+- **Rate Limit Manager** (`rate-limit-manager.ts`): Factory-based request manager
+  - Automatic retry with exponential backoff (1s, 2s, 4s delays, max 3 retries)
+  - Request throttling (min 100ms between API calls)
+  - Proactive monitoring (warns when <20% requests remain)
+  - Request queueing for sequential processing
+- **Rate Limit Utilities** (`rate-limit.ts`): Helper functions
+  - Extract rate limit headers (x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset)
+  - Format reset time as human-readable strings ("in 5 minutes", "at 3:45 PM", "tomorrow at 2:30 AM")
+  - Type guard for rate limit errors
+  - Warning threshold checks
+- **Error Messages**: Enhanced with reset time information
+  - Example: "GitHub API rate limit exceeded. Please try again at 3:45 PM."
+  - Returned directly in API responses (no persistence)
+  - HTTP 429 status code with structured error data
+- **UI Integration**: User profile displays rate limit errors
+  - Errors shown immediately from API responses
+  - Manual resync button displays structured error messages with reset time
+  - No persistence needed - fresh error on each attempt
+- **GitHub API Limits**:
+  - Search API: 30 requests/minute (authenticated)
+  - REST API: 5,000 requests/hour (authenticated)
+  - Headers tracked: x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset, x-ratelimit-used
+
 **Data Flow**:
 
 1. User sets GitHub PAT via Telegram bot
