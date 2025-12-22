@@ -17,9 +17,10 @@ export async function setup() {
 
   // Load testcontainer config first (sets COUCHDB_URL from container)
   try {
-    const { loadTestcontainerConfig } = await import(
-      '../../../../../test/global-testcontainer-setup.js'
-    );
+    // Use string template to prevent TypeScript from analyzing path at compile time
+    // This file is in workspace root, outside package rootDir (only needed at test runtime)
+    const setupPath = `${'../../../../../test'}/global-testcontainer-setup.js`;
+    const { loadTestcontainerConfig } = await import(setupPath);
     const config = loadTestcontainerConfig();
     if (!config) {
       console.error('❌ GLOBAL SETUP: Testcontainer config not found!');
