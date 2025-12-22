@@ -1001,17 +1001,21 @@ server.addTool({
 
     try {
       const startTime = Date.now();
-      const result = await db.find({
-        selector: {
-          version: 'alpha3',
-          active: { $exists: true },
-        },
+      // Use MapReduce view for efficient querying (avoids full table scan)
+      const result = await db.view('todos_by_time_tracking_active', 'byTimeTrackingActive', {
+        include_docs: true,
       });
 
-      const activeTodos = result.docs.filter((todo: unknown) => {
-        const typedTodo = todo as TodoAlpha3;
-        return Object.values(typedTodo.active).some((end) => end === null);
-      });
+      // Extract todos from view result (view emits { id: doc._id }, docs come via include_docs)
+      // Deduplicate by _id since view emits one row per active session (a todo can have multiple)
+      const seenIds = new Set<string>();
+      const activeTodos = result.rows
+        .map((row) => row.doc)
+        .filter((doc): doc is TodoAlpha3 => {
+          if (!doc || seenIds.has(doc._id)) return false;
+          seenIds.add(doc._id);
+          return true;
+        });
 
       const executionTime = Date.now() - startTime;
 
@@ -1120,7 +1124,7 @@ Error retrieving tag statistics: ${error}`;
           selector: {
             tags: { $elemMatch: { $eq: 'user:memory' } },
           },
-          // Remove sort to avoid index requirement - memories will be in creation order
+          use_index: 'tags-index',
         });
 
         const memories = memoryResult.docs || [];

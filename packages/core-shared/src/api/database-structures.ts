@@ -109,4 +109,9 @@ export const REQUIRED_INDEXES: IndexDefinition[] = [
     name: 'externalId-index',
     type: 'json',
   },
+  {
+    index: { fields: ['tags'] },
+    name: 'tags-index',
+    type: 'json',
+  },
 ];

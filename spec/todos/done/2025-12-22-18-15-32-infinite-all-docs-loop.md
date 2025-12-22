@@ -1,6 +1,6 @@
 # Investigate infinite \_all_docs loop in web-api dev server
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-12-22-18-15-32
 **Started:** 2025-12-22-18-20-15
 **Agent PID:** 98482
@@ -43,11 +43,33 @@ export async function findTodoByExternalId(...) {
 - [x] Add externalId index definition to REQUIRED_INDEXES (packages/core-shared/src/api/database-structures.ts:97)
 - [x] Rewrite findTodoByExternalId to use db.find() with index (packages/web-api/src/github/sync-utils.ts:38-51)
 - [x] Update sync-utils tests to verify db.find() is called instead of db.list()
+- [x] Fix get_active_time_tracking to use MapReduce view (packages/mcp_server/src/mcp-server.ts:1004)
+- [x] Add tags index to REQUIRED_INDEXES (packages/core-shared/src/api/database-structures.ts)
+- [x] Update user memories query to use tags index (packages/mcp_server/src/mcp-server.ts:1119)
 - [x] All unit tests pass (460 tests)
-- [x] Linting and formatting pass
-- [ ] Manual test: Enable GitHub sync, monitor CouchDB logs for \_all_docs reduction
+- [x] Linting and formatting pass (0 errors, 214 pre-existing warnings)
+- [x] Build succeeds (all packages)
+- [x] Manual test: Enable GitHub sync, monitor CouchDB logs for \_all_docs reduction (VERIFIED by user)
+- [x] Self-review: Found and fixed deduplication bug in getActiveTimeTracking
+- [x] Final validation: All tests pass with bug fix
 
 ## Review
+
+### Issues Found & Fixed
+
+**Bug: getActiveTimeTracking returned duplicate todos**
+
+- **Root cause:** MapReduce view emits one row per active session. Todo with 2 active sessions → 2 rows → duplicate in results
+- **Fix:** Added deduplication using Set to track seen `_id` values
+- **Test:** Created mock scenario, verified fix handles duplicates correctly
+
+### Code Quality Checks
+
+- ✅ All error handling in place (try-catch with graceful fallbacks)
+- ✅ Type safety maintained (TypeScript checks pass)
+- ✅ Indexes properly named and consistent
+- ✅ Comments explain why changes were made
+- ✅ No breaking changes to API contracts
 
 ## Notes
 
@@ -66,18 +88,18 @@ Web-client queries: ✅ All use MapReduce views (efficient)
 - `useTimeTrackingActive` → `todos_by_time_tracking_active/byTimeTrackingActive` view
 - `useActivitiesByWeek` → `todos_by_active/byActive` view
 
-MCP server queries: ⚠️ Two queries lack indexes
+MCP server queries: ✅ FIXED (3 queries audited)
 
-1. **get_active_time_tracking** (mcp-server.ts:1004)
-   - Current: `db.find({ selector: { version: 'alpha3', active: { $exists: true } } })`
-   - Problem: NO index for `active` field - full table scan
-   - Solution: Use existing MapReduce view `todos_by_time_tracking_active` instead
+1. **get_active_time_tracking** (mcp-server.ts:1004) - FIXED ✅
+   - Before: `db.find({ selector: { version: 'alpha3', active: { $exists: true } } })` - full table scan
+   - After: `db.view('todos_by_time_tracking_active', 'byTimeTrackingActive', { include_docs: true })`
+   - Impact: Uses existing MapReduce view, no new index needed
 
-2. **User memories query** (mcp-server.ts:1119, used in briefing/recap)
-   - Current: `db.find({ selector: { tags: { $elemMatch: { $eq: 'user:memory' } } } })`
-   - Problem: NO index for `tags` field - full table scan
-   - Solution: Add `tags` index to REQUIRED_INDEXES
+2. **User memories query** (mcp-server.ts:1119, used in briefing/recap) - FIXED ✅
+   - Before: `db.find({ selector: { tags: { $elemMatch: { $eq: 'user:memory' } } } })` - full table scan
+   - After: Added `use_index: 'tags-index'` directive + created tags-index in REQUIRED_INDEXES
+   - Impact: Efficient indexed lookup for memory todos
 
-3. **list_todos** (mcp-server.ts:427)
-   - ✅ Already has explicit index selection logic
+3. **list_todos** (mcp-server.ts:427) - Already optimal ✅
+   - Has explicit index selection logic
    - Uses version-due/version-context-due/version-completed-due indexes correctly
