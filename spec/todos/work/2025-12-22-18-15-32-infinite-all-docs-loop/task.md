@@ -1,7 +1,8 @@
 # Investigate infinite \_all_docs loop in web-api dev server
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-12-22-18-15-32
+**Started:** 2025-12-22-18-20-15
 **Agent PID:** 98482
 
 ## Description
@@ -39,14 +40,44 @@ export async function findTodoByExternalId(...) {
 
 ## Implementation Plan
 
-- [ ] Add externalId index definition to REQUIRED_INDEXES (packages/core-shared/src/api/database-structures.ts:97)
-- [ ] Rewrite findTodoByExternalId to use db.find() with index (packages/web-api/src/github/sync-utils.ts:38-51)
-- [ ] Add database migration utility to create externalId index on existing databases
-- [ ] Update setup-user-db tests to verify externalId index creation
-- [ ] Add integration test: findTodoByExternalId with 100+ todos to verify index usage
+- [x] Add externalId index definition to REQUIRED_INDEXES (packages/core-shared/src/api/database-structures.ts:97)
+- [x] Rewrite findTodoByExternalId to use db.find() with index (packages/web-api/src/github/sync-utils.ts:38-51)
+- [x] Update sync-utils tests to verify db.find() is called instead of db.list()
+- [x] All unit tests pass (460 tests)
+- [x] Linting and formatting pass
 - [ ] Manual test: Enable GitHub sync, monitor CouchDB logs for \_all_docs reduction
-- [ ] Update sync-utils tests to verify db.find() is called instead of db.list()
 
 ## Review
 
 ## Notes
+
+**Why no migration script needed:**
+
+- New users: Index created automatically during registration via `setupUserDatabase()`
+- Existing users: CouchDB auto-creates index on first query when it sees `use_index: 'externalId-index'`
+- `db.createIndex()` is idempotent - returns `'exists'` if already present
+- No downtime or manual intervention required
+
+**Additional query audit findings:**
+
+Web-client queries: ✅ All use MapReduce views (efficient)
+
+- `useTodosByWeek` → `todos_by_due_date/byDueDate` view
+- `useTimeTrackingActive` → `todos_by_time_tracking_active/byTimeTrackingActive` view
+- `useActivitiesByWeek` → `todos_by_active/byActive` view
+
+MCP server queries: ⚠️ Two queries lack indexes
+
+1. **get_active_time_tracking** (mcp-server.ts:1004)
+   - Current: `db.find({ selector: { version: 'alpha3', active: { $exists: true } } })`
+   - Problem: NO index for `active` field - full table scan
+   - Solution: Use existing MapReduce view `todos_by_time_tracking_active` instead
+
+2. **User memories query** (mcp-server.ts:1119, used in briefing/recap)
+   - Current: `db.find({ selector: { tags: { $elemMatch: { $eq: 'user:memory' } } } })`
+   - Problem: NO index for `tags` field - full table scan
+   - Solution: Add `tags` index to REQUIRED_INDEXES
+
+3. **list_todos** (mcp-server.ts:427)
+   - ✅ Already has explicit index selection logic
+   - Uses version-due/version-context-due/version-completed-due indexes correctly

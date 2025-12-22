@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { findTodoByExternalId, shouldSyncUser } from './sync-utils';
 
 interface MockDb {
-  list: ReturnType<typeof vi.fn>;
+  find: ReturnType<typeof vi.fn>;
 }
 
 describe('GitHub Sync Utils', () => {
@@ -84,11 +84,8 @@ describe('GitHub Sync Utils', () => {
       };
 
       const mockDb: MockDb = {
-        list: vi.fn().mockResolvedValue({
-          rows: [
-            { doc: existingTodo },
-            { doc: { ...existingTodo, _id: 'other', externalId: 'github:other/repo/issues/1' } },
-          ],
+        find: vi.fn().mockResolvedValue({
+          docs: [existingTodo],
         }),
       };
 
@@ -99,12 +96,19 @@ describe('GitHub Sync Utils', () => {
       );
 
       expect(result).toEqual(existingTodo);
+      expect(mockDb.find).toHaveBeenCalledWith({
+        selector: {
+          externalId: { $eq: 'github:owner/repo/issues/42' },
+        },
+        limit: 1,
+        use_index: 'externalId-index',
+      });
     });
 
     it('should return null if todo not found', async () => {
       const mockDb: MockDb = {
-        list: vi.fn().mockResolvedValue({
-          rows: [{ doc: { _id: 'other', externalId: 'github:other/repo/issues/1' } }],
+        find: vi.fn().mockResolvedValue({
+          docs: [],
         }),
       };
 
@@ -119,7 +123,7 @@ describe('GitHub Sync Utils', () => {
 
     it('should return null and log error on database failure', async () => {
       const mockDb: MockDb = {
-        list: vi.fn().mockRejectedValue(new Error('Database error')),
+        find: vi.fn().mockRejectedValue(new Error('Database error')),
       };
 
       const result = await findTodoByExternalId(

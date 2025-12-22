@@ -29,6 +29,7 @@ export function shouldSyncUser(preferences?: {
 
 /**
  * Find todo by externalId
+ * Uses externalId index for efficient lookup
  */
 export async function findTodoByExternalId(
   db: nano.DocumentScope<TodoAlpha3>,
@@ -38,13 +39,16 @@ export async function findTodoByExternalId(
   },
 ): Promise<TodoAlpha3 | null> {
   try {
-    // Query using _all_docs with include_docs
-    const result = await db.list({ include_docs: true });
-    const todo = result.rows
-      .map((row) => row.doc)
-      .filter((doc): doc is TodoAlpha3 => doc !== undefined && doc.externalId === externalId)[0];
+    // Use Mango query with externalId index
+    const result = await db.find({
+      selector: {
+        externalId: { $eq: externalId },
+      },
+      limit: 1,
+      use_index: 'externalId-index',
+    });
 
-    return todo || null;
+    return result.docs[0] || null;
   } catch (error) {
     logger.error('Failed to find todo by externalId', {
       externalId,
