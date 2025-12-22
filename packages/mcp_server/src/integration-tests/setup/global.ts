@@ -15,55 +15,14 @@ let globalTestUser: {
 export async function setup() {
   console.log('🔄 GLOBAL SETUP: Starting global test setup...');
 
-  // Load testcontainer config first (sets COUCHDB_URL from container)
-  try {
-    // Use string template to prevent TypeScript from analyzing path at compile time
-    // This file is in workspace root, outside package rootDir (only needed at test runtime)
-    const setupPath = `${'../../../../../test'}/global-testcontainer-setup.js`;
-    const { loadTestcontainerConfig } = await import(setupPath);
-    const config = loadTestcontainerConfig();
-    if (!config) {
-      console.error('❌ GLOBAL SETUP: Testcontainer config not found!');
-      console.error('   This means the globalSetup failed to start the CouchDB container.');
-      console.error(
-        '   Check that Docker is running and testcontainer setup completed successfully.',
-      );
-      throw new Error('Testcontainer config not found - integration tests require testcontainers');
-    }
-    console.log('🔄 GLOBAL SETUP: Loaded testcontainer config:', config.url);
-
-    // Wait for CouchDB to be ready by polling health endpoint
-    console.log('🔄 GLOBAL SETUP: Waiting for CouchDB to be ready...');
-    const maxRetries = 30;
-    const retryDelay = 1000;
-    let ready = false;
-
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        const response = await fetch(config.url.replace(/\/$/, ''));
-        if (response.ok) {
-          const data = await response.json();
-          if (data.couchdb === 'Welcome') {
-            console.log(`✅ GLOBAL SETUP: CouchDB ready after ${i + 1} attempts`);
-            ready = true;
-            break;
-          }
-        }
-      } catch (_error) {
-        // Connection refused, not ready yet
-      }
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
-    }
-
-    if (!ready) {
-      throw new Error(
-        `CouchDB not ready after ${maxRetries} attempts (${maxRetries * retryDelay}ms)`,
-      );
-    }
-  } catch (error) {
-    console.error('❌ GLOBAL SETUP: Failed to load testcontainer config:', error);
-    throw error;
+  // COUCHDB_URL should be set by run-integration-tests.js via testcontainer setup
+  if (!process.env.COUCHDB_URL) {
+    console.error('❌ GLOBAL SETUP: COUCHDB_URL not set!');
+    console.error('   This means testcontainer setup failed in run-integration-tests.js');
+    throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
   }
+
+  console.log('✅ GLOBAL SETUP: Using CouchDB URL:', process.env.COUCHDB_URL);
 
   // Set test environment variables
   process.env.NODE_ENV = 'test';

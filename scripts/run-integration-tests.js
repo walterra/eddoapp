@@ -8,9 +8,18 @@ import { setTimeout } from 'timers/promises';
 async function runIntegrationTests() {
   let serverProcess;
   let testExitCode = 0;
+  let containerSetup;
 
   try {
-    // Start the MCP server
+    // Start testcontainer first
+    console.log('🐳 Starting CouchDB testcontainer...');
+    const { setupTestcontainer, teardownTestcontainer } = await import(
+      '../test/global-testcontainer-setup.js'
+    );
+    await setupTestcontainer();
+    containerSetup = { teardown: teardownTestcontainer };
+
+    // Start the MCP server (COUCHDB_URL set by setupTestcontainer)
     console.log('🚀 Starting MCP test server...');
     serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
       env: {
@@ -65,6 +74,12 @@ async function runIntegrationTests() {
       if (!serverProcess.killed) {
         serverProcess.kill('SIGKILL');
       }
+    }
+
+    // Clean up testcontainer
+    if (containerSetup) {
+      console.log('🐳 Stopping CouchDB testcontainer...');
+      await containerSetup.teardown();
     }
   }
 

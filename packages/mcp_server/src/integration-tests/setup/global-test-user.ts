@@ -28,7 +28,7 @@ async function initializeGlobalTestUser(): Promise<void> {
   process.env.NODE_ENV = 'test';
   process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
-  // COUCHDB_URL should be set by testcontainer globalSetup
+  // COUCHDB_URL should be set by run-integration-tests.js via testcontainer setup
   if (!process.env.COUCHDB_URL) {
     throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
   }
