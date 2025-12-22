@@ -10084,7 +10084,7 @@ snapshots:
 
   docker-compose@1.3.0:
     dependencies:
-      yaml: 2.8.1
+      yaml: 2.8.2
 
   docker-modem@5.0.6:
     dependencies:
