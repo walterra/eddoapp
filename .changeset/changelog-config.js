@@ -2,7 +2,7 @@
  * Custom changelog generator based on @changesets/changelog-github
  * Removes "Thanks @username!" messages while keeping GitHub links
  */
-import { getInfo, getInfoFromPullRequest } from '@changesets/get-github-info';
+const { getInfo, getInfoFromPullRequest } = require('@changesets/get-github-info');
 
 /**
  * Fetches changelog data from GitHub without adding thanks messages
@@ -92,7 +92,7 @@ const getDependencyReleaseLine = async (changesets, dependenciesUpdated, options
   return [changesetLink, ...updatedDepenenciesList].join('\n');
 };
 
-export default {
+module.exports = {
   getReleaseLine,
   getDependencyReleaseLine,
 };
