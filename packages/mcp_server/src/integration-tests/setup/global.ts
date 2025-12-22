@@ -31,8 +31,35 @@ export async function setup() {
       throw new Error('Testcontainer config not found - integration tests require testcontainers');
     }
     console.log('🔄 GLOBAL SETUP: Loaded testcontainer config:', config.url);
-    // Give container a moment to be fully ready for connections
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Wait for CouchDB to be ready by polling health endpoint
+    console.log('🔄 GLOBAL SETUP: Waiting for CouchDB to be ready...');
+    const maxRetries = 30;
+    const retryDelay = 1000;
+    let ready = false;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const response = await fetch(config.url.replace(/\/$/, ''));
+        if (response.ok) {
+          const data = await response.json();
+          if (data.couchdb === 'Welcome') {
+            console.log(`✅ GLOBAL SETUP: CouchDB ready after ${i + 1} attempts`);
+            ready = true;
+            break;
+          }
+        }
+      } catch (_error) {
+        // Connection refused, not ready yet
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
+
+    if (!ready) {
+      throw new Error(
+        `CouchDB not ready after ${maxRetries} attempts (${maxRetries * retryDelay}ms)`,
+      );
+    }
   } catch (error) {
     console.error('❌ GLOBAL SETUP: Failed to load testcontainer config:', error);
     throw error;
