@@ -133,7 +133,7 @@ export const TagInput: FC<TagInputProps> = ({
 
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div
-          className="absolute top-full z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+          className="absolute top-full z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
           ref={suggestionsRef}
         >
           {filteredSuggestions.slice(0, 5).map((suggestion, index) => (

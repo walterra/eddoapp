@@ -53,7 +53,7 @@ export const EddoContextFilter: FC<EddoContextFilterProps> = ({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full z-20 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+          <div className="absolute top-full z-20 mt-1 max-h-96 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-600 dark:bg-gray-800">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Context</h3>
               {selectedContexts.length > 0 && (
