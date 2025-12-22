@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
-    "@types/uuid": "^10.0.0",
+    "@types/uuid": "^11.0.0",
     "eslint": "^9.39.1",
     "tsx": "^4.20.6",
     "typescript": "^5.8.3",
