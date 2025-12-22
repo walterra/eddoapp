@@ -24,7 +24,6 @@ export const envSchema = z.object({
   MCP_TEST_PORT: z.coerce.number().default(3003),
 
   // Test-specific CouchDB Configuration
-  COUCHDB_TEST_URL: z.string().optional(),
   COUCHDB_TEST_DB_NAME: z.string().default('todos-test'),
 
   // Telegram Bot Configuration
@@ -93,11 +92,10 @@ export function getCouchDbConfig(env: Env) {
  * Get test-specific CouchDB configuration
  */
 export function getTestCouchDbConfig(env: Env) {
-  const testUrl = env.COUCHDB_TEST_URL || env.COUCHDB_URL;
   return {
-    url: testUrl,
+    url: env.COUCHDB_URL,
     dbName: env.COUCHDB_TEST_DB_NAME,
-    fullUrl: `${testUrl}/${env.COUCHDB_TEST_DB_NAME}`,
+    fullUrl: `${env.COUCHDB_URL}/${env.COUCHDB_TEST_DB_NAME}`,
   };
 }
 
@@ -105,11 +103,10 @@ export function getTestCouchDbConfig(env: Env) {
  * Get test-specific User Registry configuration
  */
 export function getTestUserRegistryConfig(env: Env) {
-  const testUrl = env.COUCHDB_TEST_URL || env.COUCHDB_URL;
   return {
-    url: testUrl,
+    url: env.COUCHDB_URL,
     dbName: `${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
-    fullUrl: `${testUrl}/${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
+    fullUrl: `${env.COUCHDB_URL}/${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
   };
 }
 

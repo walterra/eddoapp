@@ -38,7 +38,6 @@ describe('Cleanup Interactive E2E', () => {
     const testEnv = {
       ...process.env,
       COUCHDB_URL: 'http://invalid:invalid@192.0.2.1:9999',
-      COUCHDB_TEST_URL: 'http://invalid:invalid@192.0.2.1:9999',
     };
 
     // Try to connect to invalid CouchDB instance (using TEST-NET-1 RFC5737)
@@ -115,7 +114,6 @@ describe('Cleanup Interactive E2E', () => {
     const testEnv = {
       ...process.env,
       COUCHDB_URL: 'http://wronguser:wrongpass@192.0.2.1:5984',
-      COUCHDB_TEST_URL: 'http://wronguser:wrongpass@192.0.2.1:5984',
     };
 
     // Try to access with wrong credentials (using TEST-NET-1 RFC5737)
