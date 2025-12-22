@@ -63,7 +63,7 @@ describe('GitHub Client', () => {
       expect(todo.title).toBe('Fix login bug');
       expect(todo.description).toBe('Users cannot login with special characters in password');
       expect(todo.context).toBe('work');
-      expect(todo.tags).toEqual(['github', 'bug', 'priority:high']);
+      expect(todo.tags).toEqual(['github', 'bug', 'priority:high', 'github:issue']);
       expect(todo.externalId).toBe('github:owner/repo/issues/42');
       expect(todo.link).toBe('https://github.com/owner/repo/issues/42');
       expect(todo.completed).toBe(null);
@@ -95,13 +95,20 @@ describe('GitHub Client', () => {
 
       expect(todo.description).toBe('');
       expect(todo.context).toBe('private');
-      expect(todo.tags).toEqual(['github', 'external', 'bug', 'priority:high']);
+      expect(todo.tags).toEqual(['github', 'external', 'bug', 'priority:high', 'github:issue']);
     });
 
     it('should combine custom tags with issue labels', () => {
       const todo = mapIssueToTodo(mockIssue, 'work', ['github', 'sync', 'external']);
 
-      expect(todo.tags).toEqual(['github', 'sync', 'external', 'bug', 'priority:high']);
+      expect(todo.tags).toEqual([
+        'github',
+        'sync',
+        'external',
+        'bug',
+        'priority:high',
+        'github:issue',
+      ]);
     });
 
     it('should handle issue with no labels', () => {
@@ -112,7 +119,70 @@ describe('GitHub Client', () => {
 
       const todo = mapIssueToTodo(noLabelsIssue, 'work', ['github']);
 
-      expect(todo.tags).toEqual(['github']);
+      expect(todo.tags).toEqual(['github', 'github:issue']);
+    });
+
+    it('should add github:pr-review tag for PR review requests', () => {
+      const reviewRequestPR: GithubIssue = {
+        ...mockIssue,
+        pull_request: { url: 'https://api.github.com/repos/owner/repo/pulls/42' },
+        isReviewRequested: true,
+        labels: [],
+      };
+
+      const todo = mapIssueToTodo(reviewRequestPR, 'work', ['github']);
+
+      expect(todo.tags).toEqual(['github', 'github:pr-review']);
+    });
+
+    it('should add only github:pr tag for assigned PRs', () => {
+      const assignedPR: GithubIssue = {
+        ...mockIssue,
+        pull_request: { url: 'https://api.github.com/repos/owner/repo/pulls/42' },
+        isReviewRequested: false,
+        labels: [],
+      };
+
+      const todo = mapIssueToTodo(assignedPR, 'work', ['github']);
+
+      expect(todo.tags).toEqual(['github', 'github:pr']);
+    });
+
+    it('should add only github:pr tag for PRs without isReviewRequested flag', () => {
+      const pr: GithubIssue = {
+        ...mockIssue,
+        pull_request: { url: 'https://api.github.com/repos/owner/repo/pulls/42' },
+        labels: [],
+      };
+
+      const todo = mapIssueToTodo(pr, 'work', ['github']);
+
+      expect(todo.tags).toEqual(['github', 'github:pr']);
+    });
+
+    it('should combine github:pr-review tag with custom tags and labels', () => {
+      const reviewRequestPR: GithubIssue = {
+        ...mockIssue,
+        pull_request: { url: 'https://api.github.com/repos/owner/repo/pulls/42' },
+        isReviewRequested: true,
+        labels: [{ name: 'needs-review', color: 'ffaa00' }],
+      };
+
+      const todo = mapIssueToTodo(reviewRequestPR, 'work', ['github', 'urgent']);
+
+      expect(todo.tags).toEqual(['github', 'urgent', 'needs-review', 'github:pr-review']);
+    });
+
+    it('should add only github:issue tag for regular issues', () => {
+      const regularIssue: GithubIssue = {
+        ...mockIssue,
+        isReviewRequested: true, // This shouldn't matter for issues
+        labels: [],
+      };
+
+      const todo = mapIssueToTodo(regularIssue, 'work', ['github']);
+
+      expect(todo.tags).toEqual(['github', 'github:issue']);
     });
   });
 

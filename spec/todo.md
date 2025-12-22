@@ -1,3 +1,24 @@
+- **Selective GitHub Force Resync**: Replace single "Force Resync" button with modal for fine-grained field selection
+  - **Use case:** Resync only tags without overwriting user-adjusted due dates or context
+  - **UI Flow:**
+    1. Click "Force Resync" button → modal appears
+    2. Checkboxes for fields to resync:
+       - ☑️ Tags (GitHub labels) - default checked
+       - ☑️ Title - default checked
+       - ☑️ Description - default checked
+       - ☑️ Status (open/closed) - default checked
+       - ☐ Due date - default unchecked (preserve user adjustments)
+       - ☐ Context - default unchecked (preserve user assignments)
+    3. "Resync Selected Fields" button
+  - **Backend changes:**
+    - Add `resyncFields: string[]` parameter to `/api/users/github-resync` endpoint
+    - Update `processIssue()` in sync-scheduler.ts to selectively merge fields
+    - Preserve unchanged fields from existing todo (don't overwrite with GitHub data)
+  - **Testing:**
+    - User adjusts due date, resyncs tags only → due date unchanged
+    - User changes context, resyncs all → context reset to GitHub repo name
+    - All field combinations work correctly
+
 - Add PouchDB sync for user_registry database (real-time preference updates across tabs/devices)
   - Create `/api/registry` proxy endpoint with filtered replication (user sees only their own doc)
   - Add second PouchDB instance in web-client for user_registry
