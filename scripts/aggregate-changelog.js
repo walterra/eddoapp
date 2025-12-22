@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 /**
- * Aggregates changelog entries from all packages for GitHub releases.
- * Reads the latest version from each package CHANGELOG.md and combines them.
+ * Extracts root package changelog for GitHub releases.
+ * Outputs only the latest version from CHANGELOG.md to reduce noise.
  */
-import { existsSync, readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync } from 'fs';
 
-const PACKAGES_DIR = 'packages';
 const ROOT_CHANGELOG = 'CHANGELOG.md';
 
 /**
@@ -50,46 +48,22 @@ function getCurrentVersion() {
 }
 
 /**
- * Aggregates all package changelogs for the current version.
- * With fixed versioning, all packages share the same version.
+ * Outputs only the root package changelog for the current version.
+ * Individual package changelogs are skipped to reduce noise.
  */
 function aggregateChangelogs() {
   const version = getCurrentVersion();
-  const packages = readdirSync(PACKAGES_DIR, { withFileTypes: true })
-    .filter((dirent) => dirent.isDirectory())
-    .map((dirent) => dirent.name)
-    .sort();
 
-  const aggregated = [`# Release v${version}\n`];
-  const sections = [];
-
-  // Add root changelog
+  // Only include root changelog
   if (existsSync(ROOT_CHANGELOG)) {
     const rootChangelog = readFileSync(ROOT_CHANGELOG, 'utf-8');
     const rootEntry = extractLatestVersion(rootChangelog, version);
     if (rootEntry) {
-      sections.push(`## Root Package\n\n${rootEntry}`);
+      return `# Release v${version}\n\n${rootEntry}`;
     }
   }
 
-  // Add package changelogs
-  for (const pkg of packages) {
-    const changelogPath = join(PACKAGES_DIR, pkg, 'CHANGELOG.md');
-    if (!existsSync(changelogPath)) continue;
-
-    const changelog = readFileSync(changelogPath, 'utf-8');
-    const entry = extractLatestVersion(changelog, version);
-
-    if (entry) {
-      sections.push(`## ${pkg}\n\n${entry}`);
-    }
-  }
-
-  if (sections.length === 0) {
-    return `# Release v${version}\n\nNo changelog entries found.`;
-  }
-
-  return aggregated[0] + '\n' + sections.join('\n\n---\n\n');
+  return `# Release v${version}\n\nNo changelog entries found.`;
 }
 
 // Output the aggregated changelog
