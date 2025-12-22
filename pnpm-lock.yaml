@@ -34,7 +34,7 @@ importers:
         version: 3.1.2(rollup@4.54.0)
       flowbite-react:
         specifier: ^0.12.10
-        version: 0.12.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.16)(typescript@5.8.3)
+        version: 0.12.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.18)(typescript@5.8.3)
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -92,7 +92,7 @@ importers:
         version: 4.1.14
       '@tailwindcss/typography':
         specifier: ^0.5.19
-        version: 0.5.19(tailwindcss@4.1.16)
+        version: 0.5.19(tailwindcss@4.1.18)
       '@testing-library/react':
         specifier: ^16.3.0
         version: 16.3.0(@testing-library/dom@10.4.0)(@types/react-dom@19.1.9(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -205,8 +205,8 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
       tailwindcss:
-        specifier: ^4.1.16
-        version: 4.1.16
+        specifier: ^4.1.18
+        version: 4.1.18
       ts-node:
         specifier: ^10.9.1
         version: 10.9.2(@swc/core@1.13.21)(@types/node@24.7.2)(typescript@5.8.3)
@@ -507,7 +507,7 @@ importers:
         version: 3.1.2(rollup@4.54.0)
       flowbite-react:
         specifier: ^0.12.10
-        version: 0.12.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.16)(typescript@5.8.3)
+        version: 0.12.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.18)(typescript@5.8.3)
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
@@ -576,8 +576,8 @@ importers:
         specifier: ^9.0.0
         version: 9.0.0
       tailwindcss:
-        specifier: ^4.1.16
-        version: 4.1.16
+        specifier: ^4.1.18
+        version: 4.1.18
       typescript:
         specifier: ~5.8.3
         version: 5.8.3
@@ -6075,8 +6075,8 @@ packages:
   tailwindcss@4.1.14:
     resolution: {integrity: sha512-b7pCxjGO98LnxVkKjaZSDeNuljC4ueKUddjENJOADtubtdo8llTaJy7HwBMeLNSSo2N5QIAgklslK1+Ir8r6CA==}
 
-  tailwindcss@4.1.16:
-    resolution: {integrity: sha512-pONL5awpaQX4LN5eiv7moSiSPd/DLDzKVRJz8Q9PgzmAdd1R4307GQS2ZpfiN7ZmekdQrfhZZiSE5jkLR4WNaA==}
+  tailwindcss@4.1.18:
+    resolution: {integrity: sha512-4+Z+0yiYyEtUVCScyfHCxOYP06L5Ne+JiHhY2IjR2KWMIWhJOYZKLSGZaP5HkZ8+bY0cxfzwDE5uOmzFXyIwxw==}
 
   tapable@2.3.0:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
@@ -8173,10 +8173,10 @@ snapshots:
       postcss: 8.5.6
       tailwindcss: 4.1.14
 
-  '@tailwindcss/typography@0.5.19(tailwindcss@4.1.16)':
+  '@tailwindcss/typography@0.5.19(tailwindcss@4.1.18)':
     dependencies:
       postcss-selector-parser: 6.0.10
-      tailwindcss: 4.1.16
+      tailwindcss: 4.1.18
 
   '@tanstack/query-core@5.90.5': {}
 
@@ -10354,7 +10354,7 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  flowbite-react@0.12.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.16)(typescript@5.8.3):
+  flowbite-react@0.12.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.18)(typescript@5.8.3):
     dependencies:
       '@floating-ui/core': 1.7.3
       '@floating-ui/react': 0.27.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -10372,7 +10372,7 @@ snapshots:
       recast: 0.23.11
       tailwind-merge-v2: tailwind-merge@2.6.0
       tailwind-merge-v3: tailwind-merge@3.0.1
-      tailwindcss: 4.1.16
+      tailwindcss: 4.1.18
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -12596,7 +12596,7 @@ snapshots:
 
   tailwindcss@4.1.14: {}
 
-  tailwindcss@4.1.16: {}
+  tailwindcss@4.1.18: {}
 
   tapable@2.3.0: {}
 
