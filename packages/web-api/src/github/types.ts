@@ -30,6 +30,7 @@ export interface GithubIssue {
     // Present if this is a pull request (Search API returns both issues and PRs)
     url: string;
   };
+  isReviewRequested?: boolean; // True if user is a requested reviewer for this PR
 }
 
 export interface GithubIssueListParams {

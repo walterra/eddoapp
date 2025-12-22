@@ -24,7 +24,8 @@ export function generateExternalId(issue: GithubIssue): string {
 }
 
 /**
- * Maps GitHub issue to TodoAlpha3 structure
+ * Maps GitHub issue/PR to TodoAlpha3 structure
+ * Adds type-specific tags: github:issue, github:pr, github:pr-review
  */
 export function mapIssueToTodo(
   issue: GithubIssue,
@@ -32,6 +33,24 @@ export function mapIssueToTodo(
   tags: string[],
 ): Omit<TodoAlpha3, '_rev'> {
   const now = new Date().toISOString();
+
+  // Start with configured tags and GitHub labels
+  const allTags = [...tags, ...issue.labels.map((label) => label.name)];
+
+  // Add type-specific tags
+  if (issue.pull_request) {
+    // This is a PR
+    if (issue.isReviewRequested) {
+      // This is a PR review request
+      allTags.push('github:pr-review');
+    } else {
+      // This is an assigned PR
+      allTags.push('github:pr');
+    }
+  } else {
+    // This is an issue
+    allTags.push('github:issue');
+  }
 
   return {
     _id: now,
@@ -43,7 +62,7 @@ export function mapIssueToTodo(
     externalId: generateExternalId(issue),
     link: issue.html_url,
     repeat: null,
-    tags: [...tags, ...issue.labels.map((label) => label.name)],
+    tags: allTags,
     title: issue.title,
     version: 'alpha3',
   };
@@ -76,10 +95,10 @@ function transformSearchResult(item: {
 }
 
 /**
- * Builds GitHub search query for issues
+ * Builds GitHub search query for assigned items (issues and PRs)
  */
-function buildSearchQuery(params: GithubIssueListParams): string {
-  const queryParts: string[] = ['is:issue', 'assignee:@me'];
+function buildAssignedQuery(params: GithubIssueListParams): string {
+  const queryParts: string[] = ['assignee:@me'];
 
   // Add state filter (open, closed, or both)
   if (params.state === 'open') {
@@ -89,7 +108,7 @@ function buildSearchQuery(params: GithubIssueListParams): string {
   }
   // For 'all', don't add state filter (includes both open and closed)
 
-  // Add since filter if provided (issues updated after this date)
+  // Add since filter if provided (items updated after this date)
   if (params.since) {
     // GitHub search expects format: >=YYYY-MM-DD
     const sinceDate = params.since.split('T')[0]; // Extract date part from ISO string
@@ -100,11 +119,36 @@ function buildSearchQuery(params: GithubIssueListParams): string {
 }
 
 /**
- * Fetches all user issues with pagination support using Search API
+ * Builds GitHub search query for PR reviews requested from user
+ */
+function buildReviewRequestedQuery(params: GithubIssueListParams): string {
+  const queryParts: string[] = ['is:pr', 'review-requested:@me'];
+
+  // Add state filter (open, closed, or both)
+  if (params.state === 'open') {
+    queryParts.push('state:open');
+  } else if (params.state === 'closed') {
+    queryParts.push('state:closed');
+  }
+  // For 'all', don't add state filter (includes both open and closed)
+
+  // Add since filter if provided (PRs updated after this date)
+  if (params.since) {
+    // GitHub search expects format: >=YYYY-MM-DD
+    const sinceDate = params.since.split('T')[0]; // Extract date part from ISO string
+    queryParts.push(`updated:>=${sinceDate}`);
+  }
+
+  return queryParts.join(' ');
+}
+
+/**
+ * Fetches all items matching a search query with pagination support using Search API
  * Note: GitHub Search API has a maximum of 1000 results (10 pages of 100)
  */
-async function fetchAllPages(
+async function fetchAllPagesForQuery(
   octokit: Octokit,
+  searchQuery: string,
   params: GithubIssueListParams,
   logger: {
     info: (msg: string, meta?: unknown) => void;
@@ -112,10 +156,9 @@ async function fetchAllPages(
     error: (msg: string, meta?: unknown) => void;
   },
 ): Promise<GithubIssue[]> {
-  const allIssues: GithubIssue[] = [];
+  const allItems: GithubIssue[] = [];
   let page = 1;
   const perPage = params.per_page || 100;
-  const searchQuery = buildSearchQuery(params);
 
   // Determine sort field based on params
   const sortField = params.sort === 'created' ? 'created' : 'updated';
@@ -139,27 +182,25 @@ async function fetchAllPages(
         page,
       });
 
-      // Filter out pull requests and transform to GithubIssue format
-      const issues = response.data.items
-        .filter((item) => !item.pull_request)
-        .map((item) => transformSearchResult(item));
+      // Transform to GithubIssue format (includes both issues and PRs)
+      const items = response.data.items.map((item) => transformSearchResult(item));
 
-      logger.info('Received GitHub issues page', {
+      logger.info('Received GitHub items page', {
         page,
         totalCount: response.data.total_count,
-        issuesCount: issues.length,
+        itemsCount: items.length,
         rateLimit: response.headers['x-ratelimit-remaining'],
         rateLimitReset: response.headers['x-ratelimit-reset'],
       });
 
-      if (issues.length === 0) {
+      if (items.length === 0) {
         break;
       }
 
-      allIssues.push(...issues);
+      allItems.push(...items);
 
       // If we got fewer results than requested, we're on the last page
-      if (issues.length < perPage) {
+      if (items.length < perPage) {
         break;
       }
 
@@ -168,18 +209,18 @@ async function fetchAllPages(
       // GitHub Search API has a maximum of 1000 results (10 pages of 100)
       if (page > 10) {
         logger.warn('Reached GitHub Search API limit (1000 results max)', {
-          totalIssues: allIssues.length,
+          totalItems: allItems.length,
         });
         break;
       }
 
       // Check if we've fetched all available results
-      if (allIssues.length >= response.data.total_count) {
+      if (allItems.length >= response.data.total_count) {
         break;
       }
     } catch (error) {
       const apiError = error as GithubApiError;
-      logger.error('Failed to fetch issues page', {
+      logger.error('Failed to fetch items page', {
         page,
         error: apiError.message,
         status: apiError.response?.status,
@@ -188,7 +229,7 @@ async function fetchAllPages(
     }
   }
 
-  return allIssues;
+  return allItems;
 }
 
 /**
@@ -216,10 +257,11 @@ export function createGithubClient(
 
   return {
     /**
-     * Fetches issues assigned to authenticated user via GitHub Search API
+     * Fetches items (issues and PRs) for authenticated user via GitHub Search API
+     * Includes: assigned issues, assigned PRs, and PR reviews requested from user
      * Supports all repositories (personal, org, public, private) with proper SSO authorization
      * Rate limit: 30 requests/minute for Search API (5000/hour for authenticated users)
-     * Maximum: 1000 results (GitHub Search API limit)
+     * Maximum: 1000 results per query (GitHub Search API limit)
      */
     async fetchUserIssues(params: GithubIssueListParams = {}): Promise<GithubIssue[]> {
       const defaultParams: GithubIssueListParams = {
@@ -230,16 +272,64 @@ export function createGithubClient(
         ...params,
       };
 
-      logger.info('Fetching GitHub issues via Search API', { params: defaultParams });
+      logger.info('Fetching GitHub items (issues, PRs, reviews) via Search API', {
+        params: defaultParams,
+      });
 
       try {
-        const issues = await fetchAllPages(octokit, defaultParams, logger);
+        // Fetch assigned items (issues and PRs where user is assignee)
+        const assignedQuery = buildAssignedQuery(defaultParams);
+        const assignedItems = await fetchAllPagesForQuery(
+          octokit,
+          assignedQuery,
+          defaultParams,
+          logger,
+        );
 
-        logger.info('Successfully fetched GitHub issues', {
-          count: issues.length,
+        // Fetch PR reviews (PRs where user is requested reviewer)
+        const reviewQuery = buildReviewRequestedQuery(defaultParams);
+        const reviewItems = await fetchAllPagesForQuery(
+          octokit,
+          reviewQuery,
+          defaultParams,
+          logger,
+        );
+
+        // Mark review items with a flag so we can add 'pr-review' tag later
+        const reviewItemsMarked = reviewItems.map((item) => ({
+          ...item,
+          isReviewRequested: true,
+        }));
+
+        // Combine and deduplicate by ID (a PR can be both assigned and review-requested)
+        const itemsMap = new Map<number, GithubIssue>();
+
+        // Add assigned items first
+        for (const item of assignedItems) {
+          itemsMap.set(item.id, item);
+        }
+
+        // Add review items, merging with existing if needed
+        for (const item of reviewItemsMarked) {
+          const existing = itemsMap.get(item.id);
+          if (existing) {
+            // Merge: keep existing but mark as review-requested too
+            itemsMap.set(item.id, { ...existing, isReviewRequested: true });
+          } else {
+            itemsMap.set(item.id, item);
+          }
+        }
+
+        const allItems = Array.from(itemsMap.values());
+
+        logger.info('Successfully fetched GitHub items', {
+          assignedCount: assignedItems.length,
+          reviewCount: reviewItems.length,
+          totalCount: allItems.length,
+          deduplicatedCount: assignedItems.length + reviewItems.length - allItems.length,
         });
 
-        return issues;
+        return allItems;
       } catch (error) {
         const apiError = error as GithubApiError;
 
