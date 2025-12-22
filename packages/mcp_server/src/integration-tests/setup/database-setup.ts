@@ -4,28 +4,8 @@
  * Separated from MCP server for better architecture and test isolation
  */
 import { getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
+import { DESIGN_DOCS, type DesignDocument } from '@eddo/core-shared';
 import nano from 'nano';
-
-export interface DesignDocument {
-  _id: string;
-  views?: Record<string, { map: string; reduce?: string }>;
-}
-
-export const TAG_STATISTICS_DESIGN_DOC: DesignDocument = {
-  _id: '_design/tags',
-  views: {
-    by_tag: {
-      map: `function(doc) {
-        if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
-          for (var i = 0; i < doc.tags.length; i++) {
-            emit(doc.tags[i], 1);
-          }
-        }
-      }`,
-      reduce: '_count',
-    },
-  },
-};
 
 export class DatabaseSetup {
   private couch: ReturnType<typeof nano>;
@@ -50,9 +30,9 @@ export class DatabaseSetup {
   async createDesignDocuments(): Promise<void> {
     console.log(`🏗️  Setting up design documents for: ${this.dbName}`);
 
-    await this.createDesignDocument(TAG_STATISTICS_DESIGN_DOC);
-
-    // Add more design documents here as needed
+    for (const designDoc of DESIGN_DOCS) {
+      await this.createDesignDocument(designDoc);
+    }
 
     console.log(`✅ All design documents created for: ${this.dbName}`);
   }
