@@ -15,6 +15,23 @@ let globalTestUser: {
 export async function setup() {
   console.log('🔄 GLOBAL SETUP: Starting global test setup...');
 
+  // Load testcontainer config first (sets COUCHDB_URL from container)
+  try {
+    const { loadTestcontainerConfig } = await import(
+      '../../../../../test/global-testcontainer-setup.js'
+    );
+    const config = loadTestcontainerConfig();
+    if (config) {
+      console.log('🔄 GLOBAL SETUP: Loaded testcontainer config:', config.url);
+      // Give container a moment to be fully ready for connections
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } else {
+      console.warn('⚠️  GLOBAL SETUP: No testcontainer config found, using environment variables');
+    }
+  } catch (error) {
+    console.warn('⚠️  GLOBAL SETUP: Failed to load testcontainer config:', error);
+  }
+
   // Set test environment variables
   process.env.NODE_ENV = 'test';
   process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
