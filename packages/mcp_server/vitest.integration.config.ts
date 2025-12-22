@@ -34,10 +34,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       MCP_TEST_PORT: process.env.MCP_TEST_PORT || '3003',
       COUCHDB_TEST_DB_NAME: 'todos-test',
-      // Allow custom test database URL
-      COUCHDB_TEST_URL: process.env.COUCHDB_TEST_URL,
-      // Add required COUCHDB_URL from .env file
-      COUCHDB_URL: process.env.COUCHDB_URL || 'http://admin:password@localhost:5984',
+      // COUCHDB_URL is set by testcontainer globalSetup
     },
 
     // Enable debugging to see what's happening

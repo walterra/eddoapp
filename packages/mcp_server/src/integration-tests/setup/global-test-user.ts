@@ -29,20 +29,14 @@ async function initializeGlobalTestUser(): Promise<void> {
   process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
   process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
-  // Ensure COUCHDB_URL is set from the test environment
-  if (!process.env.COUCHDB_URL && process.env.COUCHDB_TEST_URL) {
-    process.env.COUCHDB_URL = process.env.COUCHDB_TEST_URL;
-  }
-
-  // Fallback to default CouchDB URL if not set
+  // COUCHDB_URL should be set by testcontainer globalSetup
   if (!process.env.COUCHDB_URL) {
-    process.env.COUCHDB_URL = 'http://admin:password@localhost:5984';
+    throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
   }
 
   console.log('🔄 GLOBAL SETUP: Environment variables:', {
     NODE_ENV: process.env.NODE_ENV,
     COUCHDB_URL: process.env.COUCHDB_URL ? '[SET]' : '[MISSING]',
-    COUCHDB_TEST_URL: process.env.COUCHDB_TEST_URL ? '[SET]' : '[MISSING]',
   });
 
   try {
