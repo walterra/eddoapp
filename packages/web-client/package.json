@@ -36,7 +36,7 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "pouchdb-adapter-memory": "^9.0.0",
-    "tailwindcss": "^4.1.16",
+    "tailwindcss": "^4.1.18",
     "typescript": "~5.8.3",
     "vite": "^7.2.7",
     "vitest": "^3.2.4"
