@@ -2,7 +2,7 @@
  * Test MCP Server Instance
  * Manages MCP server lifecycle for integration tests
  */
-import { getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
+import { getCouchDbConfig, validateEnv } from '@eddo/core-server';
 import { ChildProcess, spawn } from 'child_process';
 import nano from 'nano';
 
@@ -26,7 +26,7 @@ export class TestMCPServerInstance {
   constructor(port?: number, pollingConfig?: ServerPollingConfig) {
     // Use environment variable or fallback to a random port to avoid conflicts
     this.port =
-      port || Number(process.env.MCP_TEST_PORT) || 3003 + Math.floor(Math.random() * 1000);
+      port || Number(process.env.MCP_SERVER_PORT) || 3003 + Math.floor(Math.random() * 1000);
 
     this.pollingConfig = {
       maxAttempts: pollingConfig?.maxAttempts ?? 30,
@@ -54,18 +54,16 @@ export class TestMCPServerInstance {
 
       // Set test environment variables before starting
       process.env.NODE_ENV = 'test';
-      process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
 
       const env = validateEnv(process.env);
-      console.log(`📦 Using test database: ${env.COUCHDB_TEST_DB_NAME}`);
+      console.log(`📦 Using test database: ${env.COUCHDB_DB_NAME}`);
 
       // Start the MCP server using the dedicated test script
       this.serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
         env: {
           ...process.env,
           NODE_ENV: 'test',
-          COUCHDB_TEST_DB_NAME: 'todos-test',
-          MCP_TEST_PORT: this.port.toString(),
+          MCP_SERVER_PORT: this.port.toString(),
         },
         stdio: ['ignore', 'pipe', 'pipe'],
         cwd: process.cwd(),
@@ -150,7 +148,7 @@ export class TestMCPServerInstance {
   async clearTestDatabase(): Promise<void> {
     try {
       const env = validateEnv(process.env);
-      const couchDbConfig = getTestCouchDbConfig(env);
+      const couchDbConfig = getCouchDbConfig(env);
       const couch = nano(couchDbConfig.url);
 
       // Try to delete the test database
@@ -277,7 +275,7 @@ let globalTestServer: TestMCPServerInstance | null = null;
 export async function getGlobalTestServer(): Promise<TestMCPServerInstance> {
   if (!globalTestServer) {
     const env = validateEnv(process.env);
-    globalTestServer = new TestMCPServerInstance(env.MCP_TEST_PORT, {
+    globalTestServer = new TestMCPServerInstance(env.MCP_SERVER_PORT, {
       maxAttempts: 20,
       pollIntervalMs: 500,
       startupTimeoutMs: 20000,

@@ -2,13 +2,7 @@
  * MCP Server with Per-Request Authentication
  * Implements proper stateless authentication following MCP best practices
  */
-import {
-  type TodoAlpha3,
-  getCouchDbConfig,
-  getRepeatTodo,
-  getTestCouchDbConfig,
-  validateEnv,
-} from '@eddo/core-server';
+import { type TodoAlpha3, getCouchDbConfig, getRepeatTodo, validateEnv } from '@eddo/core-server';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
@@ -30,7 +24,7 @@ type UserSession = {
 };
 
 // Initialize nano connection
-const couchDbConfig = env.NODE_ENV === 'test' ? getTestCouchDbConfig(env) : getCouchDbConfig(env);
+const couchDbConfig = getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
 
 // Create server with authentication
@@ -1255,12 +1249,9 @@ export async function startMcpServer(port: number = 3001) {
   try {
     console.log(`🔧 Initializing Eddo MCP server with auth on port ${port}...`);
 
-    // Verify database connection (database setup is handled externally)
-    // Note: We can't test specific user databases here since they're created on-demand
+    // Verify database connection
     try {
-      const defaultDbName =
-        env.NODE_ENV === 'test' ? getTestCouchDbConfig(env).dbName : getCouchDbConfig(env).dbName;
-      const defaultDb = couch.db.use(defaultDbName);
+      const defaultDb = couch.db.use(couchDbConfig.dbName);
       const info = await defaultDb.info();
       console.log(`✅ Connected to CouchDB (verified with ${info.db_name})`);
     } catch (error: unknown) {
@@ -1294,9 +1285,7 @@ export async function startMcpServer(port: number = 3001) {
 
 // Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // Use custom port from environment in test mode
-  const port = env.NODE_ENV === 'test' && env.MCP_TEST_PORT ? env.MCP_TEST_PORT : 3001;
-  startMcpServer(port).catch((error) => {
+  startMcpServer(env.MCP_SERVER_PORT).catch((error) => {
     console.error('Failed to start MCP server:', error);
     process.exit(1);
   });

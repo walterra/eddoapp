@@ -5,7 +5,7 @@
 import { checkPortAvailable } from './setup/port-check.js';
 
 async function main() {
-  const testPort = parseInt(process.env.MCP_TEST_PORT || '3003', 10);
+  const testPort = parseInt(process.env.MCP_SERVER_PORT || '3003', 10);
 
   console.log(`Checking if port ${testPort} is available for tests...`);
 

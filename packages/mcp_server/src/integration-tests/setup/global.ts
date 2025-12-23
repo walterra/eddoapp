@@ -15,14 +15,22 @@ let globalTestUser: {
 export async function setup() {
   console.log('🔄 GLOBAL SETUP: Starting global test setup...');
 
+  // COUCHDB_URL should be set by run-integration-tests.js via testcontainer setup
+  if (!process.env.COUCHDB_URL) {
+    console.error('❌ GLOBAL SETUP: COUCHDB_URL not set!');
+    console.error('   This means testcontainer setup failed in run-integration-tests.js');
+    throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
+  }
+
+  console.log('✅ GLOBAL SETUP: Using CouchDB URL:', process.env.COUCHDB_URL);
+
   // Set test environment variables
   process.env.NODE_ENV = 'test';
-  process.env.COUCHDB_TEST_DB_NAME = 'todos-test';
   process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
   // Check if test port is available
   const { ensurePortAvailable } = await import('./port-check.js');
-  const testPort = parseInt(process.env.MCP_TEST_PORT || '3003', 10);
+  const testPort = parseInt(process.env.MCP_SERVER_PORT || '3003', 10);
 
   try {
     await ensurePortAvailable(testPort);

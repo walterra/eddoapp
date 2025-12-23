@@ -43,6 +43,7 @@ Detailed documentation is available in the `docs/` directory:
 
 - Node.js ≥18.11.0
 - pnpm ≥7.1.0
+- Docker (required for integration and e2e tests - testcontainers auto-manages CouchDB)
 
 ### Installation
 
@@ -66,6 +67,7 @@ pnpm dev:telegram-bot  # Telegram bot
 ```
 
 **Development Access:**
+
 - **Main Application**: http://localhost:3000/ (API server proxies to web client)
 - **Web Client Dev Server**: http://localhost:5173/ (Vite dev server, used internally)
 - **MCP Server**: http://localhost:3002/ (Model Context Protocol server)
@@ -82,11 +84,13 @@ pnpm build:telegram-bot # Build telegram bot only
 
 ### Testing Commands
 
+**Note**: Integration and e2e tests automatically start/stop CouchDB containers using testcontainers. Docker must be running, but no manual CouchDB setup is needed.
+
 ```bash
 pnpm test              # Run unit tests
 pnpm test:unit         # Run unit tests explicitly
-pnpm test:integration  # Run integration tests
-pnpm test:e2e          # Run end-to-end tests
+pnpm test:integration  # Run integration tests (auto-starts CouchDB container)
+pnpm test:e2e          # Run end-to-end tests (auto-starts CouchDB container)
 pnpm test:all          # Run full test suite with linting
 pnpm test:ci           # CI test suite
 ```
@@ -267,7 +271,7 @@ pnpm vitest:run src/path/to/file.test.ts  # Run specific test file
 ## CI/CD Features
 
 - **Pre-commit hooks**: Automatic TypeScript checking, linting, and formatting via Husky
-- **GitHub Actions**: Automated testing with CouchDB service container
+- **GitHub Actions**: Automated testing with testcontainers (auto-managed CouchDB)
 - **Database isolation**: Per-user database isolation with API key authentication for MCP server
 - **Test optimization**: Separate unit/integration/e2e test commands for faster feedback
 

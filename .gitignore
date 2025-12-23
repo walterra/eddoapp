@@ -8,3 +8,9 @@ tsconfig.tsbuildinfo
 packages/telegram_bot/logs/
 logs/
 backups/
+.testcontainer-url
+-e 
+# Compiled testcontainer setup
+test/*.js
+test/*.d.ts
+test/*.map

@@ -2,7 +2,7 @@
  * E2E Test Utilities
  * Provides helper functions for setting up and cleaning up CouchDB databases in e2e tests
  */
-import { cleanupDatabasesByPattern, getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
+import { cleanupDatabasesByPattern, getCouchDbConfig, validateEnv } from '@eddo/core-server';
 import nano from 'nano';
 
 /**
@@ -19,7 +19,7 @@ export function generateTestDbName(prefix: string): string {
  */
 export function createTestEnv(customDbName?: string) {
   const env = validateEnv(process.env);
-  const testCouchConfig = getTestCouchDbConfig(env);
+  const testCouchConfig = getCouchDbConfig(env);
 
   return {
     ...process.env,
@@ -37,7 +37,7 @@ export class TestDatabaseManager {
 
   constructor() {
     const env = validateEnv(process.env);
-    const testCouchConfig = getTestCouchDbConfig(env);
+    const testCouchConfig = getCouchDbConfig(env);
     this.couch = nano(testCouchConfig.url);
   }
 

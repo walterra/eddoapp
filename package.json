@@ -15,7 +15,7 @@
     "@modelcontextprotocol/sdk": "^1.25.1",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",
-    "dotenv-mono": "github:marcocesarato/dotenv-mono#master",
+    "dotenv-mono": "^1.5.1",
     "events": "^3.3.0",
     "fastmcp": "^3.17.0",
     "flowbite": "^3.1.2",
@@ -41,6 +41,7 @@
     "@swc/core": "^1.13.21",
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/typography": "^0.5.19",
+    "@testcontainers/couchdb": "^11.10.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/react-hooks": "^8.0.1",
     "@types/d3-array": "^3.2.2",
@@ -79,6 +80,7 @@
     "prettier-plugin-tailwindcss": "^0.6.14",
     "prompts": "^2.4.2",
     "tailwindcss": "^4.1.18",
+    "testcontainers": "^11.10.0",
     "ts-node": "^10.9.1",
     "tsx": "^4.20.6",
     "typescript": "^5.8.3",
@@ -108,7 +110,7 @@
     "lint": "eslint --cache ./packages ./scripts --ignore-pattern '**/dist/**'",
     "test": "pnpm test:unit",
     "test:unit": "vitest run packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
-    "test:integration": "node scripts/run-integration-tests.js",
+    "test:integration": "tsx scripts/run-integration-tests.ts",
     "test:e2e": "vitest run scripts/__tests__/e2e",
     "test:all": "npm-run-all --parallel tsc:check test:unit test:integration test:e2e lint lint:format",
     "test:mcp": "node scripts/test-mcp.js",
@@ -152,7 +154,19 @@
   "pnpm": {
     "overrides": {
       "jws": ">=4.0.0"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "@tailwindcss/oxide",
+      "cpu-features",
+      "dotenv-mono",
+      "esbuild",
+      "leveldown",
+      "oxc-resolver",
+      "protobufjs",
+      "ssh2",
+      "unrs-resolver"
+    ]
   },
   "private": true
 }

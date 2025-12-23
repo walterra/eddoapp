@@ -29,7 +29,7 @@ export class MCPTestServer {
 
   constructor(config: MCPTestServerConfig = {}) {
     // Use dynamic port from environment or fall back to default
-    const testPort = process.env.MCP_TEST_PORT || '3003';
+    const testPort = process.env.MCP_SERVER_PORT || '3003';
 
     this.config = {
       serverUrl: config.serverUrl || process.env.MCP_TEST_URL || `http://localhost:${testPort}/mcp`,
@@ -239,11 +239,11 @@ export class MCPTestServer {
 
   private async forceCleanupDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/core-server');
+      const { validateEnv, getCouchDbConfig } = await import('@eddo/core-server');
       const nano = await import('nano');
 
       const env = validateEnv(process.env);
-      const couchDbConfig = getTestCouchDbConfig(env);
+      const couchDbConfig = getCouchDbConfig(env);
       const couch = nano.default(couchDbConfig.url);
 
       // Ensure test user is initialized

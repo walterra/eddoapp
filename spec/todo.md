@@ -1,7 +1,3 @@
-- use @testcontainers for integration/e2e tests
-
-- split up unit tests and integration tests on CI in separate tasks
-
 - **Investigate infinite \_all_docs loop in web-api dev server**: Web-api process gets stuck requesting `_all_docs?include_docs=true` continuously (10-15 req/sec), causing CouchDB to consume 900%+ CPU. Happened 2025-12-18 with process 7639 making 172+ requests in 200 log lines. Possible causes: PouchDB replication/sync issue, React infinite re-render triggering database queries, or changes feed listener gone wild. Add monitoring/detection and fix root cause in web-client or web-api code.
 
 - **Selective GitHub Force Resync**: Replace single "Force Resync" button with modal for fine-grained field selection

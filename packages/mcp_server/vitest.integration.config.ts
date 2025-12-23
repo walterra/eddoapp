@@ -11,7 +11,7 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**'],
     testTimeout: 45000, // 45 seconds for CouchDB operations (best practice)
     hookTimeout: 15000, // 15 seconds for setup/teardown with database recreation
-    globalSetup: ['src/integration-tests/setup/global.ts'], // Enable global setup to avoid race conditions
+    // Testcontainer setup handled by run-integration-tests.js
     reporters: ['verbose'],
     environment: 'node',
     globals: true,
@@ -32,12 +32,9 @@ export default defineConfig({
     // Environment variables for tests
     env: {
       NODE_ENV: 'test',
-      MCP_TEST_PORT: process.env.MCP_TEST_PORT || '3003',
-      COUCHDB_TEST_DB_NAME: 'todos-test',
-      // Allow custom test database URL
-      COUCHDB_TEST_URL: process.env.COUCHDB_TEST_URL,
-      // Add required COUCHDB_URL from .env file
-      COUCHDB_URL: process.env.COUCHDB_URL || 'http://admin:password@localhost:5984',
+      MCP_SERVER_PORT: process.env.MCP_SERVER_PORT || '3003',
+      // COUCHDB_URL is set by testcontainer globalSetup
+      // Tests use same DB_NAME as dev since containers are isolated
     },
 
     // Enable debugging to see what's happening

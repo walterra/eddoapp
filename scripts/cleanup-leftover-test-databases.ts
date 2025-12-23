@@ -4,7 +4,7 @@
  * This script cleans up test databases that were created by tests but not properly cleaned up
  */
 
-import { cleanupDatabasesByPattern, getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
+import { cleanupDatabasesByPattern, getCouchDbConfig, validateEnv } from '@eddo/core-server';
 
 async function main() {
   console.log('🧹 Cleaning up leftover test databases...');
@@ -12,7 +12,7 @@ async function main() {
   try {
     // Use test environment configuration
     const env = validateEnv(process.env);
-    const _testCouchConfig = getTestCouchDbConfig(env);
+    const _testCouchConfig = getCouchDbConfig(env);
 
     // Clean up databases with test- prefix
     const testDatabasePattern = /^test-/;

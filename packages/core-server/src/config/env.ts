@@ -21,11 +21,7 @@ export const envSchema = z.object({
 
   // MCP Server Configuration
   MCP_SERVER_URL: z.string().default('http://localhost:3001/mcp'),
-  MCP_TEST_PORT: z.coerce.number().default(3003),
-
-  // Test-specific CouchDB Configuration
-  COUCHDB_TEST_URL: z.string().optional(),
-  COUCHDB_TEST_DB_NAME: z.string().default('todos-test'),
+  MCP_SERVER_PORT: z.coerce.number().default(3001),
 
   // Telegram Bot Configuration
   TELEGRAM_BOT_TOKEN: z.string().optional(),
@@ -90,26 +86,15 @@ export function getCouchDbConfig(env: Env) {
 }
 
 /**
- * Get test-specific CouchDB configuration
- */
-export function getTestCouchDbConfig(env: Env) {
-  const testUrl = env.COUCHDB_TEST_URL || env.COUCHDB_URL;
-  return {
-    url: testUrl,
-    dbName: env.COUCHDB_TEST_DB_NAME,
-    fullUrl: `${testUrl}/${env.COUCHDB_TEST_DB_NAME}`,
-  };
-}
-
-/**
  * Get test-specific User Registry configuration
+ * With testcontainers, tests use isolated containers so same database name is fine
  */
 export function getTestUserRegistryConfig(env: Env) {
-  const testUrl = env.COUCHDB_TEST_URL || env.COUCHDB_URL;
+  const dbName = getEffectiveDbName(env);
   return {
-    url: testUrl,
-    dbName: `${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
-    fullUrl: `${testUrl}/${env.COUCHDB_TEST_DB_NAME || 'todos-test'}_user_registry`,
+    url: env.COUCHDB_URL,
+    dbName: `${dbName}_user_registry`,
+    fullUrl: `${env.COUCHDB_URL}/${dbName}_user_registry`,
   };
 }
 
