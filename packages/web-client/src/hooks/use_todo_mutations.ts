@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import type { Activity, Todo } from '@eddo/core-shared';
+import type { Activity, NewTodo, Todo } from '@eddo/core-shared';
 import { getRepeatTodo } from '@eddo/core-shared';
 
 import { usePouchDb } from '../pouch_db';
@@ -135,6 +135,115 @@ export function useTodoMutation() {
 
     // Don't invalidate on settled - optimistic update is sufficient
     // The changes listener will handle sync from other sources
+  });
+}
+
+/**
+ * Mutation hook for creating a new todo.
+ * @returns Mutation with isPending, isError, error states
+ */
+export function useCreateTodoMutation() {
+  const { safeDb } = usePouchDb();
+  const queryClient = useQueryClient();
+
+  return useMutation<Todo, Error, NewTodo>({
+    mutationFn: async (newTodo: NewTodo) => {
+      const result = await safeDb.safePut(newTodo);
+      return result;
+    },
+    onSuccess: (savedTodo) => {
+      // Track mutation to skip redundant invalidation from changes listener
+      recentMutations.add(savedTodo._id);
+
+      // Invalidate todos queries to refetch with new todo
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
+  });
+}
+
+/**
+ * Mutation hook for deleting a todo.
+ * @returns Mutation with isPending, isError, error states
+ */
+export function useDeleteTodoMutation() {
+  const { safeDb } = usePouchDb();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, Todo>({
+    mutationFn: async (todo: Todo) => {
+      await safeDb.safeRemove(todo);
+    },
+    onMutate: async (todo) => {
+      // Track mutation to skip redundant invalidation
+      recentMutations.add(todo._id);
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+      await queryClient.cancelQueries({ queryKey: ['activities'] });
+
+      // Optimistically remove from todos cache
+      queryClient.setQueriesData<Todo[]>({ queryKey: ['todos', 'byDueDate'] }, (old) => {
+        if (!old) return old;
+        return old.filter((t) => t._id !== todo._id);
+      });
+
+      // Optimistically remove from activities cache
+      queryClient.setQueriesData<Activity[]>({ queryKey: ['activities', 'byActive'] }, (old) => {
+        if (!old) return old;
+        return old.filter((a) => a.id !== todo._id);
+      });
+
+      // Optimistically remove from time tracking
+      queryClient.setQueryData<string[]>(['todos', 'byTimeTrackingActive'], (old) => {
+        if (!old) return old;
+        return old.filter((id) => id !== todo._id);
+      });
+    },
+    onError: () => {
+      // Refetch on error to restore correct state
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+    },
+  });
+}
+
+/**
+ * Mutation hook for saving/updating a todo with repeat handling.
+ * Does NOT use optimistic updates - invalidates queries after save instead.
+ * This ensures correct behavior when due date or other filter-affecting fields change.
+ * @returns Mutation with isPending, isError, error states
+ */
+export function useSaveTodoMutation() {
+  const { safeDb } = usePouchDb();
+  const queryClient = useQueryClient();
+
+  return useMutation<Todo, Error, { todo: Todo; originalTodo: Todo }>({
+    mutationFn: async ({ todo, originalTodo }) => {
+      // Get latest _rev to avoid conflict errors
+      const current = await safeDb.safeGet<Todo>(todo._id);
+      const todoToSave = current ? { ...todo, _rev: current._rev } : todo;
+      const result = await safeDb.safePut(todoToSave);
+
+      // Handle repeat todos when completion state changes
+      if (
+        typeof todo.repeat === 'number' &&
+        todo.completed &&
+        originalTodo.completed !== todo.completed
+      ) {
+        await safeDb.safePut(getRepeatTodo(todo));
+      }
+
+      return result;
+    },
+    onSuccess: (savedTodo) => {
+      // Track mutation to skip redundant invalidation from changes listener
+      recentMutations.add(savedTodo._id);
+
+      // Invalidate all todo queries to ensure consistent state
+      // This handles due date changes, context changes, and any other field updates
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+    },
   });
 }
 

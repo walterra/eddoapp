@@ -25,10 +25,14 @@ export function useTimeTrackingActive({ enabled = true }: UseTimeTrackingActiveP
 
       // Use Mango to find todos that have active entries
       // Then filter client-side for those with null end time (currently tracking)
-      const todos = await safeDb.safeFind<Todo>({
-        version: 'alpha3',
-        active: { $exists: true, $ne: {} },
-      });
+      // Note: PouchDB defaults to limit=25, so we set a high limit
+      const todos = await safeDb.safeFind<Todo>(
+        {
+          version: 'alpha3',
+          active: { $exists: true, $ne: {} },
+        },
+        { limit: 10000 },
+      );
 
       // Filter for todos with active time tracking (any entry with null end time)
       const ids = todos

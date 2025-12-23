@@ -35,10 +35,14 @@ export function useActivitiesByWeek({
       const endKey = endDate.toISOString();
 
       // Use Mango to find todos that have active entries
-      const todos = await safeDb.safeFind<Todo>({
-        version: 'alpha3',
-        active: { $exists: true, $ne: {} },
-      });
+      // Note: PouchDB defaults to limit=25, so we set a high limit
+      const todos = await safeDb.safeFind<Todo>(
+        {
+          version: 'alpha3',
+          active: { $exists: true, $ne: {} },
+        },
+        { limit: 10000 },
+      );
 
       // Expand active entries into Activity objects and filter by date range
       const activities: Activity[] = [];

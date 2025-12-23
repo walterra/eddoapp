@@ -4,7 +4,6 @@ import {
   type Todo,
   getActiveDuration,
   getFormattedDuration,
-  getRepeatTodo,
 } from '@eddo/core-client';
 import {
   Button,
@@ -19,7 +18,7 @@ import {
 import { type FC, useEffect, useState } from 'react';
 
 import { useTags } from '../hooks/use_tags';
-import { usePouchDb } from '../pouch_db';
+import { useDeleteTodoMutation, useSaveTodoMutation } from '../hooks/use_todo_mutations';
 import { TagInput } from './tag_input';
 
 interface TodoEditModalProps {
@@ -29,13 +28,11 @@ interface TodoEditModalProps {
 }
 
 export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) => {
-  const { safeDb } = usePouchDb();
   const { allTags } = useTags();
+  const saveTodoMutation = useSaveTodoMutation();
+  const deleteTodoMutation = useDeleteTodoMutation();
 
   const [editedTodo, setEditedTodo] = useState(todo);
-  const [error, setError] = useState<DatabaseError | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setEditedTodo(todo);
@@ -43,41 +40,25 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) =
 
   async function deleteButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
-    setError(null);
-    setIsDeleting(true);
 
     try {
-      await safeDb.safeRemove(todo);
+      await deleteTodoMutation.mutateAsync(todo);
       onClose();
     } catch (err) {
       console.error('Failed to delete todo:', err);
-      setError(err as DatabaseError);
-    } finally {
-      setIsDeleting(false);
+      // Error is available via deleteTodoMutation.error
     }
   }
 
   async function editSaveButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
-    setError(null);
-    setIsSaving(true);
 
     try {
-      await safeDb.safePut(editedTodo);
-
-      if (
-        typeof editedTodo.repeat === 'number' &&
-        editedTodo.completed &&
-        todo.completed !== editedTodo.completed
-      ) {
-        await safeDb.safePut(getRepeatTodo(editedTodo));
-      }
+      await saveTodoMutation.mutateAsync({ todo: editedTodo, originalTodo: todo });
       onClose();
     } catch (err) {
       console.error('Failed to save todo:', err);
-      setError(err as DatabaseError);
-    } finally {
-      setIsSaving(false);
+      // Error is available via saveTodoMutation.error
     }
   }
 
@@ -95,6 +76,15 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) =
       return false;
     }
   }, true);
+
+  const error = (saveTodoMutation.error || deleteTodoMutation.error) as DatabaseError | null;
+  const isSaving = saveTodoMutation.isPending;
+  const isDeleting = deleteTodoMutation.isPending;
+
+  const clearError = () => {
+    saveTodoMutation.reset();
+    deleteTodoMutation.reset();
+  };
 
   return (
     <Modal onClose={onClose} show={show} size="2xl">
@@ -128,7 +118,7 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) =
               <div className="ml-auto pl-3">
                 <button
                   className="inline-flex text-red-400 hover:text-red-500"
-                  onClick={() => setError(null)}
+                  onClick={clearError}
                   type="button"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,7 +1,6 @@
 import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 
-import { useAuth } from '../hooks/use_auth';
 import { useProfile } from '../hooks/use_profile';
 import { ToggleSwitch } from './toggle_switch';
 
@@ -20,9 +19,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
     unlinkTelegram,
     updatePreferences,
     clearError,
+    mutations,
   } = useProfile();
-
-  const { authToken } = useAuth();
 
   const [activeTab, setActiveTab] = useState<
     'profile' | 'security' | 'integrations' | 'preferences'
@@ -51,7 +49,6 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [githubToken, setGithubToken] = useState('');
   const [githubSyncInterval, setGithubSyncInterval] = useState(60);
   const [githubSyncTags, setGithubSyncTags] = useState('github, gtd:next');
-  const [isResyncing, setIsResyncing] = useState(false);
 
   // Initialize form when profile loads
   useEffect(() => {
@@ -270,11 +267,6 @@ export function UserProfile({ onClose }: UserProfileProps) {
   };
 
   const handleForceResync = async () => {
-    if (!authToken?.token) {
-      setFormError('Not authenticated');
-      return;
-    }
-
     if (
       !confirm('Force resync will re-fetch all GitHub issues. This may take a while. Continue?')
     ) {
@@ -283,35 +275,16 @@ export function UserProfile({ onClose }: UserProfileProps) {
 
     setFormError('');
     setSuccess(null);
-    setIsResyncing(true);
 
     try {
-      const response = await fetch('/api/users/github-resync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken.token}`,
-        },
-      });
-
-      if (response.ok) {
-        setSuccess('GitHub resync completed successfully! Refresh the page to see updates.');
-      } else {
-        const errorData = await response.json();
-
-        // Handle rate limit errors specially
-        if (errorData.rateLimitError && errorData.resetTime) {
-          setFormError(`${errorData.error}\n\nYou can try again ${errorData.resetTime}.`);
-        } else {
-          setFormError(errorData.error || 'Failed to resync GitHub issues');
-        }
-      }
-    } catch (_error) {
-      setFormError('Network error occurred during resync');
-    } finally {
-      setIsResyncing(false);
+      await mutations.githubResync.mutateAsync();
+      setSuccess('GitHub resync completed successfully! Refresh the page to see updates.');
+    } catch (err) {
+      setFormError((err as Error).message || 'Failed to resync GitHub issues');
     }
   };
+
+  const isResyncing = mutations.githubResync.isPending;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

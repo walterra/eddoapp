@@ -122,10 +122,13 @@ describe('useTimeTrackingActive', () => {
     renderHook(() => useTimeTrackingActive(), { wrapper });
 
     await waitFor(() =>
-      expect(mockSafeDb.safeFind).toHaveBeenCalledWith({
-        version: 'alpha3',
-        active: { $exists: true, $ne: {} },
-      }),
+      expect(mockSafeDb.safeFind).toHaveBeenCalledWith(
+        {
+          version: 'alpha3',
+          active: { $exists: true, $ne: {} },
+        },
+        { limit: 10000 },
+      ),
     );
   });
 

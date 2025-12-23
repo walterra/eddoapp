@@ -27,13 +27,17 @@ export function useTodosByWeek({ startDate, endDate, enabled = true }: UseTodosB
       const timerId = `fetchTodos-${Date.now()}`;
       console.time(timerId);
       // Use Mango find (faster than MapReduce views in PouchDB)
-      const todos = await safeDb.safeFind<Todo>({
-        version: 'alpha3',
-        due: {
-          $gte: startDate.toISOString(),
-          $lte: endDate.toISOString(),
+      // Note: PouchDB defaults to limit=25, so we set a high limit
+      const todos = await safeDb.safeFind<Todo>(
+        {
+          version: 'alpha3',
+          due: {
+            $gte: startDate.toISOString(),
+            $lte: endDate.toISOString(),
+          },
         },
-      });
+        { limit: 10000 },
+      );
       console.timeEnd(timerId);
       return todos;
     },
