@@ -72,7 +72,6 @@ export {
   getCouchDbConfig,
   getCouchDbUrl,
   getEffectiveDbName,
-  getTestCouchDbConfig,
   getTestUserRegistryConfig,
   validateEnv,
   type Env,

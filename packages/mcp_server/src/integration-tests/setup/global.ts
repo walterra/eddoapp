@@ -30,7 +30,7 @@ export async function setup() {
 
   // Check if test port is available
   const { ensurePortAvailable } = await import('./port-check.js');
-  const testPort = parseInt(process.env.MCP_TEST_PORT || '3003', 10);
+  const testPort = parseInt(process.env.MCP_SERVER_PORT || '3003', 10);
 
   try {
     await ensurePortAvailable(testPort);

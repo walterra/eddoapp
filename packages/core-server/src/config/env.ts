@@ -21,7 +21,7 @@ export const envSchema = z.object({
 
   // MCP Server Configuration
   MCP_SERVER_URL: z.string().default('http://localhost:3001/mcp'),
-  MCP_TEST_PORT: z.coerce.number().default(3003),
+  MCP_SERVER_PORT: z.coerce.number().default(3001),
 
   // Telegram Bot Configuration
   TELEGRAM_BOT_TOKEN: z.string().optional(),

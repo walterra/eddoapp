@@ -1285,9 +1285,7 @@ export async function startMcpServer(port: number = 3001) {
 
 // Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // Use MCP_TEST_PORT if set, otherwise default to 3001
-  const port = env.MCP_TEST_PORT || 3001;
-  startMcpServer(port).catch((error) => {
+  startMcpServer(env.MCP_SERVER_PORT).catch((error) => {
     console.error('Failed to start MCP server:', error);
     process.exit(1);
   });

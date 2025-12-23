@@ -49,7 +49,7 @@ async function runIntegrationTests(): Promise<void> {
       env: {
         ...process.env,
         COUCHDB_URL: testConfig?.url || process.env.COUCHDB_URL,
-        MCP_TEST_PORT: '3003',
+        MCP_SERVER_PORT: '3003',
         NODE_ENV: 'test',
       },
       stdio: ['ignore', 'pipe', 'pipe'],

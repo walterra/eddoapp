@@ -26,7 +26,7 @@ export class TestMCPServerInstance {
   constructor(port?: number, pollingConfig?: ServerPollingConfig) {
     // Use environment variable or fallback to a random port to avoid conflicts
     this.port =
-      port || Number(process.env.MCP_TEST_PORT) || 3003 + Math.floor(Math.random() * 1000);
+      port || Number(process.env.MCP_SERVER_PORT) || 3003 + Math.floor(Math.random() * 1000);
 
     this.pollingConfig = {
       maxAttempts: pollingConfig?.maxAttempts ?? 30,
@@ -63,7 +63,7 @@ export class TestMCPServerInstance {
         env: {
           ...process.env,
           NODE_ENV: 'test',
-          MCP_TEST_PORT: this.port.toString(),
+          MCP_SERVER_PORT: this.port.toString(),
         },
         stdio: ['ignore', 'pipe', 'pipe'],
         cwd: process.cwd(),
@@ -275,7 +275,7 @@ let globalTestServer: TestMCPServerInstance | null = null;
 export async function getGlobalTestServer(): Promise<TestMCPServerInstance> {
   if (!globalTestServer) {
     const env = validateEnv(process.env);
-    globalTestServer = new TestMCPServerInstance(env.MCP_TEST_PORT, {
+    globalTestServer = new TestMCPServerInstance(env.MCP_SERVER_PORT, {
       maxAttempts: 20,
       pollIntervalMs: 500,
       startupTimeoutMs: 20000,

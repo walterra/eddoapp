@@ -29,7 +29,7 @@ export class MCPTestServer {
 
   constructor(config: MCPTestServerConfig = {}) {
     // Use dynamic port from environment or fall back to default
-    const testPort = process.env.MCP_TEST_PORT || '3003';
+    const testPort = process.env.MCP_SERVER_PORT || '3003';
 
     this.config = {
       serverUrl: config.serverUrl || process.env.MCP_TEST_URL || `http://localhost:${testPort}/mcp`,

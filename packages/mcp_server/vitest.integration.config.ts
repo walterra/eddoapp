@@ -32,7 +32,7 @@ export default defineConfig({
     // Environment variables for tests
     env: {
       NODE_ENV: 'test',
-      MCP_TEST_PORT: process.env.MCP_TEST_PORT || '3003',
+      MCP_SERVER_PORT: process.env.MCP_SERVER_PORT || '3003',
       // COUCHDB_URL is set by testcontainer globalSetup
       // Tests use same DB_NAME as dev since containers are isolated
     },
