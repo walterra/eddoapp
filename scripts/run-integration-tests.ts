@@ -19,15 +19,17 @@ async function runIntegrationTests(): Promise<void> {
     await setupTestcontainer();
 
     // Override COUCHDB_URL with testcontainer URL to ensure complete isolation
-    loadTestcontainerConfig();
+    const testConfig = loadTestcontainerConfig();
+    console.log(`📦 Using testcontainer CouchDB: ${process.env.COUCHDB_URL}`);
 
     containerSetup = { teardown: teardownTestcontainer };
 
-    // Start the MCP server (COUCHDB_URL set by setupTestcontainer)
+    // Start the MCP server with testcontainer URL
     console.log('🚀 Starting MCP test server...');
     serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
       env: {
         ...process.env,
+        COUCHDB_URL: testConfig?.url || process.env.COUCHDB_URL,
         MCP_TEST_PORT: '3003',
         NODE_ENV: 'test',
       },

@@ -15,7 +15,11 @@ const CONTAINER_URL_FILE = path.join(process.cwd(), '.testcontainer-url');
  * Start CouchDB container and expose connection details via file
  */
 export async function setupTestcontainer(): Promise<void> {
-  console.log('🐳 Starting CouchDB testcontainer...');
+  // Guard against multiple calls (e.g., if module is imported multiple times)
+  if (container) {
+    console.log('🐳 CouchDB testcontainer already running, reusing existing container');
+    return;
+  }
 
   try {
     // Start CouchDB container with default credentials
