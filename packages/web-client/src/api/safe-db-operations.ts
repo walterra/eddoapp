@@ -268,6 +268,27 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
       throw createDatabaseError(error, 'query', `${designDoc}/${viewName}`);
     }
   },
+
+  /**
+   * Query using Mango find (uses indexes, faster than MapReduce views in PouchDB)
+   * @param selector - Mango selector for filtering documents
+   * @param options - Additional find options (sort, limit, etc.)
+   */
+  safeFind: async <T>(
+    selector: PouchDB.Find.Selector,
+    options: Omit<PouchDB.Find.FindRequest<Record<string, unknown>>, 'selector'> = {},
+  ): Promise<T[]> => {
+    try {
+      const result = await withRetry(
+        () => db.find({ selector, ...options }),
+        'find',
+        JSON.stringify(selector).slice(0, 50),
+      );
+      return result.docs as T[];
+    } catch (error) {
+      throw createDatabaseError(error, 'find');
+    }
+  },
 });
 
 export type SafeDbOperations = ReturnType<typeof createSafeDbOperations>;

@@ -1,6 +1,6 @@
 /**
  * Database changes provider - single PouchDB listener for the entire app
- * Debounces query invalidation to batch rapid changes
+ * Skips invalidation for local changes that were already handled by mutations
  */
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,6 +15,7 @@ import {
 } from 'react';
 
 import { usePouchDb } from '../pouch_db';
+import { recentMutations } from './use_todo_mutations';
 
 /** Debounce delay for query invalidation (ms) */
 const INVALIDATION_DEBOUNCE_MS = 150;
@@ -34,39 +35,48 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children 
   const [changeCount, setChangeCount] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingInvalidationRef = useRef(false);
+  const pendingChangesRef = useRef<Set<string>>(new Set());
 
   // Debounced invalidation to batch rapid changes
-  const invalidateQueries = useCallback(() => {
-    pendingInvalidationRef.current = true;
-
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      if (pendingInvalidationRef.current) {
-        console.time('invalidateQueries');
-        queryClient.invalidateQueries({ queryKey: ['todos'] });
-        queryClient.invalidateQueries({ queryKey: ['activities'] });
-        console.timeEnd('invalidateQueries');
-        pendingInvalidationRef.current = false;
+  const scheduleInvalidation = useCallback(
+    (docId: string) => {
+      // Skip if this change was from a local mutation
+      if (recentMutations.has(docId)) {
+        recentMutations.delete(docId);
+        return;
       }
-      debounceTimerRef.current = null;
-    }, INVALIDATION_DEBOUNCE_MS);
-  }, [queryClient]);
+
+      pendingChangesRef.current.add(docId);
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        if (pendingChangesRef.current.size > 0) {
+          console.time('invalidateQueries');
+          queryClient.invalidateQueries({ queryKey: ['todos'] });
+          queryClient.invalidateQueries({ queryKey: ['activities'] });
+          console.timeEnd('invalidateQueries');
+          pendingChangesRef.current.clear();
+        }
+        debounceTimerRef.current = null;
+      }, INVALIDATION_DEBOUNCE_MS);
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     const changesListener = changes({
       live: true,
       since: 'now',
-      include_docs: true,
+      include_docs: false,
     });
 
-    changesListener.on('change', (d) => {
-      setChangeCount(Number(d.seq));
-      // Debounced invalidation batches rapid changes
-      invalidateQueries();
+    changesListener.on('change', (change) => {
+      setChangeCount(Number(change.seq));
+      // Skip invalidation for local mutations
+      scheduleInvalidation(change.id);
     });
 
     changesListener.on('complete', () => {
@@ -88,7 +98,7 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children 
       changesListener.cancel();
       setIsListening(false);
     };
-  }, [changes, invalidateQueries]);
+  }, [changes, scheduleInvalidation]);
 
   return (
     <DatabaseChangesContext.Provider value={{ changeCount, isListening }}>

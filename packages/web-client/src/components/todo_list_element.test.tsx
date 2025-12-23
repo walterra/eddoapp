@@ -528,9 +528,9 @@ describe('TodoListElement', () => {
       const user = userEvent.setup();
 
       // Mock safePut to be slower so we can test simultaneous clicks
-      let resolveFirst: () => void;
-      const firstPromise = new Promise<void>((resolve) => {
-        resolveFirst = resolve;
+      let resolveFirst: (() => void) | undefined;
+      const firstPromise = new Promise<{ rev: string }>((resolve) => {
+        resolveFirst = () => resolve({ rev: '2-abc' });
       });
 
       const mockSafePut = vi.fn().mockImplementation(() => firstPromise);
@@ -545,19 +545,28 @@ describe('TodoListElement', () => {
       const pauseButton = screen.getByTestId('pause-button');
 
       // Click once to start the operation
-      user.click(pauseButton);
+      await user.click(pauseButton);
+
+      // Wait a tick for the mutation to start
+      await waitFor(() => {
+        expect(mockSafePut).toHaveBeenCalledTimes(1);
+      });
 
       // Try to click again while first operation is still pending
-      user.click(pauseButton);
-      user.click(pauseButton);
+      // These should be ignored because mutation is pending
+      await user.click(pauseButton);
+      await user.click(pauseButton);
 
       // Resolve the first operation
       resolveFirst!();
 
-      // Should only call safePut once despite multiple clicks
+      // Wait for mutation to complete
       await waitFor(() => {
-        expect(mockSafePut).toHaveBeenCalledTimes(1);
+        expect(pauseButton).not.toBeDisabled();
       });
+
+      // Should still only have been called once
+      expect(mockSafePut).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
+import type { Todo } from '@eddo/core-shared';
 import { usePouchDb } from '../pouch_db';
 
 interface UseTimeTrackingActiveParams {
@@ -7,14 +8,11 @@ interface UseTimeTrackingActiveParams {
 }
 
 /**
- * Custom hook to fetch currently active time tracking entries using TanStack Query.
+ * Fetches IDs of todos with active time tracking (end time is null).
+ * Uses Mango query to find todos with active entries, then filters client-side.
  *
- * This hook uses TanStack Query for caching and state management, while
- * relying on PouchDB changes feed (via DatabaseChangesProvider) for
- * real-time invalidation.
- *
- * @param enabled - Whether the query should run (default: true if safeDb exists)
- * @returns TanStack Query result with active todo IDs, loading, and error states
+ * @param enabled - Whether the query should run
+ * @returns TanStack Query result with active todo IDs
  */
 export function useTimeTrackingActive({ enabled = true }: UseTimeTrackingActiveParams = {}) {
   const { safeDb } = usePouchDb();
@@ -22,19 +20,22 @@ export function useTimeTrackingActive({ enabled = true }: UseTimeTrackingActiveP
   return useQuery({
     queryKey: ['todos', 'byTimeTrackingActive'],
     queryFn: async () => {
-      console.time('fetchTimeTrackingActive');
-      // View emits null, we only need the doc IDs
-      // Use include_docs to get doc._id from each row
-      const results = await safeDb.safeQuery<{ _id: string }>(
-        'todos_by_time_tracking_active',
-        'byTimeTrackingActive',
-        {
-          key: null,
-          include_docs: true,
-        },
-      );
-      const ids = results.map((d) => d._id);
-      console.timeEnd('fetchTimeTrackingActive');
+      const timerId = `fetchTimeTrackingActive-${Date.now()}`;
+      console.time(timerId);
+
+      // Use Mango to find todos that have active entries
+      // Then filter client-side for those with null end time (currently tracking)
+      const todos = await safeDb.safeFind<Todo>({
+        version: 'alpha3',
+        active: { $exists: true, $ne: {} },
+      });
+
+      // Filter for todos with active time tracking (any entry with null end time)
+      const ids = todos
+        .filter((todo) => Object.values(todo.active).some((endTime) => endTime === null))
+        .map((todo) => todo._id);
+
+      console.timeEnd(timerId);
       return ids;
     },
     enabled: !!safeDb && enabled,

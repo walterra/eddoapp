@@ -3,14 +3,16 @@ import {
   type Todo,
   getActiveDuration,
   getFormattedDuration,
-  getRepeatTodo,
 } from '@eddo/core-client';
 import { Checkbox } from 'flowbite-react';
-import { type FC, useMemo, useState } from 'react';
+import { type FC, memo, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';
-import { usePouchDb } from '../pouch_db';
+import {
+  useToggleCompletionMutation,
+  useToggleTimeTrackingMutation,
+} from '../hooks/use_todo_mutations';
 import { FormattedMessage } from './formatted_message';
 import { TagDisplay } from './tag_display';
 import { TodoEditModal } from './todo_edit_modal';
@@ -23,43 +25,32 @@ interface TodoListElementProps {
   todo: Todo;
 }
 
-export const TodoListElement: FC<TodoListElementProps> = ({
+/** Memoized to prevent re-renders when parent updates unrelated todos */
+const TodoListElementInner: FC<TodoListElementProps> = ({
   active,
   activeDate,
   activityOnly,
   timeTrackingActive,
   todo,
 }) => {
-  const { safeDb } = usePouchDb();
+  const toggleCompletion = useToggleCompletionMutation();
+  const toggleTimeTracking = useToggleTimeTrackingMutation();
 
   const { counter: activeCounter } = useActiveTimer(active);
   const [showEditModal, setShowEditModal] = useState(false);
   const [error, setError] = useState<DatabaseError | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
+
+  const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
 
   async function toggleCheckbox(todo: Todo) {
     if (isUpdating) return;
-
     setError(null);
-    setIsUpdating(true);
-
-    const updatedTodo = {
-      ...todo,
-      completed: todo.completed === null ? new Date().toISOString() : null,
-    };
 
     try {
-      await safeDb.safePut(updatedTodo);
-
-      // check if we need to create a new todo based on repeat setting
-      if (typeof updatedTodo.repeat === 'number' && updatedTodo.completed) {
-        await safeDb.safePut(getRepeatTodo(updatedTodo));
-      }
+      await toggleCompletion.mutateAsync(todo);
     } catch (err) {
       console.error('Failed to update todo:', err);
       setError(err as DatabaseError);
-    } finally {
-      setIsUpdating(false);
     }
   }
 
@@ -71,33 +62,13 @@ export const TodoListElement: FC<TodoListElementProps> = ({
   async function timeTrackingButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
     event.preventDefault();
     if (isUpdating) return;
-
     setError(null);
-    setIsUpdating(true);
-
-    const updatedActive = { ...todo.active };
-
-    if (
-      Object.keys(updatedActive).length === 0 ||
-      Object.values(updatedActive).every((d) => d !== null)
-    ) {
-      updatedActive[new Date().toISOString()] = null;
-    } else {
-      const activeEntry = Object.entries(updatedActive).find((d) => d[1] === null);
-      if (activeEntry) {
-        updatedActive[activeEntry[0]] = new Date().toISOString();
-      }
-    }
-
-    const updatedTodo = { ...todo, active: updatedActive };
 
     try {
-      await safeDb.safePut(updatedTodo);
+      await toggleTimeTracking.mutateAsync(todo);
     } catch (err) {
       console.error('Failed to update time tracking:', err);
       setError(err as DatabaseError);
-    } finally {
-      setIsUpdating(false);
     }
   }
 
@@ -214,3 +185,20 @@ export const TodoListElement: FC<TodoListElementProps> = ({
     </div>
   );
 };
+
+/** Memoized component - only re-renders when props change */
+export const TodoListElement = memo(TodoListElementInner, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if relevant props changed
+  return (
+    prevProps.active === nextProps.active &&
+    prevProps.activeDate === nextProps.activeDate &&
+    prevProps.activityOnly === nextProps.activityOnly &&
+    prevProps.timeTrackingActive === nextProps.timeTrackingActive &&
+    prevProps.todo._id === nextProps.todo._id &&
+    prevProps.todo._rev === nextProps.todo._rev &&
+    prevProps.todo.completed === nextProps.todo.completed &&
+    prevProps.todo.title === nextProps.todo.title &&
+    JSON.stringify(prevProps.todo.active) === JSON.stringify(nextProps.todo.active) &&
+    JSON.stringify(prevProps.todo.tags) === JSON.stringify(nextProps.todo.tags)
+  );
+});

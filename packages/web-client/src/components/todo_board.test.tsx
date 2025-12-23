@@ -1,7 +1,7 @@
 import { type DatabaseError, DatabaseErrorType } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { screen, waitFor } from '@testing-library/react';
-import { add, endOfWeek, startOfWeek } from 'date-fns';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../test-polyfill';
@@ -94,10 +94,6 @@ vi.mock('../hooks/use_database_changes', async (importOriginal) => {
 describe('TodoBoard', () => {
   let testDb: ReturnType<typeof createTestPouchDb>;
   const currentDate = new Date('2025-01-15T10:00:00.000Z'); // Wednesday
-  const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
-  const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), {
-    hours: 2,
-  });
 
   const defaultProps = {
     currentDate,
@@ -138,13 +134,13 @@ describe('TodoBoard', () => {
 
       await populateTestDatabase(testDb.db, todosInWeek);
 
-      // Mock safeQuery to return our test data
+      // Mock safeFind for todos (uses Mango query now)
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue(todosInWeek);
+
+      // Mock safeQuery for activities and time tracking (still use MapReduce views)
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
         .mockImplementation((_designDoc, viewName, _options) => {
-          if (viewName === 'byDueDate') {
-            return Promise.resolve(todosInWeek);
-          }
           if (viewName === 'byActive') {
             return Promise.resolve([]);
           }
@@ -167,37 +163,34 @@ describe('TodoBoard', () => {
         ).toBeInTheDocument();
       });
 
-      // Verify correct query parameters
+      // Verify safeFind was called for todos
       await waitFor(() => {
-        expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
-          'todos_by_due_date',
-          'byDueDate',
+        expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalledWith(
           expect.objectContaining({
-            startkey: currentStartOfWeek.toISOString(),
-            endkey: currentEndOfWeek.toISOString(),
-            descending: false,
-            include_docs: true,
+            version: 'alpha3',
+            due: expect.objectContaining({
+              $gte: expect.any(String),
+              $lte: expect.any(String),
+            }),
           }),
         );
       });
     });
 
     it('should fetch time tracking active todos', async () => {
-      // With include_docs: true, returns documents with _id
+      // safeFind returns todos with active entries, hook filters for null end times
       const activeTodos = [
-        { _id: '2025-01-15T10:00:00.000Z' },
-        { _id: '2025-01-15T11:00:00.000Z' },
+        { _id: '2025-01-15T10:00:00.000Z', active: { '2025-01-15T10:00:00Z': null } },
+        { _id: '2025-01-15T11:00:00.000Z', active: { '2025-01-15T11:00:00Z': null } },
       ];
 
+      // Mock safeFind for both todos and time tracking active
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue(activeTodos);
+
+      // Mock safeQuery for activities
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
         .mockImplementation((_designDoc, viewName, _options) => {
-          if (viewName === 'byTimeTrackingActive') {
-            return Promise.resolve(activeTodos);
-          }
-          if (viewName === 'byDueDate') {
-            return Promise.resolve([]);
-          }
           if (viewName === 'byActive') {
             return Promise.resolve([]);
           }
@@ -209,56 +202,39 @@ describe('TodoBoard', () => {
       });
 
       await waitFor(() => {
-        expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
-          'todos_by_time_tracking_active',
-          'byTimeTrackingActive',
-          { key: null, include_docs: true },
+        expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalledWith(
+          expect.objectContaining({
+            version: 'alpha3',
+            active: { $exists: true, $ne: {} },
+          }),
         );
       });
     });
 
     it('should fetch activities for current week', async () => {
-      const activities = [
-        {
-          id: '2025-01-15T10:00:00.000Z',
-          from: '2025-01-15T10:00:00.000Z',
-          to: '2025-01-15T11:00:00.000Z',
-          doc: {
-            _id: '2025-01-15T10:00:00.000Z',
-            title: 'Activity Todo',
-            context: 'work',
-          },
-        },
+      // Todos with active entries - safeFind returns these, hook expands to activities
+      const todosWithActive = [
+        createTestTodo({
+          _id: '2025-01-15T10:00:00.000Z',
+          title: 'Activity Todo',
+          context: 'work',
+          due: '2025-01-15T12:00:00.000Z',
+          active: { '2025-01-15T10:00:00.000Z': '2025-01-15T11:00:00.000Z' },
+        }),
       ];
 
-      testDb.contextValue.safeDb.safeQuery = vi
-        .fn()
-        .mockImplementation((_designDoc, viewName, _options) => {
-          if (viewName === 'byActive') {
-            return Promise.resolve(activities);
-          }
-          if (viewName === 'byDueDate') {
-            return Promise.resolve([]);
-          }
-          if (viewName === 'byTimeTrackingActive') {
-            return Promise.resolve([]);
-          }
-          return Promise.resolve([]);
-        });
+      // Mock safeFind to return todos with active entries
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue(todosWithActive);
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
       await waitFor(() => {
-        expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
-          'todos_by_active',
-          'byActive',
+        expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalledWith(
           expect.objectContaining({
-            startkey: currentStartOfWeek.toISOString(),
-            endkey: currentEndOfWeek.toISOString(),
-            descending: false,
-            include_docs: true,
+            version: 'alpha3',
+            active: { $exists: true, $ne: {} },
           }),
         );
       });
@@ -288,12 +264,8 @@ describe('TodoBoard', () => {
         }),
       ];
 
-      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation((_designDoc, viewName) => {
-        if (viewName === 'byDueDate') {
-          return Promise.resolve(todos);
-        }
-        return Promise.resolve([]);
-      });
+      // Mock safeFind for todos and time tracking
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue(todos);
 
       const { rerender } = renderWithPouchDb(
         <TodoBoard {...defaultProps} selectedTags={['work']} />,
@@ -368,12 +340,7 @@ describe('TodoBoard', () => {
         }),
       ];
 
-      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation((_designDoc, viewName) => {
-        if (viewName === 'byDueDate') {
-          return Promise.resolve(todos);
-        }
-        return Promise.resolve([]);
-      });
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue(todos);
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -417,12 +384,7 @@ describe('TodoBoard', () => {
         version: 'alpha3' as const,
       };
 
-      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation((_designDoc, viewName) => {
-        if (viewName === 'byDueDate') {
-          return Promise.resolve([todoWithoutContext]);
-        }
-        return Promise.resolve([]);
-      });
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue([todoWithoutContext]);
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -448,7 +410,7 @@ describe('TodoBoard', () => {
         name: 'NetworkError',
       };
 
-      testDb.contextValue.safeDb.safeQuery = vi.fn().mockRejectedValue(error);
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockRejectedValue(error);
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -469,7 +431,7 @@ describe('TodoBoard', () => {
         name: 'NetworkError',
       };
 
-      testDb.contextValue.safeDb.safeQuery = vi.fn().mockRejectedValue(error);
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockRejectedValue(error);
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -499,7 +461,7 @@ describe('TodoBoard', () => {
       };
 
       let shouldFail = true;
-      testDb.contextValue.safeDb.safeQuery = vi.fn().mockImplementation(() => {
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockImplementation(() => {
         if (shouldFail) {
           return Promise.reject(error);
         }
@@ -535,7 +497,7 @@ describe('TodoBoard', () => {
         resolvePromise = resolve;
       });
 
-      testDb.contextValue.safeDb.safeQuery = vi.fn().mockReturnValue(fetchPromise);
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockReturnValue(fetchPromise);
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -548,7 +510,7 @@ describe('TodoBoard', () => {
       resolvePromise!([]);
 
       await waitFor(() => {
-        expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalled();
+        expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalled();
       });
     });
   });
@@ -584,41 +546,41 @@ describe('TodoBoard', () => {
 
   describe('Date Change Handling', () => {
     it('should refetch data when current date changes week', async () => {
-      const mockSafeQuery = vi.fn().mockResolvedValue([]);
-      testDb.contextValue.safeDb.safeQuery = mockSafeQuery;
+      const mockSafeFind = vi.fn().mockResolvedValue([]);
+      testDb.contextValue.safeDb.safeFind = mockSafeFind;
 
       const { rerender } = renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
       await waitFor(() => {
-        expect(mockSafeQuery).toHaveBeenCalled();
+        expect(mockSafeFind).toHaveBeenCalled();
       });
 
-      const initialCallCount = mockSafeQuery.mock.calls.length;
+      const initialCallCount = mockSafeFind.mock.calls.length;
 
       // Change to different week
       const newDate = new Date('2025-01-22T10:00:00.000Z'); // Next week
       rerender(<TodoBoard {...defaultProps} currentDate={newDate} />);
 
       await waitFor(() => {
-        expect(mockSafeQuery.mock.calls.length).toBeGreaterThan(initialCallCount);
+        expect(mockSafeFind.mock.calls.length).toBeGreaterThan(initialCallCount);
       });
     });
 
     it('should not refetch when date changes within same week', async () => {
-      const mockSafeQuery = vi.fn().mockResolvedValue([]);
-      testDb.contextValue.safeDb.safeQuery = mockSafeQuery;
+      const mockSafeFind = vi.fn().mockResolvedValue([]);
+      testDb.contextValue.safeDb.safeFind = mockSafeFind;
 
       const { rerender } = renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
       await waitFor(() => {
-        expect(mockSafeQuery).toHaveBeenCalled();
+        expect(mockSafeFind).toHaveBeenCalled();
       });
 
-      const initialCallCount = mockSafeQuery.mock.calls.length;
+      const initialCallCount = mockSafeFind.mock.calls.length;
 
       // Change to different day in same week
       const newDate = new Date('2025-01-16T10:00:00.000Z'); // Thursday, same week
@@ -629,7 +591,7 @@ describe('TodoBoard', () => {
 
       // Allow for some variance in call count due to component lifecycle
       // The important thing is it shouldn't increase dramatically (like +3 for a new week)
-      expect(mockSafeQuery.mock.calls.length).toBeLessThanOrEqual(initialCallCount + 3);
+      expect(mockSafeFind.mock.calls.length).toBeLessThanOrEqual(initialCallCount + 3);
     });
   });
 });
