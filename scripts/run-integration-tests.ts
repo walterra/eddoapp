@@ -20,9 +20,28 @@ async function runIntegrationTests(): Promise<void> {
 
     // Override COUCHDB_URL with testcontainer URL to ensure complete isolation
     const testConfig = loadTestcontainerConfig();
-    console.log(`📦 Using testcontainer CouchDB: ${process.env.COUCHDB_URL}`);
+    if (!testConfig?.url) {
+      throw new Error('Failed to load testcontainer config');
+    }
+    console.log(`📦 Using testcontainer CouchDB: ${testConfig.url}`);
 
     containerSetup = { teardown: teardownTestcontainer };
+
+    // Create default test database before starting MCP server
+    console.log('🏗️  Creating test database...');
+    const nano = (await import('nano')).default;
+    const couch = nano(testConfig.url);
+    const testDbName = 'todos-dev'; // Default database name from env schema
+    try {
+      await couch.db.create(testDbName);
+      console.log(`✅ Created test database: ${testDbName}`);
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'statusCode' in err && err.statusCode === 412) {
+        console.log(`ℹ️  Test database already exists: ${testDbName}`);
+      } else {
+        throw err;
+      }
+    }
 
     // Start the MCP server with testcontainer URL
     console.log('🚀 Starting MCP test server...');

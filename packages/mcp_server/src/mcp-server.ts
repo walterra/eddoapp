@@ -1255,31 +1255,11 @@ export async function startMcpServer(port: number = 3001) {
   try {
     console.log(`🔧 Initializing Eddo MCP server with auth on port ${port}...`);
 
-    // Verify database connection and create default database if needed (for test containers)
-    // Note: We can't test specific user databases here since they're created on-demand
+    // Verify database connection
+    // Note: In test mode, database setup is handled by run-integration-tests.ts before server starts
     try {
       const defaultDbName =
         env.NODE_ENV === 'test' ? getTestCouchDbConfig(env).dbName : getCouchDbConfig(env).dbName;
-
-      // In test mode, create the database if it doesn't exist (testcontainer starts empty)
-      if (env.NODE_ENV === 'test') {
-        try {
-          await couch.db.get(defaultDbName);
-        } catch (dbError: unknown) {
-          if (
-            dbError &&
-            typeof dbError === 'object' &&
-            'statusCode' in dbError &&
-            dbError.statusCode === 404
-          ) {
-            await couch.db.create(defaultDbName);
-            console.log(`📦 Created test database: ${defaultDbName}`);
-          } else {
-            throw dbError;
-          }
-        }
-      }
-
       const defaultDb = couch.db.use(defaultDbName);
       const info = await defaultDb.info();
       console.log(`✅ Connected to CouchDB (verified with ${info.db_name})`);
