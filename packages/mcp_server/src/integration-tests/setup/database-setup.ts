@@ -4,7 +4,7 @@
  * Separated from MCP server for better architecture and test isolation
  */
 import { getCouchDbConfig, validateEnv } from '@eddo/core-server';
-import { DESIGN_DOCS, type DesignDocument } from '@eddo/core-shared';
+import { DESIGN_DOCS, type DesignDocument, REQUIRED_INDEXES } from '@eddo/core-shared';
 import nano from 'nano';
 
 export class DatabaseSetup {
@@ -92,56 +92,12 @@ export class DatabaseSetup {
 
   /**
    * Create CouchDB indexes for efficient querying
+   * Uses shared REQUIRED_INDEXES from @eddo/core-shared for consistency
    */
   async createIndexes(): Promise<void> {
     console.log(`🔍 Creating indexes for: ${this.dbName}`);
 
-    // Try a very simple index first to test if indexing works at all
-    const simpleIndex = {
-      index: { fields: ['due'] },
-      name: 'simple-due-index',
-      type: 'json' as const,
-    };
-
-    try {
-      await this.db.createIndex(simpleIndex);
-      console.log(`✅ Created simple index: ${simpleIndex.name}`);
-    } catch (error) {
-      console.error(`❌ Failed to create simple index:`, error);
-    }
-
-    const indexes: Array<{
-      index: { fields: string[] };
-      name: string;
-      type: 'json' | 'text';
-    }> = [
-      // Primary index for basic queries with sort
-      {
-        index: { fields: ['version', 'due'] },
-        name: 'version-due-index',
-        type: 'json',
-      },
-      // Index for context filtering with sort
-      {
-        index: { fields: ['version', 'context', 'due'] },
-        name: 'version-context-due-index',
-        type: 'json',
-      },
-      // Index for completion filtering with sort
-      {
-        index: { fields: ['version', 'completed', 'due'] },
-        name: 'version-completed-due-index',
-        type: 'json',
-      },
-      // Index for both context and completion filtering with sort
-      {
-        index: { fields: ['version', 'context', 'completed', 'due'] },
-        name: 'version-context-completed-due-index',
-        type: 'json',
-      },
-    ];
-
-    for (const indexDef of indexes) {
+    for (const indexDef of REQUIRED_INDEXES) {
       await this.createSingleIndexWithRetry(indexDef);
     }
 

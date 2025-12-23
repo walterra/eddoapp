@@ -1,5 +1,3 @@
-- we updated pouchdb/couchdb views recently and switched some queries to mango. this was done to improve UI primarily. check and fix if the mcp-server queries and db setup/views/indices are still in line with this.
-
 - use knip to identify dead code we can clean up
 
 - **Investigate infinite \_all_docs loop in web-api dev server**: Web-api process gets stuck requesting `_all_docs?include_docs=true` continuously (10-15 req/sec), causing CouchDB to consume 900%+ CPU. Happened 2025-12-18 with process 7639 making 172+ requests in 200 log lines. Possible causes: PouchDB replication/sync issue, React infinite re-render triggering database queries, or changes feed listener gone wild. Add monitoring/detection and fix root cause in web-client or web-api code.
