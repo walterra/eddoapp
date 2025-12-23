@@ -70,26 +70,29 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const clientSize = process.env.CLIENT_SIZE;
+            const clientSize = parseInt(process.env.CLIENT_SIZE || '0', 10);
+            const limit = 2048;
             const commentMarker = '<!-- bundle-size-report -->';
-            const comment = `${commentMarker}
-            ## Bundle Size Report 📦
+            const status = clientSize > limit ? '❌ Exceeds limit' : '✅ Within limit';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const comment = [
+              commentMarker,
+              '## Bundle Size Report 📦',
+              '',
+              `**Client bundle size:** ${clientSize}KB`,
+              `**Limit:** ${limit}KB`,
+              `**Status:** ${status}`,
+              '',
+              `[View detailed bundle analysis](${runUrl})`
+            ].join('\n');
             
-            **Client bundle size:** ${clientSize}KB
-            **Limit:** 2048KB
-            **Status:** ${clientSize > 2048 ? '❌ Exceeds limit' : '✅ Within limit'}
-            
-            [View detailed bundle analysis](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-            
-            const comments = await github.rest.issues.listComments({
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
             
-            const existingComment = comments.data.find(comment => 
-              comment.body.includes(commentMarker)
-            );
+            const existingComment = comments.find(c => c.body && c.body.includes(commentMarker));
             
             if (existingComment) {
               await github.rest.issues.updateComment({
@@ -98,13 +101,15 @@ jobs:
                 repo: context.repo.repo,
                 body: comment
               });
+              console.log(`Updated existing comment ${existingComment.id}`);
             } else {
-              await github.rest.issues.createComment({
+              const { data: newComment } = await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: comment
               });
+              console.log(`Created new comment ${newComment.id}`);
             }
 
   unit-tests:
