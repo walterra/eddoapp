@@ -90,7 +90,7 @@ export function loadTestcontainerConfig() {
       const config = JSON.parse(fs.readFileSync(CONTAINER_URL_FILE, 'utf-8'));
 
       // Override COUCHDB_URL with testcontainer URL
-      // Test code uses getTestCouchDbConfig() which falls back to COUCHDB_URL
+      // Test code uses getCouchDbConfig() which falls back to COUCHDB_URL
       process.env.COUCHDB_URL = config.url;
 
       return config;

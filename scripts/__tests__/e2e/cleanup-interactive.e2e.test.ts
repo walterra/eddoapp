@@ -31,7 +31,7 @@ describe('Cleanup Interactive E2E', () => {
 
   it.skip('should handle invalid CouchDB connection gracefully', async () => {
     // Skip: cleanup-interactive.ts uses getCouchDbConfig (production config) instead of
-    // getTestCouchDbConfig, so it always connects to the real CouchDB instance
+    // getCouchDbConfig, so it always connects to the real CouchDB instance
     // regardless of environment variable overrides in tests.
     // This test would require modifying the actual script to use test config.
 
@@ -107,7 +107,7 @@ describe('Cleanup Interactive E2E', () => {
 
   it.skip('should handle database access errors gracefully', async () => {
     // Skip: cleanup-interactive.ts uses getCouchDbConfig (production config) instead of
-    // getTestCouchDbConfig, so it always connects to the real CouchDB instance
+    // getCouchDbConfig, so it always connects to the real CouchDB instance
     // regardless of environment variable overrides in tests.
     // This test would require modifying the actual script to use test config.
 
