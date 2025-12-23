@@ -206,12 +206,12 @@ export class GithubSyncScheduler {
       const githubClient = createGithubClient({ token }, this.logger);
 
       // On initial sync, only fetch open issues
-      // On subsequent syncs, fetch issues updated since sync was enabled (max lookback)
-      const syncStartedAt = user.preferences?.githubSyncStartedAt;
+      // On subsequent syncs, fetch issues updated since last successful sync
+      const lastSync = user.preferences?.githubLastSync;
 
       const issues = await githubClient.fetchUserIssues({
         state: isInitialSync ? 'open' : 'all',
-        since: isInitialSync ? undefined : syncStartedAt,
+        since: isInitialSync ? undefined : lastSync,
       });
 
       const tags = user.preferences?.githubSyncTags || ['github', 'gtd:next'];
@@ -241,7 +241,7 @@ export class GithubSyncScheduler {
         username: user.username,
         isInitialSync,
         issueState: isInitialSync ? 'open' : 'all',
-        since: isInitialSync ? 'none' : syncStartedAt || 'none',
+        since: isInitialSync ? 'none' : lastSync || 'none',
         totalIssues: issues.length,
         created,
         updated,
