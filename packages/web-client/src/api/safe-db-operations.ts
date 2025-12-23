@@ -229,7 +229,11 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
     }
   },
 
-  /** Query a design document view */
+  /**
+   * Query a design document view
+   * When include_docs is true, returns doc merged with view value (if any)
+   * When include_docs is false, returns only the emitted value
+   */
   safeQuery: async <T>(
     designDoc: string,
     viewName: string,
@@ -241,6 +245,23 @@ export const createSafeDbOperations = (db: PouchDB.Database) => ({
         'query',
         `${designDoc}/${viewName}`,
       );
+
+      // When include_docs is true, merge doc with emitted value
+      // This supports optimized views that emit minimal data
+      if (options.include_docs) {
+        return result.rows
+          .filter((row) => row.doc)
+          .map((row) => {
+            const value = row.value as Record<string, unknown> | null;
+            const doc = row.doc as Record<string, unknown>;
+            // If value is null or undefined, just return doc
+            // Otherwise merge value properties with doc
+            if (value === null || value === undefined) {
+              return doc as T;
+            }
+            return { ...value, doc, id: row.id } as T;
+          });
+      }
 
       return result.rows.map((row) => row.value as T);
     } catch (error) {

@@ -91,16 +91,26 @@ The changes listener immediately invalidates queries without any debouncing. If 
 - [x] Count number of queries triggered per user action (3 queries per change)
 - [x] Document baseline metrics (documented in root cause analysis)
 
-### Phase 2: Fix Design Document Views (Performance Fix) - DEFERRED
+### Phase 2: Fix Design Document Views (Performance Fix) ✅
 
-- [ ] Change `emit(doc.due, doc)` to `emit(doc.due, doc._id)` in todos_by_due_date
-- [ ] Change `emit(from, { doc, from, id: doc._id, to })` to `emit(from, { from, id: doc._id, to })` in todos_by_active
-- [ ] Update `safeQuery` consumers to use `include_docs: true` and merge doc data
-- [ ] Add migration path for existing design docs
-- [ ] Automated test: verify queries return correct data
+- [x] Change `emit(doc.due, doc)` to `emit(doc.due, null)` in todos_by_due_date
+- [x] Change `emit(from, { doc, from, id, to })` to `emit(from, { from, to })` in todos_by_active
+- [x] Change `emit(null, { id })` to `emit(null, null)` in todos_by_time_tracking_active
+- [x] Update `safeQuery` to merge `row.doc` with `row.value` when `include_docs: true`
+- [x] Update hooks to use `include_docs: true`
+- [x] Automated test: all 461 tests pass
 - [ ] User test: toggle time tracking, observe console timing
 
-_Note: Deferred to separate issue - requires index rebuild and more testing_
+**Changes made:**
+
+- `packages/core-shared/src/api/database-structures.ts`: Optimized view functions to emit minimal data
+- `packages/web-client/src/api/safe-db-operations.ts`: Enhanced `safeQuery` to handle `include_docs: true`
+- `packages/web-client/src/hooks/use_todos_by_week.ts`: Use `include_docs: true`
+- `packages/web-client/src/hooks/use_activities_by_week.ts`: Use `include_docs: true`
+- `packages/web-client/src/hooks/use_time_tracking_active.ts`: Use `include_docs: true`, access `_id`
+- Updated tests in `todo_board.test.tsx` and `use_time_tracking_active.test.ts`
+
+**Index Rebuild Note:** Design doc changes trigger automatic index rebuild on first query after sync.
 
 ### Phase 3: Add Query Invalidation Debouncing (Performance Fix) ✅
 

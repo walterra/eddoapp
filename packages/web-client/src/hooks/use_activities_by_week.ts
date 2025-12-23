@@ -32,10 +32,12 @@ export function useActivitiesByWeek({
     queryKey: ['activities', 'byActive', startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
       console.time('fetchActivities');
+      // Use include_docs to fetch full documents efficiently
+      // View emits {from, to}, doc is merged via include_docs
       const activities = await safeDb.safeQuery<Activity>('todos_by_active', 'byActive', {
         descending: false,
         endkey: endDate.toISOString(),
-        include_docs: false,
+        include_docs: true,
         startkey: startDate.toISOString(),
       });
       console.timeEnd('fetchActivities');

@@ -176,14 +176,18 @@ describe('TodoBoard', () => {
             startkey: currentStartOfWeek.toISOString(),
             endkey: currentEndOfWeek.toISOString(),
             descending: false,
-            include_docs: false,
+            include_docs: true,
           }),
         );
       });
     });
 
     it('should fetch time tracking active todos', async () => {
-      const activeTodos = [{ id: '2025-01-15T10:00:00.000Z' }, { id: '2025-01-15T11:00:00.000Z' }];
+      // With include_docs: true, returns documents with _id
+      const activeTodos = [
+        { _id: '2025-01-15T10:00:00.000Z' },
+        { _id: '2025-01-15T11:00:00.000Z' },
+      ];
 
       testDb.contextValue.safeDb.safeQuery = vi
         .fn()
@@ -208,7 +212,7 @@ describe('TodoBoard', () => {
         expect(testDb.contextValue.safeDb.safeQuery).toHaveBeenCalledWith(
           'todos_by_time_tracking_active',
           'byTimeTrackingActive',
-          { key: null },
+          { key: null, include_docs: true },
         );
       });
     });
@@ -254,7 +258,7 @@ describe('TodoBoard', () => {
             startkey: currentStartOfWeek.toISOString(),
             endkey: currentEndOfWeek.toISOString(),
             descending: false,
-            include_docs: false,
+            include_docs: true,
           }),
         );
       });

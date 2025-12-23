@@ -23,14 +23,17 @@ export function useTimeTrackingActive({ enabled = true }: UseTimeTrackingActiveP
     queryKey: ['todos', 'byTimeTrackingActive'],
     queryFn: async () => {
       console.time('fetchTimeTrackingActive');
-      const results = await safeDb.safeQuery<{ id: string }>(
+      // View emits null, we only need the doc IDs
+      // Use include_docs to get doc._id from each row
+      const results = await safeDb.safeQuery<{ _id: string }>(
         'todos_by_time_tracking_active',
         'byTimeTrackingActive',
         {
           key: null,
+          include_docs: true,
         },
       );
-      const ids = results.map((d) => d.id);
+      const ids = results.map((d) => d._id);
       console.timeEnd('fetchTimeTrackingActive');
       return ids;
     },

@@ -56,9 +56,10 @@ describe('useTimeTrackingActive', () => {
     createElement(QueryClientProvider, { client: queryClient }, children);
 
   it('should return expected data structure (array of IDs)', async () => {
-    const mockIds = [{ id: 'todo-1' }, { id: 'todo-2' }, { id: 'todo-3' }];
+    // With include_docs: true, safeQuery returns full documents with _id
+    const mockDocs = [{ _id: 'todo-1' }, { _id: 'todo-2' }, { _id: 'todo-3' }];
 
-    mockSafeDb.safeQuery.mockResolvedValue(mockIds);
+    mockSafeDb.safeQuery.mockResolvedValue(mockDocs);
 
     const { result } = renderHook(() => useTimeTrackingActive(), {
       wrapper,
@@ -79,7 +80,7 @@ describe('useTimeTrackingActive', () => {
   });
 
   it('should respect enabled parameter when true', async () => {
-    mockSafeDb.safeQuery.mockResolvedValue([{ id: 'todo-1' }]);
+    mockSafeDb.safeQuery.mockResolvedValue([{ _id: 'todo-1' }]);
 
     const { result } = renderHook(() => useTimeTrackingActive({ enabled: true }), { wrapper });
 
@@ -118,6 +119,7 @@ describe('useTimeTrackingActive', () => {
         'byTimeTrackingActive',
         {
           key: null,
+          include_docs: true,
         },
       ),
     );
@@ -136,7 +138,7 @@ describe('useTimeTrackingActive', () => {
   });
 
   it('should handle single active time tracking entry', async () => {
-    mockSafeDb.safeQuery.mockResolvedValue([{ id: 'single-todo' }]);
+    mockSafeDb.safeQuery.mockResolvedValue([{ _id: 'single-todo' }]);
 
     const { result } = renderHook(() => useTimeTrackingActive(), {
       wrapper,

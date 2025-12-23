@@ -28,10 +28,12 @@ export function useTodosByWeek({ startDate, endDate, enabled = true }: UseTodosB
     queryKey: ['todos', 'byDueDate', startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
       console.time('fetchTodos');
+      // Use include_docs to fetch full documents efficiently
+      // View emits null, doc is fetched via include_docs
       const todos = await safeDb.safeQuery<Todo>('todos_by_due_date', 'byDueDate', {
         descending: false,
         endkey: endDate.toISOString(),
-        include_docs: false,
+        include_docs: true,
         startkey: startDate.toISOString(),
       });
       console.timeEnd('fetchTodos');
