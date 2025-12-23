@@ -41,13 +41,13 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     if (result.success) {
       logger.info('Agent workflow completed successfully', {
         userId,
-        hasResponse: !!result.finalState.finalResponse,
+        hasResponse: !!result.finalResponse,
       });
 
       // Note: Agent already sends conversational responses directly during processing
       // Store the final response for session tracking without sending duplicate
-      if (result.finalState.finalResponse) {
-        ctx.session.lastBotMessage = result.finalState.finalResponse;
+      if (result.finalResponse) {
+        ctx.session.lastBotMessage = result.finalResponse;
       }
     } else {
       logger.error('Agent workflow failed', {
@@ -57,7 +57,7 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
       });
 
       // Send error message if not already handled
-      if (!result.finalState.finalResponse) {
+      if (!result.finalResponse) {
         await ctx.reply(
           '❌ Sorry, I encountered an error processing your request. Please try again.',
           { parse_mode: 'Markdown' },
