@@ -41,38 +41,47 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Get Release Version
-        id: release-version
+      - name: Check for Changesets
+        id: check-changesets
         run: |
-          pnpm changeset status --output=release.json 2>/dev/null || true
-          if [ -f release.json ]; then
-            VERSION=$(jq -r '.releases[0].newVersion // empty' release.json)
-            rm release.json
-            if [ -n "$VERSION" ]; then
-              echo "version=$VERSION" >> $GITHUB_OUTPUT
-              echo "title=release v$VERSION" >> $GITHUB_OUTPUT
-            else
-              echo "title=chore: release" >> $GITHUB_OUTPUT
-            fi
+          CHANGESET_COUNT=$(find .changeset -name "*.md" ! -name "README.md" 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$CHANGESET_COUNT" -gt 0 ]; then
+            echo "hasChangesets=true" >> $GITHUB_OUTPUT
+            echo "Found $CHANGESET_COUNT changeset(s)"
           else
-            echo "title=chore: release" >> $GITHUB_OUTPUT
+            echo "hasChangesets=false" >> $GITHUB_OUTPUT
+            echo "No changesets found"
           fi
 
-      - name: Create Release Pull Request or Publish
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          title: ${{ steps.release-version.outputs.title }}
-          commit: "chore: version packages"
-          version: pnpm version-packages
-          createGithubReleases: false
+      - name: Create Release Pull Request
+        id: create-pr
+        if: steps.check-changesets.outputs.hasChangesets == 'true'
+        run: node scripts/create-release-pr.js
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Create Aggregated GitHub Release
-        if: steps.changesets.outputs.published == 'true'
+      - name: Check for Published Version
+        id: check-publish
+        if: steps.check-changesets.outputs.hasChangesets == 'false'
         run: |
-          VERSION=$(jq -r '.[0].version' <<< '${{ steps.changesets.outputs.publishedPackages }}')
+          # Get current version
+          VERSION=$(jq -r '.version' package.json)
+          
+          # Check if tag already exists
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "shouldPublish=false" >> $GITHUB_OUTPUT
+            echo "Tag v${VERSION} already exists"
+          else
+            echo "shouldPublish=true" >> $GITHUB_OUTPUT
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "Will create release for v${VERSION}"
+          fi
+
+      - name: Create GitHub Release
+        if: steps.check-publish.outputs.shouldPublish == 'true'
+        run: |
+          VERSION="${{ steps.check-publish.outputs.version }}"
           RELEASE_NOTES=$(node scripts/aggregate-changelog.js)
           
           # Create git tag
