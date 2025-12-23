@@ -29,7 +29,7 @@ export type PrinterConfig = z.infer<typeof printerConfigSchema>;
 /**
  * Create and validate printer service configuration
  */
-export function createPrinterConfig(): PrinterConfig {
+function createPrinterConfig(): PrinterConfig {
   const printerConfig = printerConfigSchema.parse(process.env);
   return printerConfig;
 }

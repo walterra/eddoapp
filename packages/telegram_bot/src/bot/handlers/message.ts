@@ -41,9 +41,7 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     if (result.success) {
       logger.info('Agent workflow completed successfully', {
         userId,
-        hasSummary: !!result.summary,
-        complexity: result.finalState.complexityAnalysis?.classification,
-        stepsExecuted: result.finalState.executionSteps.length,
+        hasResponse: !!result.finalState.finalResponse,
       });
 
       // Note: Agent already sends conversational responses directly during processing

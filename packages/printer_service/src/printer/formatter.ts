@@ -134,7 +134,7 @@ function wrapText(text: string, maxWidth: number = MAX_LINE_WIDTH): string[] {
 /**
  * Convert Telegram markdown to plain text suitable for thermal printing
  */
-export function formatForThermalPrinter(telegramMarkdown: string): string {
+function formatForThermalPrinter(telegramMarkdown: string): string {
   // Strip emojis first
   let formatted = stripEmojis(telegramMarkdown);
 
