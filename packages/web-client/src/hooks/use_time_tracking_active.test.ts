@@ -15,6 +15,7 @@ describe('useTimeTrackingActive', () => {
   let queryClient: QueryClient;
   let mockSafeDb: {
     safeQuery: ReturnType<typeof vi.fn>;
+    safeFind: ReturnType<typeof vi.fn>;
     safeGet: ReturnType<typeof vi.fn>;
     safePut: ReturnType<typeof vi.fn>;
     safeRemove: ReturnType<typeof vi.fn>;
@@ -35,6 +36,7 @@ describe('useTimeTrackingActive', () => {
     // Create mock safeDb with all required methods
     mockSafeDb = {
       safeQuery: vi.fn(),
+      safeFind: vi.fn(),
       safeGet: vi.fn(),
       safePut: vi.fn(),
       safeRemove: vi.fn(),
@@ -56,9 +58,14 @@ describe('useTimeTrackingActive', () => {
     createElement(QueryClientProvider, { client: queryClient }, children);
 
   it('should return expected data structure (array of IDs)', async () => {
-    const mockIds = [{ id: 'todo-1' }, { id: 'todo-2' }, { id: 'todo-3' }];
+    // safeFind returns todos, hook filters for active ones with null end time
+    const mockTodos = [
+      { _id: 'todo-1', active: { '2025-01-01T10:00:00Z': null } },
+      { _id: 'todo-2', active: { '2025-01-01T11:00:00Z': null } },
+      { _id: 'todo-3', active: { '2025-01-01T12:00:00Z': null } },
+    ];
 
-    mockSafeDb.safeQuery.mockResolvedValue(mockIds);
+    mockSafeDb.safeFind.mockResolvedValue(mockTodos);
 
     const { result } = renderHook(() => useTimeTrackingActive(), {
       wrapper,
@@ -75,22 +82,24 @@ describe('useTimeTrackingActive', () => {
     expect(result.current.data).toBeUndefined();
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
-    expect(mockSafeDb.safeQuery).not.toHaveBeenCalled();
+    expect(mockSafeDb.safeFind).not.toHaveBeenCalled();
   });
 
   it('should respect enabled parameter when true', async () => {
-    mockSafeDb.safeQuery.mockResolvedValue([{ id: 'todo-1' }]);
+    mockSafeDb.safeFind.mockResolvedValue([
+      { _id: 'todo-1', active: { '2025-01-01T10:00:00Z': null } },
+    ]);
 
     const { result } = renderHook(() => useTimeTrackingActive({ enabled: true }), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockSafeDb.safeQuery).toHaveBeenCalled();
+    expect(mockSafeDb.safeFind).toHaveBeenCalled();
     expect(result.current.data).toEqual(['todo-1']);
   });
 
   it('should use correct query key structure', async () => {
-    mockSafeDb.safeQuery.mockResolvedValue([]);
+    mockSafeDb.safeFind.mockResolvedValue([]);
 
     const { result } = renderHook(() => useTimeTrackingActive(), {
       wrapper,
@@ -107,24 +116,21 @@ describe('useTimeTrackingActive', () => {
     expect(queries.length).toBe(1);
   });
 
-  it('should call safeQuery with correct parameters', async () => {
-    mockSafeDb.safeQuery.mockResolvedValue([]);
+  it('should call safeFind with correct parameters', async () => {
+    mockSafeDb.safeFind.mockResolvedValue([]);
 
     renderHook(() => useTimeTrackingActive(), { wrapper });
 
     await waitFor(() =>
-      expect(mockSafeDb.safeQuery).toHaveBeenCalledWith(
-        'todos_by_time_tracking_active',
-        'byTimeTrackingActive',
-        {
-          key: null,
-        },
-      ),
+      expect(mockSafeDb.safeFind).toHaveBeenCalledWith({
+        version: 'alpha3',
+        active: { $exists: true, $ne: {} },
+      }),
     );
   });
 
   it('should return empty array when no active time tracking', async () => {
-    mockSafeDb.safeQuery.mockResolvedValue([]);
+    mockSafeDb.safeFind.mockResolvedValue([]);
 
     const { result } = renderHook(() => useTimeTrackingActive(), {
       wrapper,
@@ -136,7 +142,9 @@ describe('useTimeTrackingActive', () => {
   });
 
   it('should handle single active time tracking entry', async () => {
-    mockSafeDb.safeQuery.mockResolvedValue([{ id: 'single-todo' }]);
+    mockSafeDb.safeFind.mockResolvedValue([
+      { _id: 'single-todo', active: { '2025-01-01T10:00:00Z': null } },
+    ]);
 
     const { result } = renderHook(() => useTimeTrackingActive(), {
       wrapper,
@@ -149,7 +157,7 @@ describe('useTimeTrackingActive', () => {
 
   it('should handle errors gracefully', async () => {
     const error = new Error('Database error');
-    mockSafeDb.safeQuery.mockRejectedValue(error);
+    mockSafeDb.safeFind.mockRejectedValue(error);
 
     const { result } = renderHook(() => useTimeTrackingActive(), {
       wrapper,
@@ -174,11 +182,11 @@ describe('useTimeTrackingActive', () => {
     });
 
     expect(result.current.fetchStatus).toBe('idle');
-    expect(mockSafeDb.safeQuery).not.toHaveBeenCalled();
+    expect(mockSafeDb.safeFind).not.toHaveBeenCalled();
   });
 
   it('should provide loading state', () => {
-    mockSafeDb.safeQuery.mockImplementation(
+    mockSafeDb.safeFind.mockImplementation(
       () => new Promise(() => {}), // Never resolves
     );
 
@@ -188,5 +196,28 @@ describe('useTimeTrackingActive', () => {
 
     expect(result.current.isPending).toBe(true);
     expect(result.current.data).toBeUndefined();
+  });
+
+  it('should filter out todos without active null end time', async () => {
+    // Mix of active (null end time) and inactive (completed) time entries
+    const mockTodos = [
+      { _id: 'todo-active', active: { '2025-01-01T10:00:00Z': null } },
+      { _id: 'todo-completed', active: { '2025-01-01T10:00:00Z': '2025-01-01T11:00:00Z' } },
+      {
+        _id: 'todo-mixed',
+        active: { '2025-01-01T10:00:00Z': '2025-01-01T11:00:00Z', '2025-01-01T12:00:00Z': null },
+      },
+    ];
+
+    mockSafeDb.safeFind.mockResolvedValue(mockTodos);
+
+    const { result } = renderHook(() => useTimeTrackingActive(), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Only todos with at least one null end time should be returned
+    expect(result.current.data).toEqual(['todo-active', 'todo-mixed']);
   });
 });

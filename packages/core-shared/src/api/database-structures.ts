@@ -18,16 +18,21 @@ export interface IndexDefinition {
 /**
  * Design documents required for todo functionality
  * Used by both client (PouchDB) and server (CouchDB) setup
+ *
+ * PERFORMANCE NOTE: Views emit minimal data (IDs only or small metadata).
+ * Use `include_docs: true` in queries to fetch full documents.
+ * This keeps indexes small and rebuilds fast.
  */
 export const DESIGN_DOCS: DesignDocument[] = [
   {
     _id: '_design/todos_by_active',
     views: {
       byActive: {
+        // Emits activity metadata without full doc - use include_docs to get doc
         map: `function (doc) {
           if (doc.active) {
             Object.entries(doc.active).forEach(([from, to]) => {
-              emit(from, { doc, from, id: doc._id, to });
+              emit(from, { from: from, to: to });
             });
           }
         }`,
@@ -38,9 +43,10 @@ export const DESIGN_DOCS: DesignDocument[] = [
     _id: '_design/todos_by_due_date',
     views: {
       byDueDate: {
+        // Emits null - use include_docs to get full document
         map: `function (doc) {
           if (doc.due) {
-            emit(doc.due, doc);
+            emit(doc.due, null);
           }
         }`,
       },
@@ -50,11 +56,12 @@ export const DESIGN_DOCS: DesignDocument[] = [
     _id: '_design/todos_by_time_tracking_active',
     views: {
       byTimeTrackingActive: {
+        // Emits null - doc._id available via row.id with include_docs
         map: `function (doc) {
           if (doc.active) {
             Object.entries(doc.active).forEach((d) => {
               if (d[1] === null) {
-                emit(null, { id: doc._id });
+                emit(null, null);
               }
             });
           }

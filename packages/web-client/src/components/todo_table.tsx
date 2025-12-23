@@ -4,7 +4,6 @@ import {
   getActiveDuration,
   getFormattedDuration,
   getFormattedDurationForActivities,
-  getRepeatTodo,
   isLatestVersion,
 } from '@eddo/core-client';
 import { group } from 'd3-array';
@@ -21,7 +20,7 @@ import {
   startOfYear,
 } from 'date-fns';
 import { Checkbox } from 'flowbite-react';
-import { type FC, Fragment, useEffect, useMemo, useState } from 'react';
+import { type FC, Fragment, memo, useEffect, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { CONTEXT_DEFAULT } from '../constants';
@@ -29,6 +28,10 @@ import { ensureDesignDocuments } from '../database_setup';
 import { useActiveTimer } from '../hooks/use_active_timer';
 import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
 import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
+import {
+  useToggleCompletionMutation,
+  useToggleTimeTrackingMutation,
+} from '../hooks/use_todo_mutations';
 import { useTodosByWeek } from '../hooks/use_todos_by_week';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
@@ -78,21 +81,21 @@ interface TodoRowProps {
   selectedColumns: string[];
   activeDate: string;
   timeTrackingActive: boolean;
-  onUpdate: () => void;
 }
 
-const TodoRow: FC<TodoRowProps> = ({
+const TodoRowInner: FC<TodoRowProps> = ({
   todo,
   selectedColumns,
   activeDate,
   timeTrackingActive,
-  onUpdate,
 }) => {
-  const { safeDb } = usePouchDb();
+  const toggleCompletion = useToggleCompletionMutation();
+  const toggleTimeTracking = useToggleTimeTrackingMutation();
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [error, setError] = useState<DatabaseError | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
 
+  const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
   const thisButtonTimeTrackingActive = Object.values(todo.active).some((d) => d === null);
   const { counter: activeCounter } = useActiveTimer(thisButtonTimeTrackingActive);
 
@@ -100,62 +103,27 @@ const TodoRow: FC<TodoRowProps> = ({
     return getActiveDuration(todo.active, activeDate);
   }, [thisButtonTimeTrackingActive, activeDate, activeCounter]);
 
-  async function toggleCheckbox() {
+  async function handleToggleCheckbox() {
     if (isUpdating) return;
-
     setError(null);
-    setIsUpdating(true);
-
-    const updatedTodo = {
-      ...todo,
-      completed: todo.completed === null ? new Date().toISOString() : null,
-    };
 
     try {
-      await safeDb.safePut(updatedTodo);
-
-      if (typeof updatedTodo.repeat === 'number' && updatedTodo.completed) {
-        await safeDb.safePut(getRepeatTodo(updatedTodo));
-      }
-      onUpdate();
+      await toggleCompletion.mutateAsync(todo);
     } catch (err) {
       console.error('Failed to update todo:', err);
       setError(err as DatabaseError);
-    } finally {
-      setIsUpdating(false);
     }
   }
 
-  async function toggleTimeTracking() {
+  async function handleToggleTimeTracking() {
     if (isUpdating) return;
-
     setError(null);
-    setIsUpdating(true);
-
-    const updatedActive = { ...todo.active };
-
-    if (
-      Object.keys(updatedActive).length === 0 ||
-      Object.values(updatedActive).every((d) => d !== null)
-    ) {
-      updatedActive[new Date().toISOString()] = null;
-    } else {
-      const activeEntry = Object.entries(updatedActive).find((d) => d[1] === null);
-      if (activeEntry) {
-        updatedActive[activeEntry[0]] = new Date().toISOString();
-      }
-    }
-
-    const updatedTodo = { ...todo, active: updatedActive };
 
     try {
-      await safeDb.safePut(updatedTodo);
-      onUpdate();
+      await toggleTimeTracking.mutateAsync(todo);
     } catch (err) {
       console.error('Failed to update time tracking:', err);
       setError(err as DatabaseError);
-    } finally {
-      setIsUpdating(false);
     }
   }
 
@@ -231,7 +199,7 @@ const TodoRow: FC<TodoRowProps> = ({
               checked={todo.completed !== null}
               disabled={isUpdating}
               key={`checkbox-${todo._id}-${todo.completed !== null}`}
-              onChange={toggleCheckbox}
+              onChange={handleToggleCheckbox}
             />
           </td>
         );
@@ -293,7 +261,7 @@ const TodoRow: FC<TodoRowProps> = ({
               <button
                 className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
                 disabled={isUpdating}
-                onClick={toggleTimeTracking}
+                onClick={handleToggleTimeTracking}
                 title={thisButtonTimeTrackingActive ? 'Pause' : 'Start'}
                 type="button"
               >
@@ -320,6 +288,21 @@ const TodoRow: FC<TodoRowProps> = ({
   );
 };
 
+/** Memoized component - only re-renders when props change */
+const TodoRow = memo(TodoRowInner, (prevProps, nextProps) => {
+  return (
+    prevProps.activeDate === nextProps.activeDate &&
+    prevProps.timeTrackingActive === nextProps.timeTrackingActive &&
+    prevProps.todo._id === nextProps.todo._id &&
+    prevProps.todo._rev === nextProps.todo._rev &&
+    prevProps.todo.completed === nextProps.todo.completed &&
+    prevProps.todo.title === nextProps.todo.title &&
+    JSON.stringify(prevProps.todo.active) === JSON.stringify(nextProps.todo.active) &&
+    JSON.stringify(prevProps.todo.tags) === JSON.stringify(nextProps.todo.tags) &&
+    JSON.stringify(prevProps.selectedColumns) === JSON.stringify(nextProps.selectedColumns)
+  );
+});
+
 export const TodoTable: FC<TodoTableProps> = ({
   currentDate,
   selectedTags,
@@ -331,7 +314,6 @@ export const TodoTable: FC<TodoTableProps> = ({
   const { safeDb, rawDb } = usePouchDb();
   const [error, setError] = useState<DatabaseError | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const { startDate, endDate } = useMemo(() => {
     const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
@@ -485,12 +467,6 @@ export const TodoTable: FC<TodoTableProps> = ({
     return columnId in labels ? labels[columnId] : columnId;
   };
 
-  const handleUpdate = () => {
-    setRefreshKey((prev) => prev + 1);
-    todosQuery.refetch();
-    activitiesQuery.refetch();
-  };
-
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
       {displayError && todos.length > 0 && (
@@ -536,8 +512,7 @@ export const TodoTable: FC<TodoTableProps> = ({
                   {contextTodos.map((todo) => (
                     <TodoRow
                       activeDate={format(currentDate, 'yyyy-MM-dd')}
-                      key={`${todo._id}-${refreshKey}`}
-                      onUpdate={handleUpdate}
+                      key={`${todo._id}-${todo._rev}`}
                       selectedColumns={selectedColumns}
                       timeTrackingActive={timeTrackingActive.length > 0}
                       todo={todo}

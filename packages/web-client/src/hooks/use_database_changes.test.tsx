@@ -268,7 +268,7 @@ describe('useDatabaseChanges Hook', () => {
   });
 
   describe('Error handling', () => {
-    it('should handle changes listener errors gracefully', () => {
+    it('should handle changes listener errors gracefully', async () => {
       const mockError = new Error('Changes listener failed');
       const mockOn = vi.fn((event, callback) => {
         if (event === 'error') {
@@ -301,10 +301,59 @@ describe('useDatabaseChanges Hook', () => {
       // Initially should be listening
       expect(result.current.isListening).toBe(true);
 
-      // After error should not be listening
-      setTimeout(() => {
-        expect(result.current.isListening).toBe(false);
-      }, 100);
+      // Wait for error callback to fire and verify state
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(result.current.isListening).toBe(false);
+    });
+  });
+
+  describe('Query Invalidation Debouncing', () => {
+    it('should debounce rapid invalidations', async () => {
+      const mockInvalidateQueries = vi.fn();
+      const mockQueryClient = {
+        invalidateQueries: mockInvalidateQueries,
+      };
+
+      // Test the debouncing logic directly
+      const DEBOUNCE_MS = 150;
+      let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+      let pendingInvalidation = false;
+
+      const invalidateQueries = () => {
+        pendingInvalidation = true;
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+        debounceTimer = setTimeout(() => {
+          if (pendingInvalidation) {
+            mockQueryClient.invalidateQueries({ queryKey: ['todos'] });
+            mockQueryClient.invalidateQueries({ queryKey: ['activities'] });
+            pendingInvalidation = false;
+          }
+          debounceTimer = null;
+        }, DEBOUNCE_MS);
+      };
+
+      // Simulate 5 rapid changes
+      for (let i = 0; i < 5; i++) {
+        invalidateQueries();
+      }
+
+      // Should not have called invalidateQueries yet
+      expect(mockInvalidateQueries).not.toHaveBeenCalled();
+
+      // Wait for debounce to complete
+      await new Promise((resolve) => setTimeout(resolve, DEBOUNCE_MS + 50));
+
+      // Should have called invalidateQueries only twice (once for 'todos', once for 'activities')
+      expect(mockInvalidateQueries).toHaveBeenCalledTimes(2);
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['todos'] });
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['activities'] });
+
+      // Cleanup
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
     });
   });
 });

@@ -10,16 +10,13 @@ interface UseTodosByWeekParams {
 }
 
 /**
- * Custom hook to fetch todos for a specific week using TanStack Query.
+ * Fetches todos for a date range using Mango queries (faster than MapReduce in PouchDB).
+ * Uses the version-due-index for efficient querying.
  *
- * This hook uses TanStack Query for caching and state management, while
- * relying on PouchDB changes feed (via DatabaseChangesProvider) for
- * real-time invalidation.
- *
- * @param startDate - Start of the week (ISO date)
- * @param endDate - End of the week (ISO date)
- * @param enabled - Whether the query should run (default: true if safeDb exists)
- * @returns TanStack Query result with todos data, loading, and error states
+ * @param startDate - Start of the date range
+ * @param endDate - End of the date range
+ * @param enabled - Whether the query should run
+ * @returns TanStack Query result with todos data
  */
 export function useTodosByWeek({ startDate, endDate, enabled = true }: UseTodosByWeekParams) {
   const { safeDb } = usePouchDb();
@@ -27,14 +24,17 @@ export function useTodosByWeek({ startDate, endDate, enabled = true }: UseTodosB
   return useQuery({
     queryKey: ['todos', 'byDueDate', startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
-      console.time('fetchTodos');
-      const todos = await safeDb.safeQuery<Todo>('todos_by_due_date', 'byDueDate', {
-        descending: false,
-        endkey: endDate.toISOString(),
-        include_docs: false,
-        startkey: startDate.toISOString(),
+      const timerId = `fetchTodos-${Date.now()}`;
+      console.time(timerId);
+      // Use Mango find (faster than MapReduce views in PouchDB)
+      const todos = await safeDb.safeFind<Todo>({
+        version: 'alpha3',
+        due: {
+          $gte: startDate.toISOString(),
+          $lte: endDate.toISOString(),
+        },
       });
-      console.timeEnd('fetchTodos');
+      console.timeEnd(timerId);
       return todos;
     },
     enabled: !!safeDb && enabled,

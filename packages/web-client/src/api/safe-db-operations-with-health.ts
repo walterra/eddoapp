@@ -116,6 +116,24 @@ export const createSafeDbOperationsWithHealth = (
     };
   };
 
+  const wrapFind = <T>(operation: typeof baseSafeOps.safeFind) => {
+    return async (
+      selector: PouchDB.Find.Selector,
+      options?: Omit<PouchDB.Find.FindRequest<Record<string, unknown>>, 'selector'>,
+    ): Promise<T[]> => {
+      const startTime = Date.now();
+      try {
+        const result = await operation<T>(selector, options);
+        const responseTime = Date.now() - startTime;
+        healthMonitor.recordSuccessfulOperation(responseTime);
+        return result;
+      } catch (error) {
+        healthMonitor.recordFailedOperation();
+        throw error;
+      }
+    };
+  };
+
   return {
     safeGet: wrapGet(baseSafeOps.safeGet),
     safePut: wrapPut(baseSafeOps.safePut),
@@ -123,6 +141,7 @@ export const createSafeDbOperationsWithHealth = (
     safeAllDocs: wrapAllDocs(baseSafeOps.safeAllDocs),
     safeBulkDocs: wrapBulkDocs(baseSafeOps.safeBulkDocs),
     safeQuery: wrapQuery(baseSafeOps.safeQuery),
+    safeFind: wrapFind(baseSafeOps.safeFind),
     healthMonitor,
   };
 };
