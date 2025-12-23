@@ -13,7 +13,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.10.3)(zod@3.25.76)
+        version: 1.25.1(hono@4.10.8)(zod@3.25.76)
       d3-array:
         specifier: ^3.0.3
         version: 3.2.4
@@ -28,7 +28,7 @@ importers:
         version: 3.3.0
       fastmcp:
         specifier: ^3.17.0
-        version: 3.17.0(hono@4.10.3)
+        version: 3.17.0(hono@4.10.8)
       flowbite:
         specifier: ^3.1.2
         version: 3.1.2(rollup@4.54.0)
@@ -314,7 +314,7 @@ importers:
         version: 1.5.1
       fastmcp:
         specifier: ^3.25.4
-        version: 3.25.4(hono@4.10.3)
+        version: 3.25.4(hono@4.10.8)
       nano:
         specifier: ^11.0.3
         version: 11.0.3
@@ -324,7 +324,7 @@ importers:
     devDependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.10.3)(zod@3.25.76)
+        version: 1.25.1(hono@4.10.8)(zod@3.25.76)
       '@types/node':
         specifier: ^24.7.2
         version: 24.7.2
@@ -394,13 +394,13 @@ importers:
         version: link:../printer_service
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.10.3)(zod@3.25.76)
+        version: 1.25.1(hono@4.10.8)(zod@3.25.76)
       dotenv-mono:
         specifier: ^1.5.1
         version: 1.5.1
       fastmcp:
         specifier: ^3.25.4
-        version: 3.25.4(hono@4.10.3)
+        version: 3.25.4(hono@4.10.8)
       grammy:
         specifier: ^1.38.3
         version: 1.38.3
@@ -446,7 +446,7 @@ importers:
         version: link:../core-shared
       '@hono/node-server':
         specifier: ^1.19.5
-        version: 1.19.5(hono@4.10.3)
+        version: 1.19.5(hono@4.10.8)
       '@octokit/rest':
         specifier: ^22.0.1
         version: 22.0.1
@@ -454,8 +454,8 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       hono:
-        specifier: ^4.10.3
-        version: 4.10.3
+        specifier: ^4.10.8
+        version: 4.10.8
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -4352,8 +4352,8 @@ packages:
     resolution: {integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==}
     engines: {node: '>=0.10.0'}
 
-  hono@4.10.3:
-    resolution: {integrity: sha512-2LOYWUbnhdxdL8MNbNg9XZig6k+cZXm5IjHn2Aviv7honhBMOHb+jxrKIeJRZJRmn+htUCKhaicxwXuUDlchRA==}
+  hono@4.10.8:
+    resolution: {integrity: sha512-DDT0A0r6wzhe8zCGoYOmMeuGu3dyTAE40HHjwUsWFTEy5WxK1x2WDSsBPlEXgPbRIFY6miDualuUDbasPogIww==}
     engines: {node: '>=16.9.0'}
 
   hosted-git-info@2.8.9:
@@ -7952,13 +7952,13 @@ snapshots:
       protobufjs: 7.5.4
       yargs: 17.7.2
 
-  '@hono/node-server@1.19.5(hono@4.10.3)':
+  '@hono/node-server@1.19.5(hono@4.10.8)':
     dependencies:
-      hono: 4.10.3
+      hono: 4.10.8
 
-  '@hono/node-server@1.19.7(hono@4.10.3)':
+  '@hono/node-server@1.19.7(hono@4.10.8)':
     dependencies:
-      hono: 4.10.3
+      hono: 4.10.8
 
   '@humanfs/core@0.19.1': {}
 
@@ -8047,9 +8047,9 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.10.3)(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.25.1(hono@4.10.8)(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.10.3)
+      '@hono/node-server': 1.19.7(hono@4.10.8)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -8069,9 +8069,9 @@ snapshots:
       - hono
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.10.3)(zod@4.2.1)':
+  '@modelcontextprotocol/sdk@1.25.1(hono@4.10.8)(zod@4.2.1)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.10.3)
+      '@hono/node-server': 1.19.7(hono@4.10.8)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -10730,9 +10730,9 @@ snapshots:
 
   fast-uri@3.1.0: {}
 
-  fastmcp@3.17.0(hono@4.10.3):
+  fastmcp@3.17.0(hono@4.10.8):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.10.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.10.8)(zod@3.25.76)
       '@standard-schema/spec': 1.0.0
       execa: 9.6.0
       file-type: 21.0.0
@@ -10754,9 +10754,9 @@ snapshots:
       - supports-color
       - sury
 
-  fastmcp@3.25.4(hono@4.10.3):
+  fastmcp@3.25.4(hono@4.10.8):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.10.3)(zod@4.2.1)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.10.8)(zod@4.2.1)
       '@standard-schema/spec': 1.0.0
       execa: 9.6.1
       file-type: 21.1.1
@@ -10765,7 +10765,7 @@ snapshots:
       strict-event-emitter-types: 2.0.0
       undici: 7.16.0
       uri-templates: 0.2.0
-      xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@3.25.76))(zod@4.2.1)
+      xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@4.2.1))(zod@4.2.1)
       yargs: 18.0.0
       zod: 4.2.1
       zod-to-json-schema: 3.25.0(zod@4.2.1)
@@ -11195,7 +11195,7 @@ snapshots:
     dependencies:
       parse-passwd: 1.0.0
 
-  hono@4.10.3: {}
+  hono@4.10.8: {}
 
   hosted-git-info@2.8.9: {}
 
@@ -13910,7 +13910,7 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.24.6(zod@3.25.76)
 
-  xsschema@0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@3.25.76))(zod@4.2.1):
+  xsschema@0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@4.2.1))(zod@4.2.1):
     optionalDependencies:
       zod: 4.2.1
       zod-to-json-schema: 3.25.0(zod@4.2.1)
