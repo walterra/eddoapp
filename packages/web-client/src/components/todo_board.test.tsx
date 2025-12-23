@@ -163,7 +163,7 @@ describe('TodoBoard', () => {
         ).toBeInTheDocument();
       });
 
-      // Verify safeFind was called for todos
+      // Verify safeFind was called for todos with limit
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -173,6 +173,7 @@ describe('TodoBoard', () => {
               $lte: expect.any(String),
             }),
           }),
+          { limit: 10000 },
         );
       });
     });
@@ -207,6 +208,7 @@ describe('TodoBoard', () => {
             version: 'alpha3',
             active: { $exists: true, $ne: {} },
           }),
+          { limit: 10000 },
         );
       });
     });
@@ -236,6 +238,7 @@ describe('TodoBoard', () => {
             version: 'alpha3',
             active: { $exists: true, $ne: {} },
           }),
+          { limit: 10000 },
         );
       });
     });

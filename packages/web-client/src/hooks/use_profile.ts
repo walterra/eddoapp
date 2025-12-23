@@ -77,11 +77,28 @@ interface UpdatePreferencesData {
   githubSyncTags?: string[];
 }
 
+interface GithubResyncResponse {
+  message: string;
+  synced: number;
+  created: number;
+  updated: number;
+}
+
+interface GithubResyncError {
+  error: string;
+  rateLimitError?: boolean;
+  resetTime?: string;
+}
+
+/**
+ * Hook for managing user profile data and mutations.
+ * Uses TanStack Query for data fetching and mutations.
+ */
 export const useProfile = () => {
   const { authToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): HeadersInit => {
     if (!authToken?.token) {
       throw new Error('No authentication token available');
     }
@@ -94,7 +111,7 @@ export const useProfile = () => {
   // Fetch profile using React Query
   const {
     data: profile,
-    isLoading,
+    isLoading: isLoadingProfile,
     error: queryError,
     refetch,
   } = useQuery({
@@ -131,6 +148,27 @@ export const useProfile = () => {
     }
   };
 
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updateData: UpdateProfileData) => {
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+
   const updateProfile = async (
     updateData: UpdateProfileData,
   ): Promise<{ success: boolean; error?: string }> => {
@@ -139,26 +177,30 @@ export const useProfile = () => {
     }
 
     try {
-      const response = await fetch('/api/users/profile', {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(updateData),
-      });
-
-      if (response.ok) {
-        // Invalidate and refetch profile
-        await queryClient.invalidateQueries({ queryKey: ['profile'] });
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to update profile';
-        return { success: false, error: errorMessage };
-      }
-    } catch (_error) {
-      const errorMessage = 'Network error occurred';
-      return { success: false, error: errorMessage };
+      await updateProfileMutation.mutateAsync(updateData);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
     }
   };
+
+  // Change password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (passwordData: ChangePasswordData) => {
+      const response = await fetch('/api/users/change-password', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(passwordData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
+
+      return response.json();
+    },
+  });
 
   const changePassword = async (
     passwordData: ChangePasswordData,
@@ -168,24 +210,33 @@ export const useProfile = () => {
     }
 
     try {
-      const response = await fetch('/api/users/change-password', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(passwordData),
-      });
-
-      if (response.ok) {
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to change password';
-        return { success: false, error: errorMessage };
-      }
-    } catch (_error) {
-      const errorMessage = 'Network error occurred';
-      return { success: false, error: errorMessage };
+      await changePasswordMutation.mutateAsync(passwordData);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
     }
   };
+
+  // Link Telegram mutation
+  const linkTelegramMutation = useMutation({
+    mutationFn: async (telegramId: number) => {
+      const response = await fetch('/api/users/telegram-link', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ telegramId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to link Telegram');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
 
   const linkTelegram = async (
     telegramId: number,
@@ -198,26 +249,32 @@ export const useProfile = () => {
     }
 
     try {
-      const response = await fetch('/api/users/telegram-link', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ telegramId }),
-      });
-
-      if (response.ok) {
-        // Invalidate and refetch profile
-        await queryClient.invalidateQueries({ queryKey: ['profile'] });
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to link Telegram';
-        return { success: false, error: errorMessage };
-      }
-    } catch (_error) {
-      const errorMessage = 'Network error occurred';
-      return { success: false, error: errorMessage };
+      await linkTelegramMutation.mutateAsync(telegramId);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
     }
   };
+
+  // Unlink Telegram mutation
+  const unlinkTelegramMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/users/telegram-link', {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unlink Telegram');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
 
   const unlinkTelegram = async (): Promise<{
     success: boolean;
@@ -228,27 +285,14 @@ export const useProfile = () => {
     }
 
     try {
-      const response = await fetch('/api/users/telegram-link', {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-
-      if (response.ok) {
-        // Invalidate and refetch profile
-        await queryClient.invalidateQueries({ queryKey: ['profile'] });
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || 'Failed to unlink Telegram';
-        return { success: false, error: errorMessage };
-      }
-    } catch (_error) {
-      const errorMessage = 'Network error occurred';
-      return { success: false, error: errorMessage };
+      await unlinkTelegramMutation.mutateAsync();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
     }
   };
 
-  // Update preferences using React Query mutation
+  // Update preferences mutation
   const preferencesMutation = useMutation({
     mutationFn: async (preferencesData: UpdatePreferencesData) => {
       const response = await fetch('/api/users/preferences', {
@@ -265,7 +309,6 @@ export const useProfile = () => {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate profile query to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
@@ -286,6 +329,52 @@ export const useProfile = () => {
     }
   };
 
+  // GitHub resync mutation
+  const githubResyncMutation = useMutation<GithubResyncResponse, Error>({
+    mutationFn: async () => {
+      const response = await fetch('/api/users/github-resync', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData: GithubResyncError = await response.json();
+
+        // Handle rate limit errors with reset time
+        if (errorData.rateLimitError && errorData.resetTime) {
+          throw new Error(`${errorData.error}\n\nYou can try again ${errorData.resetTime}.`);
+        }
+
+        throw new Error(errorData.error || 'Failed to resync GitHub issues');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+
+  // Compute aggregate loading state
+  const isLoading =
+    isLoadingProfile ||
+    updateProfileMutation.isPending ||
+    changePasswordMutation.isPending ||
+    linkTelegramMutation.isPending ||
+    unlinkTelegramMutation.isPending ||
+    preferencesMutation.isPending ||
+    githubResyncMutation.isPending;
+
+  const clearError = () => {
+    queryClient.resetQueries({ queryKey: ['profile'] });
+    updateProfileMutation.reset();
+    changePasswordMutation.reset();
+    linkTelegramMutation.reset();
+    unlinkTelegramMutation.reset();
+    preferencesMutation.reset();
+    githubResyncMutation.reset();
+  };
+
   return {
     profile: profile || null,
     isLoading,
@@ -296,6 +385,15 @@ export const useProfile = () => {
     linkTelegram,
     unlinkTelegram,
     updatePreferences,
-    clearError: () => queryClient.resetQueries({ queryKey: ['profile'] }),
+    clearError,
+    // Expose mutations for direct access to isPending, isError, etc.
+    mutations: {
+      updateProfile: updateProfileMutation,
+      changePassword: changePasswordMutation,
+      linkTelegram: linkTelegramMutation,
+      unlinkTelegram: unlinkTelegramMutation,
+      preferences: preferencesMutation,
+      githubResync: githubResyncMutation,
+    },
   };
 };

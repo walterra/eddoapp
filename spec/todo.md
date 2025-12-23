@@ -1,4 +1,4 @@
-- all ui actions should make use of tanstack query mutations
+- we updated pouchdb/couchdb views recently and switched some queries to mango. this was done to improve UI primarily. check and fix if the mcp-server queries and db setup/views/indices are still in line with this.
 
 - use knip to identify dead code we can clean up
 

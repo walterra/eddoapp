@@ -1,25 +1,24 @@
-import { type DatabaseError, DatabaseErrorType, NewTodo } from '@eddo/core-client';
+import { type DatabaseError, DatabaseErrorType, type NewTodo } from '@eddo/core-client';
 import { format } from 'date-fns';
 import { Button, TextInput } from 'flowbite-react';
 import { type FC, useState } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { useTags } from '../hooks/use_tags';
-import { usePouchDb } from '../pouch_db';
+import { useCreateTodoMutation } from '../hooks/use_todo_mutations';
 import { DatabaseErrorMessage } from './database_error_message';
 import { TagInput } from './tag_input';
 
 export const AddTodo: FC = () => {
-  const { safeDb } = usePouchDb();
   const { allTags } = useTags();
+  const createTodoMutation = useCreateTodoMutation();
 
   const [todoContext, setTodoContext] = useState(CONTEXT_DEFAULT);
   const [todoDue, setTodoDue] = useState(new Date().toISOString().split('T')[0]);
   const [todoLink, setTodoLink] = useState('');
   const [todoTitle, setTodoTitle] = useState('');
   const [todoTags, setTodoTags] = useState<string[]>([]);
-  const [error, setError] = useState<DatabaseError | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<DatabaseError | null>(null);
 
   async function addTodo(
     title: string,
@@ -34,7 +33,7 @@ export const AddTodo: FC = () => {
       format(new Date(due), 'yyyy-MM-dd');
     } catch (_e) {
       console.error('failed to parse due date', due);
-      setError({
+      setValidationError({
         name: 'ValidationError',
         message: 'Invalid date format. Please use YYYY-MM-DD format.',
         type: DatabaseErrorType.OPERATION_FAILED,
@@ -58,11 +57,10 @@ export const AddTodo: FC = () => {
       version: 'alpha3',
     };
 
-    setError(null);
-    setIsSubmitting(true);
+    setValidationError(null);
 
     try {
-      await safeDb.safePut(todo);
+      await createTodoMutation.mutateAsync(todo);
 
       // Reset form on success
       setTodoTitle('');
@@ -72,9 +70,7 @@ export const AddTodo: FC = () => {
       setTodoDue(new Date().toISOString().split('T')[0]);
     } catch (err) {
       console.error('Failed to create todo:', err);
-      setError(err as DatabaseError);
-    } finally {
-      setIsSubmitting(false);
+      // Error is available via createTodoMutation.error
     }
   }
 
@@ -85,9 +81,20 @@ export const AddTodo: FC = () => {
     }
   }
 
+  const error = validationError || (createTodoMutation.error as DatabaseError | null);
+  const isSubmitting = createTodoMutation.isPending;
+
   return (
     <form onSubmit={addTodoHandler}>
-      {error && <DatabaseErrorMessage error={error} onDismiss={() => setError(null)} />}
+      {error && (
+        <DatabaseErrorMessage
+          error={error}
+          onDismiss={() => {
+            setValidationError(null);
+            createTodoMutation.reset();
+          }}
+        />
+      )}
       <div className="flex items-center space-x-3 bg-white py-4 lg:mt-1.5 dark:bg-gray-800">
         <TextInput
           aria-label="Context"

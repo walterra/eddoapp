@@ -10,6 +10,53 @@ vi.mock('./use_profile', () => ({
 
 import { useProfile } from './use_profile';
 
+/** Creates mock mutations object for useProfile tests */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const createMockMutations = (): any => ({
+  updateProfile: {
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+    mutateAsync: vi.fn(),
+  },
+  changePassword: {
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+    mutateAsync: vi.fn(),
+  },
+  linkTelegram: {
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+    mutateAsync: vi.fn(),
+  },
+  unlinkTelegram: {
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+    mutateAsync: vi.fn(),
+  },
+  preferences: {
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+    mutateAsync: vi.fn(),
+  },
+  githubResync: {
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+    mutateAsync: vi.fn(),
+  },
+});
+
 describe('useViewPreferences Hook', () => {
   it('returns default values when no profile data', () => {
     vi.mocked(useProfile).mockReturnValue({
@@ -23,6 +70,7 @@ describe('useViewPreferences Hook', () => {
       unlinkTelegram: vi.fn(),
       updatePreferences: vi.fn(),
       clearError: vi.fn(),
+      mutations: createMockMutations(),
     });
 
     const { result } = renderHook(() => useViewPreferences());
@@ -59,6 +107,7 @@ describe('useViewPreferences Hook', () => {
       unlinkTelegram: vi.fn(),
       updatePreferences: vi.fn(),
       clearError: vi.fn(),
+      mutations: createMockMutations(),
     });
 
     const { result } = renderHook(() => useViewPreferences());
@@ -81,6 +130,7 @@ describe('useViewPreferences Hook', () => {
       unlinkTelegram: vi.fn(),
       updatePreferences,
       clearError: vi.fn(),
+      mutations: createMockMutations(),
     });
 
     const { result } = renderHook(() => useViewPreferences());
@@ -106,6 +156,7 @@ describe('useViewPreferences Hook', () => {
       unlinkTelegram: vi.fn(),
       updatePreferences,
       clearError: vi.fn(),
+      mutations: createMockMutations(),
     });
 
     const { result } = renderHook(() => useViewPreferences());
@@ -130,6 +181,7 @@ describe('useViewPreferences Hook', () => {
       unlinkTelegram: vi.fn(),
       updatePreferences: vi.fn(),
       clearError: vi.fn(),
+      mutations: createMockMutations(),
     });
 
     const { result } = renderHook(() => useViewPreferences());
@@ -149,6 +201,7 @@ describe('useViewPreferences Hook', () => {
       unlinkTelegram: vi.fn(),
       updatePreferences: vi.fn(),
       clearError: vi.fn(),
+      mutations: createMockMutations(),
     });
 
     const { result } = renderHook(() => useViewPreferences());
