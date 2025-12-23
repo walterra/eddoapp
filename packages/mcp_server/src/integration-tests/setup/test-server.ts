@@ -239,11 +239,11 @@ export class MCPTestServer {
 
   private async forceCleanupDatabase(): Promise<void> {
     try {
-      const { validateEnv, getTestCouchDbConfig } = await import('@eddo/core-server');
+      const { validateEnv, getCouchDbConfig } = await import('@eddo/core-server');
       const nano = await import('nano');
 
       const env = validateEnv(process.env);
-      const couchDbConfig = getTestCouchDbConfig(env);
+      const couchDbConfig = getCouchDbConfig(env);
       const couch = nano.default(couchDbConfig.url);
 
       // Ensure test user is initialized

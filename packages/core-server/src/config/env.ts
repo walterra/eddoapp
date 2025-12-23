@@ -86,14 +86,6 @@ export function getCouchDbConfig(env: Env) {
 }
 
 /**
- * Get test-specific CouchDB configuration
- * With testcontainers, tests use isolated containers so same database name is fine
- */
-export function getTestCouchDbConfig(env: Env) {
-  return getCouchDbConfig(env);
-}
-
-/**
  * Get test-specific User Registry configuration
  * With testcontainers, tests use isolated containers so same database name is fine
  */

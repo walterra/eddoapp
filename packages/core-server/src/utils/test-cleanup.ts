@@ -5,7 +5,7 @@
 import nano from 'nano';
 
 import type { Env } from '../config/env';
-import { createEnv, getTestCouchDbConfig } from '../config/env';
+import { createEnv, getCouchDbConfig } from '../config/env';
 import {
   extractUsernameFromDatabaseName,
   getDatabasePrefix,
@@ -89,7 +89,7 @@ export class TestDatabaseCleanup {
       ...options,
     };
 
-    const testCouchConfig = getTestCouchDbConfig(this.env);
+    const testCouchConfig = getCouchDbConfig(this.env);
     this.couch = nano(testCouchConfig.url);
   }
 

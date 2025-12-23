@@ -2,7 +2,7 @@
  * Test MCP Server Instance
  * Manages MCP server lifecycle for integration tests
  */
-import { getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
+import { getCouchDbConfig, validateEnv } from '@eddo/core-server';
 import { ChildProcess, spawn } from 'child_process';
 import nano from 'nano';
 
@@ -148,7 +148,7 @@ export class TestMCPServerInstance {
   async clearTestDatabase(): Promise<void> {
     try {
       const env = validateEnv(process.env);
-      const couchDbConfig = getTestCouchDbConfig(env);
+      const couchDbConfig = getCouchDbConfig(env);
       const couch = nano(couchDbConfig.url);
 
       // Try to delete the test database

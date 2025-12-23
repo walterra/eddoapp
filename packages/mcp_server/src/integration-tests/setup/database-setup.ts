@@ -3,7 +3,7 @@
  * Handles design document creation and database schema management
  * Separated from MCP server for better architecture and test isolation
  */
-import { getTestCouchDbConfig, validateEnv } from '@eddo/core-server';
+import { getCouchDbConfig, validateEnv } from '@eddo/core-server';
 import { DESIGN_DOCS, type DesignDocument } from '@eddo/core-shared';
 import nano from 'nano';
 
@@ -14,7 +14,7 @@ export class DatabaseSetup {
 
   constructor(customDbName?: string) {
     const env = validateEnv(process.env);
-    const couchDbConfig = getTestCouchDbConfig(env);
+    const couchDbConfig = getCouchDbConfig(env);
     this.couch = nano(couchDbConfig.url);
 
     // Use custom database name for test isolation, or fall back to config
