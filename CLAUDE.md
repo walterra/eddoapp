@@ -269,6 +269,8 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 
 ## Git Rules
 
+- **CRITICAL: Questions are not instructions** - When user asks a question (e.g., "is this correct?", "should we do X?"), answer the question and STOP. Do not make changes or commit until explicitly instructed.
+- **CRITICAL: Never commit after answering a question** - Wait for explicit approval like "yes, do it" or "go ahead" before any git operations.
 - Use CC (Conventional Commit) prefixes for commit messages
 - Do not add "Generated with" or "Co-authored" sections to commit messages
 - Never git add all files. just add the files related to your current work/tasks.
@@ -280,7 +282,7 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 - Always warn about and get explicit confirmation before any operation that rewrites git history
 - Never push directly to `main` branch
 - Always verify current branch before pushing: `git branch --show-current`
-- Always askk for user confirmation before pushing
+- Always ask for user confirmation before pushing
 - Use `git remote -v` to identify correct repo for GitHub CLI commands
 
 ## CHANGELOG & Release Workflow
