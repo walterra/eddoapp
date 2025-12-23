@@ -54,6 +54,7 @@ export default defineConfig({
             'packages/core-client/src/**/*.test.ts',
             'packages/telegram_bot/src/**/*.test.ts',
             'scripts/backup-interactive.test.ts',
+            'scripts/create-release-pr.test.js',
           ],
           exclude: ['**/*.e2e.test.ts', '**/integration-tests/**'],
           testTimeout: 10000,

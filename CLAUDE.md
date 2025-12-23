@@ -278,6 +278,10 @@ Technical writer for documentation and JSDoc comments, direct factual statements
   - Use `git rebase -i` to edit specific recent commits
   - If history rewriting is absolutely necessary, use modern tools like `git filter-repo` with careful consideration
 - Always warn about and get explicit confirmation before any operation that rewrites git history
+- Never push directly to `main` branch
+- Always verify current branch before pushing: `git branch --show-current`
+- Always askk for user confirmation before pushing
+- Use `git remote -v` to identify correct repo for GitHub CLI commands
 
 ## CHANGELOG & Release Workflow
 
