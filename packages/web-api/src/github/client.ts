@@ -126,9 +126,37 @@ function buildAssignedQuery(params: GithubIssueListParams): string {
 
 /**
  * Builds GitHub search query for PR reviews requested from user
+ * Note: Only returns PRs where user is CURRENTLY a requested reviewer.
+ * Once merged/closed, review requests are cleared and PRs won't match.
  */
 function buildReviewRequestedQuery(params: GithubIssueListParams): string {
   const queryParts: string[] = ['is:pr', 'review-requested:@me'];
+
+  // Add state filter (open, closed, or both)
+  if (params.state === 'open') {
+    queryParts.push('state:open');
+  } else if (params.state === 'closed') {
+    queryParts.push('state:closed');
+  }
+  // For 'all', don't add state filter (includes both open and closed)
+
+  // Add since filter if provided (PRs updated after this date)
+  if (params.since) {
+    // GitHub search expects format: >=YYYY-MM-DD
+    const sinceDate = params.since.split('T')[0]; // Extract date part from ISO string
+    queryParts.push(`updated:>=${sinceDate}`);
+  }
+
+  return queryParts.join(' ');
+}
+
+/**
+ * Builds GitHub search query for PRs user has reviewed.
+ * Unlike review-requested:@me, this persists after PR closure.
+ * Used to detect merged/closed PRs that need completion in Eddo.
+ */
+function buildReviewedByQuery(params: GithubIssueListParams): string {
+  const queryParts: string[] = ['is:pr', 'reviewed-by:@me'];
 
   // Add state filter (open, closed, or both)
   if (params.state === 'open') {
@@ -280,7 +308,7 @@ export function createGithubClient(
   return {
     /**
      * Fetches items (issues and PRs) for authenticated user via GitHub Search API
-     * Includes: assigned issues, assigned PRs, and PR reviews requested from user
+     * Includes: assigned issues, assigned PRs, PR reviews requested, and PRs user reviewed
      * Supports all repositories (personal, org, public, private) with proper SSO authorization
      * Rate limit: 30 requests/minute for Search API (5000/hour for authenticated users)
      * Maximum: 1000 results per query (GitHub Search API limit)
@@ -310,22 +338,29 @@ export function createGithubClient(
         );
 
         // Fetch PR reviews (PRs where user is requested reviewer)
-        const reviewQuery = buildReviewRequestedQuery(defaultParams);
-        const reviewItems = await fetchAllPagesForQuery(
+        // Note: Only finds PRs with pending review requests, not merged/closed PRs
+        const reviewRequestedQuery = buildReviewRequestedQuery(defaultParams);
+        const reviewRequestedItems = await fetchAllPagesForQuery(
           octokit,
-          reviewQuery,
+          reviewRequestedQuery,
           defaultParams,
           logger,
           rateLimitManager,
         );
 
-        // Mark review items with a flag so we can add 'pr-review' tag later
-        const reviewItemsMarked = reviewItems.map((item) => ({
-          ...item,
-          isReviewRequested: true,
-        }));
+        // Fetch PRs user has reviewed (persists after PR closure)
+        // This catches merged/closed PRs that need completion in Eddo
+        const reviewedByQuery = buildReviewedByQuery(defaultParams);
+        const reviewedByItems = await fetchAllPagesForQuery(
+          octokit,
+          reviewedByQuery,
+          defaultParams,
+          logger,
+          rateLimitManager,
+        );
 
-        // Combine and deduplicate by ID (a PR can be both assigned and review-requested)
+        // Combine and deduplicate by ID
+        // Priority: assigned > review-requested > reviewed-by
         const itemsMap = new Map<number, GithubIssue>();
 
         // Add assigned items first
@@ -333,14 +368,30 @@ export function createGithubClient(
           itemsMap.set(item.id, item);
         }
 
-        // Add review items, merging with existing if needed
-        for (const item of reviewItemsMarked) {
+        // Add review-requested items with flag
+        for (const item of reviewRequestedItems) {
           const existing = itemsMap.get(item.id);
           if (existing) {
-            // Merge: keep existing but mark as review-requested too
+            // Merge: keep existing but mark as review-requested
             itemsMap.set(item.id, { ...existing, isReviewRequested: true });
           } else {
-            itemsMap.set(item.id, item);
+            itemsMap.set(item.id, { ...item, isReviewRequested: true });
+          }
+        }
+
+        // Add reviewed-by items (for closed PRs that need completion)
+        // Mark with isReviewRequested if not already present (user did review)
+        for (const item of reviewedByItems) {
+          const existing = itemsMap.get(item.id);
+          if (existing) {
+            // Already tracked, keep existing flags
+            // If already isReviewRequested, keep it; otherwise mark as reviewed
+            if (!existing.isReviewRequested) {
+              itemsMap.set(item.id, { ...existing, isReviewRequested: true });
+            }
+          } else {
+            // New item from reviewed-by query - mark as review item
+            itemsMap.set(item.id, { ...item, isReviewRequested: true });
           }
         }
 
@@ -348,9 +399,14 @@ export function createGithubClient(
 
         logger.info('Successfully fetched GitHub items', {
           assignedCount: assignedItems.length,
-          reviewCount: reviewItems.length,
+          reviewRequestedCount: reviewRequestedItems.length,
+          reviewedByCount: reviewedByItems.length,
           totalCount: allItems.length,
-          deduplicatedCount: assignedItems.length + reviewItems.length - allItems.length,
+          deduplicatedCount:
+            assignedItems.length +
+            reviewRequestedItems.length +
+            reviewedByItems.length -
+            allItems.length,
         });
 
         return allItems;
