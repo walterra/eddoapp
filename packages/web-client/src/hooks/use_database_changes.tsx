@@ -1,10 +1,23 @@
 /**
  * Database changes provider - single PouchDB listener for the entire app
+ * Debounces query invalidation to batch rapid changes
  */
 import { useQueryClient } from '@tanstack/react-query';
-import { type FC, type ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import {
+  type FC,
+  type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { usePouchDb } from '../pouch_db';
+
+/** Debounce delay for query invalidation (ms) */
+const INVALIDATION_DEBOUNCE_MS = 150;
 
 interface DatabaseChangesContextType {
   /** Increments whenever database changes occur */
@@ -20,7 +33,28 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children 
   const queryClient = useQueryClient();
   const [changeCount, setChangeCount] = useState(0);
   const [isListening, setIsListening] = useState(false);
-  console.log('changeCount', changeCount);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingInvalidationRef = useRef(false);
+
+  // Debounced invalidation to batch rapid changes
+  const invalidateQueries = useCallback(() => {
+    pendingInvalidationRef.current = true;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      if (pendingInvalidationRef.current) {
+        console.time('invalidateQueries');
+        queryClient.invalidateQueries({ queryKey: ['todos'] });
+        queryClient.invalidateQueries({ queryKey: ['activities'] });
+        console.timeEnd('invalidateQueries');
+        pendingInvalidationRef.current = false;
+      }
+      debounceTimerRef.current = null;
+    }, INVALIDATION_DEBOUNCE_MS);
+  }, [queryClient]);
 
   useEffect(() => {
     const changesListener = changes({
@@ -31,10 +65,8 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children 
 
     changesListener.on('change', (d) => {
       setChangeCount(Number(d.seq));
-      // Invalidate all queries when database changes occur
-      // This triggers TanStack Query to refetch active queries
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      // Debounced invalidation batches rapid changes
+      invalidateQueries();
     });
 
     changesListener.on('complete', () => {
@@ -49,10 +81,14 @@ export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children 
     setIsListening(true);
 
     return () => {
+      // Clean up debounce timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       changesListener.cancel();
       setIsListening(false);
     };
-  }, [changes, queryClient]);
+  }, [changes, invalidateQueries]);
 
   return (
     <DatabaseChangesContext.Provider value={{ changeCount, isListening }}>
