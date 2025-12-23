@@ -84,6 +84,10 @@ jobs:
           VERSION="${{ steps.check-publish.outputs.version }}"
           RELEASE_NOTES=$(node scripts/aggregate-changelog.js)
           
+          # Configure git identity for tagging
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
           # Create git tag
           git tag -a "v${VERSION}" -m "Release v${VERSION}"
           git push origin "v${VERSION}"
