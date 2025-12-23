@@ -27,7 +27,7 @@ export interface PrintOptions {
 /**
  * Create a thermal printer instance
  */
-export function createPrinterInstance(): ThermalPrinter {
+function createPrinterInstance(): ThermalPrinter {
   if (!appConfig.PRINTER_IP_ADDRESS) {
     throw new Error('PRINTER_IP_ADDRESS is not configured');
   }

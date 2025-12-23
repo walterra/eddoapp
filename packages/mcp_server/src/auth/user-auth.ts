@@ -172,42 +172,6 @@ export async function validateUserContext(
 }
 
 /**
- * Clear authentication cache (useful for testing or when user data changes)
- */
-export function clearAuthCache(): void {
-  userValidationCache.clear();
-  console.log('Authentication cache cleared');
-}
-
-/**
- * Get cache statistics (useful for monitoring)
- */
-export function getAuthCacheStats(): {
-  size: number;
-  entries: Array<{
-    cacheKey: string;
-    username?: string;
-    valid: boolean;
-    cached: number;
-  }>;
-} {
-  const entries = [];
-  for (const [_cacheKey, cache] of userValidationCache.entries()) {
-    entries.push({
-      cacheKey: '[REDACTED]',
-      username: cache.user?.username,
-      valid: cache.valid,
-      cached: cache.timestamp,
-    });
-  }
-
-  return {
-    size: userValidationCache.size,
-    entries,
-  };
-}
-
-/**
  * Extract header value from headers object (handles both string and string[] types)
  */
 function extractHeader(

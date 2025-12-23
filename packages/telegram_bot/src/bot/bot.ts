@@ -102,4 +102,4 @@ export function createBot(): Bot<BotContext> {
   return bot;
 }
 
-export type { BotContext, SessionData };
+export type { BotContext };

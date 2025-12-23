@@ -54,26 +54,10 @@ export class EddoAgent {
         hasError: !!result.error,
       });
 
-      // Convert simple workflow result to WorkflowResult format
       return {
         success: result.success,
         error: result.error,
-        finalState: {
-          messages: [],
-          userMessage,
-          userId,
-          currentStepIndex: 0,
-          executionSteps: [],
-          mcpResponses: [],
-          approvalRequests: [],
-          awaitingApproval: false,
-          shouldExit: true,
-          finalResponse: result.finalResponse,
-          sessionContext: {
-            startTime,
-          },
-          telegramContext,
-        },
+        finalResponse: result.finalResponse,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -85,26 +69,9 @@ export class EddoAgent {
         userMessage: userMessage.substring(0, 100), // Log first 100 chars
       });
 
-      // Return error result
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error)),
-        finalState: {
-          messages: [],
-          userMessage,
-          userId,
-          currentStepIndex: 0,
-          executionSteps: [],
-          mcpResponses: [],
-          approvalRequests: [],
-          awaitingApproval: false,
-          shouldExit: true,
-          error: error instanceof Error ? error : new Error(String(error)),
-          sessionContext: {
-            startTime: Date.now(),
-          },
-          telegramContext,
-        },
       };
     }
   }

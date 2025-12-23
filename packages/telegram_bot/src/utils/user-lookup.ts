@@ -152,35 +152,3 @@ export async function getUserContextForMCP(telegramId: number): Promise<{
     databaseName: user.database_name,
   };
 }
-
-/**
- * Clear user cache (useful for testing or when user data changes)
- */
-export function clearUserCache(): void {
-  userCache.clear();
-  cacheTimestamps.clear();
-  logger.debug('User cache cleared');
-}
-
-/**
- * Get cache statistics (useful for monitoring)
- */
-export function getCacheStats(): {
-  size: number;
-  entries: Array<{ telegramId: number; username?: string; cached: number }>;
-} {
-  const entries = [];
-  for (const [telegramId, user] of userCache.entries()) {
-    const cached = cacheTimestamps.get(telegramId) || 0;
-    entries.push({
-      telegramId,
-      username: user?.username,
-      cached,
-    });
-  }
-
-  return {
-    size: userCache.size,
-    entries,
-  };
-}
