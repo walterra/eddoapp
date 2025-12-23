@@ -1,6 +1,6 @@
 # Investigate performance issues
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-12-23-10-35-03
 **Started:** 2025-12-23T10:38:58
 **Agent PID:** 81621
@@ -98,8 +98,8 @@ The changes listener immediately invalidates queries without any debouncing. If 
 - [x] Change `emit(null, { id })` to `emit(null, null)` in todos_by_time_tracking_active
 - [x] Update `safeQuery` to merge `row.doc` with `row.value` when `include_docs: true`
 - [x] Update hooks to use `include_docs: true`
-- [x] Automated test: all 461 tests pass
-- [ ] User test: toggle time tracking, observe console timing
+- [x] Automated test: all 462 tests pass
+- [x] User test: toggle time tracking, observe console timing (instant, syncs to other clients)
 
 **Changes made:**
 
@@ -124,18 +124,15 @@ The changes listener immediately invalidates queries without any debouncing. If 
 - `packages/web-client/src/hooks/use_database_changes.tsx`: Added debouncing with 150ms delay
 - `packages/web-client/src/hooks/use_database_changes.test.tsx`: Added debouncing test, fixed async test
 
-### Phase 4: Targeted Invalidation (Advanced - Optional) - FUTURE
-
-- [ ] Pass changed document ID through changes provider
-- [ ] Only invalidate queries whose date range includes the changed document
-- [ ] Consider optimistic updates for immediate UI feedback
-
-_Note: Deferred to separate issue for more significant architectural change_
-
 ## Review
 
-- [ ] Performance improvement verified with before/after measurements
-- [ ] No regression in functionality
+- [x] Performance improvement verified with before/after measurements
+  - Initial load: ~185-193ms (acceptable)
+  - Time tracking toggle: instant (major improvement, was multi-second)
+  - Normal page navigation: ~96-101ms (good)
+  - Large date range navigation: ~2000ms (slow but tolerable for now)
+  - Cross-client sync: working correctly
+- [x] No regression in functionality (462 tests pass, manual testing confirms sync works)
 
 ## Notes
 
