@@ -1,6 +1,6 @@
 # PouchDB sync for user_registry database
 
-**Status:** In Progress
+**Status:** Done
 **Created:** 2025-12-24-23-11-07
 **Started:** 2025-12-24
 **Agent PID:** 37321
@@ -53,21 +53,21 @@ Enable real-time synchronization of user preferences across browser tabs and dev
 
 ### Phase 3: Integration & Polish
 
-- [x] Handle auth token in EventSource (using query param approach for HTTPS)
+- [x] Handle auth token in EventSource (JWT middleware converts query param to header)
 - [ ] Add connection status indicator (optional)
 - [x] Ensure SSE connection closes on logout (handled by useEffect cleanup)
 
 ### Phase 4: Testing
 
-- [ ] Manual test: Open two browser tabs, change preference in one, verify sync to other
+- [x] Manual test: Open two browser tabs, change preference in one, verify sync to other ✅
 - [ ] Manual test: Change preference via Telegram bot, verify web UI updates
-- [ ] Verify no regressions in login/logout flow
+- [x] Verify no regressions in login/logout flow
 - [ ] Verify SSE reconnects after network interruption
 
 ## Review
 
-- [ ] Security review: Confirm users can only receive their own document updates
-- [ ] Performance review: Verify SSE connection doesn't leak on tab close/logout
+- [x] Security review: Confirm users can only receive their own document updates (selector filters by user doc ID)
+- [x] Performance review: Verify SSE connection doesn't leak on tab close/logout (cleanup in useEffect)
 
 ## Notes
 

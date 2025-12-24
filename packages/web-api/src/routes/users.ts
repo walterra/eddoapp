@@ -411,27 +411,9 @@ usersApp.put('/preferences', async (c) => {
 
 // SSE endpoint for real-time preference updates
 usersApp.get('/preferences/stream', async (c) => {
-  // Support both header auth and query param auth for EventSource compatibility
-  const authHeader = c.req.header('Authorization');
-  const tokenParam = c.req.query('token');
-
-  let userToken: JwtTokenPayload | null = null;
-
-  if (authHeader) {
-    userToken = await extractUserFromToken(authHeader);
-  } else if (tokenParam) {
-    try {
-      userToken = jwt.verify(tokenParam, config.jwtSecret) as JwtTokenPayload;
-    } catch {
-      userToken = null;
-    }
-  }
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
-
-  const username = userToken.username;
+  // JWT middleware handles auth (supports query param token for EventSource)
+  const payload = c.get('jwtPayload') as jwt.JwtPayload;
+  const username = payload.username;
   const docId = `user_${username}`;
 
   console.log('[SSE] Starting preferences stream for user:', username);
