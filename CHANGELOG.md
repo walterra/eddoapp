@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0
+
+### Minor Changes
+
+- [#305](https://github.com/walterra/eddoapp/pull/305) [`b77b038`](https://github.com/walterra/eddoapp/commit/b77b038e8acb2ae6a246a77263ddaaa9af72e3b7) - Add automated backup scheduler with retention policy management
+
+- [#304](https://github.com/walterra/eddoapp/pull/304) [`f74f577`](https://github.com/walterra/eddoapp/commit/f74f5777cb25ae769acc363933956823a4b5c76e) - Add real-time user preferences sync across browser tabs via Server-Sent Events (SSE)
+
+### Patch Changes
+
+- [#297](https://github.com/walterra/eddoapp/pull/297) [`a0f5216`](https://github.com/walterra/eddoapp/commit/a0f52162ba5f1505b3873ae4a3e1666e51208a7e) - Fix PR reviews not marked complete when merged by adding `reviewed-by:@me` query to GitHub sync
+
+- [#302](https://github.com/walterra/eddoapp/pull/302) [`5d95862`](https://github.com/walterra/eddoapp/commit/5d9586232163907d2490c0c3207e2783fdb97bfd) - Remove unused exports and dead code identified by knip analysis
+
+- [#300](https://github.com/walterra/eddoapp/pull/300) [`119b61e`](https://github.com/walterra/eddoapp/commit/119b61e990a8de447abf5757cfc1dd20d0a3b476) - Fix MCP server missing database indexes (externalId-index, tags-index)
+
 ## 0.3.0
 
 ### Minor Changes
