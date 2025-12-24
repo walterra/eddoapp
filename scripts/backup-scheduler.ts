@@ -91,7 +91,11 @@ function createConsoleLogger(): BackupSchedulerConfig['logger'] {
  */
 function matchesPattern(dbName: string, pattern: string): boolean {
   // Convert glob pattern to regex
-  const regexPattern = pattern.replace(/\*/g, '.*').replace(/\?/g, '.').replace(/\./g, '\\.');
+  // Order matters: escape special chars first, then convert glob wildcards
+  const regexPattern = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex special chars (except * and ?)
+    .replace(/\*/g, '.*') // * becomes .*
+    .replace(/\?/g, '.'); // ? becomes .
   const regex = new RegExp(`^${regexPattern}$`);
   return regex.test(dbName);
 }
