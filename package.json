@@ -122,6 +122,8 @@
     "backup": "tsx scripts/backup.ts",
     "backup:interactive": "tsx scripts/backup-interactive.ts",
     "backup:verify": "tsx scripts/verify-backup.ts",
+    "backup:auto": "tsx scripts/backup-scheduler.ts",
+    "backup:retention": "tsx scripts/backup-retention.ts",
     "restore": "tsx scripts/restore.ts",
     "restore:interactive": "tsx scripts/restore-interactive.ts",
     "restore:ndjson": "tsx scripts/restore-ndjson.ts",

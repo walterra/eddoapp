@@ -47,6 +47,22 @@ DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|
 - Direct backup: `pnpm backup -- --database <db-name> --output ./backups/`
 - Direct restore: `pnpm restore -- --input ./backups/<file>.json --database <db-name>`
 - Verify backup: `pnpm backup:verify`
+- Automated backup scheduler: `pnpm backup:auto` (runs continuous backup cycle)
+- Retention policy: `pnpm backup:retention` (apply retention policy to cleanup old backups)
+- Retention dry-run: `pnpm backup:retention --dry-run` (preview what would be deleted)
+
+**Backup Scheduler Options:**
+
+- `--interval <time>` - Backup interval (e.g., "24h", "1d", "30m") - default: 24h
+- `--pattern <glob>` - Database name pattern to backup (e.g., "eddo*\*") - default: eddo*\*
+- `--run-once` - Run single backup cycle and exit
+- `--no-verify` - Skip backup verification
+- `--no-retention` - Skip retention policy
+
+**Environment Variables for Backups:**
+
+- `BACKUP_DIR` - Directory for backup files (default: ./backups)
+- `BACKUP_DATABASE_PATTERN` - Glob pattern for databases to backup (default: eddo\_\*)
 
 ### CLI & Mock Data
 
