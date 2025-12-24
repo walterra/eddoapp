@@ -1,5 +1,3 @@
-- **Investigate infinite \_all_docs loop in web-api dev server**: Web-api process gets stuck requesting `_all_docs?include_docs=true` continuously (10-15 req/sec), causing CouchDB to consume 900%+ CPU. Happened 2025-12-18 with process 7639 making 172+ requests in 200 log lines. Possible causes: PouchDB replication/sync issue, React infinite re-render triggering database queries, or changes feed listener gone wild. Add monitoring/detection and fix root cause in web-client or web-api code.
-
 - **Selective GitHub Force Resync**: Replace single "Force Resync" button with modal for fine-grained field selection
   - **Use case:** Resync only tags without overwriting user-adjusted due dates or context
   - **UI Flow:**
@@ -20,13 +18,6 @@
     - User adjusts due date, resyncs tags only → due date unchanged
     - User changes context, resyncs all → context reset to GitHub repo name
     - All field combinations work correctly
-
-- Add PouchDB sync for user_registry database (real-time preference updates across tabs/devices)
-  - Create `/api/registry` proxy endpoint with filtered replication (user sees only their own doc)
-  - Add second PouchDB instance in web-client for user_registry
-  - Extend DatabaseChangesProvider to listen to both databases (todos + registry)
-  - Update `use_profile.ts` to read/write directly to PouchDB instead of REST API
-  - Enables: multi-tab sync, cross-device sync, Telegram bot preference updates reflected in web UI
 
 - proper timezone support
 

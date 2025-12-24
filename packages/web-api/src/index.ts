@@ -44,7 +44,18 @@ app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOStri
 app.route('/auth', authRoutes);
 
 // Protected API routes (JWT required)
-app.use('/api/*', jwt({ secret: config.jwtSecret }));
+// Custom middleware that supports both header and query param tokens (for SSE/EventSource)
+app.use('/api/*', async (c, next) => {
+  // Check for token in query param (needed for EventSource which doesn't support headers)
+  const tokenParam = c.req.query('token');
+  if (tokenParam && !c.req.header('Authorization')) {
+    // Add the token as Authorization header so jwt() middleware can process it
+    c.req.raw.headers.set('Authorization', `Bearer ${tokenParam}`);
+  }
+  // Apply standard JWT middleware
+  const jwtMiddleware = jwt({ secret: config.jwtSecret });
+  return jwtMiddleware(c, next);
+});
 app.route('/api/db', dbProxyRoutes);
 app.route('/api/users', userRoutes);
 

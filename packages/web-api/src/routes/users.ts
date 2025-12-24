@@ -1,6 +1,8 @@
-import { createEnv, createUserRegistry } from '@eddo/core-server';
+import { createEnv, createUserRegistry, getUserRegistryDatabaseConfig } from '@eddo/core-server';
 import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
 import jwt from 'jsonwebtoken';
+import nano from 'nano';
 import { z } from 'zod';
 
 import { config } from '../config';
@@ -12,6 +14,11 @@ const usersApp = new Hono();
 // Initialize environment and user registry
 const env = createEnv();
 const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+
+// Initialize nano connection for changes feed
+const couchConnection = nano(env.COUCHDB_URL);
+const registryDbConfig = getUserRegistryDatabaseConfig(env);
+const registryDb = couchConnection.db.use(registryDbConfig.dbName);
 
 // Validation schemas
 const updateProfileSchema = z.object({
@@ -400,6 +407,94 @@ usersApp.put('/preferences', async (c) => {
     }
     return c.json({ error: 'Failed to update preferences' }, 500);
   }
+});
+
+// SSE endpoint for real-time preference updates
+usersApp.get('/preferences/stream', async (c) => {
+  // JWT middleware handles auth (supports query param token for EventSource)
+  const payload = c.get('jwtPayload') as jwt.JwtPayload;
+  const username = payload.username;
+  const docId = `user_${username}`;
+
+  console.log('[SSE] Starting preferences stream for user:', username);
+
+  return streamSSE(c, async (stream) => {
+    let isConnected = true;
+
+    // Handle client disconnect
+    stream.onAbort(() => {
+      console.log('[SSE] Client disconnected:', username);
+      isConnected = false;
+      registryDb.changesReader.stop();
+    });
+
+    try {
+      // Start listening to changes feed filtered to user's document only
+      const changesEmitter = registryDb.changesReader.start({
+        includeDocs: true,
+        since: 'now',
+        // Filter to only this user's document using selector
+        selector: { _id: docId },
+      });
+
+      // Send initial connection confirmation
+      await stream.writeSSE({
+        event: 'connected',
+        data: JSON.stringify({ status: 'connected', docId }),
+        id: '0',
+      });
+
+      // Forward changes to SSE stream
+      changesEmitter.on('change', async (change) => {
+        // Double-check the change is for the correct document (security)
+        if (change.id !== docId) {
+          console.warn('[SSE] Received change for wrong doc:', change.id, 'expected:', docId);
+          return;
+        }
+
+        const doc = change.doc;
+        if (!doc) return;
+
+        // Extract safe profile data (exclude password_hash)
+        const safeProfile = {
+          userId: doc._id,
+          username: doc.username,
+          email: doc.email,
+          telegramId: doc.telegram_id,
+          createdAt: doc.created_at,
+          updatedAt: doc.updated_at,
+          permissions: doc.permissions,
+          status: doc.status,
+          preferences: doc.preferences,
+        };
+
+        await stream.writeSSE({
+          event: 'preference-update',
+          data: JSON.stringify(safeProfile),
+          id: String(change.seq),
+        });
+      });
+
+      changesEmitter.on('error', (err) => {
+        console.error('[SSE] Changes feed error:', err);
+      });
+
+      // Keep the connection alive with periodic heartbeats
+      // The changesReader handles long-polling internally
+      while (isConnected) {
+        await stream.sleep(30000); // Send heartbeat every 30 seconds
+        if (isConnected) {
+          await stream.writeSSE({
+            event: 'heartbeat',
+            data: JSON.stringify({ timestamp: new Date().toISOString() }),
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[SSE] Stream error:', error);
+      registryDb.changesReader.stop();
+    }
+  });
 });
 
 // Force GitHub sync
