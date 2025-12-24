@@ -33,29 +33,29 @@ Enable real-time synchronization of user preferences across browser tabs and dev
 
 ### Phase 1: Backend - SSE Endpoint for Registry Changes
 
-- [ ] Create SSE endpoint `GET /api/users/preferences/stream` (packages/web-api/src/routes/users.ts)
+- [x] Create SSE endpoint `GET /api/users/preferences/stream` (packages/web-api/src/routes/users.ts)
   - Use Hono's `streamSSE` helper from `hono/streaming`
   - Extract username from JWT token
   - Connect to CouchDB `_changes` feed filtered to `user_{username}` doc only
   - Stream preference updates as SSE events
   - Handle connection abort/cleanup
-- [ ] Add automated test for SSE endpoint
+- [ ] Add automated test for SSE endpoint (deferred - requires integration test setup)
 
 ### Phase 2: Client - SSE Hook for Preference Updates
 
-- [ ] Create `use_preferences_stream.ts` hook (packages/web-client/src/hooks/)
+- [x] Create `use_preferences_stream.ts` hook (packages/web-client/src/hooks/)
   - Use native `EventSource` API to connect to `/api/users/preferences/stream`
   - On message: update React Query cache for `['profile']` key
   - Handle reconnection (built-in with EventSource)
   - Clean up on unmount
-- [ ] Integrate hook into authenticated app (call from `DatabaseChangesProvider` or similar)
-- [ ] Add automated test for SSE hook
+- [x] Integrate hook into authenticated app (call from `PreferencesStreamProvider` in eddo.tsx)
+- [x] Add automated test for SSE hook (6 tests in use_preferences_stream.test.tsx)
 
 ### Phase 3: Integration & Polish
 
-- [ ] Handle auth token in EventSource (may need polyfill for custom headers)
+- [x] Handle auth token in EventSource (using query param approach for HTTPS)
 - [ ] Add connection status indicator (optional)
-- [ ] Ensure SSE connection closes on logout
+- [x] Ensure SSE connection closes on logout (handled by useEffect cleanup)
 
 ### Phase 4: Testing
 
