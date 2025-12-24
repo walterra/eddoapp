@@ -24,6 +24,7 @@ Implement Phase 2: Automated Backup System for CouchDB. Core manual backup/resto
 - [x] Support for cron-like scheduling (daily at specific time)
 - [x] Configurable via environment variables (BACKUP_SCHEDULE, BACKUP_DIR, etc.)
 - [x] Graceful shutdown handling
+- [x] Fixed glob pattern matching bug (regex escaping order)
 
 ### 2. Implement Retention Policy Manager
 
@@ -35,9 +36,10 @@ Implement Phase 2: Automated Backup System for CouchDB. Core manual backup/resto
 
 ### 3. Add Automated Backup Verification
 
-- [x] Scheduler runs `verify-backup.ts` after each automated backup
-- [x] Log verification results
-- [x] Alert on verification failures (console/log for now)
+- [x] Updated `verify-backup.ts` to understand @cloudant/couchbackup format
+- [x] Scheduler runs verification after each automated backup
+- [x] Log verification results with document counts
+- [x] Distinguish design docs vs todo docs
 
 ### 4. Create pnpm Scripts
 
@@ -47,25 +49,25 @@ Implement Phase 2: Automated Backup System for CouchDB. Core manual backup/resto
 
 ### 5. Add Configuration
 
-- [ ] Document environment variables in CLAUDE.md
+- [x] Document environment variables in CLAUDE.md
 
 ### 6. Testing
 
-- [x] Unit tests for retention policy logic
-- [x] Unit tests for scheduler timing calculations
-- [ ] Integration test for backup + verify + retention flow (deferred - requires CouchDB)
+- [x] Unit tests for retention policy logic (9 tests)
+- [x] Unit tests for scheduler timing calculations (8 tests)
+- [x] Manual testing of backup + verify + retention flow
 
 ## Review
 
-- [ ] Bug/cleanup items if found
+- [x] Fixed glob pattern matching - was escaping `.` after converting `*` to `.*`
+- [x] Fixed backup verification - now understands couchbackup batched JSON format
 
 ## Notes
 
-- Fixed a bug in backup-utils.ts where timestamp format was being corrupted by replacing all dashes with colons
-- Phase 1 (manual backup/restore) is complete with E2E tests
-- Security features (encryption, audit trails) deferred to separate issue
-- Cloud storage integration deferred to separate issue
-- Conflict resolution and migration tools deferred to Phase 3 issue
+- Fixed a bug in backup-utils.ts where timestamp format was being corrupted
+- Fixed glob pattern matching in scheduler (regex escaping order)
+- Updated verify-backup.ts to handle couchbackup's batched JSON format
+- Phase 1 (manual backup/restore) remains complete with E2E tests
 
 ## Files Changed
 
@@ -73,5 +75,7 @@ Implement Phase 2: Automated Backup System for CouchDB. Core manual backup/resto
 - `scripts/backup-retention.ts` (new) - Retention policy manager
 - `scripts/backup-scheduler.test.ts` (new) - Unit tests for scheduler
 - `scripts/backup-retention.test.ts` (new) - Unit tests for retention
+- `scripts/verify-backup.ts` (updated) - Fixed couchbackup format support
 - `package.json` - Added backup:auto and backup:retention scripts
 - `vitest.config.ts` - Added new test files to unit test config
+- `CLAUDE.md` - Added backup scheduler documentation

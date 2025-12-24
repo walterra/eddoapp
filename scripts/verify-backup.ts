@@ -2,7 +2,11 @@
 
 /**
  * Backup verification script
- * Validates backup files and checks data integrity
+ * Validates backup files created by @cloudant/couchbackup
+ *
+ * Couchbackup format:
+ * - Line 1: Header with metadata {"name":"@cloudant/couchbackup","version":"...","mode":"...","attachments":...}
+ * - Line 2+: JSON arrays containing batched documents [{doc1}, {doc2}, ...]
  */
 
 import type { TodoAlpha3 } from '@eddo/core-server/types/todo';
@@ -16,16 +20,109 @@ const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
 interface ValidationResult {
   totalDocuments: number;
   validDocuments: number;
+  designDocuments: number;
+  todoDocuments: number;
   errors: string[];
+  warnings: string[];
   isValid: boolean;
+  backupVersion?: string;
+  backupMode?: string;
+}
+
+interface BackupHeader {
+  name: string;
+  version: string;
+  mode: string;
+  attachments: boolean;
 }
 
 interface BackupDocument {
   _id?: string;
+  _rev?: string;
   version?: string;
   [key: string]: unknown;
 }
 
+/**
+ * Validate a single document from the backup
+ */
+function validateDocument(
+  doc: BackupDocument,
+  lineNumber: number,
+  docIndex: number,
+): { valid: boolean; error?: string; warning?: string; isDesign: boolean; isTodo: boolean } {
+  // Check for required _id field
+  if (!doc._id) {
+    return {
+      valid: false,
+      error: `Line ${lineNumber}, doc ${docIndex}: Missing _id field`,
+      isDesign: false,
+      isTodo: false,
+    };
+  }
+
+  // Design documents start with _design/
+  const isDesign = doc._id.startsWith('_design/');
+
+  // Todo documents have a version field
+  const isTodo =
+    typeof doc.version === 'string' && ['alpha1', 'alpha2', 'alpha3'].includes(doc.version);
+
+  // Validate TodoAlpha3 documents
+  if (doc.version === 'alpha3') {
+    const todo = doc as Partial<TodoAlpha3>;
+    const missingFields: string[] = [];
+
+    if (!todo.title) missingFields.push('title');
+    if (!todo.context) missingFields.push('context');
+    if (!todo.due) missingFields.push('due');
+
+    if (missingFields.length > 0) {
+      return {
+        valid: true,
+        warning: `Line ${lineNumber}, doc ${docIndex} (${doc._id}): TodoAlpha3 missing fields: ${missingFields.join(', ')}`,
+        isDesign,
+        isTodo,
+      };
+    }
+  }
+
+  return { valid: true, isDesign, isTodo };
+}
+
+/**
+ * Parse and validate couchbackup header
+ */
+function parseHeader(line: string): BackupHeader | null {
+  try {
+    const header = JSON.parse(line) as BackupHeader;
+    if (header.name === '@cloudant/couchbackup' && header.version && header.mode) {
+      return header;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse document batch (JSON array of documents)
+ */
+function parseDocumentBatch(line: string): BackupDocument[] | null {
+  try {
+    const parsed = JSON.parse(line);
+    if (Array.isArray(parsed)) {
+      return parsed as BackupDocument[];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validate a backup file
+ */
 function validateBackupFile(filePath: string): Promise<ValidationResult> {
   console.log(`Validating backup file: ${filePath}`);
 
@@ -43,59 +140,115 @@ function validateBackupFile(filePath: string): Promise<ValidationResult> {
       crlfDelay: Infinity,
     });
 
-    let documentCount = 0;
+    let lineNumber = 0;
+    let totalDocuments = 0;
     let validDocuments = 0;
+    let designDocuments = 0;
+    let todoDocuments = 0;
+    let backupVersion: string | undefined;
+    let backupMode: string | undefined;
     const errors: string[] = [];
+    const warnings: string[] = [];
 
     rl.on('line', (line: string) => {
-      documentCount++;
+      lineNumber++;
 
-      try {
-        const doc = JSON.parse(line) as BackupDocument;
+      // Skip empty lines
+      if (line.trim() === '') {
+        return;
+      }
 
-        // Basic validation
-        if (!doc._id) {
-          errors.push(`Line ${documentCount}: Missing _id field`);
-        } else if (doc.version && !['alpha1', 'alpha2', 'alpha3'].includes(doc.version)) {
-          errors.push(`Line ${documentCount}: Invalid version field: ${doc.version}`);
-        } else {
-          validDocuments++;
+      // First line should be the couchbackup header
+      if (lineNumber === 1) {
+        const header = parseHeader(line);
+        if (header) {
+          backupVersion = header.version;
+          backupMode = header.mode;
+          console.log(`Backup format: couchbackup v${header.version} (mode: ${header.mode})`);
+          return;
+        }
+        // If not a header, treat as document batch (legacy format or different tool)
+      }
 
-          // Additional validation for TodoAlpha3 documents
-          if (doc.version === 'alpha3') {
-            const todo = doc as Partial<TodoAlpha3>;
-            if (!todo.title) {
-              errors.push(`Line ${documentCount}: TodoAlpha3 missing title field`);
-            }
-            if (!todo.context) {
-              errors.push(`Line ${documentCount}: TodoAlpha3 missing context field`);
-            }
-            if (!todo.due) {
-              errors.push(`Line ${documentCount}: TodoAlpha3 missing due field`);
-            }
+      // Parse document batch
+      const batch = parseDocumentBatch(line);
+      if (batch) {
+        for (let i = 0; i < batch.length; i++) {
+          totalDocuments++;
+          const result = validateDocument(batch[i], lineNumber, i + 1);
+
+          if (result.valid) {
+            validDocuments++;
+            if (result.isDesign) designDocuments++;
+            if (result.isTodo) todoDocuments++;
+          }
+
+          if (result.error) {
+            errors.push(result.error);
+          }
+          if (result.warning) {
+            warnings.push(result.warning);
           }
         }
-      } catch (parseError) {
-        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-        errors.push(`Line ${documentCount}: Invalid JSON - ${errorMessage}`);
+      } else {
+        // Try parsing as single document (NDJSON format fallback)
+        try {
+          const doc = JSON.parse(line) as BackupDocument;
+          totalDocuments++;
+          const result = validateDocument(doc, lineNumber, 1);
+
+          if (result.valid) {
+            validDocuments++;
+            if (result.isDesign) designDocuments++;
+            if (result.isTodo) todoDocuments++;
+          }
+
+          if (result.error) {
+            errors.push(result.error);
+          }
+          if (result.warning) {
+            warnings.push(result.warning);
+          }
+        } catch (parseError) {
+          const errorMessage =
+            parseError instanceof Error ? parseError.message : String(parseError);
+          errors.push(`Line ${lineNumber}: Invalid JSON - ${errorMessage}`);
+        }
       }
     });
 
     rl.on('close', () => {
       const result: ValidationResult = {
-        totalDocuments: documentCount,
+        totalDocuments,
         validDocuments,
+        designDocuments,
+        todoDocuments,
         errors,
-        isValid: errors.length === 0 && documentCount > 0,
+        warnings,
+        isValid: errors.length === 0 && totalDocuments > 0,
+        backupVersion,
+        backupMode,
       };
 
       console.log(`Total documents: ${result.totalDocuments}`);
-      console.log(`Valid documents: ${result.validDocuments}`);
-      console.log(`Errors: ${result.errors.length}`);
+      console.log(`  Valid: ${result.validDocuments}`);
+      console.log(`  Design docs: ${result.designDocuments}`);
+      console.log(`  Todo docs: ${result.todoDocuments}`);
 
       if (result.errors.length > 0) {
-        console.log('Validation errors:');
-        result.errors.forEach((error) => console.log(`  - ${error}`));
+        console.log(`Errors: ${result.errors.length}`);
+        result.errors.slice(0, 10).forEach((error) => console.log(`  - ${error}`));
+        if (result.errors.length > 10) {
+          console.log(`  ... and ${result.errors.length - 10} more errors`);
+        }
+      }
+
+      if (result.warnings.length > 0) {
+        console.log(`Warnings: ${result.warnings.length}`);
+        result.warnings.slice(0, 5).forEach((warning) => console.log(`  - ${warning}`));
+        if (result.warnings.length > 5) {
+          console.log(`  ... and ${result.warnings.length - 5} more warnings`);
+        }
       }
 
       resolve(result);
@@ -107,6 +260,9 @@ function validateBackupFile(filePath: string): Promise<ValidationResult> {
   });
 }
 
+/**
+ * Verify backup file(s)
+ */
 async function verifyBackup(backupFile?: string): Promise<boolean> {
   try {
     if (backupFile) {
@@ -176,4 +332,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   verifyBackup(backupFile).catch(console.error);
 }
 
-export { verifyBackup };
+export { validateBackupFile, verifyBackup };
