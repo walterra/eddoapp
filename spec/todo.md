@@ -124,3 +124,13 @@ These are quality improvements to consider for future development:
 - Property-based testing with fast-check for edge cases
 - OpenTelemetry spans with proper error recording and semantic conventions
 - Graceful shutdown with cleanup hooks
+
+## GitHub Issues
+
+- Add error boundaries and proper error handling - [#25](https://github.com/walterra/eddoapp/issues/25)
+- Configure Content Security Policy headers - [#26](https://github.com/walterra/eddoapp/issues/26)
+- Add input validation and XSS prevention - [#29](https://github.com/walterra/eddoapp/issues/29)
+- Implement loading states for async operations - [#30](https://github.com/walterra/eddoapp/issues/30)
+- Add accessibility features (focus management, ARIA live regions) - [#31](https://github.com/walterra/eddoapp/issues/31)
+- Configure bundle analysis and performance monitoring - [#32](https://github.com/walterra/eddoapp/issues/32)
+- Add test coverage reporting with minimum thresholds - [#34](https://github.com/walterra/eddoapp/issues/34)
