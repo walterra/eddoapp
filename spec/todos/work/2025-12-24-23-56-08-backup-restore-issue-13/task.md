@@ -1,99 +1,77 @@
 # Support backup/restore functionality - GitHub Issue #13
 
-**Status:** Refining
+**Status:** In Progress
 **Created:** 2025-12-24-23-56-08
+**Started:** 2025-12-25-00:00
 **Agent PID:** 37321
 
 ## Description
 
-Review GitHub Issue #13 (CouchDB Backup & Restore Implementation Plan) and verify what's implemented vs. what's still needed.
+Implement Phase 2: Automated Backup System for CouchDB. Core manual backup/restore is complete (Phase 1). This adds scheduled automated backups with retention policy management.
 
-## Current Implementation Status
+### Success Criteria
 
-### ✅ Phase 1: Basic Backup Scripts - COMPLETE
-
-All scripts implemented and working:
-
-- `pnpm backup` - Basic backup script
-- `pnpm backup:interactive` - Interactive CLI backup tool
-- `pnpm backup:verify` - Backup verification/validation
-- `pnpm restore` - Basic restore script
-- `pnpm restore:interactive` - Interactive CLI restore tool
-- `pnpm restore:ndjson` - NDJSON restore utility
-- `pnpm replicate` - Database replication
-- `pnpm replicate:interactive` - Interactive replication tool
-
-### ✅ Supporting Infrastructure - COMPLETE
-
-- `@cloudant/couchbackup` added as dependency
-- `backup-utils.ts` with shared utilities
-- E2E tests for backup/restore workflows
-- Unit tests for backup-interactive
-
-### ⚠️ Phase 2: Automated Backup System - NOT IMPLEMENTED
-
-From the issue spec, still needed:
-
-- [ ] Daily automated backups via cron/scheduler
-- [ ] Retention policy (keep daily for 30 days, weekly for 12 weeks, monthly for 12 months)
-- [ ] Health checks and backup verification (automated)
-- [ ] Cloud storage integration (optional)
-
-### ⚠️ Phase 3: Recovery Tools - PARTIALLY IMPLEMENTED
-
-- [x] Database restoration from backups
-- [ ] Conflict resolution for data sync after restore
-- [ ] Migration tools for backup format changes
-
-### ⚠️ Success Criteria from Issue
-
-- [x] Zero data loss during backup/restore cycle (tested in E2E)
-- [ ] Recovery time objective (RTO) < 4 hours - not measured/documented
-- [ ] Recovery point objective (RPO) < 24 hours - requires automated daily backups
-- [ ] Automated daily backups with verification - NOT IMPLEMENTED
-- [ ] Documented disaster recovery procedures - NOT DOCUMENTED
-
-### ⚠️ Security & Compliance - NOT IMPLEMENTED
-
-- [ ] Encrypt backups at rest
-- [ ] Secure transport for off-site backups
-- [ ] Access control for backup operations
-- [ ] Audit trail for backup/restore activities
-
-## Analysis
-
-The core backup/restore functionality is complete (Phase 1). However, for production use, the issue specifies:
-
-1. **Automated Backups** - Critical for meeting RPO < 24 hours
-2. **Retention Policy** - Important for storage management
-3. **Disaster Recovery Documentation** - Required for production readiness
-4. **Security** - Encryption and audit trails for compliance
-
-## Recommendation
-
-The issue can be considered "functionally complete" for MVP with manual backup/restore. The remaining items (Phase 2, 3 security, documentation) are enhancements for production hardening.
-
-**Options:**
-
-1. **Close as Complete** - Mark issue as done since core backup/restore works
-2. **Create Follow-up Issues** - Split remaining work into separate issues for:
-   - Automated backup scheduler
-   - Retention policy management
-   - Security hardening
-   - DR documentation
-3. **Keep Open** - Leave issue open until all items are addressed
+- Automated daily backups run without manual intervention
+- Retention policy enforces storage limits (30 days daily, 12 weeks weekly, 12 months monthly)
+- Backup health checks verify backup integrity
+- RPO < 24 hours achieved through daily automation
 
 ## Implementation Plan
 
-- [ ] Review with user: Decide on closure strategy
-- [ ] If closing: Document what's implemented in issue comment
-- [ ] If splitting: Create new issues for remaining work
+### 1. Create Backup Scheduler Service
+
+- [x] `scripts/backup-scheduler.ts` - Scheduler that runs backups on configurable intervals
+- [x] Support for cron-like scheduling (daily at specific time)
+- [x] Configurable via environment variables (BACKUP_SCHEDULE, BACKUP_DIR, etc.)
+- [x] Graceful shutdown handling
+
+### 2. Implement Retention Policy Manager
+
+- [x] `scripts/backup-retention.ts` - Manages backup file lifecycle
+- [x] Daily backups: keep for 30 days
+- [x] Weekly backups: keep oldest daily from each week for 12 weeks
+- [x] Monthly backups: keep oldest weekly from each month for 12 months
+- [x] Dry-run mode for testing policy before deletion
+
+### 3. Add Automated Backup Verification
+
+- [x] Scheduler runs `verify-backup.ts` after each automated backup
+- [x] Log verification results
+- [x] Alert on verification failures (console/log for now)
+
+### 4. Create pnpm Scripts
+
+- [x] `pnpm backup:auto` - Run backup scheduler (foreground)
+- [x] `pnpm backup:retention` - Apply retention policy
+- [x] `pnpm backup:retention --dry-run` - Preview retention actions
+
+### 5. Add Configuration
+
+- [ ] Document environment variables in CLAUDE.md
+
+### 6. Testing
+
+- [x] Unit tests for retention policy logic
+- [x] Unit tests for scheduler timing calculations
+- [ ] Integration test for backup + verify + retention flow (deferred - requires CouchDB)
+
+## Review
+
+- [ ] Bug/cleanup items if found
 
 ## Notes
 
-The issue was created as a comprehensive plan. The manual backup/restore capability is fully functional with:
+- Fixed a bug in backup-utils.ts where timestamp format was being corrupted by replacing all dashes with colons
+- Phase 1 (manual backup/restore) is complete with E2E tests
+- Security features (encryption, audit trails) deferred to separate issue
+- Cloud storage integration deferred to separate issue
+- Conflict resolution and migration tools deferred to Phase 3 issue
 
-- Interactive and non-interactive modes
-- Backup verification
-- E2E test coverage
-- Database replication support
+## Files Changed
+
+- `scripts/backup-scheduler.ts` (new) - Automated backup scheduler service
+- `scripts/backup-retention.ts` (new) - Retention policy manager
+- `scripts/backup-scheduler.test.ts` (new) - Unit tests for scheduler
+- `scripts/backup-retention.test.ts` (new) - Unit tests for retention
+- `package.json` - Added backup:auto and backup:retention scripts
+- `vitest.config.ts` - Added new test files to unit test config
