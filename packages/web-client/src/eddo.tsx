@@ -12,7 +12,7 @@ import { TodoBoard } from './components/todo_board';
 import { TodoFilters } from './components/todo_filters';
 import { TodoTable } from './components/todo_table';
 import { createQueryClient } from './config/query_client';
-import { useAuth } from './hooks/use_auth';
+import { AuthProvider, useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
@@ -189,7 +189,7 @@ function AuthenticatedApp({
   );
 }
 
-export function Eddo() {
+function EddoContent() {
   const { username, isAuthenticated, authenticate, register, logout, isAuthenticating } = useAuth();
 
   // Create user-specific PouchDB context when authenticated
@@ -217,5 +217,13 @@ export function Eddo() {
       </PouchDbContext.Provider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
+  );
+}
+
+export function Eddo() {
+  return (
+    <AuthProvider>
+      <EddoContent />
+    </AuthProvider>
   );
 }

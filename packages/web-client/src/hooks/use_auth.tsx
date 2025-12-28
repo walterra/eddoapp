@@ -1,5 +1,5 @@
 import { isTokenExpired } from '@eddo/core-client';
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
 interface AuthToken {
   token: string;
@@ -7,7 +7,33 @@ interface AuthToken {
   expiresIn: string;
 }
 
-export const useAuth = () => {
+interface AuthContextValue {
+  authToken: AuthToken | null;
+  authenticate: (username: string, password: string) => Promise<boolean>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+    telegramId?: number,
+  ) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  isAuthenticating: boolean;
+  username: string | undefined;
+  checkTokenExpiration: () => boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+/**
+ * Provides authentication state to all child components.
+ * Manages auth token, login/logout, and token expiration checking.
+ */
+export function AuthProvider({ children }: AuthProviderProps) {
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
@@ -87,13 +113,12 @@ export const useAuth = () => {
     return false;
   }, [authToken, logout]);
 
+  // Load token from localStorage on mount
   useEffect(() => {
-    // Check for stored auth token
     const stored = localStorage.getItem('authToken');
     if (stored) {
       try {
         const token = JSON.parse(stored);
-        // Check if token is expired before setting it
         if (isTokenExpired(token.token)) {
           console.warn('Stored token is expired - removing');
           localStorage.removeItem('authToken');
@@ -113,10 +138,8 @@ export const useAuth = () => {
       return;
     }
 
-    // Check immediately
     checkTokenExpiration();
 
-    // Then check every minute
     const interval = setInterval(() => {
       checkTokenExpiration();
     }, 60000); // 1 minute
@@ -124,7 +147,7 @@ export const useAuth = () => {
     return () => clearInterval(interval);
   }, [authToken, checkTokenExpiration]);
 
-  return {
+  const value: AuthContextValue = {
     authToken,
     authenticate,
     register,
@@ -134,4 +157,18 @@ export const useAuth = () => {
     username: authToken?.username,
     checkTokenExpiration,
   };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+/**
+ * Hook for accessing authentication state and methods.
+ * Must be used within an AuthProvider.
+ */
+export const useAuth = (): AuthContextValue => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
