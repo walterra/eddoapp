@@ -27,7 +27,7 @@ DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|
 - Format fix: `pnpm format`
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`
-- MCP server integration tests: `pnpm test:integration:mcp-server`
+- MCP server integration tests: `pnpm test:integration:mcp-server` (uses vitest with global setup)
 - Agent loop integration tests: `pnpm test:integration:agent-loop` (requires ANTHROPIC_API_KEY)
 - E2E tests: `pnpm test:e2e`
 - Full test suite: `pnpm test:all`
@@ -148,6 +148,43 @@ interface TodoAlpha3 {
   - `client.ts`: GitHub API client with Octokit
   - `sync-scheduler.ts`: Periodic sync scheduler
   - `types.ts`: GitHub API type definitions
+
+### Testing Architecture
+
+The project uses a layered testing approach with testcontainers for database isolation:
+
+- **Unit Tests**: Vitest for individual functions and components
+- **Integration Tests**: Vitest with testcontainers for ephemeral CouchDB instances
+- **E2E Tests**: Vitest for end-to-end workflow testing
+
+#### Testcontainers Setup
+
+Integration and E2E tests use `@testcontainers/couchdb` for automated Docker container management:
+
+- **Global Setup**: `test/global-testcontainer-setup.ts` manages CouchDB container lifecycle
+- **Complete Isolation**: Each test suite gets an ephemeral CouchDB container
+- **No Manual Setup**: Tests start/stop containers automatically
+- **Works Everywhere**: Identical behavior in local development and CI
+
+#### MCP Server Integration Tests
+
+Runner script: `scripts/run-mcp-server-integration-tests.ts`
+
+1. Starts CouchDB testcontainer
+2. Creates test database
+3. Starts MCP server with testcontainer URL
+4. Runs vitest with `packages/mcp_server/vitest.integration.config.ts`
+5. Tears down server and container
+
+**Command**: `pnpm test:integration:mcp-server`
+
+#### Agent Loop Integration Tests
+
+Runner script: `scripts/run-telegram-bot-integration-tests.ts`
+
+Tests the Telegram bot's AI agent loop with real Anthropic API calls.
+
+**Command**: `pnpm test:integration:agent-loop` (requires `ANTHROPIC_API_KEY`)
 
 ### GitHub Issue Sync Architecture
 

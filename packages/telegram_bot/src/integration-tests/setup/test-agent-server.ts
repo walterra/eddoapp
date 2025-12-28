@@ -3,17 +3,26 @@
  * Manages agent test environment for integration tests
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
 import type { Context } from 'grammy';
+import nano from 'nano';
 import { vi } from 'vitest';
 
 import { SimpleAgent } from '../../agent/simple-agent.js';
-import { setupMCPIntegration } from '../../mcp/client.js';
 import type { MCPClient } from '../../mcp/client.js';
+import { setupMCPIntegration } from '../../mcp/client.js';
 
 export interface TestAgentServerConfig {
   mcpServerUrl?: string;
   llmModel?: string;
   mockTelegramResponses?: boolean;
+}
+
+// Test user data structure matching the user registry
+interface TestUser {
+  username: string;
+  database_name: string;
+  telegram_id: number;
 }
 
 // Define session data structure for compatibility
@@ -23,6 +32,7 @@ interface SessionData {
   lastActivity: Date;
   context: Record<string, unknown>;
   lastBotMessage?: string;
+  user?: TestUser;
 }
 
 // Extend the context with session data to match BotContext
@@ -64,7 +74,9 @@ export interface MockTelegramContext {
     };
     text: string;
   };
-  session?: SessionData;
+  session?: SessionData & {
+    user?: TestUser;
+  };
 }
 
 export class TestAgentServer {
@@ -72,15 +84,14 @@ export class TestAgentServer {
   private mcpClient: MCPClient | null = null;
   private config: Required<TestAgentServerConfig>;
   private testApiKey: string;
+  private testUser: TestUser | null = null;
 
   constructor(config: TestAgentServerConfig = {}) {
-    const testPort = process.env.MCP_TEST_PORT || '3003';
+    const testPort = process.env.MCP_SERVER_PORT || '3001';
 
     this.config = {
       mcpServerUrl:
-        config.mcpServerUrl ||
-        process.env.MCP_TEST_URL ||
-        `http://localhost:${testPort}/mcp`,
+        config.mcpServerUrl || process.env.MCP_SERVER_URL || `http://localhost:${testPort}/mcp`,
       llmModel: config.llmModel || 'claude-3-5-haiku-20241022',
       mockTelegramResponses: config.mockTelegramResponses ?? true,
     };
@@ -97,15 +108,81 @@ export class TestAgentServer {
     // Set up environment variables for MCP client
     process.env.MCP_SERVER_URL = this.config.mcpServerUrl;
     process.env.MCP_API_KEY = this.testApiKey;
-    process.env.TELEGRAM_BOT_TOKEN =
-      process.env.TELEGRAM_BOT_TOKEN || 'test-token';
+    process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'test-token';
     process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'test-key';
+
+    // Create test user in the registry
+    await this.createTestUser();
 
     // Initialize MCP integration
     this.mcpClient = await setupMCPIntegration();
 
     // Initialize agent
     this.agent = new SimpleAgent();
+  }
+
+  /**
+   * Create a test user in the user registry and their database
+   */
+  private async createTestUser(): Promise<void> {
+    const couchDbUrl = process.env.COUCHDB_URL;
+    if (!couchDbUrl) {
+      throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
+    }
+
+    const env = validateEnv(process.env);
+    const userRegistry = await createTestUserRegistry(couchDbUrl, env);
+
+    // Set up user registry database
+    if (userRegistry.setupDatabase) {
+      await userRegistry.setupDatabase();
+    }
+
+    // Create unique test user
+    const timestamp = Date.now();
+    const telegramId = 12345 + Math.floor(Math.random() * 10000);
+    const username = `testuser_${timestamp}`;
+    const databaseName = `eddo_test_user_${username}`;
+
+    this.testUser = {
+      username,
+      database_name: databaseName,
+      telegram_id: telegramId,
+    };
+
+    // Check if user already exists
+    const existingUser = await userRegistry.findByUsername(username);
+    if (!existingUser) {
+      await userRegistry.create({
+        username,
+        email: `${username}@test.example.com`,
+        password_hash: 'test-hash',
+        telegram_id: telegramId,
+        permissions: ['read', 'write'],
+        status: 'active',
+        version: 'alpha2',
+        database_name: databaseName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        preferences: {
+          dailyBriefing: false,
+          briefingTime: '07:00',
+          dailyRecap: false,
+          recapTime: '18:00',
+        },
+      });
+    }
+
+    // Create the user's todo database
+    const couch = nano(couchDbUrl);
+    try {
+      await couch.db.create(databaseName);
+    } catch (err: any) {
+      if (err.statusCode !== 412) {
+        // 412 means database already exists
+        throw err;
+      }
+    }
   }
 
   async stop(): Promise<void> {
@@ -131,11 +208,16 @@ export class TestAgentServer {
   }
 
   /**
-   * Create a mock Telegram context for testing
+   * Create a mock Telegram context for testing with proper user session
    */
   createMockContext(): MockTelegramContext {
+    if (!this.testUser) {
+      throw new Error('Test user not created. Call start() first.');
+    }
+
     const replies: string[] = [];
     const chatActions: string[] = [];
+    const telegramId = this.testUser.telegram_id;
 
     const mockContext: MockTelegramContext = {
       replies,
@@ -149,38 +231,44 @@ export class TestAgentServer {
         return true;
       }),
       from: {
-        id: 12345,
+        id: telegramId,
         is_bot: false,
         first_name: 'Test',
-        username: 'testuser',
+        username: this.testUser.username,
       },
       chat: {
-        id: 12345,
+        id: telegramId,
         type: 'private',
         first_name: 'Test',
-        username: 'testuser',
+        username: this.testUser.username,
       },
       message: {
         message_id: 1,
         date: Date.now(),
         chat: {
-          id: 12345,
+          id: telegramId,
           type: 'private',
           first_name: 'Test',
-          username: 'testuser',
+          username: this.testUser.username,
         },
         from: {
-          id: 12345,
+          id: telegramId,
           is_bot: false,
           first_name: 'Test',
-          username: 'testuser',
+          username: this.testUser.username,
         },
         text: '',
       },
       session: {
-        userId: 'test-user',
+        userId: this.testUser.username,
         lastActivity: new Date(),
         context: {},
+        // Include user data for MCP context extraction
+        user: {
+          username: this.testUser.username,
+          database_name: this.testUser.database_name,
+          telegram_id: this.testUser.telegram_id,
+        },
       },
     };
 
@@ -203,11 +291,7 @@ export class TestAgentServer {
     const mockContext = context || this.createMockContext();
 
     try {
-      const result = await agent.execute(
-        input,
-        userId,
-        mockContext as unknown as BotContext,
-      );
+      const result = await agent.execute(input, userId, mockContext as unknown as BotContext);
       return {
         success: result.success,
         message: result.finalResponse || 'Agent completed successfully',
@@ -232,9 +316,7 @@ export class TestAgentServer {
   /**
    * List available MCP tools
    */
-  async listTools(): Promise<
-    Array<{ name: string; description: string; inputSchema: unknown }>
-  > {
+  async listTools(): Promise<Array<{ name: string; description: string; inputSchema: unknown }>> {
     const client = this.getMCPClient();
     return client.tools.map((tool) => ({
       name: tool.name,

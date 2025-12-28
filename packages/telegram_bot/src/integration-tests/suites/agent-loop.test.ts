@@ -3,17 +3,8 @@
  * Tests the complete agent loop workflow with real MCP server and CouchDB
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getTestCouchDbConfig, validateEnv } from '@eddo/shared';
 import nano from 'nano';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createAgentAssertions } from '../helpers/agent-assertions.js';
 import { TestAgentServer } from '../setup/test-agent-server.js';
@@ -25,7 +16,10 @@ describe('Agent Loop E2E Integration', () => {
 
   beforeAll(async () => {
     // MCP server should be running for these tests
-    // In a real scenario, this would be started by the test environment
+    // COUCHDB_URL is set by run-telegram-bot-integration-tests.ts via testcontainer
+    if (!process.env.COUCHDB_URL) {
+      throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
+    }
   });
 
   afterAll(async () => {
@@ -42,14 +36,15 @@ describe('Agent Loop E2E Integration', () => {
     assert = createAgentAssertions();
 
     // Set up direct database access for verification
-    const env = validateEnv(process.env);
-    const couchDbConfig = getTestCouchDbConfig(env);
-    const couch = nano(couchDbConfig.url);
-    const dbName = `${couchDbConfig.dbName}-${agentServer.getTestApiKey()}`;
+    // COUCHDB_URL is set by the runner script via testcontainer
+    const couchDbUrl = process.env.COUCHDB_URL!;
+    const dbName = process.env.COUCHDB_DB_NAME || 'todos-dev';
+    const couch = nano(couchDbUrl);
+    const testDbName = `${dbName}-${agentServer.getTestApiKey()}`;
 
     // Ensure test database exists
     try {
-      await couch.db.create(dbName);
+      await couch.db.create(testDbName);
     } catch (error: any) {
       if (error.statusCode !== 412) {
         // 412 means database already exists
@@ -57,7 +52,7 @@ describe('Agent Loop E2E Integration', () => {
       }
     }
 
-    testDb = couch.use(dbName);
+    testDb = couch.use(testDbName);
   });
 
   afterEach(async () => {
@@ -68,9 +63,7 @@ describe('Agent Loop E2E Integration', () => {
     it('should create todo from natural language input', async () => {
       const input = 'add todo next friday to go shopping';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-1'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-1'));
 
       // Verify successful execution
       assert.expectSuccess(response);
@@ -95,9 +88,7 @@ describe('Agent Loop E2E Integration', () => {
     it('should handle todo creation with specific date', async () => {
       const input = 'create todo for December 25th to buy Christmas presents';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-2'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-2'));
 
       assert.expectSuccess(response);
       assert.expectToolUsed(response, 'createTodo');
@@ -121,12 +112,9 @@ describe('Agent Loop E2E Integration', () => {
 
   describe('Complex Todo with Context', () => {
     it('should create work todo with context and tags', async () => {
-      const input =
-        'create work todo for quarterly report due next month with urgent tag';
+      const input = 'create work todo for quarterly report due next month with urgent tag';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-3'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-3'));
 
       assert.expectSuccess(response);
       assert.expectToolUsed(response, 'createTodo');
@@ -153,12 +141,9 @@ describe('Agent Loop E2E Integration', () => {
     });
 
     it('should create private todo with multiple tags', async () => {
-      const input =
-        'add personal todo to call mom tomorrow, tag it with family and important';
+      const input = 'add personal todo to call mom tomorrow, tag it with family and important';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-4'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-4'));
 
       assert.expectSuccess(response);
 
@@ -186,12 +171,9 @@ describe('Agent Loop E2E Integration', () => {
 
   describe('Multi-iteration Processing', () => {
     it('should handle create and list in single request', async () => {
-      const input =
-        'create a work todo for code review, then show me all my work todos';
+      const input = 'create a work todo for code review, then show me all my work todos';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-5'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-5'));
 
       assert.expectSuccess(response);
       assert.expectToolUsed(response, 'createTodo');
@@ -211,12 +193,9 @@ describe('Agent Loop E2E Integration', () => {
     });
 
     it('should create todo and start time tracking', async () => {
-      const input =
-        'add todo to review pull requests and start tracking time on it';
+      const input = 'add todo to review pull requests and start tracking time on it';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-6'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-6'));
 
       assert.expectSuccess(response);
       assert.expectToolUsed(response, 'createTodo');
@@ -241,9 +220,7 @@ describe('Agent Loop E2E Integration', () => {
     it('should handle invalid date gracefully', async () => {
       const input = 'create todo for yesterday to time travel';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-7'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-7'));
 
       // Agent should still succeed but handle the date appropriately
       assert.expectSuccess(response);
@@ -268,21 +245,16 @@ describe('Agent Loop E2E Integration', () => {
     it('should handle ambiguous requests by asking for clarification', async () => {
       const input = 'add todo';
 
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-8'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-8'));
 
       // Agent should handle this gracefully
       expect(response.context.replies.length).toBeGreaterThan(0);
 
       // Should either create a basic todo or ask for more details
       const replies = response.context.replies.join(' ');
-      const createdTodo =
-        replies.includes('created') || replies.includes('Created');
+      const createdTodo = replies.includes('created') || replies.includes('Created');
       const askedForDetails =
-        replies.includes('What') ||
-        replies.includes('what') ||
-        replies.includes('title');
+        replies.includes('What') || replies.includes('what') || replies.includes('title');
 
       expect(createdTodo || askedForDetails).toBe(true);
     });
@@ -291,8 +263,7 @@ describe('Agent Loop E2E Integration', () => {
   describe('Advanced Workflows', () => {
     it('should list todos with specific filters', async () => {
       // First create some todos
-      const setupInput1 =
-        'create work todo for meeting preparation due tomorrow';
+      const setupInput1 = 'create work todo for meeting preparation due tomorrow';
       const setupInput2 = 'create private todo for grocery shopping due today';
 
       await agentServer.executeAgent(setupInput1, 'test-user-9');
@@ -300,9 +271,7 @@ describe('Agent Loop E2E Integration', () => {
 
       // Now test filtering
       const input = 'show me all my work todos that are due tomorrow';
-      const response = await assert.expectTimely(
-        agentServer.executeAgent(input, 'test-user-9'),
-      );
+      const response = await assert.expectTimely(agentServer.executeAgent(input, 'test-user-9'));
 
       assert.expectSuccess(response);
       assert.expectToolUsed(response, 'listTodos');
