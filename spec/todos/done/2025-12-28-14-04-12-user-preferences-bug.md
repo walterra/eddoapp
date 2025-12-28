@@ -1,6 +1,6 @@
 # User preferences bug: filters reset after login
 
-**Status:** In Progress
+**Status:** Done
 **GitHub Issue:** #307
 **Started:** 2025-12-28-14-15
 **Created:** 2025-12-28-14-04-12
