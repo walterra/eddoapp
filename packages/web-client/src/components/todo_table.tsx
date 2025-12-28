@@ -19,7 +19,7 @@ import {
   startOfWeek,
   startOfYear,
 } from 'date-fns';
-import { Checkbox } from 'flowbite-react';
+import { Checkbox, Spinner } from 'flowbite-react';
 import { type FC, Fragment, memo, useEffect, useMemo, useState } from 'react';
 import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
@@ -27,6 +27,7 @@ import { CONTEXT_DEFAULT } from '../constants';
 import { ensureDesignDocuments } from '../database_setup';
 import { useActiveTimer } from '../hooks/use_active_timer';
 import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
+import { useDelayedLoading } from '../hooks/use_delayed_loading';
 import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
 import {
   useToggleCompletionMutation,
@@ -36,6 +37,7 @@ import { useTodosByWeek } from '../hooks/use_todos_by_week';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
+import { EmptyState } from './empty_state';
 import { FormattedMessage } from './formatted_message';
 import type { CompletionStatus } from './status_filter';
 import { TagDisplay } from './tag_display';
@@ -367,6 +369,7 @@ export const TodoTable: FC<TodoTableProps> = ({
   );
 
   const isLoading = todosQuery.isLoading || activitiesQuery.isLoading;
+  const showLoadingSpinner = useDelayedLoading(isLoading && !todosQuery.data);
   const queryError = todosQuery.error || activitiesQuery.error;
 
   useEffect(() => {
@@ -451,6 +454,20 @@ export const TodoTable: FC<TodoTableProps> = ({
     );
   }
 
+  // Show loading state on initial fetch (delayed to prevent flicker)
+  if (showLoadingSpinner) {
+    return (
+      <div
+        aria-label="Loading todos"
+        className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
+        role="status"
+      >
+        <Spinner aria-label="Loading" size="lg" />
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
+      </div>
+    );
+  }
+
   const getColumnLabel = (columnId: string): string => {
     const labels: Record<string, string> = {
       title: 'Title',
@@ -467,6 +484,11 @@ export const TodoTable: FC<TodoTableProps> = ({
     return columnId in labels ? labels[columnId] : columnId;
   };
 
+  // Show empty state when no todos match filters
+  // Show empty state when no todos match filters (only after initial fetch completes)
+  const hasNoTodos =
+    groupedByContext.length === 0 && !isLoading && isInitialized && todosQuery.isFetched;
+
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
       {displayError && todos.length > 0 && (
@@ -475,55 +497,66 @@ export const TodoTable: FC<TodoTableProps> = ({
         </div>
       )}
 
-      <div className="overflow-x-auto px-4 py-2">
-        {groupedByContext.map(([context, contextTodos]) => (
-          <div className="mb-4" key={context}>
-            <div className="mb-1 flex items-center justify-between">
-              <h3 className="text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
-                <FormattedMessage message={context} />
-              </h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {durationByContext[context]}
-              </span>
-            </div>
+      {hasNoTodos ? (
+        <EmptyState
+          description={
+            selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all'
+              ? 'Try adjusting your filters or select a different time range.'
+              : 'Get started by adding your first todo above.'
+          }
+          title="No todos found"
+        />
+      ) : (
+        <div className="overflow-x-auto px-4 py-2">
+          {groupedByContext.map(([context, contextTodos]) => (
+            <div className="mb-4" key={context}>
+              <div className="mb-1 flex items-center justify-between">
+                <h3 className="text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
+                  <FormattedMessage message={context} />
+                </h3>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {durationByContext[context]}
+                </span>
+              </div>
 
-            <div className="overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
+              <div className="overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
+                        <th
+                          className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
+                          key={columnId}
+                          scope="col"
+                        >
+                          {getColumnLabel(columnId)}
+                        </th>
+                      ))}
                       <th
-                        className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
-                        key={columnId}
+                        className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
                         scope="col"
                       >
-                        {getColumnLabel(columnId)}
+                        Actions
                       </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                    {contextTodos.map((todo) => (
+                      <TodoRow
+                        activeDate={format(currentDate, 'yyyy-MM-dd')}
+                        key={`${todo._id}-${todo._rev}`}
+                        selectedColumns={selectedColumns}
+                        timeTrackingActive={timeTrackingActive.length > 0}
+                        todo={todo}
+                      />
                     ))}
-                    <th
-                      className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
-                      scope="col"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-                  {contextTodos.map((todo) => (
-                    <TodoRow
-                      activeDate={format(currentDate, 'yyyy-MM-dd')}
-                      key={`${todo._id}-${todo._rev}`}
-                      selectedColumns={selectedColumns}
-                      timeTrackingActive={timeTrackingActive.length > 0}
-                      todo={todo}
-                    />
-                  ))}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
