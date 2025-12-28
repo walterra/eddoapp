@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createTestEnv,
   generateTestDbName,
+  getCouchDbUrl,
   SAMPLE_TODO_DOCS,
   TestDatabaseManager,
 } from './test-utils';
@@ -18,12 +19,14 @@ describe('Restore Interactive E2E', () => {
   let testDir: string;
   let backupDir: string;
   let dbManager: TestDatabaseManager;
+  let couchDbUrl: string;
 
   beforeEach(() => {
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-test-'));
     backupDir = path.join(testDir, 'backups');
     fs.mkdirSync(backupDir, { recursive: true });
     dbManager = new TestDatabaseManager();
+    couchDbUrl = getCouchDbUrl();
   });
 
   afterEach(async () => {
@@ -52,6 +55,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -74,6 +79,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -104,6 +111,8 @@ describe('Restore Interactive E2E', () => {
         RESTORE_SCRIPT,
         '--dry-run',
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -135,6 +144,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -162,6 +173,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -182,6 +195,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -215,6 +230,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -245,6 +262,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -265,6 +284,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -286,7 +307,7 @@ describe('Restore Interactive E2E', () => {
         .env(testEnv)
         .cwd(PROJECT_ROOT)
         .spawn('tsx', [RESTORE_SCRIPT])
-        .stdin(/Select target database for restore:/, '\x03') // Ctrl+C to cancel
+        .stdin(/CouchDB URL/, '\x03') // Ctrl+C to cancel
         .stdout(/Restore cancelled/i)
         .code(0); // prompts library exits with 0 when cancelled
     },
@@ -311,6 +332,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -330,6 +353,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -343,6 +368,27 @@ describe('Restore Interactive E2E', () => {
       .code(0);
   }, 45000);
 
+  it('should handle missing url parameter in non-interactive mode', async () => {
+    const targetDbName = generateTestDbName('missing-url-test');
+    const mockBackupFile = path.join(backupDir, 'mock-backup.json');
+    fs.writeFileSync(mockBackupFile, '{}');
+    const testEnv = createTestEnv();
+
+    await runner()
+      .env(testEnv)
+      .cwd(PROJECT_ROOT)
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--database',
+        targetDbName,
+        '--backup-file',
+        mockBackupFile,
+      ])
+      .stderr(/URL is required/i)
+      .code(1);
+  }, 30000);
+
   it('should handle missing backup file parameter in non-interactive mode', async () => {
     const targetDbName = generateTestDbName('missing-file-test');
     const testEnv = createTestEnv();
@@ -350,8 +396,15 @@ describe('Restore Interactive E2E', () => {
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
-      .spawn('tsx', [RESTORE_SCRIPT, '--no-interactive', '--database', targetDbName])
-      .stderr(/Backup file parameter is required in non-interactive mode/)
+      .spawn('tsx', [
+        RESTORE_SCRIPT,
+        '--no-interactive',
+        '--url',
+        couchDbUrl,
+        '--database',
+        targetDbName,
+      ])
+      .stderr(/Backup file is required/i)
       .code(1);
   }, 30000);
 
@@ -373,6 +426,8 @@ describe('Restore Interactive E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -391,12 +446,14 @@ describe('Restore Interactive E2E - File Discovery', () => {
   let testDir: string;
   let backupDir: string;
   let dbManager: TestDatabaseManager;
+  let couchDbUrl: string;
 
   beforeEach(() => {
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-discovery-test-'));
     backupDir = path.join(testDir, 'backups');
     fs.mkdirSync(backupDir, { recursive: true });
     dbManager = new TestDatabaseManager();
+    couchDbUrl = getCouchDbUrl();
   });
 
   afterEach(async () => {
@@ -427,6 +484,8 @@ describe('Restore Interactive E2E - File Discovery', () => {
         .spawn('tsx', [
           BACKUP_SCRIPT,
           '--no-interactive',
+          '--url',
+          couchDbUrl,
           '--database',
           dbName,
           '--backup-dir',
@@ -448,6 +507,8 @@ describe('Restore Interactive E2E - File Discovery', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -474,6 +535,8 @@ describe('Restore Interactive E2E - File Discovery', () => {
         .spawn('tsx', [
           BACKUP_SCRIPT,
           '--no-interactive',
+          '--url',
+          couchDbUrl,
           '--database',
           sourceDbName,
           '--backup-dir',
@@ -487,7 +550,7 @@ describe('Restore Interactive E2E - File Discovery', () => {
         .env(testEnv)
         .cwd(PROJECT_ROOT)
         .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', backupDir])
-        .stdin(/Select target database for restore:/, '\x03') // Cancel after discovery
+        .stdin(/CouchDB URL/, '\x03') // Cancel after URL prompt
         .stdout(/Restore cancelled/i)
         .code(0);
     },
@@ -505,7 +568,7 @@ describe('Restore Interactive E2E - File Discovery', () => {
         .env(testEnv)
         .cwd(PROJECT_ROOT)
         .spawn('tsx', [RESTORE_SCRIPT, '--backup-dir', emptyBackupDir])
-        .stdin(/Select target database for restore:/, '\x03') // Cancel at first prompt
+        .stdin(/CouchDB URL/, '\x03') // Cancel at first prompt
         .stdout(/Restore cancelled/i)
         .code(0);
     },

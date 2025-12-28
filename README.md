@@ -97,6 +97,24 @@ Issues sync periodically (default: hourly) with:
 
 Provides programmatic access to todos via Model Context Protocol. Test with `pnpm test:mcp`.
 
+## Backup & Disaster Recovery
+
+Eddo includes automated backup and restore capabilities:
+
+```bash
+# Interactive backup/restore
+pnpm backup:interactive
+pnpm restore:interactive
+
+# Automated daily backups
+pnpm backup:auto --pattern "eddo_user_*"
+
+# Apply retention policy
+pnpm backup:retention
+```
+
+See [Disaster Recovery Guide](docs/07_disaster-recovery.md) for complete procedures, recovery objectives, and troubleshooting.
+
 ## Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup, architecture, testing, and contribution guidelines.

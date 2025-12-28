@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createTestEnv,
   generateTestDbName,
+  getCouchDbUrl,
   SAMPLE_TODO_DOCS,
   TestDatabaseManager,
 } from './test-utils';
@@ -18,12 +19,14 @@ describe('Backup-Restore Workflow E2E', () => {
   let testDir: string;
   let backupDir: string;
   let dbManager: TestDatabaseManager;
+  let couchDbUrl: string;
 
   beforeEach(() => {
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-test-'));
     backupDir = path.join(testDir, 'backups');
     fs.mkdirSync(backupDir, { recursive: true });
     dbManager = new TestDatabaseManager();
+    couchDbUrl = getCouchDbUrl();
   });
 
   afterEach(async () => {
@@ -52,6 +55,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -82,6 +87,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -117,6 +124,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -145,6 +154,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -179,6 +190,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -210,6 +223,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -226,6 +241,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -249,6 +266,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -281,6 +300,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         BACKUP_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -305,6 +326,8 @@ describe('Backup-Restore Workflow E2E', () => {
       .spawn('tsx', [
         RESTORE_SCRIPT,
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
@@ -328,6 +351,8 @@ describe('Backup-Restore Workflow E2E', () => {
         BACKUP_SCRIPT,
         '--dry-run',
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         sourceDbName,
         '--backup-dir',
@@ -354,6 +379,8 @@ describe('Backup-Restore Workflow E2E', () => {
         RESTORE_SCRIPT,
         '--dry-run',
         '--no-interactive',
+        '--url',
+        couchDbUrl,
         '--database',
         targetDbName,
         '--backup-file',
