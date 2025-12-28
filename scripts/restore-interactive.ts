@@ -403,7 +403,13 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
 
   // Recreate target database to ensure it's empty (required by @cloudant/couchbackup)
   try {
-    const spinner = ora('Recreating target database...').start();
+    const spinner = ora({
+      text: 'Recreating target database...',
+      isSilent: !process.stdout.isTTY,
+    }).start();
+    if (!process.stdout.isTTY) {
+      console.log('Recreating target database...');
+    }
     await recreateDatabase(config.database, config.url);
     spinner.succeed(chalk.green(`Recreated empty target database: ${config.database}`));
   } catch (error) {
@@ -432,7 +438,15 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
   }
 
   // Start restore with progress indicator
-  const spinner = ora('Starting restore...').start();
+  // Disable spinner animation in non-TTY environments for better test output
+  const spinner = ora({
+    text: 'Starting restore...',
+    isSilent: !process.stdout.isTTY,
+  }).start();
+
+  if (!process.stdout.isTTY) {
+    console.log('Starting restore...');
+  }
 
   try {
     const startTime = Date.now();

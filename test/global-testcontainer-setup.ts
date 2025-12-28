@@ -14,6 +14,43 @@ const CONTAINER_URL_FILE = path.join(process.cwd(), '.testcontainer-url');
 /**
  * Start CouchDB container and expose connection details via file
  */
+/**
+ * Wait for CouchDB to be fully ready to accept connections
+ */
+async function waitForCouchDbReady(
+  url: string,
+  username: string,
+  password: string,
+  maxRetries = 30,
+  delayMs = 500,
+): Promise<void> {
+  const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(`${url}/_up`, {
+        headers: { Authorization: `Basic ${credentials}` },
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { status?: string };
+        if (data.status === 'ok') {
+          console.log(`✅ CouchDB is ready (attempt ${attempt})`);
+          return;
+        }
+      }
+    } catch {
+      // Connection failed, retry
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw new Error(`CouchDB failed to become ready after ${maxRetries} attempts`);
+}
+
 export async function setupTestcontainer(): Promise<void> {
   // Guard against multiple calls (e.g., if module is imported multiple times)
   if (container) {
@@ -31,6 +68,11 @@ export async function setupTestcontainer(): Promise<void> {
 
     const url = `http://${container.getHost()}:${container.getMappedPort(5984)}`;
     const urlWithAuth = `http://admin:testpassword@${container.getHost()}:${container.getMappedPort(5984)}`;
+
+    // Wait for CouchDB to be fully ready
+    console.log(`[Testcontainer] Waiting for CouchDB to be ready at ${url}...`);
+    await waitForCouchDbReady(url, 'admin', 'testpassword');
+    console.log(`[Testcontainer] CouchDB is ready!`);
 
     // Write connection details to file for test workers to read
     const connectionInfo = {

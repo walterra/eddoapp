@@ -29,6 +29,15 @@ export function createTestEnv(customDbName?: string) {
 }
 
 /**
+ * Get CouchDB URL for CLI scripts that use --url flag
+ */
+export function getCouchDbUrl(): string {
+  const env = validateEnv(process.env);
+  const testCouchConfig = getCouchDbConfig(env);
+  return testCouchConfig.url;
+}
+
+/**
  * Database cleanup utility for e2e tests
  */
 export class TestDatabaseManager {

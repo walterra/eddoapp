@@ -102,6 +102,8 @@ export default defineConfig({
           setupFiles: ['./test/e2e-setup.js'],
           include: ['scripts/__tests__/e2e/*.e2e.test.ts'],
           testTimeout: 60000,
+          // Run e2e tests sequentially to avoid race conditions with shared testcontainer
+          fileParallelism: false,
         },
       },
     ],

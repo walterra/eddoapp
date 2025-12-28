@@ -382,7 +382,15 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
   }
 
   // Start backup with progress indicator
-  const spinner = ora('Starting backup...').start();
+  // Disable spinner animation in non-TTY environments for better test output
+  const spinner = ora({
+    text: 'Starting backup...',
+    isSilent: !process.stdout.isTTY,
+  }).start();
+
+  if (!process.stdout.isTTY) {
+    console.log('Starting backup...');
+  }
 
   try {
     const startTime = Date.now();
