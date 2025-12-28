@@ -17,17 +17,20 @@ import {
   startOfWeek,
   startOfYear,
 } from 'date-fns';
+import { Spinner } from 'flowbite-react';
 import { uniqBy } from 'lodash-es';
 import { type FC, useEffect, useMemo, useState } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { ensureDesignDocuments } from '../database_setup';
 import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
+import { useDelayedLoading } from '../hooks/use_delayed_loading';
 import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
 import { useTodosByWeek } from '../hooks/use_todos_by_week';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
+import { EmptyState } from './empty_state';
 import { FormattedMessage } from './formatted_message';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
@@ -151,6 +154,7 @@ export const TodoBoard: FC<TodoBoardProps> = ({
 
   // Combine loading and error states from both queries
   const isLoading = todosQuery.isLoading || activitiesQuery.isLoading;
+  const showLoadingSpinner = useDelayedLoading(isLoading && !todosQuery.data);
   const queryError = todosQuery.error || activitiesQuery.error;
 
   useEffect(() => {
@@ -328,6 +332,24 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     );
   }
 
+  // Show loading state on initial fetch (delayed to prevent flicker)
+  if (showLoadingSpinner) {
+    return (
+      <div
+        aria-label="Loading todos"
+        className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
+        role="status"
+      >
+        <Spinner aria-label="Loading" size="lg" />
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
+      </div>
+    );
+  }
+
+  // Show empty state when no todos match filters (only after initial fetch completes)
+  const hasNoTodos =
+    groupedByContextByDate.length === 0 && !isLoading && isInitialized && todosQuery.isFetched;
+
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
       {/* Show inline error if we have data */}
@@ -337,105 +359,120 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         </div>
       )}
 
-      <div className="mt-2 flex flex-col">
-        <div className="overflow-x-auto">
-          <div className="inline-block min-w-full align-middle">
-            <div className="overflow-hidden">
-              <div className="mb-4 flex items-start justify-start space-x-3 px-4">
-                {groupedByContextByDate.map(([context, contextTodos]) => {
-                  const todosByDate = Array.from(contextTodos);
+      {hasNoTodos ? (
+        <EmptyState
+          description={
+            selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all'
+              ? 'Try adjusting your filters or select a different time range.'
+              : 'Get started by adding your first todo above.'
+          }
+          title="No todos found"
+        />
+      ) : (
+        <div className="mt-2 flex flex-col">
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-full align-middle">
+              <div className="overflow-hidden">
+                <div className="mb-4 flex items-start justify-start space-x-3 px-4">
+                  {groupedByContextByDate.map(([context, contextTodos]) => {
+                    const todosByDate = Array.from(contextTodos);
 
-                  todosByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
+                    todosByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
 
-                  const activitiesByMapDate = durationByContextByDate.find((d) => d[0] === context);
+                    const activitiesByMapDate = durationByContextByDate.find(
+                      (d) => d[0] === context,
+                    );
 
-                  const activityDurationByDate = activitiesByMapDate
-                    ? Array.from(activitiesByMapDate[1]).map((d) => [
-                        d[0],
-                        getFormattedDurationForActivities(d[1]),
-                      ])
-                    : [];
-                  activityDurationByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
+                    const activityDurationByDate = activitiesByMapDate
+                      ? Array.from(activitiesByMapDate[1]).map((d) => [
+                          d[0],
+                          getFormattedDurationForActivities(d[1]),
+                        ])
+                      : [];
+                    activityDurationByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
 
-                  return (
-                    <div className="eddo-w-kanban" key={context}>
-                      <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <FormattedMessage message={context} />
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {durationByContext[context]}
+                    return (
+                      <div className="eddo-w-kanban" key={context}>
+                        <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <FormattedMessage message={context} />
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {durationByContext[context]}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="eddo-w-kanban mb-2 space-y-2" id="kanban-list-1">
-                        {todosByDate.map(([todoDate, allTodosForDate]) => {
-                          const todosForDate = uniqBy(allTodosForDate, (d) => {
-                            return isLatestVersion(d) ? d._id : d.id;
-                          });
+                        <div className="eddo-w-kanban mb-2 space-y-2" id="kanban-list-1">
+                          {todosByDate.map(([todoDate, allTodosForDate]) => {
+                            const todosForDate = uniqBy(allTodosForDate, (d) => {
+                              return isLatestVersion(d) ? d._id : d.id;
+                            });
 
-                          todosForDate.sort((a, b) => {
-                            const aTitle = isLatestVersion(a) ? a.title : a.doc.title;
-                            const bTitle = isLatestVersion(b) ? b.title : b.doc.title;
+                            todosForDate.sort((a, b) => {
+                              const aTitle = isLatestVersion(a) ? a.title : a.doc.title;
+                              const bTitle = isLatestVersion(b) ? b.title : b.doc.title;
 
-                            return ('' + aTitle).localeCompare(bTitle);
-                          });
+                              return ('' + aTitle).localeCompare(bTitle);
+                            });
 
-                          let displayDate = '';
+                            let displayDate = '';
 
-                          try {
-                            displayDate = format(new Date(todoDate), 'yyyy-MM-dd');
-                          } catch (_e) {
-                            displayDate = format(new Date(), 'yyyy-MM-dd');
-                          }
+                            try {
+                              displayDate = format(new Date(todoDate), 'yyyy-MM-dd');
+                            } catch (_e) {
+                              displayDate = format(new Date(), 'yyyy-MM-dd');
+                            }
 
-                          const activityDurationItem = activityDurationByDate.find(
-                            (d) => d[0] === displayDate,
-                          );
+                            const activityDurationItem = activityDurationByDate.find(
+                              (d) => d[0] === displayDate,
+                            );
 
-                          const durationForDate = activityDurationItem
-                            ? activityDurationItem[1]
-                            : '';
+                            const durationForDate = activityDurationItem
+                              ? activityDurationItem[1]
+                              : '';
 
-                          return (
-                            <div key={`${context}_${todoDate}`}>
-                              <div className="mb-1 flex items-center justify-between text-xs">
-                                <div className="font-medium text-gray-600 dark:text-gray-400">
-                                  {displayDate}
+                            return (
+                              <div key={`${context}_${todoDate}`}>
+                                <div className="mb-1 flex items-center justify-between text-xs">
+                                  <div className="font-medium text-gray-600 dark:text-gray-400">
+                                    {displayDate}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-500">
+                                    {durationForDate}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-500">
-                                  {durationForDate}
-                                </div>
+                                {todosForDate.map((todoOrActivity) => {
+                                  const todo = isLatestVersion(todoOrActivity)
+                                    ? todoOrActivity
+                                    : todoOrActivity.doc;
+                                  return (
+                                    <TodoListElement
+                                      active={timeTrackingActive.some(
+                                        (d: string) => d === todo._id,
+                                      )}
+                                      activeDate={displayDate}
+                                      activityOnly={!isLatestVersion(todoOrActivity)}
+                                      key={todo._id}
+                                      timeTrackingActive={timeTrackingActive.length > 0}
+                                      todo={todo}
+                                    />
+                                  );
+                                })}
                               </div>
-                              {todosForDate.map((todoOrActivity) => {
-                                const todo = isLatestVersion(todoOrActivity)
-                                  ? todoOrActivity
-                                  : todoOrActivity.doc;
-                                return (
-                                  <TodoListElement
-                                    active={timeTrackingActive.some((d: string) => d === todo._id)}
-                                    activeDate={displayDate}
-                                    activityOnly={!isLatestVersion(todoOrActivity)}
-                                    key={todo._id}
-                                    timeTrackingActive={timeTrackingActive.length > 0}
-                                    todo={todo}
-                                  />
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
       <a download="todos.json" href={dataStr}>
         download json
       </a>

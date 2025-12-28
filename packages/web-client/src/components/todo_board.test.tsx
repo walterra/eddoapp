@@ -434,7 +434,8 @@ describe('TodoBoard', () => {
         name: 'NetworkError',
       };
 
-      testDb.contextValue.safeDb.safeFind = vi.fn().mockRejectedValue(error);
+      const mockSafeFind = vi.fn().mockRejectedValue(error);
+      testDb.contextValue.safeDb.safeFind = mockSafeFind;
 
       renderWithPouchDb(<TodoBoard {...defaultProps} />, {
         testDb: testDb.contextValue,
@@ -443,6 +444,9 @@ describe('TodoBoard', () => {
       await waitFor(() => {
         expect(screen.getByTestId('database-error-fallback')).toBeInTheDocument();
       });
+
+      // After dismiss, mock should succeed so refetch works
+      mockSafeFind.mockResolvedValue([]);
 
       // Click dismiss
       const dismissButton = screen.getByTestId('dismiss-error');
@@ -514,6 +518,61 @@ describe('TodoBoard', () => {
 
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalled();
+      });
+    });
+
+    it('should not show loading spinner immediately (delayed to prevent flicker)', async () => {
+      let resolvePromise: (value: unknown) => void;
+      const fetchPromise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
+
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockReturnValue(fetchPromise);
+
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
+
+      // Loading spinner should NOT be visible immediately (delayed 200ms to prevent flicker)
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+      // Resolve the promise to clean up
+      resolvePromise!([]);
+
+      await waitFor(() => {
+        expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Empty State', () => {
+    it('should show empty state when no todos exist', async () => {
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue([]);
+
+      renderWithPouchDb(<TodoBoard {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('No todos found')).toBeInTheDocument();
+        expect(
+          screen.getByText('Get started by adding your first todo above.'),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should show filter-specific message when filters are applied but no results', async () => {
+      testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue([]);
+
+      renderWithPouchDb(<TodoBoard {...defaultProps} selectedTags={['non-existent-tag']} />, {
+        testDb: testDb.contextValue,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('No todos found')).toBeInTheDocument();
+        expect(
+          screen.getByText('Try adjusting your filters or select a different time range.'),
+        ).toBeInTheDocument();
       });
     });
   });
