@@ -23,10 +23,20 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
+      include: [
+        'packages/web-client/src/**/*.{ts,tsx}',
+        'packages/core-shared/src/**/*.ts',
+        'packages/core-server/src/**/*.ts',
+      ],
+      exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts', '**/test-*.{ts,tsx}', '**/index.ts'],
+      thresholds: {
+        // Initial thresholds based on current coverage baseline
+        // Increase these as test coverage improves
+        lines: 10,
+        functions: 40,
+        branches: 50,
+        statements: 10,
+      },
     },
     projects: [
       {

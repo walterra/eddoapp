@@ -139,8 +139,8 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Run unit tests
-        run: pnpm test:unit
+      - name: Run unit tests with coverage
+        run: pnpm test:coverage
 
   integration-tests:
     name: Integration Tests
