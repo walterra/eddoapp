@@ -1,5 +1,3 @@
-- there is a bug with user preferences: after login you end up with default filters, only after a full page refresh the settings from stored user preferences get restored.
-
 - **Selective GitHub Force Resync**: Replace single "Force Resync" button with modal for fine-grained field selection
   - **Use case:** Resync only tags without overwriting user-adjusted due dates or context
   - **UI Flow:**
