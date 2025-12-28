@@ -6,7 +6,6 @@
  */
 
 import couchbackup from '@cloudant/couchbackup';
-import { getAvailableDatabases, getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import fs from 'fs';
@@ -23,6 +22,7 @@ import {
 } from './backup-utils.js';
 
 interface BackupConfig {
+  url: string;
   database?: string;
   backupDir: string;
   parallelism: number;
@@ -30,78 +30,171 @@ interface BackupConfig {
   dryRun: boolean;
 }
 
-async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupConfig> {
-  // Environment configuration
-  const env = validateEnv(process.env);
-  const couchConfig = getCouchDbConfig(env);
+/**
+ * Parse CouchDB URL to extract components
+ */
+function parseUrl(url: string): { baseUrl: string; defaultDb?: string } {
+  const parsed = new URL(url);
+  const pathParts = parsed.pathname.split('/').filter(Boolean);
+  const defaultDb = pathParts.length > 0 ? pathParts[0] : undefined;
 
+  // Remove database from path to get base URL
+  parsed.pathname = '/';
+  return { baseUrl: parsed.toString().replace(/\/$/, ''), defaultDb };
+}
+
+/**
+ * Build full database URL
+ */
+function buildDbUrl(baseUrl: string, database: string): string {
+  return `${baseUrl}/${database}`;
+}
+
+/**
+ * Fetch available databases from CouchDB
+ */
+async function fetchAvailableDatabases(baseUrl: string): Promise<string[]> {
+  try {
+    const parsed = new URL(baseUrl);
+    const credentials =
+      parsed.username && parsed.password
+        ? Buffer.from(`${parsed.username}:${parsed.password}`).toString('base64')
+        : null;
+
+    // Remove credentials from URL for fetch (fetch API doesn't allow credentials in URL)
+    const cleanUrl = `${parsed.protocol}//${parsed.host}`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (credentials) {
+      headers['Authorization'] = `Basic ${credentials}`;
+    }
+
+    const response = await fetch(`${cleanUrl}/_all_dbs`, { headers });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch databases: ${response.statusText}`);
+    }
+
+    const databases = (await response.json()) as string[];
+    return databases.filter((db) => !db.startsWith('_'));
+  } catch (error) {
+    console.error(
+      chalk.yellow('Warning: Could not fetch databases:'),
+      error instanceof Error ? error.message : String(error),
+    );
+    return [];
+  }
+}
+
+async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupConfig> {
   // Default values
   const defaults: BackupConfig = {
-    database: couchConfig.dbName,
+    url: '',
     backupDir: DEFAULT_CONFIG.backupDir,
     parallelism: DEFAULT_CONFIG.parallelism,
     timeout: DEFAULT_CONFIG.timeout,
     dryRun: false,
   };
 
-  // If all required options are provided, return them
-  if (options.database && options.backupDir !== undefined) {
-    return { ...defaults, ...options };
+  // If all required options are provided, return them without prompting
+  if (
+    options.url &&
+    options.database &&
+    options.backupDir !== undefined &&
+    options.parallelism !== undefined &&
+    options.timeout !== undefined
+  ) {
+    const { baseUrl } = parseUrl(options.url);
+    return {
+      ...defaults,
+      ...options,
+      url: baseUrl || options.url,
+    } as BackupConfig;
   }
 
-  // Otherwise, prompt for missing values
   console.log(chalk.blue('\n🗄️  CouchDB Interactive Backup\n'));
 
   const questions: prompts.PromptObject[] = [];
 
-  if (!options.database) {
-    // Discover available databases
+  // URL prompt if not provided
+  let baseUrl = '';
+  let defaultDb: string | undefined;
+
+  if (!options.url) {
+    questions.push({
+      type: 'text',
+      name: 'url',
+      message: 'CouchDB URL (e.g., http://admin:password@localhost:5984):',
+      validate: (value: string) => {
+        if (!value) return 'URL is required';
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return 'Invalid URL format';
+        }
+      },
+    });
+  } else {
+    const parsed = parseUrl(options.url);
+    baseUrl = parsed.baseUrl;
+    defaultDb = parsed.defaultDb;
+  }
+
+  // If we have URL already, fetch databases
+  if (baseUrl) {
     const spinner = ora('Discovering available databases...').start();
-    const availableDatabases = await getAvailableDatabases(env);
+    const availableDatabases = await fetchAvailableDatabases(baseUrl);
     spinner.stop();
 
-    if (availableDatabases.length === 0) {
-      console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
-      console.log(chalk.gray('Falling back to manual input...'));
+    if (!options.database) {
+      if (availableDatabases.length === 0) {
+        console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
+        console.log(chalk.gray('Falling back to manual input...'));
 
-      questions.push({
-        type: 'text',
-        name: 'database',
-        message: 'Database name to backup:',
-        initial: defaults.database,
-      });
-    } else {
-      console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
+        questions.push({
+          type: 'text',
+          name: 'database',
+          message: 'Database name to backup:',
+          initial: defaultDb,
+        });
+      } else {
+        console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
 
-      // Add option to enter custom database name
-      const databaseChoices = [
-        ...availableDatabases.map((db) => ({
-          title: db,
-          value: db,
-          description: db === defaults.database ? '(current default)' : '',
-        })),
-        {
-          title: '📝 Enter custom database name',
-          value: '__custom__',
-          description: 'Manually type a database name',
-        },
-      ];
+        const databaseChoices = [
+          ...availableDatabases.map((db) => ({
+            title: db,
+            value: db,
+            description: db === defaultDb ? '(from URL)' : '',
+          })),
+          {
+            title: '📝 Enter custom database name',
+            value: '__custom__',
+            description: 'Manually type a database name',
+          },
+        ];
 
-      questions.push({
-        type: 'select',
-        name: 'database',
-        message: 'Select database to backup:',
-        choices: databaseChoices,
-        initial: availableDatabases.findIndex((db) => db === defaults.database),
-      });
+        const defaultIndex = defaultDb
+          ? availableDatabases.findIndex((db) => db === defaultDb)
+          : -1;
+        questions.push({
+          type: 'select',
+          name: 'database',
+          message: 'Select database to backup:',
+          choices: databaseChoices,
+          initial: defaultIndex >= 0 ? defaultIndex : 0,
+        });
 
-      // If user selects custom, ask for manual input
-      questions.push({
-        type: (prev: string) => (prev === '__custom__' ? 'text' : null),
-        name: 'customDatabase',
-        message: 'Enter database name:',
-        initial: defaults.database,
-      });
+        questions.push({
+          type: (prev: string) => (prev === '__custom__' ? 'text' : null),
+          name: 'customDatabase',
+          message: 'Enter database name:',
+          initial: defaultDb,
+        });
+      }
     }
   }
 
@@ -142,13 +235,85 @@ async function getBackupConfig(options: Partial<BackupConfig>): Promise<BackupCo
     },
   });
 
+  // Handle URL if it was prompted
+  if (answers.url) {
+    const parsed = parseUrl(answers.url);
+    baseUrl = parsed.baseUrl;
+    defaultDb = parsed.defaultDb;
+
+    // Now fetch databases and prompt for selection
+    const spinner = ora('Discovering available databases...').start();
+    const availableDatabases = await fetchAvailableDatabases(baseUrl);
+    spinner.stop();
+
+    if (availableDatabases.length === 0) {
+      console.log(chalk.yellow('⚠️  No databases found'));
+      const dbAnswer = await prompts({
+        type: 'text',
+        name: 'database',
+        message: 'Database name to backup:',
+        initial: defaultDb,
+      });
+      answers.database = dbAnswer.database;
+    } else {
+      console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
+
+      const databaseChoices = [
+        ...availableDatabases.map((db) => ({
+          title: db,
+          value: db,
+          description: db === defaultDb ? '(from URL)' : '',
+        })),
+        {
+          title: '📝 Enter custom database name',
+          value: '__custom__',
+          description: 'Manually type a database name',
+        },
+      ];
+
+      const defaultIndex = defaultDb ? availableDatabases.findIndex((db) => db === defaultDb) : -1;
+      const dbAnswer = await prompts(
+        {
+          type: 'select',
+          name: 'database',
+          message: 'Select database to backup:',
+          choices: databaseChoices,
+          initial: defaultIndex >= 0 ? defaultIndex : 0,
+        },
+        {
+          onCancel: () => {
+            console.log(chalk.red('\nBackup cancelled.'));
+            process.exit(0);
+          },
+        },
+      );
+
+      if (dbAnswer.database === '__custom__') {
+        const customDb = await prompts({
+          type: 'text',
+          name: 'database',
+          message: 'Enter database name:',
+          initial: defaultDb,
+        });
+        answers.database = customDb.database;
+      } else {
+        answers.database = dbAnswer.database;
+      }
+    }
+  }
+
   // Handle custom database selection
   if (answers.database === '__custom__' && answers.customDatabase) {
     answers.database = answers.customDatabase;
   }
   delete answers.customDatabase;
 
-  return { ...defaults, ...options, ...answers };
+  return {
+    ...defaults,
+    ...options,
+    ...answers,
+    url: baseUrl || options.url || '',
+  };
 }
 
 async function listExistingBackups(backupDir: string, database: string): Promise<string[]> {
@@ -159,20 +324,19 @@ async function listExistingBackups(backupDir: string, database: string): Promise
 }
 
 async function performBackup(config: BackupConfig, isInteractive: boolean = true): Promise<void> {
-  const env = validateEnv(process.env);
-  const couchConfig = getCouchDbConfig(env);
+  if (!config.url) {
+    throw new Error('CouchDB URL is required');
+  }
 
-  // Use the database from config, not from env
-  const dbUrl = couchConfig.fullUrl.replace(
-    couchConfig.dbName,
-    config.database || couchConfig.dbName,
-  );
+  if (!config.database) {
+    throw new Error('Database name is required');
+  }
+
+  const { baseUrl } = parseUrl(config.url);
+  const dbUrl = buildDbUrl(baseUrl || config.url, config.database);
 
   // Show existing backups
-  const existingBackups = await listExistingBackups(
-    config.backupDir,
-    config.database || couchConfig.dbName,
-  );
+  const existingBackups = await listExistingBackups(config.backupDir, config.database);
   if (existingBackups.length > 0) {
     console.log(chalk.gray('\nExisting backups:'));
     existingBackups.slice(0, 5).forEach((file) => {
@@ -185,7 +349,7 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
   }
 
   // Generate backup filename
-  const backupFile = generateBackupFilename(config.database!, config.backupDir);
+  const backupFile = generateBackupFilename(config.database, config.backupDir);
 
   console.log('\n' + chalk.bold('Backup Configuration:'));
   console.log(`  Database: ${chalk.cyan(config.database)}`);
@@ -231,7 +395,6 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
     });
 
     let documentsProcessed = 0;
-    const _lastUpdate = Date.now();
 
     // Update spinner with progress
     const updateProgress = setInterval(() => {
@@ -285,6 +448,7 @@ program
   .name('backup-interactive')
   .description('Interactive CouchDB backup tool')
   .version('1.0.0')
+  .option('-u, --url <url>', 'CouchDB URL (e.g., http://admin:password@localhost:5984)')
   .option('-d, --database <name>', 'database name to backup')
   .option('-b, --backup-dir <path>', 'backup directory', DEFAULT_CONFIG.backupDir)
   .option(
@@ -308,14 +472,20 @@ program
       if (options.interactive) {
         config = await getBackupConfig(options);
       } else {
-        // In non-interactive mode, require explicit database parameter
+        // In non-interactive mode, require explicit parameters
+        if (!options.url) {
+          throw new Error(
+            'URL is required in non-interactive mode. Use --url <url> or run without --no-interactive',
+          );
+        }
         if (!options.database) {
           throw new Error(
-            'Database parameter is required in non-interactive mode. Use --database <name> or run without --no-interactive',
+            'Database is required in non-interactive mode. Use --database <name> or run without --no-interactive',
           );
         }
 
         config = {
+          url: options.url,
           database: options.database,
           backupDir: options.backupDir || DEFAULT_CONFIG.backupDir,
           parallelism: options.parallelism ?? DEFAULT_CONFIG.parallelism,

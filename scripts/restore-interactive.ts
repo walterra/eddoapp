@@ -6,7 +6,6 @@
  */
 
 import couchbackup from '@cloudant/couchbackup';
-import { getAvailableDatabases, getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import fs from 'fs';
@@ -24,6 +23,7 @@ import {
 } from './backup-utils.js';
 
 interface RestoreConfig {
+  url: string;
   database?: string;
   backupFile?: string;
   backupDir: string;
@@ -39,6 +39,65 @@ interface BackupFileInfo extends BackupFileInfoBase {
   age: string;
 }
 
+/**
+ * Parse CouchDB URL to extract components
+ */
+function parseUrl(url: string): { baseUrl: string; defaultDb?: string } {
+  const parsed = new URL(url);
+  const pathParts = parsed.pathname.split('/').filter(Boolean);
+  const defaultDb = pathParts.length > 0 ? pathParts[0] : undefined;
+
+  // Remove database from path to get base URL
+  parsed.pathname = '/';
+  return { baseUrl: parsed.toString().replace(/\/$/, ''), defaultDb };
+}
+
+/**
+ * Build full database URL
+ */
+function buildDbUrl(baseUrl: string, database: string): string {
+  return `${baseUrl}/${database}`;
+}
+
+/**
+ * Fetch available databases from CouchDB
+ */
+async function fetchAvailableDatabases(baseUrl: string): Promise<string[]> {
+  try {
+    const parsed = new URL(baseUrl);
+    const credentials =
+      parsed.username && parsed.password
+        ? Buffer.from(`${parsed.username}:${parsed.password}`).toString('base64')
+        : null;
+
+    // Remove credentials from URL for fetch (fetch API doesn't allow credentials in URL)
+    const cleanUrl = `${parsed.protocol}//${parsed.host}`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (credentials) {
+      headers['Authorization'] = `Basic ${credentials}`;
+    }
+
+    const response = await fetch(`${cleanUrl}/_all_dbs`, { headers });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch databases: ${response.statusText}`);
+    }
+
+    const databases = (await response.json()) as string[];
+    return databases.filter((db) => !db.startsWith('_'));
+  } catch (error) {
+    console.error(
+      chalk.yellow('Warning: Could not fetch databases:'),
+      error instanceof Error ? error.message : String(error),
+    );
+    return [];
+  }
+}
+
 function getBackupFiles(backupDir: string): BackupFileInfo[] {
   const allBackups = getAllBackupFiles(backupDir);
 
@@ -52,7 +111,7 @@ function getBackupFiles(backupDir: string): BackupFileInfo[] {
       path: backup.path,
       database: backup.database,
       timestamp: backup.timestamp,
-      size: backup.size,
+      size: formatFileSize(backup.size),
       age,
     };
   });
@@ -75,13 +134,9 @@ function getRelativeTime(date: Date): string {
 }
 
 async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<RestoreConfig> {
-  // Environment configuration
-  const env = validateEnv(process.env);
-  const couchConfig = getCouchDbConfig(env);
-
   // Default values
   const defaults: RestoreConfig = {
-    database: couchConfig.dbName,
+    url: '',
     backupDir: DEFAULT_CONFIG.backupDir,
     parallelism: DEFAULT_CONFIG.parallelism,
     timeout: DEFAULT_CONFIG.timeout,
@@ -89,69 +144,40 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
     forceOverwrite: false,
   };
 
-  // If all required options are provided, return them
-  if (options.database && options.backupFile && options.backupDir !== undefined) {
-    return { ...defaults, ...options };
-  }
-
-  // Otherwise, prompt for missing values
   console.log(chalk.blue('\n🔄 CouchDB Interactive Restore\n'));
 
   const questions: prompts.PromptObject[] = [];
 
-  // Database selection
-  if (!options.database) {
-    const spinner = ora('Discovering available databases...').start();
-    const availableDatabases = await getAvailableDatabases(env);
-    spinner.stop();
+  // URL prompt if not provided
+  let baseUrl = '';
+  let defaultDb: string | undefined;
 
-    if (availableDatabases.length === 0) {
-      console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
-      console.log(chalk.gray('Falling back to manual input...'));
-
-      questions.push({
-        type: 'text',
-        name: 'database',
-        message: 'Target database name for restore:',
-        initial: defaults.database,
-      });
-    } else {
-      console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
-
-      const databaseChoices = [
-        ...availableDatabases.map((db) => ({
-          title: db,
-          value: db,
-          description: db === defaults.database ? '(current default)' : '',
-        })),
-        {
-          title: '📝 Enter custom database name',
-          value: '__custom__',
-          description: 'Manually type a database name',
-        },
-      ];
-
-      questions.push({
-        type: 'select',
-        name: 'database',
-        message: 'Select target database for restore:',
-        choices: databaseChoices,
-        initial: availableDatabases.findIndex((db) => db === defaults.database),
-      });
-
-      questions.push({
-        type: (prev: string) => (prev === '__custom__' ? 'text' : null),
-        name: 'customDatabase',
-        message: 'Enter database name:',
-        initial: defaults.database,
-      });
-    }
+  if (!options.url) {
+    questions.push({
+      type: 'text',
+      name: 'url',
+      message: 'CouchDB URL (e.g., http://admin:password@localhost:5984):',
+      validate: (value: string) => {
+        if (!value) return 'URL is required';
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return 'Invalid URL format';
+        }
+      },
+    });
+  } else {
+    const parsed = parseUrl(options.url);
+    baseUrl = parsed.baseUrl;
+    defaultDb = parsed.defaultDb;
   }
 
-  // Backup file selection
-  if (!options.backupFile) {
-    const backupFiles = getBackupFiles(options.backupDir || defaults.backupDir);
+  // Backup file selection (do this first since it doesn't need URL)
+  const backupDir = options.backupDir || defaults.backupDir;
+  const backupFiles = getBackupFiles(backupDir);
 
+  if (!options.backupFile) {
     if (backupFiles.length === 0) {
       console.log(chalk.yellow('⚠️  No backup files found'));
       console.log(chalk.gray('Please specify backup file path manually...'));
@@ -167,10 +193,21 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
         },
       });
     } else {
-      console.log(chalk.green(`✅ Found ${backupFiles.length} backup file(s)`));
+      const MAX_DISPLAY_BACKUPS = 50;
+      const totalBackups = backupFiles.length;
+      const displayBackups = backupFiles.slice(0, MAX_DISPLAY_BACKUPS);
+
+      console.log(chalk.green(`✅ Found ${totalBackups} backup file(s)`));
+      if (totalBackups > MAX_DISPLAY_BACKUPS) {
+        console.log(
+          chalk.yellow(
+            `   Showing ${MAX_DISPLAY_BACKUPS} most recent. Use "Browse for custom backup file" for older backups.`,
+          ),
+        );
+      }
 
       const backupChoices = [
-        ...backupFiles.map((backup) => ({
+        ...displayBackups.map((backup) => ({
           title: `${backup.filename}`,
           value: backup.fullPath,
           description: `${backup.database} | ${backup.size} | ${backup.age}`,
@@ -202,9 +239,82 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
     }
   }
 
+  // Run first batch of questions (URL and backup file)
+  const firstAnswers = await prompts(questions, {
+    onCancel: () => {
+      console.log(chalk.red('\nRestore cancelled.'));
+      process.exit(0);
+    },
+  });
+
+  // Handle custom backup file selection
+  if (firstAnswers.backupFile === '__custom__' && firstAnswers.customBackupFile) {
+    firstAnswers.backupFile = firstAnswers.customBackupFile;
+  }
+  delete firstAnswers.customBackupFile;
+
+  // If URL was prompted, parse it now
+  if (firstAnswers.url) {
+    const parsed = parseUrl(firstAnswers.url);
+    baseUrl = parsed.baseUrl;
+    defaultDb = parsed.defaultDb;
+  }
+
+  // Now fetch databases and prompt for target database
+  const secondQuestions: prompts.PromptObject[] = [];
+
+  if (!options.database) {
+    const spinner = ora('Discovering available databases...').start();
+    const availableDatabases = await fetchAvailableDatabases(baseUrl || options.url || '');
+    spinner.stop();
+
+    if (availableDatabases.length === 0) {
+      console.log(chalk.yellow('⚠️  No databases found or unable to connect to CouchDB'));
+      console.log(chalk.gray('Falling back to manual input...'));
+
+      secondQuestions.push({
+        type: 'text',
+        name: 'database',
+        message: 'Target database name for restore:',
+        initial: defaultDb,
+      });
+    } else {
+      console.log(chalk.green(`✅ Found ${availableDatabases.length} database(s)`));
+
+      const databaseChoices = [
+        ...availableDatabases.map((db) => ({
+          title: db,
+          value: db,
+          description: db === defaultDb ? '(from URL)' : '',
+        })),
+        {
+          title: '📝 Enter custom database name',
+          value: '__custom__',
+          description: 'Manually type a database name',
+        },
+      ];
+
+      const defaultIndex = defaultDb ? availableDatabases.findIndex((db) => db === defaultDb) : -1;
+      secondQuestions.push({
+        type: 'select',
+        name: 'database',
+        message: 'Select target database for restore:',
+        choices: databaseChoices,
+        initial: defaultIndex >= 0 ? defaultIndex : 0,
+      });
+
+      secondQuestions.push({
+        type: (prev: string) => (prev === '__custom__' ? 'text' : null),
+        name: 'customDatabase',
+        message: 'Enter database name:',
+        initial: defaultDb,
+      });
+    }
+  }
+
   // Other configuration options
   if (options.parallelism === undefined) {
-    questions.push({
+    secondQuestions.push({
       type: 'number',
       name: 'parallelism',
       message: 'Parallel connections:',
@@ -215,7 +325,7 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
   }
 
   if (options.timeout === undefined) {
-    questions.push({
+    secondQuestions.push({
       type: 'number',
       name: 'timeout',
       message: 'Request timeout (ms):',
@@ -225,42 +335,46 @@ async function getRestoreConfig(options: Partial<RestoreConfig>): Promise<Restor
   }
 
   // Force overwrite confirmation
-  questions.push({
+  secondQuestions.push({
     type: 'confirm',
     name: 'forceOverwrite',
     message: 'This will overwrite the target database. Continue?',
     initial: false,
   });
 
-  const answers = await prompts(questions, {
+  const secondAnswers = await prompts(secondQuestions, {
     onCancel: () => {
       console.log(chalk.red('\nRestore cancelled.'));
       process.exit(0);
     },
   });
 
-  // Handle custom selections
-  if (answers.database === '__custom__' && answers.customDatabase) {
-    answers.database = answers.customDatabase;
+  // Handle custom database selection
+  if (secondAnswers.database === '__custom__' && secondAnswers.customDatabase) {
+    secondAnswers.database = secondAnswers.customDatabase;
   }
-  if (answers.backupFile === '__custom__' && answers.customBackupFile) {
-    answers.backupFile = answers.customBackupFile;
-  }
-  delete answers.customDatabase;
-  delete answers.customBackupFile;
+  delete secondAnswers.customDatabase;
 
-  return { ...defaults, ...options, ...answers };
+  return {
+    ...defaults,
+    ...options,
+    ...firstAnswers,
+    ...secondAnswers,
+    url: baseUrl || options.url || '',
+  };
 }
 
 async function performRestore(config: RestoreConfig, isInteractive: boolean = true): Promise<void> {
-  const env = validateEnv(process.env);
-  const couchConfig = getCouchDbConfig(env);
+  if (!config.url) {
+    throw new Error('CouchDB URL is required');
+  }
 
-  // Use the database from config
-  const dbUrl = couchConfig.fullUrl.replace(
-    couchConfig.dbName,
-    config.database || couchConfig.dbName,
-  );
+  if (!config.database) {
+    throw new Error('Database name is required');
+  }
+
+  const { baseUrl } = parseUrl(config.url);
+  const dbUrl = buildDbUrl(baseUrl || config.url, config.database);
 
   if (!config.backupFile || !fs.existsSync(config.backupFile)) {
     throw new Error(`Backup file does not exist: ${config.backupFile}`);
@@ -290,7 +404,7 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
   // Recreate target database to ensure it's empty (required by @cloudant/couchbackup)
   try {
     const spinner = ora('Recreating target database...').start();
-    await recreateDatabase(config.database!, env.COUCHDB_URL);
+    await recreateDatabase(config.database, config.url);
     spinner.succeed(chalk.green(`Recreated empty target database: ${config.database}`));
   } catch (error) {
     console.error(
@@ -301,7 +415,7 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
   }
 
   // Final confirmation (only in interactive mode or when not forced)
-  if (isInteractive || !config.forceOverwrite) {
+  if (isInteractive) {
     const { finalConfirm } = await prompts({
       type: 'confirm',
       name: 'finalConfirm',
@@ -345,9 +459,6 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
           resolve();
         }
       });
-
-      // Note: The readStream 'data' event won't give us accurate document count
-      // as it's raw file chunks, not individual documents
     });
 
     spinner.succeed(chalk.green('Restore completed successfully!'));
@@ -378,6 +489,7 @@ program
   .name('restore-interactive')
   .description('Interactive CouchDB restore tool')
   .version('1.0.0')
+  .option('-u, --url <url>', 'CouchDB URL (e.g., http://admin:password@localhost:5984)')
   .option('-d, --database <name>', 'target database name for restore')
   .option('-f, --backup-file <path>', 'backup file to restore from')
   .option('-b, --backup-dir <path>', 'backup directory to search', DEFAULT_CONFIG.backupDir)
@@ -403,15 +515,21 @@ program
       if (options.interactive) {
         config = await getRestoreConfig(options);
       } else {
-        // In non-interactive mode, require explicit backup file parameter
+        // In non-interactive mode, require explicit parameters
+        if (!options.url) {
+          throw new Error(
+            'URL is required in non-interactive mode. Use --url <url> or run without --no-interactive',
+          );
+        }
         if (!options.backupFile) {
           throw new Error(
-            'Backup file parameter is required in non-interactive mode. Use --backup-file <path> or run without --no-interactive',
+            'Backup file is required in non-interactive mode. Use --backup-file <path> or run without --no-interactive',
           );
         }
 
         config = {
-          database: options.database || getCouchDbConfig(validateEnv(process.env)).dbName,
+          url: options.url,
+          database: options.database,
           backupFile: options.backupFile,
           backupDir: options.backupDir || DEFAULT_CONFIG.backupDir,
           parallelism: options.parallelism ?? DEFAULT_CONFIG.parallelism,

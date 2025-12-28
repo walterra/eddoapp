@@ -1,40 +1,44 @@
 /**
  * Tests for interactive backup CLI
- * Run manually with: npx tsx scripts/backup-interactive.test.ts
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getBackupConfig } from './backup-interactive.js';
 
-// Mock dependencies
-vi.mock('@eddo/core-server/config', () => ({
-  validateEnv: vi.fn(() => ({
-    COUCHDB_URL: 'http://localhost:5984',
-    COUCHDB_USERNAME: 'admin',
-    COUCHDB_PASSWORD: 'password',
-    COUCHDB_DATABASE: 'eddo-test',
-  })),
-  getCouchDbConfig: vi.fn(() => ({
-    dbName: 'eddo-test',
-    fullUrl: 'http://admin:password@localhost:5984/eddo-test',
-  })),
-  getAvailableDatabases: vi.fn(() => Promise.resolve(['eddo-test', 'test-db'])),
-}));
-
+// Mock prompts
 vi.mock('prompts', () => ({
   default: vi.fn(),
 }));
 
+// Mock fs
 vi.mock('fs');
+
+// Mock ora
+vi.mock('ora', () => ({
+  default: vi.fn(() => ({
+    start: vi.fn().mockReturnThis(),
+    stop: vi.fn().mockReturnThis(),
+    succeed: vi.fn().mockReturnThis(),
+    fail: vi.fn().mockReturnThis(),
+  })),
+}));
+
+// Mock fetch for database discovery
+global.fetch = vi.fn();
 
 describe('backup-interactive', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(['eddo-test', 'test-db']),
+    } as Response);
   });
 
   describe('getBackupConfig', () => {
-    it('should return defaults when all options provided', async () => {
+    it('should return config when all options provided including url', async () => {
       const options = {
+        url: 'http://admin:password@localhost:5984',
         database: 'custom-db',
         backupDir: './custom-backups',
         parallelism: 3,
@@ -44,7 +48,8 @@ describe('backup-interactive', () => {
 
       const config = await getBackupConfig(options);
 
-      expect(config).toEqual({
+      expect(config).toMatchObject({
+        url: expect.stringContaining('localhost:5984'),
         database: 'custom-db',
         backupDir: './custom-backups',
         parallelism: 3,
@@ -53,61 +58,39 @@ describe('backup-interactive', () => {
       });
     });
 
-    it('should use environment defaults when no options provided', async () => {
+    it('should prompt for URL when not provided', async () => {
       const prompts = await import('prompts');
       vi.mocked(prompts.default).mockResolvedValue({
+        url: 'http://admin:password@localhost:5984',
         database: 'eddo-test',
         backupDir: './backups',
         parallelism: 5,
         timeout: 60000,
       });
 
-      const config = await getBackupConfig({});
+      await getBackupConfig({});
 
-      expect(config).toEqual({
-        database: 'eddo-test',
-        backupDir: './backups',
-        parallelism: 5,
-        timeout: 60000,
-        dryRun: false,
-      });
-
-      expect(prompts.default).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'database' }),
-          expect.objectContaining({ name: 'backupDir' }),
-          expect.objectContaining({ name: 'parallelism' }),
-          expect.objectContaining({ name: 'timeout' }),
-        ]),
-        expect.any(Object),
-      );
+      expect(prompts.default).toHaveBeenCalled();
+      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
+      const urlPrompt = calls.find((call: { name?: string }) => call.name === 'url');
+      expect(urlPrompt).toBeDefined();
     });
 
-    it('should prompt only for missing values', async () => {
+    it('should fetch available databases when URL is provided', async () => {
       const prompts = await import('prompts');
       vi.mocked(prompts.default).mockResolvedValue({
-        backupDir: './custom-backups',
+        database: 'eddo-test',
+        backupDir: './backups',
+        parallelism: 5,
+        timeout: 60000,
       });
 
-      const options = {
-        database: 'provided-db',
-        parallelism: 3,
-        timeout: 30000,
-      };
+      await getBackupConfig({ url: 'http://admin:password@localhost:5984' });
 
-      await getBackupConfig(options);
-
-      expect(prompts.default).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ name: 'backupDir' })]),
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/_all_dbs'),
         expect.any(Object),
       );
-
-      // Should not prompt for already provided values
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
-      const promptNames = calls.map((call) => call.name);
-      expect(promptNames).not.toContain('database');
-      expect(promptNames).not.toContain('parallelism');
-      expect(promptNames).not.toContain('timeout');
     });
 
     it('should handle process exit on cancel', async () => {
@@ -116,13 +99,10 @@ describe('backup-interactive', () => {
         throw new Error('Process exit called');
       });
 
-      const mockCancel = vi.fn(() => {
-        console.log('Backup cancelled.');
-        process.exit(0);
-      });
-
-      vi.mocked(prompts.default).mockImplementation(() => {
-        mockCancel();
+      vi.mocked(prompts.default).mockImplementation((_questions, options) => {
+        if (options?.onCancel) {
+          options.onCancel();
+        }
         return Promise.resolve({});
       });
 
@@ -132,41 +112,69 @@ describe('backup-interactive', () => {
   });
 
   describe('validation', () => {
-    it('should validate parallelism range', async () => {
+    it('should validate parallelism range in prompts', async () => {
       const prompts = await import('prompts');
       vi.mocked(prompts.default).mockResolvedValue({
+        url: 'http://admin:password@localhost:5984',
         database: 'test-db',
         backupDir: './backups',
-        parallelism: 15, // Above max
+        parallelism: 5,
         timeout: 60000,
       });
 
       await getBackupConfig({});
 
       const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
-      const parallelismPrompt = calls.find((call) => call.name === 'parallelism');
+      const parallelismPrompt = calls.find(
+        (call: { name?: string }) => call.name === 'parallelism',
+      );
 
       expect(parallelismPrompt).toBeDefined();
       expect(parallelismPrompt.min).toBe(1);
       expect(parallelismPrompt.max).toBe(10);
     });
 
-    it('should validate timeout minimum', async () => {
+    it('should validate timeout minimum in prompts', async () => {
       const prompts = await import('prompts');
       vi.mocked(prompts.default).mockResolvedValue({
+        url: 'http://admin:password@localhost:5984',
         database: 'test-db',
         backupDir: './backups',
         parallelism: 5,
-        timeout: 5000, // Below min
+        timeout: 60000,
       });
 
       await getBackupConfig({});
 
       const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
-      const timeoutPrompt = calls.find((call) => call.name === 'timeout');
+      const timeoutPrompt = calls.find((call: { name?: string }) => call.name === 'timeout');
 
       expect(timeoutPrompt).toBeDefined();
       expect(timeoutPrompt.min).toBe(10000);
+    });
+
+    it('should validate URL format', async () => {
+      const prompts = await import('prompts');
+      vi.mocked(prompts.default).mockResolvedValue({
+        url: 'http://admin:password@localhost:5984',
+        database: 'test-db',
+        backupDir: './backups',
+        parallelism: 5,
+        timeout: 60000,
+      });
+
+      await getBackupConfig({});
+
+      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
+      const urlPrompt = calls.find((call: { name?: string }) => call.name === 'url');
+
+      expect(urlPrompt).toBeDefined();
+      expect(urlPrompt.validate).toBeDefined();
+
+      // Test validation function
+      expect(urlPrompt.validate('')).toBe('URL is required');
+      expect(urlPrompt.validate('not-a-url')).toBe('Invalid URL format');
+      expect(urlPrompt.validate('http://localhost:5984')).toBe(true);
     });
   });
 });

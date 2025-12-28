@@ -42,10 +42,9 @@ DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|
 
 ### Backup & Restore
 
-- Interactive backup: `pnpm backup:interactive`
-- Interactive restore: `pnpm restore:interactive`
-- Direct backup: `pnpm backup -- --database <db-name> --output ./backups/`
-- Direct restore: `pnpm restore -- --input ./backups/<file>.json --database <db-name>`
+- Interactive backup: `pnpm backup:interactive` (prompts for CouchDB URL)
+- Interactive restore: `pnpm restore:interactive` (prompts for CouchDB URL)
+- With URL flag: `pnpm backup:interactive -- --url http://admin:password@localhost:5984`
 - Verify backup: `pnpm backup:verify`
 - Automated backup scheduler: `pnpm backup:auto` (runs continuous backup cycle)
 - Retention policy: `pnpm backup:retention` (apply retention policy to cleanup old backups)
