@@ -18,7 +18,14 @@ export function createAgentAssertions() {
      * Assert that agent executed successfully
      */
     expectSuccess(response: AgentResponse): void {
-      expect(response.success).toBe(true);
+      if (!response.success) {
+        console.error('❌ Agent execution failed:');
+        console.error(`   Message: ${response.message}`);
+        console.error(`   Replies: ${JSON.stringify(response.context.replies)}`);
+        console.error(`   Tool Results: ${JSON.stringify(response.context.toolResults)}`);
+        console.error(`   Chat Actions: ${JSON.stringify(response.context.chatActions)}`);
+      }
+      expect(response.success, `Agent failed with message: ${response.message}`).toBe(true);
       expect(response.message).toBeTruthy();
     },
 

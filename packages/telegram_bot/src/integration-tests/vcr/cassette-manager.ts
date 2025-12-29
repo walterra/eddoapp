@@ -233,6 +233,7 @@ export function createCassetteManager(
       } else {
         console.warn(`📼 Request hash mismatch at index ${interactionIndex}`);
         console.warn(`📼 Expected hash: ${interaction.requestHash}, got: ${requestHash}`);
+        console.warn(`📼 Recorded model: ${interaction.request.model}, current model: ${model}`);
         if (process.env.VCR_DEBUG) {
           console.warn(
             `📼 Recorded messages:`,

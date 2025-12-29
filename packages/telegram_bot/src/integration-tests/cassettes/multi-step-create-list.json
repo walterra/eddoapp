@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "multi-step-create-list",
-  "createdAt": "2025-12-29T14:23:35.977Z",
-  "frozenTime": "2025-12-29T14:23:35.977Z",
+  "createdAt": "2025-12-29T15:59:48.954Z",
+  "frozenTime": "2025-12-29T15:59:48.954Z",
   "interactions": [
     {
       "requestHash": "8592da8393afb1e4",
@@ -16,14 +16,14 @@
           }
         ]
       },
-      "response": "I'll create a code review todo for work and then show you all your work todos.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Code review\", \"context\": \"work\", \"tags\": [\"gtd:next\"], \"due\": \"2025-12-29T23:59:59.999Z\"}}",
+      "response": "I'll create that code review todo for you and then show all your work items.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Code review\", \"context\": \"work\", \"tags\": [\"gtd:next\"], \"due\": \"2025-12-29T23:59:59.999Z\"}}",
       "metadata": {
-        "recordedAt": "2025-12-29T14:23:39.520Z",
-        "responseTimeMs": 3523
+        "recordedAt": "2025-12-29T15:59:52.356Z",
+        "responseTimeMs": 3383
       }
     },
     {
-      "requestHash": "5532bb1d512df28d",
+      "requestHash": "a91796900ba588a7",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -34,22 +34,22 @@
           },
           {
             "role": "assistant",
-            "content": "I'll create a code review todo for work and then show you all your work todos.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Code review\", \"context\": \"work\", \"tags\": [\"gtd:next\"], \"due\":..."
+            "content": "I'll create that code review todo for you and then show all your work items.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Code review\", \"context\": \"work\", \"tags\": [\"gtd:next\"], \"due\": \"..."
           },
           {
             "role": "user",
-            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T14:23:39.534Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2025..."
+            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T15:59:52.371Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2025..."
           }
         ]
       },
       "response": "Perfect! Code review todo created. Now let me show you all your work todos.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"context\": \"work\", \"completed\": false}}",
       "metadata": {
-        "recordedAt": "2025-12-29T14:23:44.118Z",
-        "responseTimeMs": 4574
+        "recordedAt": "2025-12-29T15:59:57.008Z",
+        "responseTimeMs": 4625
       }
     },
     {
-      "requestHash": "4a9f1515e6509229",
+      "requestHash": "f3e6f81c59366719",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -60,11 +60,11 @@
           },
           {
             "role": "assistant",
-            "content": "I'll create a code review todo for work and then show you all your work todos.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Code review\", \"context\": \"work\", \"tags\": [\"gtd:next\"], \"due\":..."
+            "content": "I'll create that code review todo for you and then show all your work items.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Code review\", \"context\": \"work\", \"tags\": [\"gtd:next\"], \"due\": \"..."
           },
           {
             "role": "user",
-            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T14:23:39.534Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2025..."
+            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T15:59:52.371Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2025..."
           },
           {
             "role": "assistant",
@@ -72,14 +72,14 @@
           },
           {
             "role": "user",
-            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T14:23:39.534Z\\\",\\\"_rev\\\":\\\"1-3e1e43872a0eca2c14a04c995fc8865a\\\",\\\"title\\\":\\\"Cod..."
+            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T15:59:52.371Z\\\",\\\"_rev\\\":\\\"1-3e1e43872a0eca2c14a04c995fc8865a\\\",\\\"title\\\":\\\"Cod..."
           }
         ]
       },
-      "response": "Great! You have one work todo ready for action:\n\n• **Code review** (gtd:next) - due today\n\nReady to tackle that code review? 🚀",
+      "response": "Great! You have 1 work todo:\n\n🎯 **Code review** (due today)\n- Tagged as next action (gtd:next)\n- Ready to tackle when you're in work mode\n\nYour work context is nice and focused! Time to dive into that code review? 💪",
       "metadata": {
-        "recordedAt": "2025-12-29T14:23:47.822Z",
-        "responseTimeMs": 3671
+        "recordedAt": "2025-12-29T16:00:00.913Z",
+        "responseTimeMs": 3874
       }
     }
   ]

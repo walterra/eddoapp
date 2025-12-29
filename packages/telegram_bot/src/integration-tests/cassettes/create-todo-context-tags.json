@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "create-todo-context-tags",
-  "createdAt": "2025-12-29T14:23:25.125Z",
-  "frozenTime": "2025-12-29T14:23:25.125Z",
+  "createdAt": "2025-12-29T15:59:40.784Z",
+  "frozenTime": "2025-12-29T15:59:40.784Z",
   "interactions": [
     {
       "requestHash": "ae0e9e3da25a9ce1",
@@ -16,14 +16,14 @@
           }
         ]
       },
-      "response": "I'll create a work todo for your quarterly report with urgent priority and set it due at the end of next month.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Complete quarterly report\", \"context\": \"work\", \"due\": \"2025-01-31T23:59:59.999Z\", \"tags\": [\"urgent\", \"gtd:next\"], \"description\": \"Quarterly business report - compile data, analysis, and recommendations\"}}",
+      "response": "I'll create that quarterly report todo for you with urgent priority!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Complete quarterly report\", \"context\": \"work\", \"due\": \"2025-01-31T23:59:59.999Z\", \"tags\": [\"urgent\", \"gtd:next\"], \"description\": \"Prepare and finalize quarterly business report\"}}",
       "metadata": {
-        "recordedAt": "2025-12-29T14:23:30.716Z",
-        "responseTimeMs": 5578
+        "recordedAt": "2025-12-29T15:59:43.943Z",
+        "responseTimeMs": 3141
       }
     },
     {
-      "requestHash": "c26c17bfd949e3c3",
+      "requestHash": "fe3a483a28fbde0e",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -34,18 +34,18 @@
           },
           {
             "role": "assistant",
-            "content": "I'll create a work todo for your quarterly report with urgent priority and set it due at the end of next month.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Complete quarterly report\", ..."
+            "content": "I'll create that quarterly report todo for you with urgent priority!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Complete quarterly report\", \"context\": \"work\", \"due\": \"2025-01-31T23:59..."
           },
           {
             "role": "user",
-            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T14:23:30.739Z\\\",\\\"title\\\":\\\"Complete quarterly report\\\",\\\"context\\\":\\\"work\\\",..."
+            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T15:59:43.962Z\\\",\\\"title\\\":\\\"Complete quarterly report\\\",\\\"context\\\":\\\"work\\\",..."
           }
         ]
       },
-      "response": "Perfect! 🎯 Your quarterly report todo is locked and loaded for work context with urgent priority - due end of January. Time to crush those quarterly goals!",
+      "response": "Perfect! 🎯 Created your quarterly report todo with urgent priority - due January 31st. Ready to tackle when you are!",
       "metadata": {
-        "recordedAt": "2025-12-29T14:23:35.899Z",
-        "responseTimeMs": 5145
+        "recordedAt": "2025-12-29T15:59:48.868Z",
+        "responseTimeMs": 4894
       }
     }
   ]
