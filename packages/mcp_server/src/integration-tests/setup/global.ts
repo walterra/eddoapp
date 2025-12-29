@@ -28,17 +28,6 @@ export async function setup() {
   process.env.NODE_ENV = 'test';
   process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
-  // Check if test port is available
-  const { ensurePortAvailable } = await import('./port-check.js');
-  const testPort = parseInt(process.env.MCP_SERVER_PORT || '3003', 10);
-
-  try {
-    await ensurePortAvailable(testPort);
-  } catch (error) {
-    console.error(`\n❌ ${error}\n`);
-    process.exit(1);
-  }
-
   // Increase timeout for integration tests
   globalThis.setTimeout =
     globalThis.setTimeout ||

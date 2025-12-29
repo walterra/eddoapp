@@ -1,7 +1,8 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
-import { claudeService } from '../ai/claude.js';
+import type { ClaudeService } from '../ai/claude.js';
+import { claudeService as defaultClaudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import { BRIEFING_CONTENT_MARKER, RECAP_CONTENT_MARKER } from '../constants/briefing.js';
 import { getMCPClient } from '../mcp/client.js';
@@ -32,9 +33,16 @@ interface ToolCall {
   parameters: Record<string, unknown>;
 }
 
+export interface SimpleAgentConfig {
+  /** Optional Claude service for dependency injection (used in testing) */
+  claudeService?: ClaudeService;
+}
+
 export class SimpleAgent {
-  constructor() {
-    // MCP client is initialized at bot startup, not here
+  private claudeService: ClaudeService;
+
+  constructor(config: SimpleAgentConfig = {}) {
+    this.claudeService = config.claudeService ?? defaultClaudeService;
   }
 
   private getMCPClientOrThrow() {
@@ -51,7 +59,16 @@ export class SimpleAgent {
     userMessage: string,
     userId: string,
     telegramContext: BotContext,
-  ): Promise<{ success: boolean; finalResponse?: string; error?: Error }> {
+  ): Promise<{
+    success: boolean;
+    finalResponse?: string;
+    error?: Error;
+    toolResults?: Array<{
+      toolName: string;
+      result: unknown;
+      timestamp: number;
+    }>;
+  }> {
     const startTime = Date.now();
 
     logger.info('Starting simple agent execution', {
@@ -66,12 +83,13 @@ export class SimpleAgent {
       logger.info('Simple agent completed successfully', {
         userId,
         duration,
-        responseLength: result.length,
+        responseLength: result.response.length,
       });
 
       return {
         success: true,
-        finalResponse: result,
+        finalResponse: result.response,
+        toolResults: result.toolResults,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -96,7 +114,17 @@ export class SimpleAgent {
     }
   }
 
-  private async agentLoop(userInput: string, telegramContext: BotContext): Promise<string> {
+  private async agentLoop(
+    userInput: string,
+    telegramContext: BotContext,
+  ): Promise<{
+    response: string;
+    toolResults: Array<{
+      toolName: string;
+      result: unknown;
+      timestamp: number;
+    }>;
+  }> {
     // Get MCP client (initialized at bot startup)
     const mcpClient = this.getMCPClientOrThrow();
 
@@ -200,7 +228,7 @@ export class SimpleAgent {
       // Show typing before LLM call
       await this.showTyping(telegramContext);
 
-      const llmResponse = await claudeService.generateResponse(state.history, systemPrompt);
+      const llmResponse = await this.claudeService.generateResponse(state.history, systemPrompt);
 
       state.history.push({
         role: 'assistant',
@@ -421,13 +449,18 @@ export class SimpleAgent {
 
     if (iteration >= maxIterations) {
       logger.warn('Agent loop reached max iterations', { maxIterations });
-      return (
-        state.history[state.history.length - 1]?.content ||
-        'Process completed but exceeded maximum iterations.'
-      );
+      return {
+        response:
+          state.history[state.history.length - 1]?.content ||
+          'Process completed but exceeded maximum iterations.',
+        toolResults: state.toolResults,
+      };
     }
 
-    return state.output || 'Process completed successfully.';
+    return {
+      response: state.output || 'Process completed successfully.',
+      toolResults: state.toolResults,
+    };
   }
 
   private async logFinalAgentState(state: AgentState, iteration: number): Promise<void> {

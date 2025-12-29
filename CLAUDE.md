@@ -27,13 +27,17 @@ DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|
 - Format fix: `pnpm format`
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`
-- Integration tests: `pnpm test:integration`
+- MCP server integration tests: `pnpm test:integration:mcp-server` (uses vitest with global setup)
+- Agent loop integration tests: `pnpm test:integration:agent-loop` (uses VCR caching, see below)
+- Agent loop tests (record): `pnpm test:integration:agent-loop:record` (re-record cassettes)
+- Agent loop tests (playback): `pnpm test:integration:agent-loop:playback` (CI mode, no API calls)
 - E2E tests: `pnpm test:e2e`
 - Full test suite: `pnpm test:all`
-- CI test suite: `pnpm test:ci`
+- CI test suite: `pnpm test:ci` (excludes telegram-bot integration tests)
+- CI test suite with all tests: `pnpm test:ci:all` (requires ANTHROPIC_API_KEY)
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
-- MCP server test: `pnpm test:mcp` (this lets you run commands against mcp-server)
+- MCP server test: `pnpm test:mcp-server` (this lets you run commands against mcp-server)
 - Check unused dependencies: `pnpm knip`
 
 ### Package-Specific
@@ -146,6 +150,70 @@ interface TodoAlpha3 {
   - `client.ts`: GitHub API client with Octokit
   - `sync-scheduler.ts`: Periodic sync scheduler
   - `types.ts`: GitHub API type definitions
+
+### Testing Architecture
+
+The project uses a layered testing approach with testcontainers for database isolation:
+
+- **Unit Tests**: Vitest for individual functions and components
+- **Integration Tests**: Vitest with testcontainers for ephemeral CouchDB instances
+- **E2E Tests**: Vitest for end-to-end workflow testing
+
+#### Testcontainers Setup
+
+Integration and E2E tests use `@testcontainers/couchdb` for automated Docker container management:
+
+- **Global Setup**: `test/global-testcontainer-setup.ts` manages CouchDB container lifecycle
+- **Complete Isolation**: Each test suite gets an ephemeral CouchDB container
+- **No Manual Setup**: Tests start/stop containers automatically
+- **Works Everywhere**: Identical behavior in local development and CI
+
+#### MCP Server Integration Tests
+
+Runner script: `scripts/run-mcp-server-integration-tests.ts`
+
+1. Starts CouchDB testcontainer
+2. Creates test database
+3. Starts MCP server with testcontainer URL
+4. Runs vitest with `packages/mcp_server/vitest.integration.config.ts`
+5. Tears down server and container
+
+**Command**: `pnpm test:integration:mcp-server`
+
+#### Agent Loop Integration Tests
+
+Runner script: `scripts/run-telegram-bot-integration-tests.ts`
+
+Tests the Telegram bot's AI agent loop with VCR-style caching for LLM responses.
+
+**VCR Caching System** (`packages/telegram_bot/src/integration-tests/vcr/`):
+
+- Records LLM API responses to cassette files on first run
+- Replays cached responses on subsequent runs (fast, free, deterministic)
+- Freezes time during playback to match recording timestamp
+- Normalizes dynamic content (user IDs, timestamps, database names) for hash matching
+
+**VCR Modes**:
+
+- `VCR_MODE=auto` (default): Record if cassette missing, replay if exists
+- `VCR_MODE=record`: Always record fresh responses (updates cassettes)
+- `VCR_MODE=playback`: Only replay, fail if cassette missing (CI mode)
+- `VCR_DEBUG=1`: Enable verbose logging for debugging hash mismatches
+
+**Commands**:
+
+- `pnpm test:integration:agent-loop` - Auto mode (hybrid, requires `ANTHROPIC_API_KEY`)
+- `pnpm test:integration:agent-loop:record` - Re-record all cassettes (requires `ANTHROPIC_API_KEY`)
+- `pnpm test:integration:agent-loop:playback` - Playback only, no API key needed (CI default)
+
+**API Key Requirements**:
+
+- Playback mode: No `ANTHROPIC_API_KEY` required (uses cached responses)
+- Auto/Record modes: `ANTHROPIC_API_KEY` required for live API calls
+
+**Limitations**: Multi-step workflows that reference specific todo IDs cannot use cached playback because the LLM response contains hardcoded IDs from the recording session. These tests are skipped in playback mode and run live in auto/record modes.
+
+**Cassette Location**: `packages/telegram_bot/src/integration-tests/cassettes/`
 
 ### GitHub Issue Sync Architecture
 

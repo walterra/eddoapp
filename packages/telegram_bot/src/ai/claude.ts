@@ -1,4 +1,5 @@
 import { Anthropic } from '@anthropic-ai/sdk';
+import { getRandomHex } from '@eddo/core-shared';
 
 import type { AgentState } from '../agent/simple-agent.js';
 import { appConfig } from '../utils/config.js';
@@ -34,7 +35,7 @@ export class SimpleClaudeService implements ClaudeService {
     systemPrompt: string,
   ): Promise<string> {
     try {
-      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const requestId = `req_${Date.now()}_${getRandomHex(9)}`;
 
       logger.info('🤖 LLM Request', {
         requestId,
@@ -77,5 +78,15 @@ export class SimpleClaudeService implements ClaudeService {
   }
 }
 
-// Singleton instance
-export const claudeService = new SimpleClaudeService();
+// Lazy singleton instance - only created when accessed
+// In VCR playback mode, tests use cachedClaudeService instead
+let _claudeService: SimpleClaudeService | null = null;
+
+export const claudeService: ClaudeService = {
+  generateResponse: async (conversationHistory, systemPrompt) => {
+    if (!_claudeService) {
+      _claudeService = new SimpleClaudeService();
+    }
+    return _claudeService.generateResponse(conversationHistory, systemPrompt);
+  },
+};

@@ -1,0 +1,15 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Ensure JSON files always use LF line endings (important for VCR cassettes)
+*.json text eol=lf
+
+# Shell scripts should use LF
+*.sh text eol=lf
+
+# TypeScript/JavaScript source files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf

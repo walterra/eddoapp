@@ -1,11 +1,9 @@
 #!/usr/bin/env node
-
 /**
  * Test script for MCP server CRUD operations
  * Supports all tools listed in dev/MCP-CRUD.md
  * Uses the official MCP SDK like the telegram bot
  */
-
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -76,7 +74,10 @@ async function testMcpTool(toolName, args = {}) {
         if (content.type === 'text') {
           console.log(content.text);
         } else {
-          console.log(`Content ${index + 1}:`, JSON.stringify(content, null, 2));
+          console.log(
+            `Content ${index + 1}:`,
+            JSON.stringify(content, null, 2),
+          );
         }
       });
     } else {
@@ -96,7 +97,10 @@ async function testMcpTool(toolName, args = {}) {
         await client.close();
         console.log('🔌 Connection closed');
       } catch (closeError) {
-        console.warn('⚠️  Warning: Failed to close connection:', closeError.message);
+        console.warn(
+          '⚠️  Warning: Failed to close connection:',
+          closeError.message,
+        );
       }
     }
   }
