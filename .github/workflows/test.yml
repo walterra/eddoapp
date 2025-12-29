@@ -205,7 +205,6 @@ jobs:
         env:
           CI: true
           VCR_MODE: playback
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: pnpm test:integration:agent-loop
 
   e2e-tests:

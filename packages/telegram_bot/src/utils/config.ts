@@ -5,10 +5,18 @@ import { z } from 'zod';
 // Load environment variables
 dotenvLoad();
 
+// Check if we're in VCR playback mode (no real API calls needed)
+const isVcrPlayback = process.env.VCR_MODE === 'playback';
+
 // Extend the shared environment schema with telegram-specific required fields
+// In VCR playback mode, API keys are optional since we replay cached responses
 const TelegramConfigSchema = z.object({
-  TELEGRAM_BOT_TOKEN: z.string().min(1, 'Telegram bot token is required'),
-  ANTHROPIC_API_KEY: z.string().min(1, 'Anthropic API key is required'),
+  TELEGRAM_BOT_TOKEN: isVcrPlayback
+    ? z.string().optional().default('vcr-playback-token')
+    : z.string().min(1, 'Telegram bot token is required'),
+  ANTHROPIC_API_KEY: isVcrPlayback
+    ? z.string().optional().default('')
+    : z.string().min(1, 'Anthropic API key is required'),
   WEB_API_BASE_URL: z
     .string()
     .url('Web API base URL must be a valid URL')

@@ -78,5 +78,15 @@ export class SimpleClaudeService implements ClaudeService {
   }
 }
 
-// Singleton instance
-export const claudeService = new SimpleClaudeService();
+// Lazy singleton instance - only created when accessed
+// In VCR playback mode, tests use cachedClaudeService instead
+let _claudeService: SimpleClaudeService | null = null;
+
+export const claudeService: ClaudeService = {
+  generateResponse: async (conversationHistory, systemPrompt) => {
+    if (!_claudeService) {
+      _claudeService = new SimpleClaudeService();
+    }
+    return _claudeService.generateResponse(conversationHistory, systemPrompt);
+  },
+};

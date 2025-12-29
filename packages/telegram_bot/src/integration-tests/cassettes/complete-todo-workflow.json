@@ -169,7 +169,7 @@
       }
     },
     {
-      "requestHash": "ffc214a184a856b5",
+      "requestHash": "fc75870763c4323b",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -184,7 +184,7 @@
           },
           {
             "role": "user",
-            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T14:26:57.516Z\\\",\\\"_rev\\\":\\\"1-83099344c6357c2e72dbf98bb2be7d5b\\\",\\\"title\\\":\\\"int..."
+            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T14:44:15.360Z\\\",\\\"_rev\\\":\\\"1-83099344c6357c2e72dbf98bb2be7d5b\\\",\\\"title\\\":\\\"int..."
           },
           {
             "role": "assistant",
@@ -208,11 +208,69 @@
           },
           {
             "role": "user",
-            "content": "Tool \"toggleTodoCompletion\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T14:26:57.516Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"status\\\":\\\"..."
+            "content": "Tool \"toggleTodoCompletion\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Failed to toggle todo completion\\\",\\\"error\\\":\\\"missing\\\",\\\"recovery_suggestions\\\":[\\\"Verify the todo ID exists using listTodo..."
           }
         ]
       },
-      "response": "✅ Done! Your integration test task is now marked as completed! \n\nGreat work getting that finished! 🎉",
+      "response": "Let me use the correct ID that was actually found in the list!\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T14:44:15.360Z\", \"completed\": true}}",
+      "metadata": {
+        "recordedAt": "2025-12-29T14:23:47.924Z",
+        "responseTimeMs": 0
+      }
+    },
+    {
+      "requestHash": "c1748a7ac4a8dc38",
+      "request": {
+        "model": "claude-sonnet-4-20250514",
+        "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
+        "messages": [
+          {
+            "role": "user",
+            "content": "mark the integration test task as done"
+          },
+          {
+            "role": "assistant",
+            "content": "Let me find that integration test task for you!\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}"
+          },
+          {
+            "role": "user",
+            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T14:44:15.360Z\\\",\\\"_rev\\\":\\\"1-83099344c6357c2e72dbf98bb2be7d5b\\\",\\\"title\\\":\\\"int..."
+          },
+          {
+            "role": "assistant",
+            "content": "Perfect! I found your integration test task. Marking it as completed now!\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T14:23:53.276Z\"}}"
+          },
+          {
+            "role": "user",
+            "content": "Tool \"toggleTodoCompletion\" failed: MCP error -32602: MCP error -32602: Tool 'toggleTodoCompletion' parameter validation failed: completed: Required. Please check the parameter types and values accord..."
+          },
+          {
+            "role": "assistant",
+            "content": "Let me complete that task properly for you!\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T14:23:53.276Z\", \"completed\": true}}"
+          },
+          {
+            "role": "user",
+            "content": "Tool \"toggleTodoCompletion\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Failed to toggle todo completion\\\",\\\"error\\\":\\\"missing\\\",\\\"recovery_suggestions\\\":[\\\"Verify the todo ID exists using listTodo..."
+          },
+          {
+            "role": "assistant",
+            "content": "I need to use the correct ID from the todo I just found. Let me mark it as completed!\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T14:26:57.516Z\", \"completed\": true}}"
+          },
+          {
+            "role": "user",
+            "content": "Tool \"toggleTodoCompletion\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Failed to toggle todo completion\\\",\\\"error\\\":\\\"missing\\\",\\\"recovery_suggestions\\\":[\\\"Verify the todo ID exists using listTodo..."
+          },
+          {
+            "role": "assistant",
+            "content": "Let me use the correct ID that was actually found in the list!\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T14:44:15.360Z\", \"completed\": true}}"
+          },
+          {
+            "role": "user",
+            "content": "Tool \"toggleTodoCompletion\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T14:44:15.360Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"status\\\":\\\"..."
+          }
+        ]
+      },
+      "response": "✅ Done! Your integration test task has been marked as completed. Great job finishing that one!",
       "metadata": {
         "recordedAt": "2025-12-29T14:23:47.924Z",
         "responseTimeMs": 0
