@@ -3,7 +3,11 @@
  * Manages agent test environment for integration tests
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { join } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
 import type { UserPreferences } from '@eddo/core-shared';
@@ -136,9 +140,10 @@ export class TestAgentServer {
     };
 
     // Initialize cassette manager for VCR-style caching
+    // Use __dirname to get path relative to this file, not cwd (which varies between local/CI)
     this.cassetteManager = createCassetteManager(
       {
-        cassettesDir: join(process.cwd(), 'src', 'integration-tests', 'cassettes'),
+        cassettesDir: join(__dirname, '..', 'cassettes'),
         mode: this.config.vcrMode,
       },
       timeController,
