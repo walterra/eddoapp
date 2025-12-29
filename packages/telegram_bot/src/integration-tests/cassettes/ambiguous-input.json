@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2025-12-29T16:45:42.569Z",
-  "frozenTime": "2025-12-29T16:45:42.569Z",
+  "createdAt": "2025-12-29T21:47:32.519Z",
+  "frozenTime": "2025-12-29T21:47:32.519Z",
   "interactions": [
     {
       "requestHash": "df18cfb3e9e4036c",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "I'd be happy to help you create a new todo! What would you like to add?\n\nJust tell me the task and I'll set it up with the right context and due date. You can give me as much or as little detail as you'd like - a simple task name works perfectly, or you can include specifics like when it's due, what context it's for (work, personal, etc.), or any additional notes.",
+      "response": "I'd be happy to help you create a new todo! What would you like to add to your list?",
       "metadata": {
-        "recordedAt": "2025-12-29T16:45:46.984Z",
-        "responseTimeMs": 4398
+        "recordedAt": "2025-12-29T21:47:34.606Z",
+        "responseTimeMs": 2072
       }
     }
   ]

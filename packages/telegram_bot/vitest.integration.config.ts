@@ -17,7 +17,7 @@ export default defineConfig({
         singleFork: true, // Run tests sequentially to avoid database conflicts
       },
     },
-    setupFiles: [],
+    setupFiles: ['./src/integration-tests/setup/vcr-env-setup.ts'],
     coverage: {
       enabled: false, // Disable coverage for integration tests
     },
