@@ -35,15 +35,10 @@ export function createAgentAssertions() {
     /**
      * Assert that agent replied with expected content
      */
-    expectReplyContains(
-      response: AgentResponse,
-      expectedContent: string,
-    ): void {
+    expectReplyContains(response: AgentResponse, expectedContent: string): void {
       const replies = response.context.replies;
       expect(replies.length).toBeGreaterThan(0);
-      const hasContent = replies.some((reply) =>
-        reply.includes(expectedContent),
-      );
+      const hasContent = replies.some((reply) => reply.includes(expectedContent));
       expect(hasContent).toBe(true);
     },
 
@@ -53,9 +48,7 @@ export function createAgentAssertions() {
     expectToolUsed(response: AgentResponse, toolName: string): void {
       // Check if the tool was actually executed by looking at the toolResults array
       const toolResults = response.context.toolResults || [];
-      const toolExecuted = toolResults.some(
-        (toolResult) => toolResult.toolName === toolName,
-      );
+      const toolExecuted = toolResults.some((toolResult) => toolResult.toolName === toolName);
       expect(toolExecuted).toBe(true);
     },
 
@@ -87,15 +80,9 @@ export function createAgentAssertions() {
     /**
      * Assert that agent completed within reasonable time
      */
-    async expectTimely<T>(
-      promise: Promise<T>,
-      timeoutMs: number = 30000,
-    ): Promise<T> {
+    async expectTimely<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
-          timeoutMs,
-        );
+        setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
       });
 
       return Promise.race([promise, timeoutPromise]);

@@ -41,19 +41,15 @@ function findAvailablePort(startPort = 3001): Promise<number> {
  * Start the MCP test server
  */
 async function startTestServer(port: number): Promise<ChildProcess> {
-  const serverProcess = spawn(
-    'pnpm',
-    ['--filter', '@eddo/server', 'start:test'],
-    {
-      env: {
-        ...process.env,
-        COUCHDB_TEST_DB_NAME: 'todos-test',
-        MCP_TEST_PORT: port.toString(),
-        NODE_ENV: 'test',
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
+  const serverProcess = spawn('pnpm', ['--filter', '@eddo/server', 'start:test'], {
+    env: {
+      ...process.env,
+      COUCHDB_TEST_DB_NAME: 'todos-test',
+      MCP_TEST_PORT: port.toString(),
+      NODE_ENV: 'test',
     },
-  );
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
   // Pipe server output but filter out exit errors
   serverProcess.stdout?.on('data', (data) => {
