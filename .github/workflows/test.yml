@@ -201,9 +201,10 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Run agent loop integration tests
+      - name: Run agent loop integration tests (VCR playback)
         env:
           CI: true
+          VCR_MODE: playback
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: pnpm test:integration:agent-loop
 

@@ -1,7 +1,8 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
-import { claudeService } from '../ai/claude.js';
+import type { ClaudeService } from '../ai/claude.js';
+import { claudeService as defaultClaudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import { BRIEFING_CONTENT_MARKER, RECAP_CONTENT_MARKER } from '../constants/briefing.js';
 import { getMCPClient } from '../mcp/client.js';
@@ -32,9 +33,16 @@ interface ToolCall {
   parameters: Record<string, unknown>;
 }
 
+export interface SimpleAgentConfig {
+  /** Optional Claude service for dependency injection (used in testing) */
+  claudeService?: ClaudeService;
+}
+
 export class SimpleAgent {
-  constructor() {
-    // MCP client is initialized at bot startup, not here
+  private claudeService: ClaudeService;
+
+  constructor(config: SimpleAgentConfig = {}) {
+    this.claudeService = config.claudeService ?? defaultClaudeService;
   }
 
   private getMCPClientOrThrow() {
@@ -220,7 +228,7 @@ export class SimpleAgent {
       // Show typing before LLM call
       await this.showTyping(telegramContext);
 
-      const llmResponse = await claudeService.generateResponse(state.history, systemPrompt);
+      const llmResponse = await this.claudeService.generateResponse(state.history, systemPrompt);
 
       state.history.push({
         role: 'assistant',

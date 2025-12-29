@@ -3,6 +3,8 @@
  * Manages agent test environment for integration tests
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { join } from 'path';
+
 import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
 import type { UserPreferences } from '@eddo/core-shared';
 import { getRandomHex, getRandomInt, REQUIRED_INDEXES } from '@eddo/core-shared';
@@ -13,11 +15,20 @@ import { vi } from 'vitest';
 import { SimpleAgent } from '../../agent/simple-agent.js';
 import type { MCPClient } from '../../mcp/client.js';
 import { setupMCPIntegration } from '../../mcp/client.js';
+import {
+  createCachedClaudeService,
+  createCassetteManager,
+  type CassetteManager,
+  type RecordMode,
+  type TimeController,
+} from '../vcr/index.js';
 
 export interface TestAgentServerConfig {
   mcpServerUrl?: string;
   llmModel?: string;
   mockTelegramResponses?: boolean;
+  /** VCR recording mode: 'auto' (default), 'record', or 'playback' */
+  vcrMode?: RecordMode;
 }
 
 // Test user data structure matching the user registry (TelegramUser interface)
@@ -95,19 +106,43 @@ export class TestAgentServer {
   private config: Required<TestAgentServerConfig>;
   private testApiKey: string;
   private testUser: TestUser | null = null;
+  private cassetteManager: CassetteManager | null = null;
+  private currentTestName: string | null = null;
 
   constructor(config: TestAgentServerConfig = {}) {
     const testPort = process.env.MCP_SERVER_PORT || '3001';
+    const vcrMode = (process.env.VCR_MODE as RecordMode) || config.vcrMode || 'auto';
 
     this.config = {
       mcpServerUrl:
         config.mcpServerUrl || process.env.MCP_SERVER_URL || `http://localhost:${testPort}/mcp`,
       llmModel: config.llmModel || 'claude-3-5-haiku-20241022',
       mockTelegramResponses: config.mockTelegramResponses ?? true,
+      vcrMode,
     };
 
     // Generate unique test API key for database isolation
     this.testApiKey = `agent-test-${Date.now()}-${getRandomHex(9)}`;
+
+    // Time controller for freezing time during cassette replay
+    const timeController: TimeController = {
+      freeze: (isoTime: string) => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(isoTime));
+      },
+      unfreeze: () => {
+        vi.useRealTimers();
+      },
+    };
+
+    // Initialize cassette manager for VCR-style caching
+    this.cassetteManager = createCassetteManager(
+      {
+        cassettesDir: join(process.cwd(), 'src', 'integration-tests', 'cassettes'),
+        mode: this.config.vcrMode,
+      },
+      timeController,
+    );
   }
 
   async start(): Promise<void> {
@@ -127,8 +162,13 @@ export class TestAgentServer {
     // Initialize MCP integration
     this.mcpClient = await setupMCPIntegration();
 
-    // Initialize agent
-    this.agent = new SimpleAgent();
+    // Initialize agent with cached Claude service
+    const cachedClaudeService = createCachedClaudeService({
+      cassetteManager: this.cassetteManager!,
+      model: this.config.llmModel,
+    });
+
+    this.agent = new SimpleAgent({ claudeService: cachedClaudeService });
   }
 
   /**
@@ -222,11 +262,35 @@ export class TestAgentServer {
   }
 
   async stop(): Promise<void> {
+    // Save cassette if recording
+    if (this.cassetteManager) {
+      this.cassetteManager.ejectCassette();
+    }
+
     if (this.mcpClient) {
       await this.mcpClient.close();
       this.mcpClient = null;
     }
     this.agent = null;
+  }
+
+  /**
+   * Set the cassette name for VCR recording/playback
+   * Call this before executing agent for each test
+   */
+  loadCassette(testName: string): void {
+    if (!this.cassetteManager) {
+      throw new Error('Cassette manager not initialized');
+    }
+    this.currentTestName = testName;
+    this.cassetteManager.loadCassette(testName);
+  }
+
+  /**
+   * Get the current VCR mode
+   */
+  getVcrMode(): RecordMode {
+    return this.config.vcrMode;
   }
 
   getAgent(): SimpleAgent {

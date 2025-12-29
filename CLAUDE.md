@@ -28,7 +28,9 @@ DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`
 - MCP server integration tests: `pnpm test:integration:mcp-server` (uses vitest with global setup)
-- Agent loop integration tests: `pnpm test:integration:agent-loop` (requires ANTHROPIC_API_KEY)
+- Agent loop integration tests: `pnpm test:integration:agent-loop` (uses VCR caching, see below)
+- Agent loop tests (record): `pnpm test:integration:agent-loop:record` (re-record cassettes)
+- Agent loop tests (playback): `pnpm test:integration:agent-loop:playback` (CI mode, no API calls)
 - E2E tests: `pnpm test:e2e`
 - Full test suite: `pnpm test:all`
 - CI test suite: `pnpm test:ci` (excludes telegram-bot integration tests)
@@ -182,9 +184,30 @@ Runner script: `scripts/run-mcp-server-integration-tests.ts`
 
 Runner script: `scripts/run-telegram-bot-integration-tests.ts`
 
-Tests the Telegram bot's AI agent loop with real Anthropic API calls.
+Tests the Telegram bot's AI agent loop with VCR-style caching for LLM responses.
 
-**Command**: `pnpm test:integration:agent-loop` (requires `ANTHROPIC_API_KEY`)
+**VCR Caching System** (`packages/telegram_bot/src/integration-tests/vcr/`):
+
+- Records LLM API responses to cassette files on first run
+- Replays cached responses on subsequent runs (fast, free, deterministic)
+- Freezes time during playback to match recording timestamp
+- Normalizes dynamic content (user IDs, timestamps, database names) for hash matching
+
+**VCR Modes**:
+
+- `VCR_MODE=auto` (default): Record if cassette missing, replay if exists
+- `VCR_MODE=record`: Always record fresh responses (updates cassettes)
+- `VCR_MODE=playback`: Only replay, fail if cassette missing (CI mode)
+
+**Commands**:
+
+- `pnpm test:integration:agent-loop` - Auto mode (hybrid)
+- `pnpm test:integration:agent-loop:record` - Re-record all cassettes
+- `pnpm test:integration:agent-loop:playback` - Playback only (CI)
+
+**Limitations**: Multi-step workflows that reference specific todo IDs cannot use cached playback because the LLM response contains hardcoded IDs from the recording session. These tests are skipped in playback mode and run live in auto/record modes.
+
+**Cassette Location**: `packages/telegram_bot/src/integration-tests/cassettes/`
 
 ### GitHub Issue Sync Architecture
 

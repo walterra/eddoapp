@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "testName": "ambiguous-input",
+  "createdAt": "2025-12-29T14:24:14.108Z",
+  "frozenTime": "2025-12-29T14:24:14.108Z",
+  "interactions": [
+    {
+      "requestHash": "1616eacd0bcc8ed1",
+      "request": {
+        "model": "claude-sonnet-4-20250514",
+        "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
+        "messages": [
+          {
+            "role": "user",
+            "content": "add todo"
+          }
+        ]
+      },
+      "response": "I'll help you create a new todo! What would you like to add to your list?",
+      "metadata": {
+        "recordedAt": "2025-12-29T14:24:16.616Z",
+        "responseTimeMs": 2492
+      }
+    }
+  ]
+}
