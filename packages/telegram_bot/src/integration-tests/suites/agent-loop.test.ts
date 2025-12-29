@@ -15,6 +15,10 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// Force consistent persona for VCR cassette matching
+// Cassettes were recorded with gtd_coach persona
+process.env.BOT_PERSONA_ID = 'gtd_coach';
+
 import nano from 'nano';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
