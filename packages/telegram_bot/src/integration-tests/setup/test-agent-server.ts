@@ -3,6 +3,8 @@
  * Manages agent test environment for integration tests
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { randomBytes } from 'crypto';
+
 import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
 import type { UserPreferences } from '@eddo/core-shared';
 import type { Context } from 'grammy';
@@ -106,7 +108,7 @@ export class TestAgentServer {
     };
 
     // Generate unique test API key for database isolation
-    this.testApiKey = `agent-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    this.testApiKey = `agent-test-${Date.now()}-${randomBytes(9).toString('hex')}`;
   }
 
   async start(): Promise<void> {
@@ -149,7 +151,7 @@ export class TestAgentServer {
 
     // Create unique test user
     const timestamp = Date.now();
-    const telegramId = 12345 + Math.floor(Math.random() * 10000);
+    const telegramId = 12345 + (randomBytes(2).readUInt16BE(0) % 10000);
     const username = `testuser_${timestamp}`;
     const databaseName = `eddo_test_user_${username}`;
 
