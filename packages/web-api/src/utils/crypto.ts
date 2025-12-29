@@ -1,5 +1,5 @@
+import { getRandomHex } from '@eddo/core-shared';
 import bcrypt from 'bcryptjs';
-import { randomBytes } from 'crypto';
 
 /**
  * Number of salt rounds for bcrypt hashing
@@ -25,7 +25,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * Generate a secure random token
  */
 export function generateSecureToken(): string {
-  return randomBytes(16).toString('hex');
+  return getRandomHex(16);
 }
 
 /**

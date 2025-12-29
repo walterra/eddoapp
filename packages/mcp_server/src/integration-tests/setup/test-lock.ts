@@ -2,7 +2,7 @@
  * Test Lock Mechanism
  * Ensures true sequential execution of integration tests
  */
-import { randomBytes } from 'crypto';
+import { getRandomHex } from '@eddo/core-shared';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -16,7 +16,7 @@ export class TestLock {
 
   constructor() {
     // Generate unique test ID
-    this.testId = `test-${Date.now()}-${randomBytes(9).toString('hex')}`;
+    this.testId = `test-${Date.now()}-${getRandomHex(9)}`;
   }
 
   async acquire(): Promise<void> {

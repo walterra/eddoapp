@@ -1,6 +1,5 @@
-import { randomBytes } from 'crypto';
-
 import { Anthropic } from '@anthropic-ai/sdk';
+import { getRandomHex } from '@eddo/core-shared';
 
 import type { AgentState } from '../agent/simple-agent.js';
 import { appConfig } from '../utils/config.js';
@@ -36,7 +35,7 @@ export class SimpleClaudeService implements ClaudeService {
     systemPrompt: string,
   ): Promise<string> {
     try {
-      const requestId = `req_${Date.now()}_${randomBytes(9).toString('hex')}`;
+      const requestId = `req_${Date.now()}_${getRandomHex(9)}`;
 
       logger.info('🤖 LLM Request', {
         requestId,

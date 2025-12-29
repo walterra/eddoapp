@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { getRandomHex } from '@eddo/core-shared';
 
 import { type Env } from '../config/env';
 
@@ -93,7 +93,7 @@ export function sanitizeUsername(username: string): string {
  */
 export function generateLinkingCode(): string {
   const timestamp = Date.now().toString(36);
-  const random = randomBytes(4).toString('hex');
+  const random = getRandomHex(4);
   return `${timestamp}${random}`.toUpperCase();
 }
 

@@ -2,8 +2,7 @@
  * MCP Test Server Harness
  * Provides a reusable test environment for integration testing
  */
-import { randomBytes } from 'crypto';
-
+import { getRandomHex } from '@eddo/core-shared';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -43,7 +42,7 @@ export class MCPTestServer {
     this.testLock = new TestLock();
 
     // Generate unique test API key for complete isolation
-    this.testApiKey = `test-${Date.now()}-${randomBytes(9).toString('hex')}`;
+    this.testApiKey = `test-${Date.now()}-${getRandomHex(9)}`;
   }
 
   private async ensureTestUser(): Promise<void> {

@@ -74,6 +74,7 @@ export {
   getFormattedDurationForTodos,
 } from './utils/get_formatted_duration';
 export { getRepeatTodo } from './utils/get_repeat_todo';
+export { getRandomHex, getRandomInt } from './utils/random';
 export { shuffle } from './utils/shuffle';
 export {
   decodeJwtPayload,
