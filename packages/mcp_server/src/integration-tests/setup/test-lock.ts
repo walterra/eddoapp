@@ -2,6 +2,7 @@
  * Test Lock Mechanism
  * Ensures true sequential execution of integration tests
  */
+import { randomBytes } from 'crypto';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -15,7 +16,7 @@ export class TestLock {
 
   constructor() {
     // Generate unique test ID
-    this.testId = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    this.testId = `test-${Date.now()}-${randomBytes(9).toString('hex')}`;
   }
 
   async acquire(): Promise<void> {

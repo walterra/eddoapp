@@ -2,6 +2,8 @@
  * Test MCP Server Instance
  * Manages MCP server lifecycle for integration tests
  */
+import { randomBytes } from 'crypto';
+
 import { getCouchDbConfig, validateEnv } from '@eddo/core-server';
 import { ChildProcess, spawn } from 'child_process';
 import nano from 'nano';
@@ -26,7 +28,7 @@ export class TestMCPServerInstance {
   constructor(port?: number, pollingConfig?: ServerPollingConfig) {
     // Use environment variable or fallback to a random port to avoid conflicts
     this.port =
-      port || Number(process.env.MCP_SERVER_PORT) || 3003 + Math.floor(Math.random() * 1000);
+      port || Number(process.env.MCP_SERVER_PORT) || 3003 + (randomBytes(2).readUInt16BE(0) % 1000);
 
     this.pollingConfig = {
       maxAttempts: pollingConfig?.maxAttempts ?? 30,

@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 
 /**
  * Number of salt rounds for bcrypt hashing
@@ -24,7 +25,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * Generate a secure random token
  */
 export function generateSecureToken(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return randomBytes(16).toString('hex');
 }
 
 /**

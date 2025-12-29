@@ -2,6 +2,8 @@
  * MCP Test Server Harness
  * Provides a reusable test environment for integration testing
  */
+import { randomBytes } from 'crypto';
+
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -41,7 +43,7 @@ export class MCPTestServer {
     this.testLock = new TestLock();
 
     // Generate unique test API key for complete isolation
-    this.testApiKey = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    this.testApiKey = `test-${Date.now()}-${randomBytes(9).toString('hex')}`;
   }
 
   private async ensureTestUser(): Promise<void> {

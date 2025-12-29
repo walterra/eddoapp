@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto';
+
 import { type Env } from '../config/env';
 
 /**
@@ -91,7 +93,7 @@ export function sanitizeUsername(username: string): string {
  */
 export function generateLinkingCode(): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
+  const random = randomBytes(4).toString('hex');
   return `${timestamp}${random}`.toUpperCase();
 }
 

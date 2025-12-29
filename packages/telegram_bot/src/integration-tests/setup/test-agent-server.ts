@@ -151,8 +151,7 @@ export class TestAgentServer {
 
     // Create unique test user
     const timestamp = Date.now();
-    // Use timestamp for unique telegram ID - sufficient for test isolation
-    const telegramId = 12345 + (timestamp % 10000);
+    const telegramId = 12345 + (randomBytes(2).readUInt16BE(0) % 10000);
     const username = `testuser_${timestamp}`;
     const databaseName = `eddo_test_user_${username}`;
 
