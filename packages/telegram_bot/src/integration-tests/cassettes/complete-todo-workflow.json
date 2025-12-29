@@ -1,11 +1,11 @@
 {
   "version": 1,
   "testName": "complete-todo-workflow",
-  "createdAt": "2025-12-29T16:22:48.563Z",
-  "frozenTime": "2025-12-29T16:22:48.563Z",
+  "createdAt": "2025-12-29T16:32:13.152Z",
+  "frozenTime": "2025-12-29T16:32:13.152Z",
   "interactions": [
     {
-      "requestHash": "4230463dc8afde04",
+      "requestHash": "d8a0bd4126251387",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -16,14 +16,14 @@
           }
         ]
       },
-      "response": "I'll create that integration test task for you!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Integration test task\", \"context\": \"work\", \"due\": \"2025-12-29T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}",
+      "response": "I'll create that todo for you!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"integration test task\", \"context\": \"private\", \"due\": \"2025-12-29T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}",
       "metadata": {
-        "recordedAt": "2025-12-29T16:22:52.451Z",
-        "responseTimeMs": 3874
+        "recordedAt": "2025-12-29T16:32:16.450Z",
+        "responseTimeMs": 3279
       }
     },
     {
-      "requestHash": "48dee33c7d0f57c8",
+      "requestHash": "9769c3701e6e6130",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -34,22 +34,22 @@
           },
           {
             "role": "assistant",
-            "content": "I'll create that integration test task for you!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Integration test task\", \"context\": \"work\", \"due\": \"2025-12-29T23:59:59.999Z\", \"tags\": [\"gtd:..."
+            "content": "I'll create that todo for you!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"integration test task\", \"context\": \"private\", \"due\": \"2025-12-29T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}"
           },
           {
             "role": "user",
-            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T16:22:52.465Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"du..."
+            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T16:32:16.459Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"context\\\":\\\"private\\\",\\..."
           }
         ]
       },
-      "response": "Perfect! ✅ Created \"Integration test task\" as a work todo due today. Ready to tackle when you are!",
+      "response": "Perfect! ✅ Created \"integration test task\" and tagged it as a next action. Ready to tackle when you are!",
       "metadata": {
-        "recordedAt": "2025-12-29T16:22:57.415Z",
-        "responseTimeMs": 4937
+        "recordedAt": "2025-12-29T16:32:19.490Z",
+        "responseTimeMs": 3024
       }
     },
     {
-      "requestHash": "0f834a73522301f2",
+      "requestHash": "8a72d048d65310f8",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -60,14 +60,14 @@
           }
         ]
       },
-      "response": "I'll find your integration test task and mark it as completed.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}",
+      "response": "Let me find your integration test task to mark it complete.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}",
       "metadata": {
-        "recordedAt": "2025-12-29T16:23:00.074Z",
-        "responseTimeMs": 2634
+        "recordedAt": "2025-12-29T16:32:22.277Z",
+        "responseTimeMs": 2762
       }
     },
     {
-      "requestHash": "382d201e0512a1f3",
+      "requestHash": "ab603ce26e9fa869",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -78,22 +78,22 @@
           },
           {
             "role": "assistant",
-            "content": "I'll find your integration test task and mark it as completed.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}"
+            "content": "Let me find your integration test task to mark it complete.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}"
           },
           {
             "role": "user",
-            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T16:22:52.465Z\\\",\\\"_rev\\\":\\\"1-b7ebe215309eb7dee5c06740c4ca84e6\\\",\\\"title\\\":\\\"Int..."
+            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T16:32:16.459Z\\\",\\\"_rev\\\":\\\"1-83099344c6357c2e72dbf98bb2be7d5b\\\",\\\"title\\\":\\\"int..."
           }
         ]
       },
-      "response": "Perfect! I found your integration test task. Marking it as completed now.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:22:52.465Z\"}}",
+      "response": "Perfect! Found your integration test task. Marking it as complete now.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:32:16.459Z\"}}",
       "metadata": {
-        "recordedAt": "2025-12-29T16:23:02.959Z",
-        "responseTimeMs": 2860
+        "recordedAt": "2025-12-29T16:32:25.763Z",
+        "responseTimeMs": 3457
       }
     },
     {
-      "requestHash": "05ecbc6e35d089f3",
+      "requestHash": "08b1d32f2640a621",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -104,15 +104,15 @@
           },
           {
             "role": "assistant",
-            "content": "I'll find your integration test task and mark it as completed.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}"
+            "content": "Let me find your integration test task to mark it complete.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}"
           },
           {
             "role": "user",
-            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T16:22:52.465Z\\\",\\\"_rev\\\":\\\"1-b7ebe215309eb7dee5c06740c4ca84e6\\\",\\\"title\\\":\\\"Int..."
+            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T16:32:16.459Z\\\",\\\"_rev\\\":\\\"1-83099344c6357c2e72dbf98bb2be7d5b\\\",\\\"title\\\":\\\"int..."
           },
           {
             "role": "assistant",
-            "content": "Perfect! I found your integration test task. Marking it as completed now.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:22:52.465Z\"}}"
+            "content": "Perfect! Found your integration test task. Marking it as complete now.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:32:16.459Z\"}}"
           },
           {
             "role": "user",
@@ -120,14 +120,14 @@
           }
         ]
       },
-      "response": "Let me mark that task as completed with the correct parameters.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:22:52.465Z\", \"completed\": true}}",
+      "response": "Let me use the correct parameters to mark your task as complete.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:32:16.459Z\", \"completed\": true}}",
       "metadata": {
-        "recordedAt": "2025-12-29T16:23:04.889Z",
-        "responseTimeMs": 1922
+        "recordedAt": "2025-12-29T16:32:28.610Z",
+        "responseTimeMs": 2835
       }
     },
     {
-      "requestHash": "5258b952d5c9ac62",
+      "requestHash": "17620eb761ff30d5",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -138,15 +138,15 @@
           },
           {
             "role": "assistant",
-            "content": "I'll find your integration test task and mark it as completed.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}"
+            "content": "Let me find your integration test task to mark it complete.\n\nTOOL_CALL: {\"name\": \"listTodos\", \"parameters\": {\"completed\": false}}"
           },
           {
             "role": "user",
-            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T16:22:52.465Z\\\",\\\"_rev\\\":\\\"1-b7ebe215309eb7dee5c06740c4ca84e6\\\",\\\"title\\\":\\\"Int..."
+            "content": "Tool \"listTodos\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2025-12-29T16:32:16.459Z\\\",\\\"_rev\\\":\\\"1-83099344c6357c2e72dbf98bb2be7d5b\\\",\\\"title\\\":\\\"int..."
           },
           {
             "role": "assistant",
-            "content": "Perfect! I found your integration test task. Marking it as completed now.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:22:52.465Z\"}}"
+            "content": "Perfect! Found your integration test task. Marking it as complete now.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:32:16.459Z\"}}"
           },
           {
             "role": "user",
@@ -154,18 +154,18 @@
           },
           {
             "role": "assistant",
-            "content": "Let me mark that task as completed with the correct parameters.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:22:52.465Z\", \"completed\": true}}"
+            "content": "Let me use the correct parameters to mark your task as complete.\n\nTOOL_CALL: {\"name\": \"toggleTodoCompletion\", \"parameters\": {\"id\": \"2025-12-29T16:32:16.459Z\", \"completed\": true}}"
           },
           {
             "role": "user",
-            "content": "Tool \"toggleTodoCompletion\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T16:22:52.465Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"status\\\":\\\"..."
+            "content": "Tool \"toggleTodoCompletion\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T16:32:16.459Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"status\\\":\\\"..."
           }
         ]
       },
-      "response": "✅ Done! Your integration test task is now completed. Great job getting that finished! 🎉",
+      "response": "🎉 Excellent! Your integration test task is now complete! Great work getting that done - crossing items off your list always feels fantastic!",
       "metadata": {
-        "recordedAt": "2025-12-29T16:23:08.906Z",
-        "responseTimeMs": 3986
+        "recordedAt": "2025-12-29T16:32:31.677Z",
+        "responseTimeMs": 3036
       }
     }
   ]

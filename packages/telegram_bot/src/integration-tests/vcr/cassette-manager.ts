@@ -73,7 +73,9 @@ function hashRequest(
     .replace(/user_testuser_\d+/g, '[USER_ID]')
     .replace(/\btestuser_\d+\b/g, '[USERNAME]')
     // Normalize any remaining dynamic IDs
-    .replace(/agent-test-\d+-[a-f0-9]+/g, '[API_KEY]');
+    .replace(/agent-test-\d+-[a-f0-9]+/g, '[API_KEY]')
+    // Normalize localhost URLs with ports (MCP server port varies)
+    .replace(/http:\/\/localhost:\d+/g, 'http://localhost:[PORT]');
 
   // Normalize messages by removing tool result timestamps and IDs
   // Handle both regular JSON and escaped JSON (e.g., in stringified tool results)

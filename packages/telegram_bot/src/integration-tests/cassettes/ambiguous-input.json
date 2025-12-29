@@ -1,11 +1,11 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2025-12-29T16:23:08.998Z",
-  "frozenTime": "2025-12-29T16:23:08.998Z",
+  "createdAt": "2025-12-29T16:32:31.769Z",
+  "frozenTime": "2025-12-29T16:32:31.769Z",
   "interactions": [
     {
-      "requestHash": "9809a254187e335b",
+      "requestHash": "df18cfb3e9e4036c",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -16,10 +16,36 @@
           }
         ]
       },
-      "response": "I'd love to help you add a new todo! What task would you like me to create for you?\n\nJust tell me what you need to do, and I can set it up with the right context, due date, and GTD tags to keep you organized and productive!",
+      "response": "I'll help you add a new todo! Let me create it for you.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"New todo item\", \"context\": \"private\", \"due\": \"2025-12-29T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}",
       "metadata": {
-        "recordedAt": "2025-12-29T16:23:13.559Z",
-        "responseTimeMs": 4543
+        "recordedAt": "2025-12-29T16:32:34.740Z",
+        "responseTimeMs": 2956
+      }
+    },
+    {
+      "requestHash": "47fd6ea3a62b459b",
+      "request": {
+        "model": "claude-sonnet-4-20250514",
+        "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
+        "messages": [
+          {
+            "role": "user",
+            "content": "add todo"
+          },
+          {
+            "role": "assistant",
+            "content": "I'll help you add a new todo! Let me create it for you.\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"New todo item\", \"context\": \"private\", \"due\": \"2025-12-29T23:59:59.999Z\", \"tags\": [\"g..."
+          },
+          {
+            "role": "user",
+            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T16:32:34.756Z\\\",\\\"title\\\":\\\"New todo item\\\",\\\"context\\\":\\\"private\\\",\\\"due\\\":\\..."
+          }
+        ]
+      },
+      "response": "Perfect! ✅ Created your new todo item. It's ready to tackle when you are!\n\nWant to add more details to it or create another one?",
+      "metadata": {
+        "recordedAt": "2025-12-29T16:32:38.387Z",
+        "responseTimeMs": 3617
       }
     }
   ]

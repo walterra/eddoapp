@@ -9,9 +9,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Log path resolution for debugging CI issues
-console.log(`📁 Test server __dirname: ${__dirname}`);
-
 import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
 import type { UserPreferences } from '@eddo/core-shared';
 import { getRandomHex, getRandomInt, REQUIRED_INDEXES } from '@eddo/core-shared';
@@ -145,8 +142,6 @@ export class TestAgentServer {
     // Initialize cassette manager for VCR-style caching
     // Use __dirname to get path relative to this file, not cwd (which varies between local/CI)
     const cassettesDir = join(__dirname, '..', 'cassettes');
-    console.log(`📁 Cassettes directory: ${cassettesDir}`);
-
     this.cassetteManager = createCassetteManager(
       {
         cassettesDir,
@@ -398,9 +393,6 @@ export class TestAgentServer {
     const mockContext = context || this.createMockContext();
 
     try {
-      console.log(`🤖 Executing agent with input: "${input.substring(0, 50)}..."`);
-      console.log(`📼 VCR Mode: ${this.config.vcrMode}`);
-
       const result = await agent.execute(input, userId, mockContext as unknown as BotContext);
 
       // Capture tool results in mock context
@@ -408,22 +400,15 @@ export class TestAgentServer {
         mockContext.toolResults = result.toolResults;
       }
 
-      console.log(`✅ Agent execution result: success=${result.success}`);
-
       return {
         success: result.success,
         message: result.finalResponse || 'Agent completed successfully',
         context: mockContext,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Agent execution threw error: ${errorMessage}`);
-      if (error instanceof Error && error.stack) {
-        console.error(`   Stack: ${error.stack.split('\n').slice(0, 5).join('\n')}`);
-      }
       return {
         success: false,
-        message: errorMessage,
+        message: error instanceof Error ? error.message : 'Unknown error',
         context: mockContext,
       };
     }
