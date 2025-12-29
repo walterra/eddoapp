@@ -1249,13 +1249,12 @@ export async function startMcpServer(port: number = 3001) {
   try {
     console.log(`🔧 Initializing Eddo MCP server with auth on port ${port}...`);
 
-    // Verify database connection
+    // Verify CouchDB server connection (not a specific database)
     try {
-      const defaultDb = couch.db.use(couchDbConfig.dbName);
-      const info = await defaultDb.info();
-      console.log(`✅ Connected to CouchDB (verified with ${info.db_name})`);
+      const serverInfo = await couch.info();
+      console.log(`✅ Connected to CouchDB ${serverInfo.version}`);
     } catch (error: unknown) {
-      console.error('❌ Failed to connect to database. Ensure CouchDB is running.');
+      console.error('❌ Failed to connect to CouchDB. Ensure CouchDB is running.');
       throw error;
     }
 

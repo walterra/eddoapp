@@ -7,33 +7,71 @@ import { createServer } from 'http';
 import { setTimeout } from 'timers/promises';
 
 /**
- * Find an available port starting from the given port number
+ * Check if a specific port is available on a given host
  */
-function findAvailablePort(startPort = 3001): Promise<number> {
-  return new Promise((resolve, reject) => {
+function isPortAvailable(port: number, host: string): Promise<boolean> {
+  return new Promise((resolve) => {
     const server = createServer();
-
-    server.listen(startPort, () => {
-      const address = server.address();
-      if (address && typeof address !== 'string') {
-        const port = address.port;
-        server.close(() => resolve(port));
-      } else {
-        reject(new Error('Failed to get port from server'));
-      }
+    server.once('error', () => resolve(false));
+    server.once('listening', () => {
+      server.close(() => resolve(true));
     });
-
-    server.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        // Port is in use, try the next one
-        findAvailablePort(startPort + 1)
-          .then(resolve)
-          .catch(reject);
-      } else {
-        reject(err);
-      }
-    });
+    server.listen(port, host);
   });
+}
+
+/**
+ * Find an available port starting from the given port number.
+ * Checks both IPv4 (0.0.0.0) and IPv6 (::1) to avoid EADDRINUSE race conditions.
+ */
+async function findAvailablePort(startPort = 3001): Promise<number> {
+  let port = startPort;
+  const maxPort = startPort + 100; // Limit search range
+
+  while (port < maxPort) {
+    // Check both IPv4 and IPv6 to ensure the port is truly free
+    const [ipv4Available, ipv6Available] = await Promise.all([
+      isPortAvailable(port, '0.0.0.0'),
+      isPortAvailable(port, '::1'),
+    ]);
+
+    if (ipv4Available && ipv6Available) {
+      return port;
+    }
+    port++;
+  }
+
+  throw new Error(`No available port found in range ${startPort}-${maxPort}`);
+}
+
+/**
+ * Wait for MCP server to be ready by checking HTTP endpoint
+ */
+async function waitForServerReady(
+  url: string,
+  maxAttempts: number = 30,
+  intervalMs: number = 500,
+): Promise<void> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(2000),
+      });
+      // MCP endpoint returns 400 "No sessionId" for GET requests, but that means server is up
+      // Also accept 405 (Method Not Allowed) or 200 (OK) as valid responses
+      if (response.status === 400 || response.status === 405 || response.ok) {
+        console.log(`✅ MCP server ready after ${attempt} attempts (status: ${response.status})`);
+        return;
+      }
+    } catch {
+      // Server not ready yet, continue waiting
+    }
+    if (attempt < maxAttempts) {
+      await setTimeout(intervalMs);
+    }
+  }
+  throw new Error(`MCP server failed to start after ${maxAttempts} attempts`);
 }
 
 async function runTelegramBotIntegrationTests(): Promise<void> {
@@ -79,6 +117,12 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
     const mcpUrl = `http://localhost:${mcpPort}/mcp`;
 
     console.log(`🚀 Starting MCP test server on port ${mcpPort}...`);
+
+    // Track if server process exits early
+    let serverExited = false;
+    let serverExitCode: number | null = null;
+    let serverExitError: string | null = null;
+
     serverProcess = spawn('pnpm', ['--filter', '@eddo/mcp-server', 'start:test'], {
       env: {
         ...process.env,
@@ -87,6 +131,17 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
         NODE_ENV: 'test',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    // Track early exit
+    serverProcess.on('exit', (code) => {
+      serverExited = true;
+      serverExitCode = code;
+    });
+
+    serverProcess.on('error', (err) => {
+      serverExited = true;
+      serverExitError = err.message;
     });
 
     // Pipe server output but filter out the exit error
@@ -104,9 +159,27 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
       }
     });
 
-    // Wait a bit for server to start
-    await setTimeout(3000);
-    console.log('⏳ Server started, running telegram-bot integration tests...');
+    // Wait for server to be ready with health check
+    console.log('⏳ Waiting for MCP server to be ready...');
+    try {
+      await waitForServerReady(mcpUrl);
+    } catch (error) {
+      if (serverExited) {
+        throw new Error(
+          `MCP server process exited early with code ${serverExitCode}${serverExitError ? `: ${serverExitError}` : ''}`,
+        );
+      }
+      throw error;
+    }
+
+    // Double-check server is still running
+    if (serverExited) {
+      throw new Error(
+        `MCP server process exited unexpectedly with code ${serverExitCode}${serverExitError ? `: ${serverExitError}` : ''}`,
+      );
+    }
+
+    console.log('✅ MCP test server is ready');
 
     // Run the tests
     console.log(`🧪 Running telegram-bot integration tests against ${mcpUrl}...`);
