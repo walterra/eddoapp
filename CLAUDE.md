@@ -198,6 +198,7 @@ Tests the Telegram bot's AI agent loop with VCR-style caching for LLM responses.
 - `VCR_MODE=auto` (default): Record if cassette missing, replay if exists
 - `VCR_MODE=record`: Always record fresh responses (updates cassettes)
 - `VCR_MODE=playback`: Only replay, fail if cassette missing (CI mode)
+- `VCR_DEBUG=1`: Enable verbose logging for debugging hash mismatches
 
 **Commands**:
 
