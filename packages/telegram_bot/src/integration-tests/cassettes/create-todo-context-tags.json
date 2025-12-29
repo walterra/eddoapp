@@ -1,11 +1,11 @@
 {
   "version": 1,
   "testName": "create-todo-context-tags",
-  "createdAt": "2025-12-29T15:59:40.784Z",
-  "frozenTime": "2025-12-29T15:59:40.784Z",
+  "createdAt": "2025-12-29T16:22:15.100Z",
+  "frozenTime": "2025-12-29T16:22:15.100Z",
   "interactions": [
     {
-      "requestHash": "ae0e9e3da25a9ce1",
+      "requestHash": "f617f5c66a5e0751",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -16,14 +16,14 @@
           }
         ]
       },
-      "response": "I'll create that quarterly report todo for you with urgent priority!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Complete quarterly report\", \"context\": \"work\", \"due\": \"2025-01-31T23:59:59.999Z\", \"tags\": [\"urgent\", \"gtd:next\"], \"description\": \"Prepare and finalize quarterly business report\"}}",
+      "response": "I'll create that urgent quarterly report todo for you with next month's deadline!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Quarterly report\", \"description\": \"Complete quarterly business report\", \"context\": \"work\", \"due\": \"2025-01-29T23:59:59.999Z\", \"tags\": [\"urgent\", \"gtd:next\"]}}",
       "metadata": {
-        "recordedAt": "2025-12-29T15:59:43.943Z",
-        "responseTimeMs": 3141
+        "recordedAt": "2025-12-29T16:22:18.424Z",
+        "responseTimeMs": 3311
       }
     },
     {
-      "requestHash": "fe3a483a28fbde0e",
+      "requestHash": "e2b7276c94ad313f",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -34,18 +34,18 @@
           },
           {
             "role": "assistant",
-            "content": "I'll create that quarterly report todo for you with urgent priority!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Complete quarterly report\", \"context\": \"work\", \"due\": \"2025-01-31T23:59..."
+            "content": "I'll create that urgent quarterly report todo for you with next month's deadline!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Quarterly report\", \"description\": \"Complete quarterly busi..."
           },
           {
             "role": "user",
-            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T15:59:43.962Z\\\",\\\"title\\\":\\\"Complete quarterly report\\\",\\\"context\\\":\\\"work\\\",..."
+            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T16:22:18.443Z\\\",\\\"title\\\":\\\"Quarterly report\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\..."
           }
         ]
       },
-      "response": "Perfect! 🎯 Created your quarterly report todo with urgent priority - due January 31st. Ready to tackle when you are!",
+      "response": "Perfect! ✅ Created your urgent quarterly report todo for work context, due January 29th. Time to tackle that report with focus and determination!",
       "metadata": {
-        "recordedAt": "2025-12-29T15:59:48.868Z",
-        "responseTimeMs": 4894
+        "recordedAt": "2025-12-29T16:22:21.446Z",
+        "responseTimeMs": 2985
       }
     }
   ]

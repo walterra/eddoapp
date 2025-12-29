@@ -68,9 +68,10 @@ function hashRequest(
     .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g, '[ISO_DATE]')
     .replace(/Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/g, '[DAY]')
     // Normalize user-specific content (test user IDs and database names)
-    .replace(/user_testuser_\d+/g, '[USER_ID]')
-    .replace(/testuser_\d+/g, '[USERNAME]')
+    // Order matters! More specific patterns must come first
     .replace(/eddo_test_user_testuser_\d+/g, '[DATABASE]')
+    .replace(/user_testuser_\d+/g, '[USER_ID]')
+    .replace(/\btestuser_\d+\b/g, '[USERNAME]')
     // Normalize any remaining dynamic IDs
     .replace(/agent-test-\d+-[a-f0-9]+/g, '[API_KEY]');
 
@@ -95,9 +96,10 @@ function hashRequest(
       .replace(/"_id":"[^"]+"/g, '"_id":"[NORMALIZED]"')
       .replace(/"_rev":"[^"]+"/g, '"_rev":"[NORMALIZED]"')
       // Normalize user/database references
+      // Order matters! More specific patterns must come first
+      .replace(/eddo_test_user_testuser_\d+/g, '[DATABASE]')
       .replace(/user_testuser_\d+/g, '[USER_ID]')
-      .replace(/testuser_\d+/g, '[USERNAME]')
-      .replace(/eddo_test_user_testuser_\d+/g, '[DATABASE]'),
+      .replace(/\btestuser_\d+\b/g, '[USERNAME]'),
   }));
 
   const data = JSON.stringify({

@@ -1,11 +1,11 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2025-12-29T16:00:47.470Z",
-  "frozenTime": "2025-12-29T16:00:47.470Z",
+  "createdAt": "2025-12-29T16:23:08.998Z",
+  "frozenTime": "2025-12-29T16:23:08.998Z",
   "interactions": [
     {
-      "requestHash": "1616eacd0bcc8ed1",
+      "requestHash": "9809a254187e335b",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "I'll help you create a new todo! What would you like to add?\n\nYou can just tell me the task, or provide more details like:\n- The task description\n- When it's due\n- Whether it's for work or personal\n- Any specific context or notes\n\nWhat's the todo you'd like to create?",
+      "response": "I'd love to help you add a new todo! What task would you like me to create for you?\n\nJust tell me what you need to do, and I can set it up with the right context, due date, and GTD tags to keep you organized and productive!",
       "metadata": {
-        "recordedAt": "2025-12-29T16:00:53.115Z",
-        "responseTimeMs": 5627
+        "recordedAt": "2025-12-29T16:23:13.559Z",
+        "responseTimeMs": 4543
       }
     }
   ]

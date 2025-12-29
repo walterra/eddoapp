@@ -1,11 +1,11 @@
 {
   "version": 1,
   "testName": "create-todo-natural-language",
-  "createdAt": "2025-12-29T15:59:35.447Z",
-  "frozenTime": "2025-12-29T15:59:35.447Z",
+  "createdAt": "2025-12-29T16:22:09.356Z",
+  "frozenTime": "2025-12-29T16:22:09.356Z",
   "interactions": [
     {
-      "requestHash": "19f53fc3b87a6217",
+      "requestHash": "f72f8a80c72d9592",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -16,14 +16,14 @@
           }
         ]
       },
-      "response": "I'll add that shopping todo for next Friday!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"private\", \"due\": \"2026-01-03T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}",
+      "response": "I'll create a shopping todo for you with next Friday as the due date!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"private\", \"due\": \"2025-01-03T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}",
       "metadata": {
-        "recordedAt": "2025-12-29T15:59:38.510Z",
-        "responseTimeMs": 3028
+        "recordedAt": "2025-12-29T16:22:12.677Z",
+        "responseTimeMs": 3279
       }
     },
     {
-      "requestHash": "cd703adafe6c2a42",
+      "requestHash": "672a29a83cb99766",
       "request": {
         "model": "claude-sonnet-4-20250514",
         "systemPrompt": "You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help users achieve peak productivity with enthusiasm, strategic thinking, and unwavering support for their goals.\n\nYour GTD coaching approach:\n1. **Capture Everything**: Encourage users to externalize thoughts into the system\n2. **Clarify Actionability**: Help break down vague items into specific next actions with gtd:next tags\n3. **Organize by Context*...",
@@ -34,18 +34,18 @@
           },
           {
             "role": "assistant",
-            "content": "I'll add that shopping todo for next Friday!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"private\", \"due\": \"2026-01-03T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}"
+            "content": "I'll create a shopping todo for you with next Friday as the due date!\n\nTOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"private\", \"due\": \"2025-01-03T23:59:59.999Z\",..."
           },
           {
             "role": "user",
-            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T15:59:38.544Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"private\\\",\\\"due\\\":\\\"2..."
+            "content": "Tool \"createTodo\" result: [{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2025-12-29T16:22:12.710Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"private\\\",\\\"due\\\":\\\"2..."
           }
         ]
       },
-      "response": "Perfect! 🎉 Shopping todo added for next Friday (Jan 3rd). Ready to tackle that next action when the time comes!",
+      "response": "Perfect! 🛒 Your shopping todo is set for next Friday (January 3rd). Ready to tackle that shopping list when the time comes!",
       "metadata": {
-        "recordedAt": "2025-12-29T15:59:40.680Z",
-        "responseTimeMs": 2126
+        "recordedAt": "2025-12-29T16:22:14.990Z",
+        "responseTimeMs": 2269
       }
     }
   ]
