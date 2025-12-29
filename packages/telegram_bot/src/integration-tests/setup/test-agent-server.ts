@@ -4,6 +4,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
+import type { UserPreferences } from '@eddo/core-shared';
 import type { Context } from 'grammy';
 import nano from 'nano';
 import { vi } from 'vitest';
@@ -18,11 +19,18 @@ export interface TestAgentServerConfig {
   mockTelegramResponses?: boolean;
 }
 
-// Test user data structure matching the user registry
+// Test user data structure matching the user registry (TelegramUser interface)
 interface TestUser {
+  _id: string;
   username: string;
-  database_name: string;
+  email: string;
   telegram_id: number;
+  database_name: string;
+  status: string;
+  permissions: string[];
+  created_at: string;
+  updated_at: string;
+  preferences: UserPreferences;
 }
 
 // Define session data structure for compatibility
@@ -92,9 +100,7 @@ export class TestAgentServer {
 
     this.config = {
       mcpServerUrl:
-        config.mcpServerUrl ||
-        process.env.MCP_SERVER_URL ||
-        `http://localhost:${testPort}/mcp`,
+        config.mcpServerUrl || process.env.MCP_SERVER_URL || `http://localhost:${testPort}/mcp`,
       llmModel: config.llmModel || 'claude-3-5-haiku-20241022',
       mockTelegramResponses: config.mockTelegramResponses ?? true,
     };
@@ -111,8 +117,7 @@ export class TestAgentServer {
     // Set up environment variables for MCP client
     process.env.MCP_SERVER_URL = this.config.mcpServerUrl;
     process.env.MCP_API_KEY = this.testApiKey;
-    process.env.TELEGRAM_BOT_TOKEN =
-      process.env.TELEGRAM_BOT_TOKEN || 'test-token';
+    process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'test-token';
     process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'test-key';
 
     // Create test user in the registry
@@ -131,9 +136,7 @@ export class TestAgentServer {
   private async createTestUser(): Promise<void> {
     const couchDbUrl = process.env.COUCHDB_URL;
     if (!couchDbUrl) {
-      throw new Error(
-        'COUCHDB_URL not set - testcontainer setup may have failed',
-      );
+      throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
     }
 
     const env = validateEnv(process.env);
@@ -150,10 +153,23 @@ export class TestAgentServer {
     const username = `testuser_${timestamp}`;
     const databaseName = `eddo_test_user_${username}`;
 
+    const now = new Date().toISOString();
     this.testUser = {
+      _id: username,
       username,
-      database_name: databaseName,
+      email: `${username}@test.example.com`,
       telegram_id: telegramId,
+      database_name: databaseName,
+      status: 'active',
+      permissions: ['read', 'write'],
+      created_at: now,
+      updated_at: now,
+      preferences: {
+        dailyBriefing: false,
+        briefingTime: '07:00',
+        dailyRecap: false,
+        recapTime: '18:00',
+      },
     };
 
     // Check if user already exists
@@ -270,11 +286,7 @@ export class TestAgentServer {
         lastActivity: new Date(),
         context: {},
         // Include user data for MCP context extraction
-        user: {
-          username: this.testUser.username,
-          database_name: this.testUser.database_name,
-          telegram_id: this.testUser.telegram_id,
-        },
+        user: this.testUser,
       },
     };
 
@@ -297,11 +309,7 @@ export class TestAgentServer {
     const mockContext = context || this.createMockContext();
 
     try {
-      const result = await agent.execute(
-        input,
-        userId,
-        mockContext as unknown as BotContext,
-      );
+      const result = await agent.execute(input, userId, mockContext as unknown as BotContext);
 
       // Capture tool results in mock context
       if (result.toolResults) {
@@ -332,9 +340,7 @@ export class TestAgentServer {
   /**
    * List available MCP tools
    */
-  async listTools(): Promise<
-    Array<{ name: string; description: string; inputSchema: unknown }>
-  > {
+  async listTools(): Promise<Array<{ name: string; description: string; inputSchema: unknown }>> {
     const client = this.getMCPClient();
     return client.tools.map((tool) => ({
       name: tool.name,
