@@ -101,7 +101,9 @@ function hashRequest(
       // Order matters! More specific patterns must come first
       .replace(/eddo_test_user_testuser_\d+/g, '[DATABASE]')
       .replace(/user_testuser_\d+/g, '[USER_ID]')
-      .replace(/\btestuser_\d+\b/g, '[USERNAME]'),
+      .replace(/\btestuser_\d+\b/g, '[USERNAME]')
+      // Normalize localhost URLs with ports
+      .replace(/http:\/\/localhost:\d+/g, 'http://localhost:[PORT]'),
   }));
 
   const data = JSON.stringify({
@@ -238,6 +240,40 @@ export function createCassetteManager(
         console.warn(`📼 Request hash mismatch at index ${interactionIndex}`);
         console.warn(`📼 Expected hash: ${interaction.requestHash}, got: ${requestHash}`);
         console.warn(`📼 Recorded model: ${interaction.request.model}, current model: ${model}`);
+
+        // Debug: Show normalized system prompts to identify differences
+        const normalizeForDebug = (sp: string): string =>
+          sp
+            .replace(/Current date and time:.*$/m, 'Current date and time: [NORMALIZED]')
+            .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g, '[ISO_DATE]')
+            .replace(/Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/g, '[DAY]')
+            .replace(/eddo_test_user_testuser_\d+/g, '[DATABASE]')
+            .replace(/user_testuser_\d+/g, '[USER_ID]')
+            .replace(/\btestuser_\d+\b/g, '[USERNAME]')
+            .replace(/agent-test-\d+-[a-f0-9]+/g, '[API_KEY]')
+            .replace(/http:\/\/localhost:\d+/g, 'http://localhost:[PORT]');
+
+        const normalizedCurrent = normalizeForDebug(systemPrompt);
+        console.warn(`📼 Current systemPrompt length: ${systemPrompt.length}`);
+        console.warn(`📼 Recorded systemPrompt length: ${interaction.request.systemPrompt.length}`);
+        console.warn(`📼 Normalized current length: ${normalizedCurrent.length}`);
+
+        // Find first difference
+        const recorded = interaction.request.systemPrompt;
+        const current = normalizedCurrent;
+        for (let i = 0; i < Math.min(recorded.length, current.length); i++) {
+          if (recorded[i] !== current[i]) {
+            console.warn(`📼 First diff at char ${i}:`);
+            console.warn(`📼   Recorded: "${recorded.substring(Math.max(0, i - 20), i + 30)}"`);
+            console.warn(`📼   Current:  "${current.substring(Math.max(0, i - 20), i + 30)}"`);
+            break;
+          }
+        }
+        if (recorded.length !== current.length) {
+          console.warn(
+            `📼 Length difference: recorded=${recorded.length}, current=${current.length}`,
+          );
+        }
         if (process.env.VCR_DEBUG) {
           console.warn(
             `📼 Recorded messages:`,
@@ -266,11 +302,23 @@ export function createCassetteManager(
     const response = await realCall();
     const responseTimeMs = Date.now() - startTime;
 
+    // Store the normalized system prompt so we can debug hash mismatches
+    const normalizedSystemPromptForStorage = systemPrompt
+      .replace(/Current date and time:.*$/m, 'Current date and time: [NORMALIZED]')
+      .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g, '[ISO_DATE]')
+      .replace(/Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/g, '[DAY]')
+      .replace(/eddo_test_user_testuser_\d+/g, '[DATABASE]')
+      .replace(/user_testuser_\d+/g, '[USER_ID]')
+      .replace(/\btestuser_\d+\b/g, '[USERNAME]')
+      .replace(/agent-test-\d+-[a-f0-9]+/g, '[API_KEY]')
+      .replace(/http:\/\/localhost:\d+/g, 'http://localhost:[PORT]');
+
     currentCassette.interactions.push({
       requestHash,
       request: {
         model,
-        systemPrompt: systemPrompt.substring(0, 500) + '...', // Truncate for readability
+        // Store normalized system prompt for debugging hash mismatches
+        systemPrompt: normalizedSystemPromptForStorage,
         messages: messages.map((m) => ({
           role: m.role,
           content: m.content.substring(0, 200) + (m.content.length > 200 ? '...' : ''),
