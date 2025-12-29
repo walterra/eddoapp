@@ -37,23 +37,12 @@ describe('Agent Loop E2E Integration', () => {
     assert = createAgentAssertions();
 
     // Set up direct database access for verification
-    // COUCHDB_URL is set by the runner script via testcontainer
+    // Use the user's actual database created by TestAgentServer
     const couchDbUrl = process.env.COUCHDB_URL!;
-    const dbName = process.env.COUCHDB_DB_NAME || 'todos-dev';
     const couch = nano(couchDbUrl);
-    const testDbName = `${dbName}-${agentServer.getTestApiKey()}`;
+    const userDbName = agentServer.getUserDatabaseName();
 
-    // Ensure test database exists
-    try {
-      await couch.db.create(testDbName);
-    } catch (error: any) {
-      if (error.statusCode !== 412) {
-        // 412 means database already exists
-        throw error;
-      }
-    }
-
-    testDb = couch.use(testDbName);
+    testDb = couch.use(userDbName);
   });
 
   afterEach(async () => {

@@ -339,6 +339,16 @@ export class TestAgentServer {
   }
 
   /**
+   * Get the user's database name for direct database access
+   */
+  getUserDatabaseName(): string {
+    if (!this.testUser) {
+      throw new Error('Test user not created. Call start() first.');
+    }
+    return this.testUser.database_name;
+  }
+
+  /**
    * List available MCP tools
    */
   async listTools(): Promise<Array<{ name: string; description: string; inputSchema: unknown }>> {
