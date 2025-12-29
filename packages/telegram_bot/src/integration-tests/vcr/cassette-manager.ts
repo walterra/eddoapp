@@ -167,13 +167,17 @@ export function createCassetteManager(
       // Load existing cassette
       const content = readFileSync(currentCassettePath, 'utf-8');
       currentCassette = JSON.parse(content) as Cassette;
-      console.log(
-        `📼 Loaded cassette: ${safeName} (${currentCassette.interactions.length} interactions)`,
-      );
+      if (process.env.VCR_DEBUG) {
+        console.log(
+          `📼 Loaded cassette: ${safeName} (${currentCassette.interactions.length} interactions)`,
+        );
+      }
 
       // Freeze time to match recording for deterministic replay
       if (timeController && currentCassette.frozenTime) {
-        console.log(`📼 Freezing time to: ${currentCassette.frozenTime}`);
+        if (process.env.VCR_DEBUG) {
+          console.log(`📼 Freezing time to: ${currentCassette.frozenTime}`);
+        }
         timeController.freeze(currentCassette.frozenTime);
         timeFrozen = true;
       }
@@ -190,7 +194,9 @@ export function createCassetteManager(
       if (mode === 'playback') {
         throw new Error(`Cassette not found for playback: ${currentCassettePath}`);
       }
-      console.log(`📼 Created new cassette: ${safeName}`);
+      if (process.env.VCR_DEBUG) {
+        console.log(`📼 Created new cassette: ${safeName}`);
+      }
     }
   }
 
@@ -206,7 +212,9 @@ export function createCassetteManager(
     }
 
     writeFileSync(currentCassettePath, JSON.stringify(currentCassette, null, 2));
-    console.log(`📼 Saved cassette: ${currentCassettePath}`);
+    if (process.env.VCR_DEBUG) {
+      console.log(`📼 Saved cassette: ${currentCassettePath}`);
+    }
     modified = false;
   }
 
@@ -232,9 +240,11 @@ export function createCassetteManager(
 
       if (interaction.requestHash === requestHash) {
         interactionIndex++;
-        console.log(
-          `📼 Replaying interaction ${interactionIndex}/${currentCassette.interactions.length}`,
-        );
+        if (process.env.VCR_DEBUG) {
+          console.log(
+            `📼 Replaying interaction ${interactionIndex}/${currentCassette.interactions.length}`,
+          );
+        }
         return interaction.response;
       } else {
         console.warn(`📼 Request hash mismatch at index ${interactionIndex}`);
