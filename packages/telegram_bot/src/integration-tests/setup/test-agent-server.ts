@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
 import type { UserPreferences } from '@eddo/core-shared';
-import { getRandomHex, getRandomInt } from '@eddo/core-shared';
+import { getRandomHex, getRandomInt, REQUIRED_INDEXES } from '@eddo/core-shared';
 import type { Context } from 'grammy';
 import nano from 'nano';
 import { vi } from 'vitest';
@@ -204,6 +204,19 @@ export class TestAgentServer {
       if (err.statusCode !== 412) {
         // 412 means database already exists
         throw err;
+      }
+    }
+
+    // Create required indexes for the user's database
+    const userDb = couch.use(databaseName);
+    for (const indexDef of REQUIRED_INDEXES) {
+      try {
+        await userDb.createIndex(indexDef);
+      } catch (err: any) {
+        if (err.statusCode !== 409) {
+          // 409 means index already exists
+          throw err;
+        }
       }
     }
   }
