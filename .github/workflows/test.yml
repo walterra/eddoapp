@@ -172,7 +172,7 @@ jobs:
       - name: Run integration tests
         env:
           CI: true
-        run: pnpm test:integration
+        run: pnpm test:integration:mcp-server
 
   e2e-tests:
     name: E2E Tests
