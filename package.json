@@ -71,7 +71,7 @@
     "lint-staged": "^16.2.7",
     "node-fetch": "^3.3.2",
     "npm-run-all": "^4.1.5",
-    "ora": "^8.2.0",
+    "ora": "^9.0.0",
     "postcss": "^8.4.16",
     "pouchdb": "^9.0.0",
     "pouchdb-adapter-memory": "^9.0.0",
