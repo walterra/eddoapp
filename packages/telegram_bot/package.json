@@ -15,7 +15,7 @@
     "test:integration:watch": "vitest --config vitest.integration.config.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.67.0",
+    "@anthropic-ai/sdk": "^0.71.2",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
     "@eddo/printer-service": "workspace:*",
