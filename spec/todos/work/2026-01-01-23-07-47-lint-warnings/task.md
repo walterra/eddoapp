@@ -19,7 +19,7 @@ The codebase has ESLint warnings related to code quality (function complexity an
 | max-lines              | 18       | ~8      | ~56%      |
 | max-params             | 4        | ~2      | ~50%      |
 
-**Current Status:** 148 warnings (down from 270, 122 fixed = 45% reduction)
+**Current Status:** 139 warnings (down from 270, 131 fixed = 49% reduction)
 
 **Success Criteria:**
 
@@ -60,11 +60,11 @@ The codebase has ESLint warnings related to code quality (function complexity an
 
 ### Verification
 
-- [x] Run `pnpm lint` - 148 warnings (45% reduction from 270)
+- [x] Run `pnpm lint` - 139 warnings (49% reduction from 270)
 - [x] Run `pnpm test` - all tests pass (508 passed)
 - [x] Run `pnpm tsc:check` - no type errors
 
-## New Helper Modules Created (19 files)
+## New Helper Modules Created (22 files)
 
 1. scripts/restore-interactive-prompts.ts
 2. scripts/backup-interactive-prompts.ts
@@ -85,6 +85,8 @@ The codebase has ESLint warnings related to code quality (function complexity an
 17. packages/telegram_bot/src/bot/commands/github-helpers.ts
 18. packages/telegram_bot/src/bot/commands/link-helpers.ts
 19. packages/mcp_server/src/auth/user-auth-helpers.ts
+20. packages/mcp_server/src/integration-tests/setup/global-helpers.ts
+21. packages/telegram_bot/src/integration-tests/vcr/cassette-helpers.ts
 
 ## Review
 
@@ -94,5 +96,5 @@ The codebase has ESLint warnings related to code quality (function complexity an
 
 - Focus on non-UI files as they refactor more cleanly
 - React components with heavy JSX are challenging to split
-- Achieved 45% reduction (122 warnings fixed)
-- Remaining warnings mostly in React components (todo_board, todo_table, user_profile)
+- Achieved 49% reduction (131 warnings fixed)
+- Remaining warnings mostly in React components (todo_board, todo_table, user_profile, database_setup)

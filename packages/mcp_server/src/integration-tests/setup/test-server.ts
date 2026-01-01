@@ -135,68 +135,84 @@ export class MCPTestServer {
     return result;
   }
 
+  private static readonly LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
+
+  /**
+   * Check if tool returns a list
+   */
+  private isListTool(toolName: string): boolean {
+    return MCPTestServer.LIST_TOOLS.includes(toolName);
+  }
+
+  /**
+   * Handle list tool response extraction
+   */
+  private parseListToolResponse(
+    parsed: { error?: string; data?: unknown },
+    toolName: string,
+  ): unknown[] {
+    if (parsed.error) {
+      console.warn(`⚠️  Tool ${toolName} returned error: ${parsed.error}`);
+      return [];
+    }
+
+    if (parsed.data && Array.isArray(parsed.data)) {
+      return parsed.data;
+    }
+
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+
+    console.warn(`⚠️  Tool ${toolName} returned unexpected format: ${typeof parsed}`);
+    return [];
+  }
+
+  /**
+   * Handle JSON parse errors
+   */
+  private handleParseError(parseError: unknown, text: string, toolName: string): unknown {
+    if (toolName === 'getServerInfo') {
+      return text;
+    }
+
+    console.error(`❌ Tool ${toolName} returned invalid JSON:`, parseError);
+    console.error(`Raw response: ${text.substring(0, 200)}...`);
+
+    return this.isListTool(toolName) ? [] : text;
+  }
+
   /**
    * Parse tool response with proper error handling and type consistency
    */
   private parseToolResponse(text: string, toolName: string): unknown {
-    // Handle empty responses
     if (!text || text.trim() === '') {
       console.warn(`⚠️  Empty response from tool: ${toolName}`);
       return null;
     }
 
-    // All tools now return JSON responses with the new structured format
     try {
       const parsed = JSON.parse(text);
 
-      // Handle the new structured response format
-      if (parsed && typeof parsed === 'object') {
-        // Special handling for tools that return lists
-        const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
-
-        if (LIST_TOOLS.includes(toolName)) {
-          // Check if this is an error response
-          if (parsed.error) {
-            console.warn(`⚠️  Tool ${toolName} returned error: ${parsed.error}`);
-            return [];
-          }
-
-          // Extract data array from structured response
-          if (parsed.data && Array.isArray(parsed.data)) {
-            return parsed.data;
-          } else if (Array.isArray(parsed)) {
-            // Backwards compatibility - if already an array
-            return parsed;
-          } else {
-            console.warn(`⚠️  Tool ${toolName} returned unexpected format: ${typeof parsed}`);
-            return [];
-          }
-        } else if (toolName === 'getUserInfo') {
-          // getUserInfo returns the data object directly
-          return parsed.data || parsed;
-        } else if (toolName === 'getServerInfo') {
-          // getServerInfo returns plain text, not JSON
-          return text;
-        } else {
-          // For other tools (createTodo, updateTodo, etc.), return the full response
-          // Tests will need to check the response.summary or response.data fields
-          return parsed;
-        }
+      if (!parsed || typeof parsed !== 'object') {
+        return parsed;
       }
 
-      return parsed;
-    } catch (parseError) {
-      // If JSON parsing fails, check if it's a plain text response (like getServerInfo)
+      if (this.isListTool(toolName)) {
+        return this.parseListToolResponse(parsed, toolName);
+      }
+
+      if (toolName === 'getUserInfo') {
+        return parsed.data || parsed;
+      }
+
       if (toolName === 'getServerInfo') {
         return text;
       }
 
-      console.error(`❌ Tool ${toolName} returned invalid JSON:`, parseError);
-      console.error(`Raw response: ${text.substring(0, 200)}...`);
-
-      // Return appropriate default based on tool type
-      const LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];
-      return LIST_TOOLS.includes(toolName) ? [] : text;
+      return parsed;
+    } catch (parseError) {
+      return this.handleParseError(parseError, text, toolName);
     }
   }
 

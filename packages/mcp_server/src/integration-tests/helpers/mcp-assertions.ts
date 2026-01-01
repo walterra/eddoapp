@@ -65,6 +65,45 @@ export class MCPAssertions {
   }
 
   /**
+   * Assert error text matches expected pattern
+   */
+  private assertErrorMatches(errorText: unknown, pattern: string | RegExp): void {
+    if (typeof pattern === 'string') {
+      expect(errorText).toContain(pattern);
+    } else {
+      expect(errorText).toMatch(pattern);
+    }
+  }
+
+  /**
+   * Check if result is a structured error response
+   */
+  private isStructuredErrorResponse(
+    result: unknown,
+  ): result is { error?: unknown; summary?: unknown } {
+    return result !== null && typeof result === 'object' && 'error' in result;
+  }
+
+  /**
+   * Check if result is a legacy string error
+   */
+  private isLegacyStringError(result: unknown): result is string {
+    return typeof result === 'string' && result.includes('failed');
+  }
+
+  /**
+   * Handle structured error response
+   */
+  private handleStructuredError(
+    result: { error?: unknown; summary?: unknown },
+    pattern?: string | RegExp,
+  ): void {
+    if (!pattern) return;
+    const errorText = result.error || result.summary || JSON.stringify(result);
+    this.assertErrorMatches(errorText, pattern);
+  }
+
+  /**
    * Call a tool and expect it to fail with specific error
    */
   async expectToolCallError(
@@ -74,48 +113,27 @@ export class MCPAssertions {
   ): Promise<void> {
     try {
       const result = await this.testServer.callTool(toolName, args);
-      // If we get a structured error response, that's expected
-      if (result && typeof result === 'object' && 'error' in result) {
-        // This is an expected error condition in the new format
+
+      if (this.isStructuredErrorResponse(result)) {
+        this.handleStructuredError(result, expectedErrorPattern);
+        return;
+      }
+
+      if (this.isLegacyStringError(result)) {
         if (expectedErrorPattern) {
-          const errorResult = result as { error?: unknown; summary?: unknown };
-          const errorText = errorResult.error || errorResult.summary || JSON.stringify(result);
-          if (typeof expectedErrorPattern === 'string') {
-            expect(errorText).toContain(expectedErrorPattern);
-          } else {
-            expect(errorText).toMatch(expectedErrorPattern);
-          }
+          this.assertErrorMatches(result, expectedErrorPattern);
         }
         return;
       }
-      // Legacy: If we get a string result that indicates an error, that's expected
-      if (typeof result === 'string' && result.includes('failed')) {
-        // This is an expected error condition
-        if (expectedErrorPattern) {
-          if (typeof expectedErrorPattern === 'string') {
-            expect(result).toContain(expectedErrorPattern);
-          } else {
-            expect(result).toMatch(expectedErrorPattern);
-          }
-        }
-        return;
-      }
-      // If we got a successful result when expecting an error, fail the test
+
       throw new Error(
         `Expected tool call to fail but it succeeded with result: ${JSON.stringify(result)}`,
       );
     } catch (error) {
-      // If it throws an error (as expected), verify the error message if pattern provided
       if (expectedErrorPattern) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (typeof expectedErrorPattern === 'string') {
-          expect(errorMessage).toContain(expectedErrorPattern);
-        } else {
-          expect(errorMessage).toMatch(expectedErrorPattern);
-        }
+        this.assertErrorMatches(errorMessage, expectedErrorPattern);
       }
-      // Re-throw to satisfy the expectation that this should fail
-      return;
     }
   }
 
