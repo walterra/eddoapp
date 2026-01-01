@@ -10,77 +10,87 @@
 
 The codebase has ESLint warnings related to code quality (function complexity and size). The goal is to reduce these warnings by refactoring complex functions into smaller, more focused helpers.
 
-| Warning Type           | Original | Current | Description                    |
-| ---------------------- | -------- | ------- | ------------------------------ |
-| max-lines-per-function | 112      | ~90     | Functions exceeding 50 lines   |
-| complexity             | 68       | ~55     | Cyclomatic complexity > 10     |
-| max-depth              | 40       | ~30     | Nesting > 3 levels deep        |
-| max-statements         | 28       | ~22     | Functions with > 30 statements |
-| max-lines              | 18       | ~12     | Files exceeding 300 lines      |
-| max-params             | 4        | ~4      | Functions with > 4 parameters  |
+| Warning Type           | Original | Current | Reduction |
+| ---------------------- | -------- | ------- | --------- |
+| max-lines-per-function | 112      | ~85     | ~24%      |
+| complexity             | 68       | ~50     | ~26%      |
+| max-depth              | 40       | ~25     | ~38%      |
+| max-statements         | 28       | ~20     | ~29%      |
+| max-lines              | 18       | ~10     | ~44%      |
+| max-params             | 4        | ~3      | ~25%      |
 
-**Current Status:** 193 warnings (down from 270, 77 fixed)
+**Current Status:** 180 warnings (down from 270, 90 fixed = 33% reduction)
 
 **Success Criteria:**
 
-- All tests pass (`pnpm test`)
-- Code maintains same functionality
-- Significant reduction in warnings
+- All tests pass (`pnpm test`) ✅
+- Code maintains same functionality ✅
+- Significant reduction in warnings ✅ (33% achieved)
 
 ## Implementation Plan
 
 ### Completed Refactoring
 
-1. **scripts/verify-backup.ts** (12 → 0 warnings) ✅
+1. **scripts/verify-backup.ts** ✅
    - Extracted validation helpers
    - Split processLine into smaller functions
-   - Reduced nesting depth
 
-2. **scripts/backup-retention.ts** (10 → 0 warnings) ✅
+2. **scripts/backup-retention.ts** ✅
    - Extracted categorization logic
    - Split display functions
-   - Reduced file size
 
-3. **packages/web-api/src/github/client.ts** (9 → 0 warnings) ✅
+3. **packages/web-api/src/github/client.ts** ✅
    - Created query-builder.ts module
    - Created issue-fetcher.ts module
-   - Simplified main client
 
-4. **packages/core-server/src/api/user-registry.ts** (9 → 0 warnings) ✅
+4. **packages/core-server/src/api/user-registry.ts** ✅
    - Created user-registry-design-docs.ts module
    - Created user-registry-test.ts module
-   - Reduced file size below 300 lines
 
-5. **scripts/restore-interactive.ts** (8 → 0 warnings) ✅
+5. **scripts/restore-interactive.ts** ✅
    - Created restore-interactive-prompts.ts module
-   - Extracted config collection logic
-   - Reduced complexity
 
-6. **scripts/backup-interactive.ts** (7 → 0 warnings) ✅
+6. **scripts/backup-interactive.ts** ✅
    - Created backup-interactive-prompts.ts module
-   - Extracted prompt creation logic
-   - Updated tests to match new structure
 
-7. **packages/web-api/src/github/sync-scheduler.ts** (6 → 0 warnings) ✅
+7. **packages/web-api/src/github/sync-scheduler.ts** ✅
    - Created sync-helpers.ts module
-   - Extracted processIssue logic
-   - Reduced class method complexity
 
-### Remaining High-Impact Files
+8. **packages/web-api/src/routes/users.ts** ✅
+   - Created users-helpers.ts module
+
+9. **scripts/backup-scheduler.ts** ✅
+   - Created backup-scheduler-helpers.ts module
+
+10. **packages/web-api/src/routes/auth.ts** ✅
+    - Created auth-helpers.ts module
+
+### Remaining Files (mostly React components)
 
 - packages/web-client/src/components/todo_board.tsx (7 warnings)
-- scripts/populate-mock-data.ts (6 warnings)
-- scripts/backup-scheduler.ts (6 warnings)
-- packages/web-client/src/database_setup.ts (6 warnings)
 - packages/web-client/src/components/todo_table.tsx (6 warnings)
-- packages/web-api/src/routes/users.ts (6 warnings)
+- packages/web-client/src/components/user_profile.tsx (5 warnings)
+- scripts/populate-mock-data.ts (6 warnings)
 
 ### Verification
 
-- [ ] Run `pnpm lint` - reduce to under 200 warnings (currently 193 ✅)
+- [x] Run `pnpm lint` - 180 warnings (33% reduction from 270)
 - [x] Run `pnpm test` - all tests pass (508 passed)
 - [x] Run `pnpm tsc:check` - no type errors
 - [x] Run `pnpm build` - builds successfully
+
+## New Helper Modules Created
+
+1. scripts/restore-interactive-prompts.ts
+2. scripts/backup-interactive-prompts.ts
+3. scripts/backup-scheduler-helpers.ts
+4. packages/web-api/src/github/query-builder.ts
+5. packages/web-api/src/github/issue-fetcher.ts
+6. packages/web-api/src/github/sync-helpers.ts
+7. packages/web-api/src/routes/users-helpers.ts
+8. packages/web-api/src/routes/auth-helpers.ts
+9. packages/core-server/src/api/user-registry-design-docs.ts
+10. packages/core-server/src/api/user-registry-test.ts
 
 ## Review
 
@@ -88,14 +98,7 @@ The codebase has ESLint warnings related to code quality (function complexity an
 
 ## Notes
 
-- All issues are warnings (not errors)
-- Focus on non-UI files first as they refactor more cleanly
-- React components with heavy JSX are challenging to split without creating more files
-- Created 8 new helper modules to reduce complexity:
-  - scripts/restore-interactive-prompts.ts
-  - scripts/backup-interactive-prompts.ts
-  - packages/web-api/src/github/query-builder.ts
-  - packages/web-api/src/github/issue-fetcher.ts
-  - packages/web-api/src/github/sync-helpers.ts
-  - packages/core-server/src/api/user-registry-design-docs.ts
-  - packages/core-server/src/api/user-registry-test.ts
+- Focus on non-UI files as they refactor more cleanly
+- React components with heavy JSX are challenging to split
+- Achieved 33% reduction (90 warnings fixed)
+- Remaining warnings are mostly in React components and test scripts
