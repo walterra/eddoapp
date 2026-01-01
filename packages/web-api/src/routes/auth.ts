@@ -22,10 +22,15 @@ const authApp = new Hono();
 const env = createEnv();
 const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
+// Token expiration constants (in seconds)
+const TOKEN_EXPIRATION_SHORT = 1 * 60 * 60; // 1 hour
+const TOKEN_EXPIRATION_LONG = 30 * 24 * 60 * 60; // 30 days
+
 // Validation schemas
 const loginSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 const registerSchema = z.object({
@@ -33,6 +38,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   telegramId: z.number().optional(),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 const linkTelegramSchema = z.object({
@@ -44,7 +50,8 @@ const linkTelegramSchema = z.object({
 authApp.post('/register', async (c) => {
   try {
     const body = await c.req.json();
-    const { username, email, password, telegramId } = registerSchema.parse(body);
+    const { username, email, password, telegramId, rememberMe } = registerSchema.parse(body);
+    const tokenExpiration = rememberMe ? TOKEN_EXPIRATION_LONG : TOKEN_EXPIRATION_SHORT;
 
     // Validate input
     const usernameValidation = validateUsername(username);
@@ -105,7 +112,7 @@ authApp.post('/register', async (c) => {
       {
         userId: user._id,
         username: user.username,
-        exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+        exp: Math.floor(Date.now() / 1000) + tokenExpiration,
       },
       config.jwtSecret,
     );
@@ -114,7 +121,7 @@ authApp.post('/register', async (c) => {
       token,
       username: user.username,
       userId: user._id,
-      expiresIn: '24h',
+      expiresIn: rememberMe ? '30d' : '1h',
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -126,7 +133,9 @@ authApp.post('/register', async (c) => {
 authApp.post('/login', async (c) => {
   try {
     const body = await c.req.json();
-    const { username, password } = loginSchema.parse(body);
+    const { username, password, rememberMe } = loginSchema.parse(body);
+    const tokenExpiration = rememberMe ? TOKEN_EXPIRATION_LONG : TOKEN_EXPIRATION_SHORT;
+    const expiresInLabel = rememberMe ? '30d' : '1h';
 
     // First try the new user registry
     const user = await userRegistry.findByUsername(username);
@@ -145,7 +154,7 @@ authApp.post('/login', async (c) => {
         {
           userId: user._id,
           username: user.username,
-          exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+          exp: Math.floor(Date.now() / 1000) + tokenExpiration,
         },
         config.jwtSecret,
       );
@@ -154,7 +163,7 @@ authApp.post('/login', async (c) => {
         token,
         username: user.username,
         userId: user._id,
-        expiresIn: '24h',
+        expiresIn: expiresInLabel,
       });
     }
 
@@ -173,7 +182,7 @@ authApp.post('/login', async (c) => {
       {
         userId: `demo_${username}`,
         username,
-        exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+        exp: Math.floor(Date.now() / 1000) + tokenExpiration,
       },
       config.jwtSecret,
     );
@@ -182,7 +191,7 @@ authApp.post('/login', async (c) => {
       token,
       username,
       userId: `demo_${username}`,
-      expiresIn: '24h',
+      expiresIn: expiresInLabel,
     });
   } catch (error) {
     console.error('Login error:', error);

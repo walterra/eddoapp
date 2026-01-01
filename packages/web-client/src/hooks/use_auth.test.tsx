@@ -179,6 +179,64 @@ describe('useAuth Hook', () => {
       expect(result.current.isAuthenticated).toBe(false);
     });
 
+    it('passes rememberMe flag to login request', async () => {
+      const mockToken = {
+        token: 'test-token',
+        username: 'testuser',
+        expiresIn: '30d',
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockToken),
+      });
+
+      const { result } = renderHook(() => useAuth(), {
+        wrapper: AuthTestWrapper,
+      });
+
+      await act(async () => {
+        await result.current.authenticate('testuser', 'password', true);
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'testuser', password: 'password', rememberMe: true }),
+      });
+    });
+
+    it('defaults rememberMe to false when not provided', async () => {
+      const mockToken = {
+        token: 'test-token',
+        username: 'testuser',
+        expiresIn: '1h',
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockToken),
+      });
+
+      const { result } = renderHook(() => useAuth(), {
+        wrapper: AuthTestWrapper,
+      });
+
+      await act(async () => {
+        await result.current.authenticate('testuser', 'password');
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'testuser', password: 'password', rememberMe: false }),
+      });
+    });
+
     it('handles logout', async () => {
       const mockToken = {
         token: 'test-token',
