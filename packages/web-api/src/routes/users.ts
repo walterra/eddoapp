@@ -5,9 +5,14 @@ import jwt from 'jsonwebtoken';
 import nano from 'nano';
 import { z } from 'zod';
 
-import { config } from '../config';
 import { getGithubScheduler } from '../index';
-import { hashPassword, validateEmail, validatePassword, verifyPassword } from '../utils/crypto';
+import {
+  createSafeProfile,
+  extractUserFromToken,
+  validateEmailUpdate,
+  validatePasswordUpdate,
+  validateUserAccess,
+} from './users-helpers';
 
 const usersApp = new Hono();
 
@@ -76,59 +81,17 @@ const updatePreferencesSchema = z.object({
   githubSyncTags: z.array(z.string()).optional(),
 });
 
-interface JwtTokenPayload {
-  userId: string;
-  username: string;
-  exp: number;
-}
-
-// Helper function to extract user from JWT token
-async function extractUserFromToken(authHeader: string | undefined) {
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const decoded = jwt.verify(token, config.jwtSecret) as JwtTokenPayload;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
 // Get current user profile
 usersApp.get('/profile', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  const userToken = await extractUserFromToken(authHeader);
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
+  const userToken = await extractUserFromToken(c.req.header('Authorization'));
+  if (!userToken) return c.json({ error: 'Authentication required' }, 401);
 
   try {
     const user = await userRegistry.findByUsername(userToken.username);
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
+    const access = validateUserAccess(user);
+    if (!access.valid) return c.json({ error: access.error }, access.status!);
 
-    if (user.status !== 'active') {
-      return c.json({ error: 'Account is suspended' }, 403);
-    }
-
-    // Return safe user profile (without sensitive data)
-    return c.json({
-      userId: user._id,
-      username: user.username,
-      email: user.email,
-      telegramId: user.telegram_id,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      permissions: user.permissions,
-      status: user.status,
-      preferences: user.preferences,
-    });
+    return c.json(createSafeProfile(user!));
   } catch (error) {
     console.error('Profile fetch error:', error);
     return c.json({ error: 'Failed to fetch profile' }, 500);
@@ -137,40 +100,23 @@ usersApp.get('/profile', async (c) => {
 
 // Update user profile
 usersApp.put('/profile', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  const userToken = await extractUserFromToken(authHeader);
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
+  const userToken = await extractUserFromToken(c.req.header('Authorization'));
+  if (!userToken) return c.json({ error: 'Authentication required' }, 401);
 
   try {
     const body = await c.req.json();
     const { email, currentPassword, newPassword } = updateProfileSchema.parse(body);
 
     const user = await userRegistry.findByUsername(userToken.username);
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
-    if (user.status !== 'active') {
-      return c.json({ error: 'Account is suspended' }, 403);
-    }
+    const access = validateUserAccess(user);
+    if (!access.valid) return c.json({ error: access.error }, access.status!);
 
     const updates: Record<string, unknown> = {};
 
     // Update email if provided
-    if (email && email !== user.email) {
-      if (!validateEmail(email)) {
-        return c.json({ error: 'Invalid email format' }, 400);
-      }
-
-      // Check if email is already in use
-      const existingEmail = await userRegistry.findByEmail(email);
-      if (existingEmail && existingEmail._id !== user._id) {
-        return c.json({ error: 'Email already in use' }, 409);
-      }
-
+    if (email && email !== user!.email) {
+      const emailValidation = await validateEmailUpdate(email, user!, userRegistry.findByEmail);
+      if (!emailValidation.valid) return c.json({ error: emailValidation.error }, 400);
       updates.email = email;
     }
 
@@ -179,42 +125,19 @@ usersApp.put('/profile', async (c) => {
       if (!currentPassword) {
         return c.json({ error: 'Current password required to change password' }, 400);
       }
-
-      // Verify current password
-      const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password_hash);
-      if (!isCurrentPasswordValid) {
-        return c.json({ error: 'Current password is incorrect' }, 400);
-      }
-
-      // Validate new password
-      const passwordValidation = validatePassword(newPassword);
-      if (!passwordValidation.isValid) {
-        return c.json({ error: passwordValidation.errors.join(', ') }, 400);
-      }
-
-      // Hash new password
-      const newPasswordHash = await hashPassword(newPassword);
-      updates.password_hash = newPasswordHash;
+      const pwValidation = await validatePasswordUpdate(
+        currentPassword,
+        newPassword,
+        user!.password_hash,
+      );
+      if (!pwValidation.valid) return c.json({ error: pwValidation.error }, 400);
+      updates.password_hash = pwValidation.hash;
     }
 
-    // Update timestamp
     updates.updated_at = new Date().toISOString();
+    const updatedUser = await userRegistry.update(user!._id, updates);
 
-    // Apply updates
-    const updatedUser = await userRegistry.update(user._id, updates);
-
-    // Return safe updated profile
-    return c.json({
-      userId: updatedUser._id,
-      username: updatedUser.username,
-      email: updatedUser.email,
-      telegramId: updatedUser.telegram_id,
-      createdAt: updatedUser.created_at,
-      updatedAt: updatedUser.updated_at,
-      permissions: updatedUser.permissions,
-      status: updatedUser.status,
-      preferences: updatedUser.preferences,
-    });
+    return c.json(createSafeProfile(updatedUser));
   } catch (error) {
     console.error('Profile update error:', error);
     return c.json({ error: 'Failed to update profile' }, 500);
@@ -223,51 +146,30 @@ usersApp.put('/profile', async (c) => {
 
 // Change password (dedicated endpoint)
 usersApp.post('/change-password', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  const userToken = await extractUserFromToken(authHeader);
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
+  const userToken = await extractUserFromToken(c.req.header('Authorization'));
+  if (!userToken) return c.json({ error: 'Authentication required' }, 401);
 
   try {
     const body = await c.req.json();
     const { currentPassword, newPassword } = changePasswordSchema.parse(body);
 
     const user = await userRegistry.findByUsername(userToken.username);
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
+    const access = validateUserAccess(user);
+    if (!access.valid) return c.json({ error: access.error }, access.status!);
 
-    if (user.status !== 'active') {
-      return c.json({ error: 'Account is suspended' }, 403);
-    }
+    const pwValidation = await validatePasswordUpdate(
+      currentPassword,
+      newPassword,
+      user!.password_hash,
+    );
+    if (!pwValidation.valid) return c.json({ error: pwValidation.error }, 400);
 
-    // Verify current password
-    const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password_hash);
-    if (!isCurrentPasswordValid) {
-      return c.json({ error: 'Current password is incorrect' }, 400);
-    }
-
-    // Validate new password
-    const passwordValidation = validatePassword(newPassword);
-    if (!passwordValidation.isValid) {
-      return c.json({ error: passwordValidation.errors.join(', ') }, 400);
-    }
-
-    // Hash new password
-    const newPasswordHash = await hashPassword(newPassword);
-
-    // Update password
-    await userRegistry.update(user._id, {
-      password_hash: newPasswordHash,
+    await userRegistry.update(user!._id, {
+      password_hash: pwValidation.hash,
       updated_at: new Date().toISOString(),
     });
 
-    return c.json({
-      success: true,
-      message: 'Password changed successfully',
-    });
+    return c.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
     console.error('Password change error:', error);
     return c.json({ error: 'Failed to change password' }, 500);
@@ -276,47 +178,32 @@ usersApp.post('/change-password', async (c) => {
 
 // Link Telegram account manually
 usersApp.post('/telegram-link', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  const userToken = await extractUserFromToken(authHeader);
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
+  const userToken = await extractUserFromToken(c.req.header('Authorization'));
+  if (!userToken) return c.json({ error: 'Authentication required' }, 401);
 
   try {
     const body = await c.req.json();
     const { telegramId } = linkTelegramSchema.parse(body);
 
     const user = await userRegistry.findByUsername(userToken.username);
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
+    const access = validateUserAccess(user);
+    if (!access.valid) return c.json({ error: access.error }, access.status!);
 
-    if (user.status !== 'active') {
-      return c.json({ error: 'Account is suspended' }, 403);
-    }
-
-    if (user.telegram_id) {
+    if (user!.telegram_id) {
       return c.json({ error: 'Telegram account already linked' }, 400);
     }
 
-    // Check if Telegram ID is already linked to another account
     const existingTelegram = await userRegistry.findByTelegramId(telegramId);
     if (existingTelegram) {
       return c.json({ error: 'Telegram ID already linked to another account' }, 409);
     }
 
-    // Update user with Telegram ID
-    await userRegistry.update(user._id, {
+    await userRegistry.update(user!._id, {
       telegram_id: telegramId,
       updated_at: new Date().toISOString(),
     });
 
-    return c.json({
-      success: true,
-      message: 'Telegram account linked successfully',
-      telegramId,
-    });
+    return c.json({ success: true, message: 'Telegram account linked successfully', telegramId });
   } catch (error) {
     console.error('Telegram link error:', error);
     if (error instanceof z.ZodError) {
@@ -328,37 +215,24 @@ usersApp.post('/telegram-link', async (c) => {
 
 // Unlink Telegram account
 usersApp.delete('/telegram-link', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  const userToken = await extractUserFromToken(authHeader);
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
+  const userToken = await extractUserFromToken(c.req.header('Authorization'));
+  if (!userToken) return c.json({ error: 'Authentication required' }, 401);
 
   try {
     const user = await userRegistry.findByUsername(userToken.username);
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
+    const access = validateUserAccess(user);
+    if (!access.valid) return c.json({ error: access.error }, access.status!);
 
-    if (user.status !== 'active') {
-      return c.json({ error: 'Account is suspended' }, 403);
-    }
-
-    if (!user.telegram_id) {
+    if (!user!.telegram_id) {
       return c.json({ error: 'No Telegram account linked' }, 400);
     }
 
-    // Remove Telegram ID
-    await userRegistry.update(user._id, {
+    await userRegistry.update(user!._id, {
       telegram_id: undefined,
       updated_at: new Date().toISOString(),
     });
 
-    return c.json({
-      success: true,
-      message: 'Telegram account unlinked successfully',
-    });
+    return c.json({ success: true, message: 'Telegram account unlinked successfully' });
   } catch (error) {
     console.error('Telegram unlink error:', error);
     return c.json({ error: 'Failed to unlink Telegram account' }, 500);
@@ -367,51 +241,32 @@ usersApp.delete('/telegram-link', async (c) => {
 
 // Update user preferences
 usersApp.put('/preferences', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  const userToken = await extractUserFromToken(authHeader);
-
-  if (!userToken) {
-    return c.json({ error: 'Authentication required' }, 401);
-  }
+  const userToken = await extractUserFromToken(c.req.header('Authorization'));
+  if (!userToken) return c.json({ error: 'Authentication required' }, 401);
 
   try {
     const body = await c.req.json();
     const preferences = updatePreferencesSchema.parse(body);
 
     const user = await userRegistry.findByUsername(userToken.username);
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
+    const access = validateUserAccess(user);
+    if (!access.valid) return c.json({ error: access.error }, access.status!);
 
-    if (user.status !== 'active') {
-      return c.json({ error: 'Account is suspended' }, 403);
-    }
-
-    // Update preferences
-    const updatedUser = await userRegistry.update(user._id, {
-      preferences: {
-        ...user.preferences,
-        ...preferences,
-      },
+    const updatedUser = await userRegistry.update(user!._id, {
+      preferences: { ...user!.preferences, ...preferences },
       updated_at: new Date().toISOString(),
     });
 
-    return c.json({
-      success: true,
-      preferences: updatedUser.preferences,
-    });
+    return c.json({ success: true, preferences: updatedUser.preferences });
   } catch (error) {
     console.error('Preferences update error:', error);
-    if (error instanceof z.ZodError) {
-      return c.json({ error: 'Invalid preferences format' }, 400);
-    }
+    if (error instanceof z.ZodError) return c.json({ error: 'Invalid preferences format' }, 400);
     return c.json({ error: 'Failed to update preferences' }, 500);
   }
 });
 
 // SSE endpoint for real-time preference updates
 usersApp.get('/preferences/stream', async (c) => {
-  // JWT middleware handles auth (supports query param token for EventSource)
   const payload = c.get('jwtPayload') as jwt.JwtPayload;
   const username = payload.username;
   const docId = `user_${username}`;
@@ -421,7 +276,6 @@ usersApp.get('/preferences/stream', async (c) => {
   return streamSSE(c, async (stream) => {
     let isConnected = true;
 
-    // Handle client disconnect
     stream.onAbort(() => {
       console.log('[SSE] Client disconnected:', username);
       isConnected = false;
@@ -429,48 +283,26 @@ usersApp.get('/preferences/stream', async (c) => {
     });
 
     try {
-      // Start listening to changes feed filtered to user's document only
       const changesEmitter = registryDb.changesReader.start({
         includeDocs: true,
         since: 'now',
-        // Filter to only this user's document using selector
         selector: { _id: docId },
       });
 
-      // Send initial connection confirmation
       await stream.writeSSE({
         event: 'connected',
         data: JSON.stringify({ status: 'connected', docId }),
         id: '0',
       });
 
-      // Forward changes to SSE stream
       changesEmitter.on('change', async (change) => {
-        // Double-check the change is for the correct document (security)
-        if (change.id !== docId) {
-          console.warn('[SSE] Received change for wrong doc:', change.id, 'expected:', docId);
-          return;
-        }
-
+        if (change.id !== docId) return;
         const doc = change.doc;
         if (!doc) return;
 
-        // Extract safe profile data (exclude password_hash)
-        const safeProfile = {
-          userId: doc._id,
-          username: doc.username,
-          email: doc.email,
-          telegramId: doc.telegram_id,
-          createdAt: doc.created_at,
-          updatedAt: doc.updated_at,
-          permissions: doc.permissions,
-          status: doc.status,
-          preferences: doc.preferences,
-        };
-
         await stream.writeSSE({
           event: 'preference-update',
-          data: JSON.stringify(safeProfile),
+          data: JSON.stringify(createSafeProfile(doc)),
           id: String(change.seq),
         });
       });
@@ -479,10 +311,8 @@ usersApp.get('/preferences/stream', async (c) => {
         console.error('[SSE] Changes feed error:', err);
       });
 
-      // Keep the connection alive with periodic heartbeats
-      // The changesReader handles long-polling internally
       while (isConnected) {
-        await stream.sleep(30000); // Send heartbeat every 30 seconds
+        await stream.sleep(30000);
         if (isConnected) {
           await stream.writeSSE({
             event: 'heartbeat',
@@ -506,37 +336,27 @@ usersApp.post('/github-resync', async (c) => {
     console.log('[GitHub Resync] Force resync requested', { userId, username: payload.username });
 
     const scheduler = getGithubScheduler();
-    await scheduler.syncUser(userId, true); // forceResync = true
+    await scheduler.syncUser(userId, true);
 
     console.log('[GitHub Resync] Resync completed successfully', {
       userId,
       username: payload.username,
     });
 
-    return c.json({
-      success: true,
-      message: 'GitHub resync completed successfully',
-    });
+    return c.json({ success: true, message: 'GitHub resync completed successfully' });
   } catch (error) {
     console.error('[GitHub Resync] Error:', error);
 
-    // Check if it's a rate limit error with additional info
-    if (error instanceof Error) {
-      const rateLimitError = error as Error & {
-        rateLimitInfo?: { resetDate: Date };
-        resetTime?: string;
-      };
-
-      if (rateLimitError.message.includes('rate limit')) {
-        return c.json(
-          {
-            error: rateLimitError.message,
-            rateLimitError: true,
-            resetTime: rateLimitError.resetTime,
-          },
-          429, // HTTP 429 Too Many Requests
-        );
-      }
+    if (error instanceof Error && error.message.includes('rate limit')) {
+      const rateLimitError = error as Error & { resetTime?: string };
+      return c.json(
+        {
+          error: rateLimitError.message,
+          rateLimitError: true,
+          resetTime: rateLimitError.resetTime,
+        },
+        429,
+      );
     }
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to resync GitHub issues';
