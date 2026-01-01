@@ -287,19 +287,17 @@ export async function createTestUserRegistry(
 ): Promise<UserRegistryOperations> {
   const { createTestUserRegistry: createTestImpl } = await import('./user-registry-test.js');
 
-  return createTestImpl(
-    couchDbUrl,
-    env,
-    create as Parameters<typeof createTestImpl>[2],
-    findByUsername as Parameters<typeof createTestImpl>[3],
-    findByTelegramId as Parameters<typeof createTestImpl>[4],
-    findByEmail as Parameters<typeof createTestImpl>[5],
-    update as Parameters<typeof createTestImpl>[6],
-    list as Parameters<typeof createTestImpl>[7],
-    deleteEntry as Parameters<typeof createTestImpl>[8],
-    ensureUserDatabase as Parameters<typeof createTestImpl>[9],
-    getUserDatabase as Parameters<typeof createTestImpl>[10],
-  );
+  return createTestImpl(couchDbUrl, env, {
+    create,
+    findByUsername,
+    findByTelegramId,
+    findByEmail,
+    update,
+    list,
+    delete: deleteEntry,
+    ensureUserDatabase,
+    getUserDatabase,
+  });
 }
 
 // Legacy export for backward compatibility

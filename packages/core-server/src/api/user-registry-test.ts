@@ -19,6 +19,56 @@ interface TestUserRegistryContext {
   testConfig: { dbName: string };
 }
 
+/** Functions required to create test user registry */
+export interface TestUserRegistryFunctions {
+  create: (
+    context: TestUserRegistryContext,
+    entry: CreateUserRegistryEntry,
+  ) => Promise<UserRegistryEntry>;
+  findByUsername: (
+    context: TestUserRegistryContext,
+    username: string,
+  ) => Promise<UserRegistryEntry | null>;
+  findByTelegramId: (
+    context: TestUserRegistryContext,
+    telegramId: number,
+  ) => Promise<UserRegistryEntry | null>;
+  findByEmail: (
+    context: TestUserRegistryContext,
+    email: string,
+  ) => Promise<UserRegistryEntry | null>;
+  update: (
+    context: TestUserRegistryContext,
+    id: string,
+    updates: UpdateUserRegistryEntry,
+  ) => Promise<UserRegistryEntry>;
+  list: (context: TestUserRegistryContext) => Promise<UserRegistryEntry[]>;
+  delete: (context: TestUserRegistryContext, id: string) => Promise<void>;
+  ensureUserDatabase: (context: TestUserRegistryContext, username: string) => Promise<void>;
+  getUserDatabase: (
+    context: TestUserRegistryContext,
+    username: string,
+  ) => nano.DocumentScope<Record<string, unknown>>;
+}
+
+/**
+ * Check if error is a CouchDB "not found" error
+ */
+function isNotFoundError(error: unknown): boolean {
+  return (
+    error !== null && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404
+  );
+}
+
+/**
+ * Check if error is a CouchDB "already exists" error
+ */
+function isAlreadyExistsError(error: unknown): boolean {
+  return (
+    error !== null && typeof error === 'object' && 'statusCode' in error && error.statusCode === 412
+  );
+}
+
 /**
  * Ensure test database exists
  */
@@ -30,31 +80,45 @@ async function ensureTestDatabase(context: TestUserRegistryContext): Promise<voi
     console.log(`Test user registry database already exists: ${testConfig.dbName}`);
     return;
   } catch (error: unknown) {
-    const isNotFound =
-      error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404;
-
-    if (!isNotFound) {
+    if (!isNotFoundError(error)) {
       throw error;
     }
   }
 
-  // Database doesn't exist, create it
   try {
     await couchConnection.db.create(testConfig.dbName);
     console.log(`Created test user registry database: ${testConfig.dbName}`);
   } catch (createError: unknown) {
-    const alreadyExists =
-      createError &&
-      typeof createError === 'object' &&
-      'statusCode' in createError &&
-      createError.statusCode === 412;
-
-    if (alreadyExists) {
+    if (isAlreadyExistsError(createError)) {
       console.log(`Test user registry database already exists: ${testConfig.dbName}`);
     } else {
       throw createError;
     }
   }
+}
+
+/**
+ * Build user registry operations from context and functions
+ */
+function buildOperations(
+  context: TestUserRegistryContext,
+  fns: TestUserRegistryFunctions,
+): UserRegistryOperations {
+  return {
+    create: (entry: CreateUserRegistryEntry) => fns.create(context, entry),
+    findByUsername: (username: string) => fns.findByUsername(context, username),
+    findByTelegramId: (telegramId: number) => fns.findByTelegramId(context, telegramId),
+    findByEmail: (email: string) => fns.findByEmail(context, email),
+    update: (id: string, updates: UpdateUserRegistryEntry) => fns.update(context, id, updates),
+    list: () => fns.list(context),
+    delete: (id: string) => fns.delete(context, id),
+    setupDatabase: async () => {
+      await ensureTestDatabase(context);
+      await setupDesignDocuments(context.db);
+    },
+    ensureUserDatabase: (username: string) => fns.ensureUserDatabase(context, username),
+    getUserDatabase: (username: string) => fns.getUserDatabase(context, username),
+  };
 }
 
 /**
@@ -64,35 +128,7 @@ async function ensureTestDatabase(context: TestUserRegistryContext): Promise<voi
 export async function createTestUserRegistry(
   couchDbUrl: string,
   env: Env,
-  // Import these functions dynamically to avoid circular dependencies
-  createFn: (
-    context: TestUserRegistryContext,
-    entry: CreateUserRegistryEntry,
-  ) => Promise<UserRegistryEntry>,
-  findByUsernameFn: (
-    context: TestUserRegistryContext,
-    username: string,
-  ) => Promise<UserRegistryEntry | null>,
-  findByTelegramIdFn: (
-    context: TestUserRegistryContext,
-    telegramId: number,
-  ) => Promise<UserRegistryEntry | null>,
-  findByEmailFn: (
-    context: TestUserRegistryContext,
-    email: string,
-  ) => Promise<UserRegistryEntry | null>,
-  updateFn: (
-    context: TestUserRegistryContext,
-    id: string,
-    updates: UpdateUserRegistryEntry,
-  ) => Promise<UserRegistryEntry>,
-  listFn: (context: TestUserRegistryContext) => Promise<UserRegistryEntry[]>,
-  deleteEntryFn: (context: TestUserRegistryContext, id: string) => Promise<void>,
-  ensureUserDatabaseFn: (context: TestUserRegistryContext, username: string) => Promise<void>,
-  getUserDatabaseFn: (
-    context: TestUserRegistryContext,
-    username: string,
-  ) => nano.DocumentScope<Record<string, unknown>>,
+  fns: TestUserRegistryFunctions,
 ): Promise<UserRegistryOperations> {
   const { getTestUserRegistryConfig } = await import('../config/env.js');
   const testConfig = getTestUserRegistryConfig(env);
@@ -107,21 +143,7 @@ export async function createTestUserRegistry(
     testConfig,
   };
 
-  return {
-    create: (entry: CreateUserRegistryEntry) => createFn(context, entry),
-    findByUsername: (username: string) => findByUsernameFn(context, username),
-    findByTelegramId: (telegramId: number) => findByTelegramIdFn(context, telegramId),
-    findByEmail: (email: string) => findByEmailFn(context, email),
-    update: (id: string, updates: UpdateUserRegistryEntry) => updateFn(context, id, updates),
-    list: () => listFn(context),
-    delete: (id: string) => deleteEntryFn(context, id),
-    setupDatabase: async () => {
-      await ensureTestDatabase(context);
-      await setupDesignDocuments(db);
-    },
-    ensureUserDatabase: (username: string) => ensureUserDatabaseFn(context, username),
-    getUserDatabase: (username: string) => getUserDatabaseFn(context, username),
-  };
+  return buildOperations(context, fns);
 }
 
 // Re-export for external use
