@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getBackupConfig } from './backup-interactive.js';
+import { getBackupConfig } from './backup-interactive-prompts.js';
 
 // Mock prompts
 vi.mock('prompts', () => ({
@@ -60,20 +60,21 @@ describe('backup-interactive', () => {
 
     it('should prompt for URL when not provided', async () => {
       const prompts = await import('prompts');
-      vi.mocked(prompts.default).mockResolvedValue({
-        url: 'http://admin:password@localhost:5984',
-        database: 'eddo-test',
-        backupDir: './backups',
-        parallelism: 5,
-        timeout: 60000,
-      });
+      // Mock multiple prompts calls
+      vi.mocked(prompts.default)
+        .mockResolvedValueOnce({ url: 'http://admin:password@localhost:5984' })
+        .mockResolvedValueOnce({ database: 'eddo-test' })
+        .mockResolvedValueOnce({
+          backupDir: './backups',
+          parallelism: 5,
+          timeout: 60000,
+        });
 
       await getBackupConfig({});
 
       expect(prompts.default).toHaveBeenCalled();
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
-      const urlPrompt = calls.find((call: { name?: string }) => call.name === 'url');
-      expect(urlPrompt).toBeDefined();
+      const firstCall = vi.mocked(prompts.default).mock.calls[0][0] as { name?: string };
+      expect(firstCall.name).toBe('url');
     });
 
     it('should fetch available databases when URL is provided', async () => {
@@ -114,67 +115,95 @@ describe('backup-interactive', () => {
   describe('validation', () => {
     it('should validate parallelism range in prompts', async () => {
       const prompts = await import('prompts');
-      vi.mocked(prompts.default).mockResolvedValue({
-        url: 'http://admin:password@localhost:5984',
-        database: 'test-db',
-        backupDir: './backups',
-        parallelism: 5,
-        timeout: 60000,
-      });
+      vi.mocked(prompts.default)
+        .mockResolvedValueOnce({ url: 'http://admin:password@localhost:5984' })
+        .mockResolvedValueOnce({ database: 'test-db' })
+        .mockResolvedValueOnce({
+          backupDir: './backups',
+          parallelism: 5,
+          timeout: 60000,
+        });
 
       await getBackupConfig({});
 
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
-      const parallelismPrompt = calls.find(
-        (call: { name?: string }) => call.name === 'parallelism',
-      );
+      // Find the call that has parallelism prompt
+      const allCalls = vi.mocked(prompts.default).mock.calls;
+      let parallelismPrompt: { min?: number; max?: number } | undefined;
+
+      for (const call of allCalls) {
+        const questions = call[0];
+        if (Array.isArray(questions)) {
+          const found = questions.find((q: { name?: string }) => q.name === 'parallelism');
+          if (found) {
+            parallelismPrompt = found;
+            break;
+          }
+        }
+      }
 
       expect(parallelismPrompt).toBeDefined();
-      expect(parallelismPrompt.min).toBe(1);
-      expect(parallelismPrompt.max).toBe(10);
+      expect(parallelismPrompt!.min).toBe(1);
+      expect(parallelismPrompt!.max).toBe(10);
     });
 
     it('should validate timeout minimum in prompts', async () => {
       const prompts = await import('prompts');
-      vi.mocked(prompts.default).mockResolvedValue({
-        url: 'http://admin:password@localhost:5984',
-        database: 'test-db',
-        backupDir: './backups',
-        parallelism: 5,
-        timeout: 60000,
-      });
+      vi.mocked(prompts.default)
+        .mockResolvedValueOnce({ url: 'http://admin:password@localhost:5984' })
+        .mockResolvedValueOnce({ database: 'test-db' })
+        .mockResolvedValueOnce({
+          backupDir: './backups',
+          parallelism: 5,
+          timeout: 60000,
+        });
 
       await getBackupConfig({});
 
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
-      const timeoutPrompt = calls.find((call: { name?: string }) => call.name === 'timeout');
+      // Find the call that has timeout prompt
+      const allCalls = vi.mocked(prompts.default).mock.calls;
+      let timeoutPrompt: { min?: number } | undefined;
+
+      for (const call of allCalls) {
+        const questions = call[0];
+        if (Array.isArray(questions)) {
+          const found = questions.find((q: { name?: string }) => q.name === 'timeout');
+          if (found) {
+            timeoutPrompt = found;
+            break;
+          }
+        }
+      }
 
       expect(timeoutPrompt).toBeDefined();
-      expect(timeoutPrompt.min).toBe(10000);
+      expect(timeoutPrompt!.min).toBe(10000);
     });
 
     it('should validate URL format', async () => {
       const prompts = await import('prompts');
-      vi.mocked(prompts.default).mockResolvedValue({
-        url: 'http://admin:password@localhost:5984',
-        database: 'test-db',
-        backupDir: './backups',
-        parallelism: 5,
-        timeout: 60000,
-      });
+      vi.mocked(prompts.default)
+        .mockResolvedValueOnce({ url: 'http://admin:password@localhost:5984' })
+        .mockResolvedValueOnce({ database: 'test-db' })
+        .mockResolvedValueOnce({
+          backupDir: './backups',
+          parallelism: 5,
+          timeout: 60000,
+        });
 
       await getBackupConfig({});
 
-      const calls = vi.mocked(prompts.default).mock.calls[0][0] as unknown[];
-      const urlPrompt = calls.find((call: { name?: string }) => call.name === 'url');
+      // URL prompt is the first call
+      const firstCall = vi.mocked(prompts.default).mock.calls[0][0] as {
+        name?: string;
+        validate?: (value: string) => string | boolean;
+      };
 
-      expect(urlPrompt).toBeDefined();
-      expect(urlPrompt.validate).toBeDefined();
+      expect(firstCall.name).toBe('url');
+      expect(firstCall.validate).toBeDefined();
 
       // Test validation function
-      expect(urlPrompt.validate('')).toBe('URL is required');
-      expect(urlPrompt.validate('not-a-url')).toBe('Invalid URL format');
-      expect(urlPrompt.validate('http://localhost:5984')).toBe(true);
+      expect(firstCall.validate!('')).toBe('URL is required');
+      expect(firstCall.validate!('not-a-url')).toBe('Invalid URL format');
+      expect(firstCall.validate!('http://localhost:5984')).toBe(true);
     });
   });
 });

@@ -51,8 +51,15 @@ interface BackupFileWithDate extends BackupFileInfo {
 interface RetentionResult {
   kept: BackupFileWithDate[];
   deleted: BackupFileWithDate[];
-  errors: { file: string; error: string }[];
+  errors: Array<{ file: string; error: string }>;
   freedBytes: number;
+}
+
+interface CategorizedBackups {
+  daily: BackupFileWithDate[];
+  weekly: BackupFileWithDate[];
+  monthly: BackupFileWithDate[];
+  toDelete: BackupFileWithDate[];
 }
 
 /**
@@ -120,75 +127,160 @@ function getMonthKey(date: Date): string {
 }
 
 /**
+ * Calculate cutoff dates for retention tiers
+ */
+function calculateCutoffs(config: RetentionConfig): {
+  daily: Date;
+  weekly: Date;
+  monthly: Date;
+} {
+  const now = new Date();
+  return {
+    daily: new Date(now.getTime() - config.dailyRetentionDays * 24 * 60 * 60 * 1000),
+    weekly: new Date(now.getTime() - config.weeklyRetentionWeeks * 7 * 24 * 60 * 60 * 1000),
+    monthly: new Date(now.getTime() - config.monthlyRetentionMonths * 30 * 24 * 60 * 60 * 1000),
+  };
+}
+
+/**
+ * Categorize a backup into its retention tier
+ */
+function categorizeBackup(
+  backup: BackupFileWithDate,
+  cutoffs: { daily: Date; weekly: Date; monthly: Date },
+  keptWeeks: Set<string>,
+  keptMonths: Set<string>,
+): 'daily' | 'weekly' | 'monthly' | 'delete' {
+  // Daily tier: keep all backups within daily retention period
+  if (backup.date >= cutoffs.daily) {
+    keptWeeks.add(backup.weekKey);
+    keptMonths.add(backup.monthKey);
+    return 'daily';
+  }
+
+  // Weekly tier: keep oldest backup from each week within weekly retention period
+  if (backup.date >= cutoffs.weekly) {
+    if (!keptWeeks.has(backup.weekKey)) {
+      keptWeeks.add(backup.weekKey);
+      keptMonths.add(backup.monthKey);
+      return 'weekly';
+    }
+    return 'delete';
+  }
+
+  // Monthly tier: keep oldest backup from each month within monthly retention period
+  if (backup.date >= cutoffs.monthly) {
+    if (!keptMonths.has(backup.monthKey)) {
+      keptMonths.add(backup.monthKey);
+      return 'monthly';
+    }
+    return 'delete';
+  }
+
+  // Beyond all retention periods
+  return 'delete';
+}
+
+/**
  * Categorize backups by retention tier
  */
 function categorizeBackups(
   backups: BackupFileWithDate[],
   config: RetentionConfig,
-): {
-  daily: BackupFileWithDate[];
-  weekly: BackupFileWithDate[];
-  monthly: BackupFileWithDate[];
-  toDelete: BackupFileWithDate[];
-} {
-  const now = new Date();
-  const dailyCutoff = new Date(now.getTime() - config.dailyRetentionDays * 24 * 60 * 60 * 1000);
-  const weeklyCutoff = new Date(
-    now.getTime() - config.weeklyRetentionWeeks * 7 * 24 * 60 * 60 * 1000,
-  );
-  const monthlyCutoff = new Date(
-    now.getTime() - config.monthlyRetentionMonths * 30 * 24 * 60 * 60 * 1000,
-  );
+): CategorizedBackups {
+  const cutoffs = calculateCutoffs(config);
 
   // Sort by date, newest first
   const sorted = [...backups].sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  const daily: BackupFileWithDate[] = [];
-  const weekly: BackupFileWithDate[] = [];
-  const monthly: BackupFileWithDate[] = [];
-  const toDelete: BackupFileWithDate[] = [];
+  const result: CategorizedBackups = {
+    daily: [],
+    weekly: [],
+    monthly: [],
+    toDelete: [],
+  };
 
   // Track which weeks and months we've already kept a backup for
   const keptWeeks = new Set<string>();
   const keptMonths = new Set<string>();
 
   for (const backup of sorted) {
-    // Daily tier: keep all backups within daily retention period
-    if (backup.date >= dailyCutoff) {
-      daily.push(backup);
-      keptWeeks.add(backup.weekKey);
-      keptMonths.add(backup.monthKey);
-      continue;
+    const tier = categorizeBackup(backup, cutoffs, keptWeeks, keptMonths);
+    if (tier === 'delete') {
+      result.toDelete.push(backup);
+    } else {
+      result[tier].push(backup);
     }
-
-    // Weekly tier: keep oldest backup from each week within weekly retention period
-    if (backup.date >= weeklyCutoff) {
-      if (!keptWeeks.has(backup.weekKey)) {
-        weekly.push(backup);
-        keptWeeks.add(backup.weekKey);
-        keptMonths.add(backup.monthKey);
-      } else {
-        toDelete.push(backup);
-      }
-      continue;
-    }
-
-    // Monthly tier: keep oldest backup from each month within monthly retention period
-    if (backup.date >= monthlyCutoff) {
-      if (!keptMonths.has(backup.monthKey)) {
-        monthly.push(backup);
-        keptMonths.add(backup.monthKey);
-      } else {
-        toDelete.push(backup);
-      }
-      continue;
-    }
-
-    // Beyond all retention periods
-    toDelete.push(backup);
   }
 
-  return { daily, weekly, monthly, toDelete };
+  return result;
+}
+
+/**
+ * Delete a backup file and its log file
+ */
+function deleteBackupFile(
+  backup: BackupFileWithDate,
+  dryRun: boolean,
+): { success: boolean; error?: string } {
+  if (dryRun) {
+    return { success: true };
+  }
+
+  try {
+    fs.unlinkSync(backup.path);
+
+    // Also delete the log file if it exists
+    const logFile = `${backup.path}.log`;
+    if (fs.existsSync(logFile)) {
+      fs.unlinkSync(logFile);
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Apply retention policy to a single database's backups
+ */
+function applyPolicyToDatabase(
+  dbBackups: BackupFileWithDate[],
+  config: RetentionConfig,
+  result: RetentionResult,
+): void {
+  const categorized = categorizeBackups(dbBackups, config);
+
+  // Keep daily, weekly, and monthly backups
+  result.kept.push(...categorized.daily, ...categorized.weekly, ...categorized.monthly);
+
+  // Delete expired backups
+  for (const backup of categorized.toDelete) {
+    const deleteResult = deleteBackupFile(backup, config.dryRun);
+    if (deleteResult.success) {
+      result.deleted.push(backup);
+      result.freedBytes += backup.size;
+    } else if (deleteResult.error) {
+      result.errors.push({ file: backup.path, error: deleteResult.error });
+    }
+  }
+}
+
+/**
+ * Group backups by database
+ */
+function groupByDatabase(backups: BackupFileWithDate[]): Map<string, BackupFileWithDate[]> {
+  const byDatabase = new Map<string, BackupFileWithDate[]>();
+  for (const backup of backups) {
+    const existing = byDatabase.get(backup.database) || [];
+    existing.push(backup);
+    byDatabase.set(backup.database, existing);
+  }
+  return byDatabase;
 }
 
 /**
@@ -226,48 +318,37 @@ export async function applyRetentionPolicy(
   }
 
   // Group by database and apply policy per database
-  const byDatabase = new Map<string, BackupFileWithDate[]>();
-  for (const backup of backupsWithDates) {
-    const existing = byDatabase.get(backup.database) || [];
-    existing.push(backup);
-    byDatabase.set(backup.database, existing);
-  }
+  const byDatabase = groupByDatabase(backupsWithDates);
 
-  // Apply retention policy to each database's backups
-  for (const [_database, dbBackups] of byDatabase) {
-    const categorized = categorizeBackups(dbBackups, config);
-
-    // Keep daily, weekly, and monthly backups
-    result.kept.push(...categorized.daily, ...categorized.weekly, ...categorized.monthly);
-
-    // Delete expired backups
-    for (const backup of categorized.toDelete) {
-      if (config.dryRun) {
-        result.deleted.push(backup);
-        result.freedBytes += backup.size;
-      } else {
-        try {
-          fs.unlinkSync(backup.path);
-
-          // Also delete the log file if it exists
-          const logFile = `${backup.path}.log`;
-          if (fs.existsSync(logFile)) {
-            fs.unlinkSync(logFile);
-          }
-
-          result.deleted.push(backup);
-          result.freedBytes += backup.size;
-        } catch (error) {
-          result.errors.push({
-            file: backup.path,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    }
+  for (const [, dbBackups] of byDatabase) {
+    applyPolicyToDatabase(dbBackups, config, result);
   }
 
   return result;
+}
+
+/**
+ * Display deleted backups list
+ */
+function displayDeletedList(deleted: BackupFileWithDate[]): void {
+  if (deleted.length <= 10) {
+    deleted.forEach((backup) => {
+      console.log(
+        chalk.gray(
+          `   - ${path.basename(backup.path)} (${backup.date.toISOString().split('T')[0]})`,
+        ),
+      );
+    });
+  } else {
+    deleted.slice(0, 5).forEach((backup) => {
+      console.log(
+        chalk.gray(
+          `   - ${path.basename(backup.path)} (${backup.date.toISOString().split('T')[0]})`,
+        ),
+      );
+    });
+    console.log(chalk.gray(`   ... and ${deleted.length - 5} more`));
+  }
 }
 
 /**
@@ -278,15 +359,11 @@ function displaySummary(result: RetentionResult, config: RetentionPolicyConfig):
   console.log('─'.repeat(50));
 
   // Group kept backups by tier
-  const now = new Date();
-  const dailyCutoff = new Date(now.getTime() - config.dailyRetentionDays * 24 * 60 * 60 * 1000);
-  const weeklyCutoff = new Date(
-    now.getTime() - config.weeklyRetentionWeeks * 7 * 24 * 60 * 60 * 1000,
-  );
+  const cutoffs = calculateCutoffs(config);
 
-  const dailyKept = result.kept.filter((b) => b.date >= dailyCutoff);
-  const weeklyKept = result.kept.filter((b) => b.date < dailyCutoff && b.date >= weeklyCutoff);
-  const monthlyKept = result.kept.filter((b) => b.date < weeklyCutoff);
+  const dailyKept = result.kept.filter((b) => b.date >= cutoffs.daily);
+  const weeklyKept = result.kept.filter((b) => b.date < cutoffs.daily && b.date >= cutoffs.weekly);
+  const monthlyKept = result.kept.filter((b) => b.date < cutoffs.weekly);
 
   console.log(chalk.green(`\n✅ Kept: ${result.kept.length} backup(s)`));
   console.log(`   Daily (last ${config.dailyRetentionDays} days): ${dailyKept.length}`);
@@ -294,33 +371,12 @@ function displaySummary(result: RetentionResult, config: RetentionPolicyConfig):
   console.log(`   Monthly (last ${config.monthlyRetentionMonths} months): ${monthlyKept.length}`);
 
   if (result.deleted.length > 0) {
-    console.log(
-      chalk.yellow(
-        `\n${config.dryRun ? '🔍 Would delete' : '🗑️  Deleted'}: ${result.deleted.length} backup(s)`,
-      ),
-    );
-    console.log(
-      `   Space ${config.dryRun ? 'to be freed' : 'freed'}: ${formatFileSize(result.freedBytes)}`,
-    );
-
-    if (result.deleted.length <= 10) {
-      result.deleted.forEach((backup) => {
-        console.log(
-          chalk.gray(
-            `   - ${path.basename(backup.path)} (${backup.date.toISOString().split('T')[0]})`,
-          ),
-        );
-      });
-    } else {
-      result.deleted.slice(0, 5).forEach((backup) => {
-        console.log(
-          chalk.gray(
-            `   - ${path.basename(backup.path)} (${backup.date.toISOString().split('T')[0]})`,
-          ),
-        );
-      });
-      console.log(chalk.gray(`   ... and ${result.deleted.length - 5} more`));
-    }
+    const actionWord = config.dryRun ? 'Would delete' : 'Deleted';
+    const icon = config.dryRun ? '🔍' : '🗑️ ';
+    console.log(chalk.yellow(`\n${icon} ${actionWord}: ${result.deleted.length} backup(s)`));
+    const freedWord = config.dryRun ? 'to be freed' : 'freed';
+    console.log(`   Space ${freedWord}: ${formatFileSize(result.freedBytes)}`);
+    displayDeletedList(result.deleted);
   }
 
   if (result.errors.length > 0) {
@@ -335,6 +391,74 @@ function displaySummary(result: RetentionResult, config: RetentionPolicyConfig):
   }
 
   console.log();
+}
+
+/**
+ * Display verbose backup details
+ */
+function displayVerboseDetails(kept: BackupFileWithDate[]): void {
+  console.log(chalk.bold('Kept Backups:'));
+
+  // Group by database
+  const byDatabase = groupByDatabase(kept);
+
+  for (const [database, backups] of byDatabase) {
+    console.log(`\n  ${chalk.cyan(database)} (${backups.length} backups):`);
+    backups
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, 5)
+      .forEach((backup) => {
+        console.log(
+          chalk.gray(`    - ${path.basename(backup.path)} (${formatFileSize(backup.size)})`),
+        );
+      });
+    if (backups.length > 5) {
+      console.log(chalk.gray(`    ... and ${backups.length - 5} more`));
+    }
+  }
+  console.log();
+}
+
+/**
+ * Run retention policy with CLI options
+ */
+async function runRetentionPolicy(options: {
+  backupDir: string;
+  daily: string;
+  weekly: string;
+  monthly: string;
+  dryRun?: boolean;
+  verbose?: boolean;
+}): Promise<void> {
+  console.log(chalk.blue('\n📦 Backup Retention Policy Manager\n'));
+
+  const config: RetentionPolicyConfig = {
+    backupDir: options.backupDir,
+    dailyRetentionDays: parseInt(options.daily, 10),
+    weeklyRetentionWeeks: parseInt(options.weekly, 10),
+    monthlyRetentionMonths: parseInt(options.monthly, 10),
+    dryRun: options.dryRun || false,
+  };
+
+  console.log(chalk.bold('Configuration:'));
+  console.log(`  Backup Directory: ${chalk.cyan(config.backupDir)}`);
+  console.log(`  Daily Retention: ${chalk.cyan(config.dailyRetentionDays)} days`);
+  console.log(`  Weekly Retention: ${chalk.cyan(config.weeklyRetentionWeeks)} weeks`);
+  console.log(`  Monthly Retention: ${chalk.cyan(config.monthlyRetentionMonths)} months`);
+  console.log(`  Mode: ${config.dryRun ? chalk.yellow('Dry Run') : chalk.green('Live')}`);
+
+  // Check if backup directory exists
+  if (!fs.existsSync(config.backupDir)) {
+    console.log(chalk.yellow(`\n⚠️  Backup directory does not exist: ${config.backupDir}`));
+    return;
+  }
+
+  const result = await applyRetentionPolicy(config);
+  displaySummary(result, config);
+
+  if (options.verbose && result.kept.length > 0) {
+    displayVerboseDetails(result.kept);
+  }
 }
 
 // CLI setup
@@ -352,59 +476,7 @@ program
   .option('--verbose', 'show detailed output')
   .action(async (options) => {
     try {
-      console.log(chalk.blue('\n📦 Backup Retention Policy Manager\n'));
-
-      const config: RetentionPolicyConfig = {
-        backupDir: options.backupDir,
-        dailyRetentionDays: parseInt(options.daily, 10),
-        weeklyRetentionWeeks: parseInt(options.weekly, 10),
-        monthlyRetentionMonths: parseInt(options.monthly, 10),
-        dryRun: options.dryRun || false,
-      };
-
-      console.log(chalk.bold('Configuration:'));
-      console.log(`  Backup Directory: ${chalk.cyan(config.backupDir)}`);
-      console.log(`  Daily Retention: ${chalk.cyan(config.dailyRetentionDays)} days`);
-      console.log(`  Weekly Retention: ${chalk.cyan(config.weeklyRetentionWeeks)} weeks`);
-      console.log(`  Monthly Retention: ${chalk.cyan(config.monthlyRetentionMonths)} months`);
-      console.log(`  Mode: ${config.dryRun ? chalk.yellow('Dry Run') : chalk.green('Live')}`);
-
-      // Check if backup directory exists
-      if (!fs.existsSync(config.backupDir)) {
-        console.log(chalk.yellow(`\n⚠️  Backup directory does not exist: ${config.backupDir}`));
-        return;
-      }
-
-      const result = await applyRetentionPolicy(config);
-      displaySummary(result, config);
-
-      if (options.verbose && result.kept.length > 0) {
-        console.log(chalk.bold('Kept Backups:'));
-
-        // Group by database
-        const byDatabase = new Map<string, BackupFileWithDate[]>();
-        for (const backup of result.kept) {
-          const existing = byDatabase.get(backup.database) || [];
-          existing.push(backup);
-          byDatabase.set(backup.database, existing);
-        }
-
-        for (const [database, backups] of byDatabase) {
-          console.log(`\n  ${chalk.cyan(database)} (${backups.length} backups):`);
-          backups
-            .sort((a, b) => b.date.getTime() - a.date.getTime())
-            .slice(0, 5)
-            .forEach((backup) => {
-              console.log(
-                chalk.gray(`    - ${path.basename(backup.path)} (${formatFileSize(backup.size)})`),
-              );
-            });
-          if (backups.length > 5) {
-            console.log(chalk.gray(`    ... and ${backups.length - 5} more`));
-          }
-        }
-        console.log();
-      }
+      await runRetentionPolicy(options);
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
       process.exit(1);
