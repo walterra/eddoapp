@@ -9,7 +9,7 @@ interface AuthToken {
 
 interface AuthContextValue {
   authToken: AuthToken | null;
-  authenticate: (username: string, password: string) => Promise<boolean>;
+  authenticate: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   register: (
     username: string,
     email: string,
@@ -37,7 +37,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const authenticate = async (username: string, password: string): Promise<boolean> => {
+  const authenticate = async (
+    username: string,
+    password: string,
+    rememberMe: boolean = false,
+  ): Promise<boolean> => {
     setIsAuthenticating(true);
     try {
       const response = await fetch('/auth/login', {
@@ -45,7 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, rememberMe }),
       });
 
       if (response.ok) {

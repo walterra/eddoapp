@@ -1,8 +1,8 @@
-import { Button, Card, Label, TextInput } from 'flowbite-react';
+import { Button, Card, Checkbox, Label, TextInput } from 'flowbite-react';
 import { useState } from 'react';
 
 interface LoginProps {
-  onLogin: (username: string, password: string) => Promise<boolean>;
+  onLogin: (username: string, password: string, rememberMe: boolean) => Promise<boolean>;
   isAuthenticating: boolean;
   onGoToRegister: () => void;
 }
@@ -10,6 +10,7 @@ interface LoginProps {
 export function Login({ onLogin, isAuthenticating, onGoToRegister }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,7 +22,7 @@ export function Login({ onLogin, isAuthenticating, onGoToRegister }: LoginProps)
       return;
     }
 
-    const success = await onLogin(username, password);
+    const success = await onLogin(username, password, rememberMe);
     if (!success) {
       setError('Invalid credentials');
     }
@@ -72,6 +73,16 @@ export function Login({ onLogin, isAuthenticating, onGoToRegister }: LoginProps)
               type="password"
               value={password}
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={rememberMe}
+              disabled={isAuthenticating}
+              id="rememberMe"
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
+            <Label htmlFor="rememberMe">Remember me</Label>
           </div>
 
           <Button className="w-full" color="blue" disabled={isAuthenticating} type="submit">

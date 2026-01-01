@@ -4,7 +4,6 @@ All items are synced with GitHub Issues.
 
 ## Features
 
-- Remember me for login - [#327](https://github.com/walterra/eddoapp/issues/327)
 - Improve briefing prompt to not repeat itself - [#328](https://github.com/walterra/eddoapp/issues/328)
 - Workflow to proceed with read-later items - [#329](https://github.com/walterra/eddoapp/issues/329)
 - Due date quick actions / bulk actions - [#330](https://github.com/walterra/eddoapp/issues/330)
