@@ -38,6 +38,48 @@ export class DatabaseSetup {
   }
 
   /**
+   * Check if error is a CouchDB conflict (409)
+   */
+  private isConflictError(error: unknown): boolean {
+    return (
+      error !== null &&
+      typeof error === 'object' &&
+      'statusCode' in error &&
+      error.statusCode === 409
+    );
+  }
+
+  /**
+   * Update existing design document with current revision
+   */
+  private async updateExistingDesignDoc(
+    designDoc: DesignDocument,
+    attempt: number,
+    maxRetries: number,
+  ): Promise<boolean> {
+    try {
+      const existingDoc = await this.db.get(designDoc._id);
+      const updatedDoc = {
+        ...designDoc,
+        _rev: (existingDoc as { _rev: string })._rev,
+      };
+      await this.db.insert(updatedDoc);
+      console.log(`🔄 Updated design document: ${designDoc._id}`);
+      return true;
+    } catch (updateError: unknown) {
+      if (this.isConflictError(updateError) && attempt < maxRetries) {
+        console.warn(
+          `⚠️  Document conflict for ${designDoc._id}, attempt ${attempt}/${maxRetries}, retrying...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+        return false;
+      }
+      console.error(`❌ Failed to update design document ${designDoc._id}:`, updateError);
+      throw updateError;
+    }
+  }
+
+  /**
    * Create or update a single design document with retry logic
    */
   async createDesignDocument(designDoc: DesignDocument, maxRetries: number = 3): Promise<void> {
@@ -47,45 +89,13 @@ export class DatabaseSetup {
         console.log(`✅ Created design document: ${designDoc._id}`);
         return;
       } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          error.statusCode === 409
-        ) {
-          // Design document exists, try to update it
-          try {
-            const existingDoc = await this.db.get(designDoc._id);
-            const updatedDoc = {
-              ...designDoc,
-              _rev: (existingDoc as { _rev: string })._rev,
-            };
-            await this.db.insert(updatedDoc);
-            console.log(`🔄 Updated design document: ${designDoc._id}`);
-            return;
-          } catch (updateError: unknown) {
-            if (
-              updateError &&
-              typeof updateError === 'object' &&
-              'statusCode' in updateError &&
-              updateError.statusCode === 409 &&
-              attempt < maxRetries
-            ) {
-              // Document update conflict - retry after delay
-              console.warn(
-                `⚠️  Document conflict for ${designDoc._id}, attempt ${attempt}/${maxRetries}, retrying...`,
-              );
-              await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
-              continue;
-            } else {
-              console.error(`❌ Failed to update design document ${designDoc._id}:`, updateError);
-              throw updateError;
-            }
-          }
-        } else {
-          console.error(`❌ Failed to create design document ${designDoc._id}:`, error);
-          throw error;
+        if (this.isConflictError(error)) {
+          const updated = await this.updateExistingDesignDoc(designDoc, attempt, maxRetries);
+          if (updated) return;
+          continue;
         }
+        console.error(`❌ Failed to create design document ${designDoc._id}:`, error);
+        throw error;
       }
     }
   }
