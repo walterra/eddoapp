@@ -1,5 +1,30 @@
 # Todo Items
 
+## Design Improvements
+
+### Phase 1: Foundation
+
+- Define design tokens (colors, spacing, typography scale) - [#351](https://github.com/walterra/eddoapp/issues/351)
+- Implement dark mode as first-class citizen - [#352](https://github.com/walterra/eddoapp/issues/352)
+- Add consistent hover/focus states to all interactive elements - [#353](https://github.com/walterra/eddoapp/issues/353)
+- Increase whitespace throughout the interface - [#354](https://github.com/walterra/eddoapp/issues/354)
+- Audit and unify component consistency - [#364](https://github.com/walterra/eddoapp/issues/364)
+
+### Phase 2: Polish
+
+- Add micro-interactions for todo completion and time tracking - [#355](https://github.com/walterra/eddoapp/issues/355)
+- Implement skeleton loaders for data fetching - [#356](https://github.com/walterra/eddoapp/issues/356)
+- Refine Kanban card design (shadows, spacing, typography) - [#357](https://github.com/walterra/eddoapp/issues/357)
+- Add command palette (Cmd+K) - [#358](https://github.com/walterra/eddoapp/issues/358)
+- Implement optimistic UI updates for todo actions - [#363](https://github.com/walterra/eddoapp/issues/363)
+
+### Phase 3: Delight
+
+- Animate view transitions (kanban ↔ table) - [#359](https://github.com/walterra/eddoapp/issues/359)
+- Design meaningful empty states - [#360](https://github.com/walterra/eddoapp/issues/360)
+- Add keyboard shortcut hints throughout UI - [#361](https://github.com/walterra/eddoapp/issues/361)
+- Consider collapsible sidebar navigation - [#362](https://github.com/walterra/eddoapp/issues/362)
+
 ## Features
 
 - Improve briefing prompt to not repeat itself - [#328](https://github.com/walterra/eddoapp/issues/328)

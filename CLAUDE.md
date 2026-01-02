@@ -308,6 +308,39 @@ Comprehensive GitHub API rate limit management to prevent errors and provide bet
 
 Keep `README.md` up to date when making changes. The README is end-user focused (installation, usage, configuration) while CLAUDE.md is agent-focused (debugging, restrictions, architecture).
 
+## UI/UX Design Principles
+
+Full documentation: `spec/design-principles.md`
+
+**Core Philosophy:**
+
+- Quality is the strategy, not a tradeoff against speed
+- Design for power users first — don't dumb down for imaginary beginners
+- Every element must earn its place — decoration without purpose is noise
+
+**Visual Design:**
+
+- Hierarchy through contrast (font weight, color saturation, spacing) — not borders
+- Use design tokens: 5-7 font sizes, spacing scale (4/8/12/16/24/32/48/64), semantic colors
+- Typography is 90% of the interface — use Inter, establish clear hierarchy
+- Dark mode is expected for productivity tools, not an afterthought
+- Whitespace is a feature — let content breathe
+
+**Interaction Design:**
+
+- Every interaction deserves feedback (hover, focus, active states)
+- Motion with intention: guide attention, provide continuity, 200-300ms max
+- Speed is a feature — optimistic updates, skeleton loaders, no layout shifts
+- Keyboard-first: command palette (Cmd+K), shortcuts for common actions
+
+**Quality Test (before shipping):**
+
+1. Does this earn its place?
+2. Does this feel fast?
+3. Is there feedback?
+4. Is this consistent?
+5. Would best-in-class products ship this?
+
 ## Technical Writing Style
 
 Technical writer for documentation and JSDoc comments, direct factual statements only, no filler words (very/really/quite/just/simply/basically/actually/literally/comprehensive), no hedging (probably/maybe/might/could/should), no obvious phrases (please note/it's important to/keep in mind), start with present tense verbs (fetches/calculates/returns), state what not how, one line when possible, omit self-evident type information, active voice only, remove redundant phrases (in order to→to, completely finished→finished), every adjective must add information, sentences under 20 words, if removing a word preserves meaning remove it, strip all decoration keep only information.
@@ -330,7 +363,7 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 - Tests use describe/it pattern with Vitest
 - Place test files alongside implementation with .test.ts/.test.tsx extension
 - ESLint strict ruleset with no-explicit-any rule enabled
-- ESLint complexity guards as warnings (max-lines:300, max-lines-per-function:50, complexity:10, max-depth:3, max-params:4, max-nested-callbacks:4, max-statements:30) - set to warn to allow gradual improvement
+- ESLint complexity guards as errors (max-lines:300, max-lines-per-function:50, complexity:10, max-depth:3, max-params:4, max-nested-callbacks:4, max-statements:30)
 - Prettier formatting with 2-space indent and 100-char line width
 - Single quotes, trailing commas
 - Semantic versioning with Changesets following conventional commits
