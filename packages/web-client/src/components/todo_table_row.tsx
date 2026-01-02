@@ -108,12 +108,8 @@ const RowCells: FC<RowCellsProps> = ({
   </>
 );
 
-const TodoRowInner: FC<TodoRowProps> = ({
-  todo,
-  selectedColumns,
-  activeDate,
-  timeTrackingActive,
-}) => {
+/** Hook for todo row state and handlers */
+const useTodoRowState = (todo: Todo, activeDate: string) => {
   const toggleCompletion = useToggleCompletionMutation();
   const toggleTimeTracking = useToggleTimeTrackingMutation();
   const [showEditModal, setShowEditModal] = useState(false);
@@ -122,7 +118,6 @@ const TodoRowInner: FC<TodoRowProps> = ({
   const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
   const thisButtonActive = Object.values(todo.active).some((d) => d === null);
   const { counter: activeCounter } = useActiveTimer(thisButtonActive);
-
   const activeDuration = useMemo(
     () => getActiveDuration(todo.active, activeDate),
     [thisButtonActive, activeDate, activeCounter],
@@ -148,26 +143,50 @@ const TodoRowInner: FC<TodoRowProps> = ({
     }
   };
 
+  return {
+    showEditModal,
+    setShowEditModal,
+    error,
+    isUpdating,
+    thisButtonActive,
+    activeDuration,
+    handleToggleCheckbox,
+    handleToggleTimeTracking,
+  };
+};
+
+const TodoRowInner: FC<TodoRowProps> = ({
+  todo,
+  selectedColumns,
+  activeDate,
+  timeTrackingActive,
+}) => {
+  const state = useTodoRowState(todo, activeDate);
+
   return (
     <>
       <tr className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700">
         <RowCells
-          activeDuration={activeDuration}
+          activeDuration={state.activeDuration}
           columns={reorderColumnsWithStatusFirst(selectedColumns)}
-          error={error}
-          isUpdating={isUpdating}
-          onToggleCheckbox={handleToggleCheckbox}
+          error={state.error}
+          isUpdating={state.isUpdating}
+          onToggleCheckbox={state.handleToggleCheckbox}
           todo={todo}
         />
         <TodoRowActions
-          isUpdating={isUpdating}
-          onEdit={() => setShowEditModal(true)}
-          onToggleTimeTracking={handleToggleTimeTracking}
-          thisButtonActive={thisButtonActive}
+          isUpdating={state.isUpdating}
+          onEdit={() => state.setShowEditModal(true)}
+          onToggleTimeTracking={state.handleToggleTimeTracking}
+          thisButtonActive={state.thisButtonActive}
           timeTrackingActive={timeTrackingActive}
         />
       </tr>
-      <TodoEditModal onClose={() => setShowEditModal(false)} show={showEditModal} todo={todo} />
+      <TodoEditModal
+        onClose={() => state.setShowEditModal(false)}
+        show={state.showEditModal}
+        todo={todo}
+      />
     </>
   );
 };

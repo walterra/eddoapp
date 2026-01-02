@@ -230,9 +230,89 @@ function displayResults(results: BackupResult[]): void {
   );
 }
 
-// CLI setup
-const program = new Command();
+interface CliOptions {
+  interval: string;
+  backupDir: string;
+  pattern: string;
+  verify: boolean;
+  retention: boolean;
+  retentionDaily: string;
+  retentionWeekly: string;
+  retentionMonthly: string;
+  runOnce?: boolean;
+}
 
+/** Display CLI configuration */
+function displayConfig(options: CliOptions, intervalMs: number): void {
+  console.log(chalk.blue('\n📦 CouchDB Automated Backup Scheduler\n'));
+  console.log(chalk.bold('Configuration:'));
+  console.log(
+    `  Interval: ${chalk.cyan(options.interval)} (${(intervalMs / (1000 * 60 * 60)).toFixed(1)} hours)`,
+  );
+  console.log(`  Backup Directory: ${chalk.cyan(options.backupDir)}`);
+  console.log(`  Database Pattern: ${chalk.cyan(options.pattern)}`);
+  console.log(
+    `  Verification: ${options.verify ? chalk.green('enabled') : chalk.yellow('disabled')}`,
+  );
+  console.log(
+    `  Retention: ${options.retention ? chalk.green('enabled') : chalk.yellow('disabled')}`,
+  );
+  if (options.retention) {
+    console.log(`    Daily: ${chalk.cyan(options.retentionDaily)} days`);
+    console.log(`    Weekly: ${chalk.cyan(options.retentionWeekly)} weeks`);
+    console.log(`    Monthly: ${chalk.cyan(options.retentionMonthly)} months`);
+  }
+  console.log();
+}
+
+/** Create scheduler from CLI options */
+function createSchedulerFromOptions(options: CliOptions, intervalMs: number): BackupScheduler {
+  return createBackupScheduler({
+    intervalMs,
+    backupDir: options.backupDir,
+    databasePattern: options.pattern,
+    verifyAfterBackup: options.verify,
+    applyRetention: options.retention,
+    retentionConfig: {
+      dailyRetentionDays: parseInt(options.retentionDaily, 10),
+      weeklyRetentionWeeks: parseInt(options.retentionWeekly, 10),
+      monthlyRetentionMonths: parseInt(options.retentionMonthly, 10),
+      dryRun: false,
+    },
+  });
+}
+
+/** Setup shutdown handlers */
+function setupShutdownHandlers(scheduler: BackupScheduler): void {
+  const shutdown = () => {
+    console.log(chalk.yellow('\n\nShutting down backup scheduler...'));
+    scheduler.stop();
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+/** Run CLI action */
+async function runCli(options: CliOptions): Promise<void> {
+  const intervalMs = parseInterval(options.interval);
+  displayConfig(options, intervalMs);
+  const scheduler = createSchedulerFromOptions(options, intervalMs);
+
+  if (options.runOnce) {
+    console.log(chalk.yellow('Running single backup cycle...\n'));
+    const results = await scheduler.runBackupCycle();
+    displayResults(results);
+    process.exit(results.filter((r) => !r.success).length > 0 ? 1 : 0);
+  } else {
+    setupShutdownHandlers(scheduler);
+    scheduler.start();
+    console.log(chalk.green('Backup scheduler is running. Press Ctrl+C to stop.\n'));
+    await new Promise(() => {});
+  }
+}
+
+const program = new Command();
 program
   .name('backup-scheduler')
   .description('Automated CouchDB backup scheduler with retention policy')
@@ -248,66 +328,7 @@ program
   .option('--run-once', 'run a single backup cycle and exit')
   .action(async (options) => {
     try {
-      const intervalMs = parseInterval(options.interval);
-
-      console.log(chalk.blue('\n📦 CouchDB Automated Backup Scheduler\n'));
-      console.log(chalk.bold('Configuration:'));
-      console.log(
-        `  Interval: ${chalk.cyan(options.interval)} (${(intervalMs / (1000 * 60 * 60)).toFixed(1)} hours)`,
-      );
-      console.log(`  Backup Directory: ${chalk.cyan(options.backupDir)}`);
-      console.log(`  Database Pattern: ${chalk.cyan(options.pattern)}`);
-      console.log(
-        `  Verification: ${options.verify ? chalk.green('enabled') : chalk.yellow('disabled')}`,
-      );
-      console.log(
-        `  Retention: ${options.retention ? chalk.green('enabled') : chalk.yellow('disabled')}`,
-      );
-
-      if (options.retention) {
-        console.log(`    Daily: ${chalk.cyan(options.retentionDaily)} days`);
-        console.log(`    Weekly: ${chalk.cyan(options.retentionWeekly)} weeks`);
-        console.log(`    Monthly: ${chalk.cyan(options.retentionMonthly)} months`);
-      }
-      console.log();
-
-      const scheduler = createBackupScheduler({
-        intervalMs,
-        backupDir: options.backupDir,
-        databasePattern: options.pattern,
-        verifyAfterBackup: options.verify,
-        applyRetention: options.retention,
-        retentionConfig: {
-          dailyRetentionDays: parseInt(options.retentionDaily, 10),
-          weeklyRetentionWeeks: parseInt(options.retentionWeekly, 10),
-          monthlyRetentionMonths: parseInt(options.retentionMonthly, 10),
-          dryRun: false,
-        },
-      });
-
-      if (options.runOnce) {
-        console.log(chalk.yellow('Running single backup cycle...\n'));
-        const results = await scheduler.runBackupCycle();
-        displayResults(results);
-        const failed = results.filter((r) => !r.success).length;
-        process.exit(failed > 0 ? 1 : 0);
-      } else {
-        process.on('SIGINT', () => {
-          console.log(chalk.yellow('\n\nShutting down backup scheduler...'));
-          scheduler.stop();
-          process.exit(0);
-        });
-
-        process.on('SIGTERM', () => {
-          console.log(chalk.yellow('\n\nShutting down backup scheduler...'));
-          scheduler.stop();
-          process.exit(0);
-        });
-
-        scheduler.start();
-        console.log(chalk.green('Backup scheduler is running. Press Ctrl+C to stop.\n'));
-        await new Promise(() => {});
-      }
+      await runCli(options);
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
       process.exit(1);

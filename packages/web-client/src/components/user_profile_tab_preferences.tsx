@@ -147,55 +147,53 @@ const recapConfig: ScheduleSectionConfig = {
   timeHint: 'Your preferred time for receiving daily recaps',
 };
 
-export const PreferencesTab: FC<PreferencesTabProps> = ({
-  isLoading,
-  preferencesState,
-  onDailyBriefingChange,
-  onBriefingTimeChange,
-  onPrintBriefingChange,
-  onDailyRecapChange,
-  onRecapTimeChange,
-  onPrintRecapChange,
-  onSave,
-}) => (
-  <Card>
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900">Preferences</h2>
+const buildBriefingSection = (props: PreferencesTabProps) => ({
+  config: briefingConfig,
+  handlers: {
+    onEnabledChange: props.onDailyBriefingChange,
+    onTimeChange: props.onBriefingTimeChange,
+    onPrintChange: props.onPrintBriefingChange,
+  },
+  state: {
+    enabled: props.preferencesState.dailyBriefing,
+    time: props.preferencesState.briefingTime,
+    printEnabled: props.preferencesState.printBriefing,
+  },
+});
+
+const buildRecapSection = (props: PreferencesTabProps) => ({
+  config: recapConfig,
+  handlers: {
+    onEnabledChange: props.onDailyRecapChange,
+    onTimeChange: props.onRecapTimeChange,
+    onPrintChange: props.onPrintRecapChange,
+  },
+  state: {
+    enabled: props.preferencesState.dailyRecap,
+    time: props.preferencesState.recapTime,
+    printEnabled: props.preferencesState.printRecap,
+  },
+});
+
+export const PreferencesTab: FC<PreferencesTabProps> = (props) => {
+  const { isLoading, onSave } = props;
+  const briefingSection = buildBriefingSection(props);
+  const recapSection = buildRecapSection(props);
+
+  return (
+    <Card>
       <div className="space-y-6">
-        <ScheduleSection
-          config={briefingConfig}
-          handlers={{
-            onEnabledChange: onDailyBriefingChange,
-            onTimeChange: onBriefingTimeChange,
-            onPrintChange: onPrintBriefingChange,
-          }}
-          isLoading={isLoading}
-          state={{
-            enabled: preferencesState.dailyBriefing,
-            time: preferencesState.briefingTime,
-            printEnabled: preferencesState.printBriefing,
-          }}
-        />
-        <ScheduleSection
-          config={recapConfig}
-          handlers={{
-            onEnabledChange: onDailyRecapChange,
-            onTimeChange: onRecapTimeChange,
-            onPrintChange: onPrintRecapChange,
-          }}
-          isLoading={isLoading}
-          state={{
-            enabled: preferencesState.dailyRecap,
-            time: preferencesState.recapTime,
-            printEnabled: preferencesState.printRecap,
-          }}
-        />
-        <div className="flex justify-end">
-          <Button color="blue" disabled={isLoading} onClick={onSave}>
-            {isLoading ? 'Saving...' : 'Save Preferences'}
-          </Button>
+        <h2 className="text-xl font-semibold text-gray-900">Preferences</h2>
+        <div className="space-y-6">
+          <ScheduleSection {...briefingSection} isLoading={isLoading} />
+          <ScheduleSection {...recapSection} isLoading={isLoading} />
+          <div className="flex justify-end">
+            <Button color="blue" disabled={isLoading} onClick={onSave}>
+              {isLoading ? 'Saving...' : 'Save Preferences'}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
-  </Card>
-);
+    </Card>
+  );
+};

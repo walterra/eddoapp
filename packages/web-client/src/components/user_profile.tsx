@@ -25,7 +25,7 @@ import { SecurityTab } from './user_profile_tab_security';
 import type {
   GithubFormState,
   PreferencesFormState,
-  ProfileData,
+  UserProfile as ProfileData,
   ProfileFormState,
 } from './user_profile_types';
 
@@ -74,109 +74,155 @@ interface TabContentProps {
   githubFieldHandlers: ReturnType<typeof useGithubFieldHandlers>;
 }
 
-const TabContent: FC<TabContentProps> = ({
-  activeTab,
-  profile,
-  isLoading,
-  editMode,
-  formState,
-  preferencesState,
-  githubState,
-  isResyncing,
-  actions,
-  formFieldHandlers,
-  preferencesFieldHandlers,
-  githubFieldHandlers,
-}) => {
-  if (activeTab === 'profile') {
-    return (
-      <ProfileTab
-        editMode={editMode}
-        formState={formState}
-        isLoading={isLoading}
-        onEditToggle={actions.handleEditToggle}
-        onSave={actions.handleSaveProfile}
-        profile={profile}
-        {...formFieldHandlers}
-      />
-    );
-  }
-  if (activeTab === 'security') {
-    return (
-      <SecurityTab
-        formState={formState}
-        isLoading={isLoading}
-        onChangePassword={actions.handleChangePassword}
-        {...formFieldHandlers}
-      />
-    );
-  }
-  if (activeTab === 'integrations') {
-    return (
-      <IntegrationsTab
-        githubState={githubState}
-        isLoading={isLoading}
-        isResyncing={isResyncing}
-        onForceResync={actions.handleForceResync}
-        onLinkTelegram={actions.handleLinkTelegram}
-        onSaveGithub={actions.handleUpdateGithubPreferences}
-        onTelegramIdChange={formFieldHandlers.onTelegramIdChange}
-        onUnlinkTelegram={actions.handleUnlinkTelegram}
-        profile={profile}
-        telegramId={formState.telegramId}
-        {...githubFieldHandlers}
-      />
-    );
-  }
+const ProfileTabContent: FC<
+  Omit<
+    TabContentProps,
+    | 'activeTab'
+    | 'preferencesState'
+    | 'githubState'
+    | 'isResyncing'
+    | 'preferencesFieldHandlers'
+    | 'githubFieldHandlers'
+  >
+> = (p) => (
+  <ProfileTab
+    editMode={p.editMode}
+    formState={p.formState}
+    isLoading={p.isLoading}
+    onEditToggle={p.actions.handleEditToggle}
+    onSave={p.actions.handleSaveProfile}
+    profile={p.profile}
+    {...p.formFieldHandlers}
+  />
+);
+
+const SecurityTabContent: FC<
+  Pick<TabContentProps, 'formState' | 'isLoading' | 'actions' | 'formFieldHandlers'>
+> = (p) => (
+  <SecurityTab
+    formState={p.formState}
+    isLoading={p.isLoading}
+    onChangePassword={p.actions.handleChangePassword}
+    {...p.formFieldHandlers}
+  />
+);
+
+const IntegrationsTabContent: FC<
+  Pick<
+    TabContentProps,
+    | 'profile'
+    | 'isLoading'
+    | 'formState'
+    | 'githubState'
+    | 'isResyncing'
+    | 'actions'
+    | 'formFieldHandlers'
+    | 'githubFieldHandlers'
+  >
+> = (p) => (
+  <IntegrationsTab
+    githubState={p.githubState}
+    isLoading={p.isLoading}
+    isResyncing={p.isResyncing}
+    onForceResync={p.actions.handleForceResync}
+    onLinkTelegram={p.actions.handleLinkTelegram}
+    onSaveGithub={p.actions.handleUpdateGithubPreferences}
+    onTelegramIdChange={p.formFieldHandlers.onTelegramIdChange}
+    onUnlinkTelegram={p.actions.handleUnlinkTelegram}
+    profile={p.profile}
+    telegramId={p.formState.telegramId}
+    {...p.githubFieldHandlers}
+  />
+);
+
+const TabContent: FC<TabContentProps> = (props) => {
+  const { activeTab } = props;
+  if (activeTab === 'profile') return <ProfileTabContent {...props} />;
+  if (activeTab === 'security') return <SecurityTabContent {...props} />;
+  if (activeTab === 'integrations') return <IntegrationsTabContent {...props} />;
   return (
     <PreferencesTab
-      isLoading={isLoading}
-      onSave={actions.handleUpdatePreferences}
-      preferencesState={preferencesState}
-      {...preferencesFieldHandlers}
+      isLoading={props.isLoading}
+      onSave={props.actions.handleUpdatePreferences}
+      preferencesState={props.preferencesState}
+      {...props.preferencesFieldHandlers}
     />
   );
 };
 
-export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
-  const profileHook = useProfile();
-  const { profile, isLoading, error, clearError, mutations } = profileHook;
-
-  const [activeTab, setActiveTab] = useState<TabType>('profile');
-  const [editMode, setEditMode] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [formError, setFormError] = useState('');
+/** Hook to manage all form states */
+const useProfileFormStates = (profile: ProfileData | null) => {
   const [formState, setFormState] = useState<ProfileFormState>(INITIAL_FORM_STATE);
   const [preferencesState, setPreferencesState] =
     useState<PreferencesFormState>(INITIAL_PREFERENCES_STATE);
   const [githubState, setGithubState] = useState<GithubFormState>(INITIAL_GITHUB_STATE);
-
   useFormInitialization(profile, setFormState, setPreferencesState, setGithubState);
-
-  const formFieldHandlers = useFormFieldHandlers(setFormState);
-  const preferencesFieldHandlers = usePreferencesFieldHandlers(setPreferencesState);
-  const githubFieldHandlers = useGithubFieldHandlers(setGithubState);
-
-  const actions = useProfileActionHandlers({
+  return {
     formState,
     setFormState,
     preferencesState,
+    setPreferencesState,
     githubState,
-    profile,
-    editMode,
-    setEditMode,
-    setFormError,
-    setSuccess,
-    clearError,
-    actions: {
-      updateProfile: profileHook.updateProfile,
-      changePassword: profileHook.changePassword,
-      linkTelegram: profileHook.linkTelegram,
-      unlinkTelegram: profileHook.unlinkTelegram,
-      updatePreferences: profileHook.updatePreferences,
-      githubResyncMutate: mutations.githubResync.mutateAsync,
+    setGithubState,
+    handlers: {
+      form: useFormFieldHandlers(setFormState),
+      prefs: usePreferencesFieldHandlers(setPreferencesState),
+      github: useGithubFieldHandlers(setGithubState),
     },
-  });
+  };
+};
+
+interface ActionsConfigParams {
+  profileHook: ReturnType<typeof useProfile>;
+  forms: ReturnType<typeof useProfileFormStates>;
+  profile: ProfileData | null;
+  editMode: boolean;
+  setEditMode: (v: boolean) => void;
+  setFormError: (v: string) => void;
+  setSuccess: (v: string | null) => void;
+}
+
+/** Build actions config from hooks */
+const buildActionsConfig = (p: ActionsConfigParams) => ({
+  formState: p.forms.formState,
+  setFormState: p.forms.setFormState,
+  preferencesState: p.forms.preferencesState,
+  githubState: p.forms.githubState,
+  profile: p.profile,
+  editMode: p.editMode,
+  setEditMode: p.setEditMode,
+  setFormError: p.setFormError,
+  setSuccess: p.setSuccess,
+  clearError: p.profileHook.clearError,
+  actions: {
+    updateProfile: p.profileHook.updateProfile,
+    changePassword: p.profileHook.changePassword,
+    linkTelegram: p.profileHook.linkTelegram,
+    unlinkTelegram: p.profileHook.unlinkTelegram,
+    updatePreferences: p.profileHook.updatePreferences,
+    githubResyncMutate: p.profileHook.mutations.githubResync.mutateAsync,
+  },
+});
+
+export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
+  const profileHook = useProfile();
+  const { profile, isLoading, error, mutations } = profileHook;
+  const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const [editMode, setEditMode] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [formError, setFormError] = useState('');
+  const forms = useProfileFormStates(profile);
+  const actions = useProfileActionHandlers(
+    buildActionsConfig({
+      profileHook,
+      forms,
+      profile,
+      editMode,
+      setEditMode,
+      setFormError,
+      setSuccess,
+    }),
+  );
 
   if (isLoading && !profile) return <LoadingState />;
   if (!profile) return <NotFoundState onClose={onClose} />;
@@ -191,14 +237,14 @@ export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
           actions={actions}
           activeTab={activeTab}
           editMode={editMode}
-          formFieldHandlers={formFieldHandlers}
-          formState={formState}
-          githubFieldHandlers={githubFieldHandlers}
-          githubState={githubState}
+          formFieldHandlers={forms.handlers.form}
+          formState={forms.formState}
+          githubFieldHandlers={forms.handlers.github}
+          githubState={forms.githubState}
           isLoading={isLoading}
           isResyncing={mutations.githubResync.isPending}
-          preferencesFieldHandlers={preferencesFieldHandlers}
-          preferencesState={preferencesState}
+          preferencesFieldHandlers={forms.handlers.prefs}
+          preferencesState={forms.preferencesState}
           profile={profile}
         />
       </div>

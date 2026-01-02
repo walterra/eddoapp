@@ -15,57 +15,30 @@ import {
   logHashMismatch,
   saveCassetteToFile,
 } from './cassette-helpers.js';
+import type {
+  Cassette,
+  CassetteManagerConfig,
+  CassetteState,
+  InteractionParams,
+  LLMInteraction,
+  Message,
+  RecordMode,
+  RecordParams,
+  ReplayContext,
+  TimeController,
+} from './cassette-types.js';
 
-/** Recorded LLM interaction */
-export interface LLMInteraction {
-  requestHash: string;
-  request: {
-    model: string;
-    systemPrompt: string;
-    messages: Array<{ role: string; content: string }>;
-  };
-  response: string;
-  metadata: {
-    recordedAt: string;
-    responseTimeMs?: number;
-  };
-}
+export type { Cassette, CassetteManagerConfig, LLMInteraction, RecordMode, TimeController };
 
-/** Cassette file structure */
-export interface Cassette {
-  version: 1;
-  testName: string;
-  createdAt: string;
-  frozenTime: string;
-  interactions: LLMInteraction[];
-}
-
-/** Recording mode */
-export type RecordMode = 'record' | 'playback' | 'auto';
-
-/** Cassette manager configuration */
-export interface CassetteManagerConfig {
-  cassettesDir: string;
-  mode: RecordMode;
-}
-
-/** Callback to freeze/unfreeze time */
-export interface TimeController {
+/** Time controller helpers */
+interface TimeHelpers {
   freeze: (isoTime: string) => void;
   unfreeze: () => void;
-}
-
-/** Internal state for cassette manager */
-interface CassetteState {
-  cassette: Cassette | null;
-  path: string | null;
-  index: number;
-  modified: boolean;
-  timeFrozen: boolean;
+  isFrozen: () => boolean;
 }
 
 /** Create time controller helpers */
-function createTimeHelpers(timeController?: TimeController) {
+function createTimeHelpers(timeController?: TimeController): TimeHelpers {
   let timeFrozen = false;
   return {
     freeze: (isoTime: string) => {
@@ -83,14 +56,6 @@ function createTimeHelpers(timeController?: TimeController) {
     },
     isFrozen: () => timeFrozen,
   };
-}
-
-interface ReplayContext {
-  state: CassetteState;
-  mode: RecordMode;
-  requestHash: string;
-  model: string;
-  messages: Array<{ role: string; content: string }>;
 }
 
 /** Try to replay an interaction from the cassette */
@@ -119,11 +84,12 @@ function tryReplayFromCassette(ctx: ReplayContext): { replayed: boolean; respons
   return { replayed: false };
 }
 
+/** Cassette context for operations */
 interface CassetteContext {
   state: CassetteState;
   mode: RecordMode;
   cassettesDir: string;
-  time: ReturnType<typeof createTimeHelpers>;
+  time: TimeHelpers;
   saveCassette: () => void;
 }
 
@@ -152,15 +118,6 @@ function doLoadCassette(ctx: CassetteContext, testName: string): void {
   }
 }
 
-interface RecordParams {
-  state: CassetteState;
-  requestHash: string;
-  model: string;
-  systemPrompt: string;
-  messages: Array<{ role: string; content: string }>;
-  realCall: () => Promise<string>;
-}
-
 /** Record new interaction */
 async function recordNewInteraction(params: RecordParams): Promise<string> {
   const { state, requestHash, model, systemPrompt, messages, realCall } = params;
@@ -182,6 +139,25 @@ async function recordNewInteraction(params: RecordParams): Promise<string> {
   return response;
 }
 
+/** Handle interaction: replay or record */
+async function handleInteractionImpl(
+  ctx: CassetteContext,
+  params: InteractionParams,
+): Promise<string> {
+  const { state, mode } = ctx;
+  const { model, systemPrompt, messages, realCall } = params;
+  if (!state.cassette) throw new Error('No cassette loaded. Call loadCassette() first.');
+  const requestHash = hashRequest(model, systemPrompt, messages);
+  const replayResult = tryReplayFromCassette({ state, mode, requestHash, model, messages });
+  if (replayResult.replayed) return replayResult.response!;
+  if (mode === 'playback') {
+    throw new Error(
+      `No matching interaction in cassette at index ${state.index}. Run with VCR_MODE=auto or VCR_MODE=record to record new interactions.`,
+    );
+  }
+  return recordNewInteraction({ state, requestHash, model, systemPrompt, messages, realCall });
+}
+
 /** Factory function to create a cassette manager */
 export function createCassetteManager(
   config: CassetteManagerConfig,
@@ -196,7 +172,6 @@ export function createCassetteManager(
     timeFrozen: false,
   };
   const time = createTimeHelpers(timeController);
-
   if (!existsSync(cassettesDir)) mkdirSync(cassettesDir, { recursive: true });
 
   const saveCassette = (): void => {
@@ -207,33 +182,15 @@ export function createCassetteManager(
 
   const ctx: CassetteContext = { state, mode, cassettesDir, time, saveCassette };
 
-  async function handleInteraction(
-    model: string,
-    systemPrompt: string,
-    messages: Array<{ role: string; content: string }>,
-    realCall: () => Promise<string>,
-  ): Promise<string> {
-    if (!state.cassette) throw new Error('No cassette loaded. Call loadCassette() first.');
-    const requestHash = hashRequest(model, systemPrompt, messages);
-    const replayResult = tryReplayFromCassette({ state, mode, requestHash, model, messages });
-    if (replayResult.replayed) return replayResult.response!;
-    if (mode === 'playback')
-      throw new Error(
-        `No matching interaction in cassette at index ${state.index}. Run with VCR_MODE=auto or VCR_MODE=record to record new interactions.`,
-      );
-    return recordNewInteraction({ state, requestHash, model, systemPrompt, messages, realCall });
-  }
-
-  function ejectCassette(): void {
-    if (state.cassette && state.modified && state.path) saveCassette();
-    time.unfreeze();
-    Object.assign(state, { cassette: null, path: null, index: 0, modified: false });
-  }
-
   return {
     loadCassette: (testName: string) => doLoadCassette(ctx, testName),
-    handleInteraction,
-    ejectCassette,
+    handleInteraction: (m: string, s: string, msgs: Message[], r: () => Promise<string>) =>
+      handleInteractionImpl(ctx, { model: m, systemPrompt: s, messages: msgs, realCall: r }),
+    ejectCassette: (): void => {
+      if (state.cassette && state.modified && state.path) saveCassette();
+      time.unfreeze();
+      Object.assign(state, { cassette: null, path: null, index: 0, modified: false });
+    },
     saveCassette,
     getMode: () => mode,
     isReplaying: () =>

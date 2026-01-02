@@ -87,18 +87,15 @@ const ModalActions: FC<ModalActionsProps> = ({
   </div>
 );
 
-export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) => {
-  const { allTags } = useTags();
+/** Hook for todo edit modal state and handlers */
+const useTodoEditState = (todo: Todo, onClose: () => void) => {
   const saveTodoMutation = useSaveTodoMutation();
   const deleteTodoMutation = useDeleteTodoMutation();
   const [editedTodo, setEditedTodo] = useState(todo);
+  useEffect(() => setEditedTodo(todo), [todo]);
 
-  useEffect(() => {
-    setEditedTodo(todo);
-  }, [todo]);
-
-  const handleDelete = async (event: React.FormEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const handleDelete = async (e: React.FormEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     try {
       await deleteTodoMutation.mutateAsync(todo);
       onClose();
@@ -107,8 +104,8 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) =
     }
   };
 
-  const handleSave = async (event: React.FormEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const handleSave = async (e: React.FormEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     try {
       await saveTodoMutation.mutateAsync({ todo: editedTodo, originalTodo: todo });
       onClose();
@@ -117,36 +114,48 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) =
     }
   };
 
-  const activeArray = Object.entries(editedTodo.active);
+  const clearError = () => {
+    saveTodoMutation.reset();
+    deleteTodoMutation.reset();
+  };
   const error = (saveTodoMutation.error || deleteTodoMutation.error) as DatabaseError | null;
+
+  return {
+    editedTodo,
+    setEditedTodo,
+    handleDelete,
+    handleSave,
+    clearError,
+    error,
+    isSaving: saveTodoMutation.isPending,
+    isDeleting: deleteTodoMutation.isPending,
+  };
+};
+
+export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) => {
+  const { allTags } = useTags();
+  const state = useTodoEditState(todo, onClose);
+  const activeArray = Object.entries(state.editedTodo.active);
 
   return (
     <Modal onClose={onClose} show={show} size="2xl">
       <ModalHeader>Edit Todo</ModalHeader>
       <ModalBody>
-        {error && (
-          <ErrorDisplay
-            error={error}
-            onClear={() => {
-              saveTodoMutation.reset();
-              deleteTodoMutation.reset();
-            }}
-          />
-        )}
+        {state.error && <ErrorDisplay error={state.error} onClear={state.clearError} />}
         <EditFormFields
           activeArray={activeArray}
           allTags={allTags}
-          onChange={setEditedTodo}
-          todo={editedTodo}
+          onChange={state.setEditedTodo}
+          todo={state.editedTodo}
         />
       </ModalBody>
       <ModalFooter>
         <ModalActions
           isActiveValid={validateTimeTracking(activeArray)}
-          isDeleting={deleteTodoMutation.isPending}
-          isSaving={saveTodoMutation.isPending}
-          onDelete={handleDelete}
-          onSave={handleSave}
+          isDeleting={state.isDeleting}
+          isSaving={state.isSaving}
+          onDelete={state.handleDelete}
+          onSave={state.handleSave}
         />
       </ModalFooter>
     </Modal>

@@ -178,70 +178,65 @@ function createOrUpdatePr(title, body) {
   return parseInt(prNumber, 10);
 }
 
-/**
- * Main entry point
- */
-async function main() {
-  console.log('=== Release PR Creation ===\n');
-
-  // Check for changesets
-  if (!hasPendingChangesets()) {
-    console.log('No pending changesets found. Nothing to do.');
-    return;
-  }
-
-  const changesetCount = getChangesetCount();
-  console.log(`Found ${changesetCount} pending changeset(s)\n`);
-
-  // Setup git user
+/** Configure git user for commits */
+function setupGitUser() {
   exec('git config user.name "github-actions[bot]"');
   exec('git config user.email "github-actions[bot]@users.noreply.github.com"');
+}
 
-  // Prepare release branch
+/** Prepare or reset release branch */
+function prepareReleaseBranch() {
   console.log(`Preparing branch: ${RELEASE_BRANCH}`);
   try {
     exec(`git fetch origin ${RELEASE_BRANCH}:${RELEASE_BRANCH} 2>/dev/null || true`);
     exec(`git checkout ${RELEASE_BRANCH} 2>/dev/null || git checkout -b ${RELEASE_BRANCH}`);
-    // Reset to match main
     exec(`git fetch origin ${BASE_BRANCH}`);
     exec(`git reset --hard origin/${BASE_BRANCH}`);
   } catch {
     exec(`git checkout -b ${RELEASE_BRANCH}`);
   }
+}
 
-  // Run changeset version
-  console.log('\nRunning changeset version...');
-  execInherit('pnpm changeset version');
-
-  // Cleanup done todos
-  cleanupDoneTodos();
-
-  // Get version after changeset version ran
-  const version = getVersion();
-  console.log(`\nVersion: ${version}`);
-
-  // Check for changes
+/** Commit and push changes, returns false if no changes */
+function commitAndPush() {
   const status = exec('git status --porcelain');
   if (!status) {
     console.log('No changes to commit.');
-    return;
+    return false;
   }
-
-  // Commit changes
   console.log('\nCommitting changes...');
   execInherit('git add .');
   exec('git commit -m "chore: version packages"');
-
-  // Push branch
   console.log(`\nPushing to ${RELEASE_BRANCH}...`);
   execInherit(`git push origin ${RELEASE_BRANCH} --force`);
+  return true;
+}
 
-  // Extract changelog and create PR
-  const changelog = extractChangelog(version);
-  const title = `release v${version}`;
-  const body = generatePrBody(version, changelog);
+/** Main entry point */
+async function main() {
+  console.log('=== Release PR Creation ===\n');
+  if (!hasPendingChangesets()) {
+    console.log('No pending changesets found. Nothing to do.');
+    return;
+  }
+  console.log(`Found ${getChangesetCount()} pending changeset(s)\n`);
 
-  const prNumber = createOrUpdatePr(title, body);
+  setupGitUser();
+  prepareReleaseBranch();
+
+  console.log('\nRunning changeset version...');
+  execInherit('pnpm changeset version');
+  cleanupDoneTodos();
+
+  const version = getVersion();
+  console.log(`\nVersion: ${version}`);
+
+  if (!commitAndPush()) return;
+
+  const prNumber = createOrUpdatePr(
+    `release v${version}`,
+    generatePrBody(version, extractChangelog(version)),
+  );
   console.log(`\nPR #${prNumber} ready for review`);
   console.log('\n=== Done ===');
 }

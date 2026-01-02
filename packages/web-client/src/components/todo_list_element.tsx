@@ -72,6 +72,28 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
   );
 };
 
+const BUTTON_BASE =
+  'p-0.5 text-gray-400 transition-opacity duration-200 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200';
+const BUTTON_HIDDEN = 'opacity-0 group-hover:opacity-100 focus-within:opacity-100';
+
+interface TimeTrackingButtonProps {
+  isActive: boolean;
+  isUpdating: boolean;
+  onClick: (e: React.FormEvent<HTMLButtonElement>) => void;
+}
+
+const TimeTrackingButton: FC<TimeTrackingButtonProps> = ({ isActive, isUpdating, onClick }) => (
+  <button
+    className={`${BUTTON_BASE} disabled:cursor-not-allowed disabled:opacity-50 ${isActive ? 'opacity-100' : BUTTON_HIDDEN}`}
+    data-testid={isActive ? 'pause-button' : 'play-button'}
+    disabled={isUpdating}
+    onClick={onClick}
+    type="button"
+  >
+    {isActive ? <BiPauseCircle size="1.3em" /> : <BiPlayCircle size="1.3em" />}
+  </button>
+);
+
 interface ActionButtonsProps {
   todo: Todo;
   isUpdating: boolean;
@@ -83,18 +105,19 @@ interface ActionButtonsProps {
   activeCounter: number;
 }
 
-const ActionButtons: FC<ActionButtonsProps> = ({
-  todo,
-  isUpdating,
-  activityOnly,
-  timeTrackingActive,
-  onTimeTrackingClick,
-  onEditClick,
-  activeDuration,
-  activeCounter,
-}) => {
-  const thisButtonTimeTrackingActive = Object.values(todo.active).some((d) => d === null);
-  const showTimeTracking = !timeTrackingActive || thisButtonTimeTrackingActive;
+const ActionButtons: FC<ActionButtonsProps> = (props) => {
+  const {
+    todo,
+    isUpdating,
+    activityOnly,
+    timeTrackingActive,
+    onTimeTrackingClick,
+    onEditClick,
+    activeDuration,
+    activeCounter,
+  } = props;
+  const isTrackingThis = Object.values(todo.active).some((d) => d === null);
+  const showTimeTracking = !timeTrackingActive || isTrackingThis;
 
   return (
     <div className="-mt-0.5 -mr-0.5 flex items-start space-x-0.5">
@@ -106,26 +129,14 @@ const ActionButtons: FC<ActionButtonsProps> = ({
       {!activityOnly && (
         <>
           {showTimeTracking && (
-            <button
-              className={`p-0.5 text-gray-400 transition-opacity duration-200 hover:text-gray-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200 ${
-                thisButtonTimeTrackingActive
-                  ? 'opacity-100'
-                  : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
-              }`}
-              data-testid={thisButtonTimeTrackingActive ? 'pause-button' : 'play-button'}
-              disabled={isUpdating}
+            <TimeTrackingButton
+              isActive={isTrackingThis}
+              isUpdating={isUpdating}
               onClick={onTimeTrackingClick}
-              type="button"
-            >
-              {thisButtonTimeTrackingActive ? (
-                <BiPauseCircle size="1.3em" />
-              ) : (
-                <BiPlayCircle size="1.3em" />
-              )}
-            </button>
+            />
           )}
           <button
-            className="p-0.5 text-gray-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
+            className={`${BUTTON_BASE} ${BUTTON_HIDDEN}`}
             data-testid="edit-button"
             onClick={onEditClick}
             type="button"
@@ -138,13 +149,8 @@ const ActionButtons: FC<ActionButtonsProps> = ({
   );
 };
 
-const TodoListElementInner: FC<TodoListElementProps> = ({
-  active,
-  activeDate,
-  activityOnly,
-  timeTrackingActive,
-  todo,
-}) => {
+/** Hook for todo list element state */
+const useTodoListState = (todo: Todo, active: boolean, activeDate: string) => {
   const toggleCompletion = useToggleCompletionMutation();
   const toggleTimeTracking = useToggleTimeTrackingMutation();
   const { counter: activeCounter } = useActiveTimer(active);
@@ -152,7 +158,6 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
   const [error, setError] = useState<DatabaseError | null>(null);
 
   const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
-
   const activeDuration = useMemo(
     () => getActiveDuration(todo.active, activeDate),
     [active, activeDate, activeCounter],
@@ -179,51 +184,92 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
     }
   };
 
-  return (
-    <div
-      className={`${active ? 'border-2 border-sky-600' : ''}mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-2 py-1 dark:border-gray-700 dark:bg-gray-800`}
-    >
-      <ErrorDisplay error={error} onDismiss={() => setError(null)} />
-      <div className="group flex items-start justify-between">
-        <div className="text-xs text-gray-900 dark:text-white">
-          <div className="flex space-x-1">
-            <div className="mr-0.5 -ml-1">
-              {!activityOnly && (
-                <Checkbox
-                  className="checkbox checkbox-xs text-gray-400"
-                  color="gray"
-                  defaultChecked={todo.completed !== null}
-                  disabled={isUpdating}
-                  key={`checkbox-${todo._id}-${todo.completed !== null}`}
-                  onChange={handleToggleCheckbox}
-                />
-              )}
-            </div>
-            <div>
-              <TitleDisplay activityOnly={activityOnly} todo={todo} />
-              {todo.tags.length > 0 && (
-                <div className="mt-1">
-                  <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
-                </div>
-              )}
-            </div>
+  return {
+    showEditModal,
+    setShowEditModal,
+    error,
+    setError,
+    isUpdating,
+    activeDuration,
+    activeCounter,
+    handleToggleCheckbox,
+    handleTimeTrackingClick,
+  };
+};
+
+interface TodoContentProps {
+  todo: Todo;
+  activityOnly: boolean;
+  isUpdating: boolean;
+  onToggle: () => void;
+}
+
+const TodoContent: FC<TodoContentProps> = ({ todo, activityOnly, isUpdating, onToggle }) => (
+  <div className="text-xs text-gray-900 dark:text-white">
+    <div className="flex space-x-1">
+      <div className="mr-0.5 -ml-1">
+        {!activityOnly && (
+          <Checkbox
+            className="checkbox checkbox-xs text-gray-400"
+            color="gray"
+            defaultChecked={todo.completed !== null}
+            disabled={isUpdating}
+            key={`checkbox-${todo._id}-${todo.completed !== null}`}
+            onChange={onToggle}
+          />
+        )}
+      </div>
+      <div>
+        <TitleDisplay activityOnly={activityOnly} todo={todo} />
+        {todo.tags.length > 0 && (
+          <div className="mt-1">
+            <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
           </div>
-        </div>
-        <ActionButtons
-          activeCounter={activeCounter}
-          activeDuration={activeDuration}
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const TodoListElementInner: FC<TodoListElementProps> = ({
+  active,
+  activeDate,
+  activityOnly,
+  timeTrackingActive,
+  todo,
+}) => {
+  const state = useTodoListState(todo, active, activeDate);
+  const cardClass = `${active ? 'border-2 border-sky-600' : ''}mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-2 py-1 dark:border-gray-700 dark:bg-gray-800`;
+
+  return (
+    <div className={cardClass}>
+      <ErrorDisplay error={state.error} onDismiss={() => state.setError(null)} />
+      <div className="group flex items-start justify-between">
+        <TodoContent
           activityOnly={activityOnly}
-          isUpdating={isUpdating}
+          isUpdating={state.isUpdating}
+          onToggle={state.handleToggleCheckbox}
+          todo={todo}
+        />
+        <ActionButtons
+          activeCounter={state.activeCounter}
+          activeDuration={state.activeDuration}
+          activityOnly={activityOnly}
+          isUpdating={state.isUpdating}
           onEditClick={(e) => {
             e.preventDefault();
-            setShowEditModal(true);
+            state.setShowEditModal(true);
           }}
-          onTimeTrackingClick={handleTimeTrackingClick}
+          onTimeTrackingClick={state.handleTimeTrackingClick}
           timeTrackingActive={timeTrackingActive}
           todo={todo}
         />
       </div>
-      <TodoEditModal onClose={() => setShowEditModal(false)} show={showEditModal} todo={todo} />
+      <TodoEditModal
+        onClose={() => state.setShowEditModal(false)}
+        show={state.showEditModal}
+        todo={todo}
+      />
     </div>
   );
 };
