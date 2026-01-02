@@ -35,16 +35,19 @@ export function stripMarker(message: string, marker: string): string {
   return message.replaceAll(marker, '');
 }
 
+interface LogSuccessfulSendOptions {
+  contentType: 'briefing' | 'recap';
+  userId: string;
+  username: string;
+  telegramId: number;
+  messageLength: number;
+}
+
 /**
  * Logs successful send
  */
-export function logSuccessfulSend(
-  contentType: 'briefing' | 'recap',
-  userId: string,
-  username: string,
-  telegramId: number,
-  messageLength: number,
-): void {
+export function logSuccessfulSend(options: LogSuccessfulSendOptions): void {
+  const { contentType, userId, username, telegramId, messageLength } = options;
   logger.info(
     `${contentType === 'briefing' ? 'Daily briefing' : 'Recap'} sent successfully via agent`,
     {

@@ -9,6 +9,34 @@ import { join } from 'path';
 
 const LOCK_FILE = join(tmpdir(), 'eddo-integration-test.lock');
 const LOCK_TIMEOUT = 60000; // 60 seconds max wait
+const STALE_LOCK_AGE = 30000; // 30 seconds
+
+/** Check if error is EEXIST (file already exists) */
+function isFileExistsError(error: unknown): boolean {
+  return error !== null && typeof error === 'object' && 'code' in error && error.code === 'EEXIST';
+}
+
+/** Check and handle stale lock, returns true if should retry */
+async function handleStaleLock(testId: string): Promise<'retry' | 'wait'> {
+  try {
+    const lockContent = await fs.readFile(LOCK_FILE, 'utf8');
+    const lockStats = await fs.stat(LOCK_FILE);
+    const lockAge = Date.now() - lockStats.mtime.getTime();
+
+    if (lockAge > STALE_LOCK_AGE) {
+      console.warn(`⚠️  [${testId}] Removing stale lock (${lockAge}ms old)`);
+      await fs.unlink(LOCK_FILE);
+      return 'retry';
+    }
+
+    console.log(`⏳ [${testId}] Waiting for lock held by: ${lockContent}`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return 'wait';
+  } catch {
+    // Lock file disappeared, retry
+    return 'retry';
+  }
+}
 
 export class TestLock {
   private lockAcquired = false;
@@ -26,36 +54,13 @@ export class TestLock {
 
     while (Date.now() - startTime < LOCK_TIMEOUT) {
       try {
-        // Try to create lock file exclusively
         await fs.writeFile(LOCK_FILE, this.testId, { flag: 'wx' });
         this.lockAcquired = true;
         console.log(`✅ [${this.testId}] Test lock acquired`);
         return;
       } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST') {
-          // Lock file exists, check if it's stale
-          try {
-            const lockContent = await fs.readFile(LOCK_FILE, 'utf8');
-            const lockStats = await fs.stat(LOCK_FILE);
-            const lockAge = Date.now() - lockStats.mtime.getTime();
-
-            // If lock is older than 30 seconds, consider it stale
-            if (lockAge > 30000) {
-              console.warn(`⚠️  [${this.testId}] Removing stale lock (${lockAge}ms old)`);
-              await fs.unlink(LOCK_FILE);
-              continue;
-            }
-
-            // Wait and retry
-            console.log(`⏳ [${this.testId}] Waiting for lock held by: ${lockContent}`);
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          } catch (_readError) {
-            // Lock file disappeared, retry
-            continue;
-          }
-        } else {
-          throw error;
-        }
+        if (!isFileExistsError(error)) throw error;
+        await handleStaleLock(this.testId);
       }
     }
 

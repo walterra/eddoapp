@@ -181,7 +181,13 @@ export class DailyBriefingScheduler {
         });
       }
 
-      logSuccessfulSend('briefing', user._id, user.username, user.telegram_id, cleanMessage.length);
+      logSuccessfulSend({
+        contentType: 'briefing',
+        userId: user._id,
+        username: user.username,
+        telegramId: user.telegram_id,
+        messageLength: cleanMessage.length,
+      });
     } else {
       await sendTelegramMessage(this.bot, {
         telegramId: user.telegram_id,
@@ -269,7 +275,13 @@ export class DailyBriefingScheduler {
       const cleanMessage = stripMarker(result.message, RECAP_CONTENT_MARKER);
       await sendTelegramMessage(this.bot, { telegramId: user.telegram_id, message: cleanMessage });
 
-      logSuccessfulSend('recap', user._id, user.username, user.telegram_id, cleanMessage.length);
+      logSuccessfulSend({
+        contentType: 'recap',
+        userId: user._id,
+        username: user.username,
+        telegramId: user.telegram_id,
+        messageLength: cleanMessage.length,
+      });
 
       if (user.preferences?.printRecap) {
         await printIfEnabled({

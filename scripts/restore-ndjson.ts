@@ -80,6 +80,28 @@ async function handleDatabaseCheck(opts: DatabaseCheckOptions): Promise<Database
   return handleRestoreMode(opts, exists, docCount);
 }
 
+/** Validates input file exists */
+function validateInputFile(ndjsonFile: string): void {
+  if (!fs.existsSync(ndjsonFile)) {
+    throw new Error(`NDJSON file does not exist: ${ndjsonFile}`);
+  }
+}
+
+/** Logs restore operation start details */
+function logRestoreStart(ndjsonFile: string, dbName: string, operation: string): void {
+  console.log(`Starting NDJSON ${operation} to database: ${dbName}`);
+  console.log(`Source file: ${ndjsonFile}`);
+  console.log(`File size: ${formatFileSize(fs.statSync(ndjsonFile).size)}`);
+}
+
+/** Logs verification result */
+async function logVerification(dbName: string, couchUrl: string): Promise<void> {
+  const { exists, docCount } = await checkDatabaseExists(dbName, couchUrl);
+  if (exists) {
+    console.log(`Verified: Database '${dbName}' now contains ${docCount} documents`);
+  }
+}
+
 /**
  * Main restore function
  */
@@ -90,18 +112,14 @@ async function restoreNdjson(
   append: boolean = false,
 ): Promise<void> {
   try {
-    if (!fs.existsSync(ndjsonFile)) {
-      throw new Error(`NDJSON file does not exist: ${ndjsonFile}`);
-    }
+    validateInputFile(ndjsonFile);
 
     const env = validateEnv(process.env);
     const couchConfig = getCouchDbConfig(env);
     const dbName = database || couchConfig.dbName;
     const operation = append ? 'append' : 'restore';
 
-    console.log(`Starting NDJSON ${operation} to database: ${dbName}`);
-    console.log(`Source file: ${ndjsonFile}`);
-    console.log(`File size: ${formatFileSize(fs.statSync(ndjsonFile).size)}`);
+    logRestoreStart(ndjsonFile, dbName, operation);
 
     const checkResult = await handleDatabaseCheck({
       dbName,
@@ -125,26 +143,44 @@ async function restoreNdjson(
     await bulkInsertDocuments(docs, dbName, couchConfig);
 
     console.log(`NDJSON ${operation} completed successfully!`);
-
-    const { exists, docCount } = await checkDatabaseExists(dbName, env.COUCHDB_URL);
-    if (exists) {
-      console.log(`Verified: Database '${dbName}' now contains ${docCount} documents`);
-    }
+    await logVerification(dbName, env.COUCHDB_URL);
   } catch (error) {
     console.error('NDJSON restore failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
 
-/**
- * Parse command line arguments
- */
-function parseArgs(): {
+interface ParsedArgs {
   ndjsonFile?: string;
   database?: string;
   force: boolean;
   append: boolean;
-} {
+}
+
+/** Check if arg is database flag */
+function isDatabaseFlag(arg: string): boolean {
+  return arg === '--database' || arg === '-d';
+}
+
+/** Check if arg is force flag */
+function isForceFlag(arg: string): boolean {
+  return arg === '--force' || arg === '-f';
+}
+
+/** Check if arg is append flag */
+function isAppendFlag(arg: string): boolean {
+  return arg === '--append' || arg === '-a';
+}
+
+/** Check if arg is help flag */
+function isHelpFlag(arg: string): boolean {
+  return arg === '--help' || arg === '-h';
+}
+
+/**
+ * Parse command line arguments
+ */
+function parseArgs(): ParsedArgs {
   const args = process.argv.slice(2);
   let ndjsonFile: string | undefined;
   let database: string | undefined;
@@ -153,13 +189,13 @@ function parseArgs(): {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--database' || arg === '-d') {
+    if (isDatabaseFlag(arg)) {
       database = args[++i];
-    } else if (arg === '--force' || arg === '-f') {
+    } else if (isForceFlag(arg)) {
       force = true;
-    } else if (arg === '--append' || arg === '-a') {
+    } else if (isAppendFlag(arg)) {
       append = true;
-    } else if (arg === '--help' || arg === '-h') {
+    } else if (isHelpFlag(arg)) {
       printHelp();
       process.exit(0);
     } else if (!ndjsonFile && !arg.startsWith('-')) {

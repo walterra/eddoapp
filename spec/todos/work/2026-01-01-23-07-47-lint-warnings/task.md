@@ -1,7 +1,7 @@
 # Run pnpm lint and fix warnings
 
 **GitHub Issue:** [#350](https://github.com/walterra/eddoapp/issues/350)
-**Status:** In Progress (Session 4)
+**Status:** In Progress (Session 5)
 **Started:** 2026-01-01-23-15
 **Created:** 2026-01-01-23-07-47
 **Agent PID:** 34113
@@ -10,62 +10,57 @@
 
 The codebase has ESLint warnings related to code quality (function complexity and size). The goal is to reduce these warnings by refactoring complex functions into smaller, more focused helpers.
 
-**Current Status:** 83 warnings (down from 270, 187 fixed = 69% reduction)
+**Current Status:** 62 warnings (down from 270, 208 fixed = 77% reduction)
 
 **Success Criteria:**
 
 - [x] All tests pass (`pnpm test`) - 508 passed
 - [x] Code maintains same functionality
-- [x] Significant reduction in warnings - 69% achieved
+- [x] Significant reduction in warnings - 77% achieved
 - [x] No TypeScript errors (`pnpm tsc:check`)
 - [x] No lint errors (only warnings)
 
 ## Implementation Plan
 
-### Session 4 - Current Refactoring
+### Session 5 - Current Refactoring (21 warnings fixed)
 
-Files refactored with new helper modules:
+Files refactored:
 
-1. packages/telegram_bot/src/bot/middleware/auth.ts → auth-helpers.ts
-2. packages/telegram_bot/src/bot/commands/briefing.ts → briefing-helpers.ts
-3. packages/telegram_bot/src/agent/system-prompt.ts → system-prompt-sections.ts
-4. packages/telegram_bot/src/bot/handlers/message.ts → message-helpers.ts
-5. packages/telegram_bot/src/agent/helpers/message-handler.ts → print-helpers.ts
-6. packages/telegram_bot/src/bot/bot.ts → bot-middleware.ts
-7. packages/telegram_bot/src/bot/commands/start.ts → start-helpers.ts
-8. packages/telegram_bot/src/bot/commands/github.ts (refactored routing)
-9. packages/telegram_bot/src/bot/commands/github-helpers.ts (refactored complexity)
-10. packages/telegram_bot/src/mcp/client.ts → client-helpers.ts
-11. packages/telegram_bot/src/mcp/connection-manager.ts → connection-manager-helpers.ts
-12. packages/telegram_bot/src/integration-tests/vcr/cassette-manager.ts (options objects)
-13. packages/telegram_bot/src/integration-tests/vcr/cassette-helpers.ts (options objects)
-14. packages/telegram_bot/src/utils/user-lookup.ts → user-lookup-helpers.ts
-15. packages/web-api/src/github/sync-scheduler.ts → sync-helpers-extended.ts
-16. packages/web-api/src/github/rate-limit.ts (header parsing helpers)
+1. `packages/telegram_bot/src/scheduler/helpers/telegram-sender.ts` - `logSuccessfulSend` → options object
+2. `scripts/backup-interactive-prompts-helpers.ts` - `mergeConfig` → options object
+3. `packages/web-api/src/github/issue-fetcher.ts` - `fetchPage` → options object, extracted `shouldStopPagination`
+4. `packages/web-api/src/middleware/user-db.ts` - `proxyUserCouchDBRequest` → options object
+5. `packages/core-shared/src/utils/parse_github_issue_id.ts` - extracted validation helpers
+6. `scripts/replicate-helpers.ts` - extracted `displayHistoryStats`, `displaySuccessDetails`, `displayFailureDetails`
+7. `scripts/restore-ndjson.ts` - extracted validation and logging helpers, refactored `parseArgs`
+8. `scripts/restore-interactive.ts` - extracted validation helpers for `performRestore`
+9. `packages/core-shared/src/api/test-utils.ts` - `createTestTodoAlpha3/Alpha2` → spread defaults
+10. `packages/printer_service/src/printer/formatter.ts` - `wrapText` → extracted word processing helpers
+11. `packages/web-api/src/utils/setup-user-db.ts` - extracted design doc helpers
+12. `packages/web-api/src/routes/auth.ts` - extracted login helpers
+13. `packages/web-client/src/components/user_profile_handlers.ts` - added `DEFAULT_PREFERENCES` object
+14. `packages/core-server/src/api/user-registry-design-docs.ts` - extracted error checking and insert helpers
+15. `packages/mcp_server/src/integration-tests/setup/database-setup.ts` - extracted `tryInsertDesignDocument`
+16. `packages/mcp_server/src/integration-tests/setup/test-lock.ts` - extracted lock handling helpers
+17. `scripts/__tests__/e2e/test-utils.ts` - extracted database state checking helpers
 
 ### Previous Sessions - Completed
 
-Sessions 1-3: 37 files refactored.
+Sessions 1-4: 53 files refactored, 187 warnings fixed.
 
 ### Verification
 
-- [x] Run `pnpm lint` - 83 warnings (69% reduction from 270)
+- [x] Run `pnpm lint` - 62 warnings (77% reduction from 270)
 - [x] Run `pnpm test` - all tests pass (508 passed)
 - [x] Run `pnpm tsc:check` - no type errors
 
-## New Helper Modules Created (Session 4)
+## Patterns Applied
 
-1. packages/telegram_bot/src/bot/middleware/auth-helpers.ts
-2. packages/telegram_bot/src/bot/commands/briefing-helpers.ts (extended)
-3. packages/telegram_bot/src/agent/system-prompt-sections.ts
-4. packages/telegram_bot/src/bot/handlers/message-helpers.ts
-5. packages/telegram_bot/src/agent/helpers/print-helpers.ts
-6. packages/telegram_bot/src/bot/bot-middleware.ts
-7. packages/telegram_bot/src/bot/commands/start-helpers.ts
-8. packages/telegram_bot/src/mcp/client-helpers.ts
-9. packages/telegram_bot/src/mcp/connection-manager-helpers.ts
-10. packages/telegram_bot/src/utils/user-lookup-helpers.ts
-11. packages/web-api/src/github/sync-helpers-extended.ts
+1. **Options Objects** - Functions with 5+ parameters refactored to use single options object
+2. **Defaults Objects** - Complex nullish coalescing chains replaced with spread of defaults
+3. **Helper Extraction** - Nested conditionals extracted into focused helper functions
+4. **Error Type Guards** - Inline error checks extracted into named predicates
+5. **State Checking** - Complex state checks extracted into dedicated functions
 
 ## Review
 
@@ -79,17 +74,19 @@ Sessions 1-3: 37 files refactored.
 - Extracted sync logging and stats tracking
 - Extracted command routing functions to reduce complexity
 - Created preference extraction helpers
+- Reduced nesting depth in async retry loops
+- Simplified error handling with type guards
 
-### Remaining warnings (83):
+### Remaining warnings (62):
 
-- React components with complex JSX (~40 warnings)
-- Test utilities and script files (~25 warnings)
-- Some remaining complex async functions (~18 warnings)
+- React components with complex JSX (~35 warnings)
+- Test utilities and script files (~15 warnings)
+- Some remaining complex async functions (~12 warnings)
 - Most remaining files have only 1-2 warnings each
 
 ## Notes
 
-- 69% reduction achieved (83 from 270 original)
+- 77% reduction achieved (62 from 270 original)
 - Factory pattern used extensively for testability
 - Options objects reduce parameter count warnings
 - Message builder functions improve code organization

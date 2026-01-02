@@ -65,14 +65,17 @@ export function createOptionPrompts(
   return questions;
 }
 
+interface MergeConfigParams {
+  defaults: BackupConfig;
+  options: Partial<BackupConfig>;
+  optionAnswers: Record<string, unknown>;
+  baseUrl: string;
+  database?: string;
+}
+
 /** Merge configuration from various sources */
-export function mergeConfig(
-  defaults: BackupConfig,
-  options: Partial<BackupConfig>,
-  optionAnswers: Record<string, unknown>,
-  baseUrl: string,
-  database?: string,
-): BackupConfig {
+export function mergeConfig(params: MergeConfigParams): BackupConfig {
+  const { defaults, options, optionAnswers, baseUrl, database } = params;
   return {
     ...defaults,
     ...options,

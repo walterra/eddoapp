@@ -112,6 +112,16 @@ export function buildGithubUpdateData(githubState: GithubFormState) {
   };
 }
 
+/** Default preferences state values */
+const DEFAULT_PREFERENCES: PreferencesFormState = {
+  dailyBriefing: false,
+  briefingTime: '07:00',
+  printBriefing: false,
+  dailyRecap: false,
+  recapTime: '18:00',
+  printRecap: false,
+};
+
 /**
  * Initialize preferences state from profile
  */
@@ -125,13 +135,14 @@ export function initializePreferencesState(
     printRecap?: boolean;
   } | null,
 ): PreferencesFormState {
+  if (!preferences) return { ...DEFAULT_PREFERENCES };
   return {
-    dailyBriefing: preferences?.dailyBriefing ?? false,
-    briefingTime: preferences?.briefingTime ?? '07:00',
-    printBriefing: preferences?.printBriefing ?? false,
-    dailyRecap: preferences?.dailyRecap ?? false,
-    recapTime: preferences?.recapTime ?? '18:00',
-    printRecap: preferences?.printRecap ?? false,
+    dailyBriefing: preferences.dailyBriefing ?? DEFAULT_PREFERENCES.dailyBriefing,
+    briefingTime: preferences.briefingTime ?? DEFAULT_PREFERENCES.briefingTime,
+    printBriefing: preferences.printBriefing ?? DEFAULT_PREFERENCES.printBriefing,
+    dailyRecap: preferences.dailyRecap ?? DEFAULT_PREFERENCES.dailyRecap,
+    recapTime: preferences.recapTime ?? DEFAULT_PREFERENCES.recapTime,
+    printRecap: preferences.printRecap ?? DEFAULT_PREFERENCES.printRecap,
   };
 }
 

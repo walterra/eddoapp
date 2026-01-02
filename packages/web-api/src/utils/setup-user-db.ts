@@ -35,6 +35,43 @@ export async function setupUserDatabase(username: string): Promise<void> {
   console.log(`✅ User database setup complete for: ${username}`);
 }
 
+/** Fetch existing design document, returns null if not found */
+async function fetchExistingDesignDoc(
+  db: DocumentScope<Record<string, unknown>>,
+  docId: string,
+): Promise<DesignDocument | null> {
+  try {
+    return (await db.get(docId)) as DesignDocument;
+  } catch (error: unknown) {
+    const isNotFound =
+      error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404;
+    if (!isNotFound) throw error;
+    return null;
+  }
+}
+
+/** Check if design document needs update */
+function needsDesignDocUpdate(existingDoc: DesignDocument | null, newDoc: DesignDocument): boolean {
+  return !existingDoc || JSON.stringify(existingDoc.views) !== JSON.stringify(newDoc.views);
+}
+
+/** Update or create a single design document */
+async function updateDesignDocument(
+  db: DocumentScope<Record<string, unknown>>,
+  designDoc: DesignDocument,
+): Promise<void> {
+  const existingDoc = await fetchExistingDesignDoc(db, designDoc._id);
+
+  if (!needsDesignDocUpdate(existingDoc, designDoc)) {
+    console.log(`✅ Design document ${designDoc._id} already up to date`);
+    return;
+  }
+
+  const docToInsert: DesignDocument = { ...designDoc, _rev: existingDoc?._rev };
+  await db.insert(docToInsert);
+  console.log(`✅ Design document ${designDoc._id} updated`);
+}
+
 /**
  * Create design documents in the user database
  */
@@ -43,38 +80,7 @@ async function setupDesignDocuments(db: DocumentScope<Record<string, unknown>>):
 
   for (const designDoc of DESIGN_DOCS) {
     try {
-      // Try to get existing design document
-      let existingDoc: DesignDocument | null = null;
-      try {
-        existingDoc = (await db.get(designDoc._id)) as DesignDocument;
-      } catch (error: unknown) {
-        // Document doesn't exist, which is fine
-        if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          error.statusCode !== 404
-        ) {
-          throw error;
-        }
-      }
-
-      // Check if update is needed
-      const needsUpdate =
-        !existingDoc || JSON.stringify(existingDoc.views) !== JSON.stringify(designDoc.views);
-
-      if (needsUpdate) {
-        // Update or create the design document
-        const docToInsert: DesignDocument = {
-          ...designDoc,
-          _rev: existingDoc?._rev,
-        };
-
-        await db.insert(docToInsert);
-        console.log(`✅ Design document ${designDoc._id} updated`);
-      } else {
-        console.log(`✅ Design document ${designDoc._id} already up to date`);
-      }
+      await updateDesignDocument(db, designDoc);
     } catch (error) {
       console.error(`❌ Failed to setup design document ${designDoc._id}:`, error);
       throw error;

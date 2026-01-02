@@ -80,23 +80,35 @@ export class DatabaseSetup {
   }
 
   /**
+   * Try to insert a design document
+   */
+  private async tryInsertDesignDocument(
+    designDoc: DesignDocument,
+  ): Promise<{ success: boolean; error?: unknown }> {
+    try {
+      await this.db.insert(designDoc);
+      console.log(`✅ Created design document: ${designDoc._id}`);
+      return { success: true };
+    } catch (error: unknown) {
+      return { success: false, error };
+    }
+  }
+
+  /**
    * Create or update a single design document with retry logic
    */
   async createDesignDocument(designDoc: DesignDocument, maxRetries: number = 3): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await this.db.insert(designDoc);
-        console.log(`✅ Created design document: ${designDoc._id}`);
-        return;
-      } catch (error: unknown) {
-        if (this.isConflictError(error)) {
-          const updated = await this.updateExistingDesignDoc(designDoc, attempt, maxRetries);
-          if (updated) return;
-          continue;
-        }
-        console.error(`❌ Failed to create design document ${designDoc._id}:`, error);
-        throw error;
+      const result = await this.tryInsertDesignDocument(designDoc);
+      if (result.success) return;
+
+      if (!this.isConflictError(result.error)) {
+        console.error(`❌ Failed to create design document ${designDoc._id}:`, result.error);
+        throw result.error;
       }
+
+      const updated = await this.updateExistingDesignDoc(designDoc, attempt, maxRetries);
+      if (updated) return;
     }
   }
 

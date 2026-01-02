@@ -141,6 +141,32 @@ export class TestDatabaseManager {
     }
   }
 
+  /** Check if error is a CouchDB 404 */
+  private isNotFoundError(error: unknown): boolean {
+    return (
+      error !== null &&
+      typeof error === 'object' &&
+      'statusCode' in error &&
+      error.statusCode === 404
+    );
+  }
+
+  /** Wait with exponential backoff */
+  private async waitWithBackoff(attempt: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
+  }
+
+  /** Check database existence and return result */
+  private async checkDatabaseState(dbName: string): Promise<'exists' | 'not_found' | 'error'> {
+    try {
+      await this.couch.db.get(dbName);
+      return 'exists';
+    } catch (error: unknown) {
+      if (this.isNotFoundError(error)) return 'not_found';
+      throw error;
+    }
+  }
+
   /**
    * Wait for database to be fully created/deleted (useful for timing-sensitive tests)
    */
@@ -150,29 +176,10 @@ export class TestDatabaseManager {
     maxRetries: number = 10,
   ): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await this.couch.db.get(dbName);
-        if (shouldExist) {
-          return; // Database exists as expected
-        }
-        // Database exists but shouldn't - wait and retry
-        await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
-      } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          error.statusCode === 404
-        ) {
-          if (!shouldExist) {
-            return; // Database doesn't exist as expected
-          }
-          // Database doesn't exist but should - wait and retry
-          await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
-        } else {
-          throw error;
-        }
-      }
+      const state = await this.checkDatabaseState(dbName);
+      if (state === 'exists' && shouldExist) return;
+      if (state === 'not_found' && !shouldExist) return;
+      await this.waitWithBackoff(attempt);
     }
     throw new Error(
       `Database ${dbName} ${shouldExist ? 'creation' : 'deletion'} verification timed out`,

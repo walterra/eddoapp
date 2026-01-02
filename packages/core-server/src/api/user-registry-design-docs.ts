@@ -87,24 +87,36 @@ async function handleUpdateConflict(
 /**
  * Setup design documents for user registry with retry logic for conflicts
  */
+/** Check if error is a CouchDB conflict (409) */
+function isConflictError(error: unknown): boolean {
+  return (
+    error !== null && typeof error === 'object' && 'statusCode' in error && error.statusCode === 409
+  );
+}
+
+/** Attempt to insert design document */
+async function tryInsertDesignDoc(
+  db: nano.DocumentScope<UserRegistryEntry>,
+): Promise<{ success: boolean; error?: unknown }> {
+  try {
+    await db.insert(USER_REGISTRY_DESIGN_DOC);
+    console.log('Created design document: _design/queries');
+    return { success: true };
+  } catch (error: unknown) {
+    return { success: false, error };
+  }
+}
+
 export async function setupDesignDocuments(
   db: nano.DocumentScope<UserRegistryEntry>,
 ): Promise<void> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      await db.insert(USER_REGISTRY_DESIGN_DOC);
-      console.log('Created design document: _design/queries');
-      return;
-    } catch (error: unknown) {
-      const isConflict =
-        error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 409;
+    const result = await tryInsertDesignDoc(db);
+    if (result.success) return;
 
-      if (isConflict) {
-        const resolved = await handleUpdateConflict(db, USER_REGISTRY_DESIGN_DOC, attempt);
-        if (resolved) return;
-        continue;
-      }
-      throw error;
-    }
+    if (!isConflictError(result.error)) throw result.error;
+
+    const resolved = await handleUpdateConflict(db, USER_REGISTRY_DESIGN_DOC, attempt);
+    if (resolved) return;
   }
 }

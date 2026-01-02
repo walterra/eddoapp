@@ -119,38 +119,53 @@ async function confirmRestore(): Promise<boolean> {
   return finalConfirm;
 }
 
-async function performRestore(config: RestoreConfig, isInteractive: boolean = true): Promise<void> {
+/** Validate restore configuration */
+function validateRestoreConfig(config: RestoreConfig): void {
   if (!config.url) throw new Error('CouchDB URL is required');
   if (!config.database) throw new Error('Database name is required');
-
-  const { baseUrl } = parseUrl(config.url);
-  const dbUrl = buildDbUrl(baseUrl || config.url, config.database);
-
   if (!config.backupFile || !fs.existsSync(config.backupFile)) {
     throw new Error(`Backup file does not exist: ${config.backupFile}`);
   }
+}
+
+/** Handle dry run mode */
+function handleDryRun(): boolean {
+  console.log(chalk.yellow('\n⚠️  Dry run mode - no restore will be performed'));
+  return true;
+}
+
+/** Handle missing force overwrite */
+function handleNoForceOverwrite(): boolean {
+  console.log(chalk.red('\n❌ Restore cancelled - force overwrite not confirmed'));
+  return true;
+}
+
+/** Get interactive confirmation if needed */
+async function getInteractiveConfirmation(isInteractive: boolean): Promise<boolean> {
+  if (!isInteractive) return true;
+  const confirmed = await confirmRestore();
+  if (!confirmed) {
+    console.log(chalk.red('\nRestore cancelled.'));
+    return false;
+  }
+  return true;
+}
+
+async function performRestore(config: RestoreConfig, isInteractive: boolean = true): Promise<void> {
+  validateRestoreConfig(config);
+
+  const { baseUrl } = parseUrl(config.url);
+  const dbUrl = buildDbUrl(baseUrl || config.url, config.database!);
 
   displayRestoreSummary(config, dbUrl);
 
-  if (config.dryRun) {
-    console.log(chalk.yellow('\n⚠️  Dry run mode - no restore will be performed'));
-    return;
-  }
-
-  if (!config.forceOverwrite) {
-    console.log(chalk.red('\n❌ Restore cancelled - force overwrite not confirmed'));
-    return;
-  }
+  if (config.dryRun && handleDryRun()) return;
+  if (!config.forceOverwrite && handleNoForceOverwrite()) return;
 
   await prepareDatabase(config);
 
-  if (isInteractive) {
-    const confirmed = await confirmRestore();
-    if (!confirmed) {
-      console.log(chalk.red('\nRestore cancelled.'));
-      return;
-    }
-  }
+  const shouldProceed = await getInteractiveConfirmation(isInteractive);
+  if (!shouldProceed) return;
 
   try {
     await executeRestore(config, dbUrl);

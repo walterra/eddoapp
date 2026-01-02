@@ -145,6 +145,42 @@ export async function ensureTargetDatabase(
   return true;
 }
 
+/** Display replication history stats */
+function displayHistoryStats(history: nano.DatabaseReplicateHistoryItem): void {
+  console.log(`Documents written: ${chalk.cyan(history.docs_written || 0)}`);
+  console.log(`Documents read: ${chalk.cyan(history.docs_read || 0)}`);
+  console.log(`Missing documents: ${chalk.cyan(history.missing_checked || 0)}`);
+  console.log(`Errors: ${chalk.red(history.doc_write_failures || 0)}`);
+}
+
+/** Display success result details */
+function displaySuccessDetails(
+  result: nano.DatabaseReplicateResponse,
+  config: ReplicationConfig,
+  duration: number,
+): void {
+  console.log(`Status: ${chalk.green('✓ Success')}`);
+
+  if (result.history && result.history.length > 0) {
+    displayHistoryStats(result.history[0]);
+  }
+
+  if (config.continuous) {
+    console.log(`\n${chalk.yellow('ℹ️  Continuous replication is running in the background')}`);
+    console.log(`Replication ID: ${chalk.cyan(result._id || 'N/A')}`);
+  } else {
+    console.log(`Duration: ${chalk.cyan(formatDuration(duration))}`);
+  }
+}
+
+/** Display failure result details */
+function displayFailureDetails(result: nano.DatabaseReplicateResponse): void {
+  console.log(`Status: ${chalk.red('✗ Failed')}`);
+  if (result.errors) {
+    console.log(`Errors: ${chalk.red(JSON.stringify(result.errors, null, 2))}`);
+  }
+}
+
 /**
  * Display replication results
  */
@@ -157,27 +193,9 @@ export function displayReplicationResults(
   console.log(chalk.bold('📊 Replication Summary:'));
 
   if (result.ok) {
-    console.log(`Status: ${chalk.green('✓ Success')}`);
-
-    if (result.history && result.history.length > 0) {
-      const history = result.history[0];
-      console.log(`Documents written: ${chalk.cyan(history.docs_written || 0)}`);
-      console.log(`Documents read: ${chalk.cyan(history.docs_read || 0)}`);
-      console.log(`Missing documents: ${chalk.cyan(history.missing_checked || 0)}`);
-      console.log(`Errors: ${chalk.red(history.doc_write_failures || 0)}`);
-    }
-
-    if (config.continuous) {
-      console.log(`\n${chalk.yellow('ℹ️  Continuous replication is running in the background')}`);
-      console.log(`Replication ID: ${chalk.cyan(result._id || 'N/A')}`);
-    } else {
-      console.log(`Duration: ${chalk.cyan(formatDuration(duration))}`);
-    }
+    displaySuccessDetails(result, config, duration);
   } else {
-    console.log(`Status: ${chalk.red('✗ Failed')}`);
-    if (result.errors) {
-      console.log(`Errors: ${chalk.red(JSON.stringify(result.errors, null, 2))}`);
-    }
+    displayFailureDetails(result);
   }
 }
 

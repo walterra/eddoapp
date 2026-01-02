@@ -40,17 +40,23 @@ export function transformSearchResult(item: {
   } as unknown as GithubIssue;
 }
 
+interface FetchPageParams {
+  searchQuery: string;
+  page: number;
+  perPage: number;
+  sortField: 'created' | 'updated';
+  sortOrder: 'asc' | 'desc';
+}
+
 /**
  * Fetch a single page of results
  */
 async function fetchPage(
   config: FetchConfig,
-  searchQuery: string,
-  page: number,
-  perPage: number,
-  sortField: 'created' | 'updated',
-  sortOrder: 'asc' | 'desc',
+  params: FetchPageParams,
 ): Promise<{ items: GithubIssue[]; totalCount: number }> {
+  const { searchQuery, page, perPage, sortField, sortOrder } = params;
+
   config.logger.info('Fetching GitHub issues via Search API', {
     page,
     perPage,
@@ -88,6 +94,21 @@ async function fetchPage(
   return { items, totalCount: response.data.total_count };
 }
 
+/** Determines if pagination should stop based on current state */
+function shouldStopPagination(
+  items: GithubIssue[],
+  allItems: GithubIssue[],
+  perPage: number,
+  page: number,
+  totalCount: number,
+): { stop: boolean; reason?: 'empty' | 'partial' | 'limit' | 'complete' } {
+  if (items.length === 0) return { stop: true, reason: 'empty' };
+  if (items.length < perPage) return { stop: true, reason: 'partial' };
+  if (page > 10) return { stop: true, reason: 'limit' };
+  if (allItems.length >= totalCount) return { stop: true, reason: 'complete' };
+  return { stop: false };
+}
+
 /**
  * Fetches all items matching a search query with pagination support using Search API
  * Note: GitHub Search API has a maximum of 1000 results (10 pages of 100)
@@ -107,40 +128,26 @@ export async function fetchAllPagesForQuery(
 
   while (true) {
     try {
-      const { items, totalCount } = await fetchPage(
-        config,
+      const { items, totalCount } = await fetchPage(config, {
         searchQuery,
         page,
         perPage,
         sortField,
         sortOrder,
-      );
-
-      if (items.length === 0) {
-        break;
-      }
+      });
 
       allItems.push(...items);
-
-      // If we got fewer results than requested, we're on the last page
-      if (items.length < perPage) {
-        break;
-      }
-
       page++;
 
-      // GitHub Search API has a maximum of 1000 results (10 pages of 100)
-      if (page > 10) {
+      const { stop, reason } = shouldStopPagination(items, allItems, perPage, page, totalCount);
+
+      if (stop && reason === 'limit') {
         config.logger.warn('Reached GitHub Search API limit (1000 results max)', {
           totalItems: allItems.length,
         });
-        break;
       }
 
-      // Check if we've fetched all available results
-      if (allItems.length >= totalCount) {
-        break;
-      }
+      if (stop) break;
     } catch (error) {
       const apiError = error as GithubApiError;
       config.logger.error('Failed to fetch items page', {

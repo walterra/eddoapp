@@ -13,25 +13,40 @@ export interface GitHubIssueId {
   number: number;
 }
 
+/** Validates issue number is positive integer */
+function isValidIssueNumber(num: number): boolean {
+  return !isNaN(num) && num > 0;
+}
+
+/** Validates path has correct structure: owner/repo/issues/number */
+function isValidIssuePath(pathParts: string[]): boolean {
+  return pathParts.length === 4 && pathParts[2] === 'issues';
+}
+
+/** Validates prefix is 'github:' format */
+function hasGitHubPrefix(parts: string[]): boolean {
+  return parts.length === 2 && parts[0] === 'github';
+}
+
 export function parseGitHubIssueId(externalId: string): GitHubIssueId | null {
   if (!externalId || typeof externalId !== 'string') {
     return null;
   }
 
   const parts = externalId.split(':');
-  if (parts.length !== 2 || parts[0] !== 'github') {
+  if (!hasGitHubPrefix(parts)) {
     return null;
   }
 
   const pathParts = parts[1].split('/');
-  if (pathParts.length !== 4 || pathParts[2] !== 'issues') {
+  if (!isValidIssuePath(pathParts)) {
     return null;
   }
 
   const [owner, repo, , numberStr] = pathParts;
   const number = parseInt(numberStr, 10);
 
-  if (!owner || !repo || isNaN(number) || number <= 0) {
+  if (!owner || !repo || !isValidIssueNumber(number)) {
     return null;
   }
 

@@ -85,6 +85,48 @@ function stripEmojis(text: string): string {
     );
 }
 
+/** Break a long word into chunks of maxWidth */
+function breakLongWord(word: string, maxWidth: number): string[] {
+  const chunks: string[] = [];
+  for (let i = 0; i < word.length; i += maxWidth) {
+    chunks.push(word.slice(i, i + maxWidth));
+  }
+  return chunks;
+}
+
+/** Process a long word that exceeds maxWidth */
+function processLongWord(
+  word: string,
+  currentLine: string,
+  lines: string[],
+  maxWidth: number,
+): { newCurrentLine: string } {
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  lines.push(...breakLongWord(word, maxWidth));
+  return { newCurrentLine: '' };
+}
+
+/** Process a normal word that fits within maxWidth */
+function processNormalWord(
+  word: string,
+  currentLine: string,
+  lines: string[],
+  maxWidth: number,
+): { newCurrentLine: string } {
+  const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+  if (testLine.length <= maxWidth) {
+    return { newCurrentLine: testLine };
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  return { newCurrentLine: word };
+}
+
 /**
  * Wrap text to fit thermal printer width
  */
@@ -98,30 +140,11 @@ function wrapText(text: string, maxWidth: number = MAX_LINE_WIDTH): string[] {
   let currentLine = '';
 
   for (const word of words) {
-    // Handle words longer than maxWidth by force-breaking them
-    if (word.length > maxWidth) {
-      if (currentLine) {
-        lines.push(currentLine);
-        currentLine = '';
-      }
-
-      // Break long word into chunks
-      for (let i = 0; i < word.length; i += maxWidth) {
-        lines.push(word.slice(i, i + maxWidth));
-      }
-      continue;
-    }
-
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-
-    if (testLine.length <= maxWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      currentLine = word;
-    }
+    const result =
+      word.length > maxWidth
+        ? processLongWord(word, currentLine, lines, maxWidth)
+        : processNormalWord(word, currentLine, lines, maxWidth);
+    currentLine = result.newCurrentLine;
   }
 
   if (currentLine) {

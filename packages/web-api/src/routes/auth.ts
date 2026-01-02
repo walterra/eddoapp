@@ -108,6 +108,34 @@ authApp.post('/register', async (c) => {
   }
 });
 
+/** Handle login for registered users */
+async function handleRegisteredUserLogin(
+  user: { _id: string; username: string; password_hash: string; status: string },
+  password: string,
+  tokenExpiration: number,
+  expiresInLabel: string,
+): Promise<
+  { success: true; response: object } | { success: false; error: string; status: number }
+> {
+  const isValid = await verifyPassword(password, user.password_hash);
+  if (!isValid) return { success: false, error: 'Invalid credentials', status: 401 };
+  if (user.status !== 'active')
+    return { success: false, error: 'Account is suspended', status: 403 };
+
+  const token = createToken(user._id, user.username, tokenExpiration);
+  return {
+    success: true,
+    response: { token, username: user.username, userId: user._id, expiresIn: expiresInLabel },
+  };
+}
+
+/** Check if demo credentials are valid */
+function isValidDemoCredentials(username: string, password: string): boolean {
+  if (username === 'demo' && password === 'password') return true;
+  const url = new URL(config.couchdb.url);
+  return username === url.username && password === url.password;
+}
+
 authApp.post('/login', async (c) => {
   try {
     const body = await c.req.json();
@@ -117,26 +145,20 @@ authApp.post('/login', async (c) => {
 
     const user = await userRegistry.findByUsername(username);
     if (user) {
-      const isValid = await verifyPassword(password, user.password_hash);
-      if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
-      if (user.status !== 'active') return c.json({ error: 'Account is suspended' }, 403);
-
-      const token = createToken(user._id, user.username, tokenExpiration);
-      return c.json({
-        token,
-        username: user.username,
-        userId: user._id,
-        expiresIn: expiresInLabel,
-      });
+      const result = await handleRegisteredUserLogin(
+        user,
+        password,
+        tokenExpiration,
+        expiresInLabel,
+      );
+      if (!result.success) return c.json({ error: result.error }, result.status as 401 | 403);
+      return c.json(result.response);
     }
 
     // Fallback to demo authentication for backward compatibility
-    const url = new URL(config.couchdb.url);
-    const validCredentials =
-      (username === 'demo' && password === 'password') ||
-      (username === url.username && password === url.password);
-
-    if (!validCredentials) return c.json({ error: 'Invalid credentials' }, 401);
+    if (!isValidDemoCredentials(username, password)) {
+      return c.json({ error: 'Invalid credentials' }, 401);
+    }
 
     const token = createToken(`demo_${username}`, username, tokenExpiration);
     return c.json({ token, username, userId: `demo_${username}`, expiresIn: expiresInLabel });

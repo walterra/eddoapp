@@ -178,7 +178,7 @@ export async function getBackupConfig(options: Partial<BackupConfig>): Promise<B
   const optionAnswers =
     optionQuestions.length > 0 ? await prompts(optionQuestions, { onCancel }) : {};
 
-  return mergeConfig(defaults, options, optionAnswers, baseUrl, database);
+  return mergeConfig({ defaults, options, optionAnswers, baseUrl, database });
 }
 
 /** Prompt for URL and database */
