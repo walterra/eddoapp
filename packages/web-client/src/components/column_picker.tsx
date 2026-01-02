@@ -36,12 +36,12 @@ interface ColumnItemProps {
 
 const ColumnItem: FC<ColumnItemProps> = ({ column, isSelected, isLastSelected, onToggle }) => (
   <label
-    className={`flex items-center gap-2 rounded px-2 py-1 ${TRANSITION} hover:bg-gray-100 dark:hover:bg-gray-700 ${
+    className={`flex items-center gap-2 rounded px-2 py-1 ${TRANSITION} hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
       isLastSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
     }`}
   >
     <Checkbox checked={isSelected} disabled={isLastSelected} onChange={onToggle} />
-    <span className="text-sm text-gray-700 dark:text-gray-300">{column.label}</span>
+    <span className="text-sm text-neutral-700 dark:text-neutral-300">{column.label}</span>
   </label>
 );
 
@@ -92,13 +92,13 @@ export const ColumnPicker: FC<ColumnPickerProps> = ({ selectedColumns, onColumns
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full z-20 mt-1 max-h-96 w-56 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-            <div className="mb-2 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
+          <div className="absolute top-full z-20 mt-1 max-h-96 w-56 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800">
+            <div className="mb-2 text-xs font-semibold text-neutral-500 uppercase dark:text-neutral-400">
               Visible Columns
             </div>
             <ColumnList onToggle={toggleColumn} selectedColumns={selectedColumns} />
             {selectedColumns.length === 1 && (
-              <div className="mt-2 border-t border-gray-200 pt-2 text-xs text-gray-500 dark:border-gray-600 dark:text-gray-400">
+              <div className="mt-2 border-t border-neutral-200 pt-2 text-xs text-neutral-500 dark:border-neutral-600 dark:text-neutral-400">
                 At least one column must be visible
               </div>
             )}

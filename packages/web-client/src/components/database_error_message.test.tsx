@@ -124,7 +124,7 @@ describe('DatabaseErrorMessage', () => {
       render(<DatabaseErrorMessage error={error} />);
 
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass('bg-red-50', 'border-red-200', 'text-red-800');
+      expect(alert).toHaveClass('bg-error-50', 'border-error-200', 'text-error-800');
     });
 
     it('applies yellow styling for retryable network errors', () => {
@@ -140,7 +140,7 @@ describe('DatabaseErrorMessage', () => {
       render(<DatabaseErrorMessage error={error} />);
 
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass('bg-red-50', 'border-red-200', 'text-red-800');
+      expect(alert).toHaveClass('bg-error-50', 'border-error-200', 'text-error-800');
     });
 
     it('applies red styling for other error types', () => {
@@ -148,7 +148,7 @@ describe('DatabaseErrorMessage', () => {
       render(<DatabaseErrorMessage error={error} />);
 
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass('bg-red-50', 'border-red-200', 'text-red-800');
+      expect(alert).toHaveClass('bg-error-50', 'border-error-200', 'text-error-800');
     });
   });
 

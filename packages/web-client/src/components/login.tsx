@@ -14,11 +14,11 @@ interface FormHeaderProps {
 
 const FormHeader: FC<FormHeaderProps> = ({ isAuthenticating, onGoToRegister }) => (
   <div>
-    <h3 className="text-xl font-medium text-gray-900">Sign in to Eddo App</h3>
-    <p className="mt-1 text-sm text-gray-600">
+    <h3 className="text-xl font-medium text-neutral-900">Sign in to Eddo App</h3>
+    <p className="mt-1 text-sm text-neutral-600">
       Don&apos;t have an account?{' '}
       <button
-        className="text-blue-600 hover:underline"
+        className="text-primary-600 hover:underline"
         disabled={isAuthenticating}
         onClick={onGoToRegister}
         type="button"
@@ -30,7 +30,9 @@ const FormHeader: FC<FormHeaderProps> = ({ isAuthenticating, onGoToRegister }) =
 );
 
 const ErrorMessage: FC<{ error: string }> = ({ error }) =>
-  error ? <div className="mb-4 rounded-lg bg-red-100 p-4 text-sm text-red-700">{error}</div> : null;
+  error ? (
+    <div className="bg-error-100 text-error-700 mb-4 rounded-lg p-4 text-sm">{error}</div>
+  ) : null;
 
 interface LoginFieldsProps {
   username: string;
@@ -104,7 +106,7 @@ export const Login: FC<LoginProps> = ({ onLogin, isAuthenticating, onGoToRegiste
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
       <Card className="w-full max-w-md">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <FormHeader isAuthenticating={isAuthenticating} onGoToRegister={onGoToRegister} />

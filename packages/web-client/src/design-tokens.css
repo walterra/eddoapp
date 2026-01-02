@@ -1,0 +1,228 @@
+/**
+ * Eddo Design Tokens
+ *
+ * Centralized design system tokens for consistent styling.
+ * Uses Tailwind CSS v4 @theme directive for custom properties.
+ *
+ * See: packages/web-client/src/DESIGN_TOKENS.md for documentation
+ */
+
+/* Inter Variable Font */
+@import '@fontsource-variable/inter';
+
+@theme {
+  /* ============================================
+   * TYPOGRAPHY
+   * ============================================ */
+
+  /* Font Family */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Mono', monospace;
+
+  /* Font Sizes - 7 step scale */
+  --text-xs: 0.75rem; /* 12px - metadata, timestamps */
+  --text-sm: 0.875rem; /* 14px - body text, secondary content */
+  --text-base: 1rem; /* 16px - primary content, emphasis */
+  --text-lg: 1.125rem; /* 18px - section headers */
+  --text-xl: 1.25rem; /* 20px - page titles */
+  --text-2xl: 1.5rem; /* 24px - major headings */
+  --text-3xl: 1.875rem; /* 30px - hero text */
+
+  /* Line Heights - optimized for readability */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Letter Spacing */
+  --tracking-tighter: -0.05em;
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
+  /* ============================================
+   * SPACING SCALE
+   * Base unit: 4px (0.25rem)
+   * ============================================ */
+
+  --spacing-0: 0;
+  --spacing-0-5: 0.125rem; /* 2px */
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-1-5: 0.375rem; /* 6px */
+  --spacing-2: 0.5rem; /* 8px */
+  --spacing-3: 0.75rem; /* 12px */
+  --spacing-4: 1rem; /* 16px */
+  --spacing-5: 1.25rem; /* 20px */
+  --spacing-6: 1.5rem; /* 24px */
+  --spacing-8: 2rem; /* 32px */
+  --spacing-10: 2.5rem; /* 40px */
+  --spacing-12: 3rem; /* 48px */
+  --spacing-16: 4rem; /* 64px */
+  --spacing-20: 5rem; /* 80px */
+  --spacing-24: 6rem; /* 96px */
+
+  /* ============================================
+   * COLORS - Semantic Palette
+   * ============================================ */
+
+  /* Primary - Blue (actions, links, focus) */
+  --color-primary-50: oklch(0.97 0.02 250);
+  --color-primary-100: oklch(0.93 0.04 250);
+  --color-primary-200: oklch(0.87 0.08 250);
+  --color-primary-300: oklch(0.77 0.12 250);
+  --color-primary-400: oklch(0.65 0.17 250);
+  --color-primary-500: oklch(0.55 0.2 250);
+  --color-primary-600: oklch(0.48 0.2 250);
+  --color-primary-700: oklch(0.42 0.18 250);
+  --color-primary-800: oklch(0.35 0.15 250);
+  --color-primary-900: oklch(0.28 0.1 250);
+  --color-primary-950: oklch(0.2 0.08 250);
+
+  /* Neutral - Gray (text, backgrounds, borders) */
+  --color-neutral-50: oklch(0.985 0 0);
+  --color-neutral-100: oklch(0.965 0 0);
+  --color-neutral-200: oklch(0.925 0 0);
+  --color-neutral-300: oklch(0.87 0 0);
+  --color-neutral-400: oklch(0.7 0 0);
+  --color-neutral-500: oklch(0.55 0 0);
+  --color-neutral-600: oklch(0.45 0 0);
+  --color-neutral-700: oklch(0.37 0 0);
+  --color-neutral-800: oklch(0.27 0 0);
+  --color-neutral-900: oklch(0.2 0 0);
+  --color-neutral-950: oklch(0.13 0 0);
+
+  /* Success - Green */
+  --color-success-50: oklch(0.97 0.02 145);
+  --color-success-100: oklch(0.93 0.05 145);
+  --color-success-200: oklch(0.87 0.1 145);
+  --color-success-300: oklch(0.77 0.14 145);
+  --color-success-400: oklch(0.65 0.17 145);
+  --color-success-500: oklch(0.55 0.18 145);
+  --color-success-600: oklch(0.48 0.16 145);
+  --color-success-700: oklch(0.42 0.14 145);
+  --color-success-800: oklch(0.35 0.11 145);
+  --color-success-900: oklch(0.28 0.08 145);
+  --color-success-950: oklch(0.2 0.06 145);
+
+  /* Warning - Amber */
+  --color-warning-50: oklch(0.98 0.02 85);
+  --color-warning-100: oklch(0.95 0.05 85);
+  --color-warning-200: oklch(0.9 0.1 85);
+  --color-warning-300: oklch(0.83 0.15 85);
+  --color-warning-400: oklch(0.75 0.17 85);
+  --color-warning-500: oklch(0.68 0.18 80);
+  --color-warning-600: oklch(0.6 0.17 75);
+  --color-warning-700: oklch(0.52 0.14 70);
+  --color-warning-800: oklch(0.44 0.11 65);
+  --color-warning-900: oklch(0.36 0.08 60);
+  --color-warning-950: oklch(0.26 0.06 55);
+
+  /* Error - Red */
+  --color-error-50: oklch(0.97 0.02 25);
+  --color-error-100: oklch(0.93 0.05 25);
+  --color-error-200: oklch(0.87 0.1 25);
+  --color-error-300: oklch(0.77 0.15 25);
+  --color-error-400: oklch(0.65 0.19 25);
+  --color-error-500: oklch(0.55 0.2 25);
+  --color-error-600: oklch(0.48 0.19 25);
+  --color-error-700: oklch(0.42 0.16 25);
+  --color-error-800: oklch(0.35 0.13 25);
+  --color-error-900: oklch(0.28 0.1 25);
+  --color-error-950: oklch(0.2 0.08 25);
+
+  /* Accent - Purple (for delight, highlights) */
+  --color-accent-50: oklch(0.97 0.02 290);
+  --color-accent-100: oklch(0.93 0.05 290);
+  --color-accent-200: oklch(0.87 0.1 290);
+  --color-accent-300: oklch(0.77 0.14 290);
+  --color-accent-400: oklch(0.65 0.17 290);
+  --color-accent-500: oklch(0.55 0.18 290);
+  --color-accent-600: oklch(0.48 0.17 290);
+  --color-accent-700: oklch(0.42 0.15 290);
+  --color-accent-800: oklch(0.35 0.12 290);
+  --color-accent-900: oklch(0.28 0.09 290);
+  --color-accent-950: oklch(0.2 0.07 290);
+
+  /* ============================================
+   * BORDER RADIUS
+   * ============================================ */
+
+  --radius-none: 0;
+  --radius-sm: 0.125rem; /* 2px */
+  --radius-default: 0.25rem; /* 4px */
+  --radius-md: 0.375rem; /* 6px */
+  --radius-lg: 0.5rem; /* 8px */
+  --radius-xl: 0.75rem; /* 12px */
+  --radius-2xl: 1rem; /* 16px */
+  --radius-full: 9999px;
+
+  /* ============================================
+   * SHADOWS
+   * ============================================ */
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-default: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* ============================================
+   * TRANSITIONS
+   * ============================================ */
+
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+ * SEMANTIC COLOR ALIASES
+ * These are regular CSS variables (not @theme) so they can
+ * reference theme colors and adapt to dark mode.
+ * ============================================ */
+
+:root {
+  /* Background */
+  --color-bg: oklch(0.985 0 0); /* neutral-50 */
+  --color-bg-subtle: oklch(0.965 0 0); /* neutral-100 */
+  --color-bg-muted: oklch(0.925 0 0); /* neutral-200 */
+  --color-bg-emphasis: oklch(0.2 0 0); /* neutral-900 */
+
+  /* Foreground / Text */
+  --color-fg: oklch(0.2 0 0); /* neutral-900 */
+  --color-fg-muted: oklch(0.45 0 0); /* neutral-600 */
+  --color-fg-subtle: oklch(0.7 0 0); /* neutral-400 */
+  --color-fg-on-emphasis: oklch(0.985 0 0); /* neutral-50 */
+
+  /* Border */
+  --color-border: oklch(0.925 0 0); /* neutral-200 */
+  --color-border-muted: oklch(0.965 0 0); /* neutral-100 */
+  --color-border-emphasis: oklch(0.7 0 0); /* neutral-400 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Background - inverted */
+    --color-bg: oklch(0.13 0 0); /* neutral-950 */
+    --color-bg-subtle: oklch(0.2 0 0); /* neutral-900 */
+    --color-bg-muted: oklch(0.27 0 0); /* neutral-800 */
+    --color-bg-emphasis: oklch(0.965 0 0); /* neutral-100 */
+
+    /* Foreground / Text - inverted */
+    --color-fg: oklch(0.965 0 0); /* neutral-100 */
+    --color-fg-muted: oklch(0.7 0 0); /* neutral-400 */
+    --color-fg-subtle: oklch(0.55 0 0); /* neutral-500 */
+    --color-fg-on-emphasis: oklch(0.2 0 0); /* neutral-900 */
+
+    /* Border - inverted */
+    --color-border: oklch(0.27 0 0); /* neutral-800 */
+    --color-border-muted: oklch(0.2 0 0); /* neutral-900 */
+    --color-border-emphasis: oklch(0.45 0 0); /* neutral-600 */
+  }
+}

@@ -19,7 +19,7 @@ const ToggleRow: FC<ToggleRowProps> = ({ label, hint, checked, disabled, onChang
   <div className="flex items-center justify-between">
     <div>
       <Label>{label}</Label>
-      <p className="text-xs text-gray-500">{hint}</p>
+      <p className="text-xs text-neutral-500">{hint}</p>
     </div>
     <ToggleSwitch checked={checked} disabled={disabled} onChange={onChange} />
   </div>
@@ -55,7 +55,7 @@ const TimeInput: FC<TimeInputProps> = ({
       type="time"
       value={value}
     />
-    <p className="mt-1 text-xs text-gray-500">{hint}</p>
+    <p className="mt-1 text-xs text-neutral-500">{hint}</p>
   </div>
 );
 
@@ -93,8 +93,8 @@ const ScheduleSection: FC<ScheduleSectionProps> = ({ config, state, handlers, is
   <div className="rounded-lg border p-4">
     <div className="space-y-4">
       <div>
-        <h3 className="font-medium text-gray-900">{config.title}</h3>
-        <p className="text-sm text-gray-600">{config.description}</p>
+        <h3 className="font-medium text-neutral-900">{config.title}</h3>
+        <p className="text-sm text-neutral-600">{config.description}</p>
       </div>
       <ToggleRow
         checked={state.enabled}
@@ -183,7 +183,7 @@ export const PreferencesTab: FC<PreferencesTabProps> = (props) => {
   return (
     <Card>
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900">Preferences</h2>
+        <h2 className="text-xl font-semibold text-neutral-900">Preferences</h2>
         <div className="space-y-6">
           <ScheduleSection {...briefingSection} isLoading={isLoading} />
           <ScheduleSection {...recapSection} isLoading={isLoading} />

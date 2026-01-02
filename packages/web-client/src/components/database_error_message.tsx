@@ -27,12 +27,12 @@ const getErrorMessage = (error: DatabaseError): string => {
 
 const getErrorStyles = (error: DatabaseError): string => {
   if (error.type === DatabaseErrorType.QUOTA_EXCEEDED) {
-    return 'bg-red-50 border-red-200 text-red-800';
+    return 'bg-error-50 border-error-200 text-error-800';
   }
   if (error.type === DatabaseErrorType.NETWORK_ERROR && error.retryable) {
     return 'bg-yellow-50 border-yellow-200 text-yellow-800';
   }
-  return 'bg-red-50 border-red-200 text-red-800';
+  return 'bg-error-50 border-error-200 text-error-800';
 };
 
 const AlertIcon: FC = () => (

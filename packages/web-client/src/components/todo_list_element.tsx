@@ -33,10 +33,10 @@ interface ErrorDisplayProps {
 
 const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onDismiss }) =>
   error ? (
-    <div className="mb-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs dark:border-red-700 dark:bg-red-900">
-      <span className="text-red-700 dark:text-red-200">Failed to update todo</span>
+    <div className="border-error-200 bg-error-50 dark:border-error-700 dark:bg-error-900 mb-1 rounded border px-2 py-1 text-xs">
+      <span className="text-error-700 dark:text-error-200">Failed to update todo</span>
       <button
-        className={`ml-2 ${TRANSITION} rounded text-red-600 hover:text-red-500 ${FOCUS_RING}`}
+        className={`ml-2 ${TRANSITION} text-error-600 hover:text-error-500 rounded ${FOCUS_RING}`}
         onClick={onDismiss}
       >
         ×
@@ -52,7 +52,7 @@ interface TitleDisplayProps {
 const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
   const className = [
     'text-xs',
-    todo.completed || activityOnly ? 'text-gray-400' : '',
+    todo.completed || activityOnly ? 'text-neutral-400' : '',
     todo.completed ? 'line-through' : '',
   ]
     .filter(Boolean)
@@ -62,7 +62,7 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
     <span className={className}>
       {todo.link !== null && !activityOnly ? (
         <a
-          className={`font-medium text-blue-600 ${TRANSITION} rounded hover:text-blue-800 hover:underline dark:text-blue-500 dark:hover:text-blue-300 ${FOCUS_RING}`}
+          className={`text-primary-600 font-medium ${TRANSITION} hover:text-primary-800 dark:text-primary-500 dark:hover:text-primary-300 rounded hover:underline ${FOCUS_RING}`}
           href={todo.link}
           rel="noreferrer"
           target="_BLANK"
@@ -76,7 +76,7 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
   );
 };
 
-const ICON_BUTTON_BASE = `rounded p-1 ${TRANSITION} text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 ${FOCUS_RING}`;
+const ICON_BUTTON_BASE = `rounded p-1 ${TRANSITION} text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-neutral-700 ${FOCUS_RING}`;
 const ICON_BUTTON_REVEAL = 'opacity-0 group-hover:opacity-100 focus:opacity-100';
 
 interface TimeTrackingButtonProps {
@@ -125,7 +125,7 @@ const ActionButtons: FC<ActionButtonsProps> = (props) => {
   return (
     <div className="-mt-0.5 -mr-0.5 flex items-start space-x-0.5">
       {activeDuration > 0 && (
-        <span className="text-xs text-gray-400" data-counter={activeCounter}>
+        <span className="text-xs text-neutral-400" data-counter={activeCounter}>
           {getFormattedDuration(activeDuration)}
         </span>
       )}
@@ -208,12 +208,12 @@ interface TodoContentProps {
 }
 
 const TodoContent: FC<TodoContentProps> = ({ todo, activityOnly, isUpdating, onToggle }) => (
-  <div className="text-xs text-gray-900 dark:text-white">
+  <div className="text-xs text-neutral-900 dark:text-white">
     <div className="flex space-x-1">
       <div className="mr-0.5 -ml-1">
         {!activityOnly && (
           <Checkbox
-            className="checkbox checkbox-xs text-gray-400"
+            className="checkbox checkbox-xs text-neutral-400"
             color="gray"
             defaultChecked={todo.completed !== null}
             disabled={isUpdating}
@@ -243,7 +243,7 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
 }) => {
   const state = useTodoListState(todo, active, activeDate);
   const activeClass = active ? 'border-2 border-sky-600 ' : '';
-  const cardClass = `${activeClass}mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-2 py-1 ${TRANSITION} hover:shadow-md hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600`;
+  const cardClass = `${activeClass}mb-1 flex max-w-md transform flex-col rounded border border-neutral-200 bg-white px-2 py-1 ${TRANSITION} hover:shadow-md hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-neutral-600`;
 
   return (
     <div className={cardClass}>

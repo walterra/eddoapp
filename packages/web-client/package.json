@@ -6,6 +6,7 @@
   "dependencies": {
     "@eddo/core-client": "workspace:*",
     "@eddo/core-shared": "workspace:*",
+    "@fontsource-variable/inter": "^5.2.8",
     "@tanstack/react-query": "^5.90.5",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",

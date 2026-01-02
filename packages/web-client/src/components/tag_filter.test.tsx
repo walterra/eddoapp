@@ -53,7 +53,7 @@ describe('TagFilter', () => {
         />,
       );
       const button = screen.getByText('Tags').closest('button');
-      expect(button).toHaveClass('border-blue-500', 'bg-blue-50');
+      expect(button).toHaveClass('border-primary-500', 'bg-primary-50');
     });
 
     it('applies default styles when no tags are selected', () => {
@@ -65,7 +65,7 @@ describe('TagFilter', () => {
         />,
       );
       const button = screen.getByText('Tags').closest('button');
-      expect(button).toHaveClass('border-gray-300', 'bg-white');
+      expect(button).toHaveClass('border-neutral-300', 'bg-white');
     });
   });
 
@@ -207,8 +207,8 @@ describe('TagFilter', () => {
       const workButton = screen.getByRole('button', { name: 'work' });
       const urgentButton = screen.getByRole('button', { name: 'urgent' });
 
-      expect(workButton).toHaveClass('bg-blue-100', 'text-blue-800');
-      expect(urgentButton).toHaveClass('text-gray-700');
+      expect(workButton).toHaveClass('bg-primary-100', 'text-primary-800');
+      expect(urgentButton).toHaveClass('text-neutral-700');
     });
   });
 

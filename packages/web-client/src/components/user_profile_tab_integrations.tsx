@@ -26,7 +26,7 @@ export function IntegrationsTab({
   return (
     <Card>
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900">External Integrations</h2>
+        <h2 className="text-xl font-semibold text-neutral-900">External Integrations</h2>
         <div className="space-y-4">
           <TelegramSection
             isLoading={isLoading}
@@ -70,8 +70,8 @@ const TelegramHeader: FC<{
 }> = ({ telegramId, isLoading, onUnlink }) => (
   <div className="flex items-center justify-between">
     <div>
-      <h3 className="font-medium text-gray-900">Telegram Bot</h3>
-      <p className="text-sm text-gray-600">
+      <h3 className="font-medium text-neutral-900">Telegram Bot</h3>
+      <p className="text-sm text-neutral-600">
         {telegramId ? `Connected to Telegram ID: ${telegramId}` : 'Not connected to Telegram'}
       </p>
     </div>
@@ -84,7 +84,7 @@ const TelegramHeader: FC<{
 );
 
 const TelegramInstructions: FC = () => (
-  <div className="text-sm text-gray-500">
+  <div className="text-sm text-neutral-500">
     <p>
       💡 <strong>How to get your Telegram ID:</strong>
     </p>
@@ -112,8 +112,8 @@ const TelegramLinkForm: FC<TelegramLinkFormProps> = ({
 }) => (
   <div className="mt-4 space-y-4 border-t pt-4">
     <div>
-      <h4 className="font-medium text-gray-900">Link Telegram Account</h4>
-      <p className="text-sm text-gray-600">
+      <h4 className="font-medium text-neutral-900">Link Telegram Account</h4>
+      <p className="text-sm text-neutral-600">
         Enter your Telegram ID to link your account. You can get your Telegram ID by messaging the
         bot.
       </p>

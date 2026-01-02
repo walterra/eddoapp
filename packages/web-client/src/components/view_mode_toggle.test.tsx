@@ -19,8 +19,8 @@ describe('ViewModeToggle Component', () => {
     const kanbanButton = screen.getByTitle('Kanban View');
     const tableButton = screen.getByTitle('Table View');
 
-    expect(kanbanButton).toHaveClass('bg-blue-100');
-    expect(tableButton).not.toHaveClass('bg-blue-100');
+    expect(kanbanButton).toHaveClass('bg-primary-100');
+    expect(tableButton).not.toHaveClass('bg-primary-100');
   });
 
   it('highlights active view (table)', () => {
@@ -29,8 +29,8 @@ describe('ViewModeToggle Component', () => {
     const kanbanButton = screen.getByTitle('Kanban View');
     const tableButton = screen.getByTitle('Table View');
 
-    expect(tableButton).toHaveClass('bg-blue-100');
-    expect(kanbanButton).not.toHaveClass('bg-blue-100');
+    expect(tableButton).toHaveClass('bg-primary-100');
+    expect(kanbanButton).not.toHaveClass('bg-primary-100');
   });
 
   it('calls onViewModeChange when kanban button clicked', async () => {

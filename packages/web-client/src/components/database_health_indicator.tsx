@@ -15,13 +15,13 @@ interface DatabaseHealthIndicatorProps {
 const getStatusColor = (status: string): string => {
   switch (status) {
     case 'healthy':
-      return 'bg-green-500';
+      return 'bg-success-500';
     case 'degraded':
       return 'bg-yellow-500';
     case 'unhealthy':
-      return 'bg-red-500';
+      return 'bg-error-500';
     default:
-      return 'bg-gray-400';
+      return 'bg-neutral-400';
   }
 };
 
@@ -46,15 +46,15 @@ const formatTimestamp = (date: Date): string =>
   }).format(date);
 
 const getSyncStatusClassName = (syncStatus: string): string => {
-  if (syncStatus === 'connected') return 'text-green-600';
-  if (syncStatus === 'error') return 'text-red-600';
+  if (syncStatus === 'connected') return 'text-success-600';
+  if (syncStatus === 'error') return 'text-error-600';
   return 'text-yellow-600';
 };
 
 const UnknownStatus: FC<{ className: string }> = ({ className }) => (
   <div className={`flex items-center gap-2 ${className}`}>
-    <div className="h-2 w-2 rounded-full bg-gray-400"></div>
-    <span className="text-sm text-gray-500">Unknown</span>
+    <div className="h-2 w-2 rounded-full bg-neutral-400"></div>
+    <span className="text-sm text-neutral-500">Unknown</span>
   </div>
 );
 
@@ -67,7 +67,7 @@ const StatusBadge: FC<StatusBadgeProps> = ({ status, responseTime }) => (
   <div className="flex items-center gap-2">
     <div className={`h-2 w-2 rounded-full ${getStatusColor(status)}`}></div>
     <span className="text-sm font-medium">{getStatusText(status)}</span>
-    {responseTime && <span className="text-xs text-gray-500">({responseTime}ms)</span>}
+    {responseTime && <span className="text-xs text-neutral-500">({responseTime}ms)</span>}
   </div>
 );
 
@@ -80,17 +80,19 @@ const MetricsRow: FC<MetricsRowProps> = ({ healthCheck, databaseName }) => (
   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
     {databaseName && (
       <div>
-        <span className="text-gray-600">DB: </span>
-        <span className="font-mono text-gray-800">{databaseName}</span>
+        <span className="text-neutral-600">DB: </span>
+        <span className="font-mono text-neutral-800">{databaseName}</span>
       </div>
     )}
     <div>Last: {formatTimestamp(healthCheck.timestamp)}</div>
     {healthCheck.metrics.storageQuota && (
       <div>
-        <span className="text-gray-600">Storage: </span>
+        <span className="text-neutral-600">Storage: </span>
         <span
           className={
-            healthCheck.metrics.storageQuota.percentage > 80 ? 'text-orange-600' : 'text-gray-800'
+            healthCheck.metrics.storageQuota.percentage > 80
+              ? 'text-orange-600'
+              : 'text-neutral-800'
           }
         >
           {healthCheck.metrics.storageQuota.percentage.toFixed(1)}%
@@ -98,13 +100,13 @@ const MetricsRow: FC<MetricsRowProps> = ({ healthCheck, databaseName }) => (
       </div>
     )}
     <div>
-      <span className="text-gray-600">Sync: </span>
+      <span className="text-neutral-600">Sync: </span>
       <span className={`capitalize ${getSyncStatusClassName(healthCheck.metrics.syncStatus)}`}>
         {healthCheck.metrics.syncStatus}
       </span>
     </div>
     {healthCheck.metrics.consecutiveFailures > 0 && (
-      <div className="text-red-600">Failures: {healthCheck.metrics.consecutiveFailures}</div>
+      <div className="text-error-600">Failures: {healthCheck.metrics.consecutiveFailures}</div>
     )}
   </div>
 );
@@ -121,7 +123,7 @@ const IssuesDisplay: FC<IssuesDisplayProps> = ({ issues }) => {
   return (
     <div className="mt-1 flex flex-wrap gap-x-4">
       {criticalIssues.map((issue, index) => (
-        <div className="text-red-600" key={index}>
+        <div className="text-error-600" key={index}>
           <strong>Critical:</strong> {issue.message}
         </div>
       ))}
@@ -140,7 +142,7 @@ interface DetailsDisplayProps {
 }
 
 const DetailsDisplay: FC<DetailsDisplayProps> = ({ healthCheck, databaseName }) => (
-  <div className="mt-1 text-xs text-gray-600">
+  <div className="mt-1 text-xs text-neutral-600">
     <MetricsRow databaseName={databaseName} healthCheck={healthCheck} />
     <IssuesDisplay issues={healthCheck.issues} />
   </div>

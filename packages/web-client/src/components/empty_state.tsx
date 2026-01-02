@@ -14,7 +14,7 @@ export const EmptyState: FC<EmptyStateProps> = ({ title, description, icon }) =>
   const defaultIcon = (
     <svg
       aria-hidden="true"
-      className="mx-auto h-12 w-12 text-gray-400"
+      className="mx-auto h-12 w-12 text-neutral-400"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -32,8 +32,8 @@ export const EmptyState: FC<EmptyStateProps> = ({ title, description, icon }) =>
     <div className="flex min-h-64 flex-col items-center justify-center px-4 py-12">
       <div className="text-center">
         {icon ?? defaultIcon}
-        <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">{title}</h3>
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{description}</p>
+        <h3 className="mt-4 text-lg font-medium text-neutral-900 dark:text-white">{title}</h3>
+        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
       </div>
     </div>
   );

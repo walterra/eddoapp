@@ -155,7 +155,7 @@ export const RepeatField: FC<TodoFieldProps> = ({ todo, onChange }) => (
 export const CompletedField: FC<TodoFieldProps> = ({ todo, onChange }) => (
   <div className="flex items-center gap-2">
     <Checkbox
-      className="checkbox checkbox-xs text-gray-400"
+      className="checkbox checkbox-xs text-neutral-400"
       color="gray"
       defaultChecked={todo.completed !== null}
       id="eddoTodoComplete"

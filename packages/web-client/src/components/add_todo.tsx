@@ -153,7 +153,7 @@ export const AddTodo: FC = () => {
   return (
     <form onSubmit={handleSubmit}>
       <ErrorDisplay error={error} onDismiss={clearError} />
-      <div className="flex items-center space-x-3 bg-white py-4 lg:mt-1.5 dark:bg-gray-800">
+      <div className="flex items-center space-x-3 bg-white py-4 lg:mt-1.5 dark:bg-neutral-800">
         <FormFields allTags={allTags} setState={setState} state={state} />
         <SubmitButton isPending={createTodoMutation.isPending} />
       </div>

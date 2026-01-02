@@ -4,45 +4,45 @@
 
 /** Base focus ring styles for keyboard accessibility */
 export const FOCUS_RING =
-  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800';
+  'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-800';
 
 /** Focus ring without offset (for elements with backgrounds) */
 export const FOCUS_RING_INSET =
-  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset';
+  'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset';
 
 /** Standard transition for interactive elements */
 export const TRANSITION = 'transition-colors duration-200';
 
 /** Filter dropdown trigger button - inactive state */
-export const FILTER_BUTTON_INACTIVE = `flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${TRANSITION} border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 ${FOCUS_RING}`;
+export const FILTER_BUTTON_INACTIVE = `flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${TRANSITION} border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 ${FOCUS_RING}`;
 
 /** Filter dropdown trigger button - active state */
-export const FILTER_BUTTON_ACTIVE = `flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${TRANSITION} border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 ${FOCUS_RING}`;
+export const FILTER_BUTTON_ACTIVE = `flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${TRANSITION} border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-900 dark:text-primary-300 dark:hover:bg-primary-800 ${FOCUS_RING}`;
 
 /** Dropdown list item button */
-export const DROPDOWN_ITEM = `block w-full rounded px-2 py-1 text-left text-sm ${TRANSITION} hover:bg-gray-100 dark:hover:bg-gray-700 ${FOCUS_RING_INSET}`;
+export const DROPDOWN_ITEM = `block w-full rounded px-2 py-1 text-left text-sm ${TRANSITION} hover:bg-neutral-100 dark:hover:bg-neutral-700 ${FOCUS_RING_INSET}`;
 
 /** Dropdown list item button - selected state additions */
 export const DROPDOWN_ITEM_SELECTED =
-  'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200';
 
 /** Dropdown list item button - unselected state additions */
-export const DROPDOWN_ITEM_UNSELECTED = 'text-gray-700 dark:text-gray-300';
+export const DROPDOWN_ITEM_UNSELECTED = 'text-neutral-700 dark:text-neutral-300';
 
 /** Icon button (small action buttons like edit, play/pause) */
-export const ICON_BUTTON = `rounded p-1 ${TRANSITION} text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 ${FOCUS_RING}`;
+export const ICON_BUTTON = `rounded p-1 ${TRANSITION} text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-neutral-700 ${FOCUS_RING}`;
 
 /** Icon button that appears on hover (for todo cards) */
 export const ICON_BUTTON_REVEAL = `${ICON_BUTTON} opacity-0 group-hover:opacity-100 focus:opacity-100`;
 
 /** Text link styles */
-export const TEXT_LINK = `${TRANSITION} text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-200 ${FOCUS_RING}`;
+export const TEXT_LINK = `${TRANSITION} text-primary-600 hover:text-primary-800 hover:underline dark:text-primary-400 dark:hover:text-primary-200 ${FOCUS_RING}`;
 
 /** Clear/reset button in dropdowns */
-export const CLEAR_BUTTON = `text-xs ${TRANSITION} text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 ${FOCUS_RING} rounded`;
+export const CLEAR_BUTTON = `text-xs ${TRANSITION} text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200 ${FOCUS_RING} rounded`;
 
 /** Card hover state for todo items */
-export const CARD_HOVER = `${TRANSITION} hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600`;
+export const CARD_HOVER = `${TRANSITION} hover:shadow-md hover:border-neutral-300 dark:hover:border-neutral-600`;
 
 /** Helper to combine dropdown item with selection state */
 export const getDropdownItemClass = (isSelected: boolean): string =>

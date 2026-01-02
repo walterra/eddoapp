@@ -30,7 +30,7 @@ interface TimeTrackingButtonProps {
 
 const TimeTrackingButton: FC<TimeTrackingButtonProps> = ({ isActive, isUpdating, onClick }) => (
   <button
-    className={`rounded p-0.5 ${TRANSITION} text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-200 ${FOCUS_RING}`}
+    className={`rounded p-0.5 ${TRANSITION} text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-200 ${FOCUS_RING}`}
     disabled={isUpdating}
     onClick={onClick}
     title={isActive ? 'Pause' : 'Start'}
@@ -65,7 +65,7 @@ const TodoRowActions: FC<TodoRowActionsProps> = ({
         />
       )}
       <button
-        className={`rounded p-0.5 ${TRANSITION} text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-200 ${FOCUS_RING}`}
+        className={`rounded p-0.5 ${TRANSITION} text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-200 ${FOCUS_RING}`}
         onClick={onEdit}
         title="Edit"
         type="button"
@@ -166,7 +166,7 @@ const TodoRowInner: FC<TodoRowProps> = ({
 
   return (
     <>
-      <tr className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700">
+      <tr className="border-b border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-700">
         <RowCells
           activeDuration={state.activeDuration}
           columns={reorderColumnsWithStatusFirst(selectedColumns)}
