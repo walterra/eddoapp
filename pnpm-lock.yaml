@@ -506,6 +506,9 @@ importers:
       '@eddo/core-shared':
         specifier: workspace:*
         version: link:../core-shared
+      '@fontsource-variable/inter':
+        specifier: ^5.2.8
+        version: 5.2.8
       '@tanstack/react-query':
         specifier: ^5.90.5
         version: 5.90.5(react@19.2.3)
@@ -1509,6 +1512,9 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@fontsource-variable/inter@5.2.8':
+    resolution: {integrity: sha512-kOfP2D+ykbcX/P3IFnokOhVRNoTozo5/JxhAIVYLpea/UBmCQ/YWPBfWIDuBImXX/15KH+eKh4xpEUyS2sQQGQ==}
 
   '@grammyjs/types@3.22.2':
     resolution: {integrity: sha512-uu7DX2ezhnBPozL3bXHmwhLvaFsh59E4QyviNH4Cij7EdVekYrs6mCzeXsa2pDk30l3uXo7DBahlZLzTPtpYZg==}
@@ -8154,6 +8160,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
+  '@fontsource-variable/inter@5.2.8': {}
+
   '@grammyjs/types@3.22.2': {}
 
   '@grpc/grpc-js@1.14.3':
@@ -11043,7 +11051,7 @@ snapshots:
       strict-event-emitter-types: 2.0.0
       undici: 7.16.0
       uri-templates: 0.2.0
-      xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@3.25.76))(zod@4.2.1)
+      xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@4.2.1))(zod@4.2.1)
       yargs: 18.0.0
       zod: 4.2.1
       zod-to-json-schema: 3.25.0(zod@4.2.1)
@@ -14300,7 +14308,7 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.24.6(zod@3.25.76)
 
-  xsschema@0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@3.25.76))(zod@4.2.1):
+  xsschema@0.4.0-beta.5(zod-to-json-schema@3.25.0(zod@4.2.1))(zod@4.2.1):
     optionalDependencies:
       zod: 4.2.1
       zod-to-json-schema: 3.25.0(zod@4.2.1)
