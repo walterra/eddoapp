@@ -2,6 +2,14 @@ import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { UserPreferences } from '@eddo/core-shared';
 
 import { logger } from './logger.js';
+import {
+  logCacheHit,
+  logInactiveUser,
+  logLookupError,
+  logLookupSuccess,
+  logUserNotFound,
+  toTelegramUser,
+} from './user-lookup-helpers.js';
 
 /**
  * User lookup result from the user registry
@@ -46,82 +54,56 @@ export function invalidateUserCache(telegramId: number): void {
   logger.debug('User cache invalidated', { telegramId });
 }
 
-/**
- * Look up a user by their Telegram ID in the user registry
- */
-export async function lookupUserByTelegramId(telegramId: number): Promise<TelegramUser | null> {
-  // Check cache first
+function cacheResult(telegramId: number, result: TelegramUser | null): void {
+  userCache.set(telegramId, result);
+  cacheTimestamps.set(telegramId, Date.now());
+}
+
+function getCachedResult(telegramId: number): { found: boolean; user: TelegramUser | null } {
   const cached = userCache.get(telegramId);
   const cacheTime = cacheTimestamps.get(telegramId);
+  const isValid = cached !== undefined && cacheTime && Date.now() - cacheTime < CACHE_TTL_MS;
 
-  if (cached !== undefined && cacheTime && Date.now() - cacheTime < CACHE_TTL_MS) {
-    logger.debug('User lookup cache hit', {
-      telegramId,
-      username: cached?.username,
-    });
-    return cached;
+  if (isValid) {
+    logCacheHit(telegramId, cached?.username);
+    return { found: true, user: cached };
   }
+  return { found: false, user: null };
+}
+
+/**
+ * Looks up a user by their Telegram ID in the user registry
+ */
+export async function lookupUserByTelegramId(telegramId: number): Promise<TelegramUser | null> {
+  const cachedResult = getCachedResult(telegramId);
+  if (cachedResult.found) return cachedResult.user;
 
   try {
-    // Initialize environment and user registry
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
     logger.debug('Looking up user by Telegram ID', { telegramId });
 
-    // Query user registry
     const user = await userRegistry.findByTelegramId(telegramId);
 
     if (!user) {
-      logger.debug('User not found in registry', { telegramId });
-      // Cache negative result
-      userCache.set(telegramId, null);
-      cacheTimestamps.set(telegramId, Date.now());
+      logUserNotFound(telegramId);
+      cacheResult(telegramId, null);
       return null;
     }
 
-    // Check if user is active
     if (user.status !== 'active') {
-      logger.warn('User found but not active', {
-        telegramId,
-        username: user.username,
-        status: user.status,
-      });
-      // Cache negative result for inactive users
-      userCache.set(telegramId, null);
-      cacheTimestamps.set(telegramId, Date.now());
+      logInactiveUser(telegramId, user.username, user.status);
+      cacheResult(telegramId, null);
       return null;
     }
 
-    logger.info('User lookup successful', {
-      telegramId,
-      username: user.username,
-      userId: user._id,
-    });
-
-    const telegramUser: TelegramUser = {
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      telegram_id: user.telegram_id!,
-      database_name: user.database_name,
-      status: user.status,
-      permissions: user.permissions,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-      preferences: user.preferences,
-    };
-
-    // Cache the result
-    userCache.set(telegramId, telegramUser);
-    cacheTimestamps.set(telegramId, Date.now());
-
+    logLookupSuccess(telegramId, user.username, user._id);
+    const telegramUser = toTelegramUser(user);
+    cacheResult(telegramId, telegramUser);
     return telegramUser;
   } catch (error) {
-    logger.error('Error looking up user by Telegram ID', {
-      telegramId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logLookupError(telegramId, error);
     return null;
   }
 }

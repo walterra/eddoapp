@@ -4,6 +4,11 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import type { MCPTool } from './client.js';
+import {
+  isConnectionError as checkIsConnectionError,
+  createUserClient,
+  invokeToolOnClient,
+} from './connection-manager-helpers.js';
 import type { MCPUserContext } from './user-context.js';
 
 export enum ConnectionState {
@@ -296,97 +301,61 @@ export class MCPConnectionManager {
   }
 
   /**
-   * Invoke a tool with user context
+   * Invokes a tool with user context
    */
   async invoke(
     toolName: string,
     params: Record<string, unknown>,
     userContext?: MCPUserContext,
   ): Promise<unknown> {
-    if (this.state !== ConnectionState.CONNECTED || !this.client) {
-      throw new Error(`Cannot invoke tool: connection state is ${this.state}`);
-    }
-
-    if (!userContext) {
-      throw new Error('User context is required for MCP tool invocation');
-    }
+    this.validateInvokePrerequisites(userContext);
 
     logger.info('Invoking MCP tool', {
       toolName,
       params,
-      username: userContext.username,
-      databaseName: userContext.databaseName,
+      username: userContext!.username,
+      databaseName: userContext!.databaseName,
     });
 
     try {
-      // Create a user-specific transport for this request
-      const userTransport = new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
-        requestInit: {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-ID': userContext.username,
-            'X-Database-Name': userContext.databaseName,
-            'X-Telegram-ID': userContext.telegramId.toString(),
-          },
-        },
-      });
-
-      // Create a temporary client with user-specific authentication
-      const userClient = new Client({
-        name: 'eddo-telegram-bot',
-        version: '1.0.0',
-      });
-
-      // Connect the user-specific client
-      await userClient.connect(userTransport);
-
-      try {
-        const result = await userClient.callTool({
-          name: toolName,
-          arguments: params,
-        });
-
-        logger.info('MCP tool invoked successfully', {
-          toolName,
-          result: result.content,
-        });
-
-        return result.content;
-      } finally {
-        // Clean up the user-specific connection
-        await userClient.close();
-      }
+      return await this.executeToolInvocation(toolName, params, userContext!);
     } catch (error) {
-      logger.error('MCP tool invocation failed', {
-        toolName,
-        params,
-        error: String(error),
-      });
-
-      // Check if this is a connection error
-      if (this.isConnectionError(error)) {
-        await this.handleConnectionFailure();
-      }
-
+      await this.handleInvocationError(toolName, params, error);
       throw error;
     }
   }
 
-  /**
-   * Check if error is connection-related
-   */
-  private isConnectionError(error: unknown): boolean {
-    if (error instanceof Error) {
-      const message = error.message.toLowerCase();
-      return (
-        message.includes('connect') ||
-        message.includes('econnrefused') ||
-        message.includes('timeout') ||
-        message.includes('network') ||
-        message.includes('socket')
-      );
+  private validateInvokePrerequisites(userContext?: MCPUserContext): void {
+    if (this.state !== ConnectionState.CONNECTED || !this.client) {
+      throw new Error(`Cannot invoke tool: connection state is ${this.state}`);
     }
-    return false;
+    if (!userContext) {
+      throw new Error('User context is required for MCP tool invocation');
+    }
+  }
+
+  private async executeToolInvocation(
+    toolName: string,
+    params: Record<string, unknown>,
+    userContext: MCPUserContext,
+  ): Promise<unknown> {
+    const userClient = await createUserClient(userContext);
+    try {
+      return await invokeToolOnClient(userClient, toolName, params);
+    } finally {
+      await userClient.close();
+    }
+  }
+
+  private async handleInvocationError(
+    toolName: string,
+    params: Record<string, unknown>,
+    error: unknown,
+  ): Promise<void> {
+    logger.error('MCP tool invocation failed', { toolName, params, error: String(error) });
+    if (checkIsConnectionError(error)) {
+      await this.handleConnectionFailure();
+    }
   }
 
   /**

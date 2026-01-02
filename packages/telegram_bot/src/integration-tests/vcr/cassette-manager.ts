@@ -163,7 +163,13 @@ export function createCassetteManager(
       return { replayed: true, response: interaction.response };
     }
 
-    logHashMismatch(state.index, interaction, requestHash, model, messages);
+    logHashMismatch({
+      index: state.index,
+      expected: interaction,
+      actualHash: requestHash,
+      model,
+      messages,
+    });
     state.cassette.interactions = state.cassette.interactions.slice(0, state.index);
     return { replayed: false };
   }
@@ -198,7 +204,14 @@ export function createCassetteManager(
     const responseTimeMs = Date.now() - startTime;
 
     state.cassette.interactions.push(
-      createInteractionRecord(requestHash, model, systemPrompt, messages, response, responseTimeMs),
+      createInteractionRecord({
+        requestHash,
+        model,
+        systemPrompt,
+        messages,
+        response,
+        responseTimeMs,
+      }),
     );
 
     state.index++;

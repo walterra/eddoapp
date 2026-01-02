@@ -22,6 +22,27 @@ export interface RateLimitError extends Error {
   resetTime?: string; // Human-readable reset time
 }
 
+function parseHeaderValue(value: string | number | undefined): number | null {
+  if (value === undefined) return null;
+  const num = typeof value === 'string' ? parseInt(value, 10) : value;
+  return isNaN(num) || num < 0 ? null : num;
+}
+
+function extractRequiredHeaders(
+  headers: Record<string, string | number | undefined>,
+): { limit: number; remaining: number; reset: number; used: number } | null {
+  const limit = parseHeaderValue(headers['x-ratelimit-limit']);
+  const remaining = parseHeaderValue(headers['x-ratelimit-remaining']);
+  const reset = parseHeaderValue(headers['x-ratelimit-reset']);
+  const used = parseHeaderValue(headers['x-ratelimit-used']);
+
+  if (limit === null || remaining === null || reset === null || used === null) {
+    return null;
+  }
+
+  return { limit, remaining, reset, used };
+}
+
 /**
  * Extracts rate limit information from GitHub API response headers
  * Headers: x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset, x-ratelimit-used
@@ -31,42 +52,15 @@ export interface RateLimitError extends Error {
 export function extractRateLimitHeaders(
   headers: Record<string, string | number | undefined>,
 ): RateLimitInfo | null {
-  const limit = headers['x-ratelimit-limit'];
-  const remaining = headers['x-ratelimit-remaining'];
-  const reset = headers['x-ratelimit-reset'];
-  const used = headers['x-ratelimit-used'];
-
-  // All required headers must be present
-  if (limit === undefined || remaining === undefined || reset === undefined || used === undefined) {
-    return null;
-  }
-
-  // Convert to numbers
-  const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
-  const remainingNum = typeof remaining === 'string' ? parseInt(remaining, 10) : remaining;
-  const resetNum = typeof reset === 'string' ? parseInt(reset, 10) : reset;
-  const usedNum = typeof used === 'string' ? parseInt(used, 10) : used;
-
-  // Validate numeric values
-  if (
-    isNaN(limitNum) ||
-    isNaN(remainingNum) ||
-    isNaN(resetNum) ||
-    isNaN(usedNum) ||
-    limitNum < 0 ||
-    remainingNum < 0 ||
-    resetNum < 0 ||
-    usedNum < 0
-  ) {
-    return null;
-  }
+  const parsed = extractRequiredHeaders(headers);
+  if (!parsed) return null;
 
   return {
-    limit: limitNum,
-    remaining: remainingNum,
-    reset: resetNum,
-    resetDate: new Date(resetNum * 1000), // Unix timestamp to milliseconds
-    used: usedNum,
+    limit: parsed.limit,
+    remaining: parsed.remaining,
+    reset: parsed.reset,
+    resetDate: new Date(parsed.reset * 1000),
+    used: parsed.used,
   };
 }
 

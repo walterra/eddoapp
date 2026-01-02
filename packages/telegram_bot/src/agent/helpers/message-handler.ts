@@ -6,6 +6,16 @@ import { BRIEFING_CONTENT_MARKER, RECAP_CONTENT_MARKER } from '../../constants/b
 import { logger } from '../../utils/logger.js';
 import { convertToTelegramMarkdown } from '../../utils/markdown.js';
 
+import {
+  executePrint,
+  logPrintAttempt,
+  logPrintDisabled,
+  logPrinterGloballyDisabled,
+  logPrintError,
+  logPrintPreferenceCheck,
+  logPrintSuccess,
+  userWantsPrinting,
+} from './print-helpers.js';
 import type { ConversationalPart } from './types.js';
 
 /**
@@ -44,26 +54,15 @@ async function sendTelegramMessage(
  * Attempts to print content to thermal printer if enabled
  */
 async function attemptPrint(
-  telegramContext: BotContext,
+  ctx: BotContext,
   content: string,
   contentType: 'briefing' | 'recap',
   iterationId: string,
 ): Promise<void> {
-  const userWantsPrinting = telegramContext.session?.user?.preferences?.printBriefing === true;
+  logPrintPreferenceCheck(ctx, contentType, iterationId);
 
-  logger.info('🔍 User print preference check', {
-    iterationId,
-    userId: telegramContext.from?.id?.toString(),
-    printBriefing: telegramContext.session?.user?.preferences?.printBriefing,
-    userWantsPrinting,
-    contentType,
-  });
-
-  if (!userWantsPrinting) {
-    logger.debug('🖨️ User has printing disabled, skipping print', {
-      userId: telegramContext.from?.id?.toString(),
-      contentType,
-    });
+  if (!userWantsPrinting(ctx)) {
+    logPrintDisabled(ctx, contentType);
     return;
   }
 
@@ -71,36 +70,53 @@ async function attemptPrint(
     const printerModule = await import('@eddo/printer-service');
 
     if (!printerModule.appConfig.PRINTER_ENABLED) {
-      logger.debug('🖨️ Printer globally disabled (PRINTER_ENABLED=false)');
+      logPrinterGloballyDisabled();
       return;
     }
 
-    const userId = telegramContext.from?.id?.toString() || 'unknown';
+    const userId = ctx.from?.id?.toString() || 'unknown';
+    logPrintAttempt(userId, iterationId, contentType);
 
-    logger.info(`🖨️ Attempting to print ${contentType} to thermal printer`, {
-      userId,
-      iteration: iterationId,
-      contentType,
-    });
-
-    const formattedContent = printerModule.formatBriefingForPrint(content);
-
-    await printerModule.printBriefing({
-      content: formattedContent,
-      userId,
-      timestamp: new Date().toISOString(),
-      type: contentType,
-    });
-
-    logger.info(
-      `✅ ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} printed successfully`,
-    );
+    await executePrint(printerModule, content, userId, contentType);
+    logPrintSuccess(contentType);
   } catch (printerError) {
-    logger.error(`❌ Failed to print ${contentType} (non-fatal)`, {
-      error: printerError instanceof Error ? printerError.message : String(printerError),
-      contentType,
-    });
+    logPrintError(printerError, contentType);
   }
+}
+
+function detectContentType(text: string): 'briefing' | 'recap' | null {
+  if (text.includes(BRIEFING_CONTENT_MARKER)) return 'briefing';
+  if (text.includes(RECAP_CONTENT_MARKER)) return 'recap';
+  return null;
+}
+
+function formatTextForSend(text: string, isMarkdown: boolean): string {
+  const stripped = stripMarkers(text);
+  return isMarkdown ? convertToTelegramMarkdown(stripped) : stripped;
+}
+
+async function handlePrintIfNeeded(
+  ctx: BotContext,
+  text: string,
+  contentType: 'briefing' | 'recap' | null,
+  iterationId: string,
+): Promise<void> {
+  if (!contentType) return;
+
+  const capitalizedType = contentType.charAt(0).toUpperCase() + contentType.slice(1);
+  logger.info(`🔍 ${capitalizedType} marker detected`, {
+    iterationId,
+    userId: ctx.from?.id?.toString(),
+  });
+  await attemptPrint(ctx, stripMarkers(text), contentType, iterationId);
+}
+
+function logSendError(error: unknown, iterationId: string): void {
+  logger.error('❌ Failed to send message to Telegram', {
+    iterationId,
+    error: error instanceof Error ? error.message : String(error),
+    errorStack: error instanceof Error ? error.stack : undefined,
+  });
 }
 
 /**
@@ -111,13 +127,8 @@ export async function handleConversationalMessage(
   conversationalPart: ConversationalPart,
   iterationId: string,
 ): Promise<void> {
-  const hasBriefingMarker = conversationalPart.text.includes(BRIEFING_CONTENT_MARKER);
-  const hasRecapMarker = conversationalPart.text.includes(RECAP_CONTENT_MARKER);
-  const textWithoutMarker = stripMarkers(conversationalPart.text);
-
-  const textToSend = conversationalPart.isMarkdown
-    ? convertToTelegramMarkdown(textWithoutMarker)
-    : textWithoutMarker;
+  const contentType = detectContentType(conversationalPart.text);
+  const textToSend = formatTextForSend(conversationalPart.text, conversationalPart.isMarkdown);
 
   try {
     await sendTelegramMessage(
@@ -126,27 +137,9 @@ export async function handleConversationalMessage(
       conversationalPart.isMarkdown,
       iterationId,
     );
-
-    // Handle printing for briefings/recaps
-    if (hasBriefingMarker || hasRecapMarker) {
-      const contentType = hasBriefingMarker ? 'briefing' : 'recap';
-      logger.info(
-        `🔍 ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} marker detected`,
-        {
-          iterationId,
-          userId: telegramContext.from?.id?.toString(),
-        },
-      );
-      await attemptPrint(telegramContext, textWithoutMarker, contentType, iterationId);
-    }
+    await handlePrintIfNeeded(telegramContext, conversationalPart.text, contentType, iterationId);
   } catch (error) {
-    logger.error('❌ Failed to send message to Telegram', {
-      iterationId,
-      error: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-    });
-
-    // Retry without markdown if markdown parsing failed
+    logSendError(error, iterationId);
     if (conversationalPart.isMarkdown) {
       await retryWithoutMarkdown(telegramContext, conversationalPart.text, iterationId);
     }

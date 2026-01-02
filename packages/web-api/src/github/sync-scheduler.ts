@@ -7,6 +7,13 @@ import type nano from 'nano';
 
 import { createGithubClient } from './client.js';
 import { isRateLimitError, type RateLimitError } from './rate-limit.js';
+import {
+  createFetchOptions,
+  createSyncStats,
+  incrementStat,
+  logSyncComplete,
+  logSyncStart,
+} from './sync-helpers-extended.js';
 import { hasTodoChanged, processIssue, type SyncLogger } from './sync-helpers.js';
 import { shouldSyncUser } from './sync-utils.js';
 
@@ -35,7 +42,7 @@ interface GithubSyncSchedulerConfig {
 }
 
 /**
- * Sync GitHub issues for a specific user
+ * Syncs GitHub issues for a specific user
  */
 async function performUserSync(
   user: SyncUser,
@@ -50,56 +57,33 @@ async function performUserSync(
   }
 
   const isInitialSync = forceResync || !user.preferences?.githubLastSync;
+  const lastSync = user.preferences?.githubLastSync;
+  const syncInfo = { userId: user._id, username: user.username, isInitialSync, lastSync };
 
-  logger.info('Starting GitHub sync for user', {
-    userId: user._id,
-    username: user.username,
-    isInitialSync,
-  });
+  logSyncStart(logger, syncInfo);
 
   const githubClient = createGithubClient({ token }, logger);
-  const lastSync = user.preferences?.githubLastSync;
-
-  const issues = await githubClient.fetchUserIssues({
-    state: isInitialSync ? 'open' : 'all',
-    since: isInitialSync ? undefined : lastSync,
-  });
+  const fetchOptions = createFetchOptions({ isInitialSync, lastSync });
+  const issues = await githubClient.fetchUserIssues(fetchOptions);
 
   const tags = user.preferences?.githubSyncTags || ['github', 'gtd:next'];
   const db = getUserDb(user.database_name);
-
-  let created = 0;
-  let updated = 0;
-  let completed = 0;
+  const stats = createSyncStats();
 
   for (const issue of issues) {
-    const context = issue.repository.full_name;
     const result = await processIssue({
       db,
       issue,
-      context,
+      context: issue.repository.full_name,
       tags,
       githubClient,
       forceResync,
       logger,
     });
-
-    if (result === 'created') created++;
-    else if (result === 'updated') updated++;
-    else if (result === 'completed') completed++;
+    incrementStat(stats, result);
   }
 
-  logger.info('Successfully synced GitHub issues for user', {
-    userId: user._id,
-    username: user.username,
-    isInitialSync,
-    issueState: isInitialSync ? 'open' : 'all',
-    since: isInitialSync ? 'none' : lastSync || 'none',
-    totalIssues: issues.length,
-    created,
-    updated,
-    completed,
-  });
+  logSyncComplete(logger, syncInfo, stats, issues.length);
 }
 
 export class GithubSyncScheduler {

@@ -83,40 +83,60 @@ export function buildHelpMessage(isEnabled: boolean, hasToken: boolean): string 
   );
 }
 
+function getStatusFooterText(isEnabled: boolean, hasToken: boolean): string {
+  if (isEnabled && hasToken) {
+    return '🔄 GitHub sync is active. Your issues will be synced automatically.';
+  }
+  if (!hasToken) {
+    return '❌ Set your GitHub token first:\n`/github token ghp_your_token_here`';
+  }
+  return '📵 GitHub sync is disabled.\n\nUse `/github on` to enable it.';
+}
+
+function getTokenStatus(hasToken: boolean, token: string | null | undefined): string {
+  return hasToken && token ? `🔑 Set (${maskToken(token)})` : '❌ Not set';
+}
+
+interface GithubSyncPrefs {
+  isEnabled: boolean;
+  hasToken: boolean;
+  token: string | null | undefined;
+  syncInterval: number;
+  tags: string[];
+  lastSync: string | undefined;
+}
+
+function extractGithubPrefs(user: TelegramUser): GithubSyncPrefs {
+  const prefs = user.preferences;
+  return {
+    isEnabled: prefs?.githubSync === true,
+    hasToken: Boolean(prefs?.githubToken),
+    token: prefs?.githubToken,
+    syncInterval: prefs?.githubSyncInterval || 60,
+    tags: prefs?.githubSyncTags || ['github', 'gtd:next'],
+    lastSync: prefs?.githubLastSync,
+  };
+}
+
 /**
- * Build status message
+ * Builds status message for GitHub sync configuration
+ * @param user - User to display status for
+ * @returns Formatted status message
  */
 export function buildStatusMessage(user: TelegramUser): string {
-  const isEnabled = user.preferences?.githubSync === true;
-  const hasToken = Boolean(user.preferences?.githubToken);
-  const token = user.preferences?.githubToken;
-  const syncInterval = user.preferences?.githubSyncInterval || 60;
-  const tags = user.preferences?.githubSyncTags || ['github', 'gtd:next'];
-  const lastSync = user.preferences?.githubLastSync;
-
-  const statusEmoji = isEnabled ? '✅' : '❌';
-  const statusText = isEnabled ? 'Enabled' : 'Disabled';
-  const tokenStatus = hasToken ? `🔑 Set (${maskToken(token!)})` : '❌ Not set';
-  const lastSyncText = formatLastSync(lastSync);
-
-  let footerText: string;
-  if (isEnabled && hasToken) {
-    footerText = '🔄 GitHub sync is active. Your issues will be synced automatically.';
-  } else if (!hasToken) {
-    footerText = '❌ Set your GitHub token first:\n`/github token ghp_your_token_here`';
-  } else {
-    footerText = '📵 GitHub sync is disabled.\n\nUse `/github on` to enable it.';
-  }
+  const prefs = extractGithubPrefs(user);
+  const statusEmoji = prefs.isEnabled ? '✅' : '❌';
+  const statusText = prefs.isEnabled ? 'Enabled' : 'Disabled';
 
   return (
     '📊 **GitHub Sync Status**\n\n' +
     `${statusEmoji} **Status:** ${statusText}\n` +
-    `${tokenStatus}\n` +
-    `⏱ **Interval:** Every ${syncInterval} minutes\n` +
-    `🏷 **Tags:** ${tags.join(', ')}\n` +
+    `${getTokenStatus(prefs.hasToken, prefs.token)}\n` +
+    `⏱ **Interval:** Every ${prefs.syncInterval} minutes\n` +
+    `🏷 **Tags:** ${prefs.tags.join(', ')}\n` +
     `📁 **Context:** Full repository path (auto)\n` +
-    `🕰 **Last sync:** ${lastSyncText}\n\n` +
-    footerText
+    `🕰 **Last sync:** ${formatLastSync(prefs.lastSync)}\n\n` +
+    getStatusFooterText(prefs.isEnabled, prefs.hasToken)
   );
 }
 

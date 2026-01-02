@@ -15,8 +15,45 @@ import {
   updateGithubPreferences,
 } from './github-helpers.js';
 
+type GithubAction = 'on' | 'enable' | 'off' | 'disable' | 'status' | 'settings';
+
+function isGithubAction(action: string): action is GithubAction {
+  return ['on', 'enable', 'off', 'disable', 'status', 'settings'].includes(action);
+}
+
+async function sendNotLinkedError(ctx: Context): Promise<void> {
+  await ctx.reply(
+    '❌ Your Telegram account is not linked to an Eddo account.\n\n' +
+      'Please link your account first by:\n' +
+      '1. Logging into the web app\n' +
+      '2. Going to Profile → Integrations\n' +
+      '3. Following the Telegram linking instructions',
+  );
+}
+
+function parseGithubArgs(text: string | undefined): string[] {
+  return (text || '').split(' ').slice(1);
+}
+
+async function routeGithubCommand(ctx: Context, user: TelegramUser, args: string[]): Promise<void> {
+  if (args.length === 0) {
+    await showGithubHelp(ctx, user);
+    return;
+  }
+
+  const action = args[0].toLowerCase();
+
+  if (action === 'token') {
+    await setGithubToken(ctx, user, args.slice(1));
+  } else if (isGithubAction(action)) {
+    await dispatchGithubAction(ctx, user, action);
+  } else {
+    await showGithubHelp(ctx, user);
+  }
+}
+
 /**
- * Handle the /github command for GitHub sync management
+ * Handles /github command for GitHub sync management
  */
 export async function handleGithub(ctx: Context): Promise<void> {
   const telegramId = ctx.from?.id;
@@ -31,51 +68,37 @@ export async function handleGithub(ctx: Context): Promise<void> {
   try {
     const user = await lookupUserByTelegramId(telegramId);
     if (!user) {
-      await ctx.reply(
-        '❌ Your Telegram account is not linked to an Eddo account.\n\n' +
-          'Please link your account first by:\n' +
-          '1. Logging into the web app\n' +
-          '2. Going to Profile → Integrations\n' +
-          '3. Following the Telegram linking instructions',
-      );
+      await sendNotLinkedError(ctx);
       return;
     }
 
-    const messageText = ctx.message?.text || '';
-    const args = messageText.split(' ').slice(1);
-
-    if (args.length === 0) {
-      await showGithubHelp(ctx, user);
-      return;
-    }
-
-    const action = args[0].toLowerCase();
-
-    switch (action) {
-      case 'on':
-      case 'enable':
-        await enableGithubSync(ctx, user);
-        break;
-      case 'off':
-      case 'disable':
-        await disableGithubSync(ctx, user);
-        break;
-      case 'token':
-        await setGithubToken(ctx, user, args.slice(1));
-        break;
-      case 'status':
-      case 'settings':
-        await showGithubStatus(ctx, user);
-        break;
-      default:
-        await showGithubHelp(ctx, user);
-        break;
-    }
+    await routeGithubCommand(ctx, user, parseGithubArgs(ctx.message?.text));
   } catch (error) {
     logger.error('Error processing GitHub command', { telegramId, error });
     await ctx.reply(
       '❌ Sorry, there was an error processing your request. Please try again later.',
     );
+  }
+}
+
+async function dispatchGithubAction(
+  ctx: Context,
+  user: TelegramUser,
+  action: GithubAction,
+): Promise<void> {
+  switch (action) {
+    case 'on':
+    case 'enable':
+      await enableGithubSync(ctx, user);
+      break;
+    case 'off':
+    case 'disable':
+      await disableGithubSync(ctx, user);
+      break;
+    case 'status':
+    case 'settings':
+      await showGithubStatus(ctx, user);
+      break;
   }
 }
 

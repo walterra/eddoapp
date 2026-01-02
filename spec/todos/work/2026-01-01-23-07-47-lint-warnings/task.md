@@ -1,7 +1,7 @@
 # Run pnpm lint and fix warnings
 
 **GitHub Issue:** [#350](https://github.com/walterra/eddoapp/issues/350)
-**Status:** In Progress
+**Status:** In Progress (Session 4)
 **Started:** 2026-01-01-23-15
 **Created:** 2026-01-01-23-07-47
 **Agent PID:** 34113
@@ -10,83 +10,88 @@
 
 The codebase has ESLint warnings related to code quality (function complexity and size). The goal is to reduce these warnings by refactoring complex functions into smaller, more focused helpers.
 
-**Current Status:** 106 warnings (down from 270, 164 fixed = 61% reduction)
+**Current Status:** 83 warnings (down from 270, 187 fixed = 69% reduction)
 
 **Success Criteria:**
 
 - [x] All tests pass (`pnpm test`) - 508 passed
 - [x] Code maintains same functionality
-- [x] Significant reduction in warnings - 61% achieved
+- [x] Significant reduction in warnings - 69% achieved
 - [x] No TypeScript errors (`pnpm tsc:check`)
 - [x] No lint errors (only warnings)
 
 ## Implementation Plan
 
-### Session 3 - Current Refactoring (15 files refactored)
+### Session 4 - Current Refactoring
 
-25. **packages/mcp_server/src/integration-tests/setup/database-setup.ts** ✅ - Extracted index error handlers
-26. **packages/telegram_bot/src/integration-tests/setup/test-agent-server.ts** ✅ → test-agent-server-helpers.ts
-27. **scripts/test-mcp.js** ✅ → test-mcp-helpers.js
-28. **scripts/cleanup-interactive.ts** ✅ → cleanup-interactive-helpers.ts
-29. **packages/web-client/src/components/user_profile_tab_profile.tsx** ✅ → user_profile_form_fields.tsx
-30. **packages/web-client/src/components/user_profile.tsx** ✅ → user_profile_handlers.ts, user_profile_layout.tsx
-31. **packages/web-client/src/hooks/use_couchdb_sync.ts** ✅ → use_couchdb_sync_helpers.ts
-32. **packages/web-client/src/hooks/use_filter_preferences.ts** ✅ → use_filter_preferences_helpers.ts
-33. **packages/web-client/src/hooks/use_profile.ts** ✅ → use_profile_types.ts, use_profile_api.ts
-34. **packages/web-client/src/hooks/use_preferences_stream.ts** ✅ → use_preferences_stream_helpers.ts
-35. **packages/web-client/src/hooks/use_todo_mutations.ts** ✅ → use_todo_mutations_helpers.ts
-36. **packages/web-client/src/components/tag_input.tsx** ✅ → tag_input_helpers.ts
-37. **scripts/backup-interactive-prompts.ts** ✅ → backup-interactive-prompts-helpers.ts
+Files refactored with new helper modules:
+
+1. packages/telegram_bot/src/bot/middleware/auth.ts → auth-helpers.ts
+2. packages/telegram_bot/src/bot/commands/briefing.ts → briefing-helpers.ts
+3. packages/telegram_bot/src/agent/system-prompt.ts → system-prompt-sections.ts
+4. packages/telegram_bot/src/bot/handlers/message.ts → message-helpers.ts
+5. packages/telegram_bot/src/agent/helpers/message-handler.ts → print-helpers.ts
+6. packages/telegram_bot/src/bot/bot.ts → bot-middleware.ts
+7. packages/telegram_bot/src/bot/commands/start.ts → start-helpers.ts
+8. packages/telegram_bot/src/bot/commands/github.ts (refactored routing)
+9. packages/telegram_bot/src/bot/commands/github-helpers.ts (refactored complexity)
+10. packages/telegram_bot/src/mcp/client.ts → client-helpers.ts
+11. packages/telegram_bot/src/mcp/connection-manager.ts → connection-manager-helpers.ts
+12. packages/telegram_bot/src/integration-tests/vcr/cassette-manager.ts (options objects)
+13. packages/telegram_bot/src/integration-tests/vcr/cassette-helpers.ts (options objects)
+14. packages/telegram_bot/src/utils/user-lookup.ts → user-lookup-helpers.ts
+15. packages/web-api/src/github/sync-scheduler.ts → sync-helpers-extended.ts
+16. packages/web-api/src/github/rate-limit.ts (header parsing helpers)
 
 ### Previous Sessions - Completed
 
-Sessions 1-2: 24 files refactored.
+Sessions 1-3: 37 files refactored.
 
 ### Verification
 
-- [x] Run `pnpm lint` - 106 warnings (61% reduction from 270)
+- [x] Run `pnpm lint` - 83 warnings (69% reduction from 270)
 - [x] Run `pnpm test` - all tests pass (508 passed)
 - [x] Run `pnpm tsc:check` - no type errors
 
-## New Helper Modules Created (Session 3: 15 files)
+## New Helper Modules Created (Session 4)
 
-1. packages/mcp_server/src/integration-tests/setup/database-setup.ts (refactored in place)
-2. packages/telegram_bot/src/integration-tests/setup/test-agent-server-helpers.ts
-3. scripts/test-mcp-helpers.js
-4. scripts/cleanup-interactive-helpers.ts
-5. packages/web-client/src/components/user_profile_form_fields.tsx
-6. packages/web-client/src/components/user_profile_handlers.ts
-7. packages/web-client/src/components/user_profile_layout.tsx
-8. packages/web-client/src/hooks/use_couchdb_sync_helpers.ts
-9. packages/web-client/src/hooks/use_filter_preferences_helpers.ts
-10. packages/web-client/src/hooks/use_profile_types.ts
-11. packages/web-client/src/hooks/use_profile_api.ts
-12. packages/web-client/src/hooks/use_preferences_stream_helpers.ts
-13. packages/web-client/src/hooks/use_todo_mutations_helpers.ts
-14. packages/web-client/src/components/tag_input_helpers.ts
-15. scripts/backup-interactive-prompts-helpers.ts
+1. packages/telegram_bot/src/bot/middleware/auth-helpers.ts
+2. packages/telegram_bot/src/bot/commands/briefing-helpers.ts (extended)
+3. packages/telegram_bot/src/agent/system-prompt-sections.ts
+4. packages/telegram_bot/src/bot/handlers/message-helpers.ts
+5. packages/telegram_bot/src/agent/helpers/print-helpers.ts
+6. packages/telegram_bot/src/bot/bot-middleware.ts
+7. packages/telegram_bot/src/bot/commands/start-helpers.ts
+8. packages/telegram_bot/src/mcp/client-helpers.ts
+9. packages/telegram_bot/src/mcp/connection-manager-helpers.ts
+10. packages/telegram_bot/src/utils/user-lookup-helpers.ts
+11. packages/web-api/src/github/sync-helpers-extended.ts
 
 ## Review
 
 ### Quality improvements achieved:
 
-- Extracted API functions from hooks for better testability
-- Created type definition files for better organization
-- Split React components into layout and form field components
-- Extracted cache management helpers for mutation hooks
-- Reduced hook complexity significantly
+- Extracted message builders for auth middleware
+- Split system prompt into composable sections
+- Created middleware factories for bot
+- Refactored MCP client with helper extraction
+- Used options objects instead of many parameters
+- Extracted sync logging and stats tracking
+- Extracted command routing functions to reduce complexity
+- Created preference extraction helpers
 
-### Remaining warnings (106):
+### Remaining warnings (83):
 
-- Spread across ~70 files (avg 1.5 warnings/file)
-- Most are 1-2 warnings per file
-- Remaining complex React components with JSX
-- Test utilities and script files
+- React components with complex JSX (~40 warnings)
+- Test utilities and script files (~25 warnings)
+- Some remaining complex async functions (~18 warnings)
+- Most remaining files have only 1-2 warnings each
 
 ## Notes
 
-- 61% reduction achieved (106 from 270 original)
-- Factory pattern used for API functions improves testability
-- Type exports enable better type reuse across files
-- Hooks refactored to use extracted helpers
+- 69% reduction achieved (83 from 270 original)
+- Factory pattern used extensively for testability
+- Options objects reduce parameter count warnings
+- Message builder functions improve code organization
 - Further reduction would require fundamental restructuring of large React components
+- Many remaining warnings are in test utilities which are harder to refactor without affecting test clarity

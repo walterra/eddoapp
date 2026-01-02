@@ -124,26 +124,33 @@ export function normalizeSystemPromptForStorage(systemPrompt: string): string {
   return normalizeSystemPrompt(systemPrompt);
 }
 
+interface InteractionRecordInput {
+  requestHash: string;
+  model: string;
+  systemPrompt: string;
+  messages: Array<{ role: string; content: string }>;
+  response: string;
+  responseTimeMs: number;
+}
+
+function truncateMessageContent(content: string, maxLen = 200): string {
+  return content.length > maxLen ? content.substring(0, maxLen) + '...' : content;
+}
+
 /**
- * Create interaction record for storage
+ * Creates interaction record for storage
+ * @param input - Interaction record input parameters
+ * @returns LLM interaction record
  */
-export function createInteractionRecord(
-  requestHash: string,
-  model: string,
-  systemPrompt: string,
-  messages: Array<{ role: string; content: string }>,
-  response: string,
-  responseTimeMs: number,
-): LLMInteraction {
+export function createInteractionRecord(input: InteractionRecordInput): LLMInteraction {
+  const { requestHash, model, systemPrompt, messages, response, responseTimeMs } = input;
+
   return {
     requestHash,
     request: {
       model,
       systemPrompt: normalizeSystemPromptForStorage(systemPrompt),
-      messages: messages.map((m) => ({
-        role: m.role,
-        content: m.content.substring(0, 200) + (m.content.length > 200 ? '...' : ''),
-      })),
+      messages: messages.map((m) => ({ role: m.role, content: truncateMessageContent(m.content) })),
     },
     response,
     metadata: {
@@ -153,19 +160,25 @@ export function createInteractionRecord(
   };
 }
 
+interface HashMismatchInfo {
+  index: number;
+  expected: LLMInteraction;
+  actualHash: string;
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+}
+
 /**
- * Log hash mismatch details
+ * Logs hash mismatch details for debugging
+ * @param info - Hash mismatch information
  */
-export function logHashMismatch(
-  index: number,
-  expected: LLMInteraction,
-  actualHash: string,
-  model: string,
-  messages: Array<{ role: string; content: string }>,
-): void {
+export function logHashMismatch(info: HashMismatchInfo): void {
+  const { index, expected, actualHash, model, messages } = info;
+
   console.warn(`📼 Request hash mismatch at index ${index}`);
   console.warn(`📼 Expected hash: ${expected.requestHash}, got: ${actualHash}`);
   console.warn(`📼 Recorded model: ${expected.request.model}, current model: ${model}`);
+
   if (process.env.VCR_DEBUG) {
     console.warn(`📼 Recorded messages:`, JSON.stringify(expected.request.messages, null, 2));
     console.warn(
