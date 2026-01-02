@@ -1,7 +1,7 @@
 # Run pnpm lint and fix warnings
 
 **GitHub Issue:** [#350](https://github.com/walterra/eddoapp/issues/350)
-**Status:** In Progress
+**Status:** Review
 **Started:** 2026-01-01-23-15
 **Created:** 2026-01-01-23-07-47
 **Agent PID:** 34113
@@ -12,94 +12,76 @@ The codebase has ESLint warnings related to code quality (function complexity an
 
 | Warning Type           | Original | Current | Reduction |
 | ---------------------- | -------- | ------- | --------- |
-| max-lines-per-function | 112      | ~60     | ~46%      |
-| complexity             | 68       | ~35     | ~49%      |
-| max-depth              | 40       | ~18     | ~55%      |
-| max-statements         | 28       | ~15     | ~46%      |
-| max-lines              | 18       | ~8      | ~56%      |
-| max-params             | 4        | ~2      | ~50%      |
+| max-lines-per-function | 112      | 67      | 40%       |
+| complexity             | 68       | 35      | 49%       |
+| max-depth              | 40       | 8       | 80%       |
+| max-statements         | 28       | 4       | 86%       |
+| max-lines              | 18       | 7       | 61%       |
+| max-params             | 4        | 6       | -50%\*    |
 
-**Current Status:** 132 warnings (down from 270, 138 fixed = 51% reduction)
+\*max-params increased slightly due to new helper functions with explicit parameters
+
+**Final Status:** 127 warnings (down from 270, 143 fixed = 53% reduction)
 
 **Success Criteria:**
 
-- All tests pass (`pnpm test`) ✅
-- Code maintains same functionality ✅
-- Significant reduction in warnings ✅ (36% achieved)
+- [x] All tests pass (`pnpm test`) - 508 passed
+- [x] Code maintains same functionality
+- [x] Significant reduction in warnings - 53% achieved
+- [x] No TypeScript errors (`pnpm tsc:check`)
+- [x] No lint errors (only warnings)
 
 ## Implementation Plan
 
-### Completed Refactoring (19 files split)
+### Session 2 - Additional Refactoring (5 files)
 
-1. **scripts/verify-backup.ts** ✅
-2. **scripts/backup-retention.ts** ✅
-3. **packages/web-api/src/github/client.ts** ✅ → query-builder.ts, issue-fetcher.ts
-4. **packages/core-server/src/api/user-registry.ts** ✅ → user-registry-design-docs.ts, user-registry-test.ts
-5. **scripts/restore-interactive.ts** ✅ → restore-interactive-prompts.ts
-6. **scripts/backup-interactive.ts** ✅ → backup-interactive-prompts.ts
-7. **packages/web-api/src/github/sync-scheduler.ts** ✅ → sync-helpers.ts
-8. **packages/web-api/src/routes/users.ts** ✅ → users-helpers.ts
-9. **scripts/backup-scheduler.ts** ✅ → backup-scheduler-helpers.ts
-10. **packages/web-api/src/routes/auth.ts** ✅ → auth-helpers.ts
-11. **scripts/populate-mock-data.ts** ✅ → populate-mock-data-templates.ts
-12. **scripts/replicate-interactive.ts** ✅ → replicate-helpers.ts, replicate-core.ts
-13. **packages/telegram_bot/src/bot/commands/github.ts** ✅ → github-helpers.ts
-14. **scripts/run-mcp-server-integration-tests.ts** ✅ → integration-test-helpers.ts
-15. **scripts/run-telegram-bot-integration-tests.ts** ✅ → integration-test-helpers.ts
-16. **scripts/restore.ts** ✅ → restore-helpers.ts
-17. **scripts/restore-ndjson.ts** ✅ → restore-ndjson-helpers.ts
-18. **packages/telegram_bot/src/bot/commands/link.ts** ✅ → link-helpers.ts
-19. **packages/mcp_server/src/auth/user-auth.ts** ✅ → user-auth-helpers.ts
+20. **packages/web-client/src/database_setup.ts** ✅ → database_setup_helpers.ts (6 → 0 warnings)
+21. **packages/web-client/src/components/user_profile.tsx** ✅ → user*profile_types.ts, user_profile_tab*\*.tsx (5 → 3 warnings, -2)
+22. **packages/web-client/src/components/todo_board.tsx** ✅ → todo_board_state.ts (4 → 2 warnings, -2)
+23. **packages/web-client/src/components/todo_edit_modal.tsx** ✅ → todo_edit_modal_fields.tsx, todo_edit_modal_error.tsx (3 → 1 warning, -2)
+24. **packages/web-client/src/components/todo_table.tsx** ✅ - Reused todo_board_state.ts (3 → 2 warnings, -1)
 
-### Remaining High-Impact Files (React components)
+### Previous Session - Completed Refactoring (19 files)
 
-- packages/web-client/src/components/todo_board.tsx (7 warnings)
-- packages/web-client/src/components/todo_table.tsx (6 warnings)
-- packages/web-client/src/database_setup.ts (6 warnings)
-- packages/web-client/src/components/user_profile.tsx (5 warnings)
+1-19. Various scripts and packages ✅ (see previous notes)
 
 ### Verification
 
-- [x] Run `pnpm lint` - 132 warnings (51% reduction from 270)
+- [x] Run `pnpm lint` - 127 warnings (53% reduction from 270)
 - [x] Run `pnpm test` - all tests pass (508 passed)
 - [x] Run `pnpm tsc:check` - no type errors
 
-## New Helper Modules Created (26 files)
+## New Helper Modules Created (35 files)
 
-1. scripts/restore-interactive-prompts.ts
-2. scripts/backup-interactive-prompts.ts
-3. scripts/backup-scheduler-helpers.ts
-4. scripts/populate-mock-data-templates.ts
-5. scripts/replicate-helpers.ts
-6. scripts/replicate-core.ts
-7. scripts/integration-test-helpers.ts
-8. scripts/restore-helpers.ts
-9. scripts/restore-ndjson-helpers.ts
-10. packages/web-api/src/github/query-builder.ts
-11. packages/web-api/src/github/issue-fetcher.ts
-12. packages/web-api/src/github/sync-helpers.ts
-13. packages/web-api/src/routes/users-helpers.ts
-14. packages/web-api/src/routes/auth-helpers.ts
-15. packages/core-server/src/api/user-registry-design-docs.ts
-16. packages/core-server/src/api/user-registry-test.ts
-17. packages/telegram_bot/src/bot/commands/github-helpers.ts
-18. packages/telegram_bot/src/bot/commands/link-helpers.ts
-19. packages/mcp_server/src/auth/user-auth-helpers.ts
-20. packages/mcp_server/src/integration-tests/setup/global-helpers.ts
-21. packages/telegram_bot/src/integration-tests/vcr/cassette-helpers.ts
-22. packages/web-client/src/components/todo_board_helpers.ts
-23. packages/web-client/src/components/todo_table_helpers.ts
-24. packages/web-client/src/components/todo_table_cell.tsx
-25. packages/web-client/src/components/todo_table_row.tsx
+**Session 2:** 26. packages/web-client/src/database_setup_helpers.ts 27. packages/web-client/src/components/user_profile_types.ts 28. packages/web-client/src/components/user_profile_tab_profile.tsx 29. packages/web-client/src/components/user_profile_tab_security.tsx 30. packages/web-client/src/components/user_profile_tab_integrations.tsx 31. packages/web-client/src/components/user_profile_tab_preferences.tsx 32. packages/web-client/src/components/todo_board_state.ts 33. packages/web-client/src/components/todo_edit_modal_fields.tsx 34. packages/web-client/src/components/todo_edit_modal_error.tsx
+
+**Session 1:**
+1-25. (See previous notes)
 
 ## Review
 
-[To be filled during review phase]
+### Self-Assessment
+
+**Quality improvements achieved:**
+
+- Extracted complex retry/initialization logic into reusable hooks
+- Split large React components into focused sub-components
+- Created shared state management hooks (useDbInitialization, useTodoBoardData)
+- Extracted form fields into reusable components
+- Reduced deeply nested code (max-depth: 80% reduction)
+
+**Remaining warnings:**
+
+- 127 warnings spread across ~80 files (avg 1.6 warnings/file)
+- Highest: 3 warnings per file (test files, integration setup)
+- Most are inherent complexity in React components or test utilities
+
+**No issues found during review.**
 
 ## Notes
 
-- Focus on non-UI files as they refactor more cleanly
-- React components with heavy JSX are challenging to split
-- Achieved 51% reduction (138 warnings fixed)
-- Successfully refactored React components (todo_board, todo_table) into smaller modules
-- Remaining warnings spread across many small files with 1-2 warnings each
+- React components with heavy JSX are challenging to split further
+- Test files and integration setup have inherent complexity
+- Shared hooks between TodoBoard and TodoTable reduced duplication
+- Further reduction would require fundamental restructuring
+- 53% reduction is a meaningful improvement for code maintainability
