@@ -27,11 +27,70 @@ interface TodoEditModalProps {
   todo: Todo;
 }
 
+const CreationDateDisplay: FC<{ id: string }> = ({ id }) => (
+  <div>
+    <div className="mb-2 block">
+      <Label htmlFor="eddoTodoCreationDate">Creation date</Label>
+    </div>
+    {id}
+  </div>
+);
+
+interface EditFormFieldsProps {
+  todo: Todo;
+  allTags: string[];
+  activeArray: Array<[string, string | null]>;
+  onChange: (updater: (todo: Todo) => Todo) => void;
+}
+
+const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, onChange }) => (
+  <div className="flex flex-col gap-4">
+    <CreationDateDisplay id={todo._id} />
+    <ContextField onChange={onChange} todo={todo} />
+    <TitleField onChange={onChange} todo={todo} />
+    <LinkField onChange={onChange} todo={todo} />
+    <ExternalIdField onChange={onChange} todo={todo} />
+    <TagsField allTags={allTags} onChange={onChange} todo={todo} />
+    <DueDateField onChange={onChange} todo={todo} />
+    <RepeatField onChange={onChange} todo={todo} />
+    <CompletedField onChange={onChange} todo={todo} />
+    <TimeTrackingField activeArray={activeArray} onChange={onChange} todo={todo} />
+  </div>
+);
+
+interface ModalActionsProps {
+  onSave: (e: React.FormEvent<HTMLButtonElement>) => void;
+  onDelete: (e: React.FormEvent<HTMLButtonElement>) => void;
+  isActiveValid: boolean;
+  isSaving: boolean;
+  isDeleting: boolean;
+}
+
+const ModalActions: FC<ModalActionsProps> = ({
+  onSave,
+  onDelete,
+  isActiveValid,
+  isSaving,
+  isDeleting,
+}) => (
+  <div className="flex w-full justify-between">
+    <div>
+      <Button color="blue" disabled={!isActiveValid || isSaving || isDeleting} onClick={onSave}>
+        {isSaving ? 'Saving...' : 'Save'}
+      </Button>
+    </div>
+    <div>
+      <Button color="red" disabled={isSaving || isDeleting} onClick={onDelete}>
+        {isDeleting ? 'Deleting...' : 'Delete'}
+      </Button>
+    </div>
+  </div>
+);
+
 export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) => {
   const { allTags } = useTags();
   const saveTodoMutation = useSaveTodoMutation();
   const deleteTodoMutation = useDeleteTodoMutation();
-
   const [editedTodo, setEditedTodo] = useState(todo);
 
   useEffect(() => {
@@ -58,68 +117,38 @@ export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) =
     }
   };
 
-  const handleChange = (updater: (todo: Todo) => Todo) => {
-    setEditedTodo(updater);
-  };
-
   const activeArray = Object.entries(editedTodo.active);
-  const isActiveValid = validateTimeTracking(activeArray);
   const error = (saveTodoMutation.error || deleteTodoMutation.error) as DatabaseError | null;
-  const isSaving = saveTodoMutation.isPending;
-  const isDeleting = deleteTodoMutation.isPending;
-
-  const clearError = () => {
-    saveTodoMutation.reset();
-    deleteTodoMutation.reset();
-  };
 
   return (
     <Modal onClose={onClose} show={show} size="2xl">
       <ModalHeader>Edit Todo</ModalHeader>
       <ModalBody>
-        {error && <ErrorDisplay error={error} onClear={clearError} />}
-        <div className="flex flex-col gap-4">
-          <CreationDateDisplay id={editedTodo._id} />
-          <ContextField onChange={handleChange} todo={editedTodo} />
-          <TitleField onChange={handleChange} todo={editedTodo} />
-          <LinkField onChange={handleChange} todo={editedTodo} />
-          <ExternalIdField onChange={handleChange} todo={editedTodo} />
-          <TagsField allTags={allTags} onChange={handleChange} todo={editedTodo} />
-          <DueDateField onChange={handleChange} todo={editedTodo} />
-          <RepeatField onChange={handleChange} todo={editedTodo} />
-          <CompletedField onChange={handleChange} todo={editedTodo} />
-          <TimeTrackingField activeArray={activeArray} onChange={handleChange} todo={editedTodo} />
-        </div>
+        {error && (
+          <ErrorDisplay
+            error={error}
+            onClear={() => {
+              saveTodoMutation.reset();
+              deleteTodoMutation.reset();
+            }}
+          />
+        )}
+        <EditFormFields
+          activeArray={activeArray}
+          allTags={allTags}
+          onChange={setEditedTodo}
+          todo={editedTodo}
+        />
       </ModalBody>
       <ModalFooter>
-        <div className="flex w-full justify-between">
-          <div>
-            <Button
-              color="blue"
-              disabled={!isActiveValid || isSaving || isDeleting}
-              onClick={handleSave}
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-          </div>
-          <div>
-            <Button color="red" disabled={isSaving || isDeleting} onClick={handleDelete}>
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
-          </div>
-        </div>
+        <ModalActions
+          isActiveValid={validateTimeTracking(activeArray)}
+          isDeleting={deleteTodoMutation.isPending}
+          isSaving={saveTodoMutation.isPending}
+          onDelete={handleDelete}
+          onSave={handleSave}
+        />
       </ModalFooter>
     </Modal>
   );
 };
-
-function CreationDateDisplay({ id }: { id: string }) {
-  return (
-    <div>
-      <div className="mb-2 block">
-        <Label htmlFor="eddoTodoCreationDate">Creation date</Label>
-      </div>
-      {id}
-    </div>
-  );
-}

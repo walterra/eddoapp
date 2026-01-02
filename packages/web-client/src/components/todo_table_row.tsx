@@ -21,9 +21,27 @@ interface TodoRowProps {
   timeTrackingActive: boolean;
 }
 
+interface TimeTrackingButtonProps {
+  isActive: boolean;
+  isUpdating: boolean;
+  onClick: () => void;
+}
+
+const TimeTrackingButton: FC<TimeTrackingButtonProps> = ({ isActive, isUpdating, onClick }) => (
+  <button
+    className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+    disabled={isUpdating}
+    onClick={onClick}
+    title={isActive ? 'Pause' : 'Start'}
+    type="button"
+  >
+    {isActive ? <BiPauseCircle size="1.1em" /> : <BiPlayCircle size="1.1em" />}
+  </button>
+);
+
 interface TodoRowActionsProps {
   timeTrackingActive: boolean;
-  thisButtonTimeTrackingActive: boolean;
+  thisButtonActive: boolean;
   isUpdating: boolean;
   onToggleTimeTracking: () => void;
   onEdit: () => void;
@@ -31,27 +49,19 @@ interface TodoRowActionsProps {
 
 const TodoRowActions: FC<TodoRowActionsProps> = ({
   timeTrackingActive,
-  thisButtonTimeTrackingActive,
+  thisButtonActive,
   isUpdating,
   onToggleTimeTracking,
   onEdit,
 }) => (
   <td className="w-24 px-2 py-1">
     <div className="flex items-center justify-end gap-0.5">
-      {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
-        <button
-          className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
-          disabled={isUpdating}
+      {(!timeTrackingActive || thisButtonActive) && (
+        <TimeTrackingButton
+          isActive={thisButtonActive}
+          isUpdating={isUpdating}
           onClick={onToggleTimeTracking}
-          title={thisButtonTimeTrackingActive ? 'Pause' : 'Start'}
-          type="button"
-        >
-          {thisButtonTimeTrackingActive ? (
-            <BiPauseCircle size="1.1em" />
-          ) : (
-            <BiPlayCircle size="1.1em" />
-          )}
-        </button>
+        />
       )}
       <button
         className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -65,6 +75,39 @@ const TodoRowActions: FC<TodoRowActionsProps> = ({
   </td>
 );
 
+interface RowCellsProps {
+  todo: Todo;
+  columns: string[];
+  activeDuration: number;
+  isUpdating: boolean;
+  error: DatabaseError | null;
+  onToggleCheckbox: () => void;
+}
+
+const RowCells: FC<RowCellsProps> = ({
+  todo,
+  columns,
+  activeDuration,
+  isUpdating,
+  error,
+  onToggleCheckbox,
+}) => (
+  <>
+    {columns.map((columnId) => (
+      <Fragment key={columnId}>
+        <TodoCell
+          activeDuration={activeDuration}
+          columnId={columnId}
+          error={error}
+          isUpdating={isUpdating}
+          onToggleCheckbox={onToggleCheckbox}
+          todo={todo}
+        />
+      </Fragment>
+    ))}
+  </>
+);
+
 const TodoRowInner: FC<TodoRowProps> = ({
   todo,
   selectedColumns,
@@ -73,62 +116,54 @@ const TodoRowInner: FC<TodoRowProps> = ({
 }) => {
   const toggleCompletion = useToggleCompletionMutation();
   const toggleTimeTracking = useToggleTimeTrackingMutation();
-
   const [showEditModal, setShowEditModal] = useState(false);
   const [error, setError] = useState<DatabaseError | null>(null);
 
   const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
-  const thisButtonTimeTrackingActive = Object.values(todo.active).some((d) => d === null);
-  const { counter: activeCounter } = useActiveTimer(thisButtonTimeTrackingActive);
+  const thisButtonActive = Object.values(todo.active).some((d) => d === null);
+  const { counter: activeCounter } = useActiveTimer(thisButtonActive);
 
-  const activeDuration = useMemo(() => {
-    return getActiveDuration(todo.active, activeDate);
-  }, [thisButtonTimeTrackingActive, activeDate, activeCounter]);
+  const activeDuration = useMemo(
+    () => getActiveDuration(todo.active, activeDate),
+    [thisButtonActive, activeDate, activeCounter],
+  );
 
-  async function handleToggleCheckbox() {
+  const handleToggleCheckbox = async () => {
     if (isUpdating) return;
     setError(null);
     try {
       await toggleCompletion.mutateAsync(todo);
     } catch (err) {
-      console.error('Failed to update todo:', err);
       setError(err as DatabaseError);
     }
-  }
+  };
 
-  async function handleToggleTimeTracking() {
+  const handleToggleTimeTracking = async () => {
     if (isUpdating) return;
     setError(null);
     try {
       await toggleTimeTracking.mutateAsync(todo);
     } catch (err) {
-      console.error('Failed to update time tracking:', err);
       setError(err as DatabaseError);
     }
-  }
-
-  const orderedColumns = reorderColumnsWithStatusFirst(selectedColumns);
+  };
 
   return (
     <>
       <tr className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700">
-        {orderedColumns.map((columnId) => (
-          <Fragment key={columnId}>
-            <TodoCell
-              activeDuration={activeDuration}
-              columnId={columnId}
-              error={error}
-              isUpdating={isUpdating}
-              onToggleCheckbox={handleToggleCheckbox}
-              todo={todo}
-            />
-          </Fragment>
-        ))}
+        <RowCells
+          activeDuration={activeDuration}
+          columns={reorderColumnsWithStatusFirst(selectedColumns)}
+          error={error}
+          isUpdating={isUpdating}
+          onToggleCheckbox={handleToggleCheckbox}
+          todo={todo}
+        />
         <TodoRowActions
           isUpdating={isUpdating}
           onEdit={() => setShowEditModal(true)}
           onToggleTimeTracking={handleToggleTimeTracking}
-          thisButtonTimeTrackingActive={thisButtonTimeTrackingActive}
+          thisButtonActive={thisButtonActive}
           timeTrackingActive={timeTrackingActive}
         />
       </tr>

@@ -34,90 +34,97 @@ interface TodoTableProps {
   selectedColumns: string[];
 }
 
-export const TodoTable: FC<TodoTableProps> = ({
-  currentDate,
-  selectedTags,
-  selectedContexts,
-  selectedStatus,
-  selectedTimeRange,
-  selectedColumns,
-}) => {
-  const { safeDb, rawDb } = usePouchDb();
-  const { error, setError, isInitialized } = useDbInitialization(safeDb, rawDb);
+interface TableDataResult {
+  groupedByContext: Array<[string, Todo[]]>;
+  durationByContext: Record<string, string>;
+  displayError: DatabaseError | null;
+  hasNoTodos: boolean;
+  hasActiveFilters: boolean;
+}
+
+const useTableData = (
+  props: TodoTableProps,
+  isInitialized: boolean,
+  error: DatabaseError | null,
+): TableDataResult & ReturnType<typeof useTodoBoardData> => {
+  const { currentDate, selectedTags, selectedContexts, selectedStatus, selectedTimeRange } = props;
 
   const dateRange = useMemo(
     () => calculateDateRange(currentDate, selectedTimeRange),
     [currentDate, selectedTimeRange],
   );
 
-  const {
-    todos,
-    activities,
-    timeTrackingActive,
-    isLoading,
-    showLoadingSpinner,
-    queryError,
-    todosQuery,
-    activitiesQuery,
-  } = useTodoBoardData({
+  const boardData = useTodoBoardData({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
     isInitialized,
   });
 
   const filteredTodos = useMemo(
-    () => filterTodos(todos, selectedContexts, selectedStatus, selectedTags),
-    [todos, selectedTags, selectedContexts, selectedStatus],
+    () => filterTodos(boardData.todos, selectedContexts, selectedStatus, selectedTags),
+    [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
   const groupedByContext = useMemo(() => groupTodosByContext(filteredTodos), [filteredTodos]);
   const durationByContext = useMemo(
-    () => calculateDurationByContext(activities as Activity[]),
-    [activities],
+    () => calculateDurationByContext(boardData.activities as Activity[]),
+    [boardData.activities],
   );
 
-  const displayError = error || (queryError as DatabaseError | null);
+  const hasNoTodos =
+    groupedByContext.length === 0 &&
+    !boardData.isLoading &&
+    isInitialized &&
+    boardData.todosQuery.isFetched;
 
-  const handleDismissError = () => {
-    setError(null);
-    todosQuery.refetch();
-    activitiesQuery.refetch();
+  const hasActiveFilters =
+    selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
+
+  return {
+    ...boardData,
+    groupedByContext,
+    durationByContext,
+    displayError: error || (boardData.queryError as DatabaseError | null),
+    hasNoTodos,
+    hasActiveFilters,
   };
+};
 
-  if (displayError && todos.length === 0 && !isLoading) {
+export const TodoTable: FC<TodoTableProps> = (props) => {
+  const { safeDb, rawDb } = usePouchDb();
+  const { error, setError, isInitialized } = useDbInitialization(safeDb, rawDb);
+  const data = useTableData(props, isInitialized, error);
+
+  if (data.displayError && data.todos.length === 0 && !data.isLoading) {
+    const handleError = () => {
+      setError(null);
+      data.todosQuery.refetch();
+      data.activitiesQuery.refetch();
+    };
     return (
       <div className="bg-gray-50 p-8 dark:bg-gray-800">
         <DatabaseErrorFallback
-          error={displayError}
-          onDismiss={handleDismissError}
-          onRetry={handleDismissError}
+          error={data.displayError}
+          onDismiss={handleError}
+          onRetry={handleError}
         />
       </div>
     );
   }
 
-  if (showLoadingSpinner) {
-    return <LoadingSpinner />;
-  }
-
-  const hasNoTodos =
-    groupedByContext.length === 0 && !isLoading && isInitialized && todosQuery.isFetched;
-
-  const hasActiveFilters =
-    selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
+  if (data.showLoadingSpinner) return <LoadingSpinner />;
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
-      {displayError && todos.length > 0 && (
+      {data.displayError && data.todos.length > 0 && (
         <div className="px-4 pt-2">
-          <DatabaseErrorMessage error={displayError} onDismiss={() => setError(null)} />
+          <DatabaseErrorMessage error={data.displayError} onDismiss={() => setError(null)} />
         </div>
       )}
-
-      {hasNoTodos ? (
+      {data.hasNoTodos ? (
         <EmptyState
           description={
-            hasActiveFilters
+            data.hasActiveFilters
               ? 'Try adjusting your filters or select a different time range.'
               : 'Get started by adding your first todo above.'
           }
@@ -125,29 +132,27 @@ export const TodoTable: FC<TodoTableProps> = ({
         />
       ) : (
         <TodoTableContent
-          currentDate={currentDate}
-          durationByContext={durationByContext}
-          groupedByContext={groupedByContext}
-          selectedColumns={selectedColumns}
-          timeTrackingActive={timeTrackingActive}
+          currentDate={props.currentDate}
+          durationByContext={data.durationByContext}
+          groupedByContext={data.groupedByContext}
+          selectedColumns={props.selectedColumns}
+          timeTrackingActive={data.timeTrackingActive}
         />
       )}
     </div>
   );
 };
 
-function LoadingSpinner() {
-  return (
-    <div
-      aria-label="Loading todos"
-      className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
-      role="status"
-    >
-      <Spinner aria-label="Loading" size="lg" />
-      <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
-    </div>
-  );
-}
+const LoadingSpinner: FC = () => (
+  <div
+    aria-label="Loading todos"
+    className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
+    role="status"
+  >
+    <Spinner aria-label="Loading" size="lg" />
+    <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
+  </div>
+);
 
 interface TodoTableContentProps {
   groupedByContext: Array<[string, Todo[]]>;
@@ -217,37 +222,33 @@ const ContextGroup: FC<ContextGroupProps> = ({
   </div>
 );
 
-function ContextHeader({ context, duration }: { context: string; duration: string }) {
-  return (
-    <div className="mb-1 flex items-center justify-between">
-      <h3 className="text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
-        <FormattedMessage message={context} />
-      </h3>
-      <span className="text-xs text-gray-500 dark:text-gray-400">{duration}</span>
-    </div>
-  );
-}
+const ContextHeader: FC<{ context: string; duration: string }> = ({ context, duration }) => (
+  <div className="mb-1 flex items-center justify-between">
+    <h3 className="text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
+      <FormattedMessage message={context} />
+    </h3>
+    <span className="text-xs text-gray-500 dark:text-gray-400">{duration}</span>
+  </div>
+);
 
-function TableHeader({ selectedColumns }: { selectedColumns: string[] }) {
-  return (
-    <thead className="bg-gray-50 dark:bg-gray-700">
-      <tr>
-        {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
-          <th
-            className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
-            key={columnId}
-            scope="col"
-          >
-            {getColumnLabel(columnId)}
-          </th>
-        ))}
+const TableHeader: FC<{ selectedColumns: string[] }> = ({ selectedColumns }) => (
+  <thead className="bg-gray-50 dark:bg-gray-700">
+    <tr>
+      {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
         <th
-          className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
+          className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
+          key={columnId}
           scope="col"
         >
-          Actions
+          {getColumnLabel(columnId)}
         </th>
-      </tr>
-    </thead>
-  );
-}
+      ))}
+      <th
+        className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
+        scope="col"
+      >
+        Actions
+      </th>
+    </tr>
+  </thead>
+);

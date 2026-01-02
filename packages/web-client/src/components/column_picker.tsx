@@ -25,28 +25,58 @@ interface ColumnPickerProps {
   onColumnsChange: (columns: string[]) => void;
 }
 
+interface ColumnItemProps {
+  column: ColumnOption;
+  isSelected: boolean;
+  isLastSelected: boolean;
+  onToggle: () => void;
+}
+
+const ColumnItem: FC<ColumnItemProps> = ({ column, isSelected, isLastSelected, onToggle }) => (
+  <label
+    className={`flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+      isLastSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+    }`}
+  >
+    <Checkbox checked={isSelected} disabled={isLastSelected} onChange={onToggle} />
+    <span className="text-sm text-gray-700 dark:text-gray-300">{column.label}</span>
+  </label>
+);
+
+interface ColumnListProps {
+  selectedColumns: string[];
+  onToggle: (columnId: string) => void;
+}
+
+const ColumnList: FC<ColumnListProps> = ({ selectedColumns, onToggle }) => (
+  <div className="space-y-2">
+    {AVAILABLE_COLUMNS.map((column) => {
+      const isSelected = selectedColumns.includes(column.id);
+      const isLastSelected = isSelected && selectedColumns.length === 1;
+      return (
+        <ColumnItem
+          column={column}
+          isLastSelected={isLastSelected}
+          isSelected={isSelected}
+          key={column.id}
+          onToggle={() => onToggle(column.id)}
+        />
+      );
+    })}
+  </div>
+);
+
 export const ColumnPicker: FC<ColumnPickerProps> = ({ selectedColumns, onColumnsChange }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleColumn = (columnId: string) => {
     const isSelected = selectedColumns.includes(columnId);
-    let newColumns: string[];
-
-    if (isSelected) {
-      // Don't allow deselecting if it's the last column
-      if (selectedColumns.length === 1) {
-        return;
-      }
-      newColumns = selectedColumns.filter((id) => id !== columnId);
-    } else {
-      newColumns = [...selectedColumns, columnId];
-    }
-
+    if (isSelected && selectedColumns.length === 1) return;
+    const newColumns = isSelected
+      ? selectedColumns.filter((id) => id !== columnId)
+      : [...selectedColumns, columnId];
     onColumnsChange(newColumns);
   };
-
-  const selectedCount = selectedColumns.length;
-  const totalCount = AVAILABLE_COLUMNS.length;
 
   return (
     <div className="relative">
@@ -57,11 +87,10 @@ export const ColumnPicker: FC<ColumnPickerProps> = ({ selectedColumns, onColumns
       >
         <MdViewColumn size="1.2em" />
         <span className="hidden sm:inline">
-          Columns ({selectedCount}/{totalCount})
+          Columns ({selectedColumns.length}/{AVAILABLE_COLUMNS.length})
         </span>
-        <span className="sm:hidden">{selectedCount}</span>
+        <span className="sm:hidden">{selectedColumns.length}</span>
       </button>
-
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
@@ -69,28 +98,7 @@ export const ColumnPicker: FC<ColumnPickerProps> = ({ selectedColumns, onColumns
             <div className="mb-2 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
               Visible Columns
             </div>
-            <div className="space-y-2">
-              {AVAILABLE_COLUMNS.map((column) => {
-                const isSelected = selectedColumns.includes(column.id);
-                const isLastSelected = isSelected && selectedColumns.length === 1;
-
-                return (
-                  <label
-                    className={`flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                      isLastSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                    }`}
-                    key={column.id}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      disabled={isLastSelected}
-                      onChange={() => toggleColumn(column.id)}
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{column.label}</span>
-                  </label>
-                );
-              })}
-            </div>
+            <ColumnList onToggle={toggleColumn} selectedColumns={selectedColumns} />
             {selectedColumns.length === 1 && (
               <div className="mt-2 border-t border-gray-200 pt-2 text-xs text-gray-500 dark:border-gray-600 dark:text-gray-400">
                 At least one column must be visible

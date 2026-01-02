@@ -40,54 +40,75 @@ const PasswordField: FC<PasswordFieldProps> = ({
   </div>
 );
 
-export function SecurityTab({
+interface NewPasswordFieldsProps {
+  isLoading: boolean;
+  newPassword: string;
+  confirmPassword: string;
+  onNewPasswordChange: (value: string) => void;
+  onConfirmPasswordChange: (value: string) => void;
+}
+
+const NewPasswordFields: FC<NewPasswordFieldsProps> = ({
+  isLoading,
+  newPassword,
+  confirmPassword,
+  onNewPasswordChange,
+  onConfirmPasswordChange,
+}) => (
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <PasswordField
+      hint="Minimum 8 characters"
+      id="secNewPassword"
+      isLoading={isLoading}
+      label="New Password"
+      onChange={onNewPasswordChange}
+      placeholder="Enter new password"
+      value={newPassword}
+    />
+    <PasswordField
+      id="secConfirmPassword"
+      isLoading={isLoading}
+      label="Confirm New Password"
+      onChange={onConfirmPasswordChange}
+      placeholder="Confirm new password"
+      value={confirmPassword}
+    />
+  </div>
+);
+
+export const SecurityTab: FC<SecurityTabProps> = ({
   isLoading,
   formState,
   onCurrentPasswordChange,
   onNewPasswordChange,
   onConfirmPasswordChange,
   onChangePassword,
-}: SecurityTabProps) {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
-          <div className="space-y-4">
-            <PasswordField
-              hint=""
-              id="secCurrentPassword"
-              isLoading={isLoading}
-              label="Current Password"
-              onChange={onCurrentPasswordChange}
-              placeholder="Enter your current password"
-              value={formState.currentPassword}
-            />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <PasswordField
-                hint="Minimum 8 characters"
-                id="secNewPassword"
-                isLoading={isLoading}
-                label="New Password"
-                onChange={onNewPasswordChange}
-                placeholder="Enter new password"
-                value={formState.newPassword}
-              />
-              <PasswordField
-                id="secConfirmPassword"
-                isLoading={isLoading}
-                label="Confirm New Password"
-                onChange={onConfirmPasswordChange}
-                placeholder="Confirm new password"
-                value={formState.confirmPassword}
-              />
-            </div>
-            <Button color="blue" disabled={isLoading} onClick={onChangePassword}>
-              {isLoading ? 'Changing Password...' : 'Change Password'}
-            </Button>
-          </div>
+}) => (
+  <div className="space-y-6">
+    <Card>
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
+        <div className="space-y-4">
+          <PasswordField
+            id="secCurrentPassword"
+            isLoading={isLoading}
+            label="Current Password"
+            onChange={onCurrentPasswordChange}
+            placeholder="Enter your current password"
+            value={formState.currentPassword}
+          />
+          <NewPasswordFields
+            confirmPassword={formState.confirmPassword}
+            isLoading={isLoading}
+            newPassword={formState.newPassword}
+            onConfirmPasswordChange={onConfirmPasswordChange}
+            onNewPasswordChange={onNewPasswordChange}
+          />
+          <Button color="blue" disabled={isLoading} onClick={onChangePassword}>
+            {isLoading ? 'Changing Password...' : 'Change Password'}
+          </Button>
         </div>
-      </Card>
-    </div>
-  );
-}
+      </div>
+    </Card>
+  </div>
+);

@@ -41,47 +41,45 @@ interface TodoBoardProps {
   selectedTimeRange: TimeRange;
 }
 
-export const TodoBoard: FC<TodoBoardProps> = ({
-  currentDate,
-  selectedTags,
-  selectedContexts,
-  selectedStatus,
-  selectedTimeRange,
-}) => {
-  const { safeDb, rawDb } = usePouchDb();
-  const { error, setError, isInitialized } = useDbInitialization(safeDb, rawDb);
+interface BoardDataResult {
+  groupedByContextByDate: Array<[string, Map<string, Array<Todo | ActivityItem>>]>;
+  durationByContext: Record<string, string>;
+  durationByContextByDate: Array<[string, Map<string, ActivityItem[]>]>;
+  timeTrackingActive: string[];
+  dataStr: string;
+  displayError: DatabaseError | null;
+  hasNoTodos: boolean;
+  hasActiveFilters: boolean;
+}
+
+const useBoardData = (
+  props: TodoBoardProps,
+  isInitialized: boolean,
+  error: DatabaseError | null,
+): BoardDataResult & ReturnType<typeof useTodoBoardData> => {
+  const { currentDate, selectedTags, selectedContexts, selectedStatus, selectedTimeRange } = props;
 
   const dateRange = useMemo(
     () => calculateDateRange(currentDate, selectedTimeRange),
     [currentDate, selectedTimeRange],
   );
 
-  const {
-    todos,
-    activities,
-    timeTrackingActive,
-    outdatedTodosMemo,
-    isLoading,
-    showLoadingSpinner,
-    queryError,
-    todosQuery,
-    activitiesQuery,
-  } = useTodoBoardData({
+  const boardData = useTodoBoardData({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
     isInitialized,
   });
 
-  useOutdatedTodos(outdatedTodosMemo);
+  useOutdatedTodos(boardData.outdatedTodosMemo);
 
   const filteredTodos = useMemo(
-    () => filterTodos(todos, selectedContexts, selectedStatus, selectedTags),
-    [todos, selectedTags, selectedContexts, selectedStatus],
+    () => filterTodos(boardData.todos, selectedContexts, selectedStatus, selectedTags),
+    [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
   const filteredActivities = useMemo(
-    () => filterActivities(activities, selectedContexts, selectedStatus, selectedTags),
-    [activities, selectedContexts, selectedStatus, selectedTags],
+    () => filterActivities(boardData.activities, selectedContexts, selectedStatus, selectedTags),
+    [boardData.activities, selectedContexts, selectedStatus, selectedTags],
   );
 
   const groupedByContextByDate = useMemo(
@@ -89,55 +87,72 @@ export const TodoBoard: FC<TodoBoardProps> = ({
     [filteredTodos, filteredActivities],
   );
 
-  const durationByContext = useMemo(() => calculateDurationByContext(activities), [activities]);
-  const durationByContextByDate = useMemo(
-    () => calculateDurationByContextAndDate(activities),
-    [activities],
+  const durationByContext = useMemo(
+    () => calculateDurationByContext(boardData.activities),
+    [boardData.activities],
   );
 
-  const dataStr = generateTodosDownloadUrl(todos);
-  const displayError = error || (queryError as DatabaseError | null);
+  const durationByContextByDate = useMemo(
+    () => calculateDurationByContextAndDate(boardData.activities),
+    [boardData.activities],
+  );
 
-  const handleDismissError = () => {
-    setError(null);
-    todosQuery.refetch();
-    activitiesQuery.refetch();
+  const hasNoTodos =
+    groupedByContextByDate.length === 0 &&
+    !boardData.isLoading &&
+    isInitialized &&
+    boardData.todosQuery.isFetched;
+
+  const hasActiveFilters =
+    selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
+
+  return {
+    ...boardData,
+    groupedByContextByDate,
+    durationByContext,
+    durationByContextByDate,
+    dataStr: generateTodosDownloadUrl(boardData.todos),
+    displayError: error || (boardData.queryError as DatabaseError | null),
+    hasNoTodos,
+    hasActiveFilters,
   };
+};
 
-  if (displayError && todos.length === 0 && !isLoading) {
+export const TodoBoard: FC<TodoBoardProps> = (props) => {
+  const { safeDb, rawDb } = usePouchDb();
+  const { error, setError, isInitialized } = useDbInitialization(safeDb, rawDb);
+  const data = useBoardData(props, isInitialized, error);
+
+  if (data.displayError && data.todos.length === 0 && !data.isLoading) {
+    const handleError = () => {
+      setError(null);
+      data.todosQuery.refetch();
+      data.activitiesQuery.refetch();
+    };
     return (
       <div className="bg-gray-50 p-8 dark:bg-gray-800">
         <DatabaseErrorFallback
-          error={displayError}
-          onDismiss={handleDismissError}
-          onRetry={handleDismissError}
+          error={data.displayError}
+          onDismiss={handleError}
+          onRetry={handleError}
         />
       </div>
     );
   }
 
-  if (showLoadingSpinner) {
-    return <LoadingSpinner />;
-  }
-
-  const hasNoTodos =
-    groupedByContextByDate.length === 0 && !isLoading && isInitialized && todosQuery.isFetched;
-
-  const hasActiveFilters =
-    selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
+  if (data.showLoadingSpinner) return <LoadingSpinner />;
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800">
-      {displayError && todos.length > 0 && (
+      {data.displayError && data.todos.length > 0 && (
         <div className="px-4 pt-2">
-          <DatabaseErrorMessage error={displayError} onDismiss={() => setError(null)} />
+          <DatabaseErrorMessage error={data.displayError} onDismiss={() => setError(null)} />
         </div>
       )}
-
-      {hasNoTodos ? (
+      {data.hasNoTodos ? (
         <EmptyState
           description={
-            hasActiveFilters
+            data.hasActiveFilters
               ? 'Try adjusting your filters or select a different time range.'
               : 'Get started by adding your first todo above.'
           }
@@ -145,29 +160,27 @@ export const TodoBoard: FC<TodoBoardProps> = ({
         />
       ) : (
         <TodoBoardContent
-          dataStr={dataStr}
-          durationByContext={durationByContext}
-          durationByContextByDate={durationByContextByDate}
-          groupedByContextByDate={groupedByContextByDate}
-          timeTrackingActive={timeTrackingActive}
+          dataStr={data.dataStr}
+          durationByContext={data.durationByContext}
+          durationByContextByDate={data.durationByContextByDate}
+          groupedByContextByDate={data.groupedByContextByDate}
+          timeTrackingActive={data.timeTrackingActive}
         />
       )}
     </div>
   );
 };
 
-function LoadingSpinner() {
-  return (
-    <div
-      aria-label="Loading todos"
-      className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
-      role="status"
-    >
-      <Spinner aria-label="Loading" size="lg" />
-      <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
-    </div>
-  );
-}
+const LoadingSpinner: FC = () => (
+  <div
+    aria-label="Loading todos"
+    className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
+    role="status"
+  >
+    <Spinner aria-label="Loading" size="lg" />
+    <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
+  </div>
+);
 
 interface TodoBoardContentProps {
   groupedByContextByDate: Array<[string, Map<string, Array<Todo | ActivityItem>>]>;
@@ -224,9 +237,7 @@ const ContextColumn: FC<ContextColumnProps> = ({
   durationByContextByDate,
   timeTrackingActive,
 }) => {
-  const todosByDate = Array.from(contextTodos);
-  todosByDate.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
-
+  const todosByDate = Array.from(contextTodos).sort((a, b) => ('' + a[0]).localeCompare(b[0]));
   const activityDurationByDate = formatActivityDurationsByDate(durationByContextByDate, context);
 
   return (
@@ -248,18 +259,16 @@ const ContextColumn: FC<ContextColumnProps> = ({
   );
 };
 
-function ContextHeader({ context, duration }: { context: string; duration: string }) {
-  return (
-    <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
-      <div className="flex items-center justify-between">
-        <div>
-          <FormattedMessage message={context} />
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">{duration}</div>
+const ContextHeader: FC<{ context: string; duration: string }> = ({ context, duration }) => (
+  <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
+    <div className="flex items-center justify-between">
+      <div>
+        <FormattedMessage message={context} />
       </div>
+      <div className="text-xs text-gray-500 dark:text-gray-400">{duration}</div>
     </div>
-  );
-}
+  </div>
+);
 
 interface DateGroupProps {
   context: string;
@@ -319,11 +328,9 @@ const DateGroup: FC<DateGroupProps> = ({
   );
 };
 
-function DateHeader({ date, duration }: { date: string; duration: string }) {
-  return (
-    <div className="mb-1 flex items-center justify-between text-xs">
-      <div className="font-medium text-gray-600 dark:text-gray-400">{date}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-500">{duration}</div>
-    </div>
-  );
-}
+const DateHeader: FC<{ date: string; duration: string }> = ({ date, duration }) => (
+  <div className="mb-1 flex items-center justify-between text-xs">
+    <div className="font-medium text-gray-600 dark:text-gray-400">{date}</div>
+    <div className="text-xs text-gray-500 dark:text-gray-500">{duration}</div>
+  </div>
+);

@@ -33,153 +33,176 @@ interface TodoFiltersProps {
   isViewPrefsLoading?: boolean;
 }
 
-export const TodoFilters: FC<TodoFiltersProps> = ({
+const getPeriodLabel = (currentDate: Date, timeRange: TimeRange): string => {
+  switch (timeRange.type) {
+    case 'current-day':
+      return format(currentDate, 'MMM d, yyyy');
+    case 'current-week':
+      return `CW${getISOWeek(currentDate)}`;
+    case 'current-month':
+      return format(currentDate, 'MMM yyyy');
+    case 'current-year':
+      return format(currentDate, 'yyyy');
+    case 'custom':
+      if (timeRange.startDate && timeRange.endDate) {
+        const start = format(new Date(timeRange.startDate), 'MMM d');
+        const end = format(new Date(timeRange.endDate), 'MMM d, yyyy');
+        return `${start} - ${end}`;
+      }
+      return 'Custom Range';
+    case 'all-time':
+      return 'All Time';
+    default:
+      return 'Period';
+  }
+};
+
+const getCustomRangeDays = (timeRange: TimeRange): number => {
+  if (!timeRange.startDate || !timeRange.endDate) return 0;
+  const start = new Date(timeRange.startDate);
+  const end = new Date(timeRange.endDate);
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+};
+
+const navigatePeriod = (
+  currentDate: Date,
+  timeRange: TimeRange,
+  direction: 'prev' | 'next',
+): Date => {
+  const addOrSub = direction === 'next' ? add : sub;
+  switch (timeRange.type) {
+    case 'current-day':
+      return addOrSub(currentDate, { days: 1 });
+    case 'current-week':
+      return addOrSub(currentDate, { weeks: 1 });
+    case 'current-month':
+      return addOrSub(currentDate, { months: 1 });
+    case 'current-year':
+      return addOrSub(currentDate, { years: 1 });
+    case 'custom':
+      return addOrSub(currentDate, { days: getCustomRangeDays(timeRange) });
+    default:
+      return currentDate;
+  }
+};
+
+interface FilterRowProps {
+  viewMode: ViewMode;
+  isViewPrefsLoading: boolean;
+  tableColumns: string[];
+  onViewModeChange: (mode: ViewMode) => void;
+  onTableColumnsChange: (columns: string[]) => void;
+  selectedTimeRange: TimeRange;
+  setSelectedTimeRange: (timeRange: TimeRange) => void;
+  selectedStatus: CompletionStatus;
+  setSelectedStatus: (status: CompletionStatus) => void;
+  allContexts: string[];
+  selectedContexts: string[];
+  setSelectedContexts: (contexts: string[]) => void;
+  allTags: string[];
+  selectedTags: string[];
+  setSelectedTags: (tags: string[]) => void;
+}
+
+const FilterRow: FC<FilterRowProps> = (props) => (
+  <>
+    <ViewModeToggle
+      isLoading={props.isViewPrefsLoading}
+      onViewModeChange={props.onViewModeChange}
+      viewMode={props.viewMode}
+    />
+    {props.viewMode === 'table' && (
+      <ColumnPicker
+        onColumnsChange={props.onTableColumnsChange}
+        selectedColumns={props.tableColumns}
+      />
+    )}
+    <TimeRangeFilter
+      onTimeRangeChange={props.setSelectedTimeRange}
+      selectedTimeRange={props.selectedTimeRange}
+    />
+    <StatusFilter onStatusChange={props.setSelectedStatus} selectedStatus={props.selectedStatus} />
+    <EddoContextFilter
+      availableContexts={props.allContexts}
+      onContextsChange={props.setSelectedContexts}
+      selectedContexts={props.selectedContexts}
+    />
+    <TagFilter
+      availableTags={props.allTags}
+      onTagsChange={props.setSelectedTags}
+      selectedTags={props.selectedTags}
+    />
+  </>
+);
+
+interface PeriodNavigationProps {
+  currentDate: Date;
+  selectedTimeRange: TimeRange;
+  onNavigate: (direction: 'prev' | 'next') => void;
+  onReset: () => void;
+}
+
+const PeriodNavigation: FC<PeriodNavigationProps> = ({
   currentDate,
-  setCurrentDate,
-  selectedTags,
-  setSelectedTags,
-  selectedContexts,
-  setSelectedContexts,
-  selectedStatus,
-  setSelectedStatus,
   selectedTimeRange,
-  setSelectedTimeRange,
-  viewMode,
-  onViewModeChange,
-  tableColumns,
-  onTableColumnsChange,
-  isViewPrefsLoading = false,
+  onNavigate,
+  onReset,
 }) => {
+  if (selectedTimeRange.type === 'all-time') return null;
+
+  return (
+    <>
+      <Button className="p-0" color="gray" onClick={() => onNavigate('prev')} size="xs">
+        <RiArrowLeftSLine size="2em" />
+      </Button>{' '}
+      <button
+        className="cursor-pointer font-semibold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
+        onClick={onReset}
+        title="Return to current period"
+        type="button"
+      >
+        {getPeriodLabel(currentDate, selectedTimeRange)}
+      </button>{' '}
+      <Button className="p-0" color="gray" onClick={() => onNavigate('next')} size="xs">
+        <RiArrowRightSLine size="2em" />
+      </Button>
+    </>
+  );
+};
+
+export const TodoFilters: FC<TodoFiltersProps> = (props) => {
   const { allTags } = useTags();
   const { allContexts } = useEddoContexts();
 
-  const currentCalendarWeek = getISOWeek(currentDate);
-
-  function getPeriodLabel(): string {
-    switch (selectedTimeRange.type) {
-      case 'current-day':
-        return format(currentDate, 'MMM d, yyyy');
-      case 'current-week':
-        return `CW${currentCalendarWeek}`;
-      case 'current-month':
-        return format(currentDate, 'MMM yyyy');
-      case 'current-year':
-        return format(currentDate, 'yyyy');
-      case 'custom':
-        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
-          const start = format(new Date(selectedTimeRange.startDate), 'MMM d');
-          const end = format(new Date(selectedTimeRange.endDate), 'MMM d, yyyy');
-          return `${start} - ${end}`;
-        }
-        return 'Custom Range';
-      case 'all-time':
-        return 'All Time';
-      default:
-        return 'Period';
-    }
-  }
-
-  function previousPeriodClickHandler() {
-    switch (selectedTimeRange.type) {
-      case 'current-day':
-        setCurrentDate(sub(currentDate, { days: 1 }));
-        break;
-      case 'current-week':
-        setCurrentDate(sub(currentDate, { weeks: 1 }));
-        break;
-      case 'current-month':
-        setCurrentDate(sub(currentDate, { months: 1 }));
-        break;
-      case 'current-year':
-        setCurrentDate(sub(currentDate, { years: 1 }));
-        break;
-      case 'custom':
-        // For custom ranges, navigate by the same duration as the current range
-        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
-          const start = new Date(selectedTimeRange.startDate);
-          const end = new Date(selectedTimeRange.endDate);
-          const durationMs = end.getTime() - start.getTime();
-          setCurrentDate(sub(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }));
-        }
-        break;
-      // all-time doesn't have navigation
-    }
-  }
-
-  function nextPeriodClickHandler() {
-    switch (selectedTimeRange.type) {
-      case 'current-day':
-        setCurrentDate(add(currentDate, { days: 1 }));
-        break;
-      case 'current-week':
-        setCurrentDate(add(currentDate, { weeks: 1 }));
-        break;
-      case 'current-month':
-        setCurrentDate(add(currentDate, { months: 1 }));
-        break;
-      case 'current-year':
-        setCurrentDate(add(currentDate, { years: 1 }));
-        break;
-      case 'custom':
-        // For custom ranges, navigate by the same duration as the current range
-        if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
-          const start = new Date(selectedTimeRange.startDate);
-          const end = new Date(selectedTimeRange.endDate);
-          const durationMs = end.getTime() - start.getTime();
-          setCurrentDate(add(currentDate, { days: durationMs / (1000 * 60 * 60 * 24) }));
-        }
-        break;
-      // all-time doesn't have navigation
-    }
-  }
-
-  function resetToCurrentPeriod() {
-    setCurrentDate(new Date());
-  }
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    props.setCurrentDate(navigatePeriod(props.currentDate, props.selectedTimeRange, direction));
+  };
 
   return (
     <div className="flex items-center space-x-3 border-b border-gray-200 bg-white pb-4 dark:border-gray-700 dark:bg-gray-800">
-      <ViewModeToggle
-        isLoading={isViewPrefsLoading}
-        onViewModeChange={onViewModeChange}
-        viewMode={viewMode}
+      <FilterRow
+        allContexts={allContexts}
+        allTags={allTags}
+        isViewPrefsLoading={props.isViewPrefsLoading ?? false}
+        onTableColumnsChange={props.onTableColumnsChange}
+        onViewModeChange={props.onViewModeChange}
+        selectedContexts={props.selectedContexts}
+        selectedStatus={props.selectedStatus}
+        selectedTags={props.selectedTags}
+        selectedTimeRange={props.selectedTimeRange}
+        setSelectedContexts={props.setSelectedContexts}
+        setSelectedStatus={props.setSelectedStatus}
+        setSelectedTags={props.setSelectedTags}
+        setSelectedTimeRange={props.setSelectedTimeRange}
+        tableColumns={props.tableColumns}
+        viewMode={props.viewMode}
       />
-      {viewMode === 'table' && (
-        <ColumnPicker onColumnsChange={onTableColumnsChange} selectedColumns={tableColumns} />
-      )}
-      <TimeRangeFilter
-        onTimeRangeChange={setSelectedTimeRange}
-        selectedTimeRange={selectedTimeRange}
+      <PeriodNavigation
+        currentDate={props.currentDate}
+        onNavigate={handleNavigate}
+        onReset={() => props.setCurrentDate(new Date())}
+        selectedTimeRange={props.selectedTimeRange}
       />
-      <StatusFilter onStatusChange={setSelectedStatus} selectedStatus={selectedStatus} />
-      <EddoContextFilter
-        availableContexts={allContexts}
-        onContextsChange={setSelectedContexts}
-        selectedContexts={selectedContexts}
-      />
-      <TagFilter
-        availableTags={allTags}
-        onTagsChange={setSelectedTags}
-        selectedTags={selectedTags}
-      />
-      {selectedTimeRange.type !== 'all-time' && (
-        <>
-          <Button className="p-0" color="gray" onClick={previousPeriodClickHandler} size="xs">
-            <RiArrowLeftSLine size="2em" />
-          </Button>{' '}
-          <button
-            className="cursor-pointer font-semibold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
-            onClick={resetToCurrentPeriod}
-            title="Return to current period"
-            type="button"
-          >
-            {getPeriodLabel()}
-          </button>{' '}
-          <Button className="p-0" color="gray" onClick={nextPeriodClickHandler} size="xs">
-            <RiArrowRightSLine size="2em" />
-          </Button>
-        </>
-      )}
     </div>
   );
 };

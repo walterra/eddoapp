@@ -1,6 +1,8 @@
 /**
  * Profile tab component for UserProfile
  */
+import { type FC } from 'react';
+
 import { Button, Card } from 'flowbite-react';
 
 import {
@@ -11,63 +13,6 @@ import {
 } from './user_profile_form_fields';
 import { type ProfileTabProps } from './user_profile_types';
 
-export function ProfileTab({
-  profile,
-  isLoading,
-  formState,
-  editMode,
-  onEditToggle,
-  onEmailChange,
-  onCurrentPasswordChange,
-  onNewPasswordChange,
-  onConfirmPasswordChange,
-  onSave,
-}: ProfileTabProps) {
-  return (
-    <Card>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-          <Button color={editMode ? 'gray' : 'blue'} disabled={isLoading} onClick={onEditToggle}>
-            {editMode ? 'Cancel' : 'Edit'}
-          </Button>
-        </div>
-
-        <ProfileFormFields
-          editMode={editMode}
-          email={formState.email}
-          isLoading={isLoading}
-          onEmailChange={onEmailChange}
-          profile={profile}
-        />
-
-        {editMode && (
-          <PasswordChangeSection
-            confirmPassword={formState.confirmPassword}
-            currentPassword={formState.currentPassword}
-            isLoading={isLoading}
-            newPassword={formState.newPassword}
-            onConfirmPasswordChange={onConfirmPasswordChange}
-            onCurrentPasswordChange={onCurrentPasswordChange}
-            onNewPasswordChange={onNewPasswordChange}
-          />
-        )}
-
-        {editMode && (
-          <div className="flex justify-end space-x-4 border-t pt-6">
-            <Button color="gray" disabled={isLoading} onClick={onEditToggle}>
-              Cancel
-            </Button>
-            <Button color="blue" disabled={isLoading} onClick={onSave}>
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
-
 interface ProfileFormFieldsProps {
   profile: ProfileTabProps['profile'];
   email: string;
@@ -76,34 +21,32 @@ interface ProfileFormFieldsProps {
   onEmailChange: (email: string) => void;
 }
 
-function ProfileFormFields({
+const ProfileFormFields: FC<ProfileFormFieldsProps> = ({
   profile,
   email,
   editMode,
   isLoading,
   onEmailChange,
-}: ProfileFormFieldsProps) {
-  return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <ReadOnlyField
-        hint="Username cannot be changed"
-        id="username"
-        label="Username"
-        value={profile.username}
-      />
-      <EditableEmailField
-        editMode={editMode}
-        email={email}
-        isLoading={isLoading}
-        onEmailChange={onEmailChange}
-      />
-      <ReadOnlyField id="status" label="Account Status" value={profile.status} />
-      <ReadOnlyField id="permissions" label="Permissions" value={profile.permissions.join(', ')} />
-      <DateField date={profile.createdAt} id="created" label="Account Created" />
-      <DateField date={profile.updatedAt} id="updated" label="Last Updated" />
-    </div>
-  );
-}
+}) => (
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <ReadOnlyField
+      hint="Username cannot be changed"
+      id="username"
+      label="Username"
+      value={profile.username}
+    />
+    <EditableEmailField
+      editMode={editMode}
+      email={email}
+      isLoading={isLoading}
+      onEmailChange={onEmailChange}
+    />
+    <ReadOnlyField id="status" label="Account Status" value={profile.status} />
+    <ReadOnlyField id="permissions" label="Permissions" value={profile.permissions.join(', ')} />
+    <DateField date={profile.createdAt} id="created" label="Account Created" />
+    <DateField date={profile.updatedAt} id="updated" label="Last Updated" />
+  </div>
+);
 
 interface PasswordChangeSectionProps {
   isLoading: boolean;
@@ -115,7 +58,7 @@ interface PasswordChangeSectionProps {
   onConfirmPasswordChange: (password: string) => void;
 }
 
-function PasswordChangeSection({
+const PasswordChangeSection: FC<PasswordChangeSectionProps> = ({
   isLoading,
   currentPassword,
   newPassword,
@@ -123,39 +66,97 @@ function PasswordChangeSection({
   onCurrentPasswordChange,
   onNewPasswordChange,
   onConfirmPasswordChange,
-}: PasswordChangeSectionProps) {
-  return (
-    <div className="space-y-4 border-t pt-6">
-      <h3 className="text-lg font-medium text-gray-900">Change Password (Optional)</h3>
-
+}) => (
+  <div className="space-y-4 border-t pt-6">
+    <h3 className="text-lg font-medium text-gray-900">Change Password (Optional)</h3>
+    <PasswordField
+      id="currentPassword"
+      isLoading={isLoading}
+      label="Current Password"
+      onChange={onCurrentPasswordChange}
+      placeholder="Enter current password"
+      value={currentPassword}
+    />
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <PasswordField
-        id="currentPassword"
+        hint="Minimum 8 characters"
+        id="newPassword"
         isLoading={isLoading}
-        label="Current Password"
-        onChange={onCurrentPasswordChange}
-        placeholder="Enter current password"
-        value={currentPassword}
+        label="New Password"
+        onChange={onNewPasswordChange}
+        placeholder="Enter new password"
+        value={newPassword}
       />
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <PasswordField
-          hint="Minimum 8 characters"
-          id="newPassword"
-          isLoading={isLoading}
-          label="New Password"
-          onChange={onNewPasswordChange}
-          placeholder="Enter new password"
-          value={newPassword}
-        />
-        <PasswordField
-          id="confirmPassword"
-          isLoading={isLoading}
-          label="Confirm New Password"
-          onChange={onConfirmPasswordChange}
-          placeholder="Confirm new password"
-          value={confirmPassword}
-        />
-      </div>
+      <PasswordField
+        id="confirmPassword"
+        isLoading={isLoading}
+        label="Confirm New Password"
+        onChange={onConfirmPasswordChange}
+        placeholder="Confirm new password"
+        value={confirmPassword}
+      />
     </div>
-  );
+  </div>
+);
+
+interface EditModeActionsProps {
+  isLoading: boolean;
+  onEditToggle: () => void;
+  onSave: () => void;
 }
+
+const EditModeActions: FC<EditModeActionsProps> = ({ isLoading, onEditToggle, onSave }) => (
+  <div className="flex justify-end space-x-4 border-t pt-6">
+    <Button color="gray" disabled={isLoading} onClick={onEditToggle}>
+      Cancel
+    </Button>
+    <Button color="blue" disabled={isLoading} onClick={onSave}>
+      {isLoading ? 'Saving...' : 'Save Changes'}
+    </Button>
+  </div>
+);
+
+export const ProfileTab: FC<ProfileTabProps> = ({
+  profile,
+  isLoading,
+  formState,
+  editMode,
+  onEditToggle,
+  onEmailChange,
+  onCurrentPasswordChange,
+  onNewPasswordChange,
+  onConfirmPasswordChange,
+  onSave,
+}) => (
+  <Card>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
+        <Button color={editMode ? 'gray' : 'blue'} disabled={isLoading} onClick={onEditToggle}>
+          {editMode ? 'Cancel' : 'Edit'}
+        </Button>
+      </div>
+      <ProfileFormFields
+        editMode={editMode}
+        email={formState.email}
+        isLoading={isLoading}
+        onEmailChange={onEmailChange}
+        profile={profile}
+      />
+      {editMode && (
+        <PasswordChangeSection
+          confirmPassword={formState.confirmPassword}
+          currentPassword={formState.currentPassword}
+          isLoading={isLoading}
+          newPassword={formState.newPassword}
+          onConfirmPasswordChange={onConfirmPasswordChange}
+          onCurrentPasswordChange={onCurrentPasswordChange}
+          onNewPasswordChange={onNewPasswordChange}
+        />
+      )}
+      {editMode && (
+        <EditModeActions isLoading={isLoading} onEditToggle={onEditToggle} onSave={onSave} />
+      )}
+    </div>
+  </Card>
+);

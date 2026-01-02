@@ -14,132 +14,253 @@ interface TagInputProps {
   suggestions?: string[];
 }
 
+interface TagBadgeProps {
+  tag: string;
+  onRemove: () => void;
+}
+
+const TagBadge: FC<TagBadgeProps> = ({ tag, onRemove }) => (
+  <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+    {tag}
+    <button
+      className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+      onClick={onRemove}
+      type="button"
+    >
+      ×
+    </button>
+  </span>
+);
+
+interface SuggestionListProps {
+  suggestions: string[];
+  selectedIndex: number;
+  onSelect: (suggestion: string) => void;
+  suggestionsRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const SuggestionList: FC<SuggestionListProps> = ({
+  suggestions,
+  selectedIndex,
+  onSelect,
+  suggestionsRef,
+}) => (
+  <div
+    className="absolute top-full z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+    ref={suggestionsRef}
+  >
+    {suggestions.slice(0, 5).map((suggestion, index) => (
+      <button
+        className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
+          index === selectedIndex ? 'bg-blue-100 dark:bg-blue-900' : ''
+        }`}
+        key={suggestion}
+        onClick={() => onSelect(suggestion)}
+        type="button"
+      >
+        {suggestion}
+      </button>
+    ))}
+  </div>
+);
+
+interface EnterKeyContext {
+  showSuggestions: boolean;
+  selectedIndex: number;
+  suggestions: string[];
+  inputValue: string;
+}
+
+const handleEnterKey = (ctx: EnterKeyContext, addTag: (tag: string) => void): boolean => {
+  if (ctx.showSuggestions && ctx.selectedIndex >= 0) {
+    addTag(ctx.suggestions[ctx.selectedIndex]);
+  } else if (ctx.inputValue.trim()) {
+    addTag(ctx.inputValue);
+  }
+  return true;
+};
+
+interface ArrowKeyContext {
+  key: 'ArrowDown' | 'ArrowUp';
+  showSuggestions: boolean;
+  selectedIndex: number;
+  suggestionsLength: number;
+}
+
+const handleArrowKey = (ctx: ArrowKeyContext, setIndex: (index: number) => void): boolean => {
+  if (ctx.showSuggestions && ctx.suggestionsLength > 0) {
+    setIndex(handleNavigationKey(ctx.key, ctx.selectedIndex, ctx.suggestionsLength));
+  }
+  return true;
+};
+
+interface TagListDisplayProps {
+  tags: string[];
+  removeTag: (tag: string) => void;
+}
+
+const TagListDisplay: FC<TagListDisplayProps> = ({ tags, removeTag }) => (
+  <>
+    {tags.map((tag) => (
+      <TagBadge key={tag} onRemove={() => removeTag(tag)} tag={tag} />
+    ))}
+  </>
+);
+
+interface TagInputContainerProps {
+  children: React.ReactNode;
+}
+
+const TagInputContainer: FC<TagInputContainerProps> = ({ children }) => (
+  <div className="focus-within:ring-opacity-50 flex flex-wrap items-center gap-1 rounded-lg border border-gray-300 bg-gray-50 p-2 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
+    {children}
+  </div>
+);
+
+interface InputFieldProps {
+  value: string;
+  placeholder: string;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFocus: () => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+}
+
+const InputField: FC<InputFieldProps> = (props) => (
+  <input
+    className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+    onChange={props.onChange}
+    onFocus={props.onFocus}
+    onKeyDown={props.onKeyDown}
+    placeholder={props.placeholder}
+    ref={props.inputRef}
+    type="text"
+    value={props.value}
+  />
+);
+
+interface TagActionsParams {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+  state: ReturnType<typeof useTagInputState>;
+}
+
+const useTagActions = ({ tags, onChange, state }: TagActionsParams) => {
+  const addTag = useCallback(
+    (tag: string) => {
+      const trimmedTag = tag.trim();
+      if (trimmedTag && !tags.includes(trimmedTag)) onChange([...tags, trimmedTag]);
+      state.reset();
+    },
+    [tags, onChange, state],
+  );
+
+  const removeTag = useCallback(
+    (tagToRemove: string) => onChange(tags.filter((t) => t !== tagToRemove)),
+    [tags, onChange],
+  );
+
+  return { addTag, removeTag };
+};
+
+interface KeyDownHandlerParams {
+  state: ReturnType<typeof useTagInputState>;
+  filteredSuggestions: string[];
+  tags: string[];
+  addTag: (tag: string) => void;
+  removeTag: (tag: string) => void;
+}
+
+const useKeyDownHandler = ({
+  state,
+  filteredSuggestions,
+  tags,
+  addTag,
+  removeTag,
+}: KeyDownHandlerParams) =>
+  useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      let shouldPrevent = false;
+      const ctx = {
+        showSuggestions: state.showSuggestions,
+        selectedIndex: state.selectedSuggestionIndex,
+        suggestions: filteredSuggestions,
+        inputValue: state.inputValue,
+      };
+      if (e.key === 'Enter') {
+        shouldPrevent = handleEnterKey(ctx, addTag);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        shouldPrevent = handleArrowKey(
+          { ...ctx, key: e.key, suggestionsLength: filteredSuggestions.length },
+          state.setSelectedSuggestionIndex,
+        );
+      } else if (e.key === 'Backspace' && state.inputValue === '' && tags.length > 0) {
+        removeTag(tags[tags.length - 1]);
+      } else if (e.key === 'Escape') {
+        state.setShowSuggestions(false);
+        state.setSelectedSuggestionIndex(-1);
+      }
+      if (shouldPrevent) e.preventDefault();
+    },
+    [addTag, removeTag, state, filteredSuggestions, tags],
+  );
+
+const useUpdateSuggestionState = (
+  state: ReturnType<typeof useTagInputState>,
+  filteredSuggestionsLength: number,
+) =>
+  useCallback(
+    (value: string) => {
+      state.setInputValue(value);
+      state.setShowSuggestions(value.length > 0 && filteredSuggestionsLength > 0);
+      state.setSelectedSuggestionIndex(-1);
+    },
+    [state, filteredSuggestionsLength],
+  );
+
 export const TagInput: FC<TagInputProps> = ({
   tags,
   onChange,
   placeholder = 'Add tags...',
   suggestions = [],
 }) => {
-  const {
-    inputValue,
-    setInputValue,
-    showSuggestions,
-    setShowSuggestions,
-    selectedSuggestionIndex,
-    setSelectedSuggestionIndex,
-    inputRef,
-    suggestionsRef,
-    reset,
-  } = useTagInputState();
+  const state = useTagInputState();
+  const filteredSuggestions = filterSuggestions(suggestions, state.inputValue, tags);
+  const { addTag, removeTag } = useTagActions({ tags, onChange, state });
+  const updateSuggestionState = useUpdateSuggestionState(state, filteredSuggestions.length);
+  const handleKeyDown = useKeyDownHandler({
+    state,
+    filteredSuggestions,
+    tags,
+    addTag,
+    removeTag,
+  });
 
-  const filteredSuggestions = filterSuggestions(suggestions, inputValue, tags);
-
-  const addTag = useCallback(
-    (tag: string) => {
-      const trimmedTag = tag.trim();
-      if (trimmedTag && !tags.includes(trimmedTag)) {
-        onChange([...tags, trimmedTag]);
-      }
-      reset();
-    },
-    [tags, onChange, reset],
-  );
-
-  const removeTag = useCallback(
-    (tagToRemove: string) => {
-      onChange(tags.filter((tag) => tag !== tagToRemove));
-    },
-    [tags, onChange],
-  );
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInputValue(value);
-    setShowSuggestions(value.length > 0 && filteredSuggestions.length > 0);
-    setSelectedSuggestionIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (showSuggestions && selectedSuggestionIndex >= 0) {
-        addTag(filteredSuggestions[selectedSuggestionIndex]);
-      } else if (inputValue.trim()) {
-        addTag(inputValue);
-      }
-    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (showSuggestions && filteredSuggestions.length > 0) {
-        setSelectedSuggestionIndex(
-          handleNavigationKey(e.key, selectedSuggestionIndex, filteredSuggestions.length),
-        );
-      }
-    } else if (e.key === 'Backspace' && inputValue === '' && tags.length > 0) {
-      removeTag(tags[tags.length - 1]);
-    } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
-      setSelectedSuggestionIndex(-1);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    addTag(suggestion);
-    inputRef.current?.focus();
-  };
-
-  useClickOutside(inputRef, suggestionsRef, () => setShowSuggestions(false));
+  useClickOutside(state.inputRef, state.suggestionsRef, () => state.setShowSuggestions(false));
 
   return (
     <div className="relative">
-      <div className="focus-within:ring-opacity-50 flex flex-wrap items-center gap-1 rounded-lg border border-gray-300 bg-gray-50 p-2 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
-        {tags.map((tag) => (
-          <span
-            className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-            key={tag}
-          >
-            {tag}
-            <button
-              className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-              onClick={() => removeTag(tag)}
-              type="button"
-            >
-              ×
-            </button>
-          </span>
-        ))}
-        <input
-          className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
-          onChange={handleInputChange}
-          onFocus={() => {
-            setShowSuggestions(inputValue.length > 0 && filteredSuggestions.length > 0);
-            setSelectedSuggestionIndex(-1);
-          }}
+      <TagInputContainer>
+        <TagListDisplay removeTag={removeTag} tags={tags} />
+        <InputField
+          inputRef={state.inputRef}
+          onChange={(e) => updateSuggestionState(e.target.value)}
+          onFocus={() => updateSuggestionState(state.inputValue)}
           onKeyDown={handleKeyDown}
           placeholder={tags.length === 0 ? placeholder : ''}
-          ref={inputRef}
-          type="text"
-          value={inputValue}
+          value={state.inputValue}
         />
-      </div>
-
-      {showSuggestions && filteredSuggestions.length > 0 && (
-        <div
-          className="absolute top-full z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
-          ref={suggestionsRef}
-        >
-          {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
-            <button
-              className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
-                index === selectedSuggestionIndex ? 'bg-blue-100 dark:bg-blue-900' : ''
-              }`}
-              key={suggestion}
-              onClick={() => handleSuggestionClick(suggestion)}
-              type="button"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
+      </TagInputContainer>
+      {state.showSuggestions && filteredSuggestions.length > 0 && (
+        <SuggestionList
+          onSelect={(s) => {
+            addTag(s);
+            state.inputRef.current?.focus();
+          }}
+          selectedIndex={state.selectedSuggestionIndex}
+          suggestions={filteredSuggestions}
+          suggestionsRef={state.suggestionsRef}
+        />
       )}
     </div>
   );
