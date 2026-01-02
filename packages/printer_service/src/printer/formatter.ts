@@ -5,84 +5,76 @@
 
 const MAX_LINE_WIDTH = 48;
 
+/** Unicode ranges for emoji characters */
+const EMOJI_PATTERNS: RegExp[] = [
+  /[\u{1F600}-\u{1F64F}]/gu, // Emoticons
+  /[\u{1F300}-\u{1F5FF}]/gu, // Symbols & Pictographs
+  /[\u{1F680}-\u{1F6FF}]/gu, // Transport & Map
+  /[\u{1F700}-\u{1F77F}]/gu, // Alchemical Symbols
+  /[\u{1F780}-\u{1F7FF}]/gu, // Geometric Shapes Extended
+  /[\u{1F800}-\u{1F8FF}]/gu, // Supplemental Arrows-C
+  /[\u{1F900}-\u{1F9FF}]/gu, // Supplemental Symbols and Pictographs
+  /[\u{1FA00}-\u{1FA6F}]/gu, // Chess Symbols
+  /[\u{1FA70}-\u{1FAFF}]/gu, // Symbols and Pictographs Extended-A
+  /[\u{2600}-\u{26FF}]/gu, // Miscellaneous Symbols
+  /[\u{2700}-\u{27BF}]/gu, // Dingbats
+  /[\u{1F1E0}-\u{1F1FF}]/gu, // Regional Indicator Symbols (flags)
+  /[\u{FE00}-\u{FE0F}]/gu, // Variation Selectors
+  /[\u{1F000}-\u{1F02F}]/gu, // Mahjong Tiles
+  /[\u{1F0A0}-\u{1F0FF}]/gu, // Playing Cards
+  /[\u{E0020}-\u{E007F}]/gu, // Tags
+  /[\u{200D}]/gu, // Zero Width Joiner (for ZWJ sequences)
+  /[\u{1F3FB}-\u{1F3FF}]/gu, // Skin tone modifiers
+];
+
 /**
  * Strip all emojis from text for thermal printer compatibility
  * Covers: emoticons, symbols, pictographs, transport, flags, skin tones, ZWJ sequences
  */
 function stripEmojis(text: string): string {
-  return text
-    .replace(
-      /[\u{1F600}-\u{1F64F}]/gu, // Emoticons
-      '',
-    )
-    .replace(
-      /[\u{1F300}-\u{1F5FF}]/gu, // Symbols & Pictographs
-      '',
-    )
-    .replace(
-      /[\u{1F680}-\u{1F6FF}]/gu, // Transport & Map
-      '',
-    )
-    .replace(
-      /[\u{1F700}-\u{1F77F}]/gu, // Alchemical Symbols
-      '',
-    )
-    .replace(
-      /[\u{1F780}-\u{1F7FF}]/gu, // Geometric Shapes Extended
-      '',
-    )
-    .replace(
-      /[\u{1F800}-\u{1F8FF}]/gu, // Supplemental Arrows-C
-      '',
-    )
-    .replace(
-      /[\u{1F900}-\u{1F9FF}]/gu, // Supplemental Symbols and Pictographs
-      '',
-    )
-    .replace(
-      /[\u{1FA00}-\u{1FA6F}]/gu, // Chess Symbols
-      '',
-    )
-    .replace(
-      /[\u{1FA70}-\u{1FAFF}]/gu, // Symbols and Pictographs Extended-A
-      '',
-    )
-    .replace(
-      /[\u{2600}-\u{26FF}]/gu, // Miscellaneous Symbols
-      '',
-    )
-    .replace(
-      /[\u{2700}-\u{27BF}]/gu, // Dingbats
-      '',
-    )
-    .replace(
-      /[\u{1F1E0}-\u{1F1FF}]/gu, // Regional Indicator Symbols (flags)
-      '',
-    )
-    .replace(
-      /[\u{FE00}-\u{FE0F}]/gu, // Variation Selectors
-      '',
-    )
-    .replace(
-      /[\u{1F000}-\u{1F02F}]/gu, // Mahjong Tiles
-      '',
-    )
-    .replace(
-      /[\u{1F0A0}-\u{1F0FF}]/gu, // Playing Cards
-      '',
-    )
-    .replace(
-      /[\u{E0020}-\u{E007F}]/gu, // Tags
-      '',
-    )
-    .replace(
-      /[\u{200D}]/gu, // Zero Width Joiner (for ZWJ sequences)
-      '',
-    )
-    .replace(
-      /[\u{1F3FB}-\u{1F3FF}]/gu, // Skin tone modifiers
-      '',
-    );
+  return EMOJI_PATTERNS.reduce((result, pattern) => result.replace(pattern, ''), text);
+}
+
+/** Break a long word into chunks of maxWidth */
+function breakLongWord(word: string, maxWidth: number): string[] {
+  const chunks: string[] = [];
+  for (let i = 0; i < word.length; i += maxWidth) {
+    chunks.push(word.slice(i, i + maxWidth));
+  }
+  return chunks;
+}
+
+/** Process a long word that exceeds maxWidth */
+function processLongWord(
+  word: string,
+  currentLine: string,
+  lines: string[],
+  maxWidth: number,
+): { newCurrentLine: string } {
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  lines.push(...breakLongWord(word, maxWidth));
+  return { newCurrentLine: '' };
+}
+
+/** Process a normal word that fits within maxWidth */
+function processNormalWord(
+  word: string,
+  currentLine: string,
+  lines: string[],
+  maxWidth: number,
+): { newCurrentLine: string } {
+  const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+  if (testLine.length <= maxWidth) {
+    return { newCurrentLine: testLine };
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  return { newCurrentLine: word };
 }
 
 /**
@@ -98,30 +90,11 @@ function wrapText(text: string, maxWidth: number = MAX_LINE_WIDTH): string[] {
   let currentLine = '';
 
   for (const word of words) {
-    // Handle words longer than maxWidth by force-breaking them
-    if (word.length > maxWidth) {
-      if (currentLine) {
-        lines.push(currentLine);
-        currentLine = '';
-      }
-
-      // Break long word into chunks
-      for (let i = 0; i < word.length; i += maxWidth) {
-        lines.push(word.slice(i, i + maxWidth));
-      }
-      continue;
-    }
-
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-
-    if (testLine.length <= maxWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) {
-        lines.push(currentLine);
-      }
-      currentLine = word;
-    }
+    const result =
+      word.length > maxWidth
+        ? processLongWord(word, currentLine, lines, maxWidth)
+        : processNormalWord(word, currentLine, lines, maxWidth);
+    currentLine = result.newCurrentLine;
   }
 
   if (currentLine) {

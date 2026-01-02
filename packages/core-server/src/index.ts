@@ -96,7 +96,6 @@ export {
   sanitizeUsername,
 } from './utils/database-names';
 export {
-  TestDatabaseCleanup,
   cleanupCIEnvironment,
   cleanupDatabasesByPattern,
   cleanupUserDatabases,
@@ -106,4 +105,5 @@ export {
   type CleanupResult,
   type DatabaseInfo,
   type TestCleanupOptions,
+  type TestDatabaseCleanup,
 } from './utils/test-cleanup';

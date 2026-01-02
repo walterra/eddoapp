@@ -153,7 +153,11 @@ describe('Register Component', () => {
       });
       await user.click(submitButton);
 
-      expect(screen.getByText('Username must be between 3 and 20 characters')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Username must be 3-20 characters, letters, numbers, and underscores only',
+        ),
+      ).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
@@ -171,7 +175,11 @@ describe('Register Component', () => {
       });
       await user.click(submitButton);
 
-      expect(screen.getByText('Username must be between 3 and 20 characters')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Username must be 3-20 characters, letters, numbers, and underscores only',
+        ),
+      ).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
@@ -190,7 +198,9 @@ describe('Register Component', () => {
       await user.click(submitButton);
 
       expect(
-        screen.getByText('Username can only contain letters, numbers, and underscores'),
+        screen.getByText(
+          'Username must be 3-20 characters, letters, numbers, and underscores only',
+        ),
       ).toBeInTheDocument();
       expect(mockRegister).not.toHaveBeenCalled();
     });

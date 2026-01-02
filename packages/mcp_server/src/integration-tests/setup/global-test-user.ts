@@ -14,21 +14,11 @@ interface GlobalTestUser {
 let globalTestUser: GlobalTestUser | null = null;
 let initializationPromise: Promise<void> | null = null;
 
-/**
- * Initialize the global test user if not already initialized
- */
-async function initializeGlobalTestUser(): Promise<void> {
-  if (globalTestUser) {
-    return; // Already initialized
-  }
-
-  console.log('🔄 GLOBAL SETUP: Initializing global test user...');
-
-  // Set test environment variables
+/** Set up test environment variables */
+function setupTestEnvironment(): void {
   process.env.NODE_ENV = 'test';
   process.env.MCP_TEST_URL = 'http://localhost:3003/mcp';
 
-  // COUCHDB_URL should be set by run-integration-tests.js via testcontainer setup
   if (!process.env.COUCHDB_URL) {
     throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
   }
@@ -37,64 +27,69 @@ async function initializeGlobalTestUser(): Promise<void> {
     NODE_ENV: process.env.NODE_ENV,
     COUCHDB_URL: process.env.COUCHDB_URL ? '[SET]' : '[MISSING]',
   });
+}
+
+/** Create the global test user object */
+function createTestUserObject(timestamp: number): GlobalTestUser {
+  return {
+    userId: `test-user-${timestamp}`,
+    username: `testuser_${timestamp}`,
+    dbName: `eddo_test_user_testuser_${timestamp}`,
+    telegramId: '123456789',
+  };
+}
+
+/** Create user data for registry */
+function createUserData(user: GlobalTestUser) {
+  return {
+    username: user.username,
+    email: 'test@example.com',
+    password_hash: 'test-hash',
+    telegram_id: parseInt(user.telegramId),
+    permissions: ['read', 'write'] as ['read', 'write'],
+    status: 'active' as const,
+    version: 'alpha2' as const,
+    database_name: user.dbName,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    preferences: {
+      dailyBriefing: false,
+      briefingTime: '07:00',
+      dailyRecap: false,
+      recapTime: '18:00',
+    },
+  };
+}
+
+/**
+ * Initialize the global test user if not already initialized
+ */
+async function initializeGlobalTestUser(): Promise<void> {
+  if (globalTestUser) return;
+
+  console.log('🔄 GLOBAL SETUP: Initializing global test user...');
+  setupTestEnvironment();
 
   try {
-    const coreServer = await import('@eddo/core-server');
-    console.log(
-      '🔄 GLOBAL SETUP: Core server imported, available functions:',
-      Object.keys(coreServer),
-    );
-
-    const { validateEnv, createTestUserRegistry } = coreServer;
+    const { validateEnv, createTestUserRegistry } = await import('@eddo/core-server');
 
     if (!createTestUserRegistry) {
       throw new Error('createTestUserRegistry is not available in @eddo/core-server');
     }
 
     const env = validateEnv(process.env);
-    console.log('🔄 GLOBAL SETUP: Environment validated');
-
     const userRegistry = await createTestUserRegistry(env.COUCHDB_URL, env);
-    console.log('🔄 GLOBAL SETUP: Test user registry created');
 
-    // Set up test user registry database
     if (userRegistry.setupDatabase) {
       await userRegistry.setupDatabase();
     }
-    console.log('🔄 GLOBAL SETUP: Test user registry database set up');
 
-    // Create shared test user
-    const timestamp = Date.now();
-    globalTestUser = {
-      userId: `test-user-${timestamp}`,
-      username: `testuser_${timestamp}`,
-      dbName: `eddo_test_user_testuser_${timestamp}`,
-      telegramId: '123456789',
-    };
-
+    globalTestUser = createTestUserObject(Date.now());
     console.log(`🔄 GLOBAL SETUP: Created global test user object: ${globalTestUser.username}`);
 
-    // Check if test user already exists (cleanup from previous run)
     const existingUser = await userRegistry.findByUsername(globalTestUser.username);
     if (!existingUser) {
-      await userRegistry.create({
-        username: globalTestUser.username,
-        email: 'test@example.com',
-        password_hash: 'test-hash',
-        telegram_id: parseInt(globalTestUser.telegramId),
-        permissions: ['read', 'write'],
-        status: 'active',
-        version: 'alpha2',
-        database_name: globalTestUser.dbName,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        preferences: {
-          dailyBriefing: false,
-          briefingTime: '07:00',
-          dailyRecap: false,
-          recapTime: '18:00',
-        },
-      });
+      await userRegistry.create(createUserData(globalTestUser));
       console.log(`✅ Global test user created: ${globalTestUser.username}`);
     } else {
       console.log(`✅ Global test user already exists: ${globalTestUser.username}`);

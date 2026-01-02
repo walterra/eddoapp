@@ -1,0 +1,167 @@
+/**
+ * Helper functions for MCP test script
+ * Extracted to reduce function complexity
+ */
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+/**
+ * Create MCP client with transport
+ * @param {string} serverUrl - MCP server URL
+ * @param {string} apiKey - API key for authentication
+ * @returns {Promise<{client: Client, transport: StreamableHTTPClientTransport}>}
+ */
+export async function createMcpClient(serverUrl, apiKey) {
+  console.log('🔧 Creating MCP client...');
+
+  const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
+    requestInit: {
+      headers: {
+        'X-API-Key': apiKey,
+      },
+    },
+  });
+
+  const client = new Client(
+    {
+      name: 'test-client',
+      version: '1.0.0',
+    },
+    {
+      capabilities: {
+        tools: {},
+      },
+    },
+  );
+
+  console.log('🔌 Connecting to MCP server...');
+  await client.connect(transport);
+  console.log('✅ Connected successfully!');
+
+  return { client, transport };
+}
+
+/**
+ * Discover and log available tools
+ * @param {Client} client - MCP client
+ * @returns {Promise<void>}
+ */
+export async function discoverTools(client) {
+  console.log('🔍 Discovering available tools...');
+  const toolsResponse = await client.listTools();
+  console.log(`📋 Found ${toolsResponse.tools.length} tools`);
+
+  console.log('Available tools:');
+  toolsResponse.tools.forEach((tool) => {
+    console.log(`  - ${tool.name}: ${tool.description}`);
+  });
+  console.log('');
+}
+
+/**
+ * Call MCP tool and log response
+ * @param {Client} client - MCP client
+ * @param {string} toolName - Tool name to call
+ * @param {object} args - Tool arguments
+ * @returns {Promise<void>}
+ */
+export async function callToolAndLog(client, toolName, args) {
+  console.log(`📞 Calling ${toolName}...`);
+  const result = await client.callTool({
+    name: toolName,
+    arguments: args,
+  });
+
+  console.log('✅ Tool call successful!');
+  logToolResponse(result);
+}
+
+/**
+ * Log tool response content
+ * @param {object} result - Tool call result
+ */
+function logToolResponse(result) {
+  console.log('\n📄 Response:');
+  console.log('='.repeat(80));
+
+  if (result.content && result.content.length > 0) {
+    result.content.forEach((content, index) => {
+      if (content.type === 'text') {
+        console.log(content.text);
+      } else {
+        console.log(`Content ${index + 1}:`, JSON.stringify(content, null, 2));
+      }
+    });
+  } else {
+    console.log('No content in response:', result);
+  }
+
+  console.log('='.repeat(80));
+}
+
+/**
+ * Close MCP client connection
+ * @param {Client} client - MCP client
+ * @returns {Promise<void>}
+ */
+export async function closeClient(client) {
+  try {
+    await client.close();
+    console.log('🔌 Connection closed');
+  } catch (closeError) {
+    console.warn('⚠️  Warning: Failed to close connection:', closeError.message);
+  }
+}
+
+/**
+ * Parse JSON argument string
+ * @param {string} jsonString - JSON string to parse
+ * @returns {object} Parsed JSON object
+ */
+export function parseJsonArg(jsonString) {
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('❌ Invalid JSON argument:', jsonString);
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * Display usage information
+ */
+export function showUsage() {
+  console.log(`
+🔧 MCP CRUD Test Script Usage:
+
+  pnpm test:mcp <toolName> [jsonArgs]
+
+📋 Available tools (from dev/MCP-CRUD.md):
+
+CREATE:
+  pnpm test:mcp createTodo '{"title": "Test Todo", "context": "work", "due": "2025-06-20"}'
+
+READ:
+  pnpm test:mcp listTodos '{}'
+  pnpm test:mcp listTodos '{"context": "work"}'
+  pnpm test:mcp listTodos '{"completed": false}'
+  pnpm test:mcp getActiveTimeTracking '{}'
+
+UPDATE:
+  pnpm test:mcp updateTodo '{"id": "2025-06-18T10:30:00.000Z", "title": "New Title"}'
+  pnpm test:mcp toggleTodoCompletion '{"id": "2025-06-18T10:30:00.000Z", "completed": true}'
+
+DELETE:
+  pnpm test:mcp deleteTodo '{"id": "2025-06-18T10:30:00.000Z"}'
+
+TIME TRACKING:
+  pnpm test:mcp startTimeTracking '{"id": "2025-06-18T10:30:00.000Z"}'
+  pnpm test:mcp stopTimeTracking '{"id": "2025-06-18T10:30:00.000Z"}'
+
+OTHER:
+  pnpm test:mcp getServerInfo '{"section": "all"}'
+
+Examples from dev/MCP-CRUD.md are directly supported.
+`);
+}

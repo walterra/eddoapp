@@ -81,42 +81,25 @@ Just chat naturally - I'll understand what you need! 🤖
   await ctx.reply(helpMessage, { parse_mode: 'Markdown' });
 }
 
+import {
+  buildAgentSection,
+  buildMcpMetricsSection,
+  buildSessionSection,
+  escapeMarkdown,
+} from './start-helpers.js';
+
 /**
- * Handle the /status command
+ * Handles /status command to show bot status
  */
 export async function handleStatus(ctx: BotContext): Promise<void> {
   const agent = getEddoAgent();
   const agentStatus = await agent.getStatus();
   const connectionInfo = getConnectionInfo();
 
-  // Format date safely for Markdown
-  const lastActivity = ctx.session?.lastActivity
-    ? new Date(ctx.session.lastActivity).toISOString().slice(0, 19).replace('T', ' ')
-    : 'Unknown';
-
-  // Escape special characters for Markdown (escape backslashes first to prevent double-escaping)
-  const escapeMarkdown = (text: string) =>
-    text.replace(/\\/g, '\\\\').replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-
-  // Format connection metrics
   const mcpStatusLine = `🔌 MCP Server: ${escapeMarkdown(connectionInfo.state)}`;
-  let mcpMetrics = '';
-
-  if (connectionInfo.metrics) {
-    const metrics = connectionInfo.metrics;
-    const uptimeHours = Math.floor(metrics.totalUptime / 3600000);
-    const uptimeMinutes = Math.floor((metrics.totalUptime % 3600000) / 60000);
-
-    mcpMetrics = `
-*MCP Connection Metrics:*
-• Connection State: ${escapeMarkdown(connectionInfo.state)}
-• Connect Attempts: ${metrics.connectAttempts}
-• Successful Connections: ${metrics.successfulConnections}
-• Failed Connections: ${metrics.failedConnections}
-• Total Uptime: ${uptimeHours}h ${uptimeMinutes}m
-${metrics.lastConnectionTime ? `• Last Connected: ${escapeMarkdown(metrics.lastConnectionTime.toISOString().slice(0, 19).replace('T', ' '))}` : ''}
-${metrics.lastDisconnectionTime ? `• Last Disconnected: ${escapeMarkdown(metrics.lastDisconnectionTime.toISOString().slice(0, 19).replace('T', ' '))}` : ''}`;
-  }
+  const mcpMetrics = buildMcpMetricsSection(connectionInfo.state, connectionInfo.metrics);
+  const sessionSection = buildSessionSection(ctx.session);
+  const agentSection = buildAgentSection(agentStatus);
 
   const statusMessage = `🤖 *Bot Status*
 
@@ -124,16 +107,9 @@ ${metrics.lastDisconnectionTime ? `• Last Disconnected: ${escapeMarkdown(metri
 🔄 Agent: ${escapeMarkdown(agentStatus.workflowType)}
 ${mcpStatusLine}
 
-*Session Info:*
-• User ID: ${escapeMarkdown(ctx.session?.userId || 'Unknown')}
-• Last Activity: ${escapeMarkdown(lastActivity)}
-• Conversation Active: ${ctx.session?.conversationId ? 'Yes' : 'No'}
+${sessionSection}
 
-*Agent Info:*
-• Version: ${escapeMarkdown(agentStatus.version)}
-• Workflow: ${escapeMarkdown(agentStatus.workflowType)}
-• Uptime: ${Math.floor(agentStatus.uptime / 60)}m ${Math.floor(agentStatus.uptime % 60)}s
-• MCP Tools: ${agentStatus.simpleFeatures?.mcpToolsAvailable || 0}
+${agentSection}
 ${mcpMetrics}
 
 *Capabilities:*

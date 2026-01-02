@@ -4,6 +4,12 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import type { MCPTool } from './client.js';
+import {
+  calculateReconnectDelay,
+  isConnectionError as checkIsConnectionError,
+  createUserClient,
+  invokeToolOnClient,
+} from './connection-manager-helpers.js';
 import type { MCPUserContext } from './user-context.js';
 
 export enum ConnectionState {
@@ -49,16 +55,12 @@ export class MCPConnectionManager {
     logger.info('MCPConnectionManager initialized');
   }
 
-  /**
-   * Get current connection state
-   */
+  /** Get current connection state */
   getState(): ConnectionState {
     return this.state;
   }
 
-  /**
-   * Get connection metrics
-   */
+  /** Get connection metrics */
   getMetrics(): ConnectionMetrics {
     // Update total uptime if currently connected
     if (this.state === ConnectionState.CONNECTED && this.metrics.currentSessionStart) {
@@ -71,9 +73,7 @@ export class MCPConnectionManager {
     return { ...this.metrics };
   }
 
-  /**
-   * Initialize connection with proper handshake
-   */
+  /** Initialize connection with proper handshake */
   async initialize(): Promise<void> {
     if (this.state === ConnectionState.CONNECTED) {
       logger.info('Already connected, skipping initialization');
@@ -138,7 +138,6 @@ export class MCPConnectionManager {
       this.metrics.lastConnectionTime = new Date();
       this.metrics.currentSessionStart = new Date();
       this.reconnectAttempt = 0;
-
       logger.info('MCP connection established successfully', {
         toolsDiscovered: this.tools.length,
         metrics: this.getMetrics(),
@@ -146,7 +145,6 @@ export class MCPConnectionManager {
     } catch (error) {
       this.metrics.failedConnections++;
       this.setState(ConnectionState.FAILED);
-
       logger.error('Failed to establish MCP connection', {
         error: String(error),
         attempt: this.metrics.connectAttempts,
@@ -156,9 +154,7 @@ export class MCPConnectionManager {
     }
   }
 
-  /**
-   * Discover available tools from MCP server
-   */
+  /** Discover available tools from MCP server */
   private async discoverTools(): Promise<void> {
     if (!this.client) {
       throw new Error('Client not initialized');
@@ -170,16 +166,13 @@ export class MCPConnectionManager {
       description: tool.description || 'No description available',
       inputSchema: tool.inputSchema,
     }));
-
     logger.info('MCP tools discovered', {
       toolCount: this.tools.length,
       toolNames: this.tools.map((t) => t.name),
     });
   }
 
-  /**
-   * Start health check monitoring
-   */
+  /** Start health check monitoring */
   private startHealthCheck(): void {
     // Clear any existing health check
     this.stopHealthCheck();
@@ -187,15 +180,12 @@ export class MCPConnectionManager {
     this.healthCheckInterval = setInterval(async () => {
       await this.performHealthCheck();
     }, this.healthCheckIntervalMs);
-
     logger.info('Health check monitoring started', {
       intervalMs: this.healthCheckIntervalMs,
     });
   }
 
-  /**
-   * Stop health check monitoring
-   */
+  /** Stop health check monitoring */
   private stopHealthCheck(): void {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
@@ -204,9 +194,7 @@ export class MCPConnectionManager {
     }
   }
 
-  /**
-   * Perform health check
-   */
+  /** Perform health check */
   private async performHealthCheck(): Promise<void> {
     if (this.state !== ConnectionState.CONNECTED || !this.client) {
       return;
@@ -223,22 +211,15 @@ export class MCPConnectionManager {
     }
   }
 
-  /**
-   * Handle connection failure with automatic reconnection
-   */
+  /** Handle connection failure with automatic reconnection */
   private async handleConnectionFailure(): Promise<void> {
-    // Update metrics
     if (this.metrics.currentSessionStart) {
-      const sessionUptime = Date.now() - this.metrics.currentSessionStart.getTime();
-      this.metrics.totalUptime += sessionUptime;
+      this.metrics.totalUptime += Date.now() - this.metrics.currentSessionStart.getTime();
       this.metrics.currentSessionStart = undefined;
     }
     this.metrics.lastDisconnectionTime = new Date();
-
-    // Clean up current connection
     await this.cleanup();
 
-    // Attempt reconnection if not at max attempts
     if (this.reconnectAttempt < this.maxReconnectAttempts) {
       this.setState(ConnectionState.RECONNECTING);
       await this.scheduleReconnection();
@@ -251,28 +232,18 @@ export class MCPConnectionManager {
     }
   }
 
-  /**
-   * Schedule reconnection with exponential backoff
-   */
+  /** Schedule reconnection with exponential backoff */
   private async scheduleReconnection(): Promise<void> {
-    // Calculate delay with exponential backoff
-    const delay = Math.min(
-      this.initialReconnectDelayMs * Math.pow(2, this.reconnectAttempt),
+    const delay = calculateReconnectDelay(
+      this.reconnectAttempt,
+      this.initialReconnectDelayMs,
       this.maxReconnectDelayMs,
     );
-
     this.reconnectAttempt++;
 
-    logger.info('Scheduling reconnection', {
-      attempt: this.reconnectAttempt,
-      delayMs: delay,
-    });
+    logger.info('Scheduling reconnection', { attempt: this.reconnectAttempt, delayMs: delay });
 
-    // Clear any existing reconnection timeout
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-    }
-
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
     this.reconnectTimeout = setTimeout(async () => {
       try {
         await this.establishConnection();
@@ -288,109 +259,68 @@ export class MCPConnectionManager {
     }, delay);
   }
 
-  /**
-   * Get available tools
-   */
+  /** Get available tools */
   getTools(): MCPTool[] {
     return [...this.tools];
   }
 
-  /**
-   * Invoke a tool with user context
-   */
+  /** Invokes a tool with user context */
   async invoke(
     toolName: string,
     params: Record<string, unknown>,
     userContext?: MCPUserContext,
   ): Promise<unknown> {
-    if (this.state !== ConnectionState.CONNECTED || !this.client) {
-      throw new Error(`Cannot invoke tool: connection state is ${this.state}`);
-    }
-
-    if (!userContext) {
-      throw new Error('User context is required for MCP tool invocation');
-    }
+    this.validateInvokePrerequisites(userContext);
 
     logger.info('Invoking MCP tool', {
       toolName,
       params,
-      username: userContext.username,
-      databaseName: userContext.databaseName,
+      username: userContext!.username,
+      databaseName: userContext!.databaseName,
     });
 
     try {
-      // Create a user-specific transport for this request
-      const userTransport = new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
-        requestInit: {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-ID': userContext.username,
-            'X-Database-Name': userContext.databaseName,
-            'X-Telegram-ID': userContext.telegramId.toString(),
-          },
-        },
-      });
-
-      // Create a temporary client with user-specific authentication
-      const userClient = new Client({
-        name: 'eddo-telegram-bot',
-        version: '1.0.0',
-      });
-
-      // Connect the user-specific client
-      await userClient.connect(userTransport);
-
-      try {
-        const result = await userClient.callTool({
-          name: toolName,
-          arguments: params,
-        });
-
-        logger.info('MCP tool invoked successfully', {
-          toolName,
-          result: result.content,
-        });
-
-        return result.content;
-      } finally {
-        // Clean up the user-specific connection
-        await userClient.close();
-      }
+      return await this.executeToolInvocation(toolName, params, userContext!);
     } catch (error) {
-      logger.error('MCP tool invocation failed', {
-        toolName,
-        params,
-        error: String(error),
-      });
-
-      // Check if this is a connection error
-      if (this.isConnectionError(error)) {
-        await this.handleConnectionFailure();
-      }
-
+      await this.handleInvocationError(toolName, params, error);
       throw error;
     }
   }
 
-  /**
-   * Check if error is connection-related
-   */
-  private isConnectionError(error: unknown): boolean {
-    if (error instanceof Error) {
-      const message = error.message.toLowerCase();
-      return (
-        message.includes('connect') ||
-        message.includes('econnrefused') ||
-        message.includes('timeout') ||
-        message.includes('network') ||
-        message.includes('socket')
-      );
+  private validateInvokePrerequisites(userContext?: MCPUserContext): void {
+    if (this.state !== ConnectionState.CONNECTED || !this.client) {
+      throw new Error(`Cannot invoke tool: connection state is ${this.state}`);
     }
-    return false;
+    if (!userContext) {
+      throw new Error('User context is required for MCP tool invocation');
+    }
+  }
+
+  private async executeToolInvocation(
+    toolName: string,
+    params: Record<string, unknown>,
+    userContext: MCPUserContext,
+  ): Promise<unknown> {
+    const userClient = await createUserClient(userContext);
+    try {
+      return await invokeToolOnClient(userClient, toolName, params);
+    } finally {
+      await userClient.close();
+    }
+  }
+
+  private async handleInvocationError(
+    toolName: string,
+    params: Record<string, unknown>,
+    error: unknown,
+  ): Promise<void> {
+    logger.error('MCP tool invocation failed', { toolName, params, error: String(error) });
+    if (checkIsConnectionError(error)) {
+      await this.handleConnectionFailure();
+    }
   }
 
   /**
-   * Update connection state
    */
   private setState(newState: ConnectionState): void {
     const oldState = this.state;
@@ -404,9 +334,7 @@ export class MCPConnectionManager {
     }
   }
 
-  /**
-   * Clean up resources
-   */
+  /** Clean up resources */
   private async cleanup(): Promise<void> {
     this.stopHealthCheck();
 
@@ -428,9 +356,7 @@ export class MCPConnectionManager {
     this.tools = [];
   }
 
-  /**
-   * Close connection and clean up
-   */
+  /** Close connection and clean up */
   async close(): Promise<void> {
     logger.info('Closing MCP connection manager');
 

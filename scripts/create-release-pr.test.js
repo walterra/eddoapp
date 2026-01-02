@@ -58,10 +58,8 @@ ${changelog || 'No changelog entries found.'}
   return header + releases;
 }
 
-describe('create-release-pr', () => {
-  describe('extractChangelog', () => {
-    it('extracts changelog for specific version', () => {
-      const changelog = `# Changelog
+// Test fixtures
+const CHANGELOG_WITH_MULTIPLE_VERSIONS = `# Changelog
 
 ## 0.3.0
 
@@ -81,20 +79,7 @@ describe('create-release-pr', () => {
 - Old feature
 `;
 
-      const result = extractChangelog(changelog, '0.3.0');
-
-      expect(result).toBe(`### Minor Changes
-
-- Add feature A
-- Add feature B
-
-### Patch Changes
-
-- Fix bug C`);
-    });
-
-    it('returns null if version not found', () => {
-      const changelog = `# Changelog
+const CHANGELOG_VERSION_NOT_FOUND = `# Changelog
 
 ## 0.2.0
 
@@ -103,13 +88,7 @@ describe('create-release-pr', () => {
 - Some feature
 `;
 
-      const result = extractChangelog(changelog, '0.3.0');
-
-      expect(result).toBeNull();
-    });
-
-    it('stops at horizontal rule', () => {
-      const changelog = `# Changelog
+const CHANGELOG_WITH_HR = `# Changelog
 
 ## 0.3.0
 
@@ -122,15 +101,7 @@ describe('create-release-pr', () => {
 Old content
 `;
 
-      const result = extractChangelog(changelog, '0.3.0');
-
-      expect(result).toBe(`### Minor Changes
-
-- Feature`);
-    });
-
-    it('stops at "All notable changes" marker', () => {
-      const changelog = `# Changelog
+const CHANGELOG_WITH_NOTABLE_MARKER = `# Changelog
 
 ## 0.1.0
 
@@ -141,15 +112,7 @@ Old content
 All notable changes to this project will be documented in this file.
 `;
 
-      const result = extractChangelog(changelog, '0.1.0');
-
-      expect(result).toBe(`### Minor Changes
-
-- Initial release`);
-    });
-
-    it('handles empty changelog section', () => {
-      const changelog = `# Changelog
+const CHANGELOG_EMPTY_SECTION = `# Changelog
 
 ## 0.3.0
 
@@ -160,16 +123,45 @@ All notable changes to this project will be documented in this file.
 - Feature
 `;
 
-      const result = extractChangelog(changelog, '0.3.0');
+const EXPECTED_V030_CHANGES = `### Minor Changes
 
-      expect(result).toBe('');
+- Add feature A
+- Add feature B
+
+### Patch Changes
+
+- Fix bug C`;
+
+describe('create-release-pr', () => {
+  describe('extractChangelog', () => {
+    it('extracts changelog for specific version', () => {
+      expect(extractChangelog(CHANGELOG_WITH_MULTIPLE_VERSIONS, '0.3.0')).toBe(
+        EXPECTED_V030_CHANGES,
+      );
+    });
+
+    it('returns null if version not found', () => {
+      expect(extractChangelog(CHANGELOG_VERSION_NOT_FOUND, '0.3.0')).toBeNull();
+    });
+
+    it('stops at horizontal rule', () => {
+      expect(extractChangelog(CHANGELOG_WITH_HR, '0.3.0')).toBe('### Minor Changes\n\n- Feature');
+    });
+
+    it('stops at "All notable changes" marker', () => {
+      expect(extractChangelog(CHANGELOG_WITH_NOTABLE_MARKER, '0.1.0')).toBe(
+        '### Minor Changes\n\n- Initial release',
+      );
+    });
+
+    it('handles empty changelog section', () => {
+      expect(extractChangelog(CHANGELOG_EMPTY_SECTION, '0.3.0')).toBe('');
     });
   });
 
   describe('generatePrBody', () => {
     it('generates PR body with changelog', () => {
       const result = generatePrBody('0.3.0', '### Minor Changes\n\n- Add feature');
-
       expect(result).toContain('This PR was opened by the release workflow');
       expect(result).toContain('## eddo-app@0.3.0');
       expect(result).toContain('### Minor Changes');
@@ -178,14 +170,12 @@ All notable changes to this project will be documented in this file.
 
     it('handles null changelog', () => {
       const result = generatePrBody('0.3.0', null);
-
       expect(result).toContain('## eddo-app@0.3.0');
       expect(result).toContain('No changelog entries found.');
     });
 
     it('does not include other packages', () => {
       const result = generatePrBody('0.3.0', '### Minor Changes\n\n- Feature');
-
       expect(result).not.toContain('@eddo/web-client');
       expect(result).not.toContain('@eddo/core-shared');
       expect(result).not.toContain('Updated dependencies');

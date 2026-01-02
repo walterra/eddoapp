@@ -85,16 +85,21 @@ export function getUserDatabaseContext(c: {
   return c.get('userDb');
 }
 
+interface ProxyRequestOptions {
+  method: string;
+  path: string;
+  body?: string;
+  headers?: Record<string, string>;
+}
+
 /**
  * Helper function to proxy requests to user-specific CouchDB database
  */
 export async function proxyUserCouchDBRequest(
   userDbContext: UserDatabaseContext,
-  method: string,
-  path: string,
-  body?: string,
-  headers?: Record<string, string>,
+  options: ProxyRequestOptions,
 ): Promise<Response> {
+  const { method, path, body, headers } = options;
   // Remove leading slash from path if present
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
 

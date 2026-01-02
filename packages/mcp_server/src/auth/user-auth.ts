@@ -1,4 +1,18 @@
 import { createEnv, createTestUserRegistry, createUserRegistry } from '@eddo/core-server';
+import {
+  createAuthError,
+  createCacheKey,
+  createNegativeCacheEntry,
+  createPositiveCacheEntry,
+  extractHeader,
+  isCacheValid,
+  logAuthError,
+  logAuthSuccess,
+  logHeaderMismatch,
+  logUserInactive,
+  logUserNotFound,
+  type ValidationCacheEntry,
+} from './user-auth-helpers.js';
 
 /**
  * Authentication result for MCP server
@@ -9,33 +23,70 @@ export interface MCPAuthResult {
   username: string;
 }
 
-/**
- * Cached user validations to avoid repeated database queries
- */
-const userValidationCache = new Map<
-  string,
-  { valid: boolean; user?: MCPAuthResult; timestamp: number }
->();
+const userValidationCache = new Map<string, ValidationCacheEntry>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 // Clear expired cache entries periodically
 setInterval(() => {
   const now = Date.now();
-  for (const [_cacheKey, cache] of userValidationCache.entries()) {
+  for (const [cacheKey, cache] of userValidationCache.entries()) {
     if (now - cache.timestamp > CACHE_TTL_MS) {
-      userValidationCache.delete(_cacheKey);
+      userValidationCache.delete(cacheKey);
     }
   }
-}, 60 * 1000); // Clean up every minute
+}, 60 * 1000);
 
 /**
- * Validate user context from MCP headers (for microservice-to-microservice communication)
- * This doesn't "authenticate" but validates that the user context is valid
+ * Check cached validation result
  */
-export async function validateUserContext(
-  headers: Record<string, string | string[] | undefined>,
-): Promise<MCPAuthResult> {
-  // Extract authentication headers
+function checkCache(cacheKey: string): { hit: boolean; result?: MCPAuthResult } {
+  const cached = userValidationCache.get(cacheKey);
+  if (!isCacheValid(cached, CACHE_TTL_MS)) {
+    return { hit: false };
+  }
+
+  if (!cached!.valid) {
+    throw createAuthError(401, 'Invalid user (cached)');
+  }
+
+  console.log('User authentication cache hit', { username: cached!.user?.username });
+  return { hit: true, result: cached!.user };
+}
+
+/**
+ * Get user registry based on environment
+ */
+async function getUserRegistry(env: ReturnType<typeof createEnv>) {
+  return env.NODE_ENV === 'test'
+    ? await createTestUserRegistry(env.COUCHDB_URL, env)
+    : createUserRegistry(env.COUCHDB_URL, env);
+}
+
+/**
+ * Validate header consistency with user data
+ */
+function validateHeaderConsistency(
+  user: { database_name: string; telegram_id?: number },
+  databaseName: string | undefined,
+  telegramId: string | undefined,
+): void {
+  if (databaseName && databaseName !== user.database_name) {
+    logHeaderMismatch('Database name', databaseName, user.database_name);
+    throw createAuthError(400, 'Database name mismatch in headers');
+  }
+
+  if (telegramId && user.telegram_id && parseInt(telegramId) !== user.telegram_id) {
+    logHeaderMismatch('Telegram ID', telegramId, user.telegram_id);
+    throw createAuthError(400, 'Telegram ID mismatch in headers');
+  }
+}
+
+/** Extract and validate headers, throw if username missing */
+function extractAuthHeaders(headers: Record<string, string | string[] | undefined>): {
+  username: string;
+  databaseName: string | undefined;
+  telegramId: string | undefined;
+} {
   const username = extractHeader(headers, 'x-user-id');
   const databaseName = extractHeader(headers, 'x-database-name');
   const telegramId = extractHeader(headers, 'x-telegram-id');
@@ -47,97 +98,51 @@ export async function validateUserContext(
   });
 
   if (!username) {
-    throw new Response(null, {
-      status: 401,
-      statusText: 'Username required (X-User-ID header)',
-    });
+    throw createAuthError(401, 'Username required (X-User-ID header)');
   }
 
-  // Use username as cache key
-  const cacheKey = `${username}:${telegramId || 'no_telegram'}`;
-  const cached = userValidationCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    if (!cached.valid) {
-      throw new Response(null, {
-        status: 401,
-        statusText: 'Invalid user (cached)',
-      });
-    }
-    console.log('User authentication cache hit', {
-      username: cached.user?.username,
-    });
-    return cached.user!;
+  return { username, databaseName, telegramId };
+}
+
+/** Lookup user and validate status */
+async function lookupAndValidateUser(
+  username: string,
+  cacheKey: string,
+): Promise<{ _id: string; database_name: string; username: string; telegram_id?: number }> {
+  const env = createEnv();
+  const userRegistry = await getUserRegistry(env);
+  const user = await userRegistry.findByUsername(username);
+
+  if (!user) {
+    logUserNotFound(username);
+    userValidationCache.set(cacheKey, createNegativeCacheEntry());
+    throw createAuthError(401, 'Invalid username');
   }
+
+  if (user.status !== 'active') {
+    logUserInactive(user.username, user.status);
+    userValidationCache.set(cacheKey, createNegativeCacheEntry());
+    throw createAuthError(403, 'User account is not active');
+  }
+
+  return user;
+}
+
+/**
+ * Validate user context from MCP headers (for microservice-to-microservice communication)
+ */
+export async function validateUserContext(
+  headers: Record<string, string | string[] | undefined>,
+): Promise<MCPAuthResult> {
+  const { username, databaseName, telegramId } = extractAuthHeaders(headers);
+
+  const cacheKey = createCacheKey(username, telegramId);
+  const cacheResult = checkCache(cacheKey);
+  if (cacheResult.hit) return cacheResult.result!;
 
   try {
-    // Initialize environment and user registry
-    const env = createEnv();
-    const userRegistry =
-      env.NODE_ENV === 'test'
-        ? await createTestUserRegistry(env.COUCHDB_URL, env)
-        : createUserRegistry(env.COUCHDB_URL, env);
-
-    // Look up user by username
-    const user = await userRegistry.findByUsername(username);
-
-    if (!user) {
-      console.warn('User not found for username', { username });
-      // Cache negative result
-      userValidationCache.set(cacheKey, {
-        valid: false,
-        timestamp: Date.now(),
-      });
-      throw new Response(null, {
-        status: 401,
-        statusText: 'Invalid username',
-      });
-    }
-
-    // Check if user is active
-    if (user.status !== 'active') {
-      console.warn('User found but not active', {
-        username: user.username,
-        status: user.status,
-      });
-      // Cache negative result
-      userValidationCache.set(cacheKey, {
-        valid: false,
-        timestamp: Date.now(),
-      });
-      throw new Response(null, {
-        status: 403,
-        statusText: 'User account is not active',
-      });
-    }
-
-    // Validate consistency if user provided additional headers
-    if (databaseName && databaseName !== user.database_name) {
-      console.warn('Database name mismatch in headers', {
-        provided: databaseName,
-        actual: user.database_name,
-      });
-      throw new Response(null, {
-        status: 400,
-        statusText: 'Database name mismatch in headers',
-      });
-    }
-
-    if (telegramId && user.telegram_id && parseInt(telegramId) !== user.telegram_id) {
-      console.warn('Telegram ID mismatch in headers', {
-        provided: telegramId,
-        actual: user.telegram_id,
-      });
-      throw new Response(null, {
-        status: 400,
-        statusText: 'Telegram ID mismatch in headers',
-      });
-    }
-
-    console.log('User authentication successful', {
-      username: user.username,
-      userId: user._id,
-      databaseName: user.database_name,
-    });
+    const user = await lookupAndValidateUser(username, cacheKey);
+    validateHeaderConsistency(user, databaseName, telegramId);
 
     const authResult: MCPAuthResult = {
       userId: user._id,
@@ -145,42 +150,14 @@ export async function validateUserContext(
       username: user.username,
     };
 
-    // Cache the successful result
-    userValidationCache.set(cacheKey, {
-      valid: true,
-      user: authResult,
-      timestamp: Date.now(),
-    });
-
+    logAuthSuccess(authResult);
+    userValidationCache.set(cacheKey, createPositiveCacheEntry(authResult));
     return authResult;
   } catch (error) {
-    // If it's already a Response (our custom error), re-throw it
-    if (error instanceof Response) {
-      throw error;
-    }
-
-    console.error('Error during user authentication', {
-      error: error instanceof Error ? error.message : String(error),
-      username,
-    });
-
-    throw new Response(null, {
-      status: 500,
-      statusText: 'Authentication service error',
-    });
+    if (error instanceof Response) throw error;
+    logAuthError(error, username);
+    throw createAuthError(500, 'Authentication service error');
   }
 }
 
-/**
- * Extract header value from headers object (handles both string and string[] types)
- */
-function extractHeader(
-  headers: Record<string, string | string[] | undefined>,
-  name: string,
-): string | undefined {
-  const value = headers[name] || headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
+export { extractHeader };

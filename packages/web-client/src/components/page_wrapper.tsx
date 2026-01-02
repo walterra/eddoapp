@@ -12,15 +12,67 @@ interface PageWrapperProps {
   isAuthenticated: boolean;
 }
 
+const EddoLogo: FC = () => (
+  <pre aria-label="Eddo logo" className="m-0 p-0 font-mono text-sm leading-tight" role="img">
+    {`   ┓ ┓
+┏┓┏┫┏┫┏┓
+┗ ┗┻┗┻┗┛`}
+  </pre>
+);
+
+interface AuthButtonsProps {
+  onShowProfile: () => void;
+  onLogout: () => void;
+}
+
+const AuthButtons: FC<AuthButtonsProps> = ({ onShowProfile, onLogout }) => (
+  <div className="flex space-x-2">
+    <Button color="gray" onClick={onShowProfile} size="sm">
+      Profile
+    </Button>
+    <Button color="gray" onClick={onLogout} size="sm">
+      Logout
+    </Button>
+  </div>
+);
+
+interface HeaderProps {
+  isAuthenticated: boolean;
+  databaseName: string;
+  healthCheck: ReturnType<typeof useDatabaseHealth>['healthCheck'];
+  onShowProfile: () => void;
+  onLogout: () => void;
+}
+
+const Header: FC<HeaderProps> = ({
+  isAuthenticated,
+  databaseName,
+  healthCheck,
+  onShowProfile,
+  onLogout,
+}) => (
+  <div className="mb-4 flex items-center justify-between">
+    <div className="prose">
+      <h1 className="sr-only">Eddo</h1>
+      <EddoLogo />
+    </div>
+    <div className="flex items-center space-x-4">
+      {isAuthenticated && <AuthButtons onLogout={onLogout} onShowProfile={onShowProfile} />}
+      <DatabaseHealthIndicator
+        databaseName={databaseName}
+        healthCheck={healthCheck}
+        showDetails={true}
+      />
+    </div>
+  </div>
+);
+
 export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenticated }) => {
   const { healthCheck } = useDatabaseHealth();
   const { rawDb } = usePouchDb();
   const [showProfile, setShowProfile] = useState(false);
-
-  // Get the database name from the PouchDB instance
   const databaseName = rawDb.name;
 
-  // Show profile if requested
   if (showProfile) {
     return <UserProfile onClose={() => setShowProfile(false)} />;
   }
@@ -28,45 +80,14 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   return (
     <div className="flex min-h-screen w-full flex-col">
       <div className="flex w-full flex-1 flex-col overflow-hidden sm:flex-row">
-        {/* <div className="md:1/4 w-full flex-shrink flex-grow-0 p-4 sm:w-1/3">
-            <div className="sticky top-0 w-full p-4">
-              <ul className="flex content-center justify-between overflow-hidden sm:flex-col">
-                Navigation
-              </ul>
-            </div>
-          </div> */}
         <main className="w-full flex-1 overflow-auto p-3" role="main">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="prose">
-              <h1 className="sr-only">Eddo</h1>
-              <pre
-                aria-label="Eddo logo"
-                className="m-0 p-0 font-mono text-sm leading-tight"
-                role="img"
-              >
-                {`   ┓ ┓
-┏┓┏┫┏┫┏┓
-┗ ┗┻┗┻┗┛`}
-              </pre>
-            </div>
-            <div className="flex items-center space-x-4">
-              {isAuthenticated && (
-                <div className="flex space-x-2">
-                  <Button color="gray" onClick={() => setShowProfile(true)} size="sm">
-                    Profile
-                  </Button>
-                  <Button color="gray" onClick={logout} size="sm">
-                    Logout
-                  </Button>
-                </div>
-              )}
-              <DatabaseHealthIndicator
-                databaseName={databaseName}
-                healthCheck={healthCheck}
-                showDetails={true}
-              />
-            </div>
-          </div>
+          <Header
+            databaseName={databaseName}
+            healthCheck={healthCheck}
+            isAuthenticated={isAuthenticated}
+            onLogout={logout}
+            onShowProfile={() => setShowProfile(true)}
+          />
           {children}
         </main>
       </div>

@@ -38,55 +38,77 @@ export class DatabaseSetup {
   }
 
   /**
+   * Check if error is a CouchDB conflict (409)
+   */
+  private isConflictError(error: unknown): boolean {
+    return (
+      error !== null &&
+      typeof error === 'object' &&
+      'statusCode' in error &&
+      error.statusCode === 409
+    );
+  }
+
+  /**
+   * Update existing design document with current revision
+   */
+  private async updateExistingDesignDoc(
+    designDoc: DesignDocument,
+    attempt: number,
+    maxRetries: number,
+  ): Promise<boolean> {
+    try {
+      const existingDoc = await this.db.get(designDoc._id);
+      const updatedDoc = {
+        ...designDoc,
+        _rev: (existingDoc as { _rev: string })._rev,
+      };
+      await this.db.insert(updatedDoc);
+      console.log(`🔄 Updated design document: ${designDoc._id}`);
+      return true;
+    } catch (updateError: unknown) {
+      if (this.isConflictError(updateError) && attempt < maxRetries) {
+        console.warn(
+          `⚠️  Document conflict for ${designDoc._id}, attempt ${attempt}/${maxRetries}, retrying...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+        return false;
+      }
+      console.error(`❌ Failed to update design document ${designDoc._id}:`, updateError);
+      throw updateError;
+    }
+  }
+
+  /**
+   * Try to insert a design document
+   */
+  private async tryInsertDesignDocument(
+    designDoc: DesignDocument,
+  ): Promise<{ success: boolean; error?: unknown }> {
+    try {
+      await this.db.insert(designDoc);
+      console.log(`✅ Created design document: ${designDoc._id}`);
+      return { success: true };
+    } catch (error: unknown) {
+      return { success: false, error };
+    }
+  }
+
+  /**
    * Create or update a single design document with retry logic
    */
   async createDesignDocument(designDoc: DesignDocument, maxRetries: number = 3): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await this.db.insert(designDoc);
-        console.log(`✅ Created design document: ${designDoc._id}`);
-        return;
-      } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          error.statusCode === 409
-        ) {
-          // Design document exists, try to update it
-          try {
-            const existingDoc = await this.db.get(designDoc._id);
-            const updatedDoc = {
-              ...designDoc,
-              _rev: (existingDoc as { _rev: string })._rev,
-            };
-            await this.db.insert(updatedDoc);
-            console.log(`🔄 Updated design document: ${designDoc._id}`);
-            return;
-          } catch (updateError: unknown) {
-            if (
-              updateError &&
-              typeof updateError === 'object' &&
-              'statusCode' in updateError &&
-              updateError.statusCode === 409 &&
-              attempt < maxRetries
-            ) {
-              // Document update conflict - retry after delay
-              console.warn(
-                `⚠️  Document conflict for ${designDoc._id}, attempt ${attempt}/${maxRetries}, retrying...`,
-              );
-              await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
-              continue;
-            } else {
-              console.error(`❌ Failed to update design document ${designDoc._id}:`, updateError);
-              throw updateError;
-            }
-          }
-        } else {
-          console.error(`❌ Failed to create design document ${designDoc._id}:`, error);
-          throw error;
-        }
+      const result = await this.tryInsertDesignDocument(designDoc);
+      if (result.success) return;
+
+      if (!this.isConflictError(result.error)) {
+        console.error(`❌ Failed to create design document ${designDoc._id}:`, result.error);
+        throw result.error;
       }
+
+      const updated = await this.updateExistingDesignDoc(designDoc, attempt, maxRetries);
+      if (updated) return;
     }
   }
 
@@ -104,6 +126,73 @@ export class DatabaseSetup {
     console.log(`✅ Indexes created for: ${this.dbName}`);
   }
 
+  /**
+   * Check if error indicates index already exists
+   */
+  private isIndexExistsError(error: unknown): boolean {
+    return (
+      error !== null &&
+      typeof error === 'object' &&
+      'statusCode' in error &&
+      error.statusCode === 409
+    );
+  }
+
+  /**
+   * Check if error is retryable (database not ready or conflict)
+   */
+  private isRetryableIndexError(error: unknown): boolean {
+    if (!error || typeof error !== 'object' || !('statusCode' in error)) {
+      return false;
+    }
+    if (error.statusCode === 404) {
+      return true;
+    }
+    if (
+      error.statusCode === 500 &&
+      'reason' in error &&
+      typeof error.reason === 'string' &&
+      error.reason.includes('conflict')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Handle index creation error with retry logic
+   * @returns true if should retry, false if handled
+   */
+  private async handleIndexCreationError(
+    error: unknown,
+    indexName: string,
+    attempt: number,
+    maxRetries: number,
+  ): Promise<boolean> {
+    if (this.isIndexExistsError(error)) {
+      console.log(`ℹ️  Index ${indexName} already exists`);
+      return false;
+    }
+
+    if (this.isRetryableIndexError(error)) {
+      if (attempt === maxRetries) {
+        console.error(
+          `❌ Failed to create index ${indexName} after ${maxRetries} attempts:`,
+          error,
+        );
+        throw error;
+      }
+      console.warn(
+        `⚠️  Attempt ${attempt}/${maxRetries} failed for index ${indexName}, retrying...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+      return true;
+    }
+
+    console.error(`❌ Failed to create index ${indexName}:`, error);
+    throw error;
+  }
+
   private async createSingleIndexWithRetry(
     indexDef: {
       index: { fields: string[] };
@@ -118,40 +207,13 @@ export class DatabaseSetup {
         console.log(`✅ Created index: ${indexDef.name}`);
         return;
       } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          error.statusCode === 409
-        ) {
-          console.log(`ℹ️  Index ${indexDef.name} already exists`);
-          return;
-        } else if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          (error.statusCode === 404 ||
-            (error.statusCode === 500 &&
-              'reason' in error &&
-              typeof error.reason === 'string' &&
-              error.reason.includes('conflict')))
-        ) {
-          // Database doesn't exist or conflict - retry with delay
-          if (attempt === maxRetries) {
-            console.error(
-              `❌ Failed to create index ${indexDef.name} after ${maxRetries} attempts:`,
-              error,
-            );
-            throw error;
-          }
-          console.warn(
-            `⚠️  Attempt ${attempt}/${maxRetries} failed for index ${indexDef.name}, retrying...`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
-        } else {
-          console.error(`❌ Failed to create index ${indexDef.name}:`, error);
-          throw error;
-        }
+        const shouldRetry = await this.handleIndexCreationError(
+          error,
+          indexDef.name,
+          attempt,
+          maxRetries,
+        );
+        if (!shouldRetry) return;
       }
     }
   }

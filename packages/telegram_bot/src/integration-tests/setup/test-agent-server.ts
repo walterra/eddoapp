@@ -10,10 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
-import type { UserPreferences } from '@eddo/core-shared';
-import { getRandomHex, getRandomInt, REQUIRED_INDEXES } from '@eddo/core-shared';
 import type { Context } from 'grammy';
-import nano from 'nano';
 import { vi } from 'vitest';
 
 import { SimpleAgent } from '../../agent/simple-agent.js';
@@ -26,6 +23,14 @@ import {
   type RecordMode,
   type TimeController,
 } from '../vcr/index.js';
+import {
+  buildMockContext,
+  buildUserRegistryEntry,
+  generateTestApiKey,
+  generateTestUserData,
+  setupUserDatabase,
+  type TestUser,
+} from './test-agent-server-helpers.js';
 
 export interface TestAgentServerConfig {
   mcpServerUrl?: string;
@@ -33,20 +38,6 @@ export interface TestAgentServerConfig {
   mockTelegramResponses?: boolean;
   /** VCR recording mode: 'auto' (default), 'record', or 'playback' */
   vcrMode?: RecordMode;
-}
-
-// Test user data structure matching the user registry (TelegramUser interface)
-interface TestUser {
-  _id: string;
-  username: string;
-  email: string;
-  telegram_id: number;
-  database_name: string;
-  status: string;
-  permissions: string[];
-  created_at: string;
-  updated_at: string;
-  preferences: UserPreferences;
 }
 
 // Define session data structure for compatibility
@@ -126,7 +117,7 @@ export class TestAgentServer {
     };
 
     // Generate unique test API key for database isolation
-    this.testApiKey = `agent-test-${Date.now()}-${getRandomHex(9)}`;
+    this.testApiKey = generateTestApiKey();
 
     // Time controller for freezing time during cassette replay
     const timeController: TimeController = {
@@ -189,82 +180,18 @@ export class TestAgentServer {
     const env = validateEnv(process.env);
     const userRegistry = await createTestUserRegistry(couchDbUrl, env);
 
-    // Set up user registry database
     if (userRegistry.setupDatabase) {
       await userRegistry.setupDatabase();
     }
 
-    // Create unique test user
-    const timestamp = Date.now();
-    const telegramId = 12345 + getRandomInt(10000);
-    const username = `testuser_${timestamp}`;
-    const databaseName = `eddo_test_user_${username}`;
+    this.testUser = generateTestUserData();
 
-    const now = new Date().toISOString();
-    this.testUser = {
-      _id: username,
-      username,
-      email: `${username}@test.example.com`,
-      telegram_id: telegramId,
-      database_name: databaseName,
-      status: 'active',
-      permissions: ['read', 'write'],
-      created_at: now,
-      updated_at: now,
-      preferences: {
-        dailyBriefing: false,
-        briefingTime: '07:00',
-        dailyRecap: false,
-        recapTime: '18:00',
-      },
-    };
-
-    // Check if user already exists
-    const existingUser = await userRegistry.findByUsername(username);
+    const existingUser = await userRegistry.findByUsername(this.testUser.username);
     if (!existingUser) {
-      await userRegistry.create({
-        username,
-        email: `${username}@test.example.com`,
-        password_hash: 'test-hash',
-        telegram_id: telegramId,
-        permissions: ['read', 'write'],
-        status: 'active',
-        version: 'alpha2',
-        database_name: databaseName,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        preferences: {
-          dailyBriefing: false,
-          briefingTime: '07:00',
-          dailyRecap: false,
-          recapTime: '18:00',
-        },
-      });
+      await userRegistry.create(buildUserRegistryEntry(this.testUser));
     }
 
-    // Create the user's todo database
-    const couch = nano(couchDbUrl);
-    try {
-      await couch.db.create(databaseName);
-    } catch (err: any) {
-      if (err.statusCode !== 412) {
-        // 412 means database already exists
-        throw err;
-      }
-    }
-
-    // Create required indexes for the user's database
-    const userDb = couch.use(databaseName);
-    for (const indexDef of REQUIRED_INDEXES) {
-      try {
-        await userDb.createIndex(indexDef);
-      } catch (err: any) {
-        if (err.statusCode !== 409) {
-          // 409 means index already exists
-          throw err;
-        }
-      }
-    }
+    await setupUserDatabase(couchDbUrl, this.testUser.database_name);
   }
 
   async stop(): Promise<void> {
@@ -320,61 +247,7 @@ export class TestAgentServer {
     if (!this.testUser) {
       throw new Error('Test user not created. Call start() first.');
     }
-
-    const replies: string[] = [];
-    const chatActions: string[] = [];
-    const telegramId = this.testUser.telegram_id;
-
-    const mockContext: MockTelegramContext = {
-      replies,
-      chatActions,
-      reply: vi.fn(async (text: string) => {
-        replies.push(text);
-        return {} as any;
-      }),
-      replyWithChatAction: vi.fn(async (action: string) => {
-        chatActions.push(action);
-        return true;
-      }),
-      from: {
-        id: telegramId,
-        is_bot: false,
-        first_name: 'Test',
-        username: this.testUser.username,
-      },
-      chat: {
-        id: telegramId,
-        type: 'private',
-        first_name: 'Test',
-        username: this.testUser.username,
-      },
-      message: {
-        message_id: 1,
-        date: Date.now(),
-        chat: {
-          id: telegramId,
-          type: 'private',
-          first_name: 'Test',
-          username: this.testUser.username,
-        },
-        from: {
-          id: telegramId,
-          is_bot: false,
-          first_name: 'Test',
-          username: this.testUser.username,
-        },
-        text: '',
-      },
-      session: {
-        userId: this.testUser.username,
-        lastActivity: new Date(),
-        context: {},
-        // Include user data for MCP context extraction
-        user: this.testUser,
-      },
-    };
-
-    return mockContext;
+    return buildMockContext(this.testUser);
   }
 
   /**

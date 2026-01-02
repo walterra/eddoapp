@@ -1,7 +1,5 @@
 # Todo Items
 
-All items are synced with GitHub Issues.
-
 ## Features
 
 - Improve briefing prompt to not repeat itself - [#328](https://github.com/walterra/eddoapp/issues/328)

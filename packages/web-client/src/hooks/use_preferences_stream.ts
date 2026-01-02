@@ -6,12 +6,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from './use_auth';
-
-interface SSEConnectionState {
-  isConnected: boolean;
-  lastEventId: string | null;
-  error: string | null;
-}
+import {
+  buildSSEUrl,
+  handleConnectedEvent,
+  handleConnectionError,
+  handleConnectionOpen,
+  handlePreferenceUpdate,
+  INITIAL_CONNECTION_STATE,
+  type SSEConnectionState,
+} from './use_preferences_stream_helpers';
 
 interface PreferencesStreamOptions {
   /** Enable/disable the stream. Defaults to true when authenticated. */
@@ -29,11 +32,8 @@ export const usePreferencesStream = (options: PreferencesStreamOptions = {}) => 
   const { authToken, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
-  const [connectionState, setConnectionState] = useState<SSEConnectionState>({
-    isConnected: false,
-    lastEventId: null,
-    error: null,
-  });
+  const [connectionState, setConnectionState] =
+    useState<SSEConnectionState>(INITIAL_CONNECTION_STATE);
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,94 +50,32 @@ export const usePreferencesStream = (options: PreferencesStreamOptions = {}) => 
   }, []);
 
   const connect = useCallback(() => {
-    if (!authToken?.token || !enabled) {
-      return;
-    }
+    if (!authToken?.token || !enabled) return;
 
     cleanup();
 
-    // EventSource doesn't support custom headers, so pass token as query param
-    // This is acceptable since the connection is over HTTPS
-    const url = `/api/users/preferences/stream?token=${encodeURIComponent(authToken.token)}`;
-
     console.log('[PreferencesStream] Connecting to SSE...');
-    const eventSource = new EventSource(url);
+    const eventSource = new EventSource(buildSSEUrl(authToken.token));
     eventSourceRef.current = eventSource;
 
-    eventSource.addEventListener('connected', (event) => {
-      console.log('[PreferencesStream] Connected:', event.data);
-      setConnectionState({
-        isConnected: true,
-        lastEventId: event.lastEventId || null,
-        error: null,
-      });
-    });
-
-    eventSource.addEventListener('preference-update', (event) => {
-      console.log('[PreferencesStream] Received update');
-      try {
-        const profile = JSON.parse(event.data);
-
-        // Update React Query cache directly
-        queryClient.setQueryData(['profile'], profile);
-
-        // Call optional callback
-        if (onUpdate) {
-          onUpdate(profile);
-        }
-
-        setConnectionState((prev) => ({
-          ...prev,
-          lastEventId: event.lastEventId || prev.lastEventId,
-        }));
-      } catch (err) {
-        console.error('[PreferencesStream] Failed to parse update:', err);
-      }
-    });
-
-    eventSource.addEventListener('heartbeat', () => {
-      // Heartbeat received, connection is healthy
-    });
-
-    eventSource.onerror = (error) => {
-      console.error('[PreferencesStream] Connection error:', error);
-      setConnectionState((prev) => ({
-        ...prev,
-        isConnected: false,
-        error: 'Connection lost',
-      }));
-
-      // EventSource will automatically try to reconnect
-      // We just update state to reflect the disconnection
-    };
-
-    eventSource.onopen = () => {
-      setConnectionState((prev) => ({
-        ...prev,
-        isConnected: true,
-        error: null,
-      }));
-    };
+    eventSource.addEventListener('connected', (e) => handleConnectedEvent(e, setConnectionState));
+    eventSource.addEventListener('preference-update', (e) =>
+      handlePreferenceUpdate(e, queryClient, onUpdate, setConnectionState),
+    );
+    eventSource.addEventListener('heartbeat', () => {});
+    eventSource.onerror = () => handleConnectionError(setConnectionState);
+    eventSource.onopen = () => handleConnectionOpen(setConnectionState);
   }, [authToken?.token, enabled, cleanup, queryClient, onUpdate]);
 
-  // Connect when authenticated and enabled
   useEffect(() => {
     if (isAuthenticated && enabled) {
       connect();
     } else {
       cleanup();
-      setConnectionState({
-        isConnected: false,
-        lastEventId: null,
-        error: null,
-      });
+      setConnectionState(INITIAL_CONNECTION_STATE);
     }
-
     return cleanup;
   }, [isAuthenticated, enabled, connect, cleanup]);
 
-  return {
-    ...connectionState,
-    reconnect: connect,
-  };
+  return { ...connectionState, reconnect: connect };
 };

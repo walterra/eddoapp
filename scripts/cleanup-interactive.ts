@@ -6,15 +6,13 @@ import nano from 'nano';
 import ora from 'ora';
 import prompts from 'prompts';
 import { getCouchDbConfig, validateEnv } from '../packages/core-server/src/config/env.js';
-
-interface CleanupConfig {
-  mode: 'all' | 'pattern' | 'age' | 'custom';
-  pattern?: string;
-  age?: number;
-  dryRun: boolean;
-  force: boolean;
-  databases?: string[];
-}
+import {
+  type CleanupConfig,
+  handleCleanupError,
+  parseCleanupConfig,
+  printWarningIfNeeded,
+  setupProgram,
+} from './cleanup-interactive-helpers.js';
 
 interface DatabaseInfo {
   name: string;
@@ -25,67 +23,22 @@ interface DatabaseInfo {
 
 async function main() {
   const program = new Command();
-
-  program
-    .name('cleanup-interactive')
-    .description('Interactive CouchDB test database cleanup tool')
-    .option('-m, --mode <mode>', 'cleanup mode: all, pattern, age, custom', 'all')
-    .option('-p, --pattern <pattern>', 'database name pattern to match')
-    .option('-a, --age <days>', 'delete databases older than N days', parseInt)
-    .option('-d, --dry-run', 'show what would be deleted without actually deleting', false)
-    .option('-f, --force', 'skip confirmation prompts', false)
-    .option('--databases <databases>', 'comma-separated list of specific databases to clean')
-    .parse(process.argv);
+  setupProgram(program);
+  program.parse(process.argv);
 
   const options = program.opts();
 
   console.log(chalk.blue('\n🧹 CouchDB Test Database Cleanup Tool\n'));
 
   try {
-    // Environment configuration using shared validation
     const env = validateEnv(process.env);
     const couchConfig = getCouchDbConfig(env);
+    const config = parseCleanupConfig(options);
 
-    // Auto-detect mode based on provided options
-    let mode: CleanupConfig['mode'] = options.mode as CleanupConfig['mode'];
-    if (options.pattern && mode === 'all') {
-      mode = 'pattern';
-    }
-    if (options.databases && mode === 'all') {
-      mode = 'custom';
-    }
-
-    const config: CleanupConfig = {
-      mode,
-      pattern: options.pattern,
-      age: options.age,
-      dryRun: options.dryRun,
-      force: options.force,
-      databases: options.databases?.split(',').map((db: string) => db.trim()),
-    };
-
-    if (!config.force) {
-      console.log(
-        chalk.yellow(
-          '⚠️  This tool will delete databases. Make sure you have backups if needed.\n',
-        ),
-      );
-    }
-
+    printWarningIfNeeded(config.force);
     await runCleanup(couchConfig, config);
   } catch (error) {
-    console.error(chalk.red('\nError:'), error instanceof Error ? error.message : String(error));
-
-    if (error instanceof Error) {
-      if (error.message.includes('ECONNREFUSED')) {
-        console.error(chalk.yellow('\nℹ️  Make sure CouchDB is running and accessible'));
-      } else if (error.message.includes('unauthorized')) {
-        console.error(
-          chalk.yellow('\nℹ️  Check your CouchDB credentials in the environment variables'),
-        );
-      }
-    }
-
+    handleCleanupError(error);
     process.exit(1);
   }
 }

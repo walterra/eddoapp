@@ -1,7 +1,14 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import type { CompletionStatus } from '../components/status_filter';
 import type { TimeRange } from '../components/time_range_filter';
+import {
+  extractCurrentDate,
+  extractSelectedContexts,
+  extractSelectedStatus,
+  extractSelectedTags,
+  extractSelectedTimeRange,
+} from './use_filter_preferences_helpers';
 import { useProfile } from './use_profile';
 
 export interface FilterPreferences {
@@ -27,77 +34,34 @@ export interface UseFilterPreferencesReturn {
   setCurrentDate: (date: Date) => Promise<{ success: boolean; error?: string }>;
 }
 
-/**
- * Hook for managing todo filter preferences
- */
+/** Create preference setters bound to updatePreferences */
+function createPreferenceSetters(
+  updatePreferences: ReturnType<typeof useProfile>['updatePreferences'],
+) {
+  return {
+    setSelectedTags: async (tags: string[]) => updatePreferences({ selectedTags: tags }),
+    setSelectedContexts: async (contexts: string[]) =>
+      updatePreferences({ selectedContexts: contexts }),
+    setSelectedStatus: async (status: CompletionStatus) =>
+      updatePreferences({ selectedStatus: status }),
+    setSelectedTimeRange: async (timeRange: TimeRange) =>
+      updatePreferences({ selectedTimeRange: timeRange }),
+    setCurrentDate: async (date: Date) => updatePreferences({ currentDate: date.toISOString() }),
+  };
+}
+
+/** Hook for managing todo filter preferences */
 export const useFilterPreferences = (): UseFilterPreferencesReturn => {
   const { profile, isLoading, error, updatePreferences } = useProfile();
+  const prefs = profile?.preferences;
 
-  const selectedTags = useMemo<string[]>(
-    () => profile?.preferences?.selectedTags || [],
-    [profile?.preferences?.selectedTags],
-  );
+  const selectedTags = useMemo(() => extractSelectedTags(prefs), [prefs]);
+  const selectedContexts = useMemo(() => extractSelectedContexts(prefs), [prefs]);
+  const selectedStatus = useMemo(() => extractSelectedStatus(prefs), [prefs]);
+  const selectedTimeRange = useMemo(() => extractSelectedTimeRange(prefs), [prefs]);
+  const currentDate = useMemo(() => extractCurrentDate(prefs), [prefs]);
 
-  const selectedContexts = useMemo<string[]>(
-    () => profile?.preferences?.selectedContexts || [],
-    [profile?.preferences?.selectedContexts],
-  );
-
-  const selectedStatus = useMemo<CompletionStatus>(
-    () => profile?.preferences?.selectedStatus || 'all',
-    [profile?.preferences?.selectedStatus],
-  );
-
-  const selectedTimeRange = useMemo<TimeRange>(
-    () => profile?.preferences?.selectedTimeRange || { type: 'current-week' },
-    [profile?.preferences?.selectedTimeRange],
-  );
-
-  const currentDate = useMemo<Date>(() => {
-    if (profile?.preferences?.currentDate) {
-      const date = new Date(profile.preferences.currentDate);
-      // Validate date is valid (not Invalid Date)
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-    }
-    return new Date();
-  }, [profile?.preferences?.currentDate]);
-
-  const setSelectedTags = useCallback(
-    async (tags: string[]) => {
-      return await updatePreferences({ selectedTags: tags });
-    },
-    [updatePreferences],
-  );
-
-  const setSelectedContexts = useCallback(
-    async (contexts: string[]) => {
-      return await updatePreferences({ selectedContexts: contexts });
-    },
-    [updatePreferences],
-  );
-
-  const setSelectedStatus = useCallback(
-    async (status: CompletionStatus) => {
-      return await updatePreferences({ selectedStatus: status });
-    },
-    [updatePreferences],
-  );
-
-  const setSelectedTimeRange = useCallback(
-    async (timeRange: TimeRange) => {
-      return await updatePreferences({ selectedTimeRange: timeRange });
-    },
-    [updatePreferences],
-  );
-
-  const setCurrentDate = useCallback(
-    async (date: Date) => {
-      return await updatePreferences({ currentDate: date.toISOString() });
-    },
-    [updatePreferences],
-  );
+  const setters = useMemo(() => createPreferenceSetters(updatePreferences), [updatePreferences]);
 
   return {
     selectedTags,
@@ -107,10 +71,6 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
     currentDate,
     isLoading,
     error: error || null,
-    setSelectedTags,
-    setSelectedContexts,
-    setSelectedStatus,
-    setSelectedTimeRange,
-    setCurrentDate,
+    ...setters,
   };
 };

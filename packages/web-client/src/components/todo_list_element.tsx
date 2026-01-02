@@ -25,7 +25,212 @@ interface TodoListElementProps {
   todo: Todo;
 }
 
-/** Memoized to prevent re-renders when parent updates unrelated todos */
+interface ErrorDisplayProps {
+  error: DatabaseError | null;
+  onDismiss: () => void;
+}
+
+const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onDismiss }) =>
+  error ? (
+    <div className="mb-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs dark:border-red-700 dark:bg-red-900">
+      <span className="text-red-700 dark:text-red-200">Failed to update todo</span>
+      <button className="ml-2 text-red-600 hover:text-red-500" onClick={onDismiss}>
+        ×
+      </button>
+    </div>
+  ) : null;
+
+interface TitleDisplayProps {
+  todo: Todo;
+  activityOnly: boolean;
+}
+
+const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
+  const className = [
+    'text-xs',
+    todo.completed || activityOnly ? 'text-gray-400' : '',
+    todo.completed ? 'line-through' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <span className={className}>
+      {todo.link !== null && !activityOnly ? (
+        <a
+          className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+          href={todo.link}
+          rel="noreferrer"
+          target="_BLANK"
+        >
+          <FormattedMessage message={todo.title} />
+        </a>
+      ) : (
+        <FormattedMessage message={todo.title} />
+      )}
+    </span>
+  );
+};
+
+const BUTTON_BASE =
+  'p-0.5 text-gray-400 transition-opacity duration-200 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200';
+const BUTTON_HIDDEN = 'opacity-0 group-hover:opacity-100 focus-within:opacity-100';
+
+interface TimeTrackingButtonProps {
+  isActive: boolean;
+  isUpdating: boolean;
+  onClick: (e: React.FormEvent<HTMLButtonElement>) => void;
+}
+
+const TimeTrackingButton: FC<TimeTrackingButtonProps> = ({ isActive, isUpdating, onClick }) => (
+  <button
+    className={`${BUTTON_BASE} disabled:cursor-not-allowed disabled:opacity-50 ${isActive ? 'opacity-100' : BUTTON_HIDDEN}`}
+    data-testid={isActive ? 'pause-button' : 'play-button'}
+    disabled={isUpdating}
+    onClick={onClick}
+    type="button"
+  >
+    {isActive ? <BiPauseCircle size="1.3em" /> : <BiPlayCircle size="1.3em" />}
+  </button>
+);
+
+interface ActionButtonsProps {
+  todo: Todo;
+  isUpdating: boolean;
+  activityOnly: boolean;
+  timeTrackingActive: boolean;
+  onTimeTrackingClick: (e: React.FormEvent<HTMLButtonElement>) => void;
+  onEditClick: (e: React.FormEvent<HTMLButtonElement>) => void;
+  activeDuration: number;
+  activeCounter: number;
+}
+
+const ActionButtons: FC<ActionButtonsProps> = (props) => {
+  const {
+    todo,
+    isUpdating,
+    activityOnly,
+    timeTrackingActive,
+    onTimeTrackingClick,
+    onEditClick,
+    activeDuration,
+    activeCounter,
+  } = props;
+  const isTrackingThis = Object.values(todo.active).some((d) => d === null);
+  const showTimeTracking = !timeTrackingActive || isTrackingThis;
+
+  return (
+    <div className="-mt-0.5 -mr-0.5 flex items-start space-x-0.5">
+      {activeDuration > 0 && (
+        <span className="text-xs text-gray-400" data-counter={activeCounter}>
+          {getFormattedDuration(activeDuration)}
+        </span>
+      )}
+      {!activityOnly && (
+        <>
+          {showTimeTracking && (
+            <TimeTrackingButton
+              isActive={isTrackingThis}
+              isUpdating={isUpdating}
+              onClick={onTimeTrackingClick}
+            />
+          )}
+          <button
+            className={`${BUTTON_BASE} ${BUTTON_HIDDEN}`}
+            data-testid="edit-button"
+            onClick={onEditClick}
+            type="button"
+          >
+            <BiEdit size="1.3em" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
+/** Hook for todo list element state */
+const useTodoListState = (todo: Todo, active: boolean, activeDate: string) => {
+  const toggleCompletion = useToggleCompletionMutation();
+  const toggleTimeTracking = useToggleTimeTrackingMutation();
+  const { counter: activeCounter } = useActiveTimer(active);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [error, setError] = useState<DatabaseError | null>(null);
+
+  const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
+  const activeDuration = useMemo(
+    () => getActiveDuration(todo.active, activeDate),
+    [active, activeDate, activeCounter],
+  );
+
+  const handleToggleCheckbox = async () => {
+    if (isUpdating) return;
+    setError(null);
+    try {
+      await toggleCompletion.mutateAsync(todo);
+    } catch (err) {
+      setError(err as DatabaseError);
+    }
+  };
+
+  const handleTimeTrackingClick = async (e: React.FormEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (isUpdating) return;
+    setError(null);
+    try {
+      await toggleTimeTracking.mutateAsync(todo);
+    } catch (err) {
+      setError(err as DatabaseError);
+    }
+  };
+
+  return {
+    showEditModal,
+    setShowEditModal,
+    error,
+    setError,
+    isUpdating,
+    activeDuration,
+    activeCounter,
+    handleToggleCheckbox,
+    handleTimeTrackingClick,
+  };
+};
+
+interface TodoContentProps {
+  todo: Todo;
+  activityOnly: boolean;
+  isUpdating: boolean;
+  onToggle: () => void;
+}
+
+const TodoContent: FC<TodoContentProps> = ({ todo, activityOnly, isUpdating, onToggle }) => (
+  <div className="text-xs text-gray-900 dark:text-white">
+    <div className="flex space-x-1">
+      <div className="mr-0.5 -ml-1">
+        {!activityOnly && (
+          <Checkbox
+            className="checkbox checkbox-xs text-gray-400"
+            color="gray"
+            defaultChecked={todo.completed !== null}
+            disabled={isUpdating}
+            key={`checkbox-${todo._id}-${todo.completed !== null}`}
+            onChange={onToggle}
+          />
+        )}
+      </div>
+      <div>
+        <TitleDisplay activityOnly={activityOnly} todo={todo} />
+        {todo.tags.length > 0 && (
+          <div className="mt-1">
+            <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
 const TodoListElementInner: FC<TodoListElementProps> = ({
   active,
   activeDate,
@@ -33,162 +238,43 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
   timeTrackingActive,
   todo,
 }) => {
-  const toggleCompletion = useToggleCompletionMutation();
-  const toggleTimeTracking = useToggleTimeTrackingMutation();
-
-  const { counter: activeCounter } = useActiveTimer(active);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [error, setError] = useState<DatabaseError | null>(null);
-
-  const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
-
-  async function toggleCheckbox(todo: Todo) {
-    if (isUpdating) return;
-    setError(null);
-
-    try {
-      await toggleCompletion.mutateAsync(todo);
-    } catch (err) {
-      console.error('Failed to update todo:', err);
-      setError(err as DatabaseError);
-    }
-  }
-
-  function showEditModalButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    setShowEditModal(true);
-  }
-
-  async function timeTrackingButtonPressed(event: React.FormEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    if (isUpdating) return;
-    setError(null);
-
-    try {
-      await toggleTimeTracking.mutateAsync(todo);
-    } catch (err) {
-      console.error('Failed to update time tracking:', err);
-      setError(err as DatabaseError);
-    }
-  }
-
-  const thisButtonTimeTrackingActive = Object.values(todo.active).some((d) => d === null);
-
-  const activeDuration = useMemo(() => {
-    // Force recalculation when activeCounter changes
-    const duration = getActiveDuration(todo.active, activeDate);
-    return duration;
-  }, [active, activeDate, activeCounter]);
+  const state = useTodoListState(todo, active, activeDate);
+  const cardClass = `${active ? 'border-2 border-sky-600' : ''}mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-2 py-1 dark:border-gray-700 dark:bg-gray-800`;
 
   return (
-    <div
-      className={`${
-        active ? 'border-2 border-sky-600' : ''
-      }mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-2 py-1 dark:border-gray-700 dark:bg-gray-800`}
-    >
-      {error && (
-        <div className="mb-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs dark:border-red-700 dark:bg-red-900">
-          <span className="text-red-700 dark:text-red-200">Failed to update todo</span>
-          <button className="ml-2 text-red-600 hover:text-red-500" onClick={() => setError(null)}>
-            ×
-          </button>
-        </div>
-      )}
+    <div className={cardClass}>
+      <ErrorDisplay error={state.error} onDismiss={() => state.setError(null)} />
       <div className="group flex items-start justify-between">
-        <div className="text-xs text-gray-900 dark:text-white">
-          <div className="flex space-x-1">
-            <div className="mr-0.5 -ml-1">
-              {!activityOnly && (
-                <Checkbox
-                  className="checkbox checkbox-xs text-gray-400"
-                  color="gray"
-                  defaultChecked={todo.completed !== null}
-                  disabled={isUpdating}
-                  // stable key based on todo ID and completion state
-                  key={`checkbox-${todo._id}-${todo.completed !== null}`}
-                  onChange={() => toggleCheckbox(todo)}
-                />
-              )}
-            </div>
-            <div>
-              <span
-                className={[
-                  'text-xs',
-                  todo.completed || activityOnly ? 'text-gray-400' : '',
-                  todo.completed ? 'line-through' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                {todo.link !== null && !activityOnly ? (
-                  <a
-                    className="font-medium text-blue-600 hover:underline dark:text-blue-500"
-                    href={todo.link}
-                    rel="noreferrer"
-                    target="_BLANK"
-                  >
-                    <FormattedMessage message={todo.title} />
-                  </a>
-                ) : (
-                  <FormattedMessage message={todo.title} />
-                )}
-              </span>
-              {todo.tags.length > 0 && (
-                <div className="mt-1">
-                  <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="-mt-0.5 -mr-0.5 flex items-start space-x-0.5">
-          {activeDuration > 0 && (
-            <span className="text-xs text-gray-400" data-counter={activeCounter}>
-              {getFormattedDuration(activeDuration)}
-            </span>
-          )}
-          {!activityOnly && (
-            <>
-              {(!timeTrackingActive || thisButtonTimeTrackingActive) && (
-                <button
-                  className={`p-0.5 text-gray-400 transition-opacity duration-200 hover:text-gray-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200 ${
-                    thisButtonTimeTrackingActive
-                      ? 'opacity-100'
-                      : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
-                  }`}
-                  data-testid={thisButtonTimeTrackingActive ? 'pause-button' : 'play-button'}
-                  disabled={isUpdating}
-                  onClick={timeTrackingButtonPressed}
-                  type="button"
-                >
-                  {thisButtonTimeTrackingActive ? (
-                    <BiPauseCircle size="1.3em" />
-                  ) : (
-                    <BiPlayCircle size="1.3em" />
-                  )}
-                </button>
-              )}
-              <button
-                className="p-0.5 text-gray-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
-                data-testid="edit-button"
-                onClick={showEditModalButtonPressed}
-                type="button"
-              >
-                <BiEdit size="1.3em" />
-              </button>
-            </>
-          )}
-        </div>
+        <TodoContent
+          activityOnly={activityOnly}
+          isUpdating={state.isUpdating}
+          onToggle={state.handleToggleCheckbox}
+          todo={todo}
+        />
+        <ActionButtons
+          activeCounter={state.activeCounter}
+          activeDuration={state.activeDuration}
+          activityOnly={activityOnly}
+          isUpdating={state.isUpdating}
+          onEditClick={(e) => {
+            e.preventDefault();
+            state.setShowEditModal(true);
+          }}
+          onTimeTrackingClick={state.handleTimeTrackingClick}
+          timeTrackingActive={timeTrackingActive}
+          todo={todo}
+        />
       </div>
-      <TodoEditModal onClose={() => setShowEditModal(false)} show={showEditModal} todo={todo} />
+      <TodoEditModal
+        onClose={() => state.setShowEditModal(false)}
+        show={state.showEditModal}
+        todo={todo}
+      />
     </div>
   );
 };
 
-/** Memoized component - only re-renders when props change */
 export const TodoListElement = memo(TodoListElementInner, (prevProps, nextProps) => {
-  // Custom comparison - only re-render if relevant props changed
   return (
     prevProps.active === nextProps.active &&
     prevProps.activeDate === nextProps.activeDate &&
