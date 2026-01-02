@@ -4,18 +4,20 @@ import type { Activity, NewTodo, Todo } from '@eddo/core-shared';
 import { getRepeatTodo } from '@eddo/core-shared';
 
 import { usePouchDb } from '../pouch_db';
+import {
+  rollbackCache,
+  snapshotCacheState,
+  updateActivitiesCache,
+  updateTimeTrackingCache,
+  updateTodosCache,
+  type UpdateTodoContext,
+} from './use_todo_mutations_helpers';
 
 /**
  * Track recently mutated document IDs to skip redundant invalidations.
  * The changes listener checks this to avoid re-fetching data we just updated.
  */
 export const recentMutations = new Set<string>();
-
-interface UpdateTodoContext {
-  previousTodos: Map<string, Todo[] | undefined>;
-  previousActivities: Map<string, Activity[] | undefined>;
-  previousTimeTracking: string[] | undefined;
-}
 
 /**
  * Mutation hook for updating todos with optimistic updates.
@@ -36,100 +38,23 @@ export function useTodoMutation() {
     },
 
     onMutate: async (updatedTodo) => {
-      // Track this mutation to skip redundant invalidation from changes listener
       recentMutations.add(updatedTodo._id);
 
-      // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: ['todos'] });
       await queryClient.cancelQueries({ queryKey: ['activities'] });
 
-      // Snapshot current cache state for rollback
-      const previousTodos = new Map<string, Todo[] | undefined>();
-      const previousActivities = new Map<string, Activity[] | undefined>();
+      const context = snapshotCacheState(queryClient);
 
-      // Get all cached todo queries
-      const todoQueries = queryClient.getQueriesData<Todo[]>({ queryKey: ['todos', 'byDueDate'] });
-      for (const [queryKey, data] of todoQueries) {
-        previousTodos.set(JSON.stringify(queryKey), data);
-      }
+      updateTodosCache(queryClient, updatedTodo);
+      updateActivitiesCache(queryClient, updatedTodo);
+      updateTimeTrackingCache(queryClient, updatedTodo);
 
-      // Get all cached activity queries
-      const activityQueries = queryClient.getQueriesData<Activity[]>({
-        queryKey: ['activities', 'byActive'],
-      });
-      for (const [queryKey, data] of activityQueries) {
-        previousActivities.set(JSON.stringify(queryKey), data);
-      }
-
-      // Get time tracking state
-      const previousTimeTracking = queryClient.getQueryData<string[]>([
-        'todos',
-        'byTimeTrackingActive',
-      ]);
-
-      // Optimistically update todos cache
-      queryClient.setQueriesData<Todo[]>({ queryKey: ['todos', 'byDueDate'] }, (old) => {
-        if (!old) return old;
-
-        // Check if todo exists in this query's date range
-        const existingIdx = old.findIndex((t) => t._id === updatedTodo._id);
-
-        if (existingIdx >= 0) {
-          // Update existing todo
-          const updated = [...old];
-          updated[existingIdx] = updatedTodo;
-          return updated;
-        }
-
-        // Todo might need to be added to this query (due date changed)
-        // For now, just return old - the refetch will handle it
-        return old;
-      });
-
-      // Optimistically update activities cache
-      queryClient.setQueriesData<Activity[]>({ queryKey: ['activities', 'byActive'] }, (old) => {
-        if (!old) return old;
-        return old.map((activity) => {
-          if (activity.id === updatedTodo._id) {
-            return { ...activity, doc: updatedTodo };
-          }
-          return activity;
-        });
-      });
-
-      // Optimistically update time tracking active
-      queryClient.setQueryData<string[]>(['todos', 'byTimeTrackingActive'], (old) => {
-        if (!old) return old;
-
-        const isNowActive =
-          updatedTodo.active && Object.values(updatedTodo.active).some((v) => v === null);
-        const wasActive = old.includes(updatedTodo._id);
-
-        if (isNowActive && !wasActive) {
-          return [...old, updatedTodo._id];
-        } else if (!isNowActive && wasActive) {
-          return old.filter((id) => id !== updatedTodo._id);
-        }
-        return old;
-      });
-
-      return { previousTodos, previousActivities, previousTimeTracking };
+      return context;
     },
 
     onError: (_err, _updatedTodo, context) => {
-      // Rollback to previous state on error
       if (context) {
-        for (const [key, data] of context.previousTodos) {
-          const queryKey = JSON.parse(key);
-          queryClient.setQueryData(queryKey, data);
-        }
-        for (const [key, data] of context.previousActivities) {
-          const queryKey = JSON.parse(key);
-          queryClient.setQueryData(queryKey, data);
-        }
-        if (context.previousTimeTracking) {
-          queryClient.setQueryData(['todos', 'byTimeTrackingActive'], context.previousTimeTracking);
-        }
+        rollbackCache(queryClient, context);
       }
     },
 

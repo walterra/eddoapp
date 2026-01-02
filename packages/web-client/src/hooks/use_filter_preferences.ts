@@ -2,6 +2,13 @@ import { useCallback, useMemo } from 'react';
 
 import type { CompletionStatus } from '../components/status_filter';
 import type { TimeRange } from '../components/time_range_filter';
+import {
+  extractCurrentDate,
+  extractSelectedContexts,
+  extractSelectedStatus,
+  extractSelectedTags,
+  extractSelectedTimeRange,
+} from './use_filter_preferences_helpers';
 import { useProfile } from './use_profile';
 
 export interface FilterPreferences {
@@ -33,36 +40,13 @@ export interface UseFilterPreferencesReturn {
 export const useFilterPreferences = (): UseFilterPreferencesReturn => {
   const { profile, isLoading, error, updatePreferences } = useProfile();
 
-  const selectedTags = useMemo<string[]>(
-    () => profile?.preferences?.selectedTags || [],
-    [profile?.preferences?.selectedTags],
-  );
+  const prefs = profile?.preferences;
 
-  const selectedContexts = useMemo<string[]>(
-    () => profile?.preferences?.selectedContexts || [],
-    [profile?.preferences?.selectedContexts],
-  );
-
-  const selectedStatus = useMemo<CompletionStatus>(
-    () => profile?.preferences?.selectedStatus || 'all',
-    [profile?.preferences?.selectedStatus],
-  );
-
-  const selectedTimeRange = useMemo<TimeRange>(
-    () => profile?.preferences?.selectedTimeRange || { type: 'current-week' },
-    [profile?.preferences?.selectedTimeRange],
-  );
-
-  const currentDate = useMemo<Date>(() => {
-    if (profile?.preferences?.currentDate) {
-      const date = new Date(profile.preferences.currentDate);
-      // Validate date is valid (not Invalid Date)
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-    }
-    return new Date();
-  }, [profile?.preferences?.currentDate]);
+  const selectedTags = useMemo(() => extractSelectedTags(prefs), [prefs]);
+  const selectedContexts = useMemo(() => extractSelectedContexts(prefs), [prefs]);
+  const selectedStatus = useMemo(() => extractSelectedStatus(prefs), [prefs]);
+  const selectedTimeRange = useMemo(() => extractSelectedTimeRange(prefs), [prefs]);
+  const currentDate = useMemo(() => extractCurrentDate(prefs), [prefs]);
 
   const setSelectedTags = useCallback(
     async (tags: string[]) => {

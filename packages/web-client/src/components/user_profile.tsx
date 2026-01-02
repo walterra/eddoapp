@@ -1,10 +1,26 @@
 /**
  * User profile settings page component
  */
-import { Button, Card } from 'flowbite-react';
 import { useEffect, useState } from 'react';
 
 import { useProfile } from '../hooks/use_profile';
+import {
+  buildGithubUpdateData,
+  buildProfileUpdateData,
+  initializeGithubState,
+  initializePreferencesState,
+  validateGithubToken,
+  validatePasswordChange,
+  validateProfileForm,
+  validateTelegramId,
+} from './user_profile_handlers';
+import {
+  LoadingState,
+  MessageDisplay,
+  NotFoundState,
+  PageHeader,
+  TabNavigation,
+} from './user_profile_layout';
 import { IntegrationsTab } from './user_profile_tab_integrations';
 import { PreferencesTab } from './user_profile_tab_preferences';
 import { ProfileTab } from './user_profile_tab_profile';
@@ -67,22 +83,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
   useEffect(() => {
     if (profile) {
       setFormState((prev) => ({ ...prev, email: profile.email }));
-      if (profile.preferences) {
-        setPreferencesState({
-          dailyBriefing: profile.preferences.dailyBriefing,
-          briefingTime: profile.preferences.briefingTime || '07:00',
-          printBriefing: profile.preferences.printBriefing || false,
-          dailyRecap: profile.preferences.dailyRecap || false,
-          recapTime: profile.preferences.recapTime || '18:00',
-          printRecap: profile.preferences.printRecap || false,
-        });
-        setGithubState({
-          githubSync: profile.preferences.githubSync || false,
-          githubToken: profile.preferences.githubToken || '',
-          githubSyncInterval: profile.preferences.githubSyncInterval || 60,
-          githubSyncTags: profile.preferences.githubSyncTags?.join(', ') || 'github, gtd:next',
-        });
-      }
+      setPreferencesState(initializePreferencesState(profile.preferences));
+      setGithubState(initializeGithubState(profile.preferences));
     }
   }, [profile]);
 
@@ -164,13 +166,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
     setFormError('');
     setSuccess(null);
 
-    const telegramIdNumber = parseInt(formState.telegramId, 10);
-    if (!formState.telegramId || isNaN(telegramIdNumber) || telegramIdNumber <= 0) {
-      setFormError('Please enter a valid Telegram ID (positive number)');
+    const validationError = validateTelegramId(formState.telegramId);
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
 
-    const result = await linkTelegram(telegramIdNumber);
+    const result = await linkTelegram(parseInt(formState.telegramId, 10));
     if (result.success) {
       setSuccess('Telegram account linked successfully');
       setFormState((prev) => ({ ...prev, telegramId: '' }));
@@ -206,20 +208,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
     setFormError('');
     setSuccess(null);
 
-    if (githubState.githubToken && !githubState.githubToken.match(/^(ghp_|github_pat_)/)) {
-      setFormError('Invalid GitHub token format. Token should start with ghp_ or github_pat_');
+    const tokenError = validateGithubToken(githubState.githubToken);
+    if (tokenError) {
+      setFormError(tokenError);
       return;
     }
 
-    const result = await updatePreferences({
-      githubSync: githubState.githubSync,
-      githubToken: githubState.githubToken || null,
-      githubSyncInterval: githubState.githubSyncInterval,
-      githubSyncTags: githubState.githubSyncTags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    });
+    const result = await updatePreferences(buildGithubUpdateData(githubState));
 
     if (result.success) {
       setSuccess('GitHub sync settings updated successfully');
@@ -319,150 +314,4 @@ export function UserProfile({ onClose }: UserProfileProps) {
       </div>
     </div>
   );
-}
-
-// Helper components
-
-function LoadingState() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <div className="text-lg">Loading profile...</div>
-      </div>
-    </div>
-  );
-}
-
-function NotFoundState({ onClose }: { onClose?: () => void }) {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-md">
-        <div className="text-center">
-          <h3 className="text-xl font-medium text-gray-900">Profile not found</h3>
-          <p className="mt-2 text-sm text-gray-600">Unable to load your profile information.</p>
-          {onClose && (
-            <Button className="mt-4" onClick={onClose}>
-              Go Back
-            </Button>
-          )}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function PageHeader({ onClose }: { onClose?: () => void }) {
-  return (
-    <div className="mb-6 flex items-center justify-between">
-      <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-      {onClose && (
-        <Button color="gray" onClick={onClose}>
-          Back to App
-        </Button>
-      )}
-    </div>
-  );
-}
-
-function TabNavigation({
-  activeTab,
-  onTabChange,
-}: {
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
-}) {
-  const tabs: TabType[] = ['profile', 'security', 'integrations', 'preferences'];
-
-  return (
-    <div className="mb-6 border-b border-gray-200">
-      <nav className="-mb-px flex space-x-8">
-        {tabs.map((tab) => (
-          <button
-            className={`border-b-2 px-1 py-2 text-sm font-medium ${
-              activeTab === tab
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
-            key={tab}
-            onClick={() => onTabChange(tab)}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
-}
-
-function MessageDisplay({ success, error }: { success: string | null; error: string | null }) {
-  if (!success && !error) return null;
-
-  return (
-    <div className="mb-6">
-      {success && (
-        <div className="rounded-lg bg-green-100 p-4 text-sm text-green-700">{success}</div>
-      )}
-      {error && <div className="rounded-lg bg-red-100 p-4 text-sm text-red-700">{error}</div>}
-    </div>
-  );
-}
-
-// Validation helpers
-
-function validateProfileForm(formState: ProfileFormState, _currentEmail?: string): string | null {
-  if (!formState.email) {
-    return 'Email is required';
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email)) {
-    return 'Please enter a valid email address';
-  }
-
-  if (formState.newPassword) {
-    if (!formState.currentPassword) {
-      return 'Current password is required to change password';
-    }
-    if (formState.newPassword.length < 8) {
-      return 'New password must be at least 8 characters long';
-    }
-    if (formState.newPassword !== formState.confirmPassword) {
-      return 'New passwords do not match';
-    }
-  }
-
-  return null;
-}
-
-function validatePasswordChange(formState: ProfileFormState): string | null {
-  if (!formState.currentPassword || !formState.newPassword) {
-    return 'Both current and new passwords are required';
-  }
-
-  if (formState.newPassword.length < 8) {
-    return 'New password must be at least 8 characters long';
-  }
-
-  if (formState.newPassword !== formState.confirmPassword) {
-    return 'New passwords do not match';
-  }
-
-  return null;
-}
-
-function buildProfileUpdateData(
-  formState: ProfileFormState,
-  currentEmail?: string,
-): Record<string, unknown> {
-  const updateData: Record<string, unknown> = {};
-
-  if (formState.email !== currentEmail) {
-    updateData.email = formState.email;
-  }
-
-  if (formState.newPassword) {
-    updateData.currentPassword = formState.currentPassword;
-    updateData.newPassword = formState.newPassword;
-  }
-
-  return updateData;
 }

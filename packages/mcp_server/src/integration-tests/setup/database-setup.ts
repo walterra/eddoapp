@@ -114,6 +114,73 @@ export class DatabaseSetup {
     console.log(`✅ Indexes created for: ${this.dbName}`);
   }
 
+  /**
+   * Check if error indicates index already exists
+   */
+  private isIndexExistsError(error: unknown): boolean {
+    return (
+      error !== null &&
+      typeof error === 'object' &&
+      'statusCode' in error &&
+      error.statusCode === 409
+    );
+  }
+
+  /**
+   * Check if error is retryable (database not ready or conflict)
+   */
+  private isRetryableIndexError(error: unknown): boolean {
+    if (!error || typeof error !== 'object' || !('statusCode' in error)) {
+      return false;
+    }
+    if (error.statusCode === 404) {
+      return true;
+    }
+    if (
+      error.statusCode === 500 &&
+      'reason' in error &&
+      typeof error.reason === 'string' &&
+      error.reason.includes('conflict')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Handle index creation error with retry logic
+   * @returns true if should retry, false if handled
+   */
+  private async handleIndexCreationError(
+    error: unknown,
+    indexName: string,
+    attempt: number,
+    maxRetries: number,
+  ): Promise<boolean> {
+    if (this.isIndexExistsError(error)) {
+      console.log(`ℹ️  Index ${indexName} already exists`);
+      return false;
+    }
+
+    if (this.isRetryableIndexError(error)) {
+      if (attempt === maxRetries) {
+        console.error(
+          `❌ Failed to create index ${indexName} after ${maxRetries} attempts:`,
+          error,
+        );
+        throw error;
+      }
+      console.warn(
+        `⚠️  Attempt ${attempt}/${maxRetries} failed for index ${indexName}, retrying...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+      return true;
+    }
+
+    console.error(`❌ Failed to create index ${indexName}:`, error);
+    throw error;
+  }
+
   private async createSingleIndexWithRetry(
     indexDef: {
       index: { fields: string[] };
@@ -128,40 +195,13 @@ export class DatabaseSetup {
         console.log(`✅ Created index: ${indexDef.name}`);
         return;
       } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          error.statusCode === 409
-        ) {
-          console.log(`ℹ️  Index ${indexDef.name} already exists`);
-          return;
-        } else if (
-          error &&
-          typeof error === 'object' &&
-          'statusCode' in error &&
-          (error.statusCode === 404 ||
-            (error.statusCode === 500 &&
-              'reason' in error &&
-              typeof error.reason === 'string' &&
-              error.reason.includes('conflict')))
-        ) {
-          // Database doesn't exist or conflict - retry with delay
-          if (attempt === maxRetries) {
-            console.error(
-              `❌ Failed to create index ${indexDef.name} after ${maxRetries} attempts:`,
-              error,
-            );
-            throw error;
-          }
-          console.warn(
-            `⚠️  Attempt ${attempt}/${maxRetries} failed for index ${indexDef.name}, retrying...`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
-        } else {
-          console.error(`❌ Failed to create index ${indexDef.name}:`, error);
-          throw error;
-        }
+        const shouldRetry = await this.handleIndexCreationError(
+          error,
+          indexDef.name,
+          attempt,
+          maxRetries,
+        );
+        if (!shouldRetry) return;
       }
     }
   }

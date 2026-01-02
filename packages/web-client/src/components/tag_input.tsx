@@ -1,4 +1,11 @@
-import { type FC, useEffect, useRef, useState } from 'react';
+import { type FC, useCallback } from 'react';
+
+import {
+  filterSuggestions,
+  handleNavigationKey,
+  useClickOutside,
+  useTagInputState,
+} from './tag_input_helpers';
 
 interface TagInputProps {
   tags: string[];
@@ -13,30 +20,37 @@ export const TagInput: FC<TagInputProps> = ({
   placeholder = 'Add tags...',
   suggestions = [],
 }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const {
+    inputValue,
+    setInputValue,
+    showSuggestions,
+    setShowSuggestions,
+    selectedSuggestionIndex,
+    setSelectedSuggestionIndex,
+    inputRef,
+    suggestionsRef,
+    reset,
+  } = useTagInputState();
 
-  const filteredSuggestions = suggestions.filter(
-    (suggestion) =>
-      suggestion.toLowerCase().includes(inputValue.toLowerCase()) && !tags.includes(suggestion),
+  const filteredSuggestions = filterSuggestions(suggestions, inputValue, tags);
+
+  const addTag = useCallback(
+    (tag: string) => {
+      const trimmedTag = tag.trim();
+      if (trimmedTag && !tags.includes(trimmedTag)) {
+        onChange([...tags, trimmedTag]);
+      }
+      reset();
+    },
+    [tags, onChange, reset],
   );
 
-  const addTag = (tag: string) => {
-    const trimmedTag = tag.trim();
-    if (trimmedTag && !tags.includes(trimmedTag)) {
-      onChange([...tags, trimmedTag]);
-    }
-    setInputValue('');
-    setShowSuggestions(false);
-    setSelectedSuggestionIndex(-1);
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    onChange(tags.filter((tag) => tag !== tagToRemove));
-  };
+  const removeTag = useCallback(
+    (tagToRemove: string) => {
+      onChange(tags.filter((tag) => tag !== tagToRemove));
+    },
+    [tags, onChange],
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -49,24 +63,15 @@ export const TagInput: FC<TagInputProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       if (showSuggestions && selectedSuggestionIndex >= 0) {
-        // Add selected suggestion
         addTag(filteredSuggestions[selectedSuggestionIndex]);
       } else if (inputValue.trim()) {
-        // Add typed value
         addTag(inputValue);
       }
-    } else if (e.key === 'ArrowDown') {
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       if (showSuggestions && filteredSuggestions.length > 0) {
-        setSelectedSuggestionIndex((prev) =>
-          prev < filteredSuggestions.length - 1 ? prev + 1 : 0,
-        );
-      }
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (showSuggestions && filteredSuggestions.length > 0) {
-        setSelectedSuggestionIndex((prev) =>
-          prev > 0 ? prev - 1 : filteredSuggestions.length - 1,
+        setSelectedSuggestionIndex(
+          handleNavigationKey(e.key, selectedSuggestionIndex, filteredSuggestions.length),
         );
       }
     } else if (e.key === 'Backspace' && inputValue === '' && tags.length > 0) {
@@ -82,21 +87,7 @@ export const TagInput: FC<TagInputProps> = ({
     inputRef.current?.focus();
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node) &&
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(inputRef, suggestionsRef, () => setShowSuggestions(false));
 
   return (
     <div className="relative">

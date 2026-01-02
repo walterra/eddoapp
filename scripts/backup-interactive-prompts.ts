@@ -5,6 +5,12 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import prompts from 'prompts';
+
+import {
+  createOptionPrompts,
+  hasAllRequiredOptions,
+  mergeConfig,
+} from './backup-interactive-prompts-helpers.js';
 import { DEFAULT_CONFIG } from './backup-utils.js';
 
 export interface BackupConfig {
@@ -159,25 +165,30 @@ export async function getBackupConfig(options: Partial<BackupConfig>): Promise<B
     dryRun: false,
   };
 
-  // If all required options are provided, return without prompting
-  if (
-    options.url &&
-    options.database &&
-    options.backupDir !== undefined &&
-    options.parallelism !== undefined &&
-    options.timeout !== undefined
-  ) {
-    const { baseUrl } = parseUrl(options.url);
+  if (hasAllRequiredOptions(options)) {
+    const { baseUrl } = parseUrl(options.url!);
     return { ...defaults, ...options, url: baseUrl || options.url } as BackupConfig;
   }
 
   console.log(chalk.blue('\n🗄️  CouchDB Interactive Backup\n'));
 
+  const { baseUrl, database } = await promptForUrlAndDatabase(options);
+
+  const optionQuestions = createOptionPrompts(options, defaults);
+  const optionAnswers =
+    optionQuestions.length > 0 ? await prompts(optionQuestions, { onCancel }) : {};
+
+  return mergeConfig(defaults, options, optionAnswers, baseUrl, database);
+}
+
+/** Prompt for URL and database */
+async function promptForUrlAndDatabase(
+  options: Partial<BackupConfig>,
+): Promise<{ baseUrl: string; defaultDb?: string; database?: string }> {
   let baseUrl = '';
   let defaultDb: string | undefined;
   let database = options.database;
 
-  // Handle URL
   if (!options.url) {
     const { url } = await prompts(createUrlPrompt(), { onCancel });
     const parsed = parseUrl(url);
@@ -189,52 +200,9 @@ export async function getBackupConfig(options: Partial<BackupConfig>): Promise<B
     defaultDb = parsed.defaultDb;
   }
 
-  // Handle database
   if (!database) {
     database = await promptForDatabase(baseUrl, defaultDb);
   }
 
-  // Handle other options
-  const optionQuestions: prompts.PromptObject[] = [];
-
-  if (options.backupDir === undefined) {
-    optionQuestions.push({
-      type: 'text',
-      name: 'backupDir',
-      message: 'Backup directory:',
-      initial: defaults.backupDir,
-    });
-  }
-
-  if (options.parallelism === undefined) {
-    optionQuestions.push({
-      type: 'number',
-      name: 'parallelism',
-      message: 'Parallel connections:',
-      initial: defaults.parallelism,
-      min: 1,
-      max: 10,
-    });
-  }
-
-  if (options.timeout === undefined) {
-    optionQuestions.push({
-      type: 'number',
-      name: 'timeout',
-      message: 'Request timeout (ms):',
-      initial: defaults.timeout,
-      min: 10000,
-    });
-  }
-
-  const optionAnswers =
-    optionQuestions.length > 0 ? await prompts(optionQuestions, { onCancel }) : {};
-
-  return {
-    ...defaults,
-    ...options,
-    ...optionAnswers,
-    url: baseUrl || options.url || '',
-    database,
-  };
+  return { baseUrl, defaultDb, database };
 }
