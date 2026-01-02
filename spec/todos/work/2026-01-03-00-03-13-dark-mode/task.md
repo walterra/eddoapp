@@ -76,7 +76,12 @@ Dark mode is expected for productivity tools. Currently, dark mode only works vi
 - [x] Theme toggle functionality works correctly
 - [x] Theme persists in localStorage
 - [x] System preference detection works
-- [ ] **Known Issue**: Flowbite React components (TextInput, Button, Card, etc.) don't automatically adapt to dark mode - requires Flowbite ThemeProvider configuration (separate task)
+- [x] Flowbite components now work in dark mode via `@custom-variant` directive
+- [x] Improved dark mode color palette for better elevation hierarchy
+- [ ] **Polish remaining**: Dark mode is functional but could use refinement:
+  - Flowbite uses `gray-*` colors while app uses `neutral-*` (slight color mismatch)
+  - Elevation distinction could be improved with subtle shadows
+  - Input field borders could be more visible
 
 ## Notes
 
