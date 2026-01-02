@@ -94,18 +94,23 @@ async function fetchPage(
   return { items, totalCount: response.data.total_count };
 }
 
+interface PaginationState {
+  itemsCount: number;
+  allItemsCount: number;
+  perPage: number;
+  page: number;
+  totalCount: number;
+}
+
 /** Determines if pagination should stop based on current state */
-function shouldStopPagination(
-  items: GithubIssue[],
-  allItems: GithubIssue[],
-  perPage: number,
-  page: number,
-  totalCount: number,
-): { stop: boolean; reason?: 'empty' | 'partial' | 'limit' | 'complete' } {
-  if (items.length === 0) return { stop: true, reason: 'empty' };
-  if (items.length < perPage) return { stop: true, reason: 'partial' };
-  if (page > 10) return { stop: true, reason: 'limit' };
-  if (allItems.length >= totalCount) return { stop: true, reason: 'complete' };
+function shouldStopPagination(state: PaginationState): {
+  stop: boolean;
+  reason?: 'empty' | 'partial' | 'limit' | 'complete';
+} {
+  if (state.itemsCount === 0) return { stop: true, reason: 'empty' };
+  if (state.itemsCount < state.perPage) return { stop: true, reason: 'partial' };
+  if (state.page > 10) return { stop: true, reason: 'limit' };
+  if (state.allItemsCount >= state.totalCount) return { stop: true, reason: 'complete' };
   return { stop: false };
 }
 
@@ -139,7 +144,13 @@ export async function fetchAllPagesForQuery(
       allItems.push(...items);
       page++;
 
-      const { stop, reason } = shouldStopPagination(items, allItems, perPage, page, totalCount);
+      const { stop, reason } = shouldStopPagination({
+        itemsCount: items.length,
+        allItemsCount: allItems.length,
+        perPage,
+        page,
+        totalCount,
+      });
 
       if (stop && reason === 'limit') {
         config.logger.warn('Reached GitHub Search API limit (1000 results max)', {

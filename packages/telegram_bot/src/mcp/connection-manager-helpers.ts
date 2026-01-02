@@ -93,3 +93,18 @@ export function isConnectionError(error: unknown): boolean {
     message.includes('socket')
   );
 }
+
+/**
+ * Calculate exponential backoff delay
+ * @param attempt - Current attempt number
+ * @param baseDelayMs - Base delay in milliseconds
+ * @param maxDelayMs - Maximum delay in milliseconds
+ * @returns Delay in milliseconds
+ */
+export function calculateReconnectDelay(
+  attempt: number,
+  baseDelayMs: number,
+  maxDelayMs: number,
+): number {
+  return Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+}

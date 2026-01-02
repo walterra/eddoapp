@@ -20,13 +20,16 @@ export const AddTodo: FC = () => {
   const [todoTags, setTodoTags] = useState<string[]>([]);
   const [validationError, setValidationError] = useState<DatabaseError | null>(null);
 
-  async function addTodo(
-    title: string,
-    context: string,
-    dueDate: string,
-    link: string,
-    tags: string[],
-  ) {
+  interface AddTodoParams {
+    title: string;
+    context: string;
+    dueDate: string;
+    link: string;
+    tags: string[];
+  }
+
+  async function addTodo(params: AddTodoParams) {
+    const { title, context, dueDate, link, tags } = params;
     // sanity check if due date is parsable
     const due = `${dueDate}T23:59:59.999Z`;
     try {
@@ -77,7 +80,13 @@ export const AddTodo: FC = () => {
   function addTodoHandler(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (todoTitle !== '') {
-      addTodo(todoTitle, todoContext, todoDue, todoLink, todoTags);
+      addTodo({
+        title: todoTitle,
+        context: todoContext,
+        dueDate: todoDue,
+        link: todoLink,
+        tags: todoTags,
+      });
     }
   }
 

@@ -81,12 +81,12 @@ function validateHeaderConsistency(
   }
 }
 
-/**
- * Validate user context from MCP headers (for microservice-to-microservice communication)
- */
-export async function validateUserContext(
-  headers: Record<string, string | string[] | undefined>,
-): Promise<MCPAuthResult> {
+/** Extract and validate headers, throw if username missing */
+function extractAuthHeaders(headers: Record<string, string | string[] | undefined>): {
+  username: string;
+  databaseName: string | undefined;
+  telegramId: string | undefined;
+} {
   const username = extractHeader(headers, 'x-user-id');
   const databaseName = extractHeader(headers, 'x-database-name');
   const telegramId = extractHeader(headers, 'x-telegram-id');
@@ -101,29 +101,47 @@ export async function validateUserContext(
     throw createAuthError(401, 'Username required (X-User-ID header)');
   }
 
-  const cacheKey = createCacheKey(username, telegramId);
-  const cacheResult = checkCache(cacheKey);
-  if (cacheResult.hit) {
-    return cacheResult.result!;
+  return { username, databaseName, telegramId };
+}
+
+/** Lookup user and validate status */
+async function lookupAndValidateUser(
+  username: string,
+  cacheKey: string,
+): Promise<{ _id: string; database_name: string; username: string; telegram_id?: number }> {
+  const env = createEnv();
+  const userRegistry = await getUserRegistry(env);
+  const user = await userRegistry.findByUsername(username);
+
+  if (!user) {
+    logUserNotFound(username);
+    userValidationCache.set(cacheKey, createNegativeCacheEntry());
+    throw createAuthError(401, 'Invalid username');
   }
 
+  if (user.status !== 'active') {
+    logUserInactive(user.username, user.status);
+    userValidationCache.set(cacheKey, createNegativeCacheEntry());
+    throw createAuthError(403, 'User account is not active');
+  }
+
+  return user;
+}
+
+/**
+ * Validate user context from MCP headers (for microservice-to-microservice communication)
+ */
+export async function validateUserContext(
+  headers: Record<string, string | string[] | undefined>,
+): Promise<MCPAuthResult> {
+  const { username, databaseName, telegramId } = extractAuthHeaders(headers);
+
+  const cacheKey = createCacheKey(username, telegramId);
+  const cacheResult = checkCache(cacheKey);
+  if (cacheResult.hit) return cacheResult.result!;
+
   try {
-    const env = createEnv();
-    const userRegistry = await getUserRegistry(env);
-    const user = await userRegistry.findByUsername(username);
-
-    if (!user) {
-      logUserNotFound(username);
-      userValidationCache.set(cacheKey, createNegativeCacheEntry());
-      throw createAuthError(401, 'Invalid username');
-    }
-
-    if (user.status !== 'active') {
-      logUserInactive(user.username, user.status);
-      userValidationCache.set(cacheKey, createNegativeCacheEntry());
-      throw createAuthError(403, 'User account is not active');
-    }
-
+    const user = await lookupAndValidateUser(username, cacheKey);
     validateHeaderConsistency(user, databaseName, telegramId);
 
     const authResult: MCPAuthResult = {
@@ -134,13 +152,9 @@ export async function validateUserContext(
 
     logAuthSuccess(authResult);
     userValidationCache.set(cacheKey, createPositiveCacheEntry(authResult));
-
     return authResult;
   } catch (error) {
-    if (error instanceof Response) {
-      throw error;
-    }
-
+    if (error instanceof Response) throw error;
     logAuthError(error, username);
     throw createAuthError(500, 'Authentication service error');
   }

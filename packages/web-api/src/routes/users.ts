@@ -265,6 +265,27 @@ usersApp.put('/preferences', async (c) => {
   }
 });
 
+interface SSEStream {
+  writeSSE: (data: { event?: string; data: string; id?: string }) => Promise<void>;
+}
+
+/** Send SSE heartbeat message */
+async function sendHeartbeat(stream: SSEStream): Promise<void> {
+  await stream.writeSSE({
+    event: 'heartbeat',
+    data: JSON.stringify({ timestamp: new Date().toISOString() }),
+  });
+}
+
+/** Send SSE connected message */
+async function sendConnectedMessage(stream: SSEStream, docId: string): Promise<void> {
+  await stream.writeSSE({
+    event: 'connected',
+    data: JSON.stringify({ status: 'connected', docId }),
+    id: '0',
+  });
+}
+
 // SSE endpoint for real-time preference updates
 usersApp.get('/preferences/stream', async (c) => {
   const payload = c.get('jwtPayload') as jwt.JwtPayload;
@@ -289,36 +310,22 @@ usersApp.get('/preferences/stream', async (c) => {
         selector: { _id: docId },
       });
 
-      await stream.writeSSE({
-        event: 'connected',
-        data: JSON.stringify({ status: 'connected', docId }),
-        id: '0',
-      });
+      await sendConnectedMessage(stream, docId);
 
       changesEmitter.on('change', async (change) => {
-        if (change.id !== docId) return;
-        const doc = change.doc;
-        if (!doc) return;
-
+        if (change.id !== docId || !change.doc) return;
         await stream.writeSSE({
           event: 'preference-update',
-          data: JSON.stringify(createSafeProfile(doc)),
+          data: JSON.stringify(createSafeProfile(change.doc)),
           id: String(change.seq),
         });
       });
 
-      changesEmitter.on('error', (err) => {
-        console.error('[SSE] Changes feed error:', err);
-      });
+      changesEmitter.on('error', (err) => console.error('[SSE] Changes feed error:', err));
 
       while (isConnected) {
         await stream.sleep(30000);
-        if (isConnected) {
-          await stream.writeSSE({
-            event: 'heartbeat',
-            data: JSON.stringify({ timestamp: new Date().toISOString() }),
-          });
-        }
+        if (isConnected) await sendHeartbeat(stream);
       }
     } catch (error) {
       console.error('[SSE] Stream error:', error);

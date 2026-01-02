@@ -28,139 +28,103 @@ export interface RateLimitManager {
   getLastRateLimitInfo: () => RateLimitInfo | null;
 }
 
+/** Sleeps for specified milliseconds */
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Calculates exponential backoff: baseDelay * 2^(retryCount - 1) */
+const calculateBackoffDelay = (baseDelayMs: number, retryCount: number): number =>
+  baseDelayMs * Math.pow(2, retryCount - 1);
+
+/** Creates a request queue manager */
+function createRequestQueueManager() {
+  let isRequestInProgress = false;
+  const requestQueue: Array<() => void> = [];
+
+  const processQueue = (): void => {
+    if (isRequestInProgress || requestQueue.length === 0) return;
+    const nextRequest = requestQueue.shift();
+    if (nextRequest) nextRequest();
+  };
+
+  const enqueue = async (): Promise<void> =>
+    new Promise<void>((resolve) => {
+      requestQueue.push(resolve);
+      processQueue();
+    });
+
+  const setInProgress = (value: boolean): void => {
+    isRequestInProgress = value;
+    if (!value) processQueue();
+  };
+
+  return { enqueue, setInProgress };
+}
+
+/** Creates a throttle manager */
+function createThrottleManager(minIntervalMs: number, logger: RateLimitManagerConfig['logger']) {
+  let lastRequestTime = 0;
+
+  return async (): Promise<void> => {
+    const timeSinceLastRequest = Date.now() - lastRequestTime;
+    if (timeSinceLastRequest < minIntervalMs) {
+      const waitMs = minIntervalMs - timeSinceLastRequest;
+      logger.debug('Throttling request', { waitMs });
+      await sleep(waitMs);
+    }
+    lastRequestTime = Date.now();
+  };
+}
+
 /**
  * Creates a rate limit manager for GitHub API requests
  * Provides automatic retry, throttling, and monitoring
  */
 export function createRateLimitManager(config: RateLimitManagerConfig): RateLimitManager {
-  let lastRequestTime = 0;
-  // Rate limit info is tracked in client.ts, not here
-  // This is kept for the getLastRateLimitInfo() API but always returns null
   const lastRateLimitInfo: RateLimitInfo | null = null;
-  let isRequestInProgress = false;
-  const requestQueue: Array<() => void> = [];
+  const queue = createRequestQueueManager();
+  const throttle = createThrottleManager(config.minRequestIntervalMs, config.logger);
 
-  /**
-   * Sleeps for specified milliseconds
-   */
-  const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  };
-
-  /**
-   * Calculates exponential backoff delay
-   * Formula: baseDelay * 2^(retryCount - 1)
-   * Examples: 1s, 2s, 4s, 8s...
-   */
-  const calculateBackoffDelay = (retryCount: number): number => {
-    return config.baseDelayMs * Math.pow(2, retryCount - 1);
-  };
-
-  /**
-   * Enforces minimum interval between requests (throttling)
-   */
-  const throttleRequest = async (): Promise<void> => {
-    const now = Date.now();
-    const timeSinceLastRequest = now - lastRequestTime;
-
-    if (timeSinceLastRequest < config.minRequestIntervalMs) {
-      const waitMs = config.minRequestIntervalMs - timeSinceLastRequest;
-      config.logger.debug('Throttling request', { waitMs });
-      await sleep(waitMs);
-    }
-
-    lastRequestTime = Date.now();
-  };
-
-  /**
-   * Processes next request in queue
-   */
-  const processQueue = (): void => {
-    if (isRequestInProgress || requestQueue.length === 0) {
-      return;
-    }
-
-    const nextRequest = requestQueue.shift();
-    if (nextRequest) {
-      nextRequest();
-    }
-  };
-
-  /**
-   * Queues a request and waits for it to be processed
-   */
-  const enqueueRequest = async (): Promise<void> => {
-    return new Promise<void>((resolve) => {
-      requestQueue.push(resolve);
-      processQueue();
-    });
-  };
-
-  /**
-   * Executes a function with rate limit handling
-   * Includes throttling, automatic retry, and rate limit monitoring
-   */
   const executeWithRateLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
     let retryCount = 0;
 
     while (retryCount <= config.maxRetries) {
       try {
-        // Queue and throttle request
-        await enqueueRequest();
-        isRequestInProgress = true;
-        await throttleRequest();
+        await queue.enqueue();
+        queue.setInProgress(true);
+        await throttle();
 
-        // Execute function
         const result = await fn();
-
-        // Success - process next queued request
-        isRequestInProgress = false;
-        processQueue();
-
+        queue.setInProgress(false);
         return result;
       } catch (error) {
-        isRequestInProgress = false;
-        processQueue();
+        queue.setInProgress(false);
 
-        // Check if it's a rate limit error
-        if (isRateLimitError(error)) {
-          retryCount++;
+        if (!isRateLimitError(error)) throw error;
 
-          config.logger.warn('GitHub API rate limit hit', {
+        retryCount++;
+        config.logger.warn('GitHub API rate limit hit', {
+          retryCount,
+          maxRetries: config.maxRetries,
+          error: error.message,
+        });
+
+        if (retryCount > config.maxRetries) {
+          config.logger.error('Max retries exceeded for rate limit', {
             retryCount,
             maxRetries: config.maxRetries,
-            error: error.message,
           });
-
-          // Max retries exceeded
-          if (retryCount > config.maxRetries) {
-            config.logger.error('Max retries exceeded for rate limit', {
-              retryCount,
-              maxRetries: config.maxRetries,
-            });
-
-            // Error is already enhanced with rate limit info from client.ts if available
-            throw error;
-          }
-
-          // Use exponential backoff for retry
-          const backoffDelay = calculateBackoffDelay(retryCount);
-          config.logger.info('Retrying with exponential backoff', {
-            retryCount,
-            backoffDelayMs: backoffDelay,
-          });
-          await sleep(backoffDelay);
-
-          // Continue to next retry iteration
-          continue;
+          throw error;
         }
 
-        // Not a rate limit error - throw immediately
-        throw error;
+        const backoffDelay = calculateBackoffDelay(config.baseDelayMs, retryCount);
+        config.logger.info('Retrying with exponential backoff', {
+          retryCount,
+          backoffDelayMs: backoffDelay,
+        });
+        await sleep(backoffDelay);
       }
     }
 
-    // Should never reach here, but TypeScript needs it
     throw new Error('Unexpected error in rate limit manager');
   };
 
