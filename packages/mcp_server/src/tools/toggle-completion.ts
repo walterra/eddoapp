@@ -9,7 +9,11 @@ import { createErrorResponse, createSuccessResponse } from './response-helpers.j
 import type { GetUserDb, ToolContext } from './types.js';
 
 /** Tool description for LLM consumption */
-export const toggleCompletionDescription = 'Mark a todo as completed or uncompleted';
+export const toggleCompletionDescription = `Mark a todo as completed or uncompleted
+
+Usage examples:
+- Mark as completed: {"id": "2025-06-19T10:30:00.000Z", "completed": true}
+- Mark as incomplete: {"id": "2025-06-19T10:30:00.000Z", "completed": false}`;
 
 /** Zod schema for toggleTodoCompletion parameters */
 export const toggleCompletionParameters = z.object({
