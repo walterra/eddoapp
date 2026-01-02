@@ -15,12 +15,12 @@ export const ViewModeToggle: FC<ViewModeToggleProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-1 dark:border-gray-600 dark:bg-gray-800">
+    <div className="flex items-center gap-1 rounded-lg border border-neutral-300 bg-white p-1 dark:border-neutral-600 dark:bg-neutral-800">
       <button
         className={`flex items-center gap-1 rounded px-2 py-1 text-sm transition-colors ${
           viewMode === 'kanban'
-            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+            : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
         }`}
         disabled={isLoading}
         onClick={() => onViewModeChange('kanban')}
@@ -33,8 +33,8 @@ export const ViewModeToggle: FC<ViewModeToggleProps> = ({
       <button
         className={`flex items-center gap-1 rounded px-2 py-1 text-sm transition-colors ${
           viewMode === 'table'
-            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+            : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
         }`}
         disabled={isLoading}
         onClick={() => onViewModeChange('table')}

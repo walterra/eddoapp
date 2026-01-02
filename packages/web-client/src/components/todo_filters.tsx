@@ -158,7 +158,7 @@ const PeriodNavigation: FC<PeriodNavigationProps> = ({
         <RiArrowLeftSLine size="2em" />
       </Button>{' '}
       <button
-        className={`cursor-pointer font-semibold ${TRANSITION} rounded text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 ${FOCUS_RING}`}
+        className={`cursor-pointer font-semibold ${TRANSITION} hover:text-primary-600 dark:hover:text-primary-400 rounded text-neutral-900 dark:text-white ${FOCUS_RING}`}
         onClick={onReset}
         title="Return to current period"
         type="button"
@@ -181,7 +181,7 @@ export const TodoFilters: FC<TodoFiltersProps> = (props) => {
   };
 
   return (
-    <div className="flex items-center space-x-3 border-b border-gray-200 bg-white pb-4 dark:border-gray-700 dark:bg-gray-800">
+    <div className="flex items-center space-x-3 border-b border-neutral-200 bg-white pb-4 dark:border-neutral-700 dark:bg-neutral-800">
       <FilterRow
         allContexts={allContexts}
         allTags={allTags}

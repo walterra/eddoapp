@@ -2,4 +2,4 @@
 'eddo-app': minor
 ---
 
-Add centralized design token system with Inter font, semantic color palette, typography scale, and spacing system
+Add design token system with Inter font and migrate all components to semantic color tokens

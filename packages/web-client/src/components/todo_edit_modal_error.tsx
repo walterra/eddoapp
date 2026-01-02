@@ -10,13 +10,13 @@ interface ErrorDisplayProps {
 }
 
 export const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onClear }) => (
-  <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-700 dark:bg-red-900">
+  <div className="border-error-200 bg-error-50 dark:border-error-700 dark:bg-error-900 mb-4 rounded-md border px-4 py-3">
     <div className="flex items-start">
       <div className="flex-shrink-0">
         <ErrorIcon />
       </div>
       <div className="ml-3 flex-1">
-        <p className="text-sm text-red-700 dark:text-red-200">
+        <p className="text-error-700 dark:text-error-200 text-sm">
           {error.type === DatabaseErrorType.SYNC_CONFLICT
             ? 'This todo was modified by another device. Please close and try again.'
             : error.message}
@@ -24,7 +24,7 @@ export const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onClear }) => (
       </div>
       <div className="ml-auto pl-3">
         <button
-          className="inline-flex text-red-400 hover:text-red-500"
+          className="text-error-400 hover:text-error-500 inline-flex"
           onClick={onClear}
           type="button"
         >
@@ -37,7 +37,7 @@ export const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onClear }) => (
 
 function ErrorIcon() {
   return (
-    <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="text-error-400 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
         d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         strokeLinecap="round"

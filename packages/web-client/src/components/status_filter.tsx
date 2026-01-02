@@ -51,7 +51,7 @@ export const StatusFilter: FC<StatusFilterProps> = ({ selectedStatus, onStatusCh
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full z-20 mt-1 max-h-96 w-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+          <div className="absolute top-full z-20 mt-1 max-h-96 w-48 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-600 dark:bg-neutral-800">
             <div className="space-y-1">
               {statusOptions.map((option) => (
                 <StatusOption

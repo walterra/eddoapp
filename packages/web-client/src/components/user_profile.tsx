@@ -228,7 +228,7 @@ export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
   if (!profile) return <NotFoundState onClose={onClose} />;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-neutral-50 p-4">
       <div className="mx-auto max-w-4xl">
         <PageHeader onClose={onClose} />
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />

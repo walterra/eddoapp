@@ -113,8 +113,8 @@ describe('TagDisplay', () => {
       render(<TagDisplay maxTags={2} tags={manyTags} />);
       const remainingCount = screen.getByText('+3');
       expect(remainingCount).toHaveClass(
-        'bg-gray-100',
-        'text-gray-600',
+        'bg-neutral-100',
+        'text-neutral-600',
         'rounded-full',
         'font-medium',
       );
@@ -129,16 +129,16 @@ describe('TagDisplay', () => {
         'inline-flex',
         'items-center',
         'rounded-full',
-        'bg-blue-100',
+        'bg-primary-100',
         'font-medium',
-        'text-blue-800',
+        'text-primary-800',
       );
     });
 
     it('applies dark mode classes to tags', () => {
       render(<TagDisplay tags={['work']} />);
       const tag = screen.getByText('work');
-      expect(tag).toHaveClass('dark:bg-blue-900', 'dark:text-blue-300');
+      expect(tag).toHaveClass('dark:bg-primary-900', 'dark:text-primary-300');
     });
 
     it('applies correct layout classes to container', () => {

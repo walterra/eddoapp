@@ -51,9 +51,9 @@ interface DateInputProps {
 
 const DateInput: FC<DateInputProps> = ({ label, value, onChange }) => (
   <div>
-    <label className="block text-xs text-gray-500 dark:text-gray-400">{label}</label>
+    <label className="block text-xs text-neutral-500 dark:text-neutral-400">{label}</label>
     <input
-      className={`mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-xs ${TRANSITION} dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 ${FOCUS_RING}`}
+      className={`mt-1 block w-full rounded border border-neutral-300 px-2 py-1 text-xs ${TRANSITION} dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 ${FOCUS_RING}`}
       onChange={(e) => onChange(e.target.value)}
       type="date"
       value={value}
@@ -76,11 +76,11 @@ const CustomDateRange: FC<CustomDateRangeProps> = ({
   onEndDateChange,
   onApply,
 }) => (
-  <div className="mt-2 space-y-2 rounded bg-gray-50 p-2 dark:bg-gray-700">
+  <div className="mt-2 space-y-2 rounded bg-neutral-50 p-2 dark:bg-neutral-700">
     <DateInput label="Start date" onChange={onStartDateChange} value={startDate} />
     <DateInput label="End date" onChange={onEndDateChange} value={endDate} />
     <button
-      className={`w-full rounded bg-blue-600 px-2 py-1 text-xs text-white ${TRANSITION} hover:bg-blue-700 disabled:opacity-50 ${FOCUS_RING}`}
+      className={`bg-primary-600 w-full rounded px-2 py-1 text-xs text-white ${TRANSITION} hover:bg-primary-700 disabled:opacity-50 ${FOCUS_RING}`}
       disabled={!startDate || !endDate}
       onClick={onApply}
       type="button"
@@ -136,9 +136,9 @@ const DropdownContent: FC<DropdownContentProps> = ({
   handleTimeRangeSelect,
   handleCustomRangeApply,
 }) => (
-  <div className="absolute top-full z-20 mt-1 max-h-96 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+  <div className="absolute top-full z-20 mt-1 max-h-96 w-64 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800">
     <div className="mb-2">
-      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Time range</h3>
+      <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Time range</h3>
     </div>
     <div className="space-y-1">
       {timeRangeOptions.map((option) => (

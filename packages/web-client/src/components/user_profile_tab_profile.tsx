@@ -68,7 +68,7 @@ const PasswordChangeSection: FC<PasswordChangeSectionProps> = ({
   onConfirmPasswordChange,
 }) => (
   <div className="space-y-4 border-t pt-6">
-    <h3 className="text-lg font-medium text-gray-900">Change Password (Optional)</h3>
+    <h3 className="text-lg font-medium text-neutral-900">Change Password (Optional)</h3>
     <PasswordField
       id="currentPassword"
       isLoading={isLoading}
@@ -131,7 +131,7 @@ export const ProfileTab: FC<ProfileTabProps> = ({
   <Card>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
+        <h2 className="text-xl font-semibold text-neutral-900">Profile Information</h2>
         <Button color={editMode ? 'gray' : 'blue'} disabled={isLoading} onClick={onEditToggle}>
           {editMode ? 'Cancel' : 'Edit'}
         </Button>

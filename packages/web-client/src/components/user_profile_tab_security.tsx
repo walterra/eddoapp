@@ -36,7 +36,7 @@ const PasswordField: FC<PasswordFieldProps> = ({
       type="password"
       value={value}
     />
-    {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+    {hint && <p className="mt-1 text-xs text-neutral-500">{hint}</p>}
   </div>
 );
 
@@ -87,7 +87,7 @@ export const SecurityTab: FC<SecurityTabProps> = ({
   <div className="space-y-6">
     <Card>
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
+        <h2 className="text-xl font-semibold text-neutral-900">Change Password</h2>
         <div className="space-y-4">
           <PasswordField
             id="secCurrentPassword"

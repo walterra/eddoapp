@@ -21,7 +21,7 @@ export const TagDisplay: FC<TagDisplayProps> = ({ tags, size = 'xs', maxTags }) 
     <div className="flex flex-wrap gap-1">
       {displayTags.map((tag) => (
         <span
-          className={`inline-flex items-center rounded-full bg-blue-100 font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300 ${sizeClasses[size]}`}
+          className={`bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300 inline-flex items-center rounded-full font-medium ${sizeClasses[size]}`}
           key={tag}
         >
           {tag}
@@ -29,7 +29,7 @@ export const TagDisplay: FC<TagDisplayProps> = ({ tags, size = 'xs', maxTags }) 
       ))}
       {remainingCount > 0 && (
         <span
-          className={`inline-flex items-center rounded-full bg-gray-100 font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300 ${sizeClasses[size]}`}
+          className={`inline-flex items-center rounded-full bg-neutral-100 font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 ${sizeClasses[size]}`}
         >
           +{remainingCount}
         </span>

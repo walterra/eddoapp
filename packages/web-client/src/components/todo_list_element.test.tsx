@@ -111,7 +111,7 @@ describe('TodoListElement', () => {
       // Find the span with completed styling
       const styledSpan = container.querySelector('.line-through');
       expect(styledSpan).toBeInTheDocument();
-      expect(styledSpan).toHaveClass('text-gray-400');
+      expect(styledSpan).toHaveClass('text-neutral-400');
     });
   });
 

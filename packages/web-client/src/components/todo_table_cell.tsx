@@ -26,13 +26,17 @@ const TitleCell: FC<{ todo: Todo; error: DatabaseError | null; widthClass: strin
   widthClass,
 }) => (
   <td className={`px-2 py-1 text-xs ${widthClass}`}>
-    {error && <div className="mb-0.5 text-xs text-red-600 dark:text-red-400">Failed to update</div>}
+    {error && (
+      <div className="text-error-600 dark:text-error-400 mb-0.5 text-xs">Failed to update</div>
+    )}
     <span
-      className={todo.completed ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-white'}
+      className={
+        todo.completed ? 'text-neutral-400 line-through' : 'text-neutral-900 dark:text-white'
+      }
     >
       {todo.link !== null ? (
         <a
-          className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+          className="text-primary-600 dark:text-primary-500 font-medium hover:underline"
           href={todo.link}
           rel="noreferrer"
           target="_BLANK"
@@ -47,14 +51,14 @@ const TitleCell: FC<{ todo: Todo; error: DatabaseError | null; widthClass: strin
 );
 
 const ContextCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
-  <td className={`px-2 py-1 text-xs text-gray-700 dark:text-gray-300 ${widthClass}`}>
+  <td className={`px-2 py-1 text-xs text-neutral-700 dark:text-neutral-300 ${widthClass}`}>
     <FormattedMessage message={todo.context || CONTEXT_DEFAULT} />
   </td>
 );
 
 const DueCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
   <td
-    className={`px-2 py-1 text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+    className={`px-2 py-1 text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300 ${widthClass}`}
   >
     {todo.due.split('T')[0]}
   </td>
@@ -65,7 +69,7 @@ const TagsCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) 
     {todo.tags.length > 0 ? (
       <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
     ) : (
-      <span className="text-xs text-gray-400">-</span>
+      <span className="text-xs text-neutral-400">-</span>
     )}
   </td>
 );
@@ -75,7 +79,7 @@ const TimeTrackedCell: FC<{ activeDuration: number; widthClass: string }> = ({
   widthClass,
 }) => (
   <td
-    className={`px-2 py-1 text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+    className={`px-2 py-1 text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300 ${widthClass}`}
   >
     {activeDuration > 0 ? getFormattedDuration(activeDuration) : '-'}
   </td>
@@ -100,7 +104,7 @@ const StatusCell: FC<StatusCellProps> = ({ todo, isUpdating, onToggleCheckbox, w
 
 const CompletedCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
   <td
-    className={`px-2 py-1 text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+    className={`px-2 py-1 text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300 ${widthClass}`}
   >
     {todo.completed ? format(new Date(todo.completed), 'yyyy-MM-dd HH:mm') : '-'}
   </td>
@@ -108,7 +112,7 @@ const CompletedCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClas
 
 const RepeatCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
   <td
-    className={`px-2 py-1 text-xs whitespace-nowrap text-gray-700 dark:text-gray-300 ${widthClass}`}
+    className={`px-2 py-1 text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300 ${widthClass}`}
   >
     {todo.repeat ? `${todo.repeat} days` : '-'}
   </td>
@@ -118,7 +122,7 @@ const LinkCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) 
   <td className={`px-2 py-1 text-xs ${widthClass}`}>
     {todo.link ? (
       <a
-        className="text-blue-600 hover:underline dark:text-blue-500"
+        className="text-primary-600 dark:text-primary-500 hover:underline"
         href={todo.link}
         rel="noreferrer"
         target="_BLANK"
@@ -132,7 +136,7 @@ const LinkCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) 
 );
 
 const DescriptionCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
-  <td className={`px-2 py-1 text-xs text-gray-700 dark:text-gray-300 ${widthClass}`}>
+  <td className={`px-2 py-1 text-xs text-neutral-700 dark:text-neutral-300 ${widthClass}`}>
     {todo.description || '-'}
   </td>
 );

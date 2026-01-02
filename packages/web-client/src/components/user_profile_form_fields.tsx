@@ -18,8 +18,8 @@ export function ReadOnlyField({ id, label, value, hint }: ReadOnlyFieldProps) {
   return (
     <div>
       <Label htmlFor={id}>{label}</Label>
-      <TextInput className="bg-gray-50" disabled id={id} type="text" value={value} />
-      {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+      <TextInput className="bg-neutral-50" disabled id={id} type="text" value={value} />
+      {hint && <p className="mt-1 text-xs text-neutral-500">{hint}</p>}
     </div>
   );
 }
@@ -64,7 +64,7 @@ export function DateField({ id, label, date }: DateFieldProps) {
   return (
     <div>
       <Label htmlFor={id}>{label}</Label>
-      <TextInput className="bg-gray-50" disabled id={id} type="text" value={formatDate(date)} />
+      <TextInput className="bg-neutral-50" disabled id={id} type="text" value={formatDate(date)} />
     </div>
   );
 }
@@ -100,7 +100,7 @@ export function PasswordField({
         type="password"
         value={value}
       />
-      {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-neutral-500">{hint}</p>}
     </div>
   );
 }

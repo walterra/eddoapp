@@ -20,10 +20,10 @@ interface TagBadgeProps {
 }
 
 const TagBadge: FC<TagBadgeProps> = ({ tag, onRemove }) => (
-  <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+  <span className="bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium">
     {tag}
     <button
-      className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+      className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200 ml-1"
       onClick={onRemove}
       type="button"
     >
@@ -46,13 +46,13 @@ const SuggestionList: FC<SuggestionListProps> = ({
   suggestionsRef,
 }) => (
   <div
-    className="absolute top-full z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+    className="absolute top-full z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-md border border-neutral-200 bg-white shadow-lg dark:border-neutral-600 dark:bg-neutral-700"
     ref={suggestionsRef}
   >
     {suggestions.slice(0, 5).map((suggestion, index) => (
       <button
-        className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-600 ${
-          index === selectedIndex ? 'bg-blue-100 dark:bg-blue-900' : ''
+        className={`block w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-600 ${
+          index === selectedIndex ? 'bg-primary-100 dark:bg-primary-900' : ''
         }`}
         key={suggestion}
         onClick={() => onSelect(suggestion)}
@@ -112,7 +112,7 @@ interface TagInputContainerProps {
 }
 
 const TagInputContainer: FC<TagInputContainerProps> = ({ children }) => (
-  <div className="focus-within:ring-opacity-50 flex flex-wrap items-center gap-1 rounded-lg border border-gray-300 bg-gray-50 p-2 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
+  <div className="focus-within:ring-opacity-50 focus-within:border-primary-500 focus-within:ring-primary-500 flex flex-wrap items-center gap-1 rounded-lg border border-neutral-300 bg-neutral-50 p-2 focus-within:ring-2 dark:border-neutral-600 dark:bg-neutral-700">
     {children}
   </div>
 );
@@ -128,7 +128,7 @@ interface InputFieldProps {
 
 const InputField: FC<InputFieldProps> = (props) => (
   <input
-    className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+    className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
     onChange={props.onChange}
     onFocus={props.onFocus}
     onKeyDown={props.onKeyDown}

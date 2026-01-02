@@ -135,7 +135,7 @@ export const TodoBoard: FC<TodoBoardProps> = (props) => {
       data.activitiesQuery.refetch();
     };
     return (
-      <div className="bg-gray-50 p-8 dark:bg-gray-800">
+      <div className="bg-neutral-50 p-8 dark:bg-neutral-800">
         <DatabaseErrorFallback
           error={data.displayError}
           onDismiss={handleError}
@@ -148,7 +148,7 @@ export const TodoBoard: FC<TodoBoardProps> = (props) => {
   if (data.showLoadingSpinner) return <LoadingSpinner />;
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800">
+    <div className="bg-neutral-50 dark:bg-neutral-800">
       {data.displayError && data.todos.length > 0 && (
         <div className="px-4 pt-2">
           <DatabaseErrorMessage error={data.displayError} onDismiss={() => setError(null)} />
@@ -173,11 +173,11 @@ export const TodoBoard: FC<TodoBoardProps> = (props) => {
 const LoadingSpinner: FC = () => (
   <div
     aria-label="Loading todos"
-    className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
+    className="flex min-h-64 items-center justify-center bg-neutral-50 dark:bg-neutral-800"
     role="status"
   >
     <Spinner aria-label="Loading" size="lg" />
-    <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
+    <span className="ml-3 text-neutral-600 dark:text-neutral-400">Loading todos...</span>
   </div>
 );
 

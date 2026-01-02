@@ -274,10 +274,10 @@ describe('DatabaseErrorFallback', () => {
 
       const retryButton = screen.getByText('Try Again');
       expect(retryButton).toHaveClass(
-        'bg-blue-600',
+        'bg-primary-600',
         'text-white',
-        'hover:bg-blue-700',
-        'focus:ring-blue-500',
+        'hover:bg-primary-700',
+        'focus:ring-primary-500',
       );
     });
 
@@ -286,7 +286,11 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       const cleanupButton = screen.getByText('Free Up Space');
-      expect(cleanupButton).toHaveClass('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+      expect(cleanupButton).toHaveClass(
+        'bg-neutral-200',
+        'text-neutral-700',
+        'hover:bg-neutral-300',
+      );
     });
 
     it('applies correct styling to dismiss button', () => {
@@ -294,7 +298,11 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} onDismiss={mockOnDismiss} />);
 
       const dismissButton = screen.getByText('Dismiss');
-      expect(dismissButton).toHaveClass('border-gray-300', 'text-gray-600', 'hover:bg-gray-50');
+      expect(dismissButton).toHaveClass(
+        'border-neutral-300',
+        'text-neutral-600',
+        'hover:bg-neutral-50',
+      );
     });
   });
 });

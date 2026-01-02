@@ -52,12 +52,12 @@ export const ContextColumn: FC<ContextColumnProps> = ({
 };
 
 const ContextHeader: FC<{ context: string; duration: string }> = ({ context, duration }) => (
-  <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
+  <div className="pt-2 pb-2 text-xs font-semibold tracking-wide text-neutral-700 uppercase dark:text-neutral-300">
     <div className="flex items-center justify-between">
       <div>
         <FormattedMessage message={context} />
       </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">{duration}</div>
+      <div className="text-xs text-neutral-500 dark:text-neutral-400">{duration}</div>
     </div>
   </div>
 );
@@ -122,7 +122,7 @@ const DateGroup: FC<DateGroupProps> = ({
 
 const DateHeader: FC<{ date: string; duration: string }> = ({ date, duration }) => (
   <div className="mb-1 flex items-center justify-between text-xs">
-    <div className="font-medium text-gray-600 dark:text-gray-400">{date}</div>
-    <div className="text-xs text-gray-500 dark:text-gray-500">{duration}</div>
+    <div className="font-medium text-neutral-600 dark:text-neutral-400">{date}</div>
+    <div className="text-xs text-neutral-500 dark:text-neutral-500">{duration}</div>
   </div>
 );

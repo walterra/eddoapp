@@ -102,7 +102,7 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
       data.activitiesQuery.refetch();
     };
     return (
-      <div className="bg-gray-50 p-8 dark:bg-gray-800">
+      <div className="bg-neutral-50 p-8 dark:bg-neutral-800">
         <DatabaseErrorFallback
           error={data.displayError}
           onDismiss={handleError}
@@ -115,7 +115,7 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
   if (data.showLoadingSpinner) return <LoadingSpinner />;
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800">
+    <div className="bg-neutral-50 dark:bg-neutral-800">
       {data.displayError && data.todos.length > 0 && (
         <div className="px-4 pt-2">
           <DatabaseErrorMessage error={data.displayError} onDismiss={() => setError(null)} />
@@ -146,11 +146,11 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
 const LoadingSpinner: FC = () => (
   <div
     aria-label="Loading todos"
-    className="flex min-h-64 items-center justify-center bg-gray-50 dark:bg-gray-800"
+    className="flex min-h-64 items-center justify-center bg-neutral-50 dark:bg-neutral-800"
     role="status"
   >
     <Spinner aria-label="Loading" size="lg" />
-    <span className="ml-3 text-gray-600 dark:text-gray-400">Loading todos...</span>
+    <span className="ml-3 text-neutral-600 dark:text-neutral-400">Loading todos...</span>
   </div>
 );
 
@@ -203,10 +203,10 @@ const ContextGroup: FC<ContextGroupProps> = ({
 }) => (
   <div className="mb-4">
     <ContextHeader context={context} duration={durationByContext[context]} />
-    <div className="overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <div className="overflow-hidden rounded border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+      <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
         <TableHeader selectedColumns={selectedColumns} />
-        <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+        <tbody className="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
           {contextTodos.map((todo) => (
             <TodoRow
               activeDate={format(currentDate, 'yyyy-MM-dd')}
@@ -224,19 +224,19 @@ const ContextGroup: FC<ContextGroupProps> = ({
 
 const ContextHeader: FC<{ context: string; duration: string }> = ({ context, duration }) => (
   <div className="mb-1 flex items-center justify-between">
-    <h3 className="text-xs font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
+    <h3 className="text-xs font-semibold tracking-wide text-neutral-700 uppercase dark:text-neutral-300">
       <FormattedMessage message={context} />
     </h3>
-    <span className="text-xs text-gray-500 dark:text-gray-400">{duration}</span>
+    <span className="text-xs text-neutral-500 dark:text-neutral-400">{duration}</span>
   </div>
 );
 
 const TableHeader: FC<{ selectedColumns: string[] }> = ({ selectedColumns }) => (
-  <thead className="bg-gray-50 dark:bg-gray-700">
+  <thead className="bg-neutral-50 dark:bg-neutral-700">
     <tr>
       {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
         <th
-          className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400 ${getColumnWidthClass(columnId)}`}
+          className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400 ${getColumnWidthClass(columnId)}`}
           key={columnId}
           scope="col"
         >
@@ -244,7 +244,7 @@ const TableHeader: FC<{ selectedColumns: string[] }> = ({ selectedColumns }) => 
         </th>
       ))}
       <th
-        className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400"
+        className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400"
         scope="col"
       >
         Actions
