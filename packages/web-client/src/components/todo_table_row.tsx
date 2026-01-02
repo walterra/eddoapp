@@ -10,6 +10,7 @@ import {
   useToggleCompletionMutation,
   useToggleTimeTrackingMutation,
 } from '../hooks/use_todo_mutations';
+import { FOCUS_RING, TRANSITION } from '../styles/interactive';
 import { TodoEditModal } from './todo_edit_modal';
 import { TodoCell } from './todo_table_cell';
 import { reorderColumnsWithStatusFirst } from './todo_table_helpers';
@@ -29,7 +30,7 @@ interface TimeTrackingButtonProps {
 
 const TimeTrackingButton: FC<TimeTrackingButtonProps> = ({ isActive, isUpdating, onClick }) => (
   <button
-    className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+    className={`rounded p-0.5 ${TRANSITION} text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-200 ${FOCUS_RING}`}
     disabled={isUpdating}
     onClick={onClick}
     title={isActive ? 'Pause' : 'Start'}
@@ -64,7 +65,7 @@ const TodoRowActions: FC<TodoRowActionsProps> = ({
         />
       )}
       <button
-        className="rounded p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+        className={`rounded p-0.5 ${TRANSITION} text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-200 ${FOCUS_RING}`}
         onClick={onEdit}
         title="Edit"
         type="button"

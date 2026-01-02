@@ -13,6 +13,7 @@ import {
   useToggleCompletionMutation,
   useToggleTimeTrackingMutation,
 } from '../hooks/use_todo_mutations';
+import { FOCUS_RING, TRANSITION } from '../styles/interactive';
 import { FormattedMessage } from './formatted_message';
 import { TagDisplay } from './tag_display';
 import { TodoEditModal } from './todo_edit_modal';
@@ -34,7 +35,10 @@ const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onDismiss }) =>
   error ? (
     <div className="mb-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs dark:border-red-700 dark:bg-red-900">
       <span className="text-red-700 dark:text-red-200">Failed to update todo</span>
-      <button className="ml-2 text-red-600 hover:text-red-500" onClick={onDismiss}>
+      <button
+        className={`ml-2 ${TRANSITION} rounded text-red-600 hover:text-red-500 ${FOCUS_RING}`}
+        onClick={onDismiss}
+      >
         ×
       </button>
     </div>
@@ -58,7 +62,7 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
     <span className={className}>
       {todo.link !== null && !activityOnly ? (
         <a
-          className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+          className={`font-medium text-blue-600 ${TRANSITION} rounded hover:text-blue-800 hover:underline dark:text-blue-500 dark:hover:text-blue-300 ${FOCUS_RING}`}
           href={todo.link}
           rel="noreferrer"
           target="_BLANK"
@@ -72,9 +76,8 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
   );
 };
 
-const BUTTON_BASE =
-  'p-0.5 text-gray-400 transition-opacity duration-200 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200';
-const BUTTON_HIDDEN = 'opacity-0 group-hover:opacity-100 focus-within:opacity-100';
+const ICON_BUTTON_BASE = `rounded p-1 ${TRANSITION} text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 ${FOCUS_RING}`;
+const ICON_BUTTON_REVEAL = 'opacity-0 group-hover:opacity-100 focus:opacity-100';
 
 interface TimeTrackingButtonProps {
   isActive: boolean;
@@ -84,7 +87,7 @@ interface TimeTrackingButtonProps {
 
 const TimeTrackingButton: FC<TimeTrackingButtonProps> = ({ isActive, isUpdating, onClick }) => (
   <button
-    className={`${BUTTON_BASE} disabled:cursor-not-allowed disabled:opacity-50 ${isActive ? 'opacity-100' : BUTTON_HIDDEN}`}
+    className={`${ICON_BUTTON_BASE} disabled:cursor-not-allowed disabled:opacity-50 ${isActive ? 'opacity-100' : ICON_BUTTON_REVEAL}`}
     data-testid={isActive ? 'pause-button' : 'play-button'}
     disabled={isUpdating}
     onClick={onClick}
@@ -136,7 +139,7 @@ const ActionButtons: FC<ActionButtonsProps> = (props) => {
             />
           )}
           <button
-            className={`${BUTTON_BASE} ${BUTTON_HIDDEN}`}
+            className={`${ICON_BUTTON_BASE} ${ICON_BUTTON_REVEAL}`}
             data-testid="edit-button"
             onClick={onEditClick}
             type="button"
@@ -239,7 +242,8 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
   todo,
 }) => {
   const state = useTodoListState(todo, active, activeDate);
-  const cardClass = `${active ? 'border-2 border-sky-600' : ''}mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-2 py-1 dark:border-gray-700 dark:bg-gray-800`;
+  const activeClass = active ? 'border-2 border-sky-600 ' : '';
+  const cardClass = `${activeClass}mb-1 flex max-w-md transform flex-col rounded border border-gray-200 bg-white px-2 py-1 ${TRANSITION} hover:shadow-md hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600`;
 
   return (
     <div className={cardClass}>

@@ -1,21 +1,13 @@
 import { type FC, useState } from 'react';
 import { MdFilterList } from 'react-icons/md';
 
+import { CLEAR_BUTTON, getDropdownItemClass, getFilterButtonClass } from '../styles/interactive';
+
 interface EddoContextFilterProps {
   availableContexts: string[];
   selectedContexts: string[];
   onContextsChange: (contexts: string[]) => void;
 }
-
-const getButtonClassName = (hasSelected: boolean): string =>
-  hasSelected
-    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-    : 'border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300';
-
-const getOptionClassName = (isSelected: boolean): string =>
-  isSelected
-    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    : 'text-gray-700 dark:text-gray-300';
 
 interface FilterHeaderProps {
   selectedCount: number;
@@ -26,11 +18,7 @@ const FilterHeader: FC<FilterHeaderProps> = ({ selectedCount, onClearAll }) => (
   <div className="mb-3 flex items-center justify-between">
     <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Context</h3>
     {selectedCount > 0 && (
-      <button
-        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-        onClick={onClearAll}
-        type="button"
-      >
+      <button className={CLEAR_BUTTON} onClick={onClearAll} type="button">
         Clear all
       </button>
     )}
@@ -68,7 +56,7 @@ const ContextList: FC<ContextListProps> = ({ contexts, selectedContexts, onToggl
   <div className="space-y-1">
     {contexts.map((context) => (
       <button
-        className={`block w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${getOptionClassName(selectedContexts.includes(context))}`}
+        className={getDropdownItemClass(selectedContexts.includes(context))}
         key={context}
         onClick={() => onToggle(context)}
         type="button"
@@ -99,7 +87,7 @@ export const EddoContextFilter: FC<EddoContextFilterProps> = ({
   return (
     <div className="relative">
       <button
-        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${getButtonClassName(selectedContexts.length > 0)}`}
+        className={getFilterButtonClass(selectedContexts.length > 0)}
         onClick={() => setIsOpen(!isOpen)}
         type="button"
       >

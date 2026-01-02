@@ -1,6 +1,13 @@
 import { type FC, useState } from 'react';
 import { MdFilterList } from 'react-icons/md';
 
+import {
+  FOCUS_RING,
+  TRANSITION,
+  getDropdownItemClass,
+  getFilterButtonClass,
+} from '../styles/interactive';
+
 export type TimeRangeType =
   | 'current-day'
   | 'current-week'
@@ -36,16 +43,6 @@ const getTimeRangeLabel = (timeRange: TimeRange): string => {
   return timeRangeOptions.find((opt) => opt.value === timeRange.type)?.label || 'Week';
 };
 
-const getButtonClassName = (isNonDefault: boolean): string =>
-  isNonDefault
-    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-    : 'border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300';
-
-const getOptionClassName = (isSelected: boolean): string =>
-  isSelected
-    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    : 'text-gray-700 dark:text-gray-300';
-
 interface DateInputProps {
   label: string;
   value: string;
@@ -56,7 +53,7 @@ const DateInput: FC<DateInputProps> = ({ label, value, onChange }) => (
   <div>
     <label className="block text-xs text-gray-500 dark:text-gray-400">{label}</label>
     <input
-      className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+      className={`mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-xs ${TRANSITION} dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 ${FOCUS_RING}`}
       onChange={(e) => onChange(e.target.value)}
       type="date"
       value={value}
@@ -83,7 +80,7 @@ const CustomDateRange: FC<CustomDateRangeProps> = ({
     <DateInput label="Start date" onChange={onStartDateChange} value={startDate} />
     <DateInput label="End date" onChange={onEndDateChange} value={endDate} />
     <button
-      className="w-full rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+      className={`w-full rounded bg-blue-600 px-2 py-1 text-xs text-white ${TRANSITION} hover:bg-blue-700 disabled:opacity-50 ${FOCUS_RING}`}
       disabled={!startDate || !endDate}
       onClick={onApply}
       type="button"
@@ -110,7 +107,7 @@ const TimeRangeOption: FC<TimeRangeOptionProps> = ({
 }) => (
   <div>
     <button
-      className={`block w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${getOptionClassName(isSelected)}`}
+      className={getDropdownItemClass(isSelected)}
       onClick={() => onSelect(option.value)}
       type="button"
     >
@@ -189,7 +186,7 @@ export const TimeRangeFilter: FC<TimeRangeFilterProps> = ({
   return (
     <div className="relative">
       <button
-        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${getButtonClassName(selectedTimeRange.type !== 'current-week')}`}
+        className={getFilterButtonClass(selectedTimeRange.type !== 'current-week')}
         onClick={() => setIsOpen(!isOpen)}
         type="button"
       >
