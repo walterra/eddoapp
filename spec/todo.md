@@ -4,7 +4,6 @@
 
 ### Phase 1: Foundation
 
-- Implement dark mode as first-class citizen - [#352](https://github.com/walterra/eddoapp/issues/352)
 - Increase whitespace throughout the interface - [#354](https://github.com/walterra/eddoapp/issues/354)
 
 ### Phase 2: Polish

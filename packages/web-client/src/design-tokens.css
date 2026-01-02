@@ -208,23 +208,21 @@
   --color-border-emphasis: #a3a3a3; /* neutral-400 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Background - inverted */
-    --color-bg: #0a0a0a; /* neutral-950 */
-    --color-bg-subtle: #171717; /* neutral-900 */
-    --color-bg-muted: #262626; /* neutral-800 */
-    --color-bg-emphasis: #f5f5f5; /* neutral-100 */
+.dark {
+  /* Background - inverted */
+  --color-bg: #0a0a0a; /* neutral-950 */
+  --color-bg-subtle: #171717; /* neutral-900 */
+  --color-bg-muted: #262626; /* neutral-800 */
+  --color-bg-emphasis: #f5f5f5; /* neutral-100 */
 
-    /* Foreground / Text - inverted */
-    --color-fg: #f5f5f5; /* neutral-100 */
-    --color-fg-muted: #a3a3a3; /* neutral-400 */
-    --color-fg-subtle: #737373; /* neutral-500 */
-    --color-fg-on-emphasis: #171717; /* neutral-900 */
+  /* Foreground / Text - inverted */
+  --color-fg: #f5f5f5; /* neutral-100 */
+  --color-fg-muted: #a3a3a3; /* neutral-400 */
+  --color-fg-subtle: #737373; /* neutral-500 */
+  --color-fg-on-emphasis: #171717; /* neutral-900 */
 
-    /* Border - inverted */
-    --color-border: #262626; /* neutral-800 */
-    --color-border-muted: #171717; /* neutral-900 */
-    --color-border-emphasis: #525252; /* neutral-600 */
-  }
+  /* Border - inverted */
+  --color-border: #262626; /* neutral-800 */
+  --color-border-muted: #171717; /* neutral-900 */
+  --color-border-emphasis: #525252; /* neutral-600 */
 }

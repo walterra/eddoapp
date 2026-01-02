@@ -48,6 +48,7 @@ export {
 export {
   createDefaultUserPreferences,
   isUserRegistryEntryAlpha2,
+  type ThemePreference,
   type UserPreferences,
   type UserRegistryEntryAlpha2,
 } from './versions/user_registry_alpha2';
