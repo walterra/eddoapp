@@ -6,7 +6,6 @@
 
 - Define design tokens (colors, spacing, typography scale) - [#351](https://github.com/walterra/eddoapp/issues/351)
 - Implement dark mode as first-class citizen - [#352](https://github.com/walterra/eddoapp/issues/352)
-- Add consistent hover/focus states to all interactive elements - [#353](https://github.com/walterra/eddoapp/issues/353)
 - Increase whitespace throughout the interface - [#354](https://github.com/walterra/eddoapp/issues/354)
 - Audit and unify component consistency - [#364](https://github.com/walterra/eddoapp/issues/364)
 

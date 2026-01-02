@@ -2,6 +2,8 @@ import { Checkbox } from 'flowbite-react';
 import { type FC, useState } from 'react';
 import { MdViewColumn } from 'react-icons/md';
 
+import { FILTER_BUTTON_INACTIVE, TRANSITION } from '../styles/interactive';
+
 export interface ColumnOption {
   id: string;
   label: string;
@@ -34,7 +36,7 @@ interface ColumnItemProps {
 
 const ColumnItem: FC<ColumnItemProps> = ({ column, isSelected, isLastSelected, onToggle }) => (
   <label
-    className={`flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+    className={`flex items-center gap-2 rounded px-2 py-1 ${TRANSITION} hover:bg-gray-100 dark:hover:bg-gray-700 ${
       isLastSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
     }`}
   >
@@ -80,11 +82,7 @@ export const ColumnPicker: FC<ColumnPickerProps> = ({ selectedColumns, onColumns
 
   return (
     <div className="relative">
-      <button
-        className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        onClick={() => setIsOpen(!isOpen)}
-        type="button"
-      >
+      <button className={FILTER_BUTTON_INACTIVE} onClick={() => setIsOpen(!isOpen)} type="button">
         <MdViewColumn size="1.2em" />
         <span className="hidden sm:inline">
           Columns ({selectedColumns.length}/{AVAILABLE_COLUMNS.length})

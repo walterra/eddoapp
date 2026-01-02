@@ -3,6 +3,8 @@ import { Button } from 'flowbite-react';
 import { type FC } from 'react';
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 
+import { FOCUS_RING, TRANSITION } from '../styles/interactive';
+
 import { useEddoContexts } from '../hooks/use_eddo_contexts';
 import { useTags } from '../hooks/use_tags';
 import type { ViewMode } from '../hooks/use_view_preferences';
@@ -156,7 +158,7 @@ const PeriodNavigation: FC<PeriodNavigationProps> = ({
         <RiArrowLeftSLine size="2em" />
       </Button>{' '}
       <button
-        className="cursor-pointer font-semibold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
+        className={`cursor-pointer font-semibold ${TRANSITION} rounded text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 ${FOCUS_RING}`}
         onClick={onReset}
         title="Return to current period"
         type="button"
