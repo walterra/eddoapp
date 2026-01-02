@@ -26,6 +26,9 @@ export interface GithubFormState {
   githubSyncTags: string;
 }
 
+/** Re-export UserProfile type from hook */
+export type { UserProfile } from '../hooks/use_profile_types';
+
 export interface ProfileData {
   username: string;
   email: string;

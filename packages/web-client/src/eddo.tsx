@@ -26,19 +26,15 @@ function CouchdbSyncProvider() {
   useCouchDbSync();
   return null;
 }
-
 function PreferencesStreamProvider() {
   usePreferencesStream();
   return null;
 }
-
 function HealthMonitor() {
   const { startMonitoring } = useDatabaseHealth();
-
   useEffect(() => {
     startMonitoring();
   }, [startMonitoring]);
-
   return null;
 }
 
@@ -55,6 +51,105 @@ interface AuthenticatedAppProps {
   isAuthenticating: boolean;
 }
 
+/** Hook for filter preference handlers */
+function useFilterHandlers() {
+  const prefs = useFilterPreferences();
+  return {
+    prefs,
+    handleCurrentDateChange: (date: Date) => {
+      prefs.setCurrentDate(date);
+    },
+    handleSelectedTagsChange: (tags: string[]) => {
+      prefs.setSelectedTags(tags);
+    },
+    handleSelectedContextsChange: (contexts: string[]) => {
+      prefs.setSelectedContexts(contexts);
+    },
+    handleSelectedStatusChange: (status: CompletionStatus) => {
+      prefs.setSelectedStatus(status);
+    },
+    handleSelectedTimeRangeChange: (timeRange: TimeRange) => {
+      prefs.setSelectedTimeRange(timeRange);
+    },
+  };
+}
+
+/** Todo filters with view mode handling */
+function TodoFiltersSection({
+  handlers,
+  viewPrefs,
+}: {
+  handlers: ReturnType<typeof useFilterHandlers>;
+  viewPrefs: ReturnType<typeof useViewPreferences>;
+}) {
+  const { prefs, ...rest } = handlers;
+  const { viewMode, tableColumns, isLoading, setViewMode, setTableColumns } = viewPrefs;
+  return (
+    <TodoFilters
+      currentDate={prefs.currentDate}
+      isViewPrefsLoading={isLoading}
+      onTableColumnsChange={async (cols) => {
+        await setTableColumns(cols);
+      }}
+      onViewModeChange={async (mode) => {
+        await setViewMode(mode);
+      }}
+      selectedContexts={prefs.selectedContexts}
+      selectedStatus={prefs.selectedStatus}
+      selectedTags={prefs.selectedTags}
+      selectedTimeRange={prefs.selectedTimeRange}
+      setCurrentDate={rest.handleCurrentDateChange}
+      setSelectedContexts={rest.handleSelectedContextsChange}
+      setSelectedStatus={rest.handleSelectedStatusChange}
+      setSelectedTags={rest.handleSelectedTagsChange}
+      setSelectedTimeRange={rest.handleSelectedTimeRangeChange}
+      tableColumns={tableColumns}
+      viewMode={viewMode}
+    />
+  );
+}
+
+/** Todo content view (board or table) */
+function TodoContentView({
+  prefs,
+  viewMode,
+  tableColumns,
+}: {
+  prefs: ReturnType<typeof useFilterPreferences>;
+  viewMode: string;
+  tableColumns: string[];
+}) {
+  const common = {
+    currentDate: prefs.currentDate,
+    selectedContexts: prefs.selectedContexts,
+    selectedStatus: prefs.selectedStatus,
+    selectedTags: prefs.selectedTags,
+    selectedTimeRange: prefs.selectedTimeRange,
+  };
+  return viewMode === 'kanban' ? (
+    <TodoBoard {...common} />
+  ) : (
+    <TodoTable {...common} selectedColumns={tableColumns} />
+  );
+}
+
+/** Authenticated todo app content */
+function TodoApp({ logout }: { logout: () => void }) {
+  const viewPrefs = useViewPreferences();
+  const handlers = useFilterHandlers();
+  return (
+    <PageWrapper isAuthenticated={true} logout={logout}>
+      <AddTodo />
+      <TodoFiltersSection handlers={handlers} viewPrefs={viewPrefs} />
+      <TodoContentView
+        prefs={handlers.prefs}
+        tableColumns={viewPrefs.tableColumns}
+        viewMode={viewPrefs.viewMode}
+      />
+    </PageWrapper>
+  );
+}
+
 function AuthenticatedApp({
   authenticate,
   register,
@@ -63,77 +158,18 @@ function AuthenticatedApp({
   isAuthenticating,
 }: AuthenticatedAppProps) {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-
-  // View preferences
-  const {
-    viewMode,
-    tableColumns,
-    isLoading: isViewPrefsLoading,
-    setViewMode,
-    setTableColumns,
-  } = useViewPreferences();
-
-  // Filter preferences
-  const {
-    currentDate,
-    selectedTags,
-    selectedContexts,
-    selectedStatus,
-    selectedTimeRange,
-    setCurrentDate,
-    setSelectedTags,
-    setSelectedContexts,
-    setSelectedStatus,
-    setSelectedTimeRange,
-  } = useFilterPreferences();
-
-  const handleViewModeChange = async (mode: typeof viewMode) => {
-    await setViewMode(mode);
-  };
-
-  const handleTableColumnsChange = async (columns: string[]) => {
-    await setTableColumns(columns);
-  };
-
-  // Wrapper functions for filter preferences (async updates in background)
-  const handleCurrentDateChange = (date: Date) => {
-    setCurrentDate(date);
-  };
-
-  const handleSelectedTagsChange = (tags: string[]) => {
-    setSelectedTags(tags);
-  };
-
-  const handleSelectedContextsChange = (contexts: string[]) => {
-    setSelectedContexts(contexts);
-  };
-
-  const handleSelectedStatusChange = (status: CompletionStatus) => {
-    setSelectedStatus(status);
-  };
-
-  const handleSelectedTimeRangeChange = (timeRange: TimeRange) => {
-    setSelectedTimeRange(timeRange);
-  };
-
-  // Reset authMode to 'login' when user logs out
   useEffect(() => {
-    if (!isAuthenticated) {
-      setAuthMode('login');
-    }
+    if (!isAuthenticated) setAuthMode('login');
   }, [isAuthenticated]);
 
   if (!isAuthenticated) {
-    if (authMode === 'register') {
-      return (
-        <Register
-          isAuthenticating={isAuthenticating}
-          onBackToLogin={() => setAuthMode('login')}
-          onRegister={register}
-        />
-      );
-    }
-    return (
+    return authMode === 'register' ? (
+      <Register
+        isAuthenticating={isAuthenticating}
+        onBackToLogin={() => setAuthMode('login')}
+        onRegister={register}
+      />
+    ) : (
       <Login
         isAuthenticating={isAuthenticating}
         onGoToRegister={() => setAuthMode('register')}
@@ -147,61 +183,17 @@ function AuthenticatedApp({
       <CouchdbSyncProvider />
       <PreferencesStreamProvider />
       <HealthMonitor />
-      <PageWrapper isAuthenticated={isAuthenticated} logout={logout}>
-        <AddTodo />
-        <TodoFilters
-          currentDate={currentDate}
-          isViewPrefsLoading={isViewPrefsLoading}
-          onTableColumnsChange={handleTableColumnsChange}
-          onViewModeChange={handleViewModeChange}
-          selectedContexts={selectedContexts}
-          selectedStatus={selectedStatus}
-          selectedTags={selectedTags}
-          selectedTimeRange={selectedTimeRange}
-          setCurrentDate={handleCurrentDateChange}
-          setSelectedContexts={handleSelectedContextsChange}
-          setSelectedStatus={handleSelectedStatusChange}
-          setSelectedTags={handleSelectedTagsChange}
-          setSelectedTimeRange={handleSelectedTimeRangeChange}
-          tableColumns={tableColumns}
-          viewMode={viewMode}
-        />
-        {viewMode === 'kanban' ? (
-          <TodoBoard
-            currentDate={currentDate}
-            selectedContexts={selectedContexts}
-            selectedStatus={selectedStatus}
-            selectedTags={selectedTags}
-            selectedTimeRange={selectedTimeRange}
-          />
-        ) : (
-          <TodoTable
-            currentDate={currentDate}
-            selectedColumns={tableColumns}
-            selectedContexts={selectedContexts}
-            selectedStatus={selectedStatus}
-            selectedTags={selectedTags}
-            selectedTimeRange={selectedTimeRange}
-          />
-        )}
-      </PageWrapper>
+      <TodoApp logout={logout} />
     </DatabaseChangesProvider>
   );
 }
 
 function EddoContent() {
   const { username, isAuthenticated, authenticate, register, logout, isAuthenticating } = useAuth();
-
-  // Create user-specific PouchDB context when authenticated
-  const pouchDbContext = useMemo(() => {
-    if (isAuthenticated && username) {
-      return createUserPouchDbContext(username);
-    }
-    // Fallback to default context for unauthenticated state
-    return null;
-  }, [isAuthenticated, username]);
-
-  // Create QueryClient instance once
+  const pouchDbContext = useMemo(
+    () => (isAuthenticated && username ? createUserPouchDbContext(username) : null),
+    [isAuthenticated, username],
+  );
   const queryClient = useMemo(() => createQueryClient(), []);
 
   return (

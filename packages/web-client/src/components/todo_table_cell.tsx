@@ -4,7 +4,7 @@
 import { type DatabaseError, type Todo, getFormattedDuration } from '@eddo/core-client';
 import { format } from 'date-fns';
 import { Checkbox } from 'flowbite-react';
-import { type FC } from 'react';
+import { type FC, type ReactElement } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { FormattedMessage } from './formatted_message';
@@ -81,12 +81,13 @@ const TimeTrackedCell: FC<{ activeDuration: number; widthClass: string }> = ({
   </td>
 );
 
-const StatusCell: FC<{
+interface StatusCellProps {
   todo: Todo;
   isUpdating: boolean;
   onToggleCheckbox: () => void;
   widthClass: string;
-}> = ({ todo, isUpdating, onToggleCheckbox, widthClass }) => (
+}
+const StatusCell: FC<StatusCellProps> = ({ todo, isUpdating, onToggleCheckbox, widthClass }) => (
   <td className={`px-2 py-1 ${widthClass}`}>
     <Checkbox
       checked={todo.completed !== null}
@@ -136,6 +137,41 @@ const DescriptionCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthCl
   </td>
 );
 
+interface CellRenderContext {
+  todo: Todo;
+  error: DatabaseError | null;
+  isUpdating: boolean;
+  activeDuration: number;
+  onToggleCheckbox: () => void;
+  widthClass: string;
+}
+
+type CellRenderer = (ctx: CellRenderContext) => ReactElement;
+
+const CELL_RENDERERS: Record<string, CellRenderer> = {
+  title: (ctx) => <TitleCell error={ctx.error} todo={ctx.todo} widthClass={ctx.widthClass} />,
+  context: (ctx) => <ContextCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+  due: (ctx) => <DueCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+  tags: (ctx) => <TagsCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+  timeTracked: (ctx) => (
+    <TimeTrackedCell activeDuration={ctx.activeDuration} widthClass={ctx.widthClass} />
+  ),
+  status: (ctx) => (
+    <StatusCell
+      isUpdating={ctx.isUpdating}
+      onToggleCheckbox={ctx.onToggleCheckbox}
+      todo={ctx.todo}
+      widthClass={ctx.widthClass}
+    />
+  ),
+  completed: (ctx) => <CompletedCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+  repeat: (ctx) => <RepeatCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+  link: (ctx) => <LinkCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+  description: (ctx) => <DescriptionCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+};
+
+const DefaultCell = () => <td className="px-2 py-1">-</td>;
+
 export const TodoCell: FC<TodoCellProps> = ({
   columnId,
   todo,
@@ -145,36 +181,14 @@ export const TodoCell: FC<TodoCellProps> = ({
   onToggleCheckbox,
 }) => {
   const widthClass = getColumnWidthClass(columnId);
-
-  switch (columnId) {
-    case 'title':
-      return <TitleCell error={error} todo={todo} widthClass={widthClass} />;
-    case 'context':
-      return <ContextCell todo={todo} widthClass={widthClass} />;
-    case 'due':
-      return <DueCell todo={todo} widthClass={widthClass} />;
-    case 'tags':
-      return <TagsCell todo={todo} widthClass={widthClass} />;
-    case 'timeTracked':
-      return <TimeTrackedCell activeDuration={activeDuration} widthClass={widthClass} />;
-    case 'status':
-      return (
-        <StatusCell
-          isUpdating={isUpdating}
-          onToggleCheckbox={onToggleCheckbox}
-          todo={todo}
-          widthClass={widthClass}
-        />
-      );
-    case 'completed':
-      return <CompletedCell todo={todo} widthClass={widthClass} />;
-    case 'repeat':
-      return <RepeatCell todo={todo} widthClass={widthClass} />;
-    case 'link':
-      return <LinkCell todo={todo} widthClass={widthClass} />;
-    case 'description':
-      return <DescriptionCell todo={todo} widthClass={widthClass} />;
-    default:
-      return <td className="px-2 py-1">-</td>;
-  }
+  const ctx: CellRenderContext = {
+    todo,
+    error,
+    isUpdating,
+    activeDuration,
+    onToggleCheckbox,
+    widthClass,
+  };
+  const renderer = CELL_RENDERERS[columnId];
+  return renderer ? renderer(ctx) : <DefaultCell />;
 };

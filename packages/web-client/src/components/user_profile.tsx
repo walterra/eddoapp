@@ -1,19 +1,16 @@
 /**
  * User profile settings page component
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useProfile } from '../hooks/use_profile';
 import {
-  buildGithubUpdateData,
-  buildProfileUpdateData,
-  initializeGithubState,
-  initializePreferencesState,
-  validateGithubToken,
-  validatePasswordChange,
-  validateProfileForm,
-  validateTelegramId,
-} from './user_profile_handlers';
+  useFormFieldHandlers,
+  useFormInitialization,
+  useGithubFieldHandlers,
+  usePreferencesFieldHandlers,
+  useProfileActionHandlers,
+} from './user_profile_hooks';
 import {
   LoadingState,
   MessageDisplay,
@@ -33,6 +30,30 @@ interface UserProfileProps {
 
 type TabType = 'profile' | 'security' | 'integrations' | 'preferences';
 
+const INITIAL_FORM_STATE: ProfileFormState = {
+  email: '',
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+  telegramId: '',
+};
+
+const INITIAL_PREFERENCES_STATE: PreferencesFormState = {
+  dailyBriefing: false,
+  briefingTime: '07:00',
+  printBriefing: false,
+  dailyRecap: false,
+  recapTime: '18:00',
+  printRecap: false,
+};
+
+const INITIAL_GITHUB_STATE: GithubFormState = {
+  githubSync: false,
+  githubToken: '',
+  githubSyncInterval: 60,
+  githubSyncTags: 'github, gtd:next',
+};
+
 export function UserProfile({ onClose }: UserProfileProps) {
   const {
     profile,
@@ -51,200 +72,40 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [editMode, setEditMode] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
+  const [formState, setFormState] = useState<ProfileFormState>(INITIAL_FORM_STATE);
+  const [preferencesState, setPreferencesState] =
+    useState<PreferencesFormState>(INITIAL_PREFERENCES_STATE);
+  const [githubState, setGithubState] = useState<GithubFormState>(INITIAL_GITHUB_STATE);
 
-  // Form states
-  const [formState, setFormState] = useState<ProfileFormState>({
-    email: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-    telegramId: '',
+  useFormInitialization(profile, setFormState, setPreferencesState, setGithubState);
+
+  const formFieldHandlers = useFormFieldHandlers(setFormState);
+  const preferencesFieldHandlers = usePreferencesFieldHandlers(setPreferencesState);
+  const githubFieldHandlers = useGithubFieldHandlers(setGithubState);
+
+  const actions = useProfileActionHandlers({
+    formState,
+    setFormState,
+    preferencesState,
+    githubState,
+    profile,
+    editMode,
+    setEditMode,
+    setFormError,
+    setSuccess,
+    clearError,
+    actions: {
+      updateProfile,
+      changePassword,
+      linkTelegram,
+      unlinkTelegram,
+      updatePreferences,
+      githubResyncMutate: mutations.githubResync.mutateAsync,
+    },
   });
 
-  // Preferences states
-  const [preferencesState, setPreferencesState] = useState<PreferencesFormState>({
-    dailyBriefing: false,
-    briefingTime: '07:00',
-    printBriefing: false,
-    dailyRecap: false,
-    recapTime: '18:00',
-    printRecap: false,
-  });
-
-  // GitHub integration states
-  const [githubState, setGithubState] = useState<GithubFormState>({
-    githubSync: false,
-    githubToken: '',
-    githubSyncInterval: 60,
-    githubSyncTags: 'github, gtd:next',
-  });
-
-  // Initialize form when profile loads
-  useEffect(() => {
-    if (profile) {
-      setFormState((prev) => ({ ...prev, email: profile.email }));
-      setPreferencesState(initializePreferencesState(profile.preferences));
-      setGithubState(initializeGithubState(profile.preferences));
-    }
-  }, [profile]);
-
-  const handleEditToggle = () => {
-    if (editMode) {
-      setFormState((prev) => ({
-        ...prev,
-        email: profile?.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      }));
-      setFormError('');
-    }
-    setEditMode(!editMode);
-    setSuccess(null);
-    clearError();
-  };
-
-  const handleSaveProfile = async () => {
-    setFormError('');
-    setSuccess(null);
-
-    const validationError = validateProfileForm(formState, profile?.email);
-    if (validationError) {
-      setFormError(validationError);
-      return;
-    }
-
-    const updateData = buildProfileUpdateData(formState, profile?.email);
-    if (Object.keys(updateData).length === 0) {
-      setEditMode(false);
-      return;
-    }
-
-    const result = await updateProfile(updateData);
-    if (result.success) {
-      setSuccess('Profile updated successfully');
-      setEditMode(false);
-      resetPasswordFields();
-    } else {
-      setFormError(result.error || 'Failed to update profile');
-    }
-  };
-
-  const handleChangePassword = async () => {
-    setFormError('');
-    setSuccess(null);
-
-    const validationError = validatePasswordChange(formState);
-    if (validationError) {
-      setFormError(validationError);
-      return;
-    }
-
-    const result = await changePassword({
-      currentPassword: formState.currentPassword,
-      newPassword: formState.newPassword,
-    });
-
-    if (result.success) {
-      setSuccess('Password changed successfully');
-      resetPasswordFields();
-    } else {
-      setFormError(result.error || 'Failed to change password');
-    }
-  };
-
-  const resetPasswordFields = () => {
-    setFormState((prev) => ({
-      ...prev,
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    }));
-  };
-
-  const handleLinkTelegram = async () => {
-    setFormError('');
-    setSuccess(null);
-
-    const validationError = validateTelegramId(formState.telegramId);
-    if (validationError) {
-      setFormError(validationError);
-      return;
-    }
-
-    const result = await linkTelegram(parseInt(formState.telegramId, 10));
-    if (result.success) {
-      setSuccess('Telegram account linked successfully');
-      setFormState((prev) => ({ ...prev, telegramId: '' }));
-    } else {
-      setFormError(result.error || 'Failed to link Telegram');
-    }
-  };
-
-  const handleUnlinkTelegram = async () => {
-    if (!confirm('Are you sure you want to unlink your Telegram account?')) return;
-
-    const result = await unlinkTelegram();
-    if (result.success) {
-      setSuccess('Telegram account unlinked successfully');
-    } else {
-      setFormError(result.error || 'Failed to unlink Telegram');
-    }
-  };
-
-  const handleUpdatePreferences = async () => {
-    setFormError('');
-    setSuccess(null);
-
-    const result = await updatePreferences(preferencesState);
-    if (result.success) {
-      setSuccess('Preferences updated successfully');
-    } else {
-      setFormError(result.error || 'Failed to update preferences');
-    }
-  };
-
-  const handleUpdateGithubPreferences = async () => {
-    setFormError('');
-    setSuccess(null);
-
-    const tokenError = validateGithubToken(githubState.githubToken);
-    if (tokenError) {
-      setFormError(tokenError);
-      return;
-    }
-
-    const result = await updatePreferences(buildGithubUpdateData(githubState));
-
-    if (result.success) {
-      setSuccess('GitHub sync settings updated successfully');
-    } else {
-      setFormError(result.error || 'Failed to update GitHub sync settings');
-    }
-  };
-
-  const handleForceResync = async () => {
-    const msg = 'Force resync will re-fetch all GitHub issues. This may take a while. Continue?';
-    if (!confirm(msg)) return;
-
-    setFormError('');
-    setSuccess(null);
-
-    try {
-      await mutations.githubResync.mutateAsync();
-      setSuccess('GitHub resync completed successfully! Refresh the page to see updates.');
-    } catch (err) {
-      setFormError((err as Error).message || 'Failed to resync GitHub issues');
-    }
-  };
-
-  if (isLoading && !profile) {
-    return <LoadingState />;
-  }
-
-  if (!profile) {
-    return <NotFoundState onClose={onClose} />;
-  }
+  if (isLoading && !profile) return <LoadingState />;
+  if (!profile) return <NotFoundState onClose={onClose} />;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -258,13 +119,10 @@ export function UserProfile({ onClose }: UserProfileProps) {
             editMode={editMode}
             formState={formState}
             isLoading={isLoading}
-            onConfirmPasswordChange={(v) => setFormState((p) => ({ ...p, confirmPassword: v }))}
-            onCurrentPasswordChange={(v) => setFormState((p) => ({ ...p, currentPassword: v }))}
-            onEditToggle={handleEditToggle}
-            onEmailChange={(v) => setFormState((p) => ({ ...p, email: v }))}
-            onNewPasswordChange={(v) => setFormState((p) => ({ ...p, newPassword: v }))}
-            onSave={handleSaveProfile}
+            onEditToggle={actions.handleEditToggle}
+            onSave={actions.handleSaveProfile}
             profile={profile}
+            {...formFieldHandlers}
           />
         )}
 
@@ -272,10 +130,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
           <SecurityTab
             formState={formState}
             isLoading={isLoading}
-            onChangePassword={handleChangePassword}
-            onConfirmPasswordChange={(v) => setFormState((p) => ({ ...p, confirmPassword: v }))}
-            onCurrentPasswordChange={(v) => setFormState((p) => ({ ...p, currentPassword: v }))}
-            onNewPasswordChange={(v) => setFormState((p) => ({ ...p, newPassword: v }))}
+            onChangePassword={actions.handleChangePassword}
+            {...formFieldHandlers}
           />
         )}
 
@@ -284,31 +140,23 @@ export function UserProfile({ onClose }: UserProfileProps) {
             githubState={githubState}
             isLoading={isLoading}
             isResyncing={mutations.githubResync.isPending}
-            onForceResync={handleForceResync}
-            onGithubIntervalChange={(v) => setGithubState((p) => ({ ...p, githubSyncInterval: v }))}
-            onGithubSyncChange={(v) => setGithubState((p) => ({ ...p, githubSync: v }))}
-            onGithubTagsChange={(v) => setGithubState((p) => ({ ...p, githubSyncTags: v }))}
-            onGithubTokenChange={(v) => setGithubState((p) => ({ ...p, githubToken: v }))}
-            onLinkTelegram={handleLinkTelegram}
-            onSaveGithub={handleUpdateGithubPreferences}
-            onTelegramIdChange={(v) => setFormState((p) => ({ ...p, telegramId: v }))}
-            onUnlinkTelegram={handleUnlinkTelegram}
+            onForceResync={actions.handleForceResync}
+            onLinkTelegram={actions.handleLinkTelegram}
+            onSaveGithub={actions.handleUpdateGithubPreferences}
+            onTelegramIdChange={formFieldHandlers.onTelegramIdChange}
+            onUnlinkTelegram={actions.handleUnlinkTelegram}
             profile={profile}
             telegramId={formState.telegramId}
+            {...githubFieldHandlers}
           />
         )}
 
         {activeTab === 'preferences' && (
           <PreferencesTab
             isLoading={isLoading}
-            onBriefingTimeChange={(v) => setPreferencesState((p) => ({ ...p, briefingTime: v }))}
-            onDailyBriefingChange={(v) => setPreferencesState((p) => ({ ...p, dailyBriefing: v }))}
-            onDailyRecapChange={(v) => setPreferencesState((p) => ({ ...p, dailyRecap: v }))}
-            onPrintBriefingChange={(v) => setPreferencesState((p) => ({ ...p, printBriefing: v }))}
-            onPrintRecapChange={(v) => setPreferencesState((p) => ({ ...p, printRecap: v }))}
-            onRecapTimeChange={(v) => setPreferencesState((p) => ({ ...p, recapTime: v }))}
-            onSave={handleUpdatePreferences}
+            onSave={actions.handleUpdatePreferences}
             preferencesState={preferencesState}
+            {...preferencesFieldHandlers}
           />
         )}
       </div>

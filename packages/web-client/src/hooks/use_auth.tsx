@@ -25,89 +25,115 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-interface AuthProviderProps {
-  children: ReactNode;
+type SetAuthToken = (t: AuthToken) => void;
+
+/** Saves token to state and localStorage */
+function persistToken(token: AuthToken, setAuthToken: SetAuthToken): void {
+  setAuthToken(token);
+  localStorage.setItem('authToken', JSON.stringify(token));
 }
 
-/**
- * Provides authentication state to all child components.
- * Manages auth token, login/logout, and token expiration checking.
- */
-export function AuthProvider({ children }: AuthProviderProps) {
+/** Load and validate token from localStorage */
+function loadStoredToken(): AuthToken | null {
+  const stored = localStorage.getItem('authToken');
+  if (!stored) return null;
+  try {
+    const token = JSON.parse(stored);
+    if (isTokenExpired(token.token)) {
+      console.warn('Stored token is expired - removing');
+      localStorage.removeItem('authToken');
+      return null;
+    }
+    return token;
+  } catch (error) {
+    console.error('Invalid stored token:', error);
+    localStorage.removeItem('authToken');
+    return null;
+  }
+}
+
+interface LoginParams {
+  username: string;
+  password: string;
+  rememberMe: boolean;
+}
+interface RegisterParams {
+  username: string;
+  email: string;
+  password: string;
+  telegramId?: number;
+}
+
+/** Authenticate user with login credentials */
+async function doLogin(params: LoginParams, setAuthToken: SetAuthToken): Promise<boolean> {
+  const response = await fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (response.ok) {
+    persistToken(await response.json(), setAuthToken);
+    return true;
+  }
+  return false;
+}
+
+/** Register new user account */
+async function doRegister(
+  params: RegisterParams,
+  setAuthToken: SetAuthToken,
+): Promise<{ success: boolean; error?: string }> {
+  const response = await fetch('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (response.ok) {
+    persistToken(await response.json(), setAuthToken);
+    return { success: true };
+  }
+  const errorData = await response.json();
+  return { success: false, error: errorData.error || 'Registration failed' };
+}
+
+/** Hook to set up token expiration checking interval */
+function useTokenExpirationCheck(authToken: AuthToken | null, checkFn: () => boolean) {
+  useEffect(() => {
+    if (!authToken) return;
+    checkFn();
+    const interval = setInterval(checkFn, 60000);
+    return () => clearInterval(interval);
+  }, [authToken, checkFn]);
+}
+
+/** Wrap async action with isAuthenticating state management */
+function useAuthAction<T>(
+  setIsAuthenticating: (v: boolean) => void,
+  action: () => Promise<T>,
+  fallback: T,
+): () => Promise<T> {
+  return async () => {
+    setIsAuthenticating(true);
+    try {
+      return await action();
+    } catch (error) {
+      console.error('Auth action error:', error);
+      return fallback;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+}
+
+/** Provides authentication state to all child components */
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-
-  const authenticate = async (
-    username: string,
-    password: string,
-    rememberMe: boolean = false,
-  ): Promise<boolean> => {
-    setIsAuthenticating(true);
-    try {
-      const response = await fetch('/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password, rememberMe }),
-      });
-
-      if (response.ok) {
-        const token = await response.json();
-        setAuthToken(token);
-        localStorage.setItem('authToken', JSON.stringify(token));
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Authentication error:', error);
-      return false;
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
-
-  const register = async (
-    username: string,
-    email: string,
-    password: string,
-    telegramId?: number,
-  ): Promise<{ success: boolean; error?: string }> => {
-    setIsAuthenticating(true);
-    try {
-      const response = await fetch('/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, email, password, telegramId }),
-      });
-
-      if (response.ok) {
-        const token = await response.json();
-        setAuthToken(token);
-        localStorage.setItem('authToken', JSON.stringify(token));
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        return {
-          success: false,
-          error: errorData.error || 'Registration failed',
-        };
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: 'Network error occurred' };
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
 
   const logout = useCallback(() => {
     setAuthToken(null);
     localStorage.removeItem('authToken');
   }, []);
-
   const checkTokenExpiration = useCallback(() => {
     if (authToken && isTokenExpired(authToken.token)) {
       console.warn('Authentication token expired - logging out');
@@ -117,44 +143,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return false;
   }, [authToken, logout]);
 
-  // Load token from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('authToken');
-    if (stored) {
-      try {
-        const token = JSON.parse(stored);
-        if (isTokenExpired(token.token)) {
-          console.warn('Stored token is expired - removing');
-          localStorage.removeItem('authToken');
-        } else {
-          setAuthToken(token);
-        }
-      } catch (error) {
-        console.error('Invalid stored token:', error);
-        localStorage.removeItem('authToken');
-      }
-    }
+    setAuthToken(loadStoredToken());
   }, []);
-
-  // Periodically check for token expiration
-  useEffect(() => {
-    if (!authToken) {
-      return;
-    }
-
-    checkTokenExpiration();
-
-    const interval = setInterval(() => {
-      checkTokenExpiration();
-    }, 60000); // 1 minute
-
-    return () => clearInterval(interval);
-  }, [authToken, checkTokenExpiration]);
+  useTokenExpirationCheck(authToken, checkTokenExpiration);
 
   const value: AuthContextValue = {
     authToken,
-    authenticate,
-    register,
+    authenticate: async (username, password, rememberMe = false) =>
+      useAuthAction(
+        setIsAuthenticating,
+        () => doLogin({ username, password, rememberMe }, setAuthToken),
+        false,
+      )(),
+    register: async (username, email, password, telegramId) =>
+      useAuthAction(
+        setIsAuthenticating,
+        () => doRegister({ username, email, password, telegramId }, setAuthToken),
+        { success: false, error: 'Network error occurred' },
+      )(),
     logout,
     isAuthenticated: !!authToken,
     isAuthenticating,
@@ -165,14 +172,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * Hook for accessing authentication state and methods.
- * Must be used within an AuthProvider.
- */
+/** Hook for accessing authentication state and methods */
 export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
