@@ -64,9 +64,125 @@ interface CassetteState {
   timeFrozen: boolean;
 }
 
-/**
- * Factory function to create a cassette manager
- */
+/** Create time controller helpers */
+function createTimeHelpers(timeController?: TimeController) {
+  let timeFrozen = false;
+  return {
+    freeze: (isoTime: string) => {
+      if (timeController && isoTime) {
+        if (process.env.VCR_DEBUG) console.log(`📼 Freezing time to: ${isoTime}`);
+        timeController.freeze(isoTime);
+        timeFrozen = true;
+      }
+    },
+    unfreeze: () => {
+      if (timeFrozen && timeController) {
+        timeController.unfreeze();
+        timeFrozen = false;
+      }
+    },
+    isFrozen: () => timeFrozen,
+  };
+}
+
+interface ReplayContext {
+  state: CassetteState;
+  mode: RecordMode;
+  requestHash: string;
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+}
+
+/** Try to replay an interaction from the cassette */
+function tryReplayFromCassette(ctx: ReplayContext): { replayed: boolean; response?: string } {
+  const { state, mode, requestHash, model, messages } = ctx;
+  if (!state.cassette || mode === 'record') return { replayed: false };
+  if (state.index >= state.cassette.interactions.length) return { replayed: false };
+
+  const interaction = state.cassette.interactions[state.index];
+  if (interaction.requestHash === requestHash) {
+    state.index++;
+    if (process.env.VCR_DEBUG) {
+      console.log(`📼 Replaying interaction ${state.index}/${state.cassette.interactions.length}`);
+    }
+    return { replayed: true, response: interaction.response };
+  }
+
+  logHashMismatch({
+    index: state.index,
+    expected: interaction,
+    actualHash: requestHash,
+    model,
+    messages,
+  });
+  state.cassette.interactions = state.cassette.interactions.slice(0, state.index);
+  return { replayed: false };
+}
+
+interface CassetteContext {
+  state: CassetteState;
+  mode: RecordMode;
+  cassettesDir: string;
+  time: ReturnType<typeof createTimeHelpers>;
+  saveCassette: () => void;
+}
+
+/** Load or create cassette for test */
+function doLoadCassette(ctx: CassetteContext, testName: string): void {
+  const { state, mode, cassettesDir, time, saveCassette } = ctx;
+  if (state.cassette && state.modified && state.path) saveCassette();
+  time.unfreeze();
+
+  state.path = getCassettePath(cassettesDir, testName);
+  state.index = 0;
+  state.modified = false;
+  const safeName = testName.replace(/[^a-zA-Z0-9-_]/g, '_');
+
+  if (existsSync(state.path) && mode !== 'record') {
+    state.cassette = loadCassetteFromFile(state.path);
+    if (process.env.VCR_DEBUG)
+      console.log(
+        `📼 Loaded cassette: ${safeName} (${state.cassette.interactions.length} interactions)`,
+      );
+    time.freeze(state.cassette.frozenTime);
+  } else {
+    state.cassette = createNewCassette(testName);
+    if (mode === 'playback') throw new Error(`Cassette not found for playback: ${state.path}`);
+    if (process.env.VCR_DEBUG) console.log(`📼 Created new cassette: ${safeName}`);
+  }
+}
+
+interface RecordParams {
+  state: CassetteState;
+  requestHash: string;
+  model: string;
+  systemPrompt: string;
+  messages: Array<{ role: string; content: string }>;
+  realCall: () => Promise<string>;
+}
+
+/** Record new interaction */
+async function recordNewInteraction(params: RecordParams): Promise<string> {
+  const { state, requestHash, model, systemPrompt, messages, realCall } = params;
+  console.log(`📼 Recording new interaction ${state.index + 1}`);
+  const startTime = Date.now();
+  const response = await realCall();
+  state.cassette!.interactions.push(
+    createInteractionRecord({
+      requestHash,
+      model,
+      systemPrompt,
+      messages,
+      response,
+      responseTimeMs: Date.now() - startTime,
+    }),
+  );
+  state.index++;
+  state.modified = true;
+  return response;
+}
+
+/** Factory function to create a cassette manager */
 export function createCassetteManager(
   config: CassetteManagerConfig,
   timeController?: TimeController,
@@ -79,100 +195,17 @@ export function createCassetteManager(
     modified: false,
     timeFrozen: false,
   };
+  const time = createTimeHelpers(timeController);
 
-  if (!existsSync(cassettesDir)) {
-    mkdirSync(cassettesDir, { recursive: true });
-  }
+  if (!existsSync(cassettesDir)) mkdirSync(cassettesDir, { recursive: true });
 
-  function saveCassette(): void {
+  const saveCassette = (): void => {
     if (!state.cassette || !state.path) return;
     saveCassetteToFile(state.path, state.cassette);
     state.modified = false;
-  }
+  };
 
-  function unfreezeTime(): void {
-    if (state.timeFrozen && timeController) {
-      timeController.unfreeze();
-      state.timeFrozen = false;
-    }
-  }
-
-  function freezeTime(isoTime: string): void {
-    if (timeController && isoTime) {
-      if (process.env.VCR_DEBUG) {
-        console.log(`📼 Freezing time to: ${isoTime}`);
-      }
-      timeController.freeze(isoTime);
-      state.timeFrozen = true;
-    }
-  }
-
-  function loadCassette(testName: string): void {
-    if (state.cassette && state.modified && state.path) {
-      saveCassette();
-    }
-    unfreezeTime();
-
-    state.path = getCassettePath(cassettesDir, testName);
-    state.index = 0;
-    state.modified = false;
-
-    if (existsSync(state.path) && mode !== 'record') {
-      state.cassette = loadCassetteFromFile(state.path);
-      if (process.env.VCR_DEBUG) {
-        const safeName = testName.replace(/[^a-zA-Z0-9-_]/g, '_');
-        console.log(
-          `📼 Loaded cassette: ${safeName} (${state.cassette.interactions.length} interactions)`,
-        );
-      }
-      freezeTime(state.cassette.frozenTime);
-    } else {
-      state.cassette = createNewCassette(testName);
-      if (mode === 'playback') {
-        throw new Error(`Cassette not found for playback: ${state.path}`);
-      }
-      if (process.env.VCR_DEBUG) {
-        const safeName = testName.replace(/[^a-zA-Z0-9-_]/g, '_');
-        console.log(`📼 Created new cassette: ${safeName}`);
-      }
-    }
-  }
-
-  function tryReplayInteraction(
-    requestHash: string,
-    model: string,
-    messages: Array<{ role: string; content: string }>,
-  ): { replayed: boolean; response?: string } {
-    if (!state.cassette || mode === 'record') {
-      return { replayed: false };
-    }
-
-    if (state.index >= state.cassette.interactions.length) {
-      return { replayed: false };
-    }
-
-    const interaction = state.cassette.interactions[state.index];
-
-    if (interaction.requestHash === requestHash) {
-      state.index++;
-      if (process.env.VCR_DEBUG) {
-        console.log(
-          `📼 Replaying interaction ${state.index}/${state.cassette.interactions.length}`,
-        );
-      }
-      return { replayed: true, response: interaction.response };
-    }
-
-    logHashMismatch({
-      index: state.index,
-      expected: interaction,
-      actualHash: requestHash,
-      model,
-      messages,
-    });
-    state.cassette.interactions = state.cassette.interactions.slice(0, state.index);
-    return { replayed: false };
-  }
+  const ctx: CassetteContext = { state, mode, cassettesDir, time, saveCassette };
 
   async function handleInteraction(
     model: string,
@@ -180,73 +213,31 @@ export function createCassetteManager(
     messages: Array<{ role: string; content: string }>,
     realCall: () => Promise<string>,
   ): Promise<string> {
-    if (!state.cassette) {
-      throw new Error('No cassette loaded. Call loadCassette() first.');
-    }
-
+    if (!state.cassette) throw new Error('No cassette loaded. Call loadCassette() first.');
     const requestHash = hashRequest(model, systemPrompt, messages);
-    const replayResult = tryReplayInteraction(requestHash, model, messages);
-
-    if (replayResult.replayed) {
-      return replayResult.response!;
-    }
-
-    if (mode === 'playback') {
+    const replayResult = tryReplayFromCassette({ state, mode, requestHash, model, messages });
+    if (replayResult.replayed) return replayResult.response!;
+    if (mode === 'playback')
       throw new Error(
-        `No matching interaction in cassette at index ${state.index}. ` +
-          `Run with VCR_MODE=auto or VCR_MODE=record to record new interactions.`,
+        `No matching interaction in cassette at index ${state.index}. Run with VCR_MODE=auto or VCR_MODE=record to record new interactions.`,
       );
-    }
-
-    console.log(`📼 Recording new interaction ${state.index + 1}`);
-    const startTime = Date.now();
-    const response = await realCall();
-    const responseTimeMs = Date.now() - startTime;
-
-    state.cassette.interactions.push(
-      createInteractionRecord({
-        requestHash,
-        model,
-        systemPrompt,
-        messages,
-        response,
-        responseTimeMs,
-      }),
-    );
-
-    state.index++;
-    state.modified = true;
-
-    return response;
+    return recordNewInteraction({ state, requestHash, model, systemPrompt, messages, realCall });
   }
 
   function ejectCassette(): void {
-    if (state.cassette && state.modified && state.path) {
-      saveCassette();
-    }
-    unfreezeTime();
-    state.cassette = null;
-    state.path = null;
-    state.index = 0;
-    state.modified = false;
-  }
-
-  function getMode(): RecordMode {
-    return mode;
-  }
-
-  function isReplaying(): boolean {
-    if (!state.cassette) return false;
-    return mode !== 'record' && state.cassette.interactions.length > 0;
+    if (state.cassette && state.modified && state.path) saveCassette();
+    time.unfreeze();
+    Object.assign(state, { cassette: null, path: null, index: 0, modified: false });
   }
 
   return {
-    loadCassette,
+    loadCassette: (testName: string) => doLoadCassette(ctx, testName),
     handleInteraction,
     ejectCassette,
     saveCassette,
-    getMode,
-    isReplaying,
+    getMode: () => mode,
+    isReplaying: () =>
+      !!state.cassette && mode !== 'record' && state.cassette.interactions.length > 0,
   };
 }
 

@@ -17,69 +17,55 @@ export interface CachedClaudeServiceConfig {
   model?: string;
 }
 
-/**
- * Creates a Claude service that records/replays responses via cassette manager
- */
-export function createCachedClaudeService(config: CachedClaudeServiceConfig): ClaudeService {
-  const { cassetteManager, model = 'claude-3-5-haiku-20241022' } = config;
-
-  // Only create real Anthropic client if we might need to record
-  let anthropic: Anthropic | null = null;
-
-  function getAnthropicClient(): Anthropic {
-    if (!anthropic) {
+/** Creates lazy-initialized Anthropic client factory */
+function createAnthropicFactory(): () => Anthropic {
+  let client: Anthropic | null = null;
+  return () => {
+    if (!client) {
       if (!appConfig.ANTHROPIC_API_KEY) {
         throw new Error(
           'ANTHROPIC_API_KEY required for recording. Set VCR_MODE=playback to use cached responses.',
         );
       }
-      anthropic = new Anthropic({
-        apiKey: appConfig.ANTHROPIC_API_KEY,
-      });
+      client = new Anthropic({ apiKey: appConfig.ANTHROPIC_API_KEY });
     }
-    return anthropic;
-  }
+    return client;
+  };
+}
+
+/** Make real Claude API call */
+async function makeClaudeApiCall(
+  getClient: () => Anthropic,
+  model: string,
+  systemPrompt: string,
+  messages: Array<{ role: string; content: string }>,
+): Promise<string> {
+  logger.debug('Making real Claude API call', { model, messagesCount: messages.length });
+  const response = await getClient().messages.create({
+    model,
+    max_tokens: 1000,
+    system: systemPrompt,
+    messages: messages as Anthropic.MessageParam[],
+  });
+  const content = response.content[0];
+  if (content.type !== 'text') throw new Error('Unexpected response type from Claude');
+  return content.text;
+}
+
+/** Creates a Claude service that records/replays responses via cassette manager */
+export function createCachedClaudeService(config: CachedClaudeServiceConfig): ClaudeService {
+  const { cassetteManager, model = 'claude-3-5-haiku-20241022' } = config;
+  const getClient = createAnthropicFactory();
 
   async function generateResponse(
     conversationHistory: AgentState['history'],
     systemPrompt: string,
   ): Promise<string> {
-    const messages = conversationHistory.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
-    return cassetteManager.handleInteraction(
-      model,
-      systemPrompt,
-      messages,
-      // Real API call function (only called if not replaying)
-      async () => {
-        const client = getAnthropicClient();
-
-        logger.debug('Making real Claude API call', {
-          model,
-          messagesCount: messages.length,
-        });
-
-        const response = await client.messages.create({
-          model,
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages,
-        });
-
-        const content = response.content[0];
-        if (content.type !== 'text') {
-          throw new Error('Unexpected response type from Claude');
-        }
-
-        return content.text;
-      },
+    const messages = conversationHistory.map((msg) => ({ role: msg.role, content: msg.content }));
+    return cassetteManager.handleInteraction(model, systemPrompt, messages, () =>
+      makeClaudeApiCall(getClient, model, systemPrompt, messages),
     );
   }
 
-  return {
-    generateResponse,
-  };
+  return { generateResponse };
 }

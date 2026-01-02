@@ -85,94 +85,60 @@ export class DatabaseHealthMonitor {
     return { ...this.currentMetrics };
   }
 
-  /**
-   * Perform a manual health check
-   */
-  async performHealthCheck(): Promise<DatabaseHealthCheck> {
-    const startTime = Date.now();
-    const issues: DatabaseHealthIssue[] = [];
-
-    try {
-      // Test database connectivity with a simple operation
-      await this.db.info();
-
-      const responseTime = Date.now() - startTime;
-
-      // Update metrics on success
-      this.currentMetrics.isConnected = true;
-      this.currentMetrics.lastSuccessfulOperation = new Date();
-      this.currentMetrics.consecutiveFailures = 0;
-      this.currentMetrics.lastResponseTime = responseTime;
-
-      // Check performance
-      if (responseTime > this.config.performanceThreshold) {
-        issues.push({
-          type: 'performance',
-          severity: responseTime > this.config.performanceThreshold * 2 ? 'high' : 'medium',
-          message: `Database response time is ${responseTime}ms, exceeding threshold of ${this.config.performanceThreshold}ms`,
-          resolution: 'Consider optimizing database queries or checking network conditions',
-          autoResolvable: false,
-        });
-      }
-
-      // Check storage quota if available
-      try {
-        const storageQuota = await this.checkStorageQuota();
-        this.currentMetrics.storageQuota = storageQuota;
-
-        if (storageQuota && storageQuota.percentage >= this.config.storageCriticalThreshold) {
-          issues.push({
-            type: 'storage',
-            severity: 'critical',
-            message: `Storage is ${storageQuota.percentage.toFixed(1)}% full`,
-            resolution: 'Delete unnecessary data or increase storage quota',
-            autoResolvable: false,
-          });
-        } else if (storageQuota && storageQuota.percentage >= this.config.storageWarningThreshold) {
-          issues.push({
-            type: 'storage',
-            severity: 'medium',
-            message: `Storage is ${storageQuota.percentage.toFixed(1)}% full`,
-            resolution: 'Consider cleaning up old data',
-            autoResolvable: false,
-          });
-        }
-      } catch (error) {
-        // Storage quota check failed, but this is non-critical
-        console.warn('Failed to check storage quota:', error);
-      }
-    } catch (error) {
-      // Update metrics on failure
-      this.currentMetrics.isConnected = false;
-      this.currentMetrics.consecutiveFailures++;
-      this.currentMetrics.lastResponseTime = Date.now() - startTime;
-
-      // Classify the error
-      const dbError = this.classifyError(error);
-
-      issues.push({
-        type: 'connectivity',
-        severity:
-          this.currentMetrics.consecutiveFailures >= this.config.maxConsecutiveFailures
-            ? 'critical'
-            : 'high',
-        message: `Database connection failed: ${dbError.message}`,
-        resolution: this.getResolutionForError(dbError),
-        autoResolvable: dbError.retryable,
-      });
-    }
-
-    // Determine overall health status
-    const status = this.determineHealthStatus(issues);
-
-    const healthCheck: DatabaseHealthCheck = {
-      timestamp: new Date(),
-      status,
-      metrics: { ...this.currentMetrics },
-      issues,
+  /** Check performance and add issue if slow */
+  private checkPerformanceIssue(responseTime: number): DatabaseHealthIssue | null {
+    if (responseTime <= this.config.performanceThreshold) return null;
+    return {
+      type: 'performance',
+      severity: responseTime > this.config.performanceThreshold * 2 ? 'high' : 'medium',
+      message: `Database response time is ${responseTime}ms, exceeding threshold of ${this.config.performanceThreshold}ms`,
+      resolution: 'Consider optimizing database queries or checking network conditions',
+      autoResolvable: false,
     };
+  }
 
-    // Notify listeners
+  /** Check storage and return issue if approaching limit */
+  private checkStorageIssue(
+    storageQuota: { percentage: number } | null,
+  ): DatabaseHealthIssue | null {
+    if (!storageQuota) return null;
+    if (storageQuota.percentage >= this.config.storageCriticalThreshold) {
+      return {
+        type: 'storage',
+        severity: 'critical',
+        message: `Storage is ${storageQuota.percentage.toFixed(1)}% full`,
+        resolution: 'Delete unnecessary data or increase storage quota',
+        autoResolvable: false,
+      };
+    }
+    if (storageQuota.percentage >= this.config.storageWarningThreshold) {
+      return {
+        type: 'storage',
+        severity: 'medium',
+        message: `Storage is ${storageQuota.percentage.toFixed(1)}% full`,
+        resolution: 'Consider cleaning up old data',
+        autoResolvable: false,
+      };
+    }
+    return null;
+  }
+
+  /** Create connectivity issue from error */
+  private createConnectivityIssue(dbError: DatabaseError): DatabaseHealthIssue {
+    return {
+      type: 'connectivity',
+      severity:
+        this.currentMetrics.consecutiveFailures >= this.config.maxConsecutiveFailures
+          ? 'critical'
+          : 'high',
+      message: `Database connection failed: ${dbError.message}`,
+      resolution: this.getResolutionForError(dbError),
+      autoResolvable: dbError.retryable,
+    };
+  }
+
+  /** Notify all listeners of health check result */
+  private notifyListeners(healthCheck: DatabaseHealthCheck): void {
     this.listeners.forEach((listener) => {
       try {
         listener(healthCheck);
@@ -180,7 +146,48 @@ export class DatabaseHealthMonitor {
         console.error('Error in health check listener:', error);
       }
     });
+  }
 
+  /** Perform a manual health check */
+  async performHealthCheck(): Promise<DatabaseHealthCheck> {
+    const startTime = Date.now();
+    const issues: DatabaseHealthIssue[] = [];
+
+    try {
+      await this.db.info();
+      const responseTime = Date.now() - startTime;
+
+      this.currentMetrics.isConnected = true;
+      this.currentMetrics.lastSuccessfulOperation = new Date();
+      this.currentMetrics.consecutiveFailures = 0;
+      this.currentMetrics.lastResponseTime = responseTime;
+
+      const perfIssue = this.checkPerformanceIssue(responseTime);
+      if (perfIssue) issues.push(perfIssue);
+
+      try {
+        const storageQuota = await this.checkStorageQuota();
+        this.currentMetrics.storageQuota = storageQuota;
+        const storageIssue = this.checkStorageIssue(storageQuota);
+        if (storageIssue) issues.push(storageIssue);
+      } catch {
+        console.warn('Failed to check storage quota');
+      }
+    } catch (error) {
+      this.currentMetrics.isConnected = false;
+      this.currentMetrics.consecutiveFailures++;
+      this.currentMetrics.lastResponseTime = Date.now() - startTime;
+      issues.push(this.createConnectivityIssue(this.classifyError(error)));
+    }
+
+    const healthCheck: DatabaseHealthCheck = {
+      timestamp: new Date(),
+      status: this.determineHealthStatus(issues),
+      metrics: { ...this.currentMetrics },
+      issues,
+    };
+
+    this.notifyListeners(healthCheck);
     return healthCheck;
   }
 
