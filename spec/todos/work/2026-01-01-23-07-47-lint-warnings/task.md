@@ -19,7 +19,7 @@ The codebase has ESLint warnings related to code quality (function complexity an
 | max-lines              | 18       | ~8      | ~56%      |
 | max-params             | 4        | ~2      | ~50%      |
 
-**Current Status:** 136 warnings (down from 270, 134 fixed = 50% reduction)
+**Current Status:** 132 warnings (down from 270, 138 fixed = 51% reduction)
 
 **Success Criteria:**
 
@@ -60,11 +60,11 @@ The codebase has ESLint warnings related to code quality (function complexity an
 
 ### Verification
 
-- [x] Run `pnpm lint` - 136 warnings (50% reduction from 270)
+- [x] Run `pnpm lint` - 132 warnings (51% reduction from 270)
 - [x] Run `pnpm test` - all tests pass (508 passed)
 - [x] Run `pnpm tsc:check` - no type errors
 
-## New Helper Modules Created (22 files)
+## New Helper Modules Created (26 files)
 
 1. scripts/restore-interactive-prompts.ts
 2. scripts/backup-interactive-prompts.ts
@@ -87,6 +87,10 @@ The codebase has ESLint warnings related to code quality (function complexity an
 19. packages/mcp_server/src/auth/user-auth-helpers.ts
 20. packages/mcp_server/src/integration-tests/setup/global-helpers.ts
 21. packages/telegram_bot/src/integration-tests/vcr/cassette-helpers.ts
+22. packages/web-client/src/components/todo_board_helpers.ts
+23. packages/web-client/src/components/todo_table_helpers.ts
+24. packages/web-client/src/components/todo_table_cell.tsx
+25. packages/web-client/src/components/todo_table_row.tsx
 
 ## Review
 
@@ -96,5 +100,6 @@ The codebase has ESLint warnings related to code quality (function complexity an
 
 - Focus on non-UI files as they refactor more cleanly
 - React components with heavy JSX are challenging to split
-- Achieved 50% reduction (134 warnings fixed)
-- Remaining warnings mostly in React components (todo_board, todo_table, user_profile, database_setup)
+- Achieved 51% reduction (138 warnings fixed)
+- Successfully refactored React components (todo_board, todo_table) into smaller modules
+- Remaining warnings spread across many small files with 1-2 warnings each
