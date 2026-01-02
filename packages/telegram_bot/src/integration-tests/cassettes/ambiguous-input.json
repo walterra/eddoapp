@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-01-02T14:20:18.587Z",
-  "frozenTime": "2026-01-02T14:20:18.587Z",
+  "createdAt": "2026-01-02T14:25:57.100Z",
+  "frozenTime": "2026-01-02T14:25:57.100Z",
   "interactions": [
     {
       "requestHash": "8941db273cd9bfdd",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "I'd love to help you create a new todo! Could you tell me what task you'd like to add? Just let me know what you want to accomplish and I'll get it set up in your system.",
+      "response": "I'd love to help you add a todo! What task would you like to add to your system?",
       "metadata": {
-        "recordedAt": "2026-01-02T14:20:21.299Z",
-        "responseTimeMs": 2697
+        "recordedAt": "2026-01-02T14:26:01.459Z",
+        "responseTimeMs": 4347
       }
     }
   ]
