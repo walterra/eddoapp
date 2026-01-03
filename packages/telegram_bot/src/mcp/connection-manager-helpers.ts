@@ -3,10 +3,22 @@
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { context, propagation } from '@opentelemetry/api';
 
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import type { MCPUserContext } from './user-context.js';
+
+/**
+ * Injects OpenTelemetry trace context into headers for distributed tracing
+ * @param headers - Existing headers object
+ * @returns Headers with trace context injected
+ */
+function injectTraceContext(headers: Record<string, string>): Record<string, string> {
+  const carrier: Record<string, string> = { ...headers };
+  propagation.inject(context.active(), carrier);
+  return carrier;
+}
 
 /**
  * Creates headers for user-specific MCP requests
@@ -23,15 +35,16 @@ export function createUserHeaders(userContext: MCPUserContext): Record<string, s
 }
 
 /**
- * Creates a user-specific MCP transport
+ * Creates a user-specific MCP transport with trace context propagation
  * @param userContext - User context for the request
  * @returns Configured transport
  */
 export function createUserTransport(userContext: MCPUserContext): StreamableHTTPClientTransport {
+  // Inject trace context for distributed tracing between telegram-bot and mcp-server
+  const headers = injectTraceContext(createUserHeaders(userContext));
+
   return new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
-    requestInit: {
-      headers: createUserHeaders(userContext),
-    },
+    requestInit: { headers },
   });
 }
 

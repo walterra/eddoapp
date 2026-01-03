@@ -241,12 +241,12 @@ usersApp.get('/preferences/stream', async (c) => {
   logger.debug({ username }, 'Starting SSE preferences stream');
 
   return streamSSE(c, async (stream) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await handlePreferencesStream({
       stream,
       username,
       docId,
-      registryDb: registryDb as any,
+      // Type cast needed due to nano's complex generic types
+      registryDb: registryDb as Parameters<typeof handlePreferencesStream>[0]['registryDb'],
       createSafeProfile,
     });
   });

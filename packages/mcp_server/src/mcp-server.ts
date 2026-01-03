@@ -2,7 +2,16 @@
  * MCP Server with Per-Request Authentication
  * Implements proper stateless authentication following MCP best practices
  */
+
+// Note: OTEL auto-instrumentation is loaded via --import flag in package.json dev script
+// See: node --import @elastic/opentelemetry-node --import tsx src/mcp-server.ts
+
+// Configure global HTTP timeout (2 minutes for slow operations)
+import { Agent, setGlobalDispatcher } from 'undici';
+setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
+
 import { type TodoAlpha3, getCouchDbConfig, validateEnv } from '@eddo/core-server';
+import { context, propagation, trace } from '@opentelemetry/api';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
@@ -50,6 +59,27 @@ import {
   updateTodoParameters,
 } from './tools/index.js';
 import type { ToolContext, UserSession } from './tools/types.js';
+import { logger } from './utils/logger.js';
+
+/**
+ * Extracts trace context from request headers and stores it for later use.
+ * Returns the extracted context for use in tool executions.
+ */
+function extractTraceContext(
+  headers: Record<string, string | undefined>,
+): ReturnType<typeof context.active> {
+  // Normalize headers to lowercase for propagation API
+  const carrier: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (value) {
+      carrier[key.toLowerCase()] = value;
+    }
+  }
+  return propagation.extract(context.active(), carrier);
+}
+
+// Store extracted context per request (keyed by session)
+const requestContexts = new WeakMap<object, ReturnType<typeof context.active>>();
 
 // Load environment variables
 dotenvLoad();
@@ -90,21 +120,35 @@ const server = new FastMCP<UserSession>({
   ping: { logLevel: 'info' },
   instructions: SERVER_INSTRUCTIONS,
   authenticate: async (request) => {
-    console.log('MCP authentication request');
+    logger.debug('MCP authentication request');
+
+    // Extract trace context from incoming request for distributed tracing
+    const extractedContext = extractTraceContext(
+      request.headers as Record<string, string | undefined>,
+    );
 
     const username = request.headers['x-user-id'] || request.headers['X-User-ID'];
 
     if (!username) {
-      console.log('MCP connection without user headers (connection handshake)');
-      return { userId: 'anonymous', dbName: 'default', username: 'anonymous' };
+      logger.debug('MCP connection without user headers (connection handshake)');
+      const session = { userId: 'anonymous', dbName: 'default', username: 'anonymous' };
+      requestContexts.set(session, extractedContext);
+      return session;
     }
 
     const authResult = await validateUserContext(request.headers);
-    return {
+    logger.info(
+      { userId: authResult.userId, username: authResult.username },
+      'MCP user authenticated',
+    );
+
+    const session = {
       userId: authResult.userId,
       dbName: authResult.dbName,
       username: authResult.username,
     };
+    requestContexts.set(session, extractedContext);
+    return session;
   },
 });
 
@@ -125,96 +169,159 @@ function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
   return couch.db.use<TodoAlpha3>(context.session.dbName);
 }
 
-// Register all tools
+/**
+ * Wraps a tool execution with tracing span, preserving distributed trace context
+ */
+function wrapToolExecution<TArgs, TResult>(
+  toolName: string,
+  executeFn: (args: TArgs, toolContext: ToolContext) => TResult | Promise<TResult>,
+): (args: TArgs, toolContext: ToolContext) => Promise<TResult> {
+  return async (args: TArgs, toolContext: ToolContext) => {
+    // Get the extracted trace context from the request (if available)
+    const extractedContext = toolContext.session
+      ? requestContexts.get(toolContext.session)
+      : undefined;
+    const parentContext = extractedContext ?? context.active();
+
+    // Create span within the parent context (from telegram-bot if available)
+    const tracer = trace.getTracer('eddo-mcp-server');
+    const span = tracer.startSpan(
+      `mcp_tool_${toolName}`,
+      {
+        attributes: {
+          'mcp.tool': toolName,
+          'user.id': toolContext.session?.userId ?? 'anonymous',
+          'user.name': toolContext.session?.username ?? 'anonymous',
+        },
+      },
+      parentContext,
+    );
+
+    return context.with(trace.setSpan(parentContext, span), async () => {
+      try {
+        const result = await Promise.resolve(executeFn(args, toolContext));
+        span.setAttribute('mcp.result', 'success');
+        logger.info({ toolName, userId: toolContext.session?.userId }, 'MCP tool executed');
+        span.end();
+        return result;
+      } catch (error) {
+        span.setAttribute('mcp.result', 'error');
+        span.setAttribute('error.message', error instanceof Error ? error.message : String(error));
+        span.recordException(error instanceof Error ? error : new Error(String(error)));
+        logger.error({ toolName, error }, 'MCP tool execution failed');
+        span.end();
+        throw error;
+      }
+    });
+  };
+}
+
+// Register all tools with tracing
 server.addTool({
   name: 'createTodo',
   description: createTodoDescription,
   parameters: createTodoParameters,
-  execute: async (args, context) => executeCreateTodo(args, context, getUserDb, couch),
+  execute: wrapToolExecution('createTodo', (args, ctx) =>
+    executeCreateTodo(args, ctx, getUserDb, couch),
+  ),
 });
 
 server.addTool({
   name: 'listTodos',
   description: listTodosDescription,
   parameters: listTodosParameters,
-  execute: async (args, context) => executeListTodos(args, context, getUserDb),
+  execute: wrapToolExecution('listTodos', (args, ctx) => executeListTodos(args, ctx, getUserDb)),
 });
 
 server.addTool({
   name: 'getTodo',
   description: getTodoDescription,
   parameters: getTodoParameters,
-  execute: async (args, context) => executeGetTodo(args, context, getUserDb),
+  execute: wrapToolExecution('getTodo', (args, ctx) => executeGetTodo(args, ctx, getUserDb)),
 });
 
 server.addTool({
   name: 'getUserInfo',
   description: getUserInfoDescription,
   parameters: getUserInfoParameters,
-  execute: async (_, context) => executeGetUserInfo({}, context),
+  execute: wrapToolExecution('getUserInfo', (_, ctx) => executeGetUserInfo({}, ctx)),
 });
 
 server.addTool({
   name: 'updateTodo',
   description: updateTodoDescription,
   parameters: updateTodoParameters,
-  execute: async (args, context) => executeUpdateTodo(args, context, getUserDb),
+  execute: wrapToolExecution('updateTodo', (args, ctx) => executeUpdateTodo(args, ctx, getUserDb)),
 });
 
 server.addTool({
   name: 'toggleTodoCompletion',
   description: toggleCompletionDescription,
   parameters: toggleCompletionParameters,
-  execute: async (args, context) => executeToggleCompletion(args, context, getUserDb),
+  execute: wrapToolExecution('toggleTodoCompletion', (args, ctx) =>
+    executeToggleCompletion(args, ctx, getUserDb),
+  ),
 });
 
 server.addTool({
   name: 'deleteTodo',
   description: deleteTodoDescription,
   parameters: deleteTodoParameters,
-  execute: async (args, context) => executeDeleteTodo(args, context, getUserDb),
+  execute: wrapToolExecution('deleteTodo', (args, ctx) => executeDeleteTodo(args, ctx, getUserDb)),
 });
 
 server.addTool({
   name: 'startTimeTracking',
   description: startTimeTrackingDescription,
   parameters: startTimeTrackingParameters,
-  execute: async (args, context) => executeStartTimeTracking(args, context, getUserDb),
+  execute: wrapToolExecution('startTimeTracking', (args, ctx) =>
+    executeStartTimeTracking(args, ctx, getUserDb),
+  ),
 });
 
 server.addTool({
   name: 'stopTimeTracking',
   description: stopTimeTrackingDescription,
   parameters: stopTimeTrackingParameters,
-  execute: async (args, context) => executeStopTimeTracking(args, context, getUserDb),
+  execute: wrapToolExecution('stopTimeTracking', (args, ctx) =>
+    executeStopTimeTracking(args, ctx, getUserDb),
+  ),
 });
 
 server.addTool({
   name: 'getActiveTimeTracking',
   description: getActiveTimeTrackingDescription,
   parameters: getActiveTimeTrackingParameters,
-  execute: async (_args, context) => executeGetActiveTimeTracking({}, context, getUserDb),
+  execute: wrapToolExecution('getActiveTimeTracking', (_args, ctx) =>
+    executeGetActiveTimeTracking({}, ctx, getUserDb),
+  ),
 });
 
 server.addTool({
   name: 'getServerInfo',
   description: getServerInfoDescription,
   parameters: getServerInfoParameters,
-  execute: async (args, context) => executeGetServerInfo(args, context, getUserDb),
+  execute: wrapToolExecution('getServerInfo', (args, ctx) =>
+    executeGetServerInfo(args, ctx, getUserDb),
+  ),
 });
 
 server.addTool({
   name: 'getBriefingData',
   description: getBriefingDataDescription,
   parameters: getBriefingDataParameters,
-  execute: async (_args, context) => executeGetBriefingData({}, context, getUserDb),
+  execute: wrapToolExecution('getBriefingData', (_args, ctx) =>
+    executeGetBriefingData({}, ctx, getUserDb),
+  ),
 });
 
 server.addTool({
   name: 'getRecapData',
   description: getRecapDataDescription,
   parameters: getRecapDataParameters,
-  execute: async (_args, context) => executeGetRecapData({}, context, getUserDb),
+  execute: wrapToolExecution('getRecapData', (_args, ctx) =>
+    executeGetRecapData({}, ctx, getUserDb),
+  ),
 });
 
 // Export the server instance and control functions
@@ -226,9 +333,9 @@ export const mcpServer = server;
 export async function stopMcpServer(): Promise<void> {
   try {
     await server.stop();
-    console.log('✅ Eddo MCP server stopped');
+    logger.info('MCP server stopped');
   } catch (error) {
-    console.error('❌ Failed to stop MCP server:', error);
+    logger.error({ error }, 'Failed to stop MCP server');
     throw error;
   }
 }
@@ -238,25 +345,41 @@ export async function stopMcpServer(): Promise<void> {
  */
 export async function startMcpServer(port: number = 3001): Promise<void> {
   try {
-    console.log(`🔧 Initializing Eddo MCP server with auth on port ${port}...`);
+    logger.info({ port }, 'Initializing MCP server');
 
     // Verify CouchDB server connection
     const serverInfo = await couch.info();
-    console.log(`✅ Connected to CouchDB ${serverInfo.version}`);
+    logger.info({ couchdbVersion: serverInfo.version }, 'Connected to CouchDB');
 
     await server.start({
       transportType: 'httpStream',
       httpStream: { port },
     });
 
-    console.log(`🚀 Eddo MCP server with auth running on port ${port}`);
-    console.log(`📡 Connect with: http://localhost:${port}/mcp`);
-    console.log(`🔐 Authentication: Pass X-API-Key header`);
-    console.log(
-      '📋 Available tools: createTodo, listTodos, getTodo, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo, getUserInfo, getBriefingData, getRecapData',
+    logger.info(
+      {
+        port,
+        endpoint: `http://localhost:${port}/mcp`,
+        tools: [
+          'createTodo',
+          'listTodos',
+          'getTodo',
+          'updateTodo',
+          'toggleTodoCompletion',
+          'deleteTodo',
+          'startTimeTracking',
+          'stopTimeTracking',
+          'getActiveTimeTracking',
+          'getServerInfo',
+          'getUserInfo',
+          'getBriefingData',
+          'getRecapData',
+        ],
+      },
+      'MCP server started',
     );
   } catch (error) {
-    console.error('❌ Failed to start MCP server:', error);
+    logger.error({ error }, 'Failed to start MCP server');
     throw error;
   }
 }
@@ -264,7 +387,7 @@ export async function startMcpServer(port: number = 3001): Promise<void> {
 // Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   startMcpServer(env.MCP_SERVER_PORT).catch((error) => {
-    console.error('Failed to start MCP server:', error);
+    logger.error({ error }, 'Failed to start MCP server');
     process.exit(1);
   });
 }
