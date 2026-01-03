@@ -16,6 +16,8 @@ import {
   executeCreateTodo,
   executeDeleteTodo,
   executeGetActiveTimeTracking,
+  executeGetBriefingData,
+  executeGetRecapData,
   executeGetServerInfo,
   executeGetUserInfo,
   executeListTodos,
@@ -25,6 +27,10 @@ import {
   executeUpdateTodo,
   getActiveTimeTrackingDescription,
   getActiveTimeTrackingParameters,
+  getBriefingDataDescription,
+  getBriefingDataParameters,
+  getRecapDataDescription,
+  getRecapDataParameters,
   getServerInfoDescription,
   getServerInfoParameters,
   getUserInfoDescription,
@@ -187,6 +193,20 @@ server.addTool({
   execute: async (args, context) => executeGetServerInfo(args, context, getUserDb),
 });
 
+server.addTool({
+  name: 'getBriefingData',
+  description: getBriefingDataDescription,
+  parameters: getBriefingDataParameters,
+  execute: async (_args, context) => executeGetBriefingData({}, context, getUserDb),
+});
+
+server.addTool({
+  name: 'getRecapData',
+  description: getRecapDataDescription,
+  parameters: getRecapDataParameters,
+  execute: async (_args, context) => executeGetRecapData({}, context, getUserDb),
+});
+
 // Export the server instance and control functions
 export const mcpServer = server;
 
@@ -223,7 +243,7 @@ export async function startMcpServer(port: number = 3001): Promise<void> {
     console.log(`📡 Connect with: http://localhost:${port}/mcp`);
     console.log(`🔐 Authentication: Pass X-API-Key header`);
     console.log(
-      '📋 Available tools: createTodo, listTodos, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo, getUserInfo',
+      '📋 Available tools: createTodo, listTodos, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo, getUserInfo, getBriefingData, getRecapData',
     );
   } catch (error) {
     console.error('❌ Failed to start MCP server:', error);
