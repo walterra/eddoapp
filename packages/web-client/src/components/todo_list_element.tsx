@@ -251,7 +251,7 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
 }) => {
   const state = useTodoListState(todo, active, activeDate);
   const activeClass = active ? 'ring-2 ring-sky-600 ' : '';
-  const cardClass = `${activeClass}mb-1 flex max-w-md transform flex-col px-2 py-1 ${CARD_INTERACTIVE}`;
+  const cardClass = `${activeClass}mb-1 flex max-w-md transform flex-col px-3 py-2 ${CARD_INTERACTIVE}`;
 
   return (
     <div className={cardClass}>

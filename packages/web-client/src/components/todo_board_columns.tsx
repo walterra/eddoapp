@@ -35,7 +35,7 @@ export const ContextColumn: FC<ContextColumnProps> = ({
   return (
     <div className="eddo-w-kanban" key={context}>
       <ContextHeader context={context} duration={durationByContext[context]} />
-      <div className="eddo-w-kanban mb-2 space-y-2" id="kanban-list-1">
+      <div className="eddo-w-kanban mb-2 space-y-3" id="kanban-list-1">
         {todosByDate.map(([todoDate, allTodosForDate]) => (
           <DateGroup
             activityDurationByDate={activityDurationByDate}

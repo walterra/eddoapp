@@ -200,7 +200,7 @@ const TodoBoardContent: FC<TodoBoardContentProps> = ({
     <div className="overflow-x-auto">
       <div className="inline-block min-w-full align-middle">
         <div className="overflow-hidden">
-          <div className="mb-4 flex items-start justify-start space-x-3 px-4">
+          <div className="mb-4 flex items-start justify-start space-x-4 px-4">
             {groupedByContextByDate.map(([context, contextTodos]) => (
               <ContextColumn
                 context={context}
