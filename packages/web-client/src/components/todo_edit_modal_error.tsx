@@ -10,7 +10,7 @@ interface ErrorDisplayProps {
 }
 
 export const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onClear }) => (
-  <div className="border-error-200 bg-error-50 dark:border-error-700 dark:bg-error-900 mb-4 rounded-md border px-4 py-3">
+  <div className="border-error-200 bg-error-50 dark:border-error-700 dark:bg-error-900 mb-4 rounded-lg border px-4 py-3">
     <div className="flex items-start">
       <div className="flex-shrink-0">
         <ErrorIcon />

@@ -2,7 +2,7 @@ import { Checkbox } from 'flowbite-react';
 import { type FC, useState } from 'react';
 import { MdViewColumn } from 'react-icons/md';
 
-import { FILTER_BUTTON_INACTIVE, TRANSITION } from '../styles/interactive';
+import { DROPDOWN_CONTAINER, FILTER_BUTTON_INACTIVE, TRANSITION } from '../styles/interactive';
 
 export interface ColumnOption {
   id: string;
@@ -36,7 +36,7 @@ interface ColumnItemProps {
 
 const ColumnItem: FC<ColumnItemProps> = ({ column, isSelected, isLastSelected, onToggle }) => (
   <label
-    className={`flex items-center gap-2 rounded px-2 py-1 ${TRANSITION} hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
+    className={`flex items-center gap-2 rounded-lg px-2 py-1 ${TRANSITION} hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
       isLastSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
     }`}
   >
@@ -92,7 +92,7 @@ export const ColumnPicker: FC<ColumnPickerProps> = ({ selectedColumns, onColumns
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full z-20 mt-1 max-h-96 w-56 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800">
+          <div className={`top-full w-56 p-3 ${DROPDOWN_CONTAINER}`}>
             <div className="mb-2 text-xs font-semibold text-neutral-500 uppercase dark:text-neutral-400">
               Visible Columns
             </div>

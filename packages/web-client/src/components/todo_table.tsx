@@ -203,7 +203,7 @@ const ContextGroup: FC<ContextGroupProps> = ({
 }) => (
   <div className="mb-4">
     <ContextHeader context={context} duration={durationByContext[context]} />
-    <div className="overflow-hidden rounded border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
       <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
         <TableHeader selectedColumns={selectedColumns} />
         <tbody className="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">

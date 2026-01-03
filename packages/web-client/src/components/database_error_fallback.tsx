@@ -2,6 +2,8 @@ import { type FC } from 'react';
 
 import { DatabaseError, DatabaseErrorType } from '@eddo/core-client';
 
+import { BTN_GHOST, BTN_PRIMARY, BTN_SECONDARY, CARD_BASE } from '../styles/interactive';
+
 interface DatabaseErrorFallbackProps {
   error: DatabaseError;
   onRetry?: () => void;
@@ -36,26 +38,17 @@ interface ActionButtonsProps {
 const ActionButtons: FC<ActionButtonsProps> = ({ error, onRetry, onDismiss }) => (
   <div className="flex justify-end gap-3">
     {error.retryable && onRetry && (
-      <button
-        className="bg-primary-600 hover:bg-primary-700 focus:ring-primary-500 rounded px-4 py-2 text-white focus:ring-2 focus:outline-none"
-        onClick={onRetry}
-      >
+      <button className={BTN_PRIMARY} onClick={onRetry}>
         Try Again
       </button>
     )}
     {error.type === DatabaseErrorType.QUOTA_EXCEEDED && (
-      <button
-        className="rounded bg-neutral-200 px-4 py-2 text-neutral-700 hover:bg-neutral-300 focus:ring-2 focus:ring-neutral-500 focus:outline-none"
-        onClick={() => console.log('Storage cleanup requested')}
-      >
+      <button className={BTN_SECONDARY} onClick={() => console.log('Storage cleanup requested')}>
         Free Up Space
       </button>
     )}
     {onDismiss && (
-      <button
-        className="rounded border border-neutral-300 px-4 py-2 text-neutral-600 hover:bg-neutral-50 focus:ring-2 focus:ring-neutral-500 focus:outline-none"
-        onClick={onDismiss}
-      >
+      <button className={BTN_GHOST} onClick={onDismiss}>
         Dismiss
       </button>
     )}
@@ -70,7 +63,7 @@ const TechnicalDetails: FC<TechnicalDetailsProps> = ({ error }) => {
   if (process.env.NODE_ENV !== 'development' || !error.originalError) return null;
 
   return (
-    <details className="mb-6 rounded border border-neutral-200 bg-neutral-50 p-3">
+    <details className="mb-6 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
       <summary className="cursor-pointer text-sm font-medium text-neutral-600">
         Technical Details
       </summary>
@@ -98,7 +91,7 @@ export const DatabaseErrorFallback: FC<DatabaseErrorFallbackProps> = ({
   onDismiss,
 }) => (
   <div className="mx-auto flex max-w-md flex-col items-center justify-center p-8">
-    <div className="w-full rounded-lg bg-white p-6 shadow-lg">
+    <div className={`w-full p-6 shadow-lg ${CARD_BASE}`}>
       <div className="mb-4 flex items-center">
         <span aria-label="Warning" className="mr-3 text-4xl" role="img">
           ⚠️

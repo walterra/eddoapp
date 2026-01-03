@@ -2,6 +2,7 @@ import { type FC } from 'react';
 import { MdTableChart, MdViewKanban } from 'react-icons/md';
 
 import type { ViewMode } from '../hooks/use_view_preferences';
+import { TOGGLE_GROUP, getToggleButtonClass } from '../styles/interactive';
 
 interface ViewModeToggleProps {
   viewMode: ViewMode;
@@ -15,13 +16,9 @@ export const ViewModeToggle: FC<ViewModeToggleProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-neutral-300 bg-white p-1 dark:border-neutral-600 dark:bg-neutral-800">
+    <div className={TOGGLE_GROUP}>
       <button
-        className={`flex items-center gap-1 rounded px-2 py-1 text-sm transition-colors ${
-          viewMode === 'kanban'
-            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-            : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-        }`}
+        className={getToggleButtonClass(viewMode === 'kanban')}
         disabled={isLoading}
         onClick={() => onViewModeChange('kanban')}
         title="Kanban View"
@@ -31,11 +28,7 @@ export const ViewModeToggle: FC<ViewModeToggleProps> = ({
         <span className="hidden sm:inline">Kanban</span>
       </button>
       <button
-        className={`flex items-center gap-1 rounded px-2 py-1 text-sm transition-colors ${
-          viewMode === 'table'
-            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
-            : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-        }`}
+        className={getToggleButtonClass(viewMode === 'table')}
         disabled={isLoading}
         onClick={() => onViewModeChange('table')}
         title="Table View"

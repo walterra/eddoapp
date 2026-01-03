@@ -158,7 +158,7 @@ const PeriodNavigation: FC<PeriodNavigationProps> = ({
         <RiArrowLeftSLine size="2em" />
       </Button>{' '}
       <button
-        className={`cursor-pointer font-semibold ${TRANSITION} hover:text-primary-600 dark:hover:text-primary-400 rounded text-neutral-900 dark:text-white ${FOCUS_RING}`}
+        className={`cursor-pointer font-semibold ${TRANSITION} hover:text-primary-600 dark:hover:text-primary-400 rounded-lg text-neutral-900 dark:text-white ${FOCUS_RING}`}
         onClick={onReset}
         title="Return to current period"
         type="button"
