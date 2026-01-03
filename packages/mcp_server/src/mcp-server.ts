@@ -11,64 +11,23 @@ import { Agent, setGlobalDispatcher } from 'undici';
 setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
 
 import { type TodoAlpha3, getCouchDbConfig, validateEnv } from '@eddo/core-server';
-import { context, propagation, trace } from '@opentelemetry/api';
+import { context, propagation } from '@opentelemetry/api';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 
 import { validateUserContext } from './auth/user-auth.js';
-import {
-  createTodoDescription,
-  createTodoParameters,
-  deleteTodoDescription,
-  deleteTodoParameters,
-  executeCreateTodo,
-  executeDeleteTodo,
-  executeGetActiveTimeTracking,
-  executeGetBriefingData,
-  executeGetRecapData,
-  executeGetServerInfo,
-  executeGetTodo,
-  executeGetUserInfo,
-  executeListTodos,
-  executeStartTimeTracking,
-  executeStopTimeTracking,
-  executeToggleCompletion,
-  executeUpdateTodo,
-  getActiveTimeTrackingDescription,
-  getActiveTimeTrackingParameters,
-  getBriefingDataDescription,
-  getBriefingDataParameters,
-  getRecapDataDescription,
-  getRecapDataParameters,
-  getServerInfoDescription,
-  getServerInfoParameters,
-  getTodoDescription,
-  getTodoParameters,
-  getUserInfoDescription,
-  getUserInfoParameters,
-  listTodosDescription,
-  listTodosParameters,
-  startTimeTrackingDescription,
-  startTimeTrackingParameters,
-  stopTimeTrackingDescription,
-  stopTimeTrackingParameters,
-  toggleCompletionDescription,
-  toggleCompletionParameters,
-  updateTodoDescription,
-  updateTodoParameters,
-} from './tools/index.js';
+import { registerTools } from './tools/register-tools.js';
+import { storeTraceContext } from './tools/tool-wrapper.js';
 import type { ToolContext, UserSession } from './tools/types.js';
 import { logger } from './utils/logger.js';
 
 /**
- * Extracts trace context from request headers and stores it for later use.
- * Returns the extracted context for use in tool executions.
+ * Extracts trace context from request headers for distributed tracing
  */
 function extractTraceContext(
   headers: Record<string, string | undefined>,
 ): ReturnType<typeof context.active> {
-  // Normalize headers to lowercase for propagation API
   const carrier: Record<string, string> = {};
   for (const [key, value] of Object.entries(headers)) {
     if (value) {
@@ -77,9 +36,6 @@ function extractTraceContext(
   }
   return propagation.extract(context.active(), carrier);
 }
-
-// Store extracted context per request (keyed by session)
-const requestContexts = new WeakMap<object, ReturnType<typeof context.active>>();
 
 // Load environment variables
 dotenvLoad();
@@ -132,7 +88,7 @@ const server = new FastMCP<UserSession>({
     if (!username) {
       logger.debug('MCP connection without user headers (connection handshake)');
       const session = { userId: 'anonymous', dbName: 'default', username: 'anonymous' };
-      requestContexts.set(session, extractedContext);
+      storeTraceContext(session, extractedContext);
       return session;
     }
 
@@ -147,7 +103,7 @@ const server = new FastMCP<UserSession>({
       dbName: authResult.dbName,
       username: authResult.username,
     };
-    requestContexts.set(session, extractedContext);
+    storeTraceContext(session, extractedContext);
     return session;
   },
 });
@@ -169,160 +125,8 @@ function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
   return couch.db.use<TodoAlpha3>(context.session.dbName);
 }
 
-/**
- * Wraps a tool execution with tracing span, preserving distributed trace context
- */
-function wrapToolExecution<TArgs, TResult>(
-  toolName: string,
-  executeFn: (args: TArgs, toolContext: ToolContext) => TResult | Promise<TResult>,
-): (args: TArgs, toolContext: ToolContext) => Promise<TResult> {
-  return async (args: TArgs, toolContext: ToolContext) => {
-    // Get the extracted trace context from the request (if available)
-    const extractedContext = toolContext.session
-      ? requestContexts.get(toolContext.session)
-      : undefined;
-    const parentContext = extractedContext ?? context.active();
-
-    // Create span within the parent context (from telegram-bot if available)
-    const tracer = trace.getTracer('eddo-mcp-server');
-    const span = tracer.startSpan(
-      `mcp_tool_${toolName}`,
-      {
-        attributes: {
-          'mcp.tool': toolName,
-          'user.id': toolContext.session?.userId ?? 'anonymous',
-          'user.name': toolContext.session?.username ?? 'anonymous',
-        },
-      },
-      parentContext,
-    );
-
-    return context.with(trace.setSpan(parentContext, span), async () => {
-      try {
-        const result = await Promise.resolve(executeFn(args, toolContext));
-        span.setAttribute('mcp.result', 'success');
-        logger.info({ toolName, userId: toolContext.session?.userId }, 'MCP tool executed');
-        span.end();
-        return result;
-      } catch (error) {
-        span.setAttribute('mcp.result', 'error');
-        span.setAttribute('error.message', error instanceof Error ? error.message : String(error));
-        span.recordException(error instanceof Error ? error : new Error(String(error)));
-        logger.error({ toolName, error }, 'MCP tool execution failed');
-        span.end();
-        throw error;
-      }
-    });
-  };
-}
-
 // Register all tools with tracing
-server.addTool({
-  name: 'createTodo',
-  description: createTodoDescription,
-  parameters: createTodoParameters,
-  execute: wrapToolExecution('createTodo', (args, ctx) =>
-    executeCreateTodo(args, ctx, getUserDb, couch),
-  ),
-});
-
-server.addTool({
-  name: 'listTodos',
-  description: listTodosDescription,
-  parameters: listTodosParameters,
-  execute: wrapToolExecution('listTodos', (args, ctx) => executeListTodos(args, ctx, getUserDb)),
-});
-
-server.addTool({
-  name: 'getTodo',
-  description: getTodoDescription,
-  parameters: getTodoParameters,
-  execute: wrapToolExecution('getTodo', (args, ctx) => executeGetTodo(args, ctx, getUserDb)),
-});
-
-server.addTool({
-  name: 'getUserInfo',
-  description: getUserInfoDescription,
-  parameters: getUserInfoParameters,
-  execute: wrapToolExecution('getUserInfo', (_, ctx) => executeGetUserInfo({}, ctx)),
-});
-
-server.addTool({
-  name: 'updateTodo',
-  description: updateTodoDescription,
-  parameters: updateTodoParameters,
-  execute: wrapToolExecution('updateTodo', (args, ctx) => executeUpdateTodo(args, ctx, getUserDb)),
-});
-
-server.addTool({
-  name: 'toggleTodoCompletion',
-  description: toggleCompletionDescription,
-  parameters: toggleCompletionParameters,
-  execute: wrapToolExecution('toggleTodoCompletion', (args, ctx) =>
-    executeToggleCompletion(args, ctx, getUserDb),
-  ),
-});
-
-server.addTool({
-  name: 'deleteTodo',
-  description: deleteTodoDescription,
-  parameters: deleteTodoParameters,
-  execute: wrapToolExecution('deleteTodo', (args, ctx) => executeDeleteTodo(args, ctx, getUserDb)),
-});
-
-server.addTool({
-  name: 'startTimeTracking',
-  description: startTimeTrackingDescription,
-  parameters: startTimeTrackingParameters,
-  execute: wrapToolExecution('startTimeTracking', (args, ctx) =>
-    executeStartTimeTracking(args, ctx, getUserDb),
-  ),
-});
-
-server.addTool({
-  name: 'stopTimeTracking',
-  description: stopTimeTrackingDescription,
-  parameters: stopTimeTrackingParameters,
-  execute: wrapToolExecution('stopTimeTracking', (args, ctx) =>
-    executeStopTimeTracking(args, ctx, getUserDb),
-  ),
-});
-
-server.addTool({
-  name: 'getActiveTimeTracking',
-  description: getActiveTimeTrackingDescription,
-  parameters: getActiveTimeTrackingParameters,
-  execute: wrapToolExecution('getActiveTimeTracking', (_args, ctx) =>
-    executeGetActiveTimeTracking({}, ctx, getUserDb),
-  ),
-});
-
-server.addTool({
-  name: 'getServerInfo',
-  description: getServerInfoDescription,
-  parameters: getServerInfoParameters,
-  execute: wrapToolExecution('getServerInfo', (args, ctx) =>
-    executeGetServerInfo(args, ctx, getUserDb),
-  ),
-});
-
-server.addTool({
-  name: 'getBriefingData',
-  description: getBriefingDataDescription,
-  parameters: getBriefingDataParameters,
-  execute: wrapToolExecution('getBriefingData', (_args, ctx) =>
-    executeGetBriefingData({}, ctx, getUserDb),
-  ),
-});
-
-server.addTool({
-  name: 'getRecapData',
-  description: getRecapDataDescription,
-  parameters: getRecapDataParameters,
-  execute: wrapToolExecution('getRecapData', (_args, ctx) =>
-    executeGetRecapData({}, ctx, getUserDb),
-  ),
-});
+registerTools(server, getUserDb, couch);
 
 // Export the server instance and control functions
 export const mcpServer = server;
