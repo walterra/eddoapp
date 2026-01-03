@@ -169,6 +169,80 @@ describe('MCP Query and Filtering Integration', () => {
       assert.expectTodosFilteredByCompletion(completedWorkTodos, true);
       expect(completedWorkTodos[0]._id).toBe(workTodo1Id);
     });
+
+    it('should filter completed todos by due date range', async () => {
+      const targetDate = testDates.tomorrow();
+      const nextWeekDate = testDates.nextWeek();
+
+      // Create todos with different due dates
+      const completedTomorrowResponse = await assert.expectToolCallSuccess<MCPResponse>(
+        'createTodo',
+        {
+          ...createTestTodoData.basic(),
+          title: 'Completed Tomorrow',
+          due: targetDate,
+        },
+      );
+      const completedTomorrowId = completedTomorrowResponse.data!.id!;
+
+      const completedNextWeekResponse = await assert.expectToolCallSuccess<MCPResponse>(
+        'createTodo',
+        {
+          ...createTestTodoData.basic(),
+          title: 'Completed Next Week',
+          due: nextWeekDate,
+        },
+      );
+      const completedNextWeekId = completedNextWeekResponse.data!.id!;
+
+      const incompleteTomorrowResponse = await assert.expectToolCallSuccess<MCPResponse>(
+        'createTodo',
+        {
+          ...createTestTodoData.basic(),
+          title: 'Incomplete Tomorrow',
+          due: targetDate,
+        },
+      );
+      const _incompleteTomorrowId = incompleteTomorrowResponse.data!.id!;
+
+      // Complete the first two todos
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: completedTomorrowId,
+        completed: true,
+      });
+      await assert.expectToolCallSuccess('toggleTodoCompletion', {
+        id: completedNextWeekId,
+        completed: true,
+      });
+
+      // Filter for completed todos with tomorrow's due date
+      const completedTomorrow = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        completed: true,
+        dateFrom: targetDate,
+        dateTo: targetDate,
+      });
+
+      assert.expectTodoCount(completedTomorrow, 1);
+      assert.expectTodosFilteredByCompletion(completedTomorrow, true);
+      assert.expectTodosInDateRange(completedTomorrow, targetDate, targetDate);
+      expect(completedTomorrow[0]._id).toBe(completedTomorrowId);
+      expect(completedTomorrow[0].title).toBe('Completed Tomorrow');
+
+      // Filter for completed todos in a wider date range
+      const completedInRange = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+        completed: true,
+        dateFrom: targetDate,
+        dateTo: nextWeekDate,
+      });
+
+      assert.expectTodoCount(completedInRange, 2);
+      assert.expectTodosFilteredByCompletion(completedInRange, true);
+      assert.expectTodosInDateRange(completedInRange, targetDate, nextWeekDate);
+      const titles = completedInRange.map((t) => t.title);
+      expect(titles).toContain('Completed Tomorrow');
+      expect(titles).toContain('Completed Next Week');
+      expect(titles).not.toContain('Incomplete Tomorrow');
+    });
   });
 
   describe('Completion Date Range Filtering', () => {
