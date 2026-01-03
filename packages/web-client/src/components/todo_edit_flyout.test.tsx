@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../test-polyfill';
 import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
 import { createTestTodo, populateTestDatabase, renderWithPouchDb, testTodos } from '../test-utils';
-import { TodoEditModal } from './todo_edit_modal';
+import { TodoEditFlyout } from './todo_edit_flyout';
 
 // Mock child components to avoid complex dependencies
 vi.mock('./tag_input', () => ({
@@ -49,7 +49,7 @@ vi.mock('../hooks/use_tags', () => ({
   }),
 }));
 
-describe('TodoEditModal', () => {
+describe('TodoEditFlyout', () => {
   let testDb: ReturnType<typeof createTestPouchDb>;
 
   beforeEach(() => {
@@ -69,17 +69,17 @@ describe('TodoEditModal', () => {
     todo: testTodos.active as TodoAlpha3,
   };
 
-  describe('Modal Rendering', () => {
-    it('renders modal when show is true', () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+  describe('Flyout Rendering', () => {
+    it('renders flyout when show is true', () => {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
       expect(screen.getByText('Edit Todo')).toBeInTheDocument();
     });
 
-    it('does not render modal when show is false', () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} show={false} />, {
+    it('does not render flyout when show is false', () => {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} show={false} />, {
         testDb: testDb.contextValue,
       });
 
@@ -87,7 +87,7 @@ describe('TodoEditModal', () => {
     });
 
     it('renders all form fields', () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -107,7 +107,7 @@ describe('TodoEditModal', () => {
         _id: '2025-07-12T10:30:00.000Z',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todo} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todo} />, {
         testDb: testDb.contextValue,
       });
 
@@ -115,7 +115,7 @@ describe('TodoEditModal', () => {
     });
 
     it('renders save and delete buttons', () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -126,7 +126,7 @@ describe('TodoEditModal', () => {
 
   describe('Form Field Updates', () => {
     it('updates context field', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -141,7 +141,7 @@ describe('TodoEditModal', () => {
     });
 
     it('updates title field', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -154,7 +154,7 @@ describe('TodoEditModal', () => {
     });
 
     it('updates link field', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -172,7 +172,7 @@ describe('TodoEditModal', () => {
         ...testTodos.withLink,
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithLink} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithLink} />, {
         testDb: testDb.contextValue,
       });
 
@@ -184,7 +184,7 @@ describe('TodoEditModal', () => {
     });
 
     it('updates externalId field', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -205,7 +205,7 @@ describe('TodoEditModal', () => {
         externalId: 'github:owner/repo/issues/1',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithExternalId} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithExternalId} />, {
         testDb: testDb.contextValue,
       });
 
@@ -217,7 +217,7 @@ describe('TodoEditModal', () => {
     });
 
     it('updates due date field', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -241,7 +241,7 @@ describe('TodoEditModal', () => {
         due: '2025-07-12T23:59:59.999Z',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTime} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithTime} />, {
         testDb: testDb.contextValue,
       });
 
@@ -254,7 +254,7 @@ describe('TodoEditModal', () => {
     });
 
     it('updates repeat field', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -272,7 +272,7 @@ describe('TodoEditModal', () => {
         ...testTodos.repeating,
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithRepeat} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithRepeat} />, {
         testDb: testDb.contextValue,
       });
 
@@ -285,7 +285,7 @@ describe('TodoEditModal', () => {
 
     it('toggles completion status', async () => {
       const user = userEvent.setup();
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -297,7 +297,7 @@ describe('TodoEditModal', () => {
     });
 
     it('updates tags through TagInput component', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -323,7 +323,7 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithTracking} />, {
         testDb: testDb.contextValue,
       });
 
@@ -344,7 +344,7 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithTracking} />, {
         testDb: testDb.contextValue,
       });
 
@@ -369,7 +369,7 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithTracking} />, {
         testDb: testDb.contextValue,
       });
 
@@ -397,7 +397,7 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithTracking} />, {
         testDb: testDb.contextValue,
       });
 
@@ -417,7 +417,7 @@ describe('TodoEditModal', () => {
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
       renderWithPouchDb(
-        <TodoEditModal {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
+        <TodoEditFlyout {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -447,7 +447,7 @@ describe('TodoEditModal', () => {
       const todoFromDb = await testDb.db.get(testTodos.repeating._id);
 
       renderWithPouchDb(
-        <TodoEditModal {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
+        <TodoEditFlyout {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -476,7 +476,7 @@ describe('TodoEditModal', () => {
       });
       testDb.contextValue.safeDb.safePut = vi.fn().mockReturnValue(savePromise);
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -504,7 +504,7 @@ describe('TodoEditModal', () => {
         _rev: '1-test',
       } as TodoAlpha3;
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} todo={todoWithTracking} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} todo={todoWithTracking} />, {
         testDb: testDb.contextValue,
       });
 
@@ -528,7 +528,7 @@ describe('TodoEditModal', () => {
 
       testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(mockError);
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -550,7 +550,7 @@ describe('TodoEditModal', () => {
 
       testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(syncError);
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -570,7 +570,7 @@ describe('TodoEditModal', () => {
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
       renderWithPouchDb(
-        <TodoEditModal {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
+        <TodoEditFlyout {...defaultProps} onClose={onClose} todo={todoFromDb as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
@@ -598,7 +598,7 @@ describe('TodoEditModal', () => {
       });
       testDb.contextValue.safeDb.safeRemove = vi.fn().mockReturnValue(deletePromise);
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -624,7 +624,7 @@ describe('TodoEditModal', () => {
 
       testDb.contextValue.safeDb.safeRemove = vi.fn().mockRejectedValue(mockError);
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -648,7 +648,7 @@ describe('TodoEditModal', () => {
 
       testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(mockError);
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -681,7 +681,7 @@ describe('TodoEditModal', () => {
       // First operation fails
       testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(mockError);
 
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -701,23 +701,23 @@ describe('TodoEditModal', () => {
     });
   });
 
-  describe('Modal State Management', () => {
+  describe('Flyout State Management', () => {
     it('resets edited todo when todo prop changes', () => {
       const { rerender } = renderWithPouchDb(
-        <TodoEditModal {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoEditFlyout {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
       expect(screen.getByDisplayValue('Active Todo')).toBeInTheDocument();
 
       // Change the todo prop
-      rerender(<TodoEditModal {...defaultProps} todo={testTodos.withTags as TodoAlpha3} />);
+      rerender(<TodoEditFlyout {...defaultProps} todo={testTodos.withTags as TodoAlpha3} />);
 
       expect(screen.getByDisplayValue('Tagged Todo')).toBeInTheDocument();
     });
 
     it('maintains form state during a single session', async () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -728,11 +728,11 @@ describe('TodoEditModal', () => {
       expect(titleInput).toHaveValue('Modified Title');
 
       // Re-render with same props should maintain the edited state
-      const { rerender } = renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      const { rerender } = renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
-      rerender(<TodoEditModal {...defaultProps} />);
+      rerender(<TodoEditFlyout {...defaultProps} />);
 
       expect(screen.getByDisplayValue('Modified Title')).toBeInTheDocument();
     });
@@ -740,7 +740,7 @@ describe('TodoEditModal', () => {
 
   describe('Accessibility', () => {
     it('has proper ARIA labels on all form inputs', () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 
@@ -753,7 +753,7 @@ describe('TodoEditModal', () => {
     });
 
     it('has proper form structure with labels', () => {
-      renderWithPouchDb(<TodoEditModal {...defaultProps} />, {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
         testDb: testDb.contextValue,
       });
 

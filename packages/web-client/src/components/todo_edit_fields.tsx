@@ -1,5 +1,5 @@
 /**
- * Form field components for TodoEditModal
+ * Form field components for todo editing
  */
 import { type Todo, getActiveDuration, getFormattedDuration } from '@eddo/core-client';
 import { Button, Checkbox, Label, TextInput } from 'flowbite-react';

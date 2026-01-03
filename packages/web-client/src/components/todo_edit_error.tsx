@@ -1,5 +1,5 @@
 /**
- * Error display component for TodoEditModal
+ * Error display component for todo editing
  */
 import { type DatabaseError, DatabaseErrorType } from '@eddo/core-client';
 import { type FC } from 'react';

@@ -9,10 +9,10 @@ import { createTestTodo, populateTestDatabase, renderWithPouchDb, testTodos } fr
 import { TodoListElement } from './todo_list_element';
 
 // Mock child components to avoid complex dependencies
-vi.mock('./todo_edit_modal', () => ({
-  TodoEditModal: ({ show, onClose }: { show: boolean; onClose: () => void }) =>
+vi.mock('./todo_edit_flyout', () => ({
+  TodoEditFlyout: ({ show, onClose }: { show: boolean; onClose: () => void }) =>
     show ? (
-      <div data-testid="todo-edit-modal">
+      <div data-testid="todo-edit-flyout">
         <button onClick={onClose}>Close Modal</button>
       </div>
     ) : null,
@@ -469,7 +469,7 @@ describe('TodoListElement', () => {
 
       // Verify the modal is shown
       await waitFor(() => {
-        expect(screen.getByTestId('todo-edit-modal')).toBeInTheDocument();
+        expect(screen.getByTestId('todo-edit-flyout')).toBeInTheDocument();
       });
     });
 

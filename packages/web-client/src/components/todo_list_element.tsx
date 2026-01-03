@@ -22,7 +22,7 @@ import {
 } from '../styles/interactive';
 import { FormattedMessage } from './formatted_message';
 import { TagDisplay } from './tag_display';
-import { TodoEditModal } from './todo_edit_modal';
+import { TodoEditFlyout } from './todo_edit_flyout';
 
 interface TodoListElementProps {
   active: boolean;
@@ -277,7 +277,7 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
           todo={todo}
         />
       </div>
-      <TodoEditModal
+      <TodoEditFlyout
         onClose={() => state.setShowEditModal(false)}
         show={state.showEditModal}
         todo={todo}
