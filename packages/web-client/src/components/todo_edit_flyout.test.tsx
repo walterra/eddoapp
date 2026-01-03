@@ -93,6 +93,7 @@ describe('TodoEditFlyout', () => {
 
       expect(screen.getByLabelText('Context')).toBeInTheDocument();
       expect(screen.getByLabelText('Todo')).toBeInTheDocument();
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
       expect(screen.getByLabelText('Link')).toBeInTheDocument();
       expect(screen.getByLabelText('External ID')).toBeInTheDocument();
       expect(screen.getByLabelText('Due date')).toBeInTheDocument();
@@ -163,6 +164,19 @@ describe('TodoEditFlyout', () => {
 
       await waitFor(() => {
         expect(linkInput).toHaveValue('https://example.com');
+      });
+    });
+
+    it('updates description field', async () => {
+      renderWithPouchDb(<TodoEditFlyout {...defaultProps} />, {
+        testDb: testDb.contextValue,
+      });
+
+      const descriptionInput = screen.getByLabelText('Description');
+      fireEvent.change(descriptionInput, { target: { value: 'A detailed description' } });
+
+      await waitFor(() => {
+        expect(descriptionInput).toHaveValue('A detailed description');
       });
     });
 
@@ -746,6 +760,7 @@ describe('TodoEditFlyout', () => {
 
       expect(screen.getByLabelText('Context')).toBeInTheDocument();
       expect(screen.getByLabelText('Todo')).toBeInTheDocument();
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
       expect(screen.getByLabelText('Link')).toBeInTheDocument();
       expect(screen.getByLabelText('Due date')).toBeInTheDocument();
       expect(screen.getByLabelText('Repeat')).toBeInTheDocument();
@@ -760,10 +775,12 @@ describe('TodoEditFlyout', () => {
       // Check that labels are properly associated with inputs
       const contextLabel = screen.getByText('Context');
       const todoLabel = screen.getByText('Todo');
+      const descriptionLabel = screen.getByText('Description');
       const linkLabel = screen.getByText('Link');
 
       expect(contextLabel).toBeInTheDocument();
       expect(todoLabel).toBeInTheDocument();
+      expect(descriptionLabel).toBeInTheDocument();
       expect(linkLabel).toBeInTheDocument();
     });
   });

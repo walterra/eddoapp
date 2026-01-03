@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import './design-tokens.css';
 @plugin "flowbite/plugin";
+@plugin "@tailwindcss/typography";
 @source "../node_modules/flowbite";
 @source "../node_modules/flowbite-react";
 
@@ -27,4 +28,19 @@ body {
 
 .eddo-w-kanban {
   width: 20rem;
+}
+
+/* Hide bullet points for GitHub-flavored markdown task lists */
+.prose ul:has(input[type='checkbox']) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose li:has(> input[type='checkbox']) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose li > input[type='checkbox'] {
+  margin-right: 0.5rem;
 }

@@ -1,3 +1,4 @@
+import tailwindTypography from '@tailwindcss/typography';
 import flowbite from 'flowbite/plugin';
 
 /** @type {import('tailwindcss').Config} */
@@ -9,5 +10,5 @@ export default {
   ],
   darkMode: 'media',
   mode: 'jit',
-  plugins: [flowbite],
+  plugins: [flowbite, tailwindTypography],
 };

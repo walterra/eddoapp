@@ -11,6 +11,7 @@ import { ErrorDisplay } from './todo_edit_error';
 import {
   CompletedField,
   ContextField,
+  DescriptionField,
   DueDateField,
   ExternalIdField,
   LinkField,
@@ -46,6 +47,7 @@ interface EditFormFieldsProps {
 const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, onChange }) => (
   <div className="flex flex-col gap-6">
     <TitleField onChange={onChange} todo={todo} />
+    <DescriptionField onChange={onChange} todo={todo} />
     <ContextField onChange={onChange} todo={todo} />
     <TagsField allTags={allTags} onChange={onChange} todo={todo} />
     <DueDateField onChange={onChange} todo={todo} />
