@@ -119,7 +119,7 @@ interface ViewModeActionsProps {
 }
 
 const ViewModeActions: FC<ViewModeActionsProps> = ({ onDelete, isDeleting }) => (
-  <div className="flex w-full justify-end border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">
+  <div className="-mx-4 -mb-4 flex w-[calc(100%+2rem)] justify-end border-t border-neutral-200 bg-neutral-50 px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900">
     <Button color="red" disabled={isDeleting} onClick={onDelete}>
       {isDeleting ? 'Deleting...' : 'Delete'}
     </Button>
@@ -139,7 +139,7 @@ const EditModeActions: FC<EditModeActionsProps> = ({
   isActiveValid,
   isSaving,
 }) => (
-  <div className="flex w-full justify-between border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">
+  <div className="-mx-4 -mb-4 flex w-[calc(100%+2rem)] justify-between border-t border-neutral-200 bg-neutral-50 px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900">
     <Button color="gray" disabled={isSaving} onClick={onCancel}>
       Cancel
     </Button>
@@ -184,6 +184,29 @@ const FlyoutContent: FC<FlyoutContentProps> = ({ todo, state, allTags, activeArr
   </div>
 );
 
+/** Custom theme for Flowbite Drawer to use neutral palette instead of gray */
+const drawerTheme = {
+  root: {
+    base: 'fixed z-40 overflow-y-auto bg-white p-4 transition-transform dark:bg-neutral-800',
+    backdrop: 'fixed inset-0 z-30 bg-neutral-900/50',
+    position: {
+      right: {
+        on: 'right-0 top-0 h-screen w-80 transform-none shadow-xl dark:shadow-neutral-900/50',
+        off: 'right-0 top-0 h-screen w-80 translate-x-full',
+      },
+    },
+  },
+  header: {
+    inner: {
+      titleText:
+        'mb-4 inline-flex items-center text-base font-semibold text-neutral-500 dark:text-neutral-400',
+      closeButton:
+        'absolute end-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-sm text-neutral-400 hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-700 dark:hover:text-white',
+      closeIcon: 'h-4 w-4',
+    },
+  },
+};
+
 export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
   const { allTags } = useTags();
   const state = useTodoFlyoutState(todo, show, onClose);
@@ -201,6 +224,7 @@ export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
         onClose={state.handleClose}
         open={show}
         position="right"
+        theme={drawerTheme}
       >
         <DrawerHeader
           title={state.mode === 'view' ? 'Todo Details' : 'Edit Todo'}

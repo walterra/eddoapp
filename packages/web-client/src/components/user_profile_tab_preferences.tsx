@@ -4,6 +4,7 @@
 import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
 
+import { ThemeToggle } from './theme_toggle';
 import { ToggleSwitch } from './toggle_switch';
 import type { PreferencesTabProps } from './user_profile_types';
 
@@ -175,6 +176,28 @@ const buildRecapSection = (props: PreferencesTabProps) => ({
   },
 });
 
+const ThemeSection: FC = () => (
+  <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-medium text-neutral-900 dark:text-white">Appearance</h3>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          Choose your preferred color theme
+        </p>
+      </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <Label>Theme</Label>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            System follows your OS preference
+          </p>
+        </div>
+        <ThemeToggle />
+      </div>
+    </div>
+  </div>
+);
+
 export const PreferencesTab: FC<PreferencesTabProps> = (props) => {
   const { isLoading, onSave } = props;
   const briefingSection = buildBriefingSection(props);
@@ -185,6 +208,7 @@ export const PreferencesTab: FC<PreferencesTabProps> = (props) => {
       <div className="space-y-6">
         <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Preferences</h2>
         <div className="space-y-6">
+          <ThemeSection />
           <ScheduleSection {...briefingSection} isLoading={isLoading} />
           <ScheduleSection {...recapSection} isLoading={isLoading} />
           <div className="flex justify-end">

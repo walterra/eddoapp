@@ -209,15 +209,13 @@
 }
 
 .dark {
-  /* Background - layered elevation system for dark mode
-   * Level 0 (body): neutral-900 - base canvas
-   * Level 1 (cards/panels): neutral-850 - elevated surfaces
-   * Level 2 (inputs/nested): neutral-800 - interactive elements
+  /* Background - unified dark mode matching Tailwind's neutral scale
+   * Base canvas matches dark:bg-neutral-800 used throughout components
    */
-  --color-bg: oklch(0.2 0 0); /* neutral-900 - base canvas */
-  --color-bg-subtle: oklch(0.23 0 0); /* ~neutral-850 - elevated surfaces */
-  --color-bg-muted: oklch(0.27 0 0); /* neutral-800 - inputs/nested elements */
-  --color-bg-emphasis: oklch(0.965 0 0); /* neutral-100 */
+  --color-bg: #262626; /* neutral-800 - matches dark:bg-neutral-800 */
+  --color-bg-subtle: #303030; /* slightly elevated surfaces */
+  --color-bg-muted: #3a3a3a; /* inputs/nested elements */
+  --color-bg-emphasis: #f5f5f5; /* neutral-100 */
 
   /* Foreground / Text - inverted */
   --color-fg: oklch(0.93 0 0); /* neutral-100 - slightly softer than pure white */

@@ -4,7 +4,7 @@ import { type FC, useState } from 'react';
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseHealthIndicator } from './database_health_indicator';
-import { ThemeToggle } from './theme_toggle';
+
 import { UserProfile } from './user_profile';
 
 interface PageWrapperProps {
@@ -58,7 +58,6 @@ const Header: FC<HeaderProps> = ({
       <EddoLogo />
     </div>
     <div className="flex items-center space-x-4">
-      <ThemeToggle />
       {isAuthenticated && <AuthButtons onLogout={onLogout} onShowProfile={onShowProfile} />}
       <DatabaseHealthIndicator
         databaseName={databaseName}

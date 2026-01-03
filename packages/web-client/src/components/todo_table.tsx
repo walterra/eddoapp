@@ -169,7 +169,7 @@ const TodoTableContent: FC<TodoTableContentProps> = ({
   timeTrackingActive,
   currentDate,
 }) => (
-  <div className="overflow-x-auto px-4 py-2">
+  <div className="overflow-x-auto py-2">
     {groupedByContext.map(([context, contextTodos]) => (
       <ContextGroup
         context={context}
