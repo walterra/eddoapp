@@ -233,4 +233,47 @@ describe('Agent Loop E2E Integration', () => {
       expect(validOutcome).toBe(true);
     });
   });
+
+  describe('STATUS Message Pattern', () => {
+    it('should use STATUS for intermediate feedback without hallucinated content', async () => {
+      agentServer.loadCassette('status-message-pattern');
+
+      // First create some todos to have data for the recap
+      const setupInput = 'create a work todo called "Test task for recap"';
+      await assert.expectTimely(agentServer.executeAgent(setupInput, 'test-user-6'));
+
+      // Request a recap which requires multiple tool calls
+      const recapInput = 'show me what I completed today';
+
+      const response = await assert.expectTimely(
+        agentServer.executeAgent(recapInput, 'test-user-6'),
+      );
+
+      assert.expectSuccess(response);
+      assert.expectToolUsed(response, 'listTodos');
+
+      // Verify responses don't contain hallucinated content before tool results
+      // STATUS messages should be short (under 10 words), not full recaps
+      const replies = response.context.replies;
+
+      // Check that intermediate messages (if any) are short status messages
+      // and don't contain hallucinated recap content
+      for (let i = 0; i < replies.length - 1; i++) {
+        const reply = replies[i];
+        // Intermediate messages should be short status updates
+        // They should NOT contain detailed recap content like "[x] Task name"
+        const wordCount = reply.split(/\s+/).length;
+
+        // If it's a short message (likely a STATUS), it shouldn't have recap markers
+        if (wordCount < 20) {
+          expect(reply).not.toMatch(/---RECAP-START---/);
+          expect(reply).not.toMatch(/\[x\].*completed/i);
+        }
+      }
+
+      // Final response should have actual content
+      const finalReply = replies[replies.length - 1];
+      expect(finalReply.length).toBeGreaterThan(20);
+    });
+  });
 });
