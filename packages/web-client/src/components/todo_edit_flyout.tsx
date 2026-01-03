@@ -1,13 +1,13 @@
 /**
- * Modal for editing todo items
+ * Flyout panel for editing todo items
  */
 import { type DatabaseError, type Todo } from '@eddo/core-client';
-import { Button, Label, Modal, ModalBody, ModalFooter, ModalHeader } from 'flowbite-react';
+import { Button, Drawer, DrawerHeader, DrawerItems, Label } from 'flowbite-react';
 import { type FC, useEffect, useState } from 'react';
 
 import { useTags } from '../hooks/use_tags';
 import { useDeleteTodoMutation, useSaveTodoMutation } from '../hooks/use_todo_mutations';
-import { ErrorDisplay } from './todo_edit_modal_error';
+import { ErrorDisplay } from './todo_edit_error';
 import {
   CompletedField,
   ContextField,
@@ -19,9 +19,9 @@ import {
   TimeTrackingField,
   TitleField,
   validateTimeTracking,
-} from './todo_edit_modal_fields';
+} from './todo_edit_fields';
 
-interface TodoEditModalProps {
+interface TodoEditFlyoutProps {
   onClose: () => void;
   show: boolean;
   todo: Todo;
@@ -32,7 +32,7 @@ const CreationDateDisplay: FC<{ id: string }> = ({ id }) => (
     <div className="mb-2 block">
       <Label htmlFor="eddoTodoCreationDate">Creation date</Label>
     </div>
-    {id}
+    <span className="text-sm text-neutral-600 dark:text-neutral-400">{id}</span>
   </div>
 );
 
@@ -44,21 +44,21 @@ interface EditFormFieldsProps {
 }
 
 const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, onChange }) => (
-  <div className="flex flex-col gap-4">
-    <CreationDateDisplay id={todo._id} />
-    <ContextField onChange={onChange} todo={todo} />
+  <div className="flex flex-col gap-6">
     <TitleField onChange={onChange} todo={todo} />
-    <LinkField onChange={onChange} todo={todo} />
-    <ExternalIdField onChange={onChange} todo={todo} />
+    <ContextField onChange={onChange} todo={todo} />
     <TagsField allTags={allTags} onChange={onChange} todo={todo} />
     <DueDateField onChange={onChange} todo={todo} />
+    <LinkField onChange={onChange} todo={todo} />
+    <ExternalIdField onChange={onChange} todo={todo} />
     <RepeatField onChange={onChange} todo={todo} />
     <CompletedField onChange={onChange} todo={todo} />
     <TimeTrackingField activeArray={activeArray} onChange={onChange} todo={todo} />
+    <CreationDateDisplay id={todo._id} />
   </div>
 );
 
-interface ModalActionsProps {
+interface FlyoutActionsProps {
   onSave: (e: React.FormEvent<HTMLButtonElement>) => void;
   onDelete: (e: React.FormEvent<HTMLButtonElement>) => void;
   isActiveValid: boolean;
@@ -66,28 +66,24 @@ interface ModalActionsProps {
   isDeleting: boolean;
 }
 
-const ModalActions: FC<ModalActionsProps> = ({
+const FlyoutActions: FC<FlyoutActionsProps> = ({
   onSave,
   onDelete,
   isActiveValid,
   isSaving,
   isDeleting,
 }) => (
-  <div className="flex w-full justify-between">
-    <div>
-      <Button color="blue" disabled={!isActiveValid || isSaving || isDeleting} onClick={onSave}>
-        {isSaving ? 'Saving...' : 'Save'}
-      </Button>
-    </div>
-    <div>
-      <Button color="red" disabled={isSaving || isDeleting} onClick={onDelete}>
-        {isDeleting ? 'Deleting...' : 'Delete'}
-      </Button>
-    </div>
+  <div className="flex w-full justify-between border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">
+    <Button color="blue" disabled={!isActiveValid || isSaving || isDeleting} onClick={onSave}>
+      {isSaving ? 'Saving...' : 'Save'}
+    </Button>
+    <Button color="red" disabled={isSaving || isDeleting} onClick={onDelete}>
+      {isDeleting ? 'Deleting...' : 'Delete'}
+    </Button>
   </div>
 );
 
-/** Hook for todo edit modal state and handlers */
+/** Hook for todo edit flyout state and handlers */
 const useTodoEditState = (todo: Todo, onClose: () => void) => {
   const saveTodoMutation = useSaveTodoMutation();
   const deleteTodoMutation = useDeleteTodoMutation();
@@ -132,32 +128,38 @@ const useTodoEditState = (todo: Todo, onClose: () => void) => {
   };
 };
 
-export const TodoEditModal: FC<TodoEditModalProps> = ({ onClose, show, todo }) => {
+export const TodoEditFlyout: FC<TodoEditFlyoutProps> = ({ onClose, show, todo }) => {
   const { allTags } = useTags();
   const state = useTodoEditState(todo, onClose);
   const activeArray = Object.entries(state.editedTodo.active);
 
+  if (!show) {
+    return null;
+  }
+
   return (
-    <Modal onClose={onClose} show={show} size="2xl">
-      <ModalHeader>Edit Todo</ModalHeader>
-      <ModalBody>
-        {state.error && <ErrorDisplay error={state.error} onClear={state.clearError} />}
-        <EditFormFields
-          activeArray={activeArray}
-          allTags={allTags}
-          onChange={state.setEditedTodo}
-          todo={state.editedTodo}
-        />
-      </ModalBody>
-      <ModalFooter>
-        <ModalActions
-          isActiveValid={validateTimeTracking(activeArray)}
-          isDeleting={state.isDeleting}
-          isSaving={state.isSaving}
-          onDelete={state.handleDelete}
-          onSave={state.handleSave}
-        />
-      </ModalFooter>
-    </Modal>
+    <Drawer className="!w-[640px]" onClose={onClose} open={show} position="right">
+      <DrawerHeader title="Edit Todo" titleIcon={() => null} />
+      <DrawerItems>
+        <div className="flex h-full flex-col">
+          <div className="flex-1 overflow-y-auto p-4">
+            {state.error && <ErrorDisplay error={state.error} onClear={state.clearError} />}
+            <EditFormFields
+              activeArray={activeArray}
+              allTags={allTags}
+              onChange={state.setEditedTodo}
+              todo={state.editedTodo}
+            />
+          </div>
+          <FlyoutActions
+            isActiveValid={validateTimeTracking(activeArray)}
+            isDeleting={state.isDeleting}
+            isSaving={state.isSaving}
+            onDelete={state.handleDelete}
+            onSave={state.handleSave}
+          />
+        </div>
+      </DrawerItems>
+    </Drawer>
   );
 };

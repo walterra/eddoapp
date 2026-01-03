@@ -11,7 +11,7 @@ import {
   useToggleTimeTrackingMutation,
 } from '../hooks/use_todo_mutations';
 import { ICON_BUTTON } from '../styles/interactive';
-import { TodoEditModal } from './todo_edit_modal';
+import { TodoEditFlyout } from './todo_edit_flyout';
 import { TodoCell } from './todo_table_cell';
 import { reorderColumnsWithStatusFirst } from './todo_table_helpers';
 
@@ -178,7 +178,7 @@ const TodoRowInner: FC<TodoRowProps> = ({
           timeTrackingActive={timeTrackingActive}
         />
       </tr>
-      <TodoEditModal
+      <TodoEditFlyout
         onClose={() => state.setShowEditModal(false)}
         show={state.showEditModal}
         todo={todo}
