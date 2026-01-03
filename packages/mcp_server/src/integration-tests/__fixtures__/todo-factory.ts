@@ -163,24 +163,36 @@ export function generateTestId(): string {
 }
 
 /**
- * Helper to generate date strings for testing
+ * Returns end-of-day ISO timestamp for a given date.
+ * Due dates should use full ISO timestamps with end-of-day time
+ * to ensure consistent comparison with query date ranges.
+ */
+function toEndOfDayIso(date: Date): string {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d.toISOString();
+}
+
+/**
+ * Helper to generate date strings for testing.
+ * Returns full ISO timestamps (end-of-day) to match how due dates are stored.
  */
 export const testDates = {
-  today: () => new Date().toISOString().split('T')[0],
+  today: () => toEndOfDayIso(new Date()),
   tomorrow: () => {
     const date = new Date();
     date.setDate(date.getDate() + 1);
-    return date.toISOString().split('T')[0];
+    return toEndOfDayIso(date);
   },
   nextWeek: () => {
     const date = new Date();
     date.setDate(date.getDate() + 7);
-    return date.toISOString().split('T')[0];
+    return toEndOfDayIso(date);
   },
   yesterday: () => {
     const date = new Date();
     date.setDate(date.getDate() - 1);
-    return date.toISOString().split('T')[0];
+    return toEndOfDayIso(date);
   },
   range: (startDaysFromNow: number, endDaysFromNow: number) => {
     const start = new Date();
@@ -188,8 +200,8 @@ export const testDates = {
     const end = new Date();
     end.setDate(end.getDate() + endDaysFromNow);
     return {
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0],
+      start: toEndOfDayIso(start),
+      end: toEndOfDayIso(end),
     };
   },
 };
