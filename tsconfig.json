@@ -20,6 +20,7 @@
   "references": [
     { "path": "./packages/core-shared" },
     { "path": "./packages/core-client" },
+    { "path": "./packages/core-instrumentation" },
     { "path": "./packages/core-server" },
     { "path": "./packages/mcp_server" },
     { "path": "./packages/printer_service" },
