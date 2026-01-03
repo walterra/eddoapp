@@ -1,0 +1,37 @@
+# OpenTelemetry Collector for Eddo observability
+#
+# Usage:
+#   pnpm otel:collector:start   # Start collector
+#   pnpm otel:collector:stop    # Stop collector
+#   pnpm otel:collector:logs    # View logs
+#
+# Required environment variables (in .env):
+#   ELASTIC_API_KEY        - Elasticsearch API key for authentication
+#   COLLECTOR_ES_NODE      - Elasticsearch endpoint (e.g., https://host.docker.internal:9200)
+#
+# Optional environment variables:
+#   OTEL_TLS_VERIFY=false  - Disable TLS verification (for self-signed certs)
+#   OTEL_CA_FILE           - Path to custom CA certificate
+#   COUCHDB_USERNAME       - CouchDB admin username (default: admin)
+#   COUCHDB_PASSWORD       - CouchDB admin password (default: password)
+
+services:
+  otel-collector:
+    image: elastic/elastic-agent:9.2.2
+    container_name: eddo-otel-collector
+    command: ["otel", "--config", "/etc/otel-collector/config.yaml"]
+    environment:
+      - OTEL_TLS_SKIP_VERIFY=${OTEL_TLS_VERIFY:-false}
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+    env_file:
+      - .env
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector/config.yaml:ro

@@ -7,7 +7,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
+    "dev": "OTEL_SERVICE_NAME=eddo-telegram-bot OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development node --import @elastic/opentelemetry-node --import tsx src/index.ts",
+    "dev:watch": "OTEL_SERVICE_NAME=eddo-telegram-bot tsx watch src/index.ts",
+    "dev:no-otel": "OTEL_SDK_DISABLED=true tsx watch src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -16,27 +18,30 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "@eddo/core-instrumentation": "workspace:*",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
     "@eddo/printer-service": "workspace:*",
+    "@elastic/opentelemetry-node": "^1.7.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
+    "@opentelemetry/api": "^1.9.0",
     "dotenv-mono": "^1.5.1",
     "fastmcp": "^3.25.4",
     "grammy": "^1.38.3",
     "marked": "^16.4.0",
+    "undici": "^7.16.0",
     "uuid": "^13.0.0",
-    "winston": "^3.18.3",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
     "@types/uuid": "^11.0.0",
     "eslint": "^9.39.1",
+    "nano": "^10.1.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4",
-    "nano": "^10.1.2",
-    "vite-tsconfig-paths": "^4.2.0"
+    "vite-tsconfig-paths": "^4.2.0",
+    "vitest": "^3.2.4"
   },
   "keywords": [
     "telegram",

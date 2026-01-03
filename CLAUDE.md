@@ -383,6 +383,52 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 - Use Prettier for formatting with existing config
 - **Always run the proper scripts for linting and formatting before manually fixing code style issues**
 
+### Handling ESLint Complexity Errors
+
+When ESLint reports complexity guard violations (`max-lines`, `max-lines-per-function`, `complexity`, etc.), **do NOT use shortcuts**:
+
+**❌ NEVER do this:**
+
+- Condense multiple statements onto single lines
+- Remove JSDoc comments or documentation
+- Remove log statements to reduce line count
+- Combine unrelated logic to reduce function count
+- Use terse variable names to save space
+
+**✅ ALWAYS do proper refactoring:**
+
+1. **For `max-lines` (file too long, max 300):**
+   - Identify cohesive groups of functionality (e.g., health checks, metrics, validation)
+   - Extract to new module with clear single responsibility
+   - Use proper imports/exports to maintain encapsulation
+   - Example: Extract `ConnectionHealthManager` from `MCPConnectionManager`
+
+2. **For `max-lines-per-function` (function too long, max 50):**
+   - Identify logical sub-steps within the function
+   - Extract helper functions with descriptive names
+   - Each helper should do one thing well
+   - Keep the original function as an orchestrator
+
+3. **For `complexity` (too many branches, max 10):**
+   - Use early returns to reduce nesting
+   - Extract conditional logic to well-named predicates
+   - Consider strategy pattern for multiple similar branches
+   - Use lookup objects instead of switch/if chains
+
+4. **For `max-depth` (too deeply nested, max 3):**
+   - Extract inner logic to separate functions
+   - Use guard clauses (early returns)
+   - Consider inverting conditions
+
+**Refactoring checklist:**
+
+- [ ] New modules have clear, single responsibilities
+- [ ] All existing functionality is preserved
+- [ ] All existing tests still pass
+- [ ] New code has appropriate test coverage
+- [ ] JSDoc comments are preserved or updated
+- [ ] Log statements are preserved at appropriate levels
+
 ## Git Rules
 
 - **CRITICAL: Questions are not instructions** - When user asks a question (e.g., "is this correct?", "should we do X?"), answer the question and STOP. Do not make changes or commit until explicitly instructed.
@@ -571,3 +617,102 @@ BOT_PERSONA_ID=gtd_coach  # Options: butler, gtd_coach, zen_master
 # Development
 NODE_ENV=development|production
 ```
+
+### OpenTelemetry Configuration
+
+```bash
+# Disable OTEL export (logs still go to console/file)
+OTEL_SDK_DISABLED=true
+
+# Service identification (auto-set per service)
+OTEL_SERVICE_NAME=eddo-telegram-bot
+
+# Resource attributes for APM filtering
+OTEL_RESOURCE_ATTRIBUTES=service.version=0.3.0,deployment.environment=development
+
+# OTLP endpoint (default: http://localhost:4318)
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
+
+### EDOT Collector Configuration
+
+Required for `pnpm otel:collector:start`:
+
+```bash
+# Elasticsearch API key (generate in Kibana -> Stack Management -> API Keys)
+ELASTIC_API_KEY=your_api_key_here
+
+# Elasticsearch endpoint (use Docker networking for collector)
+COLLECTOR_ES_NODE=https://host.docker.internal:9200
+
+# TLS for self-signed certs (optional)
+OTEL_TLS_VERIFY=false
+```
+
+## Observability (O11y)
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Node.js Services                            │
+│         (telegram-bot, web-api, mcp-server)                     │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐    ┌─────────────────────────┐    │
+│  │      EDOT Node.js       │    │   Pino Logger + OTel    │    │
+│  │  (@elastic/otel-node)   │    │      Transport          │    │
+│  │  • Auto-instrumentation │    │  • Structured logs      │    │
+│  │  • Traces & Metrics     │    │  • Trace correlation    │    │
+│  └───────────┬─────────────┘    └───────────┬─────────────┘    │
+│              └──────────────┬───────────────┘                   │
+└─────────────────────────────┼───────────────────────────────────┘
+                              ▼
+               ┌──────────────────────────────┐
+               │       EDOT Collector         │
+               │    (localhost:4317/4318)     │
+               │  • OTLP receiver (gRPC/HTTP) │
+               │  • elasticapm processor      │
+               │  • spanmetrics connector     │
+               └──────────────┬───────────────┘
+                              ▼
+               ┌──────────────────────────────┐
+               │       Elasticsearch          │
+               │  • traces-apm.otel-*         │
+               │  • metrics-apm.otel-*        │
+               │  • logs-apm.otel-*           │
+               └──────────────┬───────────────┘
+                              ▼
+               ┌──────────────────────────────┐
+               │          Kibana APM          │
+               │  • Services, Traces, Metrics │
+               └──────────────────────────────┘
+```
+
+### Commands
+
+```bash
+# Collector management
+pnpm otel:collector:start    # Start EDOT Collector (Docker)
+pnpm otel:collector:stop     # Stop collector
+pnpm otel:collector:logs     # View collector logs
+pnpm otel:collector:status   # Check collector status
+
+# Run without telemetry export
+OTEL_SDK_DISABLED=true pnpm dev:telegram-bot
+```
+
+### Instrumented Operations (telegram-bot)
+
+| Span Name                 | Description                 | Attributes                                     |
+| ------------------------- | --------------------------- | ---------------------------------------------- |
+| `agent_execute`           | Full agent workflow         | user.id, message.length, agent.tool_calls      |
+| `agent_iteration`         | Single agent loop iteration | agent.iteration, mcp.tool                      |
+| `llm_generate`            | Claude API call             | llm.model, llm.input_tokens, llm.output_tokens |
+| `mcp_tool_execute`        | MCP tool invocation         | mcp.tool, mcp.operation                        |
+| `telegram_message_handle` | Incoming message processing | telegram.chat.id, user.id                      |
+| `scheduler_send_briefing` | Daily briefing delivery     | user.id, username, telegram.chat.id            |
+
+### Packages
+
+- `@eddo/core-instrumentation`: Shared Pino logger factory, withSpan() helper, SpanAttributes
+- Configuration: `otel-collector-config.yml`, `docker-compose.otel.yml`

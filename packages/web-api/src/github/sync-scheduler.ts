@@ -5,6 +5,7 @@
 import { createEnv, createUserRegistry, type TodoAlpha3 } from '@eddo/core-server';
 import type nano from 'nano';
 
+import { withSpan } from '../utils/logger';
 import { createGithubClient } from './client.js';
 import { isRateLimitError, type RateLimitError } from './rate-limit.js';
 import {
@@ -41,33 +42,21 @@ interface GithubSyncSchedulerConfig {
   getUserDb: (dbName: string) => nano.DocumentScope<TodoAlpha3>;
 }
 
-/**
- * Syncs GitHub issues for a specific user
- */
-async function performUserSync(
-  user: SyncUser,
-  logger: SyncLogger,
-  getUserDb: GithubSyncSchedulerConfig['getUserDb'],
-  forceResync = false,
-): Promise<void> {
-  const token = user.preferences?.githubToken;
-  if (!token) {
-    logger.warn('User has GitHub sync enabled but no token', { userId: user._id });
-    return;
-  }
+interface SyncContext {
+  user: SyncUser;
+  logger: SyncLogger;
+  getUserDb: GithubSyncSchedulerConfig['getUserDb'];
+  forceResync: boolean;
+}
 
-  const isInitialSync = forceResync || !user.preferences?.githubLastSync;
-  const lastSync = user.preferences?.githubLastSync;
-  const syncInfo = { userId: user._id, username: user.username, isInitialSync, lastSync };
-
-  logSyncStart(logger, syncInfo);
-
-  const githubClient = createGithubClient({ token }, logger);
-  const fetchOptions = createFetchOptions({ isInitialSync, lastSync });
-  const issues = await githubClient.fetchUserIssues(fetchOptions);
-
-  const tags = user.preferences?.githubSyncTags || ['github', 'gtd:next'];
-  const db = getUserDb(user.database_name);
+/** Process all issues and return stats */
+async function processAllIssues(
+  ctx: SyncContext,
+  issues: Awaited<ReturnType<ReturnType<typeof createGithubClient>['fetchUserIssues']>>,
+  githubClient: ReturnType<typeof createGithubClient>,
+): Promise<ReturnType<typeof createSyncStats>> {
+  const tags = ctx.user.preferences?.githubSyncTags || ['github', 'gtd:next'];
+  const db = ctx.getUserDb(ctx.user.database_name);
   const stats = createSyncStats();
 
   for (const issue of issues) {
@@ -77,13 +66,68 @@ async function performUserSync(
       context: issue.repository.full_name,
       tags,
       githubClient,
-      forceResync,
-      logger,
+      forceResync: ctx.forceResync,
+      logger: ctx.logger,
     });
     incrementStat(stats, result);
   }
 
-  logSyncComplete(logger, syncInfo, stats, issues.length);
+  return stats;
+}
+
+/**
+ * Syncs GitHub issues for a specific user
+ */
+async function performUserSync(
+  user: SyncUser,
+  logger: SyncLogger,
+  getUserDb: GithubSyncSchedulerConfig['getUserDb'],
+  forceResync = false,
+): Promise<void> {
+  const spanAttrs = {
+    'user.id': user._id,
+    'user.name': user.username,
+    'github.force_resync': forceResync,
+  };
+
+  return withSpan('github_sync_user', spanAttrs, async (span) => {
+    const token = user.preferences?.githubToken;
+    if (!token) {
+      logger.warn('User has GitHub sync enabled but no token', { userId: user._id });
+      span.setAttribute('github.result', 'no_token');
+      return;
+    }
+
+    const isInitialSync = forceResync || !user.preferences?.githubLastSync;
+    const syncInfo = {
+      userId: user._id,
+      username: user.username,
+      isInitialSync,
+      lastSync: user.preferences?.githubLastSync,
+    };
+    span.setAttribute('github.initial_sync', isInitialSync);
+
+    logSyncStart(logger, syncInfo);
+
+    const githubClient = createGithubClient({ token }, logger);
+    const issues = await githubClient.fetchUserIssues(
+      createFetchOptions({ isInitialSync, lastSync: syncInfo.lastSync }),
+    );
+    span.setAttribute('github.issues_fetched', issues.length);
+
+    const stats = await processAllIssues(
+      { user, logger, getUserDb, forceResync },
+      issues,
+      githubClient,
+    );
+
+    span.setAttribute('github.created', stats.created);
+    span.setAttribute('github.updated', stats.updated);
+    span.setAttribute('github.completed', stats.completed);
+    span.setAttribute('github.result', 'success');
+
+    logSyncComplete(logger, syncInfo, stats, issues.length);
+  });
 }
 
 export class GithubSyncScheduler {

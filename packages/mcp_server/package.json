@@ -5,11 +5,16 @@
   "type": "module",
   "main": "dist/mcp-server.js",
   "dependencies": {
+    "@eddo/core-instrumentation": "workspace:*",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
+    "@elastic/opentelemetry-node": "^1.7.0",
+    "@opentelemetry/api": "^1.9.0",
     "dotenv-mono": "^1.5.1",
     "fastmcp": "^3.25.4",
     "nano": "^11.0.3",
+    "pino": "^10.1.0",
+    "undici": "^7.16.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
@@ -21,8 +26,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/mcp-server.ts",
-    "start": "node dist/mcp-server.js",
+    "dev": "OTEL_SERVICE_NAME=eddo-mcp-server OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development node --import @elastic/opentelemetry-node --import tsx src/mcp-server.ts",
+    "dev:watch": "tsx watch src/mcp-server.ts",
+    "dev:no-otel": "OTEL_SDK_DISABLED=true tsx watch src/mcp-server.ts",
+    "start": "OTEL_SERVICE_NAME=eddo-mcp-server OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production node --import @elastic/opentelemetry-node dist/mcp-server.js",
     "start:test": "tsx src/mcp-server.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:integration:watch": "vitest --config vitest.integration.config.ts",

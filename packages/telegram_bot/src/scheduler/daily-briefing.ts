@@ -8,7 +8,7 @@ import {
   getRecapRequestMessage,
   RECAP_CONTENT_MARKER,
 } from '../constants/briefing.js';
-import { logger } from '../utils/logger.js';
+import { logger, SpanAttributes, withSpan } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 
 import {
@@ -157,48 +157,68 @@ export class DailyBriefingScheduler {
       return;
     }
 
-    const result = await executeAgentForUser(
-      user,
-      DAILY_BRIEFING_REQUEST_MESSAGE,
-      BRIEFING_CONTENT_MARKER,
-      'briefing',
+    return withSpan(
+      'scheduler_send_briefing',
+      {
+        [SpanAttributes.USER_ID]: user._id,
+        [SpanAttributes.USERNAME]: user.username,
+        [SpanAttributes.TELEGRAM_CHAT_ID]: user.telegram_id,
+      },
+      async () => {
+        const result = await executeAgentForUser(
+          user,
+          DAILY_BRIEFING_REQUEST_MESSAGE,
+          BRIEFING_CONTENT_MARKER,
+          'briefing',
+        );
+
+        if (result.hasMarker) {
+          await this.sendBriefingWithMarker(user, result.message);
+        } else {
+          await this.sendBriefingWithoutMarker(user, result.message);
+        }
+      },
     );
+  }
 
-    if (result.hasMarker) {
-      const cleanMessage = stripMarker(result.message, BRIEFING_CONTENT_MARKER);
-      await sendTelegramMessage(this.bot, {
-        telegramId: user.telegram_id,
-        message: cleanMessage,
-        disableLinkPreview: true,
-      });
+  private async sendBriefingWithMarker(user: TelegramUser, message: string): Promise<void> {
+    const cleanMessage = stripMarker(message, BRIEFING_CONTENT_MARKER);
 
-      if (user.preferences?.printBriefing) {
-        await printIfEnabled({
-          userId: user._id,
-          username: user.username,
-          content: cleanMessage,
-          type: 'briefing',
-        });
-      }
+    await sendTelegramMessage(this.bot, {
+      telegramId: user.telegram_id!,
+      message: cleanMessage,
+      disableLinkPreview: true,
+    });
 
-      logSuccessfulSend({
-        contentType: 'briefing',
+    if (user.preferences?.printBriefing) {
+      await printIfEnabled({
         userId: user._id,
         username: user.username,
-        telegramId: user.telegram_id,
-        messageLength: cleanMessage.length,
-      });
-    } else {
-      await sendTelegramMessage(this.bot, {
-        telegramId: user.telegram_id,
-        message: result.message,
-        disableLinkPreview: true,
-      });
-      logger.warn('Briefing sent without marker (printer skipped)', {
-        userId: user._id,
-        username: user.username,
+        content: cleanMessage,
+        type: 'briefing',
       });
     }
+
+    logSuccessfulSend({
+      contentType: 'briefing',
+      userId: user._id,
+      username: user.username,
+      telegramId: user.telegram_id!,
+      messageLength: cleanMessage.length,
+    });
+  }
+
+  private async sendBriefingWithoutMarker(user: TelegramUser, message: string): Promise<void> {
+    await sendTelegramMessage(this.bot, {
+      telegramId: user.telegram_id!,
+      message,
+      disableLinkPreview: true,
+    });
+
+    logger.warn('Briefing sent without marker (printer skipped)', {
+      userId: user._id,
+      username: user.username,
+    });
   }
 
   private async checkAndSendUserRecaps(now: Date): Promise<void> {

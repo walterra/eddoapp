@@ -3,7 +3,7 @@ import { claudeService as defaultClaudeService } from '../ai/claude.js';
 import type { BotContext } from '../bot/bot.js';
 import type { MCPClient } from '../mcp/client.js';
 import { getMCPClient } from '../mcp/client.js';
-import { logger } from '../utils/logger.js';
+import { logger, SpanAttributes, withSpan } from '../utils/logger.js';
 
 import {
   type AgentState,
@@ -60,31 +60,43 @@ export class SimpleAgent {
     error?: Error;
     toolResults?: Array<{ toolName: string; result: unknown; timestamp: number }>;
   }> {
-    const startTime = Date.now();
+    return withSpan(
+      'agent_execute',
+      {
+        [SpanAttributes.USER_ID]: userId,
+        'message.length': userMessage.length,
+      },
+      async (span) => {
+        const startTime = Date.now();
 
-    logger.info('Starting simple agent execution', {
-      userId,
-      messageLength: userMessage.length,
-    });
+        logger.info('Starting simple agent execution', {
+          userId,
+          messageLength: userMessage.length,
+        });
 
-    try {
-      const result = await this.agentLoop(userMessage, telegramContext);
-      const duration = Date.now() - startTime;
+        try {
+          const result = await this.agentLoop(userMessage, telegramContext);
+          const duration = Date.now() - startTime;
 
-      logger.info('Simple agent completed successfully', {
-        userId,
-        duration,
-        responseLength: result.response.length,
-      });
+          span.setAttribute(SpanAttributes.AGENT_TOOL_CALLS, result.toolResults.length);
+          span.setAttribute('response.length', result.response.length);
 
-      return {
-        success: true,
-        finalResponse: result.response,
-        toolResults: result.toolResults,
-      };
-    } catch (error) {
-      return this.handleExecutionError(error, userId, startTime, telegramContext);
-    }
+          logger.info('Simple agent completed successfully', {
+            userId,
+            duration,
+            responseLength: result.response.length,
+          });
+
+          return {
+            success: true,
+            finalResponse: result.response,
+            toolResults: result.toolResults,
+          };
+        } catch (error) {
+          return this.handleExecutionError(error, userId, startTime, telegramContext);
+        }
+      },
+    );
   }
 
   private async handleExecutionError(
@@ -195,58 +207,83 @@ export class SimpleAgent {
     context: IterationContext,
     iteration: number,
   ): Promise<void> {
-    const { mcpClient, telegramContext, systemPrompt } = context;
-    const iterationId = `iter_${Date.now()}_${iteration}`;
+    return withSpan(
+      'agent_iteration',
+      { [SpanAttributes.AGENT_ITERATION]: iteration },
+      async (span) => {
+        const { telegramContext, systemPrompt } = context;
+        const iterationId = `iter_${Date.now()}_${iteration}`;
 
-    this.logIterationStart(state, iteration, iterationId, context);
+        this.logIterationStart(state, iteration, iterationId, context);
+        await this.showTyping(telegramContext);
 
-    await this.showTyping(telegramContext);
+        const llmResponse = await this.claudeService.generateResponse(state.history, systemPrompt);
+        state.history.push({ role: 'assistant', content: llmResponse, timestamp: Date.now() });
 
-    const llmResponse = await this.claudeService.generateResponse(state.history, systemPrompt);
-    state.history.push({ role: 'assistant', content: llmResponse, timestamp: Date.now() });
+        const toolCall = parseToolCall(llmResponse);
 
-    const toolCall = parseToolCall(llmResponse);
+        if (toolCall) {
+          span.setAttribute(SpanAttributes.MCP_TOOL, toolCall.name);
+          await this.handleToolCallResponse(toolCall, llmResponse, state, {
+            ...context,
+            iterationId,
+          });
+        } else {
+          await this.handleFinalResponse(llmResponse, state, telegramContext, iterationId);
+        }
+      },
+    );
+  }
 
-    if (toolCall) {
-      // Tool call present - check for STATUS message to show user
-      const statusMessage = extractStatusMessage(llmResponse);
+  private async handleToolCallResponse(
+    toolCall: ReturnType<typeof parseToolCall>,
+    llmResponse: string,
+    state: AgentState,
+    context: IterationContext & { iterationId: string },
+  ): Promise<void> {
+    const { mcpClient, telegramContext, iterationId } = context;
+    const statusMessage = extractStatusMessage(llmResponse);
 
-      if (statusMessage) {
-        logger.debug('📝 Extracted STATUS message for intermediate feedback', {
-          iterationId,
-          statusMessage,
-        });
-        await handleConversationalMessage(
-          telegramContext,
-          { text: statusMessage, isMarkdown: false },
-          iterationId,
-        );
-      }
-
-      // Execute tool (no other content sent - prevents hallucination)
-      await handleToolExecution(toolCall, state, { telegramContext, mcpClient, iterationId });
-    } else {
-      // No tool call - this is the final response, send to user
-      const conversationalPart = extractConversationalPart(llmResponse);
-
-      if (conversationalPart) {
-        logger.debug('📝 Extracted conversational part (final response)', {
-          iterationId,
-          hasConversationalPart: true,
-          textLength: conversationalPart.text.length,
-          isMarkdown: conversationalPart.isMarkdown,
-        });
-        await handleConversationalMessage(telegramContext, conversationalPart, iterationId);
-      }
-
-      logger.info('🏁 Agent Decision: Complete', {
+    if (statusMessage) {
+      logger.debug('📝 Extracted STATUS message for intermediate feedback', {
         iterationId,
-        reasoning: 'LLM provided final response without tool call',
-        responsePreview: llmResponse.substring(0, 200) + '...',
+        statusMessage,
       });
-      state.done = true;
-      state.output = llmResponse;
+      await handleConversationalMessage(
+        telegramContext,
+        { text: statusMessage, isMarkdown: false },
+        iterationId,
+      );
     }
+
+    await handleToolExecution(toolCall!, state, { telegramContext, mcpClient, iterationId });
+  }
+
+  private async handleFinalResponse(
+    llmResponse: string,
+    state: AgentState,
+    telegramContext: BotContext,
+    iterationId: string,
+  ): Promise<void> {
+    const conversationalPart = extractConversationalPart(llmResponse);
+
+    if (conversationalPart) {
+      logger.debug('📝 Extracted conversational part (final response)', {
+        iterationId,
+        hasConversationalPart: true,
+        textLength: conversationalPart.text.length,
+        isMarkdown: conversationalPart.isMarkdown,
+      });
+      await handleConversationalMessage(telegramContext, conversationalPart, iterationId);
+    }
+
+    logger.info('🏁 Agent Decision: Complete', {
+      iterationId,
+      reasoning: 'LLM provided final response without tool call',
+      responsePreview: llmResponse.substring(0, 200) + '...',
+    });
+    state.done = true;
+    state.output = llmResponse;
   }
 
   private logIterationStart(

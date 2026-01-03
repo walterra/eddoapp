@@ -3,6 +3,7 @@ import { createMiddleware } from 'hono/factory';
 import jwt from 'jsonwebtoken';
 
 import { config } from '../config';
+import { logger } from '../utils/logger';
 
 interface JwtTokenPayload {
   userId: string;
@@ -71,7 +72,7 @@ export const userDatabaseMiddleware = createMiddleware(async (c, next) => {
 
     await next();
   } catch (error) {
-    console.error('User database middleware error:', error);
+    logger.error({ error }, 'User database middleware error');
     return c.json({ error: 'Invalid token' }, 401);
   }
 });
@@ -146,7 +147,7 @@ export async function proxyUserCouchDBRequest(
       headers: filteredHeaders,
     });
   } catch (error) {
-    console.error('User CouchDB proxy error:', error);
+    logger.error({ error }, 'CouchDB proxy error');
     return new Response(JSON.stringify({ error: 'Database connection failed' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
