@@ -7,6 +7,7 @@
     "@eddo/core-client": "workspace:*",
     "@eddo/core-shared": "workspace:*",
     "@fontsource-variable/inter": "^5.2.8",
+    "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.5",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",
@@ -19,6 +20,8 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
