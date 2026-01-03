@@ -26,6 +26,53 @@ describe('MCP CRUD Lifecycle Integration', () => {
     await testServer.stop();
   });
 
+  describe('Get Single Todo', () => {
+    it('should fetch a single todo by ID with full details', async () => {
+      // Create a todo with description
+      const todoData = createTestTodoData.complete();
+      const createResponse = await assert.expectToolCallSuccess<MCPResponse>(
+        'createTodo',
+        todoData,
+      );
+      const createdId = createResponse.data!.id!;
+
+      // Get the todo by ID
+      const getResponse = await assert.expectToolCallSuccess<MCPResponse>('getTodo', {
+        id: createdId,
+      });
+
+      expect(getResponse.summary).toBe('Todo retrieved successfully');
+      expect(getResponse.data).toBeDefined();
+      expect(getResponse.data!._id).toBe(createdId);
+      expect(getResponse.data!.title).toBe(todoData.title);
+      expect(getResponse.data!.description).toBe(todoData.description);
+      expect(getResponse.data!.context).toBe(todoData.context);
+    });
+
+    it('should return error for non-existent todo ID', async () => {
+      const nonExistentId = '2025-01-01T00:00:00.000Z';
+
+      const getResponse = await assert.expectToolCallSuccess<MCPResponse>('getTodo', {
+        id: nonExistentId,
+      });
+
+      expect(getResponse.summary).toBe('Todo not found');
+      expect(getResponse.error).toBeDefined();
+    });
+
+    it('should return error for invalid todo ID format', async () => {
+      const invalidIds = ['invalid-id', '', 'not-a-timestamp'];
+
+      for (const invalidId of invalidIds) {
+        const getResponse = await assert.expectToolCallSuccess<MCPResponse>('getTodo', {
+          id: invalidId,
+        });
+
+        expect(getResponse.error).toBeDefined();
+      }
+    });
+  });
+
   describe('Basic CRUD Operations', () => {
     it('should complete full create → read → update → delete cycle', async () => {
       // 1. CREATE: Create a basic todo
