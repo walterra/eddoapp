@@ -617,3 +617,102 @@ BOT_PERSONA_ID=gtd_coach  # Options: butler, gtd_coach, zen_master
 # Development
 NODE_ENV=development|production
 ```
+
+### OpenTelemetry Configuration
+
+```bash
+# Disable OTEL export (logs still go to console/file)
+OTEL_SDK_DISABLED=true
+
+# Service identification (auto-set per service)
+OTEL_SERVICE_NAME=eddo-telegram-bot
+
+# Resource attributes for APM filtering
+OTEL_RESOURCE_ATTRIBUTES=service.version=0.3.0,deployment.environment=development
+
+# OTLP endpoint (default: http://localhost:4318)
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
+
+### EDOT Collector Configuration
+
+Required for `pnpm otel:collector:start`:
+
+```bash
+# Elasticsearch API key (generate in Kibana -> Stack Management -> API Keys)
+ELASTIC_API_KEY=your_api_key_here
+
+# Elasticsearch endpoint (use Docker networking for collector)
+COLLECTOR_ES_NODE=https://host.docker.internal:9200
+
+# TLS for self-signed certs (optional)
+OTEL_TLS_VERIFY=false
+```
+
+## Observability (O11y)
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Node.js Services                            │
+│         (telegram-bot, web-api, mcp-server)                     │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────┐    ┌─────────────────────────┐    │
+│  │      EDOT Node.js       │    │   Pino Logger + OTel    │    │
+│  │  (@elastic/otel-node)   │    │      Transport          │    │
+│  │  • Auto-instrumentation │    │  • Structured logs      │    │
+│  │  • Traces & Metrics     │    │  • Trace correlation    │    │
+│  └───────────┬─────────────┘    └───────────┬─────────────┘    │
+│              └──────────────┬───────────────┘                   │
+└─────────────────────────────┼───────────────────────────────────┘
+                              ▼
+               ┌──────────────────────────────┐
+               │       EDOT Collector         │
+               │    (localhost:4317/4318)     │
+               │  • OTLP receiver (gRPC/HTTP) │
+               │  • elasticapm processor      │
+               │  • spanmetrics connector     │
+               └──────────────┬───────────────┘
+                              ▼
+               ┌──────────────────────────────┐
+               │       Elasticsearch          │
+               │  • traces-apm.otel-*         │
+               │  • metrics-apm.otel-*        │
+               │  • logs-apm.otel-*           │
+               └──────────────┬───────────────┘
+                              ▼
+               ┌──────────────────────────────┐
+               │          Kibana APM          │
+               │  • Services, Traces, Metrics │
+               └──────────────────────────────┘
+```
+
+### Commands
+
+```bash
+# Collector management
+pnpm otel:collector:start    # Start EDOT Collector (Docker)
+pnpm otel:collector:stop     # Stop collector
+pnpm otel:collector:logs     # View collector logs
+pnpm otel:collector:status   # Check collector status
+
+# Run without telemetry export
+OTEL_SDK_DISABLED=true pnpm dev:telegram-bot
+```
+
+### Instrumented Operations (telegram-bot)
+
+| Span Name                 | Description                 | Attributes                                     |
+| ------------------------- | --------------------------- | ---------------------------------------------- |
+| `agent_execute`           | Full agent workflow         | user.id, message.length, agent.tool_calls      |
+| `agent_iteration`         | Single agent loop iteration | agent.iteration, mcp.tool                      |
+| `llm_generate`            | Claude API call             | llm.model, llm.input_tokens, llm.output_tokens |
+| `mcp_tool_execute`        | MCP tool invocation         | mcp.tool, mcp.operation                        |
+| `telegram_message_handle` | Incoming message processing | telegram.chat.id, user.id                      |
+| `scheduler_send_briefing` | Daily briefing delivery     | user.id, username, telegram.chat.id            |
+
+### Packages
+
+- `@eddo/core-instrumentation`: Shared Pino logger factory, withSpan() helper, SpanAttributes
+- Configuration: `otel-collector-config.yml`, `docker-compose.otel.yml`
