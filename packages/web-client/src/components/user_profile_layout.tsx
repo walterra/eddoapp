@@ -21,7 +21,9 @@ export function NotFoundState({ onClose }: { onClose?: () => void }) {
     <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-md">
         <div className="text-center">
-          <h3 className="text-xl font-medium text-neutral-900">Profile not found</h3>
+          <h3 className="text-xl font-medium text-neutral-900 dark:text-white">
+            Profile not found
+          </h3>
           <p className="mt-2 text-sm text-neutral-600">Unable to load your profile information.</p>
           {onClose && (
             <Button className="mt-4" onClick={onClose}>
@@ -37,7 +39,7 @@ export function NotFoundState({ onClose }: { onClose?: () => void }) {
 export function PageHeader({ onClose }: { onClose?: () => void }) {
   return (
     <div className="mb-6 flex items-center justify-between">
-      <h1 className="text-3xl font-bold text-neutral-900">Profile Settings</h1>
+      <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Profile Settings</h1>
       {onClose && (
         <Button color="gray" onClick={onClose}>
           Back to App

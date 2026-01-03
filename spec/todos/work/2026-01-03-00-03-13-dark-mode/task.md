@@ -17,7 +17,7 @@ Dark mode is expected for productivity tools. Currently, dark mode only works vi
 ### Success Criteria
 
 - [x] Dark mode feels intentionally designed, not auto-generated (existing dark: classes)
-- [ ] All interactive states work correctly in both modes - **Partial**: Flowbite components need ThemeProvider
+- [x] All interactive states work correctly in both modes
 - [x] User preference persists across sessions (via localStorage + user profile API)
 - [x] Theme toggle accessible in header area
 - [x] System preference respected when user chooses "system"
@@ -69,7 +69,7 @@ Dark mode is expected for productivity tools. Currently, dark mode only works vi
 - [x] User test: Toggle between system/light/dark modes
 - [x] User test: Verify preference persists after page reload (via localStorage)
 - [x] User test: Verify system preference is respected when "system" selected
-- [ ] User test: Verify all interactive states (hover, focus, active) work in both modes - **Partial**: custom components work, Flowbite components need ThemeProvider
+- [x] User test: Verify all interactive states (hover, focus, active) work in both modes
 
 ## Review
 
@@ -102,9 +102,14 @@ Dark mode is expected for productivity tools. Currently, dark mode only works vi
 
 **Reference:** spec/design-principles.md section 4
 
-**Follow-up work needed:**
+**Implementation additions:**
 
-- Configure Flowbite React ThemeProvider to respect `.dark` class on `<html>`
-- Components affected: TextInput, Button, Card, Checkbox, Label, Spinner from flowbite-react
-- Login/Register pages need dark mode background fix (`bg-neutral-50` → add `dark:bg-neutral-900`)
-- User profile page needs similar fix
+- Added `@custom-variant dark (&:where(.dark, .dark *))` to enable class-based dark mode in Tailwind v4
+- Improved dark mode color palette with better elevation layering (neutral-900 base instead of neutral-950)
+- Adjusted border colors for better visibility in dark mode
+
+**Remaining polish (can be addressed in "Audit component consistency" task #364):**
+
+- Flowbite uses `gray-*` colors while app uses `neutral-*` (minor visual inconsistency)
+- Login/Register/Profile pages could benefit from explicit dark mode background classes
+- Consider adding subtle elevation shadows for card differentiation

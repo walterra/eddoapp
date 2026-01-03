@@ -93,7 +93,7 @@ const ScheduleSection: FC<ScheduleSectionProps> = ({ config, state, handlers, is
   <div className="rounded-lg border p-4">
     <div className="space-y-4">
       <div>
-        <h3 className="font-medium text-neutral-900">{config.title}</h3>
+        <h3 className="font-medium text-neutral-900 dark:text-white">{config.title}</h3>
         <p className="text-sm text-neutral-600">{config.description}</p>
       </div>
       <ToggleRow
@@ -183,7 +183,7 @@ export const PreferencesTab: FC<PreferencesTabProps> = (props) => {
   return (
     <Card>
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-neutral-900">Preferences</h2>
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Preferences</h2>
         <div className="space-y-6">
           <ScheduleSection {...briefingSection} isLoading={isLoading} />
           <ScheduleSection {...recapSection} isLoading={isLoading} />

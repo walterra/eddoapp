@@ -24,7 +24,7 @@ const GithubTokenInput: FC<GithubTokenInputProps> = ({ isLoading, value, onChang
       type="password"
       value={value}
     />
-    <p className="mt-1 text-xs text-neutral-500">
+    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
       Required for syncing private repositories. Token needs <code>repo</code> scope.{' '}
       <a
         className="text-primary-600 hover:underline"
@@ -58,7 +58,7 @@ const GithubIntervalSelect: FC<GithubIntervalSelectProps> = ({ disabled, value, 
   <div>
     <Label htmlFor="githubSyncInterval">Sync Interval</Label>
     <select
-      className="focus:border-primary-500 focus:ring-primary-500 block w-full rounded-lg border border-neutral-300 bg-neutral-50 p-2.5 text-sm text-neutral-900"
+      className="focus:border-primary-500 focus:ring-primary-500 block w-full rounded-lg border border-neutral-300 bg-neutral-50 p-2.5 text-sm text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
       disabled={disabled}
       id="githubSyncInterval"
       onChange={(e) => onChange(Number(e.target.value))}
@@ -70,7 +70,7 @@ const GithubIntervalSelect: FC<GithubIntervalSelectProps> = ({ disabled, value, 
         </option>
       ))}
     </select>
-    <p className="mt-1 text-xs text-neutral-500">
+    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
       How often to check for new/updated GitHub issues. Each repository becomes its own context
       (e.g., &quot;walterra/eddoapp&quot;).
     </p>
@@ -94,7 +94,9 @@ const GithubTagsInput: FC<GithubTagsInputProps> = ({ disabled, value, onChange }
       type="text"
       value={value}
     />
-    <p className="mt-1 text-xs text-neutral-500">Comma-separated tags to add to synced todos</p>
+    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+      Comma-separated tags to add to synced todos
+    </p>
   </div>
 );
 
@@ -113,7 +115,7 @@ export interface GithubSectionProps {
 
 const GithubHeader: FC = () => (
   <div>
-    <h3 className="font-medium text-neutral-900">GitHub Issue Sync</h3>
+    <h3 className="font-medium text-neutral-900 dark:text-white">GitHub Issue Sync</h3>
     <p className="text-sm text-neutral-600">
       Automatically sync your GitHub issues as todos. Issues are synced periodically and assigned to
       a context.
@@ -131,7 +133,7 @@ const GithubSyncToggle: FC<GithubSyncToggleProps> = ({ checked, disabled, onChan
   <div className="flex items-center justify-between">
     <div>
       <Label>Enable GitHub Sync</Label>
-      <p className="text-xs text-neutral-500">Sync GitHub issues to todos</p>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400">Sync GitHub issues to todos</p>
     </div>
     <ToggleSwitch checked={checked} disabled={disabled} onChange={onChange} />
   </div>
