@@ -53,19 +53,14 @@ exporters:
   debug:
     verbosity: basic
 
-  # Elasticsearch exporter with OTel-native mapping
+  # Elasticsearch exporter with ECS mapping for APM UI compatibility
   # Uses COLLECTOR_ES_NODE (for Docker networking) separate from local ES_NODE
   elasticsearch/otel:
     endpoints: ["${env:COLLECTOR_ES_NODE}"]
     api_key: ${env:ELASTIC_API_KEY}
     mapping:
-      mode: otel  # Preserves OTel semantics (recommended for Stack 9.x)
-    logs_dynamic_index:
-      enabled: true
-    metrics_dynamic_index:
-      enabled: true
-    traces_dynamic_index:
-      enabled: true
+      mode: ecs  # ECS mode for Kibana APM UI compatibility
+    traces_index: traces-apm-default
     tls:
       # OTEL_TLS_VERIFY=false disables verification (for self-signed certs)
       # OTEL_CA_FILE=/path/to/ca.pem provides custom CA certificate

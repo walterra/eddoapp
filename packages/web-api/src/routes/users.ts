@@ -1,4 +1,9 @@
-import { createEnv, createUserRegistry, getUserRegistryDatabaseConfig } from '@eddo/core-server';
+import {
+  createEnv,
+  createUserRegistry,
+  getUserRegistryDatabaseConfig,
+  type UserRegistryEntryAlpha2,
+} from '@eddo/core-server';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import jwt from 'jsonwebtoken';
@@ -30,7 +35,7 @@ const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 // Initialize nano connection for changes feed
 const couchConnection = nano(env.COUCHDB_URL);
 const registryDbConfig = getUserRegistryDatabaseConfig(env);
-const registryDb = couchConnection.db.use(registryDbConfig.dbName);
+const registryDb = couchConnection.db.use<UserRegistryEntryAlpha2>(registryDbConfig.dbName);
 
 // Validation schemas
 // Get current user profile
@@ -241,12 +246,11 @@ usersApp.get('/preferences/stream', async (c) => {
   logger.debug({ username }, 'Starting SSE preferences stream');
 
   return streamSSE(c, async (stream) => {
-    await handlePreferencesStream({
+    await handlePreferencesStream<UserRegistryEntryAlpha2>({
       stream,
       username,
       docId,
-      // Type cast needed due to nano's complex generic types
-      registryDb: registryDb as Parameters<typeof handlePreferencesStream>[0]['registryDb'],
+      registryDb,
       createSafeProfile,
     });
   });
