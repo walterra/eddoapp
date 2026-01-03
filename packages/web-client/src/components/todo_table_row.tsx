@@ -1,17 +1,18 @@
 /**
  * TodoRow component for rendering individual table rows
  */
-import { type DatabaseError, type Todo, getActiveDuration } from '@eddo/core-client';
+import { areTodosEqual, type DatabaseError, getActiveDuration, type Todo } from '@eddo/core-client';
 import { type FC, Fragment, memo, useMemo, useState } from 'react';
-import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
+import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';
+import { useTodoFlyout } from '../hooks/use_todo_flyout';
 import {
   useToggleCompletionMutation,
   useToggleTimeTrackingMutation,
 } from '../hooks/use_todo_mutations';
 import { ICON_BUTTON } from '../styles/interactive';
-import { TodoEditFlyout } from './todo_edit_flyout';
+import { TodoFlyout } from './todo_flyout';
 import { TodoCell } from './todo_table_cell';
 import { reorderColumnsWithStatusFirst } from './todo_table_helpers';
 
@@ -64,8 +65,8 @@ const TodoRowActions: FC<TodoRowActionsProps> = ({
           onClick={onToggleTimeTracking}
         />
       )}
-      <button className={ICON_BUTTON} onClick={onEdit} title="Edit" type="button">
-        <BiEdit size="1.1em" />
+      <button className={ICON_BUTTON} onClick={onEdit} title="View details" type="button">
+        <BiInfoCircle size="1.1em" />
       </button>
     </div>
   </td>
@@ -108,7 +109,7 @@ const RowCells: FC<RowCellsProps> = ({
 const useTodoRowState = (todo: Todo, activeDate: string) => {
   const toggleCompletion = useToggleCompletionMutation();
   const toggleTimeTracking = useToggleTimeTrackingMutation();
-  const [showEditModal, setShowEditModal] = useState(false);
+  const flyout = useTodoFlyout(todo);
   const [error, setError] = useState<DatabaseError | null>(null);
 
   const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
@@ -140,8 +141,9 @@ const useTodoRowState = (todo: Todo, activeDate: string) => {
   };
 
   return {
-    showEditModal,
-    setShowEditModal,
+    showFlyout: flyout.isOpen,
+    openFlyout: flyout.open,
+    closeFlyout: flyout.close,
     error,
     isUpdating,
     thisButtonActive,
@@ -172,17 +174,13 @@ const TodoRowInner: FC<TodoRowProps> = ({
         />
         <TodoRowActions
           isUpdating={state.isUpdating}
-          onEdit={() => state.setShowEditModal(true)}
+          onEdit={state.openFlyout}
           onToggleTimeTracking={state.handleToggleTimeTracking}
           thisButtonActive={state.thisButtonActive}
           timeTrackingActive={timeTrackingActive}
         />
       </tr>
-      <TodoEditFlyout
-        onClose={() => state.setShowEditModal(false)}
-        show={state.showEditModal}
-        todo={todo}
-      />
+      <TodoFlyout onClose={state.closeFlyout} show={state.showFlyout} todo={todo} />
     </>
   );
 };
@@ -191,12 +189,7 @@ export const TodoRow = memo(TodoRowInner, (prevProps, nextProps) => {
   return (
     prevProps.activeDate === nextProps.activeDate &&
     prevProps.timeTrackingActive === nextProps.timeTrackingActive &&
-    prevProps.todo._id === nextProps.todo._id &&
-    prevProps.todo._rev === nextProps.todo._rev &&
-    prevProps.todo.completed === nextProps.todo.completed &&
-    prevProps.todo.title === nextProps.todo.title &&
-    JSON.stringify(prevProps.todo.active) === JSON.stringify(nextProps.todo.active) &&
-    JSON.stringify(prevProps.todo.tags) === JSON.stringify(nextProps.todo.tags) &&
+    areTodosEqual(prevProps.todo, nextProps.todo) &&
     JSON.stringify(prevProps.selectedColumns) === JSON.stringify(nextProps.selectedColumns)
   );
 });

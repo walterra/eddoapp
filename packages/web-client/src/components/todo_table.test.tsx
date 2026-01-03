@@ -9,10 +9,10 @@ import { createTestTodo, renderWithPouchDb } from '../test-utils';
 import { TodoTable } from './todo_table';
 
 // Mock child components
-vi.mock('./todo_edit_flyout', () => ({
-  TodoEditFlyout: ({ show, onClose }: { show: boolean; onClose: () => void }) =>
+vi.mock('./todo_flyout', () => ({
+  TodoFlyout: ({ show, onClose }: { show: boolean; onClose: () => void }) =>
     show ? (
-      <div data-testid="todo-edit-flyout">
+      <div data-testid="todo-flyout">
         <button onClick={onClose}>Close</button>
       </div>
     ) : null,
@@ -245,11 +245,11 @@ describe('TodoTable', () => {
         expect(screen.getByText('Test todo')).toBeInTheDocument();
       });
 
-      const editButton = screen.getByTitle('Edit');
-      await user.click(editButton);
+      const viewButton = screen.getByTitle('View details');
+      await user.click(viewButton);
 
       await waitFor(() => {
-        expect(screen.getByTestId('todo-edit-flyout')).toBeInTheDocument();
+        expect(screen.getByTestId('todo-flyout')).toBeInTheDocument();
       });
     });
 

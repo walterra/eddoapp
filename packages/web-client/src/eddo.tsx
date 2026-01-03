@@ -18,6 +18,7 @@ import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
 import { useFilterPreferences } from './hooks/use_filter_preferences';
 import { usePreferencesStream } from './hooks/use_preferences_stream';
+import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
 import { useViewPreferences } from './hooks/use_view_preferences';
 import { createUserPouchDbContext } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
@@ -180,10 +181,12 @@ function AuthenticatedApp({
 
   return (
     <DatabaseChangesProvider>
-      <CouchdbSyncProvider />
-      <PreferencesStreamProvider />
-      <HealthMonitor />
-      <TodoApp logout={logout} />
+      <TodoFlyoutProvider>
+        <CouchdbSyncProvider />
+        <PreferencesStreamProvider />
+        <HealthMonitor />
+        <TodoApp logout={logout} />
+      </TodoFlyoutProvider>
     </DatabaseChangesProvider>
   );
 }

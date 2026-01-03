@@ -1,14 +1,16 @@
 import {
+  areTodosEqual,
   type DatabaseError,
-  type Todo,
   getActiveDuration,
   getFormattedDuration,
+  type Todo,
 } from '@eddo/core-client';
 import { Checkbox } from 'flowbite-react';
 import { type FC, memo, useMemo, useState } from 'react';
-import { BiEdit, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
+import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';
+import { useTodoFlyout } from '../hooks/use_todo_flyout';
 import {
   useToggleCompletionMutation,
   useToggleTimeTrackingMutation,
@@ -22,7 +24,7 @@ import {
 } from '../styles/interactive';
 import { FormattedMessage } from './formatted_message';
 import { TagDisplay } from './tag_display';
-import { TodoEditFlyout } from './todo_edit_flyout';
+import { TodoFlyout } from './todo_flyout';
 
 interface TodoListElementProps {
   active: boolean;
@@ -148,11 +150,11 @@ const ActionButtons: FC<ActionButtonsProps> = (props) => {
           )}
           <button
             className={`${ICON_BUTTON_BASE} ${ICON_BUTTON_REVEAL_CLASS}`}
-            data-testid="edit-button"
+            data-testid="view-button"
             onClick={onEditClick}
             type="button"
           >
-            <BiEdit size="1.3em" />
+            <BiInfoCircle size="1.3em" />
           </button>
         </>
       )}
@@ -165,7 +167,7 @@ const useTodoListState = (todo: Todo, active: boolean, activeDate: string) => {
   const toggleCompletion = useToggleCompletionMutation();
   const toggleTimeTracking = useToggleTimeTrackingMutation();
   const { counter: activeCounter } = useActiveTimer(active);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const flyout = useTodoFlyout(todo);
   const [error, setError] = useState<DatabaseError | null>(null);
 
   const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
@@ -196,8 +198,9 @@ const useTodoListState = (todo: Todo, active: boolean, activeDate: string) => {
   };
 
   return {
-    showEditModal,
-    setShowEditModal,
+    showFlyout: flyout.isOpen,
+    openFlyout: flyout.open,
+    closeFlyout: flyout.close,
     error,
     setError,
     isUpdating,
@@ -270,18 +273,14 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
           isUpdating={state.isUpdating}
           onEditClick={(e) => {
             e.preventDefault();
-            state.setShowEditModal(true);
+            state.openFlyout();
           }}
           onTimeTrackingClick={state.handleTimeTrackingClick}
           timeTrackingActive={timeTrackingActive}
           todo={todo}
         />
       </div>
-      <TodoEditFlyout
-        onClose={() => state.setShowEditModal(false)}
-        show={state.showEditModal}
-        todo={todo}
-      />
+      <TodoFlyout onClose={state.closeFlyout} show={state.showFlyout} todo={todo} />
     </div>
   );
 };
@@ -292,11 +291,6 @@ export const TodoListElement = memo(TodoListElementInner, (prevProps, nextProps)
     prevProps.activeDate === nextProps.activeDate &&
     prevProps.activityOnly === nextProps.activityOnly &&
     prevProps.timeTrackingActive === nextProps.timeTrackingActive &&
-    prevProps.todo._id === nextProps.todo._id &&
-    prevProps.todo._rev === nextProps.todo._rev &&
-    prevProps.todo.completed === nextProps.todo.completed &&
-    prevProps.todo.title === nextProps.todo.title &&
-    JSON.stringify(prevProps.todo.active) === JSON.stringify(nextProps.todo.active) &&
-    JSON.stringify(prevProps.todo.tags) === JSON.stringify(nextProps.todo.tags)
+    areTodosEqual(prevProps.todo, nextProps.todo)
   );
 });
