@@ -5,9 +5,10 @@ export {
   // Database monitoring
   DatabaseHealthMonitor,
   DatabaseOperationError,
+  // Utils
+  areTodosEqual,
   createDefaultUserPreferences,
   decodeJwtPayload,
-  // Utils
   generateStableKey,
   getActiveDuration,
   getActiveRecordForActivities,

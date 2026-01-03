@@ -5,6 +5,7 @@ import { type RenderOptions, render } from '@testing-library/react';
 import { type ReactElement, type ReactNode } from 'react';
 
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
+import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
 import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 import { createTestPouchDb } from './test-setup';
 
@@ -50,7 +51,9 @@ export const TestWrapper = ({
   return (
     <QueryClientProvider client={queryClient}>
       <PouchDbContext.Provider value={contextValue}>
-        <DatabaseChangesProvider>{children}</DatabaseChangesProvider>
+        <DatabaseChangesProvider>
+          <TodoFlyoutProvider>{children}</TodoFlyoutProvider>
+        </DatabaseChangesProvider>
       </PouchDbContext.Provider>
     </QueryClientProvider>
   );

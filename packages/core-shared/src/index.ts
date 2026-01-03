@@ -64,6 +64,7 @@ export {
 } from './api/database-structures';
 
 // Utils
+export { areTodosEqual } from './utils/are_todos_equal';
 export { generateStableKey } from './utils/generate_stable_key';
 export { getActiveDuration } from './utils/get_active_duration';
 export { getActiveRecordForActivities } from './utils/get_active_record_for_activities';

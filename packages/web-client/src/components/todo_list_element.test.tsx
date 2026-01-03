@@ -9,10 +9,10 @@ import { createTestTodo, populateTestDatabase, renderWithPouchDb, testTodos } fr
 import { TodoListElement } from './todo_list_element';
 
 // Mock child components to avoid complex dependencies
-vi.mock('./todo_edit_flyout', () => ({
-  TodoEditFlyout: ({ show, onClose }: { show: boolean; onClose: () => void }) =>
+vi.mock('./todo_flyout', () => ({
+  TodoFlyout: ({ show, onClose }: { show: boolean; onClose: () => void }) =>
     show ? (
-      <div data-testid="todo-edit-flyout">
+      <div data-testid="todo-flyout">
         <button onClick={onClose}>Close Modal</button>
       </div>
     ) : null,
@@ -304,7 +304,7 @@ describe('TodoListElement', () => {
       // Should not have any buttons in activity-only mode
       expect(screen.queryByTestId('play-button')).not.toBeInTheDocument();
       expect(screen.queryByTestId('pause-button')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('edit-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('view-button')).not.toBeInTheDocument();
     });
 
     it('hides time tracking button when another todo is actively tracking', () => {
@@ -430,17 +430,17 @@ describe('TodoListElement', () => {
     });
   });
 
-  describe('Edit Modal', () => {
-    it('shows edit button', () => {
+  describe('View Flyout', () => {
+    it('shows view button', () => {
       renderWithPouchDb(
         <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
-      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
+      expect(screen.getByTestId('view-button')).toBeInTheDocument();
     });
 
-    it('does not show edit button in activity-only mode', () => {
+    it('does not show view button in activity-only mode', () => {
       renderWithPouchDb(
         <TodoListElement
           {...defaultProps}
@@ -455,7 +455,7 @@ describe('TodoListElement', () => {
       expect(buttons).toHaveLength(0);
     });
 
-    it('opens edit modal when edit button is clicked', async () => {
+    it('opens view flyout when view button is clicked', async () => {
       const user = userEvent.setup();
 
       renderWithPouchDb(
@@ -463,33 +463,33 @@ describe('TodoListElement', () => {
         { testDb: testDb.contextValue },
       );
 
-      // Find and click the edit button
-      const editButton = screen.getByTestId('edit-button');
-      await user.click(editButton);
+      // Find and click the view button
+      const viewButton = screen.getByTestId('view-button');
+      await user.click(viewButton);
 
-      // Verify the modal is shown
+      // Verify the flyout is shown
       await waitFor(() => {
-        expect(screen.getByTestId('todo-edit-flyout')).toBeInTheDocument();
+        expect(screen.getByTestId('todo-flyout')).toBeInTheDocument();
       });
     });
 
-    it('prevents default behavior on edit button click', () => {
+    it('prevents default behavior on view button click', () => {
       renderWithPouchDb(
         <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
-      // Find the edit button
-      const editButton = screen.getByTestId('edit-button');
+      // Find the view button
+      const viewButton = screen.getByTestId('view-button');
 
       const mockPreventDefault = vi.fn();
 
-      fireEvent.click(editButton, {
+      fireEvent.click(viewButton, {
         preventDefault: mockPreventDefault,
       });
 
       // The component calls preventDefault internally
-      expect(editButton).toBeInTheDocument();
+      expect(viewButton).toBeInTheDocument();
     });
   });
 
