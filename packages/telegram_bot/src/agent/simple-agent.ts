@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import {
   type AgentState,
   extractConversationalPart,
+  extractStatusMessage,
   getMCPSystemInfo,
   handleConversationalMessage,
   handleToolExecution,
@@ -205,21 +206,39 @@ export class SimpleAgent {
     state.history.push({ role: 'assistant', content: llmResponse, timestamp: Date.now() });
 
     const toolCall = parseToolCall(llmResponse);
-    const conversationalPart = extractConversationalPart(llmResponse);
-
-    if (conversationalPart) {
-      logger.debug('📝 Extracted conversational part', {
-        iterationId,
-        hasConversationalPart: true,
-        textLength: conversationalPart.text.length,
-        isMarkdown: conversationalPart.isMarkdown,
-      });
-      await handleConversationalMessage(telegramContext, conversationalPart, iterationId);
-    }
 
     if (toolCall) {
+      // Tool call present - check for STATUS message to show user
+      const statusMessage = extractStatusMessage(llmResponse);
+
+      if (statusMessage) {
+        logger.debug('📝 Extracted STATUS message for intermediate feedback', {
+          iterationId,
+          statusMessage,
+        });
+        await handleConversationalMessage(
+          telegramContext,
+          { text: statusMessage, isMarkdown: false },
+          iterationId,
+        );
+      }
+
+      // Execute tool (no other content sent - prevents hallucination)
       await handleToolExecution(toolCall, state, { telegramContext, mcpClient, iterationId });
     } else {
+      // No tool call - this is the final response, send to user
+      const conversationalPart = extractConversationalPart(llmResponse);
+
+      if (conversationalPart) {
+        logger.debug('📝 Extracted conversational part (final response)', {
+          iterationId,
+          hasConversationalPart: true,
+          textLength: conversationalPart.text.length,
+          isMarkdown: conversationalPart.isMarkdown,
+        });
+        await handleConversationalMessage(telegramContext, conversationalPart, iterationId);
+      }
+
       logger.info('🏁 Agent Decision: Complete', {
         iterationId,
         reasoning: 'LLM provided final response without tool call',

@@ -188,14 +188,31 @@ Example: "Work on: Review Q4 budget spreadsheet. It's due tomorrow and requires 
 export function getResponseFormatSection(): string {
   return `If you don't need to use any tools, provide a direct response to help the user and stop responding.
 
-CRITICAL: Stop after a tool call. Do NOT add text after a tool call.
-
 Always respond in character according to your personality described above.
 
-All of the above means you have 2 options to respond:
+You have 2 response options:
 
-1. If you don't need to use a tool, provide a direct response to help the user.
-2. If you need to use a tool, start with a brief conversational message to tell the user what the tool is about to do (don't mention a "tool", for the user, it's you, the assistant, doing the work), then after 2 newlines make the tool call, and stop your response right after the tool call.
+1. FINAL RESPONSE (no tools needed): Provide your complete response to help the user.
+
+2. TOOL CALL (need data first): Optionally include a STATUS line, then make EXACTLY ONE tool call and STOP.
+   - Optional status: STATUS: <short message under 10 words>
+   - Tool call: TOOL_CALL: {"name": "toolName", "parameters": {...}}
+   - STOP your response RIGHT AFTER the closing brace }
+
+   Example with status:
+   STATUS: Checking your completed tasks...
+   TOOL_CALL: {"name": "listTodos", "parameters": {"completed": true}}
+
+   Example without status:
+   TOOL_CALL: {"name": "listTodos", "parameters": {"completed": true}}
+
+CRITICAL RULES:
+- STATUS must be SHORT (under 10 words) - just what you're doing, not results
+- ONE tool call per response, then STOP
+- Do NOT add ANY text after the tool call
+- NEVER generate content (summaries, recaps, lists) BEFORE receiving tool results
+- NEVER echo back tool results - analyze them and create your response
+- After receiving tool results, either make another tool call OR provide your final response
 
 Now create your response:`;
 }
