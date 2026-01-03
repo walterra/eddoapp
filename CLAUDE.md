@@ -383,6 +383,52 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 - Use Prettier for formatting with existing config
 - **Always run the proper scripts for linting and formatting before manually fixing code style issues**
 
+### Handling ESLint Complexity Errors
+
+When ESLint reports complexity guard violations (`max-lines`, `max-lines-per-function`, `complexity`, etc.), **do NOT use shortcuts**:
+
+**❌ NEVER do this:**
+
+- Condense multiple statements onto single lines
+- Remove JSDoc comments or documentation
+- Remove log statements to reduce line count
+- Combine unrelated logic to reduce function count
+- Use terse variable names to save space
+
+**✅ ALWAYS do proper refactoring:**
+
+1. **For `max-lines` (file too long, max 300):**
+   - Identify cohesive groups of functionality (e.g., health checks, metrics, validation)
+   - Extract to new module with clear single responsibility
+   - Use proper imports/exports to maintain encapsulation
+   - Example: Extract `ConnectionHealthManager` from `MCPConnectionManager`
+
+2. **For `max-lines-per-function` (function too long, max 50):**
+   - Identify logical sub-steps within the function
+   - Extract helper functions with descriptive names
+   - Each helper should do one thing well
+   - Keep the original function as an orchestrator
+
+3. **For `complexity` (too many branches, max 10):**
+   - Use early returns to reduce nesting
+   - Extract conditional logic to well-named predicates
+   - Consider strategy pattern for multiple similar branches
+   - Use lookup objects instead of switch/if chains
+
+4. **For `max-depth` (too deeply nested, max 3):**
+   - Extract inner logic to separate functions
+   - Use guard clauses (early returns)
+   - Consider inverting conditions
+
+**Refactoring checklist:**
+
+- [ ] New modules have clear, single responsibilities
+- [ ] All existing functionality is preserved
+- [ ] All existing tests still pass
+- [ ] New code has appropriate test coverage
+- [ ] JSDoc comments are preserved or updated
+- [ ] Log statements are preserved at appropriate levels
+
 ## Git Rules
 
 - **CRITICAL: Questions are not instructions** - When user asks a question (e.g., "is this correct?", "should we do X?"), answer the question and STOP. Do not make changes or commit until explicitly instructed.

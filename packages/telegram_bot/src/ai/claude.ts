@@ -3,7 +3,7 @@ import { getRandomHex } from '@eddo/core-shared';
 
 import type { AgentState } from '../agent/simple-agent.js';
 import { appConfig } from '../utils/config.js';
-import { logger } from '../utils/logger.js';
+import { logger, withSpan } from '../utils/logger.js';
 
 export interface ClaudeService {
   generateResponse: (
@@ -34,12 +34,41 @@ export class SimpleClaudeService implements ClaudeService {
     conversationHistory: AgentState['history'],
     systemPrompt: string,
   ): Promise<string> {
-    try {
-      const requestId = `req_${Date.now()}_${getRandomHex(9)}`;
+    const model = appConfig.LLM_MODEL || 'claude-3-haiku-20240307';
 
+    return withSpan(
+      'llm_generate',
+      {
+        'llm.model': model,
+        'llm.messages_count': conversationHistory.length,
+        'llm.system_prompt_length': systemPrompt.length,
+      },
+      async (span) => {
+        const requestId = `req_${Date.now()}_${getRandomHex(9)}`;
+        return this.executeRequest({
+          requestId,
+          model,
+          conversationHistory,
+          systemPrompt,
+          span,
+        });
+      },
+    );
+  }
+
+  private async executeRequest(params: {
+    requestId: string;
+    model: string;
+    conversationHistory: AgentState['history'];
+    systemPrompt: string;
+    span: { setAttribute: (key: string, value: string | number) => void };
+  }): Promise<string> {
+    const { requestId, model, conversationHistory, systemPrompt, span } = params;
+
+    try {
       logger.info('🤖 LLM Request', {
         requestId,
-        model: appConfig.LLM_MODEL || 'claude-3-haiku-20240307',
+        model,
         systemPrompt,
         conversationHistory,
         historyLength: conversationHistory.length,
@@ -47,19 +76,20 @@ export class SimpleClaudeService implements ClaudeService {
       });
 
       const response = await this.anthropic.messages.create({
-        model: appConfig.LLM_MODEL || 'claude-3-haiku-20240307',
+        model,
         max_tokens: 1000,
         system: systemPrompt,
-        messages: conversationHistory.map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
+        messages: conversationHistory.map((msg) => ({ role: msg.role, content: msg.content })),
       });
 
       const content = response.content[0];
       if (content.type !== 'text') {
         throw new Error('Unexpected response type from Claude');
       }
+
+      span.setAttribute('llm.response_length', content.text.length);
+      span.setAttribute('llm.input_tokens', response.usage.input_tokens);
+      span.setAttribute('llm.output_tokens', response.usage.output_tokens);
 
       logger.info('🤖 LLM Response', {
         requestId,

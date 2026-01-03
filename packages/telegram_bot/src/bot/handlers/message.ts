@@ -1,5 +1,5 @@
 import { getEddoAgent } from '../../agent/index.js';
-import { logger } from '../../utils/logger.js';
+import { logger, SpanAttributes, withSpan } from '../../utils/logger.js';
 import type { BotContext } from '../bot.js';
 import {
   logFailure,
@@ -45,25 +45,35 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
     return;
   }
 
-  logger.info('Processing message with agent workflow', {
-    userId,
-    messageLength: messageText.length,
-    username: ctx.from?.username,
-  });
+  return withSpan(
+    'telegram_message_handle',
+    {
+      [SpanAttributes.TELEGRAM_CHAT_ID]: ctx.chat?.id ?? 0,
+      [SpanAttributes.USER_ID]: userId.toString(),
+      'message.length': messageText.length,
+    },
+    async () => {
+      logger.info('Processing message with agent workflow', {
+        userId,
+        messageLength: messageText.length,
+        username: ctx.from?.username,
+      });
 
-  try {
-    await ctx.replyWithChatAction('typing');
+      try {
+        await ctx.replyWithChatAction('typing');
 
-    const agent = getEddoAgent({
-      enableStreaming: true,
-      enableApprovals: true,
-      maxExecutionTime: 300000,
-    });
+        const agent = getEddoAgent({
+          enableStreaming: true,
+          enableApprovals: true,
+          maxExecutionTime: 300000,
+        });
 
-    const result = await agent.processMessage(messageText, userId.toString(), ctx);
-    await processAgentResult(ctx, result, userId);
-  } catch (error) {
-    logFatalError(userId, error, messageText);
-    await sendFatalErrorMessage(ctx);
-  }
+        const result = await agent.processMessage(messageText, userId.toString(), ctx);
+        await processAgentResult(ctx, result, userId);
+      } catch (error) {
+        logFatalError(userId, error, messageText);
+        await sendFatalErrorMessage(ctx);
+      }
+    },
+  );
 }

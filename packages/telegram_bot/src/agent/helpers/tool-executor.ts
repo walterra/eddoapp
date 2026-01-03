@@ -4,7 +4,7 @@
 import type { BotContext } from '../../bot/bot.js';
 import type { MCPClient } from '../../mcp/client.js';
 import { extractUserContextForMCP } from '../../mcp/user-context.js';
-import { logger } from '../../utils/logger.js';
+import { logger, SpanAttributes, withSpan } from '../../utils/logger.js';
 
 import type { AgentState, ToolCall } from './types.js';
 
@@ -25,21 +25,30 @@ export async function executeTool(
   telegramContext: BotContext,
   mcpClient: MCPClient,
 ): Promise<unknown> {
-  const tool = mcpClient.tools.find((t) => t.name === toolCall.name);
-  if (!tool) {
-    throw new Error(`Tool not found: ${toolCall.name}`);
-  }
+  return withSpan(
+    'mcp_tool_execute',
+    {
+      [SpanAttributes.MCP_TOOL]: toolCall.name,
+      [SpanAttributes.MCP_OPERATION]: 'invoke',
+    },
+    async () => {
+      const tool = mcpClient.tools.find((t) => t.name === toolCall.name);
+      if (!tool) {
+        throw new Error(`Tool not found: ${toolCall.name}`);
+      }
 
-  const userContext = await extractUserContextForMCP(telegramContext);
+      const userContext = await extractUserContextForMCP(telegramContext);
 
-  logger.info('Executing tool', {
-    toolName: tool.name,
-    parameters: toolCall.parameters,
-    username: userContext?.username,
-    databaseName: userContext?.databaseName,
-  });
+      logger.info('Executing tool', {
+        toolName: tool.name,
+        parameters: toolCall.parameters,
+        username: userContext?.username,
+        databaseName: userContext?.databaseName,
+      });
 
-  return mcpClient.invoke(tool.name, toolCall.parameters, userContext || undefined);
+      return mcpClient.invoke(tool.name, toolCall.parameters, userContext || undefined);
+    },
+  );
 }
 
 /**
