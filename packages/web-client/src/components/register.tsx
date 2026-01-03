@@ -55,8 +55,10 @@ interface FormHeaderProps {
 
 const FormHeader: FC<FormHeaderProps> = ({ isAuthenticating, onBackToLogin }) => (
   <div>
-    <h3 className="text-xl font-medium text-neutral-900">Create your Eddo App account</h3>
-    <p className="mt-1 text-sm text-neutral-600">
+    <h3 className="text-xl font-medium text-neutral-900 dark:text-white">
+      Create your Eddo App account
+    </h3>
+    <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
       Already have an account?{' '}
       <button
         className="text-primary-600 hover:underline"
@@ -72,7 +74,9 @@ const FormHeader: FC<FormHeaderProps> = ({ isAuthenticating, onBackToLogin }) =>
 
 const ErrorMessage: FC<{ error: string }> = ({ error }) =>
   error ? (
-    <div className="bg-error-100 text-error-700 mb-4 rounded-lg p-4 text-sm">{error}</div>
+    <div className="bg-error-100 text-error-700 dark:bg-error-900 dark:text-error-200 mb-4 rounded-lg p-4 text-sm">
+      {error}
+    </div>
   ) : null;
 
 interface FieldConfig {
@@ -140,7 +144,9 @@ const FormField: FC<FormFieldProps> = ({ config, value, onChange, disabled }) =>
       type={config.type}
       value={value}
     />
-    {config.hint && <p className="mt-1 text-xs text-neutral-500">{config.hint}</p>}
+    {config.hint && (
+      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{config.hint}</p>
+    )}
   </div>
 );
 
@@ -185,7 +191,7 @@ export const Register: FC<RegisterProps> = ({ onRegister, isAuthenticating, onBa
     setForm((p) => ({ ...p, [field]: value }));
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-900">
       <Card className="w-full max-w-md">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <FormHeader isAuthenticating={isAuthenticating} onBackToLogin={onBackToLogin} />

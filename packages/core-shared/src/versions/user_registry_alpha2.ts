@@ -4,6 +4,8 @@ import { UserRegistryEntryAlpha1 } from './user_registry_alpha1';
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string; // HH:MM format, defaults to 07:00
@@ -12,6 +14,7 @@ export interface UserPreferences {
   recapTime?: string; // HH:MM format, defaults to 18:00
   printRecap?: boolean; // Enable/disable thermal printer output for recap
   timezone?: string; // Future timezone support
+  theme?: ThemePreference; // UI theme preference, defaults to system
   viewMode?: 'kanban' | 'table'; // Todo view preference, defaults to kanban
   tableColumns?: string[]; // Selected columns for table view
   selectedTags?: string[]; // Filter: selected tags
@@ -54,6 +57,7 @@ export function createDefaultUserPreferences(): UserPreferences {
     recapTime: '18:00',
     printRecap: false,
     timezone: undefined,
+    theme: 'system',
     viewMode: 'kanban',
     tableColumns: ['title', 'due', 'tags', 'timeTracked', 'status'],
     selectedTags: [],

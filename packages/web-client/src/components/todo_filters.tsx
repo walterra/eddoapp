@@ -181,7 +181,7 @@ export const TodoFilters: FC<TodoFiltersProps> = (props) => {
   };
 
   return (
-    <div className="flex items-center space-x-4 border-b border-neutral-200 bg-white pb-5 dark:border-neutral-700 dark:bg-neutral-800">
+    <div className="flex items-center space-x-4 bg-white pb-3 dark:bg-neutral-800">
       <FilterRow
         allContexts={allContexts}
         allTags={allTags}

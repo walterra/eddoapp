@@ -80,19 +80,19 @@ const MetricsRow: FC<MetricsRowProps> = ({ healthCheck, databaseName }) => (
   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
     {databaseName && (
       <div>
-        <span className="text-neutral-600">DB: </span>
-        <span className="font-mono text-neutral-800">{databaseName}</span>
+        <span className="text-neutral-600 dark:text-neutral-400">DB: </span>
+        <span className="font-mono text-neutral-800 dark:text-neutral-200">{databaseName}</span>
       </div>
     )}
     <div>Last: {formatTimestamp(healthCheck.timestamp)}</div>
     {healthCheck.metrics.storageQuota && (
       <div>
-        <span className="text-neutral-600">Storage: </span>
+        <span className="text-neutral-600 dark:text-neutral-400">Storage: </span>
         <span
           className={
             healthCheck.metrics.storageQuota.percentage > 80
               ? 'text-orange-600'
-              : 'text-neutral-800'
+              : 'text-neutral-800 dark:text-neutral-200'
           }
         >
           {healthCheck.metrics.storageQuota.percentage.toFixed(1)}%
@@ -100,7 +100,7 @@ const MetricsRow: FC<MetricsRowProps> = ({ healthCheck, databaseName }) => (
       </div>
     )}
     <div>
-      <span className="text-neutral-600">Sync: </span>
+      <span className="text-neutral-600 dark:text-neutral-400">Sync: </span>
       <span className={`capitalize ${getSyncStatusClassName(healthCheck.metrics.syncStatus)}`}>
         {healthCheck.metrics.syncStatus}
       </span>
@@ -142,7 +142,7 @@ interface DetailsDisplayProps {
 }
 
 const DetailsDisplay: FC<DetailsDisplayProps> = ({ healthCheck, databaseName }) => (
-  <div className="mt-1 text-xs text-neutral-600">
+  <div className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
     <MetricsRow databaseName={databaseName} healthCheck={healthCheck} />
     <IssuesDisplay issues={healthCheck.issues} />
   </div>

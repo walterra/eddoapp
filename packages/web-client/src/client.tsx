@@ -1,9 +1,11 @@
+import { ThemeProvider } from 'flowbite-react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { ThemeInit } from '../../../.flowbite-react/init';
 import { Eddo } from './eddo';
 import './eddo.css';
+import { customFlowbiteTheme } from './flowbite_theme';
 
 // Ensure the root element exists
 const rootElement = document.getElementById('root');
@@ -15,7 +17,9 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <StrictMode>
-    <ThemeInit />
-    <Eddo />
+    <ThemeProvider theme={customFlowbiteTheme}>
+      <ThemeInit />
+      <Eddo />
+    </ThemeProvider>
   </StrictMode>,
 );

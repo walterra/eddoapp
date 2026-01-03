@@ -87,7 +87,7 @@ export const SecurityTab: FC<SecurityTabProps> = ({
   <div className="space-y-6">
     <Card>
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-neutral-900">Change Password</h2>
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Change Password</h2>
         <div className="space-y-4">
           <PasswordField
             id="secCurrentPassword"

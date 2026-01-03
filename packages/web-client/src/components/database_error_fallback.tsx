@@ -64,10 +64,10 @@ const TechnicalDetails: FC<TechnicalDetailsProps> = ({ error }) => {
 
   return (
     <details className="mb-6 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
-      <summary className="cursor-pointer text-sm font-medium text-neutral-600">
+      <summary className="cursor-pointer text-sm font-medium text-neutral-600 dark:text-neutral-400">
         Technical Details
       </summary>
-      <pre className="mt-2 overflow-x-auto text-xs text-neutral-500">
+      <pre className="mt-2 overflow-x-auto text-xs text-neutral-500 dark:text-neutral-400">
         {JSON.stringify(
           {
             type: error.type,
@@ -96,9 +96,9 @@ export const DatabaseErrorFallback: FC<DatabaseErrorFallbackProps> = ({
         <span aria-label="Warning" className="mr-3 text-4xl" role="img">
           ⚠️
         </span>
-        <h3 className="text-xl font-semibold text-neutral-900">Database Error</h3>
+        <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">Database Error</h3>
       </div>
-      <p className="mb-6 text-neutral-700">{getErrorMessage(error)}</p>
+      <p className="mb-6 text-neutral-700 dark:text-neutral-300">{getErrorMessage(error)}</p>
       <TechnicalDetails error={error} />
       <ActionButtons error={error} onDismiss={onDismiss} onRetry={onRetry} />
     </div>

@@ -4,6 +4,7 @@ import { type FC, useState } from 'react';
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseHealthIndicator } from './database_health_indicator';
+
 import { UserProfile } from './user_profile';
 
 interface PageWrapperProps {

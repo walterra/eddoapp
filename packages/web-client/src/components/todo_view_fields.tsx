@@ -73,7 +73,7 @@ const DescriptionView: FC<{ description: string }> = ({ description }) => {
     <div>
       <div className={LABEL_CLASS}>Description</div>
       <div
-        className={`${MARKDOWN_PROSE} mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900`}
+        className={`${MARKDOWN_PROSE} mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-600 dark:bg-neutral-900/50`}
       >
         <Markdown remarkPlugins={[remarkGfm]}>{description}</Markdown>
       </div>
@@ -141,7 +141,7 @@ const TimeTrackingView: FC<TimeTrackingViewProps> = ({ active }) => {
     <div>
       <div className={LABEL_CLASS}>Time Tracking</div>
       <div className="mt-2 space-y-2">
-        <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
+        <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/50">
           <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Total</span>
           <span className="text-sm font-semibold text-neutral-900 dark:text-white">
             {getFormattedDuration(totalDuration) || '0m'}

@@ -18,6 +18,7 @@ import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
 import { useFilterPreferences } from './hooks/use_filter_preferences';
 import { usePreferencesStream } from './hooks/use_preferences_stream';
+import { initializeTheme } from './hooks/use_theme';
 import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
 import { useViewPreferences } from './hooks/use_view_preferences';
 import { createUserPouchDbContext } from './pouch_db';
@@ -214,6 +215,9 @@ function EddoContent() {
     </QueryClientProvider>
   );
 }
+
+// Initialize theme before React renders to prevent flash of wrong theme
+initializeTheme();
 
 export function Eddo() {
   return (

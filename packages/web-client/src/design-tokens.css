@@ -208,23 +208,23 @@
   --color-border-emphasis: #a3a3a3; /* neutral-400 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Background - inverted */
-    --color-bg: #0a0a0a; /* neutral-950 */
-    --color-bg-subtle: #171717; /* neutral-900 */
-    --color-bg-muted: #262626; /* neutral-800 */
-    --color-bg-emphasis: #f5f5f5; /* neutral-100 */
+.dark {
+  /* Background - unified dark mode matching Tailwind's neutral scale
+   * Base canvas matches dark:bg-neutral-800 used throughout components
+   */
+  --color-bg: #262626; /* neutral-800 - matches dark:bg-neutral-800 */
+  --color-bg-subtle: #303030; /* slightly elevated surfaces */
+  --color-bg-muted: #3a3a3a; /* inputs/nested elements */
+  --color-bg-emphasis: #f5f5f5; /* neutral-100 */
 
-    /* Foreground / Text - inverted */
-    --color-fg: #f5f5f5; /* neutral-100 */
-    --color-fg-muted: #a3a3a3; /* neutral-400 */
-    --color-fg-subtle: #737373; /* neutral-500 */
-    --color-fg-on-emphasis: #171717; /* neutral-900 */
+  /* Foreground / Text - inverted */
+  --color-fg: oklch(0.93 0 0); /* neutral-100 - slightly softer than pure white */
+  --color-fg-muted: oklch(0.65 0 0); /* neutral-400 - secondary text */
+  --color-fg-subtle: oklch(0.5 0 0); /* neutral-500 - tertiary/disabled */
+  --color-fg-on-emphasis: oklch(0.2 0 0); /* neutral-900 */
 
-    /* Border - inverted */
-    --color-border: #262626; /* neutral-800 */
-    --color-border-muted: #171717; /* neutral-900 */
-    --color-border-emphasis: #525252; /* neutral-600 */
-  }
+  /* Border - more visible in dark mode */
+  --color-border: oklch(0.35 0 0); /* neutral-700 - more visible borders */
+  --color-border-muted: oklch(0.27 0 0); /* neutral-800 - subtle dividers */
+  --color-border-emphasis: oklch(0.5 0 0); /* neutral-500 - emphasized borders */
 }

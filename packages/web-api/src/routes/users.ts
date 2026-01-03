@@ -55,6 +55,7 @@ const updatePreferencesSchema = z.object({
     .optional(),
   printRecap: z.boolean().optional(),
   timezone: z.string().optional(),
+  theme: z.enum(['system', 'light', 'dark']).optional(),
   viewMode: z.enum(['kanban', 'table']).optional(),
   tableColumns: z.array(z.string()).optional(),
   selectedTags: z.array(z.string()).optional(),

@@ -108,7 +108,7 @@ interface TagInputContainerProps {
 }
 
 const TagInputContainer: FC<TagInputContainerProps> = ({ children }) => (
-  <div className="focus-within:ring-opacity-50 focus-within:border-primary-500 focus-within:ring-primary-500 flex flex-wrap items-center gap-1 rounded-lg border border-neutral-300 bg-neutral-50 p-2 focus-within:ring-2 dark:border-neutral-600 dark:bg-neutral-700">
+  <div className="focus-within:border-primary-500 focus-within:ring-primary-500 flex flex-wrap items-center gap-1 rounded-lg border border-neutral-300 bg-neutral-50 p-2.5 focus-within:ring-1 dark:border-neutral-600 dark:bg-neutral-700">
     {children}
   </div>
 );
@@ -124,7 +124,7 @@ interface InputFieldProps {
 
 const InputField: FC<InputFieldProps> = (props) => (
   <input
-    className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
+    className="min-w-[100px] flex-1 border-none bg-transparent p-0 text-sm text-neutral-900 outline-none placeholder:text-neutral-500 dark:text-white dark:placeholder:text-neutral-400"
     onChange={props.onChange}
     onFocus={props.onFocus}
     onKeyDown={props.onKeyDown}

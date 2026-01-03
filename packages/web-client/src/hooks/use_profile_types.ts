@@ -2,6 +2,8 @@
  * Type definitions for user profile hook
  */
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string;
@@ -10,6 +12,7 @@ export interface UserPreferences {
   recapTime?: string;
   printRecap?: boolean;
   timezone?: string;
+  theme?: ThemePreference;
   viewMode?: 'kanban' | 'table';
   tableColumns?: string[];
   selectedTags?: string[];
@@ -60,6 +63,7 @@ export interface UpdatePreferencesData {
   recapTime?: string;
   printRecap?: boolean;
   timezone?: string;
+  theme?: ThemePreference;
   viewMode?: 'kanban' | 'table';
   tableColumns?: string[];
   selectedTags?: string[];
