@@ -28,6 +28,14 @@ export {
   type ListTodosArgs,
 } from './list-todos.js';
 
+// Get Todo
+export {
+  executeGetTodo,
+  getTodoDescription,
+  getTodoParameters,
+  type GetTodoArgs,
+} from './get-todo.js';
+
 // Update Todo
 export {
   executeUpdateTodo,

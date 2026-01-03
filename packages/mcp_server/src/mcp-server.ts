@@ -19,6 +19,7 @@ import {
   executeGetBriefingData,
   executeGetRecapData,
   executeGetServerInfo,
+  executeGetTodo,
   executeGetUserInfo,
   executeListTodos,
   executeStartTimeTracking,
@@ -33,6 +34,8 @@ import {
   getRecapDataParameters,
   getServerInfoDescription,
   getServerInfoParameters,
+  getTodoDescription,
+  getTodoParameters,
   getUserInfoDescription,
   getUserInfoParameters,
   listTodosDescription,
@@ -135,6 +138,13 @@ server.addTool({
   description: listTodosDescription,
   parameters: listTodosParameters,
   execute: async (args, context) => executeListTodos(args, context, getUserDb),
+});
+
+server.addTool({
+  name: 'getTodo',
+  description: getTodoDescription,
+  parameters: getTodoParameters,
+  execute: async (args, context) => executeGetTodo(args, context, getUserDb),
 });
 
 server.addTool({
@@ -243,7 +253,7 @@ export async function startMcpServer(port: number = 3001): Promise<void> {
     console.log(`📡 Connect with: http://localhost:${port}/mcp`);
     console.log(`🔐 Authentication: Pass X-API-Key header`);
     console.log(
-      '📋 Available tools: createTodo, listTodos, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo, getUserInfo, getBriefingData, getRecapData',
+      '📋 Available tools: createTodo, listTodos, getTodo, updateTodo, toggleTodoCompletion, deleteTodo, startTimeTracking, stopTimeTracking, getActiveTimeTracking, getServerInfo, getUserInfo, getBriefingData, getRecapData',
     );
   } catch (error) {
     console.error('❌ Failed to start MCP server:', error);
