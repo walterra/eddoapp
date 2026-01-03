@@ -249,7 +249,14 @@ export class MCPConnectionManager {
     try {
       return await invokeToolOnClient(userClient, toolName, params);
     } finally {
-      await userClient.close();
+      // Close client, ignoring AbortError (expected when closing HTTP streams)
+      try {
+        await userClient.close();
+      } catch (closeError) {
+        if (!(closeError instanceof Error && closeError.name === 'AbortError')) {
+          logger.warn('Error closing MCP client', { error: String(closeError) });
+        }
+      }
     }
   }
 

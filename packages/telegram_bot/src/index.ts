@@ -1,3 +1,10 @@
+// Note: OTEL auto-instrumentation is loaded via --import flag in package.json dev script
+// See: node --import @elastic/opentelemetry-node --import tsx src/index.ts
+
+// Configure global HTTP timeout for MCP requests (2 minutes)
+import { Agent, setGlobalDispatcher } from 'undici';
+setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
+
 import { createBot } from './bot/bot.js';
 import { handleBriefing, handleBriefingOff, handleBriefingOn } from './bot/commands/briefing.js';
 import { handleGithub } from './bot/commands/github.js';
