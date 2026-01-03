@@ -1,7 +1,12 @@
 import { type FC, useState } from 'react';
 import { MdFilterList } from 'react-icons/md';
 
-import { CLEAR_BUTTON, getDropdownItemClass, getFilterButtonClass } from '../styles/interactive';
+import {
+  CLEAR_BUTTON,
+  DROPDOWN_CONTAINER,
+  getDropdownItemClass,
+  getFilterButtonClass,
+} from '../styles/interactive';
 import { TagDisplay } from './tag_display';
 
 interface TagFilterProps {
@@ -88,7 +93,7 @@ export const TagFilter: FC<TagFilterProps> = ({ availableTags, selectedTags, onT
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full z-20 mt-1 max-h-96 w-64 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800">
+          <div className={`top-full w-64 p-3 ${DROPDOWN_CONTAINER}`}>
             <FilterHeader onClearAll={() => onTagsChange([])} selectedCount={selectedTags.length} />
             <SelectedTagsDisplay selectedTags={selectedTags} />
             <TagList onToggle={toggleTag} selectedTags={selectedTags} tags={availableTags} />

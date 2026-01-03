@@ -10,7 +10,7 @@ import {
   useToggleCompletionMutation,
   useToggleTimeTrackingMutation,
 } from '../hooks/use_todo_mutations';
-import { FOCUS_RING, TRANSITION } from '../styles/interactive';
+import { ICON_BUTTON } from '../styles/interactive';
 import { TodoEditModal } from './todo_edit_modal';
 import { TodoCell } from './todo_table_cell';
 import { reorderColumnsWithStatusFirst } from './todo_table_helpers';
@@ -30,7 +30,7 @@ interface TimeTrackingButtonProps {
 
 const TimeTrackingButton: FC<TimeTrackingButtonProps> = ({ isActive, isUpdating, onClick }) => (
   <button
-    className={`rounded p-0.5 ${TRANSITION} text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-200 ${FOCUS_RING}`}
+    className={ICON_BUTTON}
     disabled={isUpdating}
     onClick={onClick}
     title={isActive ? 'Pause' : 'Start'}
@@ -64,12 +64,7 @@ const TodoRowActions: FC<TodoRowActionsProps> = ({
           onClick={onToggleTimeTracking}
         />
       )}
-      <button
-        className={`rounded p-0.5 ${TRANSITION} text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-200 ${FOCUS_RING}`}
-        onClick={onEdit}
-        title="Edit"
-        type="button"
-      >
+      <button className={ICON_BUTTON} onClick={onEdit} title="Edit" type="button">
         <BiEdit size="1.1em" />
       </button>
     </div>

@@ -1,7 +1,11 @@
 import { type FC, useState } from 'react';
 import { MdFilterList } from 'react-icons/md';
 
-import { getDropdownItemClass, getFilterButtonClass } from '../styles/interactive';
+import {
+  DROPDOWN_CONTAINER,
+  getDropdownItemClass,
+  getFilterButtonClass,
+} from '../styles/interactive';
 
 export type CompletionStatus = 'all' | 'completed' | 'incomplete';
 
@@ -51,7 +55,7 @@ export const StatusFilter: FC<StatusFilterProps> = ({ selectedStatus, onStatusCh
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full z-20 mt-1 max-h-96 w-48 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-600 dark:bg-neutral-800">
+          <div className={`top-full w-48 p-2 ${DROPDOWN_CONTAINER}`}>
             <div className="space-y-1">
               {statusOptions.map((option) => (
                 <StatusOption

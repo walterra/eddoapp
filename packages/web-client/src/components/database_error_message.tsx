@@ -73,7 +73,7 @@ export const DatabaseErrorMessage: FC<DatabaseErrorMessageProps> = ({
   className = '',
 }) => (
   <div
-    className={`mb-4 flex items-center justify-between rounded-md border p-3 ${getErrorStyles(error)} ${className}`}
+    className={`mb-4 flex items-center justify-between rounded-lg border p-3 ${getErrorStyles(error)} ${className}`}
     role="alert"
   >
     <div className="flex items-center">

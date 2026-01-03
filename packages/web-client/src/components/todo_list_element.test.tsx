@@ -97,8 +97,8 @@ describe('TodoListElement', () => {
         { testDb: testDb.contextValue },
       );
 
-      // Check for the main container with active border styling
-      const todoElement = container.querySelector('[class*="border-sky-600"]');
+      // Check for the main container with active ring styling (changed from border to ring)
+      const todoElement = container.querySelector('[class*="ring-sky-600"]');
       expect(todoElement).toBeInTheDocument();
     });
 

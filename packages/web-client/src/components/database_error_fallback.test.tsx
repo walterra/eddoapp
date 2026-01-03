@@ -286,11 +286,8 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} />);
 
       const cleanupButton = screen.getByText('Free Up Space');
-      expect(cleanupButton).toHaveClass(
-        'bg-neutral-200',
-        'text-neutral-700',
-        'hover:bg-neutral-300',
-      );
+      // Uses BTN_SECONDARY token
+      expect(cleanupButton).toHaveClass('rounded-lg', 'text-neutral-700', 'border-neutral-300');
     });
 
     it('applies correct styling to dismiss button', () => {
@@ -298,11 +295,8 @@ describe('DatabaseErrorFallback', () => {
       render(<DatabaseErrorFallback error={error} onDismiss={mockOnDismiss} />);
 
       const dismissButton = screen.getByText('Dismiss');
-      expect(dismissButton).toHaveClass(
-        'border-neutral-300',
-        'text-neutral-600',
-        'hover:bg-neutral-50',
-      );
+      // Uses BTN_GHOST token
+      expect(dismissButton).toHaveClass('rounded-lg', 'text-neutral-600', 'hover:bg-neutral-100');
     });
   });
 });

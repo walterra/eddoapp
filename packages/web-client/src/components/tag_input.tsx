@@ -1,5 +1,6 @@
 import { type FC, useCallback } from 'react';
 
+import { DROPDOWN_CONTAINER, DROPDOWN_ITEM } from '../styles/interactive';
 import {
   filterSuggestions,
   handleNavigationKey,
@@ -45,15 +46,10 @@ const SuggestionList: FC<SuggestionListProps> = ({
   onSelect,
   suggestionsRef,
 }) => (
-  <div
-    className="absolute top-full z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-md border border-neutral-200 bg-white shadow-lg dark:border-neutral-600 dark:bg-neutral-700"
-    ref={suggestionsRef}
-  >
+  <div className={`top-full w-full p-1 ${DROPDOWN_CONTAINER}`} ref={suggestionsRef}>
     {suggestions.slice(0, 5).map((suggestion, index) => (
       <button
-        className={`block w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-600 ${
-          index === selectedIndex ? 'bg-primary-100 dark:bg-primary-900' : ''
-        }`}
+        className={`${DROPDOWN_ITEM} ${index === selectedIndex ? 'bg-primary-100 dark:bg-primary-900' : ''}`}
         key={suggestion}
         onClick={() => onSelect(suggestion)}
         type="button"

@@ -4,6 +4,14 @@
 @source "../node_modules/flowbite";
 @source "../node_modules/flowbite-react";
 
+/*
+ * Override Tailwind v4's default hover behavior.
+ * By default, Tailwind v4 wraps hover in @media(hover:hover) which
+ * can fail in some WebKit browsers (Safari, Orion).
+ * This redefines hover to work without the media query wrapper.
+ */
+@variant hover (&:hover);
+
 html,
 body,
 #root {

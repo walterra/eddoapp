@@ -250,7 +250,7 @@ describe('DatabaseErrorMessage', () => {
         'flex',
         'items-center',
         'justify-between',
-        'rounded-md',
+        'rounded-lg',
         'border',
         'p-3',
       );

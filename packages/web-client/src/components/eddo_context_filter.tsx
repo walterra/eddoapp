@@ -1,7 +1,12 @@
 import { type FC, useState } from 'react';
 import { MdFilterList } from 'react-icons/md';
 
-import { CLEAR_BUTTON, getDropdownItemClass, getFilterButtonClass } from '../styles/interactive';
+import {
+  CLEAR_BUTTON,
+  DROPDOWN_CONTAINER,
+  getDropdownItemClass,
+  getFilterButtonClass,
+} from '../styles/interactive';
 
 interface EddoContextFilterProps {
   availableContexts: string[];
@@ -36,7 +41,7 @@ const SelectedContextsDisplay: FC<SelectedContextsDisplayProps> = ({ selectedCon
       <div className="flex flex-wrap gap-1">
         {selectedContexts.map((context) => (
           <span
-            className="bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200 rounded px-2 py-0.5 text-xs"
+            className="bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200 rounded-lg px-2 py-0.5 text-xs"
             key={context}
           >
             {context}
@@ -102,7 +107,7 @@ export const EddoContextFilter: FC<EddoContextFilterProps> = ({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full z-20 mt-1 max-h-96 w-64 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800">
+          <div className={`top-full w-64 p-3 ${DROPDOWN_CONTAINER}`}>
             <FilterHeader
               onClearAll={() => onContextsChange([])}
               selectedCount={selectedContexts.length}
