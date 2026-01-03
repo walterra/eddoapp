@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
 import { config } from '../config';
-import { generateSecureToken, hashPassword, verifyPassword } from '../utils/crypto';
+import { generateSecureToken, hashPassword, verifyPassword } from '../utils/crypto.js';
 import { setupUserDatabase } from '../utils/setup-user-db';
 import {
   checkExistingUser,

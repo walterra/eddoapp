@@ -5,7 +5,8 @@ import type { UserRegistryEntry } from '@eddo/core-shared';
 import jwt from 'jsonwebtoken';
 
 import { config } from '../config.js';
-import { hashPassword, validateEmail, validatePassword, verifyPassword } from '../utils/crypto.js';
+import { hashPassword, verifyPassword } from '../utils/crypto.js';
+import { validateEmail, validatePassword } from '../utils/validation.js';
 
 interface JwtTokenPayload {
   userId: string;

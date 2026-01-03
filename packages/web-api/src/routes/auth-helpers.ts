@@ -3,7 +3,7 @@
  */
 import type { UserRegistryOperations } from '@eddo/core-shared';
 
-import { validateEmail, validatePassword, validateUsername } from '../utils/crypto.js';
+import { validateEmail, validatePassword, validateUsername } from '../utils/validation.js';
 
 export interface RegistrationInput {
   username: string;
