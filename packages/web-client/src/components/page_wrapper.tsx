@@ -51,8 +51,8 @@ const Header: FC<HeaderProps> = ({
   onShowProfile,
   onLogout,
 }) => (
-  <div className="mb-4 flex items-center justify-between">
-    <div className="prose">
+  <div className="mb-2 flex items-center justify-between">
+    <div>
       <h1 className="sr-only">Eddo</h1>
       <EddoLogo />
     </div>
@@ -80,7 +80,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   return (
     <div className="flex min-h-screen w-full flex-col">
       <div className="flex w-full flex-1 flex-col overflow-hidden sm:flex-row">
-        <main className="w-full flex-1 overflow-auto p-3" role="main">
+        <main className="w-full flex-1 overflow-auto px-4 pt-4 pb-3" role="main">
           <Header
             databaseName={databaseName}
             healthCheck={healthCheck}
