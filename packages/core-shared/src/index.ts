@@ -48,6 +48,7 @@ export {
 export {
   createDefaultUserPreferences,
   isUserRegistryEntryAlpha2,
+  type RssFeedConfig,
   type ThemePreference,
   type UserPreferences,
   type UserRegistryEntryAlpha2,

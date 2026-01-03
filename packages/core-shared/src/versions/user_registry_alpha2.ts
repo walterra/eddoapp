@@ -6,6 +6,20 @@ type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/** RSS feed configuration */
+export interface RssFeedConfig {
+  /** Original URL provided by user */
+  url: string;
+  /** Discovered/resolved feed URL */
+  feedUrl: string;
+  /** Feed title (from autodiscovery or feed itself) */
+  title?: string;
+  /** Whether this feed is enabled for sync */
+  enabled: boolean;
+  /** ISO timestamp when feed was added */
+  addedAt: string;
+}
+
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string; // HH:MM format, defaults to 07:00
@@ -32,6 +46,12 @@ export interface UserPreferences {
   githubSyncTags?: string[]; // Tags to add to synced issues, defaults to ["github", "gtd:next"]
   githubLastSync?: string; // ISO timestamp of last successful sync
   githubSyncStartedAt?: string; // ISO timestamp when sync was first enabled (max lookback)
+  // RSS Sync
+  rssSync?: boolean; // Enable/disable RSS feed sync
+  rssFeeds?: RssFeedConfig[]; // Array of subscribed feeds
+  rssSyncInterval?: number; // Minutes between syncs, defaults to 60
+  rssSyncTags?: string[]; // Tags to add to synced items, defaults to ["gtd:someday", "source:rss"]
+  rssLastSync?: string; // ISO timestamp of last successful sync
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
@@ -71,5 +91,10 @@ export function createDefaultUserPreferences(): UserPreferences {
     githubSyncTags: ['github', 'gtd:next'],
     githubLastSync: undefined,
     githubSyncStartedAt: undefined,
+    rssSync: false,
+    rssFeeds: [],
+    rssSyncInterval: 60,
+    rssSyncTags: ['gtd:someday', 'source:rss'],
+    rssLastSync: undefined,
   };
 }
