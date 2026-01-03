@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { config } from '../config';
 import { generateSecureToken, hashPassword, verifyPassword } from '../utils/crypto.js';
+import { logger, withSpan } from '../utils/logger';
 import { setupUserDatabase } from '../utils/setup-user-db';
 import {
   checkExistingUser,
@@ -55,57 +56,78 @@ function createToken(userId: string, username: string, expiration: number): stri
   );
 }
 
+interface RegistrationInput {
+  username: string;
+  email: string;
+  password: string;
+  telegramId?: number;
+}
+
+/** Creates a new user in the registry */
+async function createNewUser(input: RegistrationInput): Promise<{ _id: string; username: string }> {
+  const passwordHash = await hashPassword(input.password);
+
+  return userRegistry.create({
+    username: input.username,
+    email: input.email,
+    password_hash: passwordHash,
+    telegram_id: input.telegramId,
+    database_name: '',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    permissions: ['read', 'write'],
+    status: 'active',
+    version: 'alpha2',
+    preferences: createDefaultUserPreferences(),
+  });
+}
+
 authApp.post('/register', async (c) => {
-  try {
-    const body = await c.req.json();
-    const { username, email, password, telegramId, rememberMe } = registerSchema.parse(body);
-    const tokenExpiration = rememberMe ? TOKEN_EXPIRATION_LONG : TOKEN_EXPIRATION_SHORT;
+  return withSpan('auth_register', { 'auth.operation': 'register' }, async (span) => {
+    try {
+      const body = await c.req.json();
+      const { username, email, password, telegramId, rememberMe } = registerSchema.parse(body);
+      const tokenExpiration = rememberMe ? TOKEN_EXPIRATION_LONG : TOKEN_EXPIRATION_SHORT;
 
-    const inputValidation = validateRegistrationInput({ username, email, password, telegramId });
-    if (!inputValidation.valid) {
-      return c.json({ error: inputValidation.error }, 400);
+      span.setAttribute('user.name', username);
+
+      const inputValidation = validateRegistrationInput({ username, email, password, telegramId });
+      if (!inputValidation.valid) {
+        span.setAttribute('auth.result', 'validation_failed');
+        return c.json({ error: inputValidation.error }, 400);
+      }
+
+      const existingCheck = await checkExistingUser(userRegistry, {
+        username,
+        email,
+        password,
+        telegramId,
+      });
+      if (!existingCheck.valid) {
+        span.setAttribute('auth.result', 'user_exists');
+        return c.json({ error: existingCheck.error }, 409);
+      }
+
+      const user = await createNewUser({ username, email, password, telegramId });
+      await setupUserDatabase(username);
+      const token = createToken(user._id, user.username, tokenExpiration);
+
+      span.setAttribute('auth.result', 'success');
+      span.setAttribute('user.id', user._id);
+      logger.info({ username, userId: user._id }, 'User registered successfully');
+
+      return c.json({
+        token,
+        username: user.username,
+        userId: user._id,
+        expiresIn: rememberMe ? '30d' : '1h',
+      });
+    } catch (error) {
+      span.setAttribute('auth.result', 'error');
+      logger.error({ error }, 'Registration error');
+      return c.json({ error: 'Registration failed' }, 500);
     }
-
-    const existingCheck = await checkExistingUser(userRegistry, {
-      username,
-      email,
-      password,
-      telegramId,
-    });
-    if (!existingCheck.valid) {
-      return c.json({ error: existingCheck.error }, 409);
-    }
-
-    const passwordHash = await hashPassword(password);
-
-    const user = await userRegistry.create({
-      username,
-      email,
-      password_hash: passwordHash,
-      telegram_id: telegramId,
-      database_name: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      permissions: ['read', 'write'],
-      status: 'active',
-      version: 'alpha2',
-      preferences: createDefaultUserPreferences(),
-    });
-
-    await setupUserDatabase(username);
-
-    const token = createToken(user._id, user.username, tokenExpiration);
-
-    return c.json({
-      token,
-      username: user.username,
-      userId: user._id,
-      expiresIn: rememberMe ? '30d' : '1h',
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    return c.json({ error: 'Registration failed' }, 500);
-  }
+  });
 });
 
 /** Handle login for registered users */
@@ -137,35 +159,48 @@ function isValidDemoCredentials(username: string, password: string): boolean {
 }
 
 authApp.post('/login', async (c) => {
-  try {
-    const body = await c.req.json();
-    const { username, password, rememberMe } = loginSchema.parse(body);
-    const tokenExpiration = rememberMe ? TOKEN_EXPIRATION_LONG : TOKEN_EXPIRATION_SHORT;
-    const expiresInLabel = rememberMe ? '30d' : '1h';
+  return withSpan('auth_login', { 'auth.operation': 'login' }, async (span) => {
+    try {
+      const body = await c.req.json();
+      const { username, password, rememberMe } = loginSchema.parse(body);
+      const tokenExpiration = rememberMe ? TOKEN_EXPIRATION_LONG : TOKEN_EXPIRATION_SHORT;
+      const expiresInLabel = rememberMe ? '30d' : '1h';
 
-    const user = await userRegistry.findByUsername(username);
-    if (user) {
-      const result = await handleRegisteredUserLogin(
-        user,
-        password,
-        tokenExpiration,
-        expiresInLabel,
-      );
-      if (!result.success) return c.json({ error: result.error }, result.status as 401 | 403);
-      return c.json(result.response);
+      span.setAttribute('user.name', username);
+
+      const user = await userRegistry.findByUsername(username);
+      if (user) {
+        const result = await handleRegisteredUserLogin(
+          user,
+          password,
+          tokenExpiration,
+          expiresInLabel,
+        );
+        if (!result.success) {
+          span.setAttribute('auth.result', 'invalid_credentials');
+          return c.json({ error: result.error }, result.status as 401 | 403);
+        }
+        span.setAttribute('auth.result', 'success');
+        span.setAttribute('user.id', user._id);
+        logger.info({ username, userId: user._id }, 'User logged in');
+        return c.json(result.response);
+      }
+
+      // Fallback to demo authentication for backward compatibility
+      if (!isValidDemoCredentials(username, password)) {
+        span.setAttribute('auth.result', 'invalid_credentials');
+        return c.json({ error: 'Invalid credentials' }, 401);
+      }
+
+      span.setAttribute('auth.result', 'demo_login');
+      const token = createToken(`demo_${username}`, username, tokenExpiration);
+      return c.json({ token, username, userId: `demo_${username}`, expiresIn: expiresInLabel });
+    } catch (error) {
+      span.setAttribute('auth.result', 'error');
+      logger.error({ error }, 'Login error');
+      return c.json({ error: 'Invalid request' }, 400);
     }
-
-    // Fallback to demo authentication for backward compatibility
-    if (!isValidDemoCredentials(username, password)) {
-      return c.json({ error: 'Invalid credentials' }, 401);
-    }
-
-    const token = createToken(`demo_${username}`, username, tokenExpiration);
-    return c.json({ token, username, userId: `demo_${username}`, expiresIn: expiresInLabel });
-  } catch (error) {
-    console.error('Login error:', error);
-    return c.json({ error: 'Invalid request' }, 400);
-  }
+  });
 });
 
 authApp.get('/validate', async (c) => {
@@ -211,31 +246,45 @@ authApp.post('/generate-link-code', async (c) => {
 });
 
 authApp.post('/link-telegram', async (c) => {
-  try {
-    const body = await c.req.json();
-    const { linkCode, telegramId } = linkTelegramSchema.parse(body);
+  return withSpan('auth_link_telegram', { 'auth.operation': 'link_telegram' }, async (span) => {
+    try {
+      const body = await c.req.json();
+      const { linkCode, telegramId } = linkTelegramSchema.parse(body);
 
-    const linkResult = getLinkingCode(linkCode);
-    if (!linkResult.valid) {
-      return c.json({ error: linkResult.error }, 400);
+      span.setAttribute('telegram.id', telegramId);
+
+      const linkResult = getLinkingCode(linkCode);
+      if (!linkResult.valid) {
+        span.setAttribute('auth.result', 'invalid_code');
+        return c.json({ error: linkResult.error }, 400);
+      }
+
+      const existingTelegram = await userRegistry.findByTelegramId(telegramId);
+      if (existingTelegram) {
+        span.setAttribute('auth.result', 'already_linked');
+        return c.json({ error: 'Telegram ID already linked to another account' }, 409);
+      }
+
+      const user = await userRegistry.findByUsername(linkResult.username!);
+      if (!user) {
+        span.setAttribute('auth.result', 'user_not_found');
+        return c.json({ error: 'User not found' }, 404);
+      }
+
+      await userRegistry.update(user._id, { telegram_id: telegramId });
+      deleteLinkingCode(linkCode);
+
+      span.setAttribute('auth.result', 'success');
+      span.setAttribute('user.name', linkResult.username!);
+      logger.info({ username: linkResult.username, telegramId }, 'Telegram account linked');
+
+      return c.json({ success: true, username: linkResult.username });
+    } catch (error) {
+      span.setAttribute('auth.result', 'error');
+      logger.error({ error }, 'Telegram linking error');
+      return c.json({ error: 'Linking failed' }, 500);
     }
-
-    const existingTelegram = await userRegistry.findByTelegramId(telegramId);
-    if (existingTelegram) {
-      return c.json({ error: 'Telegram ID already linked to another account' }, 409);
-    }
-
-    const user = await userRegistry.findByUsername(linkResult.username!);
-    if (!user) return c.json({ error: 'User not found' }, 404);
-
-    await userRegistry.update(user._id, { telegram_id: telegramId });
-    deleteLinkingCode(linkCode);
-
-    return c.json({ success: true, username: linkResult.username });
-  } catch (error) {
-    console.error('Telegram linking error:', error);
-    return c.json({ error: 'Linking failed' }, 500);
-  }
+  });
 });
 
 export { authApp as authRoutes };

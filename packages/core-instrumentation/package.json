@@ -8,11 +8,13 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./otel-init": {
       "types": "./dist/otel-init.d.ts",
-      "import": "./dist/otel-init.js"
+      "import": "./dist/otel-init.js",
+      "default": "./dist/otel-init.js"
     }
   },
   "files": [

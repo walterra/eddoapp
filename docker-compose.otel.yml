@@ -12,20 +12,16 @@
 # Optional environment variables:
 #   OTEL_TLS_VERIFY=false  - Disable TLS verification (for self-signed certs)
 #   OTEL_CA_FILE           - Path to custom CA certificate
+#   COUCHDB_USERNAME       - CouchDB admin username (default: admin)
+#   COUCHDB_PASSWORD       - CouchDB admin password (default: password)
 
 services:
   otel-collector:
     image: elastic/elastic-agent:9.2.2
     container_name: eddo-otel-collector
-    command: >
-      sh -c '
-        if [ "$$OTEL_TLS_VERIFY" = "false" ]; then
-          export OTEL_TLS_SKIP_VERIFY=true
-        else
-          export OTEL_TLS_SKIP_VERIFY=false
-        fi
-        exec otel --config /etc/otel-collector/config.yaml
-      '
+    command: ["otel", "--config", "/etc/otel-collector/config.yaml"]
+    environment:
+      - OTEL_TLS_SKIP_VERIFY=${OTEL_TLS_VERIFY:-false}
     deploy:
       resources:
         limits:

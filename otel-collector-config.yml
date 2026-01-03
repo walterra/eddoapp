@@ -9,6 +9,10 @@
 #   pnpm otel:collector:start   # Start collector
 #   pnpm otel:collector:stop    # Stop collector
 #   pnpm otel:collector:logs    # View logs
+#
+# CouchDB metrics:
+#   Scraped via Prometheus receiver from CouchDB's built-in /_node/_local/_prometheus endpoint
+#   Requires COUCHDB_USERNAME and COUCHDB_PASSWORD environment variables
 
 receivers:
   otlp:
@@ -17,6 +21,20 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+
+  # CouchDB metrics via Prometheus endpoint
+  # Note: Uses host.docker.internal to reach host machine from Docker on macOS
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'couchdb'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['host.docker.internal:5984']
+          metrics_path: '/_node/_local/_prometheus'
+          basic_auth:
+            username: ${env:COUCHDB_USERNAME:-admin}
+            password: ${env:COUCHDB_PASSWORD:-password}
 
 processors:
   batch:
@@ -62,9 +80,12 @@ service:
       processors: [batch, elasticapm]
       exporters: [debug, spanmetrics, elasticsearch/otel]
 
-    # Metrics pipeline receives both direct metrics AND generated APM metrics
+    # Metrics pipeline receives:
+    # - Direct metrics from OTLP
+    # - Generated APM metrics from spanmetrics connector
+    # - CouchDB metrics from Prometheus scraper
     metrics:
-      receivers: [otlp, spanmetrics]
+      receivers: [otlp, spanmetrics, prometheus]
       processors: [batch]
       exporters: [debug, elasticsearch/otel]
 

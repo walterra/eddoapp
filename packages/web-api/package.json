@@ -4,19 +4,25 @@
   "private": true,
   "main": "./src/index.ts",
   "scripts": {
-    "dev": "NODE_ENV=development tsx watch src/index.ts",
+    "dev": "OTEL_SERVICE_NAME=eddo-web-api OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development NODE_ENV=development node --import @elastic/opentelemetry-node --import tsx src/index.ts",
+    "dev:watch": "NODE_ENV=development tsx watch src/index.ts",
+    "dev:no-otel": "OTEL_SDK_DISABLED=true NODE_ENV=development tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "OTEL_SERVICE_NAME=eddo-web-api OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production node --import @elastic/opentelemetry-node dist/index.js"
   },
   "dependencies": {
+    "@eddo/core-instrumentation": "workspace:*",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
+    "@elastic/opentelemetry-node": "^1.7.0",
     "@hono/node-server": "^1.19.7",
     "@octokit/rest": "^22.0.1",
     "bcryptjs": "^3.0.3",
     "hono": "^4.11.1",
     "jsonwebtoken": "^9.0.2",
     "nano": "^11.0.3",
+    "pino": "^10.1.0",
+    "undici": "^7.16.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
