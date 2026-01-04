@@ -8,6 +8,7 @@ const mockUpdatePreferences = vi.fn();
 vi.mock('./use_profile', () => ({
   useProfile: vi.fn(() => ({
     profile: null,
+    authToken: null,
     isLoading: false,
     updatePreferences: mockUpdatePreferences,
   })),
@@ -48,6 +49,7 @@ describe('useTheme', () => {
     // Reset useProfile mock
     mockUseProfile.mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -93,6 +95,7 @@ describe('useTheme', () => {
 
     it('uses profile theme when authenticated', () => {
       mockUseProfile.mockReturnValue({
+        authToken: 'test-token',
         profile: {
           userId: 'test',
           username: 'test',
@@ -167,6 +170,7 @@ describe('useTheme', () => {
 
     it('persists to profile when authenticated', async () => {
       mockUseProfile.mockReturnValue({
+        authToken: 'test-token',
         profile: {
           userId: 'test',
           username: 'test',

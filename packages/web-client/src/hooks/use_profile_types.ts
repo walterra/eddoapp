@@ -4,6 +4,14 @@
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+export interface RssFeedConfigUI {
+  url: string;
+  feedUrl: string;
+  title?: string;
+  enabled: boolean;
+  addedAt: string;
+}
+
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string;
@@ -30,6 +38,11 @@ export interface UserPreferences {
   githubSyncTags?: string[];
   githubLastSync?: string;
   githubSyncStartedAt?: string;
+  rssSync?: boolean;
+  rssFeeds?: RssFeedConfigUI[];
+  rssSyncInterval?: number;
+  rssSyncTags?: string[];
+  rssLastSync?: string;
 }
 
 export interface UserProfile {
@@ -79,6 +92,10 @@ export interface UpdatePreferencesData {
   githubToken?: string | null;
   githubSyncInterval?: number;
   githubSyncTags?: string[];
+  rssSync?: boolean;
+  rssFeeds?: RssFeedConfigUI[];
+  rssSyncInterval?: number;
+  rssSyncTags?: string[];
 }
 
 export interface GithubResyncResponse {

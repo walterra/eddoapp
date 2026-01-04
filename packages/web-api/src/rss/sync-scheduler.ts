@@ -5,6 +5,7 @@
 import { createEnv, createUserRegistry, type TodoAlpha3 } from '@eddo/core-server';
 import type nano from 'nano';
 
+import { withSpan } from '../utils/logger.js';
 import type { SyncLogger } from './client.js';
 import { createRssClient } from './client.js';
 import { createSyncStats, incrementStat, processItem, type SyncStats } from './sync-helpers.js';
@@ -141,21 +142,37 @@ async function performUserSync(
     return;
   }
 
-  logger.info('Starting RSS sync for user', {
-    userId: user._id,
-    username: user.username,
-    feedCount: feeds.length,
-  });
+  const spanAttrs = {
+    'user.id': user._id,
+    'user.name': user.username,
+    'rss.feed_count': feeds.length,
+  };
 
-  const { stats, totalItems } = await processAllFeeds({ user, logger, getUserDb }, feeds);
+  return withSpan('rss_sync_user', spanAttrs, async (span) => {
+    logger.info('Starting RSS sync for user', {
+      userId: user._id,
+      username: user.username,
+      feedCount: feeds.length,
+    });
 
-  logger.info('RSS sync completed for user', {
-    userId: user._id,
-    username: user.username,
-    totalItems,
-    created: stats.created,
-    skipped: stats.skipped,
-    errors: stats.errors,
+    const { stats, totalItems } = await processAllFeeds({ user, logger, getUserDb }, feeds);
+
+    span.setAttribute('rss.items_fetched', totalItems);
+    span.setAttribute('rss.created', stats.created);
+    span.setAttribute('rss.updated', stats.updated);
+    span.setAttribute('rss.skipped', stats.skipped);
+    span.setAttribute('rss.errors', stats.errors);
+    span.setAttribute('rss.result', 'success');
+
+    logger.info('RSS sync completed for user', {
+      userId: user._id,
+      username: user.username,
+      totalItems,
+      created: stats.created,
+      updated: stats.updated,
+      skipped: stats.skipped,
+      errors: stats.errors,
+    });
   });
 }
 
@@ -202,39 +219,50 @@ export class RssSyncScheduler {
   }
 
   private async checkAndSyncUsers(): Promise<void> {
-    const env = createEnv();
-    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+    return withSpan('rss_sync_check', {}, async (span) => {
+      const env = createEnv();
+      const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
-    try {
-      const users = await userRegistry.list();
-      const syncEnabledUsers = users.filter(
-        (user) =>
-          user.status === 'active' &&
-          user.preferences?.rssSync === true &&
-          user.preferences?.rssFeeds?.some((f) => f.enabled),
-      );
+      try {
+        const users = await userRegistry.list();
+        const syncEnabledUsers = users.filter(
+          (user) =>
+            user.status === 'active' &&
+            user.preferences?.rssSync === true &&
+            user.preferences?.rssFeeds?.some((f) => f.enabled),
+        );
 
-      this.logger.debug('Checking RSS sync for users', {
-        totalUsers: users.length,
-        syncEnabledUsers: syncEnabledUsers.length,
-      });
+        span.setAttribute('rss.total_users', users.length);
+        span.setAttribute('rss.sync_enabled_users', syncEnabledUsers.length);
 
-      for (const user of syncEnabledUsers) {
-        if (!shouldSyncUser(user.preferences)) continue;
+        this.logger.debug('Checking RSS sync for users', {
+          totalUsers: users.length,
+          syncEnabledUsers: syncEnabledUsers.length,
+        });
 
-        try {
-          await this.syncUserFeeds(user);
-        } catch (error) {
-          this.logger.error('Failed to sync RSS feeds for user', {
-            userId: user._id,
-            username: user.username,
-            error,
-          });
+        let syncedCount = 0;
+        for (const user of syncEnabledUsers) {
+          if (!shouldSyncUser(user.preferences)) continue;
+
+          try {
+            await this.syncUserFeeds(user);
+            syncedCount++;
+          } catch (error) {
+            this.logger.error('Failed to sync RSS feeds for user', {
+              userId: user._id,
+              username: user.username,
+              error,
+            });
+          }
         }
+
+        span.setAttribute('rss.users_synced', syncedCount);
+        span.setAttribute('rss.result', 'success');
+      } catch (error) {
+        span.setAttribute('rss.result', 'error');
+        this.logger.error('Failed to check users for RSS sync', { error });
       }
-    } catch (error) {
-      this.logger.error('Failed to check users for RSS sync', { error });
-    }
+    });
   }
 
   public async syncUser(userId: string): Promise<void> {

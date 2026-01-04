@@ -15,7 +15,7 @@ export interface ProcessItemConfig {
   logger: SyncLogger;
 }
 
-export type ProcessItemResult = 'created' | 'skipped';
+export type ProcessItemResult = 'created' | 'updated' | 'skipped';
 
 /**
  * Find todo by externalId
@@ -46,8 +46,15 @@ export async function findTodoByExternalId(
 }
 
 /**
- * Process a single RSS item (create todo if not exists)
- * RSS items are immutable - we only create, never update
+ * Check if todo needs updating (due date differs from RSS pubDate)
+ */
+function needsUpdate(existingTodo: TodoAlpha3, newTodo: Omit<TodoAlpha3, '_rev'>): boolean {
+  // Update if due date differs (fixes old items with wrong due date)
+  return existingTodo.due !== newTodo.due;
+}
+
+/**
+ * Process a single RSS item (create or update todo)
  */
 export async function processItem(config: ProcessItemConfig): Promise<ProcessItemResult> {
   const { db, item, tags, rssClient, logger } = config;
@@ -55,9 +62,28 @@ export async function processItem(config: ProcessItemConfig): Promise<ProcessIte
 
   // Check if todo already exists
   const existingTodo = await findTodoByExternalId(db, externalId, logger);
+  const newTodo = rssClient.mapItemToTodo(item, tags);
 
   if (existingTodo) {
-    logger.debug('RSS item already exists, skipping', {
+    // Check if update is needed
+    if (needsUpdate(existingTodo, newTodo)) {
+      // Update existing todo with new due date (spread includes _id and _rev)
+      const updatedTodo: TodoAlpha3 = {
+        ...existingTodo,
+        due: newTodo.due,
+      };
+      await db.insert(updatedTodo);
+
+      logger.debug('Updated todo from RSS item', {
+        externalId,
+        title: item.title,
+        oldDue: existingTodo.due,
+        newDue: newTodo.due,
+      });
+      return 'updated';
+    }
+
+    logger.debug('RSS item already exists and up to date, skipping', {
       externalId,
       title: item.title,
     });
@@ -65,7 +91,6 @@ export async function processItem(config: ProcessItemConfig): Promise<ProcessIte
   }
 
   // Create new todo
-  const newTodo = rssClient.mapItemToTodo(item, tags);
   await db.insert(newTodo as TodoAlpha3);
 
   logger.debug('Created todo from RSS item', {
@@ -78,6 +103,7 @@ export async function processItem(config: ProcessItemConfig): Promise<ProcessIte
 
 export interface SyncStats {
   created: number;
+  updated: number;
   skipped: number;
   errors: number;
 }
@@ -88,6 +114,7 @@ export interface SyncStats {
 export function createSyncStats(): SyncStats {
   return {
     created: 0,
+    updated: 0,
     skipped: 0,
     errors: 0,
   };

@@ -74,11 +74,27 @@ function truncate(text: string, maxLength: number): string {
 }
 
 /**
+ * Parses publication date from RSS item, returns ISO string or current time as fallback
+ */
+function parsePubDate(pubDate: string | undefined): string {
+  if (!pubDate) return new Date().toISOString();
+
+  try {
+    const parsed = new Date(pubDate);
+    if (isNaN(parsed.getTime())) return new Date().toISOString();
+    return parsed.toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
+}
+
+/**
  * Maps RSS item to TodoAlpha3 structure
  */
 export function mapItemToTodo(item: RssItem, tags: string[]): Omit<TodoAlpha3, '_rev'> {
   const now = new Date().toISOString();
   const cleanDescription = item.description ? truncate(stripHtml(item.description), 2000) : '';
+  const dueDate = parsePubDate(item.pubDate);
 
   return {
     _id: now,
@@ -86,7 +102,7 @@ export function mapItemToTodo(item: RssItem, tags: string[]): Omit<TodoAlpha3, '
     completed: null,
     context: 'read-later',
     description: cleanDescription,
-    due: now,
+    due: dueDate,
     externalId: generateExternalId(item),
     link: item.link,
     repeat: null,

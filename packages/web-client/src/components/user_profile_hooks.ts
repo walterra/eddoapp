@@ -9,40 +9,50 @@ import {
   buildProfileUpdateData,
   initializeGithubState,
   initializePreferencesState,
+  initializeRssState,
   validateGithubToken,
   validatePasswordChange,
   validateProfileForm,
   validateTelegramId,
 } from './user_profile_handlers';
+import { useRssActionHandlers } from './user_profile_rss_hooks';
 import type {
   GithubFormState,
   PreferencesFormState,
   ProfileFormState,
+  RssFormState,
   UserProfile,
 } from './user_profile_types';
 
+interface FormStateSetters {
+  setFormState: (fn: (prev: ProfileFormState) => ProfileFormState) => void;
+  setPreferencesState: (state: PreferencesFormState) => void;
+  setGithubState: (state: GithubFormState) => void;
+  setRssState: (state: RssFormState) => void;
+}
+
 /** Initialize form state from profile */
-export function useFormInitialization(
-  profile: UserProfile | null,
-  setFormState: (fn: (prev: ProfileFormState) => ProfileFormState) => void,
-  setPreferencesState: (state: PreferencesFormState) => void,
-  setGithubState: (state: GithubFormState) => void,
-) {
+export function useFormInitialization(profile: UserProfile | null, setters: FormStateSetters) {
+  const { setFormState, setPreferencesState, setGithubState, setRssState } = setters;
   useEffect(() => {
     if (profile) {
       setFormState((prev) => ({ ...prev, email: profile.email }));
       setPreferencesState(initializePreferencesState(profile.preferences));
       setGithubState(initializeGithubState(profile.preferences));
+      setRssState(initializeRssState(profile.preferences));
     }
-  }, [profile, setFormState, setPreferencesState, setGithubState]);
+  }, [profile, setFormState, setPreferencesState, setGithubState, setRssState]);
 }
 
-/** Partial update data for preferences - can include general or github prefs */
+/** Partial update data for preferences - can include general, github, or rss prefs */
 interface PreferencesUpdateData extends Partial<PreferencesFormState> {
   githubSync?: boolean;
   githubToken?: string | null;
   githubSyncInterval?: number;
   githubSyncTags?: string[];
+  rssSync?: boolean;
+  rssSyncInterval?: number;
+  rssSyncTags?: string[];
 }
 
 interface FormActions {
@@ -55,6 +65,7 @@ interface FormActions {
   unlinkTelegram: () => Promise<ProfileResult>;
   updatePreferences: (data: PreferencesUpdateData) => Promise<ProfileResult>;
   githubResyncMutate: () => Promise<unknown>;
+  rssResyncMutate: () => Promise<unknown>;
 }
 
 interface FormHandlersConfig {
@@ -62,7 +73,9 @@ interface FormHandlersConfig {
   setFormState: (fn: (prev: ProfileFormState) => ProfileFormState) => void;
   preferencesState: PreferencesFormState;
   githubState: GithubFormState;
+  rssState: RssFormState;
   profile: UserProfile | null;
+  authToken: string | null;
   editMode: boolean;
   setEditMode: (mode: boolean) => void;
   setFormError: (error: string) => void;
@@ -119,6 +132,20 @@ export function useGithubFieldHandlers(setGithubState: GithubFieldSetter) {
       onGithubTagsChange: (v: string) => setGithubState((p) => ({ ...p, githubSyncTags: v })),
     }),
     [setGithubState],
+  );
+}
+
+type RssFieldSetter = (fn: (prev: RssFormState) => RssFormState) => void;
+
+/** Create RSS field handlers */
+export function useRssFieldHandlers(setRssState: RssFieldSetter) {
+  return useMemo(
+    () => ({
+      onRssSyncChange: (v: boolean) => setRssState((p) => ({ ...p, rssSync: v })),
+      onRssIntervalChange: (v: number) => setRssState((p) => ({ ...p, rssSyncInterval: v })),
+      onRssTagsChange: (v: string) => setRssState((p) => ({ ...p, rssSyncTags: v })),
+    }),
+    [setRssState],
   );
 }
 
@@ -261,7 +288,24 @@ function usePreferencesActionHandlers(config: FormHandlersConfig) {
     }
   }, [setFormError, setSuccess, actions]);
 
-  return { handleUpdatePreferences, handleUpdateGithubPreferences, handleForceResync };
+  const handleForceRssResync = useCallback(async () => {
+    if (!confirm('Force resync will re-fetch all RSS feeds. Continue?')) return;
+    setFormError('');
+    setSuccess(null);
+    try {
+      await actions.rssResyncMutate();
+      setSuccess('RSS resync completed successfully! Refresh the page to see updates.');
+    } catch (err) {
+      setFormError((err as Error).message || 'Failed to resync RSS feeds');
+    }
+  }, [setFormError, setSuccess, actions]);
+
+  return {
+    handleUpdatePreferences,
+    handleUpdateGithubPreferences,
+    handleForceResync,
+    handleForceRssResync,
+  };
 }
 
 /** Create profile action handlers */
@@ -271,6 +315,14 @@ export function useProfileActionHandlers(config: FormHandlersConfig) {
   const handleChangePassword = useChangePasswordHandler(config);
   const telegramHandlers = useTelegramHandlers(config);
   const preferencesHandlers = usePreferencesActionHandlers(config);
+  const rssHandlers = useRssActionHandlers({
+    rssState: config.rssState,
+    profile: config.profile,
+    authToken: config.authToken,
+    setFormError: config.setFormError,
+    setSuccess: config.setSuccess,
+    updatePreferences: config.actions.updatePreferences,
+  });
 
   return {
     handleEditToggle,
@@ -278,5 +330,6 @@ export function useProfileActionHandlers(config: FormHandlersConfig) {
     handleChangePassword,
     ...telegramHandlers,
     ...preferencesHandlers,
+    ...rssHandlers,
   };
 }

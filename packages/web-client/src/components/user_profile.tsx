@@ -10,6 +10,7 @@ import {
   useGithubFieldHandlers,
   usePreferencesFieldHandlers,
   useProfileActionHandlers,
+  useRssFieldHandlers,
 } from './user_profile_hooks';
 import {
   LoadingState,
@@ -27,6 +28,7 @@ import type {
   PreferencesFormState,
   UserProfile as ProfileData,
   ProfileFormState,
+  RssFormState,
 } from './user_profile_types';
 
 interface UserProfileProps {
@@ -59,6 +61,12 @@ const INITIAL_GITHUB_STATE: GithubFormState = {
   githubSyncTags: 'github, gtd:next',
 };
 
+const INITIAL_RSS_STATE: RssFormState = {
+  rssSync: false,
+  rssSyncInterval: 60,
+  rssSyncTags: 'gtd:someday, source:rss',
+};
+
 interface TabContentProps {
   activeTab: TabType;
   profile: ProfileData;
@@ -67,11 +75,14 @@ interface TabContentProps {
   formState: ProfileFormState;
   preferencesState: PreferencesFormState;
   githubState: GithubFormState;
+  rssState: RssFormState;
   isResyncing: boolean;
+  isRssResyncing: boolean;
   actions: ReturnType<typeof useProfileActionHandlers>;
   formFieldHandlers: ReturnType<typeof useFormFieldHandlers>;
   preferencesFieldHandlers: ReturnType<typeof usePreferencesFieldHandlers>;
   githubFieldHandlers: ReturnType<typeof useGithubFieldHandlers>;
+  rssFieldHandlers: ReturnType<typeof useRssFieldHandlers>;
 }
 
 const ProfileTabContent: FC<
@@ -114,24 +125,34 @@ const IntegrationsTabContent: FC<
     | 'isLoading'
     | 'formState'
     | 'githubState'
+    | 'rssState'
     | 'isResyncing'
+    | 'isRssResyncing'
     | 'actions'
     | 'formFieldHandlers'
     | 'githubFieldHandlers'
+    | 'rssFieldHandlers'
   >
 > = (p) => (
   <IntegrationsTab
     githubState={p.githubState}
     isLoading={p.isLoading}
     isResyncing={p.isResyncing}
+    isRssResyncing={p.isRssResyncing}
+    onAddRssFeed={p.actions.handleAddRssFeed}
     onForceResync={p.actions.handleForceResync}
+    onForceRssResync={p.actions.handleForceRssResync}
     onLinkTelegram={p.actions.handleLinkTelegram}
+    onRemoveRssFeed={p.actions.handleRemoveRssFeed}
     onSaveGithub={p.actions.handleUpdateGithubPreferences}
+    onSaveRss={p.actions.handleUpdateRssPreferences}
     onTelegramIdChange={p.formFieldHandlers.onTelegramIdChange}
     onUnlinkTelegram={p.actions.handleUnlinkTelegram}
     profile={p.profile}
+    rssState={p.rssState}
     telegramId={p.formState.telegramId}
     {...p.githubFieldHandlers}
+    {...p.rssFieldHandlers}
   />
 );
 
@@ -156,7 +177,13 @@ const useProfileFormStates = (profile: ProfileData | null) => {
   const [preferencesState, setPreferencesState] =
     useState<PreferencesFormState>(INITIAL_PREFERENCES_STATE);
   const [githubState, setGithubState] = useState<GithubFormState>(INITIAL_GITHUB_STATE);
-  useFormInitialization(profile, setFormState, setPreferencesState, setGithubState);
+  const [rssState, setRssState] = useState<RssFormState>(INITIAL_RSS_STATE);
+  useFormInitialization(profile, {
+    setFormState,
+    setPreferencesState,
+    setGithubState,
+    setRssState,
+  });
   return {
     formState,
     setFormState,
@@ -164,10 +191,13 @@ const useProfileFormStates = (profile: ProfileData | null) => {
     setPreferencesState,
     githubState,
     setGithubState,
+    rssState,
+    setRssState,
     handlers: {
       form: useFormFieldHandlers(setFormState),
       prefs: usePreferencesFieldHandlers(setPreferencesState),
       github: useGithubFieldHandlers(setGithubState),
+      rss: useRssFieldHandlers(setRssState),
     },
   };
 };
@@ -188,7 +218,9 @@ const buildActionsConfig = (p: ActionsConfigParams) => ({
   setFormState: p.forms.setFormState,
   preferencesState: p.forms.preferencesState,
   githubState: p.forms.githubState,
+  rssState: p.forms.rssState,
   profile: p.profile,
+  authToken: p.profileHook.authToken,
   editMode: p.editMode,
   setEditMode: p.setEditMode,
   setFormError: p.setFormError,
@@ -201,6 +233,7 @@ const buildActionsConfig = (p: ActionsConfigParams) => ({
     unlinkTelegram: p.profileHook.unlinkTelegram,
     updatePreferences: p.profileHook.updatePreferences,
     githubResyncMutate: p.profileHook.mutations.githubResync.mutateAsync,
+    rssResyncMutate: p.profileHook.mutations.rssResync.mutateAsync,
   },
 });
 
@@ -243,9 +276,12 @@ export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
           githubState={forms.githubState}
           isLoading={isLoading}
           isResyncing={mutations.githubResync.isPending}
+          isRssResyncing={mutations.rssResync.isPending}
           preferencesFieldHandlers={forms.handlers.prefs}
           preferencesState={forms.preferencesState}
           profile={profile}
+          rssFieldHandlers={forms.handlers.rss}
+          rssState={forms.rssState}
         />
       </div>
     </div>

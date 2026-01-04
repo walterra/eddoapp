@@ -7,6 +7,7 @@ import {
   fetchProfileApi,
   githubResyncApi,
   linkTelegramApi,
+  rssResyncApi,
   unlinkTelegramApi,
   updatePreferencesApi,
   updateProfileApi,
@@ -83,6 +84,10 @@ function useProfileMutations(getAuthHeaders: () => HeadersInit, queryClient: Que
       mutationFn: () => githubResyncApi(getAuthHeaders()),
       onSuccess: invalidateProfile,
     }),
+    rssResync: useMutation({
+      mutationFn: () => rssResyncApi(getAuthHeaders()),
+      onSuccess: invalidateProfile,
+    }),
   };
 }
 
@@ -125,6 +130,7 @@ export const useProfile = () => {
     profile: (profileQuery.data as UserProfile | null) ?? null,
     isLoading,
     error: profileQuery.error ? (profileQuery.error as Error).message : null,
+    authToken: token ?? null,
     fetchProfile,
     updateProfile: (data: UpdateProfileData) => wrapMutation(token, mutations.updateProfile, data),
     changePassword: (data: ChangePasswordData) =>
