@@ -1,6 +1,6 @@
 {
   "name": "@eddo/printer-service",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Thermal receipt printer service for daily briefings",
   "private": true,
   "type": "module",
