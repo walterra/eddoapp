@@ -46,6 +46,7 @@ export {
   // Types
   type NewTodo,
   type NewUserRegistryEntry,
+  type RssFeedConfig,
   type Todo,
   // API versions
   type TodoAlpha1,

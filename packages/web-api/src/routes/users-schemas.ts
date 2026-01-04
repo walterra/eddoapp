@@ -57,4 +57,18 @@ export const updatePreferencesSchema = z.object({
   githubToken: z.string().nullable().optional(),
   githubSyncInterval: z.number().int().positive().optional(),
   githubSyncTags: z.array(z.string()).optional(),
+  rssSync: z.boolean().optional(),
+  rssFeeds: z
+    .array(
+      z.object({
+        url: z.string(),
+        feedUrl: z.string(),
+        title: z.string().optional(),
+        enabled: z.boolean(),
+        addedAt: z.string(),
+      }),
+    )
+    .optional(),
+  rssSyncInterval: z.number().int().positive().optional(),
+  rssSyncTags: z.array(z.string()).optional(),
 });

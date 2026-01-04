@@ -6,6 +6,7 @@ import { Agent, setGlobalDispatcher } from 'undici';
 setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
 
 import { createEnv, createUserRegistry } from '@eddo/core-server';
+import type { TodoAlpha3 } from '@eddo/core-shared';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { existsSync, readFileSync } from 'fs';
@@ -20,7 +21,9 @@ import { config } from './config';
 import { createGithubSyncScheduler } from './github/sync-scheduler';
 import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
+import { rssRoutes } from './routes/rss';
 import { userRoutes } from './routes/users';
+import { createRssSyncScheduler } from './rss/sync-scheduler';
 import { logger } from './utils/logger';
 
 const app = new Hono();
@@ -64,6 +67,7 @@ app.use('/api/*', async (c, next) => {
 });
 app.route('/api/db', dbProxyRoutes);
 app.route('/api/users', userRoutes);
+app.route('/api/rss', rssRoutes);
 
 if (!isDevelopment) {
   // Production: Serve static files from public directory
@@ -112,12 +116,23 @@ logger.info({ port }, 'Server starting');
 // GitHub sync scheduler instance (initialized after database setup)
 let githubSchedulerInstance: ReturnType<typeof createGithubSyncScheduler> | null = null;
 
+// RSS sync scheduler instance (initialized after database setup)
+let rssSchedulerInstance: ReturnType<typeof createRssSyncScheduler> | null = null;
+
 // Export getter for scheduler instance
 export function getGithubScheduler() {
   if (!githubSchedulerInstance) {
     throw new Error('GitHub scheduler not initialized yet');
   }
   return githubSchedulerInstance;
+}
+
+// Export getter for RSS scheduler instance
+export function getRssScheduler() {
+  if (!rssSchedulerInstance) {
+    throw new Error('RSS scheduler not initialized yet');
+  }
+  return rssSchedulerInstance;
 }
 
 // Initialize database
@@ -139,27 +154,44 @@ async function initializeDatabase() {
   }
 }
 
+/** Creates a sync logger adapter for pino */
+function createSyncLoggerAdapter(childLogger: typeof logger) {
+  return {
+    info: (msg: string, meta?: unknown) => childLogger.info(meta ?? {}, msg),
+    warn: (msg: string, meta?: unknown) => childLogger.warn(meta ?? {}, msg),
+    error: (msg: string, meta?: unknown) => childLogger.error(meta ?? {}, msg),
+    debug: (msg: string, meta?: unknown) => childLogger.debug(meta ?? {}, msg),
+  };
+}
+
+/** Initialize sync schedulers */
+function initializeSyncSchedulers(couch: ReturnType<typeof nano>) {
+  const getUserDb = (dbName: string) => couch.db.use<TodoAlpha3>(dbName);
+  const checkIntervalMs = 1 * 60 * 1000; // Check every 1 minute
+
+  githubSchedulerInstance = createGithubSyncScheduler({
+    checkIntervalMs,
+    logger: createSyncLoggerAdapter(logger.child({ component: 'github-sync' })),
+    getUserDb,
+  });
+  githubSchedulerInstance.start();
+  logger.info('GitHub sync scheduler started');
+
+  rssSchedulerInstance = createRssSyncScheduler({
+    checkIntervalMs,
+    logger: createSyncLoggerAdapter(logger.child({ component: 'rss-sync' })),
+    getUserDb,
+  });
+  rssSchedulerInstance.start();
+  logger.info('RSS sync scheduler started');
+}
+
 // Initialize database before starting server
 initializeDatabase().then(() => {
-  // Initialize GitHub sync scheduler
   const env = createEnv();
   const couch = nano(env.COUCHDB_URL);
 
-  const githubLogger = logger.child({ component: 'github-sync' });
-  githubSchedulerInstance = createGithubSyncScheduler({
-    checkIntervalMs: 1 * 60 * 1000, // Check every 1 minute (matches smallest user interval)
-    logger: {
-      info: (msg, meta) => githubLogger.info(meta ?? {}, msg),
-      warn: (msg, meta) => githubLogger.warn(meta ?? {}, msg),
-      error: (msg, meta) => githubLogger.error(meta ?? {}, msg),
-      debug: (msg, meta) => githubLogger.debug(meta ?? {}, msg),
-    },
-    getUserDb: (dbName: string) => couch.db.use(dbName),
-  });
-
-  // Start GitHub sync scheduler
-  githubSchedulerInstance.start();
-  logger.info('GitHub sync scheduler started');
+  initializeSyncSchedulers(couch);
 
   // Start server with graceful shutdown
   const server = serve({

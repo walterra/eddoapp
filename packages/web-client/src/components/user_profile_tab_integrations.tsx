@@ -5,36 +5,26 @@ import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
 
 import { GithubSection } from './user_profile_github_section';
+import { RssSection } from './user_profile_rss_section';
 import type { IntegrationsTabProps } from './user_profile_types';
 
-export function IntegrationsTab({
-  profile,
-  isLoading,
-  isResyncing,
-  telegramId,
-  githubState,
-  onTelegramIdChange,
-  onLinkTelegram,
-  onUnlinkTelegram,
-  onGithubSyncChange,
-  onGithubTokenChange,
-  onGithubIntervalChange,
-  onGithubTagsChange,
-  onSaveGithub,
-  onForceResync,
-}: IntegrationsTabProps) {
+const IntegrationsHeader: FC = () => (
+  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">External Integrations</h2>
+);
+
+export function IntegrationsTab(props: IntegrationsTabProps) {
+  const { profile, isLoading, isResyncing, telegramId, githubState, rssState } = props;
+
   return (
     <Card>
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-          External Integrations
-        </h2>
+        <IntegrationsHeader />
         <div className="space-y-4">
           <TelegramSection
             isLoading={isLoading}
-            onLinkTelegram={onLinkTelegram}
-            onTelegramIdChange={onTelegramIdChange}
-            onUnlinkTelegram={onUnlinkTelegram}
+            onLinkTelegram={props.onLinkTelegram}
+            onTelegramIdChange={props.onTelegramIdChange}
+            onUnlinkTelegram={props.onUnlinkTelegram}
             profile={profile}
             telegramId={telegramId}
           />
@@ -43,12 +33,26 @@ export function IntegrationsTab({
             isLoading={isLoading}
             isResyncing={isResyncing}
             lastSync={profile.preferences?.githubLastSync}
-            onForceResync={onForceResync}
-            onGithubIntervalChange={onGithubIntervalChange}
-            onGithubSyncChange={onGithubSyncChange}
-            onGithubTagsChange={onGithubTagsChange}
-            onGithubTokenChange={onGithubTokenChange}
-            onSaveGithub={onSaveGithub}
+            onForceResync={props.onForceResync}
+            onGithubIntervalChange={props.onGithubIntervalChange}
+            onGithubSyncChange={props.onGithubSyncChange}
+            onGithubTagsChange={props.onGithubTagsChange}
+            onGithubTokenChange={props.onGithubTokenChange}
+            onSaveGithub={props.onSaveGithub}
+          />
+          <RssSection
+            feeds={profile.preferences?.rssFeeds || []}
+            isLoading={isLoading}
+            isResyncing={props.isRssResyncing}
+            lastSync={profile.preferences?.rssLastSync}
+            onAddFeed={props.onAddRssFeed}
+            onForceResync={props.onForceRssResync}
+            onRemoveFeed={props.onRemoveRssFeed}
+            onRssIntervalChange={props.onRssIntervalChange}
+            onRssSyncChange={props.onRssSyncChange}
+            onRssTagsChange={props.onRssTagsChange}
+            onSaveRss={props.onSaveRss}
+            rssState={rssState}
           />
         </div>
       </div>

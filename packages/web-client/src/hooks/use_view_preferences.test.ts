@@ -61,6 +61,7 @@ describe('useViewPreferences Hook', () => {
   it('returns default values when no profile data', () => {
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -83,6 +84,7 @@ describe('useViewPreferences Hook', () => {
 
   it('returns profile preferences when available', () => {
     vi.mocked(useProfile).mockReturnValue({
+      authToken: 'test-token',
       profile: {
         userId: '123',
         username: 'testuser',
@@ -121,6 +123,7 @@ describe('useViewPreferences Hook', () => {
 
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -147,6 +150,7 @@ describe('useViewPreferences Hook', () => {
 
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -172,6 +176,7 @@ describe('useViewPreferences Hook', () => {
   it('returns loading state from profile', () => {
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: true,
       error: null,
       fetchProfile: vi.fn(),
@@ -192,6 +197,7 @@ describe('useViewPreferences Hook', () => {
   it('returns error state from profile', () => {
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: 'Failed to load profile',
       fetchProfile: vi.fn(),

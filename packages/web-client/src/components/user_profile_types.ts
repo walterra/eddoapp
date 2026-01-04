@@ -26,8 +26,22 @@ export interface GithubFormState {
   githubSyncTags: string;
 }
 
+export interface RssFormState {
+  rssSync: boolean;
+  rssSyncInterval: number;
+  rssSyncTags: string;
+}
+
 /** Re-export UserProfile type from hook */
 export type { UserProfile } from '../hooks/use_profile_types';
+
+export interface RssFeedConfigUI {
+  url: string;
+  feedUrl: string;
+  title?: string;
+  enabled: boolean;
+  addedAt: string;
+}
 
 export interface ProfileData {
   username: string;
@@ -49,6 +63,11 @@ export interface ProfileData {
     githubSyncInterval?: number;
     githubSyncTags?: string[];
     githubLastSync?: string;
+    rssSync?: boolean;
+    rssFeeds?: RssFeedConfigUI[];
+    rssSyncInterval?: number;
+    rssSyncTags?: string[];
+    rssLastSync?: string;
   };
 }
 
@@ -80,6 +99,7 @@ export interface IntegrationsTabProps {
   isResyncing: boolean;
   telegramId: string;
   githubState: GithubFormState;
+  rssState: RssFormState;
   onTelegramIdChange: (id: string) => void;
   onLinkTelegram: () => Promise<void>;
   onUnlinkTelegram: () => Promise<void>;
@@ -89,6 +109,14 @@ export interface IntegrationsTabProps {
   onGithubTagsChange: (tags: string) => void;
   onSaveGithub: () => Promise<void>;
   onForceResync: () => Promise<void>;
+  onRssSyncChange: (enabled: boolean) => void;
+  onRssIntervalChange: (interval: number) => void;
+  onRssTagsChange: (tags: string) => void;
+  onAddRssFeed: (url: string) => Promise<void>;
+  onRemoveRssFeed: (index: number) => Promise<void>;
+  onForceRssResync: () => Promise<void>;
+  onSaveRss: () => Promise<void>;
+  isRssResyncing: boolean;
 }
 
 export interface PreferencesTabProps {
@@ -115,3 +143,16 @@ export function formatDate(dateString: string): string {
     minute: '2-digit',
   });
 }
+
+/**
+ * Shared sync interval options for integrations
+ */
+export const SYNC_INTERVAL_OPTIONS = [
+  { value: 1, label: '1 minute' },
+  { value: 5, label: '5 minutes' },
+  { value: 15, label: '15 minutes' },
+  { value: 30, label: '30 minutes' },
+  { value: 60, label: '1 hour' },
+  { value: 120, label: '2 hours' },
+  { value: 240, label: '4 hours' },
+];

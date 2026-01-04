@@ -9,6 +9,7 @@ import { createBot } from './bot/bot.js';
 import { handleBriefing, handleBriefingOff, handleBriefingOn } from './bot/commands/briefing.js';
 import { handleGithub } from './bot/commands/github.js';
 import { handleLink, handleUnlink } from './bot/commands/link.js';
+import { handleRss } from './bot/commands/rss.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
 import { getMCPClient, setupMCPIntegration } from './mcp/client.js';
@@ -54,6 +55,9 @@ async function main(): Promise<void> {
 
     // Register GitHub sync commands
     bot.command('github', handleGithub);
+
+    // Register RSS sync commands
+    bot.command('rss', handleRss);
 
     // Register message handler for general text with agent workflow
     bot.on('message:text', handleMessage);

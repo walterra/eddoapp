@@ -10,7 +10,7 @@ import jwt from 'jsonwebtoken';
 import nano from 'nano';
 import { z } from 'zod';
 
-import { getGithubScheduler } from '../index';
+import { getGithubScheduler, getRssScheduler } from '../index';
 import { logger, withSpan } from '../utils/logger';
 import {
   createSafeProfile,
@@ -293,6 +293,34 @@ usersApp.post('/github-resync', async (c) => {
 
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to resync GitHub issues';
+      return c.json({ error: errorMessage }, 500);
+    }
+  });
+});
+
+// Force RSS sync
+usersApp.post('/rss-resync', async (c) => {
+  return withSpan('rss_force_resync', { 'rss.operation': 'force_resync' }, async (span) => {
+    try {
+      const payload = c.get('jwtPayload') as jwt.JwtPayload;
+      const userId = `user_${payload.username}`;
+
+      span.setAttribute('user.id', userId);
+      span.setAttribute('user.name', payload.username);
+      logger.info({ userId, username: payload.username }, 'Force RSS resync requested');
+
+      const scheduler = getRssScheduler();
+      await scheduler.syncUser(userId);
+
+      span.setAttribute('rss.result', 'success');
+      logger.info({ userId, username: payload.username }, 'RSS resync completed');
+
+      return c.json({ success: true, message: 'RSS resync completed successfully' });
+    } catch (error) {
+      span.setAttribute('rss.result', 'error');
+      logger.error({ error }, 'RSS resync error');
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resync RSS feeds';
       return c.json({ error: errorMessage }, 500);
     }
   });

@@ -2,7 +2,12 @@
  * User profile event handlers
  * Extracted from user_profile.tsx to reduce function size
  */
-import type { GithubFormState, PreferencesFormState, ProfileFormState } from './user_profile_types';
+import type {
+  GithubFormState,
+  PreferencesFormState,
+  ProfileFormState,
+  RssFormState,
+} from './user_profile_types';
 
 // Validation helpers
 
@@ -162,5 +167,36 @@ export function initializeGithubState(
     githubToken: preferences?.githubToken ?? '',
     githubSyncInterval: preferences?.githubSyncInterval ?? 60,
     githubSyncTags: preferences?.githubSyncTags?.join(', ') ?? 'github, gtd:next',
+  };
+}
+
+/**
+ * Initialize RSS state from profile
+ */
+export function initializeRssState(
+  preferences?: {
+    rssSync?: boolean;
+    rssSyncInterval?: number;
+    rssSyncTags?: string[];
+  } | null,
+): RssFormState {
+  return {
+    rssSync: preferences?.rssSync ?? false,
+    rssSyncInterval: preferences?.rssSyncInterval ?? 60,
+    rssSyncTags: preferences?.rssSyncTags?.join(', ') ?? 'gtd:someday, source:rss',
+  };
+}
+
+/**
+ * Build RSS preferences update data
+ */
+export function buildRssUpdateData(rssState: RssFormState) {
+  return {
+    rssSync: rssState.rssSync,
+    rssSyncInterval: rssState.rssSyncInterval,
+    rssSyncTags: rssState.rssSyncTags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean),
   };
 }

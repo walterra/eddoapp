@@ -140,3 +140,23 @@ export async function githubResyncApi(headers: HeadersInit): Promise<GithubResyn
 
   return response.json();
 }
+
+export interface RssResyncResponse {
+  success: boolean;
+  message: string;
+}
+
+/** Resync RSS feeds */
+export async function rssResyncApi(headers: HeadersInit): Promise<RssResyncResponse> {
+  const response = await fetch('/api/users/rss-resync', {
+    method: 'POST',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to resync RSS feeds');
+  }
+
+  return response.json();
+}

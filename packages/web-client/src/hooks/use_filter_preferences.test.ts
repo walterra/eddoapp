@@ -61,6 +61,7 @@ describe('useFilterPreferences Hook', () => {
   it('returns default values when no profile data', () => {
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -87,6 +88,7 @@ describe('useFilterPreferences Hook', () => {
   it('returns profile filter preferences when available', () => {
     const testDate = '2024-07-15T10:00:00.000Z';
     vi.mocked(useProfile).mockReturnValue({
+      authToken: 'test-token',
       profile: {
         userId: '123',
         username: 'testuser',
@@ -131,6 +133,7 @@ describe('useFilterPreferences Hook', () => {
 
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -158,6 +161,7 @@ describe('useFilterPreferences Hook', () => {
 
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -185,6 +189,7 @@ describe('useFilterPreferences Hook', () => {
 
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -211,6 +216,7 @@ describe('useFilterPreferences Hook', () => {
 
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -238,6 +244,7 @@ describe('useFilterPreferences Hook', () => {
 
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: null,
       fetchProfile: vi.fn(),
@@ -265,6 +272,7 @@ describe('useFilterPreferences Hook', () => {
   it('returns loading state from profile', () => {
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: true,
       error: null,
       fetchProfile: vi.fn(),
@@ -285,6 +293,7 @@ describe('useFilterPreferences Hook', () => {
   it('returns error state from profile', () => {
     vi.mocked(useProfile).mockReturnValue({
       profile: null,
+      authToken: null,
       isLoading: false,
       error: 'Failed to load profile',
       fetchProfile: vi.fn(),
@@ -304,6 +313,7 @@ describe('useFilterPreferences Hook', () => {
 
   it('handles invalid date strings gracefully', () => {
     vi.mocked(useProfile).mockReturnValue({
+      authToken: 'test-token',
       profile: {
         userId: '123',
         username: 'testuser',

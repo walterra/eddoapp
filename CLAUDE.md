@@ -304,6 +304,84 @@ Comprehensive GitHub API rate limit management to prevent errors and provide bet
 
 **Testing**: Mock GitHub API responses, verify deduplication, update detection, error handling
 
+### RSS Feed Sync Architecture
+
+**Location**: `packages/web-api/src/rss/`
+
+**Purpose**: Sync RSS/Atom feed items into Eddo todos with autodiscovery and deduplication
+
+**Components**:
+
+- **Autodiscovery** (`autodiscovery.ts`): Feed URL discovery from HTML pages
+  - Parses `<link rel="alternate" type="application/rss+xml">` tags
+  - Supports RSS, Atom, RDF, and JSON Feed formats
+  - Users can add website URLs instead of finding feed URLs manually
+- **RssClient** (`client.ts`): Feed fetching and parsing using `feedsmith` library
+  - Fetches and parses RSS/Atom/RDF/JSON feeds
+  - Maps feed items to TodoAlpha3 structure
+  - Generates external IDs: `rss:<sha256(feed-url)>/<sha256(item-guid)>`
+  - Strips HTML and truncates descriptions
+- **RssSyncScheduler** (`sync-scheduler.ts`): Periodic sync service
+  - Runs in web-api process
+  - Checks every 5 minutes for users needing sync
+  - Per-user sync intervals (default 60 minutes)
+  - Deduplication via `externalId` field
+  - Creates new todos only (RSS items are immutable)
+- **User Configuration**: Stored in UserPreferences (user_registry_alpha2)
+  - `rssSync`: boolean - enable/disable
+  - `rssFeeds`: RssFeedConfig[] - array of subscribed feeds
+  - `rssSyncInterval`: number - minutes between syncs (default 60)
+  - `rssSyncTags`: string[] - tags to add (default: `["gtd:someday", "source:rss"]`)
+  - `rssLastSync`: string - ISO timestamp of last sync
+
+**RssFeedConfig Structure**:
+
+```typescript
+interface RssFeedConfig {
+  url: string; // Original URL provided by user
+  feedUrl: string; // Discovered/resolved feed URL
+  title?: string; // Feed title
+  enabled: boolean; // Whether sync is enabled for this feed
+  addedAt: string; // ISO timestamp when added
+}
+```
+
+**Telegram Bot Commands**:
+
+- `/rss` - Show help and current status
+- `/rss on` - Enable automatic sync
+- `/rss off` - Disable sync
+- `/rss add <url>` - Add a feed (autodiscovery supported)
+- `/rss list` - List subscribed feeds
+- `/rss remove <number>` - Remove feed by number
+- `/rss status` - View current configuration
+
+**Fixed Values**:
+
+- Context: `read-later`
+- Tags: `gtd:someday`, `source:rss`
+- Completion: Manual only (RSS items never auto-complete)
+
+**Data Flow**:
+
+1. User adds feed via `/rss add <url>`
+2. Autodiscovery fetches URL and finds RSS/Atom feed links
+3. Feed URL and title saved to user preferences
+4. User enables sync with `/rss on`
+5. Scheduler checks user preferences every 5 minutes
+6. If sync interval elapsed, fetches all enabled feeds
+7. For each feed item, generates externalId and checks for duplicates
+8. Creates new todos for new items (skips existing)
+9. Updates `rssLastSync` timestamp
+
+**Library**: `feedsmith` (npm) - chosen over `rss-parser`:
+
+- Actively maintained (2025)
+- Full TypeScript support
+- Supports RSS, Atom, RDF, JSON Feed, and OPML
+- Forgiving parser for malformed real-world feeds
+- Fastest among JavaScript feed parsers
+
 ## Documentation Maintenance
 
 Keep `README.md` up to date when making changes. The README is end-user focused (installation, usage, configuration) while CLAUDE.md is agent-focused (debugging, restrictions, architecture).

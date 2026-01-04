@@ -5,7 +5,7 @@ import { Button, Label, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
 
 import { ToggleSwitch } from './toggle_switch';
-import { formatDate, type GithubFormState } from './user_profile_types';
+import { formatDate, type GithubFormState, SYNC_INTERVAL_OPTIONS } from './user_profile_types';
 
 interface GithubTokenInputProps {
   isLoading: boolean;
@@ -44,16 +44,6 @@ interface GithubIntervalSelectProps {
   onChange: (interval: number) => void;
 }
 
-const INTERVAL_OPTIONS = [
-  { value: 1, label: '1 minute' },
-  { value: 5, label: '5 minutes' },
-  { value: 15, label: '15 minutes' },
-  { value: 30, label: '30 minutes' },
-  { value: 60, label: '1 hour' },
-  { value: 120, label: '2 hours' },
-  { value: 240, label: '4 hours' },
-];
-
 const GithubIntervalSelect: FC<GithubIntervalSelectProps> = ({ disabled, value, onChange }) => (
   <div>
     <Label htmlFor="githubSyncInterval">Sync Interval</Label>
@@ -64,7 +54,7 @@ const GithubIntervalSelect: FC<GithubIntervalSelectProps> = ({ disabled, value, 
       onChange={(e) => onChange(Number(e.target.value))}
       value={value}
     >
-      {INTERVAL_OPTIONS.map((opt) => (
+      {SYNC_INTERVAL_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}
         </option>
