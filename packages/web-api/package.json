@@ -32,9 +32,11 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
+    "@types/html-to-text": "^9.0.4",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^24.7.2",
     "dotenv": "^17.2.2",
+    "html-to-text": "^9.0.5",
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
     "vitest": "^3.2.4"

@@ -4,6 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-shared';
 import { createHash } from 'crypto';
 import { parseFeed } from 'feedsmith';
+import { convert } from 'html-to-text';
 
 import type { RssFeedConfig, RssItem } from './types.js';
 
@@ -50,19 +51,17 @@ export function generateExternalId(item: RssItem): string {
 }
 
 /**
- * Strips HTML tags and decodes entities from text.
- * Note: &amp; must be decoded LAST to avoid double-unescaping
- * (e.g., &amp;lt; → &lt; → <)
+ * Strips HTML tags and converts to plain text safely.
+ * Uses html-to-text library to avoid XSS via incomplete sanitization.
  */
 function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
+  return convert(html, {
+    wordwrap: false,
+    selectors: [
+      { selector: 'a', options: { ignoreHref: true } },
+      { selector: 'img', format: 'skip' },
+    ],
+  })
     .replace(/\s+/g, ' ')
     .trim();
 }
