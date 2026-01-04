@@ -7,7 +7,7 @@ import { createHash } from 'crypto';
 import { ImapFlow } from 'imapflow';
 
 import { extractPlainText, extractSender, stripHtml, truncate } from './email-parser.js';
-import type { EmailItem, EmailSyncConfig } from './types.js';
+import type { EmailItem, ImapConnectionConfig } from './types.js';
 
 /** Logger interface for email client */
 export interface EmailLogger {
@@ -17,8 +17,8 @@ export interface EmailLogger {
   debug: (msg: string, meta?: unknown) => void;
 }
 
-/** Email client configuration */
-export interface EmailClientConfig {
+/** Email client factory configuration */
+export interface EmailClientOptions {
   /** Request timeout in milliseconds */
   timeoutMs?: number;
 }
@@ -26,16 +26,16 @@ export interface EmailClientConfig {
 /** Email client interface */
 export interface EmailClient {
   /** Fetch unread emails from configured folder */
-  fetchEmails(syncConfig: EmailSyncConfig, accessToken?: string): Promise<EmailItem[]>;
+  fetchEmails(config: ImapConnectionConfig, accessToken?: string): Promise<EmailItem[]>;
   /** Mark emails as read by UID */
-  markAsRead(syncConfig: EmailSyncConfig, uids: number[], accessToken?: string): Promise<void>;
+  markAsRead(config: ImapConnectionConfig, uids: number[], accessToken?: string): Promise<void>;
   /** Map email item to todo */
   mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3, '_rev'>;
   /** Generate external ID for deduplication */
   generateExternalId(item: EmailItem): string;
 }
 
-const DEFAULT_CONFIG: Required<EmailClientConfig> = {
+const DEFAULT_OPTIONS: Required<EmailClientOptions> = {
   timeoutMs: 30000,
 };
 
@@ -63,7 +63,7 @@ export function generateExternalId(item: EmailItem): string {
  * Creates Gmail OAuth IMAP options
  */
 function createGmailImapOptions(
-  syncConfig: EmailSyncConfig,
+  config: ImapConnectionConfig,
   accessToken: string,
 ): ConstructorParameters<typeof ImapFlow>[0] {
   return {
@@ -71,7 +71,7 @@ function createGmailImapOptions(
     port: GMAIL_IMAP_PORT,
     secure: true,
     auth: {
-      user: syncConfig.imapUser || '',
+      user: config.imapUser || config.oauthEmail || '',
       accessToken,
     },
     logger: false,
@@ -82,15 +82,15 @@ function createGmailImapOptions(
  * Creates plain IMAP options
  */
 function createPlainImapOptions(
-  syncConfig: EmailSyncConfig,
+  config: ImapConnectionConfig,
 ): ConstructorParameters<typeof ImapFlow>[0] {
   return {
-    host: syncConfig.imapHost || '',
-    port: syncConfig.imapPort || 993,
+    host: config.imapHost || '',
+    port: config.imapPort || 993,
     secure: true,
     auth: {
-      user: syncConfig.imapUser || '',
-      pass: syncConfig.imapPassword || '',
+      user: config.imapUser || '',
+      pass: config.imapPassword || '',
     },
     logger: false,
   };
@@ -100,13 +100,13 @@ function createPlainImapOptions(
  * Creates IMAP connection options based on sync config
  */
 function createImapOptions(
-  syncConfig: EmailSyncConfig,
+  config: ImapConnectionConfig,
   accessToken?: string,
 ): ConstructorParameters<typeof ImapFlow>[0] {
-  if (syncConfig.provider === 'gmail' && accessToken) {
-    return createGmailImapOptions(syncConfig, accessToken);
+  if (config.provider === 'gmail' && accessToken) {
+    return createGmailImapOptions(config, accessToken);
   }
-  return createPlainImapOptions(syncConfig);
+  return createPlainImapOptions(config);
 }
 
 /**
@@ -278,21 +278,21 @@ async function connectWithTimeout(client: ImapFlow, timeoutMs: number): Promise<
 /**
  * Creates fetch emails implementation
  */
-function createFetchEmails(config: Required<EmailClientConfig>, logger: EmailLogger) {
-  return async (syncConfig: EmailSyncConfig, accessToken?: string): Promise<EmailItem[]> => {
-    const folder = syncConfig.folder || 'Eddo';
-    logger.debug('Fetching emails', { folder, provider: syncConfig.provider });
+function createFetchEmails(options: Required<EmailClientOptions>, logger: EmailLogger) {
+  return async (config: ImapConnectionConfig, accessToken?: string): Promise<EmailItem[]> => {
+    const folder = config.folder || 'Eddo';
+    logger.debug('Fetching emails', { folder, provider: config.provider });
 
-    const imapOptions = createImapOptions(syncConfig, accessToken);
+    const imapOptions = createImapOptions(config, accessToken);
     const client = new ImapFlow(imapOptions);
 
     try {
-      await connectWithTimeout(client, config.timeoutMs);
+      await connectWithTimeout(client, options.timeoutMs);
       const emails = await fetchEmailsFromImap(client, folder, logger);
 
       logger.info('Successfully fetched emails', {
         folder,
-        provider: syncConfig.provider,
+        provider: config.provider,
         count: emails.length,
       });
 
@@ -312,14 +312,14 @@ function createFetchEmails(config: Required<EmailClientConfig>, logger: EmailLog
  */
 function createMarkAsRead(logger: EmailLogger) {
   return async (
-    syncConfig: EmailSyncConfig,
+    config: ImapConnectionConfig,
     uids: number[],
     accessToken?: string,
   ): Promise<void> => {
     if (uids.length === 0) return;
 
-    const folder = syncConfig.folder || 'Eddo';
-    const imapOptions = createImapOptions(syncConfig, accessToken);
+    const folder = config.folder || 'Eddo';
+    const imapOptions = createImapOptions(config, accessToken);
     const client = new ImapFlow(imapOptions);
 
     try {
@@ -342,13 +342,13 @@ const defaultLogger: EmailLogger = {
  * Creates email client for fetching and processing emails
  */
 export function createEmailClient(
-  clientConfig: EmailClientConfig = {},
+  clientOptions: EmailClientOptions = {},
   logger: EmailLogger = defaultLogger,
 ): EmailClient {
-  const config = { ...DEFAULT_CONFIG, ...clientConfig };
+  const options = { ...DEFAULT_OPTIONS, ...clientOptions };
 
   return {
-    fetchEmails: createFetchEmails(config, logger),
+    fetchEmails: createFetchEmails(options, logger),
     markAsRead: createMarkAsRead(logger),
     mapEmailToTodo,
     generateExternalId,

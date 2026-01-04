@@ -2,7 +2,7 @@
  * Email sync module exports
  */
 export { createEmailClient, generateExternalId, mapEmailToTodo } from './client.js';
-export type { EmailClient, EmailClientConfig, EmailLogger } from './client.js';
+export type { EmailClient, EmailClientOptions, EmailLogger } from './client.js';
 export {
   decodeQuotedPrintable,
   extractPlainText,
@@ -19,6 +19,7 @@ export type {
   EmailProvider,
   EmailSyncConfig,
   EmailSyncResult,
+  ImapConnectionConfig,
   OAuthState,
   OAuthTokenResponse,
 } from './types.js';

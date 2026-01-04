@@ -1,27 +1,10 @@
 /**
- * Email sync types
+ * Email sync types for web-api
+ * Re-exports shared types and adds web-api specific types
  */
 
-/** Email authentication provider */
-export type EmailProvider = 'gmail' | 'imap';
-
-/** Email sync configuration stored in user preferences */
-export interface EmailSyncConfig {
-  /** Authentication provider */
-  provider: EmailProvider;
-  /** Gmail OAuth refresh token */
-  oauthRefreshToken?: string;
-  /** IMAP host (for non-OAuth) */
-  imapHost?: string;
-  /** IMAP port (for non-OAuth, default 993) */
-  imapPort?: number;
-  /** IMAP username (for non-OAuth) */
-  imapUser?: string;
-  /** IMAP password (for non-OAuth) */
-  imapPassword?: string;
-  /** Folder to sync from (default: "Eddo") */
-  folder: string;
-}
+// Re-export shared types
+export type { EmailProvider, EmailSyncConfig } from '@eddo/core-shared';
 
 /** Raw email item fetched from IMAP */
 export interface EmailItem {
@@ -77,4 +60,24 @@ export interface EmailSyncResult {
   skipped: number;
   /** Number of errors encountered */
   errors: number;
+}
+
+/** IMAP connection configuration for sync operations */
+export interface ImapConnectionConfig {
+  /** Authentication provider */
+  provider: 'gmail' | 'imap';
+  /** Gmail OAuth refresh token */
+  oauthRefreshToken?: string;
+  /** Gmail email address (for user identification) */
+  oauthEmail?: string;
+  /** IMAP host (for non-OAuth) */
+  imapHost?: string;
+  /** IMAP port (for non-OAuth, default 993) */
+  imapPort?: number;
+  /** IMAP username (for non-OAuth, or Gmail email for OAuth) */
+  imapUser?: string;
+  /** IMAP password (for non-OAuth) */
+  imapPassword?: string;
+  /** Folder to sync from */
+  folder: string;
 }
