@@ -251,6 +251,22 @@ function useTelegramHandlers(config: FormHandlersConfig) {
   return { handleLinkTelegram, handleUnlinkTelegram };
 }
 
+/** Create RSS resync handler */
+function useRssResyncHandler(config: FormHandlersConfig) {
+  const { setFormError, setSuccess, actions } = config;
+  return useCallback(async () => {
+    if (!confirm('Force resync will re-fetch all RSS feeds. Continue?')) return;
+    setFormError('');
+    setSuccess(null);
+    try {
+      await actions.rssResyncMutate();
+      setSuccess('RSS resync completed successfully! Refresh the page to see updates.');
+    } catch (err) {
+      setFormError((err as Error).message || 'Failed to resync RSS feeds');
+    }
+  }, [setFormError, setSuccess, actions]);
+}
+
 /** Create preferences and github handlers */
 function usePreferencesActionHandlers(config: FormHandlersConfig) {
   const { preferencesState, githubState, setFormError, setSuccess, actions } = config;
@@ -288,17 +304,7 @@ function usePreferencesActionHandlers(config: FormHandlersConfig) {
     }
   }, [setFormError, setSuccess, actions]);
 
-  const handleForceRssResync = useCallback(async () => {
-    if (!confirm('Force resync will re-fetch all RSS feeds. Continue?')) return;
-    setFormError('');
-    setSuccess(null);
-    try {
-      await actions.rssResyncMutate();
-      setSuccess('RSS resync completed successfully! Refresh the page to see updates.');
-    } catch (err) {
-      setFormError((err as Error).message || 'Failed to resync RSS feeds');
-    }
-  }, [setFormError, setSuccess, actions]);
+  const handleForceRssResync = useRssResyncHandler(config);
 
   return {
     handleUpdatePreferences,

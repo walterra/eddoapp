@@ -50,17 +50,19 @@ export function generateExternalId(item: RssItem): string {
 }
 
 /**
- * Strips HTML tags and decodes entities from text
+ * Strips HTML tags and decodes entities from text.
+ * Note: &amp; must be decoded LAST to avoid double-unescaping
+ * (e.g., &amp;lt; → &lt; → <)
  */
 function stripHtml(html: string): string {
   return html
     .replace(/<[^>]*>/g, '')
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
     .trim();
 }
