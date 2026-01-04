@@ -3,5 +3,6 @@
   "scripts/**/*.{ts,js}": ["eslint --fix", "prettier --write"],
   "*.{ts,js}": ["prettier --write"],
   "packages/**/*.{json,md}": ["prettier --write"],
-  "*.{json,md}": ["prettier --write"]
+  "*.{json,md}": ["prettier --write"],
+  ".changeset/*.md": ["tsx scripts/lint-changesets.ts"]
 }
