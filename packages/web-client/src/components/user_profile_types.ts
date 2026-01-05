@@ -32,6 +32,19 @@ export interface RssFormState {
   rssSyncTags: string;
 }
 
+export interface EmailFormState {
+  emailSync: boolean;
+  emailFolder: string;
+  emailSyncInterval: number;
+  emailSyncTags: string;
+}
+
+export interface EmailSyncConfigUI {
+  provider: 'gmail' | 'imap';
+  oauthEmail?: string;
+  imapUser?: string;
+}
+
 /** Re-export UserProfile type from hook */
 export type { UserProfile } from '../hooks/use_profile_types';
 
@@ -68,6 +81,12 @@ export interface ProfileData {
     rssSyncInterval?: number;
     rssSyncTags?: string[];
     rssLastSync?: string;
+    emailSync?: boolean;
+    emailConfig?: EmailSyncConfigUI;
+    emailFolder?: string;
+    emailSyncInterval?: number;
+    emailSyncTags?: string[];
+    emailLastSync?: string;
   };
 }
 
@@ -100,6 +119,7 @@ export interface IntegrationsTabProps {
   telegramId: string;
   githubState: GithubFormState;
   rssState: RssFormState;
+  emailState: EmailFormState;
   onTelegramIdChange: (id: string) => void;
   onLinkTelegram: () => Promise<void>;
   onUnlinkTelegram: () => Promise<void>;
@@ -117,6 +137,16 @@ export interface IntegrationsTabProps {
   onForceRssResync: () => Promise<void>;
   onSaveRss: () => Promise<void>;
   isRssResyncing: boolean;
+  // Email sync props
+  onEmailSyncChange: (enabled: boolean) => void;
+  onEmailFolderChange: (folder: string) => void;
+  onEmailIntervalChange: (interval: number) => void;
+  onEmailTagsChange: (tags: string) => void;
+  onSaveEmail: () => Promise<void>;
+  onForceEmailResync: () => Promise<void>;
+  onConnectGmail: () => Promise<void>;
+  onDisconnectEmail: () => Promise<void>;
+  isEmailResyncing: boolean;
 }
 
 export interface PreferencesTabProps {

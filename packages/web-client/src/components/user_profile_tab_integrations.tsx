@@ -4,12 +4,42 @@
 import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
 
+import { EmailSection } from './user_profile_email_section';
 import { GithubSection } from './user_profile_github_section';
 import { RssSection } from './user_profile_rss_section';
 import type { IntegrationsTabProps } from './user_profile_types';
 
 const IntegrationsHeader: FC = () => (
   <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">External Integrations</h2>
+);
+
+function isEmailConnected(profile: IntegrationsTabProps['profile']): boolean {
+  const config = profile.preferences?.emailConfig;
+  return config != null && (config.oauthEmail != null || config.imapUser != null);
+}
+
+function getConnectedEmail(profile: IntegrationsTabProps['profile']): string | undefined {
+  const config = profile.preferences?.emailConfig;
+  return config?.oauthEmail || config?.imapUser;
+}
+
+const EmailSectionWrapper: FC<IntegrationsTabProps> = (props) => (
+  <EmailSection
+    connectedEmail={getConnectedEmail(props.profile)}
+    emailState={props.emailState}
+    isConnected={isEmailConnected(props.profile)}
+    isLoading={props.isLoading}
+    isResyncing={props.isEmailResyncing}
+    lastSync={props.profile.preferences?.emailLastSync}
+    onConnectGmail={props.onConnectGmail}
+    onDisconnect={props.onDisconnectEmail}
+    onEmailFolderChange={props.onEmailFolderChange}
+    onEmailIntervalChange={props.onEmailIntervalChange}
+    onEmailSyncChange={props.onEmailSyncChange}
+    onEmailTagsChange={props.onEmailTagsChange}
+    onForceResync={props.onForceEmailResync}
+    onSaveEmail={props.onSaveEmail}
+  />
 );
 
 export function IntegrationsTab(props: IntegrationsTabProps) {
@@ -54,6 +84,7 @@ export function IntegrationsTab(props: IntegrationsTabProps) {
             onSaveRss={props.onSaveRss}
             rssState={rssState}
           />
+          <EmailSectionWrapper {...props} />
         </div>
       </div>
     </Card>

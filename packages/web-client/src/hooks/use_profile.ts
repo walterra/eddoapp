@@ -4,6 +4,7 @@ import { useAuth } from './use_auth';
 import {
   changePasswordApi,
   createAuthHeaders,
+  emailResyncApi,
   fetchProfileApi,
   githubResyncApi,
   linkTelegramApi,
@@ -86,6 +87,10 @@ function useProfileMutations(getAuthHeaders: () => HeadersInit, queryClient: Que
     }),
     rssResync: useMutation({
       mutationFn: () => rssResyncApi(getAuthHeaders()),
+      onSuccess: invalidateProfile,
+    }),
+    emailResync: useMutation({
+      mutationFn: () => emailResyncApi(getAuthHeaders()),
       onSuccess: invalidateProfile,
     }),
   };

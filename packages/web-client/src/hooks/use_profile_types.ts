@@ -43,6 +43,16 @@ export interface UserPreferences {
   rssSyncInterval?: number;
   rssSyncTags?: string[];
   rssLastSync?: string;
+  emailSync?: boolean;
+  emailConfig?: {
+    provider: 'gmail' | 'imap';
+    oauthEmail?: string;
+    imapUser?: string;
+  };
+  emailFolder?: string;
+  emailSyncInterval?: number;
+  emailSyncTags?: string[];
+  emailLastSync?: string;
 }
 
 export interface UserProfile {
@@ -96,6 +106,15 @@ export interface UpdatePreferencesData {
   rssFeeds?: RssFeedConfigUI[];
   rssSyncInterval?: number;
   rssSyncTags?: string[];
+  emailSync?: boolean;
+  emailConfig?: {
+    provider: 'gmail' | 'imap';
+    oauthEmail?: string;
+    imapUser?: string;
+  } | null;
+  emailFolder?: string;
+  emailSyncInterval?: number;
+  emailSyncTags?: string[];
 }
 
 export interface GithubResyncResponse {

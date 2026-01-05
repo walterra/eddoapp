@@ -4,9 +4,10 @@
 import { type FC, useState } from 'react';
 
 import { useProfile } from '../hooks/use_profile';
+import { useEmailFieldHandlers } from './user_profile_email_hooks';
+import { useProfileFormStates } from './user_profile_form_state';
 import {
   useFormFieldHandlers,
-  useFormInitialization,
   useGithubFieldHandlers,
   usePreferencesFieldHandlers,
   useProfileActionHandlers,
@@ -24,6 +25,7 @@ import { PreferencesTab } from './user_profile_tab_preferences';
 import { ProfileTab } from './user_profile_tab_profile';
 import { SecurityTab } from './user_profile_tab_security';
 import type {
+  EmailFormState,
   GithubFormState,
   PreferencesFormState,
   UserProfile as ProfileData,
@@ -37,36 +39,6 @@ interface UserProfileProps {
 
 type TabType = 'profile' | 'security' | 'integrations' | 'preferences';
 
-const INITIAL_FORM_STATE: ProfileFormState = {
-  email: '',
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: '',
-  telegramId: '',
-};
-
-const INITIAL_PREFERENCES_STATE: PreferencesFormState = {
-  dailyBriefing: false,
-  briefingTime: '07:00',
-  printBriefing: false,
-  dailyRecap: false,
-  recapTime: '18:00',
-  printRecap: false,
-};
-
-const INITIAL_GITHUB_STATE: GithubFormState = {
-  githubSync: false,
-  githubToken: '',
-  githubSyncInterval: 60,
-  githubSyncTags: 'github, gtd:next',
-};
-
-const INITIAL_RSS_STATE: RssFormState = {
-  rssSync: false,
-  rssSyncInterval: 60,
-  rssSyncTags: 'gtd:someday, source:rss',
-};
-
 interface TabContentProps {
   activeTab: TabType;
   profile: ProfileData;
@@ -76,13 +48,16 @@ interface TabContentProps {
   preferencesState: PreferencesFormState;
   githubState: GithubFormState;
   rssState: RssFormState;
+  emailState: EmailFormState;
   isResyncing: boolean;
   isRssResyncing: boolean;
+  isEmailResyncing: boolean;
   actions: ReturnType<typeof useProfileActionHandlers>;
   formFieldHandlers: ReturnType<typeof useFormFieldHandlers>;
   preferencesFieldHandlers: ReturnType<typeof usePreferencesFieldHandlers>;
   githubFieldHandlers: ReturnType<typeof useGithubFieldHandlers>;
   rssFieldHandlers: ReturnType<typeof useRssFieldHandlers>;
+  emailFieldHandlers: ReturnType<typeof useEmailFieldHandlers>;
 }
 
 const ProfileTabContent: FC<
@@ -126,24 +101,33 @@ const IntegrationsTabContent: FC<
     | 'formState'
     | 'githubState'
     | 'rssState'
+    | 'emailState'
     | 'isResyncing'
     | 'isRssResyncing'
+    | 'isEmailResyncing'
     | 'actions'
     | 'formFieldHandlers'
     | 'githubFieldHandlers'
     | 'rssFieldHandlers'
+    | 'emailFieldHandlers'
   >
 > = (p) => (
   <IntegrationsTab
+    emailState={p.emailState}
     githubState={p.githubState}
+    isEmailResyncing={p.isEmailResyncing}
     isLoading={p.isLoading}
     isResyncing={p.isResyncing}
     isRssResyncing={p.isRssResyncing}
     onAddRssFeed={p.actions.handleAddRssFeed}
+    onConnectGmail={p.actions.handleConnectGmail}
+    onDisconnectEmail={p.actions.handleDisconnectEmail}
+    onForceEmailResync={p.actions.handleForceEmailResync}
     onForceResync={p.actions.handleForceResync}
     onForceRssResync={p.actions.handleForceRssResync}
     onLinkTelegram={p.actions.handleLinkTelegram}
     onRemoveRssFeed={p.actions.handleRemoveRssFeed}
+    onSaveEmail={p.actions.handleUpdateEmailPreferences}
     onSaveGithub={p.actions.handleUpdateGithubPreferences}
     onSaveRss={p.actions.handleUpdateRssPreferences}
     onTelegramIdChange={p.formFieldHandlers.onTelegramIdChange}
@@ -153,6 +137,7 @@ const IntegrationsTabContent: FC<
     telegramId={p.formState.telegramId}
     {...p.githubFieldHandlers}
     {...p.rssFieldHandlers}
+    {...p.emailFieldHandlers}
   />
 );
 
@@ -169,37 +154,6 @@ const TabContent: FC<TabContentProps> = (props) => {
       {...props.preferencesFieldHandlers}
     />
   );
-};
-
-/** Hook to manage all form states */
-const useProfileFormStates = (profile: ProfileData | null) => {
-  const [formState, setFormState] = useState<ProfileFormState>(INITIAL_FORM_STATE);
-  const [preferencesState, setPreferencesState] =
-    useState<PreferencesFormState>(INITIAL_PREFERENCES_STATE);
-  const [githubState, setGithubState] = useState<GithubFormState>(INITIAL_GITHUB_STATE);
-  const [rssState, setRssState] = useState<RssFormState>(INITIAL_RSS_STATE);
-  useFormInitialization(profile, {
-    setFormState,
-    setPreferencesState,
-    setGithubState,
-    setRssState,
-  });
-  return {
-    formState,
-    setFormState,
-    preferencesState,
-    setPreferencesState,
-    githubState,
-    setGithubState,
-    rssState,
-    setRssState,
-    handlers: {
-      form: useFormFieldHandlers(setFormState),
-      prefs: usePreferencesFieldHandlers(setPreferencesState),
-      github: useGithubFieldHandlers(setGithubState),
-      rss: useRssFieldHandlers(setRssState),
-    },
-  };
 };
 
 interface ActionsConfigParams {
@@ -219,6 +173,7 @@ const buildActionsConfig = (p: ActionsConfigParams) => ({
   preferencesState: p.forms.preferencesState,
   githubState: p.forms.githubState,
   rssState: p.forms.rssState,
+  emailState: p.forms.emailState,
   profile: p.profile,
   authToken: p.profileHook.authToken,
   editMode: p.editMode,
@@ -234,8 +189,43 @@ const buildActionsConfig = (p: ActionsConfigParams) => ({
     updatePreferences: p.profileHook.updatePreferences,
     githubResyncMutate: p.profileHook.mutations.githubResync.mutateAsync,
     rssResyncMutate: p.profileHook.mutations.rssResync.mutateAsync,
+    emailResyncMutate: p.profileHook.mutations.emailResync?.mutateAsync || (async () => {}),
   },
 });
+
+interface TabPropsParams {
+  profile: ProfileData;
+  isLoading: boolean;
+  mutations: ReturnType<typeof useProfile>['mutations'];
+  forms: ReturnType<typeof useProfileFormStates>;
+  actions: ReturnType<typeof useProfileActionHandlers>;
+  activeTab: TabType;
+  editMode: boolean;
+}
+
+/** Build tab content props from profile state */
+function buildTabProps(p: TabPropsParams): TabContentProps {
+  return {
+    activeTab: p.activeTab,
+    profile: p.profile,
+    isLoading: p.isLoading,
+    editMode: p.editMode,
+    formState: p.forms.formState,
+    preferencesState: p.forms.preferencesState,
+    githubState: p.forms.githubState,
+    rssState: p.forms.rssState,
+    emailState: p.forms.emailState,
+    isResyncing: p.mutations.githubResync.isPending,
+    isRssResyncing: p.mutations.rssResync.isPending,
+    isEmailResyncing: p.mutations.emailResync?.isPending || false,
+    actions: p.actions,
+    formFieldHandlers: p.forms.handlers.form,
+    preferencesFieldHandlers: p.forms.handlers.prefs,
+    githubFieldHandlers: p.forms.handlers.github,
+    rssFieldHandlers: p.forms.handlers.rss,
+    emailFieldHandlers: p.forms.handlers.email,
+  };
+}
 
 export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
   const profileHook = useProfile();
@@ -245,20 +235,29 @@ export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
   const [success, setSuccess] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
   const forms = useProfileFormStates(profile);
-  const actions = useProfileActionHandlers(
-    buildActionsConfig({
-      profileHook,
-      forms,
-      profile,
-      editMode,
-      setEditMode,
-      setFormError,
-      setSuccess,
-    }),
-  );
+  const actionsConfig = buildActionsConfig({
+    profileHook,
+    forms,
+    profile,
+    editMode,
+    setEditMode,
+    setFormError,
+    setSuccess,
+  });
+  const actions = useProfileActionHandlers(actionsConfig);
 
   if (isLoading && !profile) return <LoadingState />;
   if (!profile) return <NotFoundState onClose={onClose} />;
+
+  const tabProps = buildTabProps({
+    profile,
+    isLoading,
+    mutations,
+    forms,
+    actions,
+    activeTab,
+    editMode,
+  });
 
   return (
     <div className="min-h-screen bg-neutral-50 p-4 dark:bg-neutral-900">
@@ -266,23 +265,7 @@ export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
         <PageHeader onClose={onClose} />
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
         <MessageDisplay error={error || formError} success={success} />
-        <TabContent
-          actions={actions}
-          activeTab={activeTab}
-          editMode={editMode}
-          formFieldHandlers={forms.handlers.form}
-          formState={forms.formState}
-          githubFieldHandlers={forms.handlers.github}
-          githubState={forms.githubState}
-          isLoading={isLoading}
-          isResyncing={mutations.githubResync.isPending}
-          isRssResyncing={mutations.rssResync.isPending}
-          preferencesFieldHandlers={forms.handlers.prefs}
-          preferencesState={forms.preferencesState}
-          profile={profile}
-          rssFieldHandlers={forms.handlers.rss}
-          rssState={forms.rssState}
-        />
+        <TabContent {...tabProps} />
       </div>
     </div>
   );
