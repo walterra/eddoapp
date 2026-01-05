@@ -8,7 +8,7 @@
     "@eddo/core-shared": "workspace:*",
     "@fontsource-variable/inter": "^5.2.8",
     "@tailwindcss/typography": "^0.5.19",
-    "@tanstack/react-query": "^5.90.5",
+    "@tanstack/react-query": "^5.90.14",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",
     "events": "^3.3.0",
