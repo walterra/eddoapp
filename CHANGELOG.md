@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.0
+
+### Minor Changes
+
+- [#398](https://github.com/walterra/eddoapp/pull/398) [`680d0d5`](https://github.com/walterra/eddoapp/commit/680d0d5de40dff00969574bffc446c9d65e6a31f) - Add bulk due date actions via clickable column header in table view
+
+- [#396](https://github.com/walterra/eddoapp/pull/396) [`1adaeac`](https://github.com/walterra/eddoapp/commit/1adaeacdacb4615d8237d98227bdca80db5a0a35) - Add email to todo sync with Gmail OAuth integration
+
+### Patch Changes
+
+- [#393](https://github.com/walterra/eddoapp/pull/393) [`eab141a`](https://github.com/walterra/eddoapp/commit/eab141a680f6d92d7c36eca2892d538fed8b4e79) - Bump @tanstack/react-query from 5.90.5 to 5.90.14
+
+- [#391](https://github.com/walterra/eddoapp/pull/391) [`03ab75f`](https://github.com/walterra/eddoapp/commit/03ab75fd8f06c097d1a11134d188f9c89d50c51b) - Bump @vitejs/plugin-react from 5.0.4 to 5.1.2
+
+- [`3aa3641`](https://github.com/walterra/eddoapp/commit/3aa3641a77c4f67674f3740186a6993e203f655a) - Patch CVE-2026-0621 ReDoS vulnerability in @modelcontextprotocol/sdk
+
+- [#394](https://github.com/walterra/eddoapp/pull/394) [`c99066a`](https://github.com/walterra/eddoapp/commit/c99066a03ce2e1a6440a282211803b1bf63ba3ec) - Bump prettier from 3.6.2 to 3.7.4
+
+- [#395](https://github.com/walterra/eddoapp/pull/395) [`8a52993`](https://github.com/walterra/eddoapp/commit/8a52993c3f8a6749db039dca2594ecfe806edbc1) - Bump typescript-eslint from 8.44.1 to 8.50.0
+
 ## 0.4.0
 
 ### Minor Changes
