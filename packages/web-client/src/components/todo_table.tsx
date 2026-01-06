@@ -7,6 +7,7 @@ import { Spinner } from 'flowbite-react';
 import { type FC, useMemo } from 'react';
 
 import { usePouchDb } from '../pouch_db';
+import { BulkDueDatePopover } from './bulk_due_date_popover';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
 import { EmptyState } from './empty_state';
@@ -205,7 +206,7 @@ const ContextGroup: FC<ContextGroupProps> = ({
     <ContextHeader context={context} duration={durationByContext[context]} />
     <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
       <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-        <TableHeader selectedColumns={selectedColumns} />
+        <TableHeader contextTodos={contextTodos} selectedColumns={selectedColumns} />
         <tbody className="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
           {contextTodos.map((todo) => (
             <TodoRow
@@ -231,7 +232,28 @@ const ContextHeader: FC<{ context: string; duration: string }> = ({ context, dur
   </div>
 );
 
-const TableHeader: FC<{ selectedColumns: string[] }> = ({ selectedColumns }) => (
+interface TableHeaderProps {
+  selectedColumns: string[];
+  contextTodos: readonly Todo[];
+}
+
+/**
+ * Render column header content, with bulk action popover for due date column
+ */
+const ColumnHeaderContent: FC<{ columnId: string; contextTodos: readonly Todo[] }> = ({
+  columnId,
+  contextTodos,
+}) => {
+  const label = getColumnLabel(columnId);
+
+  if (columnId === 'due') {
+    return <BulkDueDatePopover todos={contextTodos}>{label}</BulkDueDatePopover>;
+  }
+
+  return <>{label}</>;
+};
+
+const TableHeader: FC<TableHeaderProps> = ({ selectedColumns, contextTodos }) => (
   <thead className="bg-neutral-50 dark:bg-neutral-700">
     <tr>
       {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
@@ -240,7 +262,7 @@ const TableHeader: FC<{ selectedColumns: string[] }> = ({ selectedColumns }) => 
           key={columnId}
           scope="col"
         >
-          {getColumnLabel(columnId)}
+          <ColumnHeaderContent columnId={columnId} contextTodos={contextTodos} />
         </th>
       ))}
       <th
