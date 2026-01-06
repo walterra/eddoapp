@@ -3,26 +3,27 @@
  */
 import type { Todo } from '@eddo/core-client';
 import { useQueryClient } from '@tanstack/react-query';
-import { addDays, format, nextMonday, startOfDay } from 'date-fns';
-import { type FC, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { addDays, nextMonday, startOfDay } from 'date-fns';
+import { type FC, useRef, useState } from 'react';
 import { BiCalendar, BiCalendarEvent, BiCalendarWeek } from 'react-icons/bi';
 
 import { useTodoMutation } from '../hooks/use_todo_mutations';
-import { DROPDOWN_ITEM, TRANSITION_FAST } from '../styles/interactive';
+import {
+  formatDueDate,
+  PopoverMenu,
+  type PopoverPosition,
+  type QuickAction,
+} from './due_date_popover_shared';
 
 interface DueDatePopoverProps {
   todo: Todo;
   children: React.ReactNode;
 }
 
-interface QuickAction {
-  label: string;
-  icon: React.ReactNode;
-  getDate: () => Date;
-}
-
-const getQuickActions = (): QuickAction[] => {
+/**
+ * Get quick actions for date selection
+ */
+export const getQuickActions = (): QuickAction[] => {
   const today = startOfDay(new Date());
 
   return [
@@ -44,73 +45,9 @@ const getQuickActions = (): QuickAction[] => {
   ];
 };
 
-const formatDueDate = (date: Date): string => {
-  return `${format(date, 'yyyy-MM-dd')}T23:59:59.999Z`;
-};
-
-interface PopoverMenuProps {
-  actions: QuickAction[];
-  position: { top: number; left: number };
-  onSelect: (date: Date) => void;
-  onClose: () => void;
-}
-
-const POPOVER_MENU_STYLES =
-  'fixed z-50 min-w-36 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
-
-const PopoverMenu: FC<PopoverMenuProps> = ({ actions, position, onSelect, onClose }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [onClose]);
-
-  return createPortal(
-    <div
-      className={POPOVER_MENU_STYLES}
-      ref={menuRef}
-      style={{ top: position.top, left: position.left }}
-    >
-      {actions.map((action) => (
-        <button
-          className={`${DROPDOWN_ITEM} ${TRANSITION_FAST} flex items-center gap-2`}
-          key={action.label}
-          onClick={() => onSelect(action.getDate())}
-          type="button"
-        >
-          {action.icon}
-          <span>{action.label}</span>
-          <span className="ml-auto text-xs text-neutral-400">
-            {format(action.getDate(), 'MMM d')}
-          </span>
-        </button>
-      ))}
-    </div>,
-    document.body,
-  );
-};
-
 export const DueDatePopover: FC<DueDatePopoverProps> = ({ todo, children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const updateTodo = useTodoMutation();
   const queryClient = useQueryClient();
