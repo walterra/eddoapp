@@ -166,6 +166,14 @@
     "not op_mini all"
   ],
   "pnpm": {
+    "patchedDependencies": {
+      "@modelcontextprotocol/sdk@1.25.1": "patches/@modelcontextprotocol__sdk@1.25.1.patch"
+    },
+    "auditConfig": {
+      "ignoreCves": [
+        "CVE-2026-0621"
+      ]
+    },
     "overrides": {
       "jws": ">=4.0.0",
       "qs": ">=6.14.1",

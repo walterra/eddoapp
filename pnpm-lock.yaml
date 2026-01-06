@@ -15,13 +15,18 @@ overrides:
   read-yaml-file: '>=2.1.0'
   '@changesets/parse': '>=0.4.2'
 
+patchedDependencies:
+  '@modelcontextprotocol/sdk@1.25.1':
+    hash: 3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3
+    path: patches/@modelcontextprotocol__sdk@1.25.1.patch
+
 importers:
 
   .:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.11.1)(zod@3.25.76)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.1)(zod@3.25.76)
       d3-array:
         specifier: ^3.0.3
         version: 3.2.4
@@ -378,7 +383,7 @@ importers:
     devDependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.11.1)(zod@3.25.76)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.1)(zod@3.25.76)
       '@types/node':
         specifier: ^24.7.2
         version: 24.7.2
@@ -457,7 +462,7 @@ importers:
         version: 1.7.0(@opentelemetry/api@1.9.0)
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.11.1)(zod@3.25.76)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.1)(zod@3.25.76)
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
@@ -9113,7 +9118,7 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 2.1.0
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.1)(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 1.19.7(hono@4.11.1)
       ajv: 8.17.1
@@ -9135,7 +9140,7 @@ snapshots:
       - hono
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.2.1)':
+  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.1)(zod@4.2.1)':
     dependencies:
       '@hono/node-server': 1.19.7(hono@4.11.1)
       ajv: 8.17.1
@@ -12600,7 +12605,7 @@ snapshots:
 
   fastmcp@3.17.0(hono@4.11.1):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.1)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.1)(zod@3.25.76)
       '@standard-schema/spec': 1.0.0
       execa: 9.6.0
       file-type: 21.0.0
@@ -12624,7 +12629,7 @@ snapshots:
 
   fastmcp@3.25.4(hono@4.11.1):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.1)(zod@4.2.1)
+      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.1)(zod@4.2.1)
       '@standard-schema/spec': 1.0.0
       execa: 9.6.1
       file-type: 21.1.1

@@ -1,0 +1,42 @@
+diff --git a/dist/esm/shared/uriTemplate.js b/dist/esm/shared/uriTemplate.js
+--- a/dist/esm/shared/uriTemplate.js
++++ b/dist/esm/shared/uriTemplate.js
+@@ -181,7 +181,7 @@
+         const name = part.name;
+         switch (part.operator) {
+             case '':
+-                pattern = part.exploded ? '([^/]+(?:,[^/]+)*)' : '([^/,]+)';
++                pattern = part.exploded ? '([^/,]+(?:,[^/,]+)*)' : '([^/,]+)';
+                 break;
+             case '+':
+             case '#':
+@@ -191,7 +191,7 @@
+                 pattern = '\\.([^/,]+)';
+                 break;
+             case '/':
+-                pattern = '/' + (part.exploded ? '([^/]+(?:,[^/]+)*)' : '([^/,]+)');
++                pattern = '/' + (part.exploded ? '([^/,]+(?:,[^/,]+)*)' : '([^/,]+)');
+                 break;
+             default:
+                 pattern = '([^/]+)';
+diff --git a/dist/cjs/shared/uriTemplate.js b/dist/cjs/shared/uriTemplate.js
+--- a/dist/cjs/shared/uriTemplate.js
++++ b/dist/cjs/shared/uriTemplate.js
+@@ -184,7 +184,7 @@
+         const name = part.name;
+         switch (part.operator) {
+             case '':
+-                pattern = part.exploded ? '([^/]+(?:,[^/]+)*)' : '([^/,]+)';
++                pattern = part.exploded ? '([^/,]+(?:,[^/,]+)*)' : '([^/,]+)';
+                 break;
+             case '+':
+             case '#':
+@@ -194,7 +194,7 @@
+                 pattern = '\\.([^/,]+)';
+                 break;
+             case '/':
+-                pattern = '/' + (part.exploded ? '([^/]+(?:,[^/]+)*)' : '([^/,]+)');
++                pattern = '/' + (part.exploded ? '([^/,]+(?:,[^/,]+)*)' : '([^/,]+)');
+                 break;
+             default:
+                 pattern = '([^/]+)';
