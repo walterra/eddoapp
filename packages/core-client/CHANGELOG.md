@@ -1,5 +1,12 @@
 # @eddo/core-client
 
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @eddo/core-shared@0.5.0
+
 ## 0.4.0
 
 ### Patch Changes
