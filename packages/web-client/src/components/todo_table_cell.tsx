@@ -7,6 +7,7 @@ import { Checkbox } from 'flowbite-react';
 import { type FC, type ReactElement } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { DueDatePopover } from './due_date_popover';
 import { FormattedMessage } from './formatted_message';
 import { TagDisplay } from './tag_display';
 import { getColumnWidthClass } from './todo_table_helpers';
@@ -60,7 +61,7 @@ const DueCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) =
   <td
     className={`px-2 py-1 text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300 ${widthClass}`}
   >
-    {todo.due.split('T')[0]}
+    <DueDatePopover todo={todo}>{todo.due.split('T')[0]}</DueDatePopover>
   </td>
 );
 
