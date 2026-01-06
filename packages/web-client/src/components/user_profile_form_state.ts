@@ -52,7 +52,7 @@ export const INITIAL_RSS_STATE: RssFormState = {
 
 export const INITIAL_EMAIL_STATE: EmailFormState = {
   emailSync: false,
-  emailFolder: 'Eddo',
+  emailFolder: 'eddo',
   emailSyncInterval: 15,
   emailSyncTags: 'source:email, gtd:next',
 };

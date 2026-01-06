@@ -70,11 +70,16 @@ function createGmailImapOptions(
     host: GMAIL_IMAP_HOST,
     port: GMAIL_IMAP_PORT,
     secure: true,
+    logger: {
+      debug: (msg: unknown) => console.log('[IMAP DEBUG]', msg),
+      info: (msg: unknown) => console.log('[IMAP INFO]', msg),
+      warn: (msg: unknown) => console.warn('[IMAP WARN]', msg),
+      error: (msg: unknown) => console.error('[IMAP ERROR]', msg),
+    },
     auth: {
       user: config.imapUser || config.oauthEmail || '',
       accessToken,
     },
-    logger: false,
   };
 }
 
@@ -110,6 +115,17 @@ function createImapOptions(
 }
 
 /**
+ * Generates Gmail deep link URL from message ID
+ */
+function generateGmailLink(gmailMessageId?: string): string | null {
+  if (!gmailMessageId) return null;
+  // Gmail uses hex-encoded message ID in the URL
+  // Format: https://mail.google.com/mail/u/0/#inbox/<hex-message-id>
+  const hexId = BigInt(gmailMessageId).toString(16);
+  return `https://mail.google.com/mail/u/0/#inbox/${hexId}`;
+}
+
+/**
  * Maps email item to TodoAlpha3 structure
  */
 export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3, '_rev'> {
@@ -124,7 +140,7 @@ export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3
     description: cleanDescription,
     due: item.receivedDate,
     externalId: generateExternalId(item),
-    link: null,
+    link: generateGmailLink(item.gmailMessageId),
     repeat: null,
     tags,
     title: item.subject || 'No Subject',
@@ -143,6 +159,8 @@ interface ImapMessage {
   };
   source?: Buffer;
   uid: number;
+  /** Gmail-specific message ID for deep linking */
+  emailId?: string;
 }
 
 /**
@@ -163,14 +181,8 @@ function messageToEmailItem(message: ImapMessage, folder: string): EmailItem | n
     messageId: message.envelope.messageId || `${message.uid}@unknown`,
     uid: message.uid,
     folder,
+    gmailMessageId: message.emailId,
   };
-}
-
-/**
- * Checks if message should be skipped (already read or no envelope)
- */
-function shouldSkipMessage(message: ImapMessage): boolean {
-  return message.flags?.has('\\Seen') === true || !message.envelope;
 }
 
 /**
@@ -181,13 +193,24 @@ async function processMessages(
   folder: string,
 ): Promise<EmailItem[]> {
   const emails: EmailItem[] = [];
+  let totalMessages = 0;
+  let skippedNoEnvelope = 0;
 
   for await (const message of messages) {
-    if (shouldSkipMessage(message)) continue;
+    totalMessages++;
+
+    if (!message.envelope) {
+      skippedNoEnvelope++;
+      continue;
+    }
 
     const emailItem = messageToEmailItem(message, folder);
     if (emailItem) emails.push(emailItem);
   }
+
+  console.log(
+    `[EMAIL] Processed ${totalMessages} messages: ${emails.length} kept, ${skippedNoEnvelope} skipped (no envelope)`,
+  );
 
   return emails;
 }
@@ -196,7 +219,24 @@ async function processMessages(
  * Fetches emails from IMAP folder with lock
  */
 async function fetchWithLock(client: ImapFlow, folder: string): Promise<EmailItem[]> {
-  const lock = await client.getMailboxLock(folder);
+  let lock;
+  try {
+    lock = await client.getMailboxLock(folder);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // Check for common folder-not-found patterns
+    if (
+      message.includes('Command failed') ||
+      message.includes('NO') ||
+      message.includes('not exist')
+    ) {
+      throw new Error(
+        `Folder "${folder}" does not exist. Please create a label called "${folder}" in Gmail.`,
+      );
+    }
+    throw error;
+  }
+
   try {
     const messages = client.fetch('1:*', {
       envelope: true,
@@ -280,7 +320,7 @@ async function connectWithTimeout(client: ImapFlow, timeoutMs: number): Promise<
  */
 function createFetchEmails(options: Required<EmailClientOptions>, logger: EmailLogger) {
   return async (config: ImapConnectionConfig, accessToken?: string): Promise<EmailItem[]> => {
-    const folder = config.folder || 'Eddo';
+    const folder = config.folder || 'eddo';
     logger.debug('Fetching emails', { folder, provider: config.provider });
 
     const imapOptions = createImapOptions(config, accessToken);
@@ -299,7 +339,8 @@ function createFetchEmails(options: Required<EmailClientOptions>, logger: EmailL
       return emails;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.error('Failed to fetch emails', { folder, error: message });
+      const stack = error instanceof Error ? error.stack : undefined;
+      logger.error('Failed to fetch emails', { folder, error: message, stack });
       throw new Error(`Failed to fetch emails: ${message}`);
     } finally {
       await safeLogout(client);
@@ -318,7 +359,7 @@ function createMarkAsRead(logger: EmailLogger) {
   ): Promise<void> => {
     if (uids.length === 0) return;
 
-    const folder = config.folder || 'Eddo';
+    const folder = config.folder || 'eddo';
     const imapOptions = createImapOptions(config, accessToken);
     const client = new ImapFlow(imapOptions);
 

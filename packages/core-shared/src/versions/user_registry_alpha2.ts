@@ -76,7 +76,7 @@ export interface UserPreferences {
   // Email Sync
   emailSync?: boolean; // Enable/disable email sync
   emailConfig?: EmailSyncConfig; // Email authentication configuration
-  emailFolder?: string; // IMAP folder to sync from, defaults to "Eddo"
+  emailFolder?: string; // IMAP folder to sync from, defaults to "eddo"
   emailSyncInterval?: number; // Minutes between syncs, defaults to 15
   emailSyncTags?: string[]; // Tags to add to synced emails, defaults to ["source:email", "gtd:next"]
   emailLastSync?: string; // ISO timestamp of last successful sync
@@ -126,7 +126,7 @@ export function createDefaultUserPreferences(): UserPreferences {
     rssLastSync: undefined,
     emailSync: false,
     emailConfig: undefined,
-    emailFolder: 'Eddo',
+    emailFolder: 'eddo',
     emailSyncInterval: 15,
     emailSyncTags: ['source:email', 'gtd:next'],
     emailLastSync: undefined,

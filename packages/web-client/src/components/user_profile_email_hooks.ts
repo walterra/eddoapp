@@ -27,7 +27,7 @@ export function initializeEmailState(
 ): EmailFormState {
   return {
     emailSync: preferences?.emailSync || false,
-    emailFolder: preferences?.emailFolder || 'Eddo',
+    emailFolder: preferences?.emailFolder || 'eddo',
     emailSyncInterval: preferences?.emailSyncInterval || 15,
     emailSyncTags: (preferences?.emailSyncTags || ['source:email', 'gtd:next']).join(', '),
   };

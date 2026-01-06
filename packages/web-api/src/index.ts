@@ -18,9 +18,11 @@ import nano from 'nano';
 import path from 'path';
 
 import { config } from './config';
+import { createEmailSyncScheduler } from './email/sync-scheduler';
 import { createGithubSyncScheduler } from './github/sync-scheduler';
 import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
+import { emailRoutes } from './routes/email';
 import { rssRoutes } from './routes/rss';
 import { userRoutes } from './routes/users';
 import { createRssSyncScheduler } from './rss/sync-scheduler';
@@ -51,6 +53,9 @@ app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOStri
 
 // Auth routes (no JWT required)
 app.route('/auth', authRoutes);
+
+// Email OAuth callback (no JWT required - Google redirects here)
+app.route('/api/email', emailRoutes);
 
 // Protected API routes (JWT required)
 // Custom middleware that supports both header and query param tokens (for SSE/EventSource)
@@ -119,6 +124,9 @@ let githubSchedulerInstance: ReturnType<typeof createGithubSyncScheduler> | null
 // RSS sync scheduler instance (initialized after database setup)
 let rssSchedulerInstance: ReturnType<typeof createRssSyncScheduler> | null = null;
 
+// Email sync scheduler instance (initialized after database setup)
+let emailSchedulerInstance: ReturnType<typeof createEmailSyncScheduler> | null = null;
+
 // Export getter for scheduler instance
 export function getGithubScheduler() {
   if (!githubSchedulerInstance) {
@@ -133,6 +141,14 @@ export function getRssScheduler() {
     throw new Error('RSS scheduler not initialized yet');
   }
   return rssSchedulerInstance;
+}
+
+// Export getter for Email scheduler instance
+export function getEmailScheduler() {
+  if (!emailSchedulerInstance) {
+    throw new Error('Email scheduler not initialized yet');
+  }
+  return emailSchedulerInstance;
 }
 
 // Initialize database
@@ -184,6 +200,14 @@ function initializeSyncSchedulers(couch: ReturnType<typeof nano>) {
   });
   rssSchedulerInstance.start();
   logger.info('RSS sync scheduler started');
+
+  emailSchedulerInstance = createEmailSyncScheduler({
+    checkIntervalMs,
+    logger: createSyncLoggerAdapter(logger.child({ component: 'email-sync' })),
+    getUserDb,
+  });
+  emailSchedulerInstance.start();
+  logger.info('Email sync scheduler started');
 }
 
 // Initialize database before starting server
@@ -209,6 +233,18 @@ initializeDatabase().then(() => {
     if (githubSchedulerInstance) {
       githubSchedulerInstance.stop();
       logger.info('GitHub sync scheduler stopped');
+    }
+
+    // Stop RSS sync scheduler
+    if (rssSchedulerInstance) {
+      rssSchedulerInstance.stop();
+      logger.info('RSS sync scheduler stopped');
+    }
+
+    // Stop Email sync scheduler
+    if (emailSchedulerInstance) {
+      emailSchedulerInstance.stop();
+      logger.info('Email sync scheduler stopped');
     }
 
     // Close the server

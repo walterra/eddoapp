@@ -24,6 +24,8 @@ export interface EmailItem {
   uid: number;
   /** Folder this email came from */
   folder: string;
+  /** Gmail message ID for deep linking (X-GM-MSGID) */
+  gmailMessageId?: string;
 }
 
 /** OAuth token response from Google */

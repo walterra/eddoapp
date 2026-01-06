@@ -128,7 +128,7 @@ const EmailFolderInput: FC<EmailFolderInputProps> = ({ disabled, value, onChange
       disabled={disabled}
       id="emailFolder"
       onChange={(e) => onChange(e.target.value)}
-      placeholder="Eddo"
+      placeholder="eddo"
       type="text"
       value={value}
     />

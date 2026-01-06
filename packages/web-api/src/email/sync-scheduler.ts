@@ -74,14 +74,14 @@ function buildImapConfig(preferences: UserPreferences): ImapConnectionConfig {
     imapPort: config.imapPort,
     imapUser: config.imapUser || config.oauthEmail,
     imapPassword: config.imapPassword,
-    folder: preferences.emailFolder || 'Eddo',
+    folder: preferences.emailFolder || 'eddo',
   };
 }
 
 /**
  * Gets OAuth access token for Gmail
  */
-async function getGmailAccessToken(refreshToken: string): Promise<string> {
+async function getGmailAccessToken(refreshToken: string, logger: EmailLogger): Promise<string> {
   const env = createEnv();
   const oauthClient = createGoogleOAuthClient({
     clientId: env.GOOGLE_CLIENT_ID,
@@ -89,8 +89,25 @@ async function getGmailAccessToken(refreshToken: string): Promise<string> {
     redirectUri: env.GOOGLE_REDIRECT_URI,
   });
 
-  const tokens = await oauthClient.refreshAccessToken(refreshToken);
-  return tokens.accessToken;
+  logger.info('Refreshing Gmail access token', {
+    refreshTokenPrefix: refreshToken.substring(0, 10) + '...',
+  });
+
+  try {
+    const tokens = await oauthClient.refreshAccessToken(refreshToken);
+    logger.info('Got new access token', {
+      hasAccessToken: !!tokens.accessToken,
+      expiresIn: tokens.expiresIn,
+      tokenPrefix: tokens.accessToken.substring(0, 30),
+      tokenType: tokens.tokenType,
+    });
+    return tokens.accessToken;
+  } catch (error) {
+    logger.error('Failed to refresh access token', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
 
 interface ProcessEmailsConfig {
@@ -142,10 +159,24 @@ async function performUserSync(config: SyncUserEmailsConfig): Promise<SyncStats>
   const imapConfig = buildImapConfig(preferences);
   const tags = preferences.emailSyncTags || DEFAULT_EMAIL_TAGS;
 
+  logger.info('IMAP config built', {
+    provider: imapConfig.provider,
+    hasRefreshToken: !!imapConfig.oauthRefreshToken,
+    oauthEmail: imapConfig.oauthEmail,
+    folder: imapConfig.folder,
+  });
+
   // Get access token for Gmail OAuth
   let accessToken: string | undefined;
   if (imapConfig.provider === 'gmail' && imapConfig.oauthRefreshToken) {
-    accessToken = await getGmailAccessToken(imapConfig.oauthRefreshToken);
+    logger.info('Attempting to get access token for Gmail');
+    accessToken = await getGmailAccessToken(imapConfig.oauthRefreshToken, logger);
+    logger.info('Got access token', { hasToken: !!accessToken, tokenLength: accessToken?.length });
+  } else {
+    logger.info('Skipping OAuth token refresh', {
+      provider: imapConfig.provider,
+      hasRefreshToken: !!imapConfig.oauthRefreshToken,
+    });
   }
 
   // Fetch emails from IMAP
@@ -157,15 +188,9 @@ async function performUserSync(config: SyncUserEmailsConfig): Promise<SyncStats>
     return createSyncStats();
   }
 
-  // Process emails and create todos
+  // Process emails and create todos (deduplication via externalId)
   const db = getUserDb(user.database_name);
   const stats = await processEmails({ db, emails, tags, logger });
-
-  // Mark processed emails as read
-  if (stats.created > 0) {
-    const processedUids = emails.map((e) => e.uid);
-    await emailClient.markAsRead(imapConfig, processedUids, accessToken);
-  }
 
   return stats;
 }
@@ -179,7 +204,7 @@ async function syncUserWithSpan(config: SyncUserEmailsConfig): Promise<void> {
   const spanAttrs = {
     'user.id': user._id,
     'user.name': user.username,
-    'email.folder': user.preferences?.emailFolder || 'Eddo',
+    'email.folder': user.preferences?.emailFolder || 'eddo',
     'email.provider': user.preferences?.emailConfig?.provider || 'unknown',
   };
 
@@ -210,6 +235,7 @@ async function syncUserWithSpan(config: SyncUserEmailsConfig): Promise<void> {
  * Updates user's last sync timestamp
  */
 async function updateLastSyncTime(userId: string, logger: EmailLogger): Promise<void> {
+  logger.info('Updating last sync time', { userId });
   try {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
@@ -217,12 +243,16 @@ async function updateLastSyncTime(userId: string, logger: EmailLogger): Promise<
     const user = users.find((u) => u._id === userId);
 
     if (user) {
+      const newLastSync = new Date().toISOString();
       await userRegistry.update(userId, {
         preferences: {
           ...user.preferences,
-          emailLastSync: new Date().toISOString(),
+          emailLastSync: newLastSync,
         },
       });
+      logger.info('Updated last sync time', { userId, emailLastSync: newLastSync });
+    } else {
+      logger.warn('User not found for last sync update', { userId });
     }
   } catch (error) {
     logger.error('Failed to update last sync time', { userId, error });

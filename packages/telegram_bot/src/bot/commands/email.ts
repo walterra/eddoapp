@@ -211,7 +211,7 @@ async function startGmailAuth(ctx: Context, user: TelegramUser): Promise<void> {
         '• Grant Eddo permission to read your emails\n' +
         "• You'll be redirected back and notified here\n\n" +
         '⏰ This link expires in 10 minutes.\n\n' +
-        '🔒 We only access emails in your "Eddo" folder/label.',
+        '🔒 We only access emails in your "eddo" folder/label.',
       { parse_mode: 'Markdown' },
     );
   } catch (error) {

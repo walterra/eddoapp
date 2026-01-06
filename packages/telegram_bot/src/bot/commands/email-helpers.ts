@@ -72,9 +72,9 @@ export function buildHelpMessage(isEnabled: boolean, isConfigured: boolean): str
     `🔄 Sync: ${syncStatus}\n\n` +
     '**How it works:**\n' +
     '1. Connect your Gmail account with `/email auth`\n' +
-    '2. Create a label called "Eddo" in Gmail\n' +
+    '2. Create a label called "eddo" in Gmail\n' +
     '3. Enable sync with `/email on`\n' +
-    '4. Emails in your "Eddo" label become todos\n' +
+    '4. Emails in your "eddo" label become todos\n' +
     '5. Synced emails are marked as read'
   );
 }
@@ -106,7 +106,7 @@ function getEmailFromConfig(config: EmailSyncConfig | undefined): string | undef
   return config.oauthEmail || config.imapUser;
 }
 
-const DEFAULT_EMAIL_FOLDER = 'Eddo';
+const DEFAULT_EMAIL_FOLDER = 'eddo';
 const DEFAULT_SYNC_INTERVAL = 15;
 const DEFAULT_EMAIL_TAGS = ['source:email', 'gtd:next'];
 
@@ -178,49 +178,35 @@ export function buildStatusMessage(user: TelegramUser): string {
   );
 }
 
-// Singleton state manager for OAuth flow tracking
-let oauthStateManager: Awaited<
-  ReturnType<typeof import('@eddo/web-api/email').createOAuthStateManager>
-> | null = null;
-
-/**
- * Get or create OAuth state manager singleton
- */
-export async function getOAuthStateManager() {
-  if (!oauthStateManager) {
-    const { createOAuthStateManager } = await import('@eddo/web-api/email');
-    oauthStateManager = createOAuthStateManager();
-  }
-  return oauthStateManager;
-}
-
 /**
  * Generate OAuth authorization URL for Gmail
+ * Calls web-api to generate URL so state is stored in the same process that handles callback
  */
 export async function generateGmailAuthUrl(
   userId: string,
   telegramChatId: number,
 ): Promise<string | null> {
   try {
-    const { createGoogleOAuthClient } = await import('@eddo/web-api/email');
-    const env = createEnv();
+    // Determine web-api URL (same host, port 3000)
+    const webApiUrl = process.env.WEB_API_URL || 'http://localhost:3000';
 
-    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
-      logger.error('Google OAuth not configured');
+    const response = await fetch(`${webApiUrl}/api/email/oauth/generate-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, telegramChatId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      logger.error('Failed to generate OAuth URL from web-api', {
+        status: response.status,
+        error,
+      });
       return null;
     }
 
-    const oauthClient = createGoogleOAuthClient({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-      redirectUri: env.GOOGLE_REDIRECT_URI,
-    });
-
-    // Create state for CSRF protection
-    const stateManager = await getOAuthStateManager();
-    const state = stateManager.create(userId, telegramChatId);
-
-    return oauthClient.generateAuthUrl(state.state);
+    const data = (await response.json()) as { authUrl: string };
+    return data.authUrl;
   } catch (error) {
     logger.error('Failed to generate Gmail auth URL', { error });
     return null;

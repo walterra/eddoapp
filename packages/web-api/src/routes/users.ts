@@ -10,7 +10,7 @@ import jwt from 'jsonwebtoken';
 import nano from 'nano';
 import { z } from 'zod';
 
-import { getGithubScheduler, getRssScheduler } from '../index';
+import { getEmailScheduler, getGithubScheduler, getRssScheduler } from '../index';
 import { logger, withSpan } from '../utils/logger';
 import {
   createSafeProfile,
@@ -321,6 +321,34 @@ usersApp.post('/rss-resync', async (c) => {
       logger.error({ error }, 'RSS resync error');
 
       const errorMessage = error instanceof Error ? error.message : 'Failed to resync RSS feeds';
+      return c.json({ error: errorMessage }, 500);
+    }
+  });
+});
+
+// Force Email sync
+usersApp.post('/email-resync', async (c) => {
+  return withSpan('email_force_resync', { 'email.operation': 'force_resync' }, async (span) => {
+    try {
+      const payload = c.get('jwtPayload') as jwt.JwtPayload;
+      const userId = `user_${payload.username}`;
+
+      span.setAttribute('user.id', userId);
+      span.setAttribute('user.name', payload.username);
+      logger.info({ userId, username: payload.username }, 'Force email resync requested');
+
+      const scheduler = getEmailScheduler();
+      await scheduler.syncUser(userId);
+
+      span.setAttribute('email.result', 'success');
+      logger.info({ userId, username: payload.username }, 'Email resync completed');
+
+      return c.json({ success: true, message: 'Email resync completed successfully' });
+    } catch (error) {
+      span.setAttribute('email.result', 'error');
+      logger.error({ error }, 'Email resync error');
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resync emails';
       return c.json({ error: errorMessage }, 500);
     }
   });
