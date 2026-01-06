@@ -36,13 +36,40 @@ export function decodeQuotedPrintable(text: string): string {
 }
 
 /**
- * Extracts plain text from content type match
+ * Finds content part by content type using string search (avoids regex backtracking)
  */
-function extractFromContentMatch(content: string, regex: RegExp, isHtml: boolean): string | null {
-  const match = content.match(regex);
-  if (!match) return null;
-  const decoded = decodeQuotedPrintable(match[1].trim());
-  return isHtml ? stripHtml(decoded) : decoded;
+function findContentPart(content: string, contentType: string): string | null {
+  const lowerContent = content.toLowerCase();
+  const marker = `content-type: ${contentType}`;
+
+  let startIdx = lowerContent.indexOf(marker);
+  if (startIdx === -1) {
+    // Try without space after colon
+    startIdx = lowerContent.indexOf(`content-type:${contentType}`);
+  }
+  if (startIdx === -1) return null;
+
+  // Find the blank line that separates headers from body
+  const headerEndPatterns = ['\r\n\r\n', '\n\n'];
+  let bodyStart = -1;
+
+  for (const pattern of headerEndPatterns) {
+    const idx = content.indexOf(pattern, startIdx);
+    if (idx !== -1 && (bodyStart === -1 || idx < bodyStart)) {
+      bodyStart = idx + pattern.length;
+    }
+  }
+
+  if (bodyStart === -1) return null;
+
+  // Find the end boundary (-- followed by boundary string)
+  let bodyEnd = content.length;
+  const boundaryIdx = content.indexOf('\n--', bodyStart);
+  if (boundaryIdx !== -1) {
+    bodyEnd = boundaryIdx;
+  }
+
+  return content.substring(bodyStart, bodyEnd).trim();
 }
 
 /**
@@ -52,15 +79,16 @@ export function extractPlainText(source: Buffer | string): string {
   const content = typeof source === 'string' ? source : source.toString('utf-8');
 
   // Try to find plain text part in multipart message
-  const plainTextRegex =
-    /Content-Type:\s*text\/plain[^]*?(?:\r?\n\r?\n)([\s\S]*?)(?=--[^\r\n]+|$)/i;
-  const plainResult = extractFromContentMatch(content, plainTextRegex, false);
-  if (plainResult) return plainResult;
+  const plainPart = findContentPart(content, 'text/plain');
+  if (plainPart) {
+    return decodeQuotedPrintable(plainPart);
+  }
 
   // Try to find HTML part and convert
-  const htmlRegex = /Content-Type:\s*text\/html[^]*?(?:\r?\n\r?\n)([\s\S]*?)(?=--[^\r\n]+|$)/i;
-  const htmlResult = extractFromContentMatch(content, htmlRegex, true);
-  if (htmlResult) return htmlResult;
+  const htmlPart = findContentPart(content, 'text/html');
+  if (htmlPart) {
+    return stripHtml(decodeQuotedPrintable(htmlPart));
+  }
 
   // Fallback: treat entire content as text after headers
   const bodyStart = content.indexOf('\r\n\r\n');
