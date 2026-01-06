@@ -110,7 +110,7 @@
     "lint:format": "prettier --cache --check ./packages",
     "lint": "eslint --cache ./packages ./scripts --ignore-pattern '**/dist/**'",
     "test": "pnpm test:unit",
-    "test:unit": "vitest run packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
+    "test:unit": "vitest run packages/web-client/src packages/web-api/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
     "test:coverage": "vitest run --coverage packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
     "coverage:open": "open coverage/index.html",
     "test:integration:mcp-server": "tsx scripts/run-mcp-server-integration-tests.ts",

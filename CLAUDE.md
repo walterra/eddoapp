@@ -382,6 +382,134 @@ interface RssFeedConfig {
 - Forgiving parser for malformed real-world feeds
 - Fastest among JavaScript feed parsers
 
+### Email to Todo Sync Architecture
+
+**Location**: `packages/web-api/src/email/`
+
+**Purpose**: Sync emails from a designated IMAP folder into Eddo todos with Gmail OAuth support
+
+**Components**:
+
+- **EmailClient** (`client.ts`): IMAP email fetching using `imapflow` library
+  - Connects to IMAP servers (Gmail or standard IMAP)
+  - Fetches unread emails from configured folder
+  - Maps emails to TodoAlpha3 structure
+  - Generates consistent external IDs: `email:<folder-hash>/<message-id-hash>`
+  - Marks emails as read after sync (not delete)
+  - OAuth XOAUTH2 authentication for Gmail
+- **GoogleOAuthClient** (`oauth.ts`): Gmail OAuth handling using `google-auth-library`
+  - Generates authorization URLs for user consent
+  - Exchanges authorization codes for tokens
+  - Refreshes access tokens automatically
+  - Requires `https://mail.google.com/` scope for IMAP access
+- **OAuthStateManager** (`oauth-state-manager.ts`): CSRF protection for OAuth flows
+  - Creates and validates OAuth state tokens
+  - Auto-expiration (10 minutes)
+  - Cleanup of expired states
+- **EmailSyncScheduler** (`sync-scheduler.ts`): Periodic sync service
+  - Runs in web-api process
+  - Checks every 5 minutes for users needing sync
+  - Per-user sync intervals (default 15 minutes)
+  - Deduplication via `externalId` field
+  - Creates new todos only (emails are immutable)
+- **EmailParser** (`email-parser.ts`): Email content extraction
+  - Parses MIME messages
+  - Extracts plain text from HTML emails
+  - Handles multipart messages
+
+**User Configuration**: Stored in UserPreferences (user_registry_alpha2)
+
+- `emailSync`: boolean - enable/disable sync
+- `emailConfig`: EmailSyncConfig - provider and credentials
+  - `provider`: 'gmail' | 'imap'
+  - `oauthRefreshToken`: string (for Gmail OAuth)
+  - `oauthEmail`: string (Gmail address)
+  - `imapHost`, `imapPort`, `imapUser`, `imapPassword` (for IMAP)
+- `emailFolder`: string - IMAP folder name (default: "Eddo")
+- `emailSyncInterval`: number - minutes between syncs (default: 15)
+- `emailSyncTags`: string[] - tags to add (default: `["source:email", "gtd:next"]`)
+- `emailLastSync`: string - ISO timestamp of last sync
+
+**Telegram Bot Commands**:
+
+- `/email` - Show help and current status
+- `/email auth` - Start Gmail OAuth flow (opens browser)
+- `/email on` - Enable automatic sync
+- `/email off` - Disable sync
+- `/email folder <name>` - Set folder name
+- `/email status` - View current configuration
+
+**Web API Routes**:
+
+- `GET /api/email/oauth/callback` - OAuth callback from Google
+- `POST /api/users/email-resync` - Force resync (authenticated)
+
+**OAuth Flow**:
+
+1. User runs `/email auth` in Telegram
+2. Bot generates OAuth state and authorization URL
+3. User opens URL, authorizes Gmail access
+4. Google redirects to `/api/email/oauth/callback`
+5. Callback validates state, exchanges code for tokens
+6. Refresh token saved to user preferences
+7. User notified via HTML success page
+
+**Environment Variables**:
+
+```bash
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/email/oauth/callback
+```
+
+**Google OAuth Setup** (one-time app configuration):
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create or select a project
+3. Enable the Gmail API:
+   - Navigate to "APIs & Services" → "Library"
+   - Search for "Gmail API" and enable it
+4. Configure OAuth consent screen:
+   - Go to "APIs & Services" → "OAuth consent screen"
+   - Choose "External" user type (or "Internal" for Workspace)
+   - Fill in app name, support email, developer contact
+   - Add scope: `https://mail.google.com/` (required for IMAP access)
+5. Create OAuth credentials:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth client ID"
+   - Select "Web application"
+   - Add authorized redirect URI: `http://localhost:3000/api/email/oauth/callback`
+   - Copy Client ID and Client Secret to `.env`
+
+**Reference**: [Google OAuth 2.0 for Web Server Applications](https://developers.google.com/identity/protocols/oauth2/web-server)
+
+**Fixed Values**:
+
+- Context: `email`
+- Default Tags: `source:email`, `gtd:next`
+- Completion: Manual only (emails never auto-complete)
+
+**Data Flow**:
+
+1. User authenticates via `/email auth` (Gmail) or configures IMAP credentials
+2. User enables sync with `/email on`
+3. Scheduler checks user preferences every 5 minutes
+4. If sync interval elapsed:
+   - Refreshes OAuth access token (Gmail)
+   - Connects to IMAP server
+   - Fetches unread emails from configured folder
+   - Generates externalId and checks for duplicates
+   - Creates new todos for new emails
+   - Marks emails as read
+5. Updates `emailLastSync` timestamp
+
+**Library**: `imapflow` (npm) - chosen for:
+
+- Modern async/await API
+- TypeScript support
+- Active maintenance (193K weekly downloads)
+- OAuth XOAUTH2 support for Gmail
+
 ## Documentation Maintenance
 
 Keep `README.md` up to date when making changes. The README is end-user focused (installation, usage, configuration) while CLAUDE.md is agent-focused (debugging, restrictions, architecture).

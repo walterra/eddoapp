@@ -43,6 +43,11 @@ export const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters').optional(),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
+
+  // Google OAuth Configuration (for email sync)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().default('http://localhost:3000/api/email/oauth/callback'),
 });
 
 /**

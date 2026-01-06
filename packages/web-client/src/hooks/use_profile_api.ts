@@ -160,3 +160,23 @@ export async function rssResyncApi(headers: HeadersInit): Promise<RssResyncRespo
 
   return response.json();
 }
+
+export interface EmailResyncResponse {
+  success: boolean;
+  message: string;
+}
+
+/** Resync emails */
+export async function emailResyncApi(headers: HeadersInit): Promise<EmailResyncResponse> {
+  const response = await fetch('/api/users/email-resync', {
+    method: 'POST',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to resync emails');
+  }
+
+  return response.json();
+}

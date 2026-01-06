@@ -48,6 +48,8 @@ export {
 export {
   createDefaultUserPreferences,
   isUserRegistryEntryAlpha2,
+  type EmailProvider,
+  type EmailSyncConfig,
   type RssFeedConfig,
   type ThemePreference,
   type UserPreferences,

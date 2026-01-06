@@ -3,7 +3,6 @@ import { UserPreferences } from '@eddo/core-shared';
 
 import { logger } from './logger.js';
 import {
-  logCacheHit,
   logInactiveUser,
   logLookupError,
   logLookupSuccess,
@@ -28,56 +27,17 @@ export interface TelegramUser {
 }
 
 /**
- * Cached user lookups to avoid repeated database queries
+ * No-op for backwards compatibility (cache was removed for simplicity)
+ * @deprecated Cache no longer used - this function does nothing
  */
-const userCache = new Map<number, TelegramUser | null>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const cacheTimestamps = new Map<number, number>();
-
-// Clear expired cache entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [telegramId, timestamp] of cacheTimestamps.entries()) {
-    if (now - timestamp > CACHE_TTL_MS) {
-      userCache.delete(telegramId);
-      cacheTimestamps.delete(telegramId);
-    }
-  }
-}, 60 * 1000); // Clean up every minute
-
-/**
- * Invalidate cache for a specific user (call after updating user data)
- */
-export function invalidateUserCache(telegramId: number): void {
-  userCache.delete(telegramId);
-  cacheTimestamps.delete(telegramId);
-  logger.debug('User cache invalidated', { telegramId });
-}
-
-function cacheResult(telegramId: number, result: TelegramUser | null): void {
-  userCache.set(telegramId, result);
-  cacheTimestamps.set(telegramId, Date.now());
-}
-
-function getCachedResult(telegramId: number): { found: boolean; user: TelegramUser | null } {
-  const cached = userCache.get(telegramId);
-  const cacheTime = cacheTimestamps.get(telegramId);
-  const isValid = cached !== undefined && cacheTime && Date.now() - cacheTime < CACHE_TTL_MS;
-
-  if (isValid) {
-    logCacheHit(telegramId, cached?.username);
-    return { found: true, user: cached };
-  }
-  return { found: false, user: null };
+export function invalidateUserCache(_telegramId: number): void {
+  // No-op: cache removed for simplicity, fresh data fetched on each lookup
 }
 
 /**
  * Looks up a user by their Telegram ID in the user registry
  */
 export async function lookupUserByTelegramId(telegramId: number): Promise<TelegramUser | null> {
-  const cachedResult = getCachedResult(telegramId);
-  if (cachedResult.found) return cachedResult.user;
-
   try {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
@@ -88,20 +48,16 @@ export async function lookupUserByTelegramId(telegramId: number): Promise<Telegr
 
     if (!user) {
       logUserNotFound(telegramId);
-      cacheResult(telegramId, null);
       return null;
     }
 
     if (user.status !== 'active') {
       logInactiveUser(telegramId, user.username, user.status);
-      cacheResult(telegramId, null);
       return null;
     }
 
     logLookupSuccess(telegramId, user.username, user._id);
-    const telegramUser = toTelegramUser(user);
-    cacheResult(telegramId, telegramUser);
-    return telegramUser;
+    return toTelegramUser(user);
   } catch (error) {
     logLookupError(telegramId, error);
     return null;

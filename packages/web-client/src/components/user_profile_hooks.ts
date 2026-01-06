@@ -4,19 +4,20 @@
 import { useCallback, useEffect, useMemo } from 'react';
 
 import type { ProfileResult } from '../hooks/use_profile';
+import { useEmailActionHandlers } from './user_profile_email_hooks';
+import { usePreferencesActionHandlers } from './user_profile_github_hooks';
 import {
-  buildGithubUpdateData,
   buildProfileUpdateData,
   initializeGithubState,
   initializePreferencesState,
   initializeRssState,
-  validateGithubToken,
   validatePasswordChange,
   validateProfileForm,
   validateTelegramId,
 } from './user_profile_handlers';
 import { useRssActionHandlers } from './user_profile_rss_hooks';
 import type {
+  EmailFormState,
   GithubFormState,
   PreferencesFormState,
   ProfileFormState,
@@ -66,6 +67,7 @@ interface FormActions {
   updatePreferences: (data: PreferencesUpdateData) => Promise<ProfileResult>;
   githubResyncMutate: () => Promise<unknown>;
   rssResyncMutate: () => Promise<unknown>;
+  emailResyncMutate: () => Promise<unknown>;
 }
 
 interface FormHandlersConfig {
@@ -74,6 +76,7 @@ interface FormHandlersConfig {
   preferencesState: PreferencesFormState;
   githubState: GithubFormState;
   rssState: RssFormState;
+  emailState: EmailFormState;
   profile: UserProfile | null;
   authToken: string | null;
   editMode: boolean;
@@ -251,76 +254,21 @@ function useTelegramHandlers(config: FormHandlersConfig) {
   return { handleLinkTelegram, handleUnlinkTelegram };
 }
 
-/** Create RSS resync handler */
-function useRssResyncHandler(config: FormHandlersConfig) {
-  const { setFormError, setSuccess, actions } = config;
-  return useCallback(async () => {
-    if (!confirm('Force resync will re-fetch all RSS feeds. Continue?')) return;
-    setFormError('');
-    setSuccess(null);
-    try {
-      await actions.rssResyncMutate();
-      setSuccess('RSS resync completed successfully! Refresh the page to see updates.');
-    } catch (err) {
-      setFormError((err as Error).message || 'Failed to resync RSS feeds');
-    }
-  }, [setFormError, setSuccess, actions]);
-}
-
-/** Create preferences and github handlers */
-function usePreferencesActionHandlers(config: FormHandlersConfig) {
-  const { preferencesState, githubState, setFormError, setSuccess, actions } = config;
-  const handleUpdatePreferences = useCallback(async () => {
-    setFormError('');
-    setSuccess(null);
-    const result = await actions.updatePreferences(preferencesState);
-    if (result.success) setSuccess('Preferences updated successfully');
-    else setFormError(result.error || 'Failed to update preferences');
-  }, [preferencesState, setFormError, setSuccess, actions]);
-
-  const handleUpdateGithubPreferences = useCallback(async () => {
-    setFormError('');
-    setSuccess(null);
-    const err = validateGithubToken(githubState.githubToken);
-    if (err) {
-      setFormError(err);
-      return;
-    }
-    const result = await actions.updatePreferences(buildGithubUpdateData(githubState));
-    if (result.success) setSuccess('GitHub sync settings updated successfully');
-    else setFormError(result.error || 'Failed to update GitHub sync settings');
-  }, [githubState, setFormError, setSuccess, actions]);
-
-  const handleForceResync = useCallback(async () => {
-    if (!confirm('Force resync will re-fetch all GitHub issues. This may take a while. Continue?'))
-      return;
-    setFormError('');
-    setSuccess(null);
-    try {
-      await actions.githubResyncMutate();
-      setSuccess('GitHub resync completed successfully! Refresh the page to see updates.');
-    } catch (err) {
-      setFormError((err as Error).message || 'Failed to resync GitHub issues');
-    }
-  }, [setFormError, setSuccess, actions]);
-
-  const handleForceRssResync = useRssResyncHandler(config);
-
-  return {
-    handleUpdatePreferences,
-    handleUpdateGithubPreferences,
-    handleForceResync,
-    handleForceRssResync,
-  };
-}
-
 /** Create profile action handlers */
 export function useProfileActionHandlers(config: FormHandlersConfig) {
   const handleEditToggle = useEditToggleHandler(config);
   const handleSaveProfile = useSaveProfileHandler(config);
   const handleChangePassword = useChangePasswordHandler(config);
   const telegramHandlers = useTelegramHandlers(config);
-  const preferencesHandlers = usePreferencesActionHandlers(config);
+  const preferencesHandlers = usePreferencesActionHandlers({
+    preferencesState: config.preferencesState,
+    githubState: config.githubState,
+    setFormError: config.setFormError,
+    setSuccess: config.setSuccess,
+    updatePreferences: config.actions.updatePreferences,
+    githubResyncMutate: config.actions.githubResyncMutate,
+    rssResyncMutate: config.actions.rssResyncMutate,
+  });
   const rssHandlers = useRssActionHandlers({
     rssState: config.rssState,
     profile: config.profile,
@@ -328,6 +276,14 @@ export function useProfileActionHandlers(config: FormHandlersConfig) {
     setFormError: config.setFormError,
     setSuccess: config.setSuccess,
     updatePreferences: config.actions.updatePreferences,
+  });
+  const emailHandlers = useEmailActionHandlers({
+    emailState: config.emailState,
+    profile: config.profile,
+    setFormError: config.setFormError,
+    setSuccess: config.setSuccess,
+    updatePreferences: config.actions.updatePreferences,
+    emailResyncMutate: config.actions.emailResyncMutate,
   });
 
   return {
@@ -337,5 +293,6 @@ export function useProfileActionHandlers(config: FormHandlersConfig) {
     ...telegramHandlers,
     ...preferencesHandlers,
     ...rssHandlers,
+    ...emailHandlers,
   };
 }

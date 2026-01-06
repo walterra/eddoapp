@@ -20,6 +20,27 @@ export interface RssFeedConfig {
   addedAt: string;
 }
 
+/** Email authentication provider type */
+export type EmailProvider = 'gmail' | 'imap';
+
+/** Email sync configuration */
+export interface EmailSyncConfig {
+  /** Authentication provider (gmail for OAuth, imap for credentials) */
+  provider: EmailProvider;
+  /** Gmail OAuth refresh token (for provider: 'gmail') */
+  oauthRefreshToken?: string;
+  /** Gmail email address (set during OAuth) */
+  oauthEmail?: string;
+  /** IMAP host (for provider: 'imap') */
+  imapHost?: string;
+  /** IMAP port (for provider: 'imap', default: 993) */
+  imapPort?: number;
+  /** IMAP username (for provider: 'imap') */
+  imapUser?: string;
+  /** IMAP password (for provider: 'imap') */
+  imapPassword?: string;
+}
+
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string; // HH:MM format, defaults to 07:00
@@ -52,6 +73,13 @@ export interface UserPreferences {
   rssSyncInterval?: number; // Minutes between syncs, defaults to 60
   rssSyncTags?: string[]; // Tags to add to synced items, defaults to ["gtd:someday", "source:rss"]
   rssLastSync?: string; // ISO timestamp of last successful sync
+  // Email Sync
+  emailSync?: boolean; // Enable/disable email sync
+  emailConfig?: EmailSyncConfig; // Email authentication configuration
+  emailFolder?: string; // IMAP folder to sync from, defaults to "eddo"
+  emailSyncInterval?: number; // Minutes between syncs, defaults to 15
+  emailSyncTags?: string[]; // Tags to add to synced emails, defaults to ["source:email", "gtd:next"]
+  emailLastSync?: string; // ISO timestamp of last successful sync
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
@@ -96,5 +124,11 @@ export function createDefaultUserPreferences(): UserPreferences {
     rssSyncInterval: 60,
     rssSyncTags: ['gtd:someday', 'source:rss'],
     rssLastSync: undefined,
+    emailSync: false,
+    emailConfig: undefined,
+    emailFolder: 'eddo',
+    emailSyncInterval: 15,
+    emailSyncTags: ['source:email', 'gtd:next'],
+    emailLastSync: undefined,
   };
 }

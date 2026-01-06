@@ -26,6 +26,9 @@
     },
     {
       "path": "../printer_service"
+    },
+    {
+      "path": "../web-api"
     }
   ]
 }
