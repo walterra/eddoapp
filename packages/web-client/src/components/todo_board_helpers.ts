@@ -109,6 +109,14 @@ function filterByTags(todos: Todo[], selectedTags: string[]): Todo[] {
 }
 
 /**
+ * Filter out child todos (those with a parentId set)
+ * Child todos are displayed nested under their parent, not in the main view
+ */
+function filterOutChildTodos(todos: Todo[]): Todo[] {
+  return todos.filter((todo) => !todo.parentId);
+}
+
+/**
  * Apply all filters to todos
  */
 export function filterTodos(
@@ -118,6 +126,7 @@ export function filterTodos(
   selectedTags: string[],
 ): Todo[] {
   let filtered = todos;
+  filtered = filterOutChildTodos(filtered);
   filtered = filterByContext(filtered, selectedContexts);
   filtered = filterByStatus(filtered, selectedStatus);
   filtered = filterByTags(filtered, selectedTags);
