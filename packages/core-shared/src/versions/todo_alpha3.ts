@@ -7,6 +7,7 @@ type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 export interface TodoAlpha3 extends Omit<TodoAlpha2, 'version'> {
   externalId?: string | null;
   link: string | null;
+  parentId?: string | null;
   version: 'alpha3';
 }
 

@@ -86,6 +86,13 @@ export const createTodoParameters = z.object({
     .describe(
       'Optional external system ID for syncing (e.g., "github:owner/repo/issues/123"). Used for deduplication during periodic imports.',
     ),
+  parentId: z
+    .string()
+    .nullable()
+    .default(null)
+    .describe(
+      'Optional parent todo ID for creating subtasks. References the _id of an existing todo to create a parent-child relationship.',
+    ),
 });
 
 export type CreateTodoArgs = z.infer<typeof createTodoParameters>;
@@ -130,6 +137,7 @@ function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha3, '_rev'> {
     repeat: args.repeat,
     externalId: args.externalId,
     link: args.link,
+    parentId: args.parentId,
     version: 'alpha3',
   };
 }
