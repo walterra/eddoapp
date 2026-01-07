@@ -9,7 +9,7 @@ import { type FC, type ReactElement } from 'react';
 import { CONTEXT_DEFAULT } from '../constants';
 import { DueDatePopover } from './due_date_popover';
 import { FormattedMessage } from './formatted_message';
-import { TagDisplay } from './tag_display';
+import { TagsPopover } from './tags_popover';
 import { getColumnWidthClass } from './todo_table_helpers';
 
 interface TodoCellProps {
@@ -67,11 +67,7 @@ const DueCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) =
 
 const TagsCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
   <td className={`px-2 py-1 ${widthClass}`}>
-    {todo.tags.length > 0 ? (
-      <TagDisplay maxTags={3} size="xs" tags={todo.tags} />
-    ) : (
-      <span className="text-xs text-neutral-400">-</span>
-    )}
+    <TagsPopover todo={todo} />
   </td>
 );
 
