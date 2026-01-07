@@ -12,6 +12,41 @@ export interface RssFeedConfigUI {
   addedAt: string;
 }
 
+/** Date handling mode for filter presets */
+export type FilterPresetDateMode = 'relative' | 'fixed';
+
+/** Time range type for filter presets */
+export type FilterPresetTimeRangeType =
+  | 'current-day'
+  | 'current-week'
+  | 'current-month'
+  | 'current-year'
+  | 'all-time'
+  | 'custom';
+
+/** Time range configuration for filter presets */
+export interface FilterPresetTimeRange {
+  type: FilterPresetTimeRangeType;
+  startDate?: string;
+  endDate?: string;
+}
+
+/** Completion status for filter presets */
+export type FilterPresetStatus = 'all' | 'completed' | 'incomplete';
+
+/** Saved filter preset configuration */
+export interface FilterPreset {
+  id: string;
+  name: string;
+  selectedTags: string[];
+  selectedContexts: string[];
+  selectedStatus: FilterPresetStatus;
+  selectedTimeRange: FilterPresetTimeRange;
+  dateMode: FilterPresetDateMode;
+  savedDate?: string;
+  createdAt: string;
+}
+
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string;
@@ -53,6 +88,7 @@ export interface UserPreferences {
   emailSyncInterval?: number;
   emailSyncTags?: string[];
   emailLastSync?: string;
+  filterPresets?: FilterPreset[];
 }
 
 export interface UserProfile {
@@ -115,6 +151,7 @@ export interface UpdatePreferencesData {
   emailFolder?: string;
   emailSyncInterval?: number;
   emailSyncTags?: string[];
+  filterPresets?: FilterPreset[];
 }
 
 export interface GithubResyncResponse {

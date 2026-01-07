@@ -25,6 +25,17 @@ vi.mock('../hooks/use_eddo_contexts', () => ({
   }),
 }));
 
+vi.mock('../hooks/use_filter_presets', () => ({
+  useFilterPresets: () => ({
+    presets: [],
+    isLoading: false,
+    createPreset: vi.fn(),
+    updatePreset: vi.fn(),
+    deletePreset: vi.fn(),
+    applyPreset: vi.fn(),
+  }),
+}));
+
 // Mock date-fns to make tests deterministic
 vi.mock('date-fns', async () => {
   const actual = await vi.importActual('date-fns');

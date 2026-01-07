@@ -88,6 +88,7 @@ function TodoFiltersSection({
   const { viewMode, tableColumns, isLoading, setViewMode, setTableColumns } = viewPrefs;
   return (
     <TodoFilters
+      batchUpdateFilters={prefs.batchUpdate}
       currentDate={prefs.currentDate}
       isViewPrefsLoading={isLoading}
       onTableColumnsChange={async (cols) => {
