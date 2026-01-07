@@ -55,6 +55,12 @@ export const listTodosParameters = z.object({
     .string()
     .optional()
     .describe('Filter by exact external system ID (e.g., "github:owner/repo/issues/123")'),
+  parentId: z
+    .string()
+    .optional()
+    .describe(
+      'Filter by parent todo ID to list subtasks. Use "_ROOT_" or null equivalent to list only root-level todos.',
+    ),
 });
 
 export type ListTodosArgs = z.infer<typeof listTodosParameters>;
@@ -103,6 +109,14 @@ function buildSelector(args: ListTodosArgs): MangoSelector {
 
   if (args.tags && args.tags.length > 0) selector.tags = { $in: args.tags };
   if (args.externalId) selector.externalId = args.externalId;
+  if (args.parentId !== undefined) {
+    // "_ROOT_" is a special value to query root-level todos (no parent)
+    if (args.parentId === '_ROOT_') {
+      selector.$or = [{ parentId: null }, { parentId: { $exists: false } }];
+    } else {
+      selector.parentId = args.parentId;
+    }
+  }
 
   return selector;
 }
@@ -113,6 +127,8 @@ function buildSelector(args: ListTodosArgs): MangoSelector {
 function selectIndex(args: ListTodosArgs): string {
   const hasCompletedFilter = args.completed !== undefined || args.completedFrom || args.completedTo;
 
+  // Use parentId-due-index when filtering by parentId (not _ROOT_ which uses $or)
+  if (args.parentId && args.parentId !== '_ROOT_') return 'parentId-due-index';
   if (args.context && hasCompletedFilter) return 'version-context-completed-due-index';
   if (args.context) return 'version-context-due-index';
   if (hasCompletedFilter) return 'version-completed-due-index';

@@ -11,7 +11,7 @@ describe('ColumnPicker Component', () => {
   it('renders with column count', () => {
     render(<ColumnPicker onColumnsChange={vi.fn()} selectedColumns={defaultColumns} />);
 
-    expect(screen.getByText(/Columns \(3\/10\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Columns \(3\/11\)/)).toBeInTheDocument();
   });
 
   it('opens dropdown when clicked', async () => {
@@ -34,6 +34,7 @@ describe('ColumnPicker Component', () => {
     await user.click(button);
 
     expect(screen.getByText('Title')).toBeInTheDocument();
+    expect(screen.getByText('Subtasks')).toBeInTheDocument();
     expect(screen.getByText('Context')).toBeInTheDocument();
     expect(screen.getByText('Due Date')).toBeInTheDocument();
     expect(screen.getByText('Tags')).toBeInTheDocument();

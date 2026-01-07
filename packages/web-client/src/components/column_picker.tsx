@@ -11,6 +11,7 @@ export interface ColumnOption {
 
 const AVAILABLE_COLUMNS: ColumnOption[] = [
   { id: 'title', label: 'Title' },
+  { id: 'subtasks', label: 'Subtasks' },
   { id: 'context', label: 'Context' },
   { id: 'due', label: 'Due Date' },
   { id: 'tags', label: 'Tags' },

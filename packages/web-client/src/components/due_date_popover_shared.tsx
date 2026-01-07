@@ -13,11 +13,6 @@ export interface QuickAction {
   getDate: () => Date;
 }
 
-export interface PopoverPosition {
-  top: number;
-  left: number;
-}
-
 /**
  * Format a date as ISO due date string (end of day)
  */
@@ -26,14 +21,15 @@ export const formatDueDate = (date: Date): string => {
 };
 
 const POPOVER_MENU_STYLES =
-  'fixed z-50 min-w-36 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
+  'z-50 min-w-36 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
 
 interface PopoverMenuProps {
   actions: readonly QuickAction[];
-  position: PopoverPosition;
   onSelect: (date: Date) => void;
   onClose: () => void;
   header?: React.ReactNode;
+  floatingStyles: object;
+  setFloatingRef: (node: HTMLDivElement | null) => void;
 }
 
 /** Hook for popover dismiss behavior (click outside, escape key) */
@@ -79,19 +75,26 @@ const QuickActionButton: FC<{ action: QuickAction; onSelect: (date: Date) => voi
  */
 export const PopoverMenu: FC<PopoverMenuProps> = ({
   actions,
-  position,
   onSelect,
   onClose,
   header,
+  floatingStyles,
+  setFloatingRef,
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const setRefs = (node: HTMLDivElement | null) => {
+    menuRef.current = node;
+    setFloatingRef(node);
+  };
+
   usePopoverDismiss(menuRef, onClose);
 
   return createPortal(
     <div
       className={POPOVER_MENU_STYLES}
-      ref={menuRef}
-      style={{ top: position.top, left: position.left }}
+      ref={setRefs}
+      style={floatingStyles as React.CSSProperties}
     >
       {header}
       {actions.map((action) => (

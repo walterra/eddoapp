@@ -23,6 +23,7 @@ import {
   TRANSITION,
 } from '../styles/interactive';
 import { FormattedMessage } from './formatted_message';
+import { SubtaskIndicator } from './subtask_indicator';
 import { TagDisplay } from './tag_display';
 import { TodoFlyout } from './todo_flyout';
 
@@ -234,7 +235,10 @@ const TodoContent: FC<TodoContentProps> = ({ todo, activityOnly, isUpdating, onT
         )}
       </div>
       <div>
-        <TitleDisplay activityOnly={activityOnly} todo={todo} />
+        <div className="flex items-center gap-2">
+          <TitleDisplay activityOnly={activityOnly} todo={todo} />
+          {!activityOnly && <SubtaskIndicator todoId={todo._id} />}
+        </div>
         {todo.tags.length > 0 && (
           <div className="mt-1">
             <TagDisplay maxTags={3} size="xs" tags={todo.tags} />

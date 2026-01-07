@@ -70,6 +70,21 @@ export const DESIGN_DOCS: DesignDocument[] = [
     },
   },
   {
+    _id: '_design/todos_by_parent',
+    views: {
+      byParent: {
+        // Emits [parentId, due] for querying children sorted by due date
+        // parentId of null/_ROOT_ for root-level todos
+        map: `function (doc) {
+          if (doc.version === 'alpha3') {
+            var parent = doc.parentId || '_ROOT_';
+            emit([parent, doc.due || ''], null);
+          }
+        }`,
+      },
+    },
+  },
+  {
     _id: '_design/tags',
     views: {
       by_tag: {
@@ -119,6 +134,16 @@ export const REQUIRED_INDEXES: IndexDefinition[] = [
   {
     index: { fields: ['tags'] },
     name: 'tags-index',
+    type: 'json',
+  },
+  {
+    index: { fields: ['parentId'] },
+    name: 'parentId-index',
+    type: 'json',
+  },
+  {
+    index: { fields: ['parentId', 'due'] },
+    name: 'parentId-due-index',
     type: 'json',
   },
 ];

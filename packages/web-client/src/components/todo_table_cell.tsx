@@ -9,6 +9,7 @@ import { type FC, type ReactElement } from 'react';
 import { CONTEXT_DEFAULT } from '../constants';
 import { DueDatePopover } from './due_date_popover';
 import { FormattedMessage } from './formatted_message';
+import { SubtasksPopover } from './subtasks_popover';
 import { TagsPopover } from './tags_popover';
 import { getColumnWidthClass } from './todo_table_helpers';
 
@@ -138,6 +139,12 @@ const DescriptionCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthCl
   </td>
 );
 
+const SubtasksCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
+  <td className={`px-2 py-1 text-xs ${widthClass}`}>
+    <SubtasksPopover todoId={todo._id} />
+  </td>
+);
+
 interface CellRenderContext {
   todo: Todo;
   error: DatabaseError | null;
@@ -151,6 +158,7 @@ type CellRenderer = (ctx: CellRenderContext) => ReactElement;
 
 const CELL_RENDERERS: Record<string, CellRenderer> = {
   title: (ctx) => <TitleCell error={ctx.error} todo={ctx.todo} widthClass={ctx.widthClass} />,
+  subtasks: (ctx) => <SubtasksCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   context: (ctx) => <ContextCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   due: (ctx) => <DueCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   tags: (ctx) => <TagsCell todo={ctx.todo} widthClass={ctx.widthClass} />,

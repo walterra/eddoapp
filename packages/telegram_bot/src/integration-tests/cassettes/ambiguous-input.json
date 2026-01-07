@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-01-03T23:13:52.204Z",
-  "frozenTime": "2026-01-03T23:13:52.204Z",
+  "createdAt": "2026-01-07T15:48:52.592Z",
+  "frozenTime": "2026-01-07T15:48:52.592Z",
   "interactions": [
     {
       "requestHash": "351e8cd6bfde57ee",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "I'm excited to help you capture that task! What todo would you like to add? Just tell me what you need to get done and I'll get it into your system with the right GTD structure!",
+      "response": "I'd be happy to help you create a todo! What task would you like to add? Just tell me what needs to be done and I'll set it up for you.",
       "metadata": {
-        "recordedAt": "2026-01-03T23:13:54.776Z",
-        "responseTimeMs": 2558
+        "recordedAt": "2026-01-07T15:48:59.323Z",
+        "responseTimeMs": 6718
       }
     }
   ]

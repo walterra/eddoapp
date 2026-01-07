@@ -30,6 +30,11 @@ export const updateTodoParameters = z.object({
       'Updated repeat interval in days (null to disable). gtd:calendar repeats from due date, gtd:habit repeats from completion date',
     ),
   link: z.string().nullable().optional().describe('Updated URL or reference link (null to remove)'),
+  parentId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('Updated parent todo ID (null to remove parent, making it a root todo)'),
 });
 
 export type UpdateTodoArgs = z.infer<typeof updateTodoParameters>;
@@ -47,6 +52,7 @@ function mergeUpdates(todo: TodoAlpha3, args: UpdateTodoArgs): TodoAlpha3 {
     tags: args.tags ?? todo.tags,
     repeat: args.repeat !== undefined ? args.repeat : todo.repeat,
     link: args.link !== undefined ? args.link : todo.link,
+    parentId: args.parentId !== undefined ? args.parentId : todo.parentId,
   };
 }
 

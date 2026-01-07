@@ -3,9 +3,11 @@
  */
 import { type Todo, getActiveDuration, getFormattedDuration } from '@eddo/core-client';
 import { type FC } from 'react';
+import { BiCheckCircle, BiCircle, BiSubdirectoryRight } from 'react-icons/bi';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { useChildTodos, useParentTodo } from '../hooks/use_parent_child';
 import { TEXT_LINK } from '../styles/interactive';
 import { TagDisplay } from './tag_display';
 
@@ -158,9 +160,83 @@ const TimeTrackingView: FC<TimeTrackingViewProps> = ({ active }) => {
   );
 };
 
+const ParentView: FC<{ parentId: string | null | undefined }> = ({ parentId }) => {
+  const { data: parentTodo, isLoading } = useParentTodo(parentId);
+
+  if (!parentId) {
+    return null;
+  }
+
+  return (
+    <div>
+      <div className={LABEL_CLASS}>Parent Todo</div>
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/50">
+        <BiSubdirectoryRight
+          className="rotate-180 text-neutral-400 dark:text-neutral-500"
+          size="1.2em"
+        />
+        {isLoading ? (
+          <span className="text-sm text-neutral-500">Loading...</span>
+        ) : parentTodo ? (
+          <span className="text-sm text-neutral-900 dark:text-white">{parentTodo.title}</span>
+        ) : (
+          <span className="text-sm text-amber-600 dark:text-amber-400">Parent not found</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const SubtasksView: FC<{ todoId: string }> = ({ todoId }) => {
+  const { data: children, isLoading } = useChildTodos(todoId);
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className={LABEL_CLASS}>Subtasks</div>
+        <div className="mt-2 text-sm text-neutral-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!children || children.length === 0) {
+    return null;
+  }
+
+  const completedCount = children.filter((c) => c.completed !== null).length;
+
+  return (
+    <div>
+      <div className={LABEL_CLASS}>
+        Subtasks ({completedCount}/{children.length})
+      </div>
+      <div className="mt-2 space-y-1">
+        {children.map((child) => (
+          <div
+            className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/50"
+            key={child._id}
+          >
+            {child.completed ? (
+              <BiCheckCircle className="text-green-500" size="1.2em" />
+            ) : (
+              <BiCircle className="text-neutral-400 dark:text-neutral-500" size="1.2em" />
+            )}
+            <span
+              className={`text-sm ${child.completed ? 'text-neutral-500 line-through' : 'text-neutral-900 dark:text-white'}`}
+            >
+              {child.title}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
   <div className="flex flex-col gap-6">
     <TitleView todo={todo} />
+    <ParentView parentId={todo.parentId} />
     <DescriptionView description={todo.description} />
 
     <div className="grid grid-cols-2 gap-4">
@@ -169,6 +245,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
     </div>
 
     <TagsView tags={todo.tags} />
+    <SubtasksView todoId={todo._id} />
     <LinkView link={todo.link} />
     <ExternalIdView externalId={todo.externalId ?? null} />
     <TimeTrackingView active={todo.active} />

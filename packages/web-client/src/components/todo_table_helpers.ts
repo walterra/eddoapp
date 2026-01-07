@@ -13,6 +13,7 @@ import type { CompletionStatus } from './status_filter';
 export function getColumnWidthClass(columnId: string): string {
   const widths: Record<string, string> = {
     title: '', // Flexible width
+    subtasks: 'w-20',
     context: 'w-32',
     due: 'w-32',
     tags: 'w-48',
@@ -42,6 +43,7 @@ export function reorderColumnsWithStatusFirst(columns: string[]): string[] {
 export function getColumnLabel(columnId: string): string {
   const labels: Record<string, string> = {
     title: 'Title',
+    subtasks: 'Subtasks',
     context: 'Context',
     due: 'Due Date',
     tags: 'Tags',
@@ -84,6 +86,14 @@ function filterByTags(todos: Todo[], selectedTags: string[]): Todo[] {
 }
 
 /**
+ * Filter out child todos (those with a parentId set)
+ * Child todos are displayed nested under their parent, not in the main view
+ */
+function filterOutChildTodos(todos: Todo[]): Todo[] {
+  return todos.filter((todo) => !todo.parentId);
+}
+
+/**
  * Apply all filters to todos
  */
 export function filterTodos(
@@ -93,6 +103,7 @@ export function filterTodos(
   selectedTags: string[],
 ): Todo[] {
   let filtered = todos;
+  filtered = filterOutChildTodos(filtered);
   filtered = filterByContext(filtered, selectedContexts);
   filtered = filterByStatus(filtered, selectedStatus);
   filtered = filterByTags(filtered, selectedTags);

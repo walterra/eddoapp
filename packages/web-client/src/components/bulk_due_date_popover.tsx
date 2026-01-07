@@ -2,11 +2,12 @@
  * BulkDueDatePopover component for bulk due date actions on multiple todos
  */
 import type { Todo } from '@eddo/core-client';
-import { type FC, useRef, useState } from 'react';
+import { type FC, useState } from 'react';
 
 import { useBulkTodoMutation } from '../hooks/use_bulk_todo_mutation';
+import { useFloatingPosition } from '../hooks/use_floating_position';
 import { getQuickActions } from './due_date_popover';
-import { formatDueDate, PopoverMenu, type PopoverPosition } from './due_date_popover_shared';
+import { formatDueDate, PopoverMenu } from './due_date_popover_shared';
 
 interface BulkDueDatePopoverProps {
   todos: readonly Todo[];
@@ -43,9 +44,11 @@ const BulkUpdateHeader: FC<{ count: number }> = ({ count }) => (
  */
 export const BulkDueDatePopover: FC<BulkDueDatePopoverProps> = ({ todos, children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const bulkUpdateTodo = useBulkTodoMutation();
+  const { refs, floatingStyles } = useFloatingPosition({
+    placement: 'bottom-start',
+    open: isOpen,
+  });
 
   const incompleteTodos = getIncompleteTodos(todos);
   const hasIncompleteTodos = incompleteTodos.length > 0;
@@ -63,10 +66,6 @@ export const BulkDueDatePopover: FC<BulkDueDatePopoverProps> = ({ todos, childre
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!hasIncompleteTodos) return;
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setPosition({ top: rect.bottom + 4, left: rect.left });
-    }
     setIsOpen(!isOpen);
   };
 
@@ -76,7 +75,7 @@ export const BulkDueDatePopover: FC<BulkDueDatePopoverProps> = ({ todos, childre
         className={getButtonClass(hasIncompleteTodos)}
         disabled={!hasIncompleteTodos}
         onClick={handleToggle}
-        ref={buttonRef}
+        ref={refs.setReference}
         title={getButtonTitle(incompleteTodos.length)}
         type="button"
       >
@@ -85,10 +84,11 @@ export const BulkDueDatePopover: FC<BulkDueDatePopoverProps> = ({ todos, childre
       {isOpen && (
         <PopoverMenu
           actions={getQuickActions()}
+          floatingStyles={floatingStyles}
           header={<BulkUpdateHeader count={incompleteTodos.length} />}
           onClose={() => setIsOpen(false)}
           onSelect={handleSelect}
-          position={position}
+          setFloatingRef={refs.setFloating}
         />
       )}
     </>
