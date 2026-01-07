@@ -5,6 +5,7 @@ export {
   // Database monitoring
   DatabaseHealthMonitor,
   DatabaseOperationError,
+  createAuditLogEntry,
   createDefaultUserPreferences,
   decodeJwtPayload,
   // Utils
@@ -18,6 +19,7 @@ export {
   getRepeatTodo,
   getTokenExpiration,
   getTokenTimeRemaining,
+  isAuditLogAlpha1,
   isLatestUserRegistryVersion,
   isLatestVersion,
   isTodoAlpha1,
@@ -32,6 +34,11 @@ export {
   migrateUserRegistryEntry,
   shuffle,
   type Activity,
+  // Audit log types
+  type AuditAction,
+  type AuditEntityType,
+  type AuditLogAlpha1,
+  type AuditSource,
   type CreateUserRegistryEntry,
   type CreateUserRequest,
   type DatabaseError,
@@ -43,6 +50,7 @@ export {
   type LinkTelegramResponse,
   type LoginRequest,
   type LoginResponse,
+  type NewAuditLogEntry,
   // Types
   type NewTodo,
   type NewUserRegistryEntry,
@@ -79,6 +87,22 @@ export {
 } from './config';
 
 // Server-specific API
+export {
+  createAuditDatabase,
+  ensureAuditDatabase,
+  getAuditDatabase,
+  type AuditDatabase,
+  type AuditListOptions,
+  type AuditListResult,
+} from './api/audit-database';
+export {
+  clearAuditServiceCache,
+  createAndInitializeAuditService,
+  createAuditService,
+  getAuditService,
+  type AuditService,
+  type LogActionOptions,
+} from './api/audit-service';
 export { createDatabase, type DatabaseConfig, type DatabaseFactory } from './api/database-factory';
 export { UserRegistry, createTestUserRegistry, createUserRegistry } from './api/user-registry';
 
@@ -87,11 +111,14 @@ export {
   extractUsernameFromDatabaseName,
   generateLinkingCode,
   getAllUserDatabaseNames,
+  getAuditDatabaseConfig,
+  getAuditDatabaseName,
   getDatabasePrefix,
   getUserDatabaseConfig,
   getUserDatabaseName,
   getUserRegistryDatabaseConfig,
   getUserRegistryDatabaseName,
+  isAuditDatabase,
   isUserDatabase,
   isUserRegistryDatabase,
   sanitizeUsername,

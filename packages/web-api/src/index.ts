@@ -20,6 +20,7 @@ import path from 'path';
 import { config } from './config';
 import { createEmailSyncScheduler } from './email/sync-scheduler';
 import { createGithubSyncScheduler } from './github/sync-scheduler';
+import { auditLogRoutes } from './routes/audit-log';
 import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
 import { emailRoutes } from './routes/email';
@@ -73,6 +74,7 @@ app.use('/api/*', async (c, next) => {
 app.route('/api/db', dbProxyRoutes);
 app.route('/api/users', userRoutes);
 app.route('/api/rss', rssRoutes);
+app.route('/api/audit-log', auditLogRoutes);
 
 if (!isDevelopment) {
   // Production: Serve static files from public directory
