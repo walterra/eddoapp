@@ -23,6 +23,7 @@ import {
   TitleField,
   validateTimeTracking,
 } from './todo_edit_fields';
+import { ParentIdField } from './todo_parent_field';
 import { TodoViewFields } from './todo_view_fields';
 
 type FlyoutMode = 'view' | 'edit';
@@ -107,6 +108,7 @@ const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, o
     <DueDateField onChange={onChange} todo={todo} />
     <LinkField onChange={onChange} todo={todo} />
     <ExternalIdField onChange={onChange} todo={todo} />
+    <ParentIdField onChange={onChange} todo={todo} />
     <RepeatField onChange={onChange} todo={todo} />
     <CompletedField onChange={onChange} todo={todo} />
     <TimeTrackingField activeArray={activeArray} onChange={onChange} todo={todo} />
