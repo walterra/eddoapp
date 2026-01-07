@@ -83,7 +83,14 @@ async function processFeedItems(config: ProcessFeedItemsConfig): Promise<number>
 
   for (const item of items) {
     try {
-      const result = await processItem({ db, item, tags, rssClient, logger: ctx.logger });
+      const result = await processItem({
+        db,
+        item,
+        tags,
+        rssClient,
+        logger: ctx.logger,
+        username: ctx.user.username,
+      });
       incrementStat(stats, result);
     } catch (error) {
       ctx.logger.error('Failed to process RSS item', {

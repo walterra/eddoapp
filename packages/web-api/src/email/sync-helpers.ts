@@ -4,6 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import type nano from 'nano';
 
+import { logSyncAudit } from '../utils/sync-audit.js';
 import type { EmailClient, EmailLogger } from './client.js';
 import type { EmailItem } from './types.js';
 
@@ -13,6 +14,7 @@ export interface ProcessEmailConfig {
   tags: string[];
   emailClient: EmailClient;
   logger: EmailLogger;
+  username: string;
 }
 
 export type ProcessEmailResult = 'created' | 'skipped';
@@ -45,7 +47,7 @@ export async function findTodoByExternalId(
  * Process a single email (create todo if not exists)
  */
 export async function processEmail(config: ProcessEmailConfig): Promise<ProcessEmailResult> {
-  const { db, email, tags, emailClient, logger } = config;
+  const { db, email, tags, emailClient, logger, username } = config;
   const externalId = emailClient.generateExternalId(email);
 
   // Check if todo already exists
@@ -62,6 +64,15 @@ export async function processEmail(config: ProcessEmailConfig): Promise<ProcessE
   // Create new todo
   const newTodo = emailClient.mapEmailToTodo(email, tags);
   await db.insert(newTodo as TodoAlpha3);
+
+  await logSyncAudit({
+    username,
+    source: 'email-sync',
+    action: 'create',
+    entityId: newTodo._id,
+    after: newTodo,
+    metadata: { subject: email.subject, from: email.from },
+  });
 
   logger.debug('Created todo from email', {
     externalId,

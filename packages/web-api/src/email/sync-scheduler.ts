@@ -115,13 +115,14 @@ interface ProcessEmailsConfig {
   emails: EmailItem[];
   tags: string[];
   logger: EmailLogger;
+  username: string;
 }
 
 /**
  * Process fetched emails and create todos
  */
 async function processEmails(config: ProcessEmailsConfig): Promise<SyncStats> {
-  const { db, emails, tags, logger } = config;
+  const { db, emails, tags, logger, username } = config;
   const stats = createSyncStats();
   stats.fetched = emails.length;
 
@@ -129,7 +130,7 @@ async function processEmails(config: ProcessEmailsConfig): Promise<SyncStats> {
 
   for (const email of emails) {
     try {
-      const result = await processEmail({ db, email, tags, emailClient, logger });
+      const result = await processEmail({ db, email, tags, emailClient, logger, username });
       incrementStat(stats, result);
     } catch (error) {
       logger.error('Failed to process email', {
@@ -190,7 +191,7 @@ async function performUserSync(config: SyncUserEmailsConfig): Promise<SyncStats>
 
   // Process emails and create todos (deduplication via externalId)
   const db = getUserDb(user.database_name);
-  const stats = await processEmails({ db, emails, tags, logger });
+  const stats = await processEmails({ db, emails, tags, logger, username: user.username });
 
   return stats;
 }

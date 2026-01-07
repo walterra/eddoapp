@@ -4,6 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import type nano from 'nano';
 
+import { logSyncAudit } from '../utils/sync-audit.js';
 import type { GithubClient } from './client.js';
 import { findTodoByExternalId } from './sync-utils.js';
 import type { GithubIssue } from './types.js';
@@ -23,6 +24,7 @@ export interface ProcessIssueConfig {
   githubClient: GithubClient;
   forceResync: boolean;
   logger: SyncLogger;
+  username: string;
 }
 
 export type ProcessIssueResult = 'created' | 'updated' | 'completed' | 'unchanged';
@@ -68,9 +70,19 @@ export function hasTodoChanged(
  * Create a new todo from a GitHub issue
  */
 async function createNewTodo(config: ProcessIssueConfig): Promise<ProcessIssueResult> {
-  const { db, issue, context, tags, githubClient } = config;
+  const { db, issue, context, tags, githubClient, username } = config;
   const newTodo = githubClient.mapIssueToTodo(issue, context, tags);
   await db.insert(newTodo as TodoAlpha3);
+
+  await logSyncAudit({
+    username,
+    source: 'github-sync',
+    action: 'create',
+    entityId: newTodo._id,
+    after: newTodo,
+    metadata: { issueNumber: issue.number, repository: issue.repository.full_name },
+  });
+
   return 'created';
 }
 
@@ -81,7 +93,7 @@ async function forceResyncTodo(
   config: ProcessIssueConfig,
   existingTodo: TodoAlpha3,
 ): Promise<ProcessIssueResult> {
-  const { db, issue, context, tags, githubClient } = config;
+  const { db, issue, context, tags, githubClient, username } = config;
   const freshTodo = githubClient.mapIssueToTodo(issue, context, tags);
 
   const updatedTodo = {
@@ -95,6 +107,17 @@ async function forceResyncTodo(
 
   if (hasTodoChanged(existingTodo, updatedTodo)) {
     await db.insert(updatedTodo);
+
+    await logSyncAudit({
+      username,
+      source: 'github-sync',
+      action: 'update',
+      entityId: updatedTodo._id,
+      before: existingTodo,
+      after: updatedTodo,
+      metadata: { issueNumber: issue.number, repository: issue.repository.full_name },
+    });
+
     return 'updated';
   }
   return 'unchanged';
@@ -107,7 +130,7 @@ async function handleClosedIssue(
   config: ProcessIssueConfig,
   existingTodo: TodoAlpha3,
 ): Promise<ProcessIssueResult> {
-  const { db, issue } = config;
+  const { db, issue, username } = config;
 
   if (issue.state === 'closed' && !existingTodo.completed) {
     const updatedTodo = {
@@ -117,6 +140,17 @@ async function handleClosedIssue(
 
     if (hasTodoChanged(existingTodo, updatedTodo)) {
       await db.insert(updatedTodo);
+
+      await logSyncAudit({
+        username,
+        source: 'github-sync',
+        action: 'complete',
+        entityId: updatedTodo._id,
+        before: existingTodo,
+        after: updatedTodo,
+        metadata: { issueNumber: issue.number, repository: issue.repository.full_name },
+      });
+
       return 'completed';
     }
   }
@@ -130,7 +164,7 @@ async function updateTodoContent(
   config: ProcessIssueConfig,
   existingTodo: TodoAlpha3,
 ): Promise<ProcessIssueResult> {
-  const { db, issue } = config;
+  const { db, issue, username } = config;
 
   const updatedTodo = {
     ...existingTodo,
@@ -140,6 +174,17 @@ async function updateTodoContent(
 
   if (hasTodoChanged(existingTodo, updatedTodo)) {
     await db.insert(updatedTodo);
+
+    await logSyncAudit({
+      username,
+      source: 'github-sync',
+      action: 'update',
+      entityId: updatedTodo._id,
+      before: existingTodo,
+      after: updatedTodo,
+      metadata: { issueNumber: issue.number, repository: issue.repository.full_name },
+    });
+
     return 'updated';
   }
 
