@@ -13,6 +13,7 @@ import type { CompletionStatus } from './status_filter';
 export function getColumnWidthClass(columnId: string): string {
   const widths: Record<string, string> = {
     title: '', // Flexible width
+    subtasks: 'w-20',
     context: 'w-32',
     due: 'w-32',
     tags: 'w-48',
@@ -42,6 +43,7 @@ export function reorderColumnsWithStatusFirst(columns: string[]): string[] {
 export function getColumnLabel(columnId: string): string {
   const labels: Record<string, string> = {
     title: 'Title',
+    subtasks: 'Subtasks',
     context: 'Context',
     due: 'Due Date',
     tags: 'Tags',

@@ -7,6 +7,7 @@ import { Checkbox } from 'flowbite-react';
 import { type FC, type ReactElement } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { useChildTodos } from '../hooks/use_parent_child';
 import { DueDatePopover } from './due_date_popover';
 import { FormattedMessage } from './formatted_message';
 import { TagsPopover } from './tags_popover';
@@ -138,6 +139,43 @@ const DescriptionCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthCl
   </td>
 );
 
+const SubtasksCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => {
+  const { data: children, isLoading } = useChildTodos(todo._id);
+
+  if (isLoading) {
+    return (
+      <td className={`px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500 ${widthClass}`}>
+        ...
+      </td>
+    );
+  }
+
+  if (!children || children.length === 0) {
+    return (
+      <td className={`px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500 ${widthClass}`}>
+        -
+      </td>
+    );
+  }
+
+  const completedCount = children.filter((c) => c.completed !== null).length;
+  const totalCount = children.length;
+  const isAllComplete = completedCount === totalCount;
+
+  return (
+    <td
+      className={`px-2 py-1 text-xs ${widthClass} ${
+        isAllComplete
+          ? 'text-green-600 dark:text-green-400'
+          : 'text-neutral-700 dark:text-neutral-300'
+      }`}
+      title={`${completedCount} of ${totalCount} subtasks completed`}
+    >
+      {completedCount}/{totalCount}
+    </td>
+  );
+};
+
 interface CellRenderContext {
   todo: Todo;
   error: DatabaseError | null;
@@ -151,6 +189,7 @@ type CellRenderer = (ctx: CellRenderContext) => ReactElement;
 
 const CELL_RENDERERS: Record<string, CellRenderer> = {
   title: (ctx) => <TitleCell error={ctx.error} todo={ctx.todo} widthClass={ctx.widthClass} />,
+  subtasks: (ctx) => <SubtasksCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   context: (ctx) => <ContextCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   due: (ctx) => <DueCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   tags: (ctx) => <TagsCell todo={ctx.todo} widthClass={ctx.widthClass} />,

@@ -77,7 +77,14 @@ describe('useViewPreferences Hook', () => {
     const { result } = renderHook(() => useViewPreferences());
 
     expect(result.current.viewMode).toBe('kanban');
-    expect(result.current.tableColumns).toEqual(['status', 'title', 'due', 'tags', 'timeTracked']);
+    expect(result.current.tableColumns).toEqual([
+      'status',
+      'title',
+      'subtasks',
+      'due',
+      'tags',
+      'timeTracked',
+    ]);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBe(null);
   });

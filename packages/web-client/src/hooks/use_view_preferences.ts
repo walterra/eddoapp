@@ -4,7 +4,7 @@ import { useProfile } from './use_profile';
 
 export type ViewMode = 'kanban' | 'table';
 
-export const DEFAULT_TABLE_COLUMNS = ['status', 'title', 'due', 'tags', 'timeTracked'];
+export const DEFAULT_TABLE_COLUMNS = ['status', 'title', 'subtasks', 'due', 'tags', 'timeTracked'];
 
 export interface ViewPreferences {
   viewMode: ViewMode;
