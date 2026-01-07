@@ -71,4 +71,30 @@ export const updatePreferencesSchema = z.object({
     .optional(),
   rssSyncInterval: z.number().int().positive().optional(),
   rssSyncTags: z.array(z.string()).optional(),
+  filterPresets: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        selectedTags: z.array(z.string()),
+        selectedContexts: z.array(z.string()),
+        selectedStatus: z.enum(['all', 'completed', 'incomplete']),
+        selectedTimeRange: z.object({
+          type: z.enum([
+            'current-day',
+            'current-week',
+            'current-month',
+            'current-year',
+            'all-time',
+            'custom',
+          ]),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        }),
+        dateMode: z.enum(['relative', 'fixed']),
+        savedDate: z.string().optional(),
+        createdAt: z.string(),
+      }),
+    )
+    .optional(),
 });

@@ -19,6 +19,15 @@ export interface FilterPreferences {
   currentDate: Date;
 }
 
+/** Batch update data for applying presets */
+export interface BatchFilterUpdate {
+  selectedTags?: string[];
+  selectedContexts?: string[];
+  selectedStatus?: CompletionStatus;
+  selectedTimeRange?: TimeRange;
+  currentDate?: Date;
+}
+
 export interface UseFilterPreferencesReturn {
   selectedTags: string[];
   selectedContexts: string[];
@@ -32,6 +41,7 @@ export interface UseFilterPreferencesReturn {
   setSelectedStatus: (status: CompletionStatus) => Promise<{ success: boolean; error?: string }>;
   setSelectedTimeRange: (timeRange: TimeRange) => Promise<{ success: boolean; error?: string }>;
   setCurrentDate: (date: Date) => Promise<{ success: boolean; error?: string }>;
+  batchUpdate: (updates: BatchFilterUpdate) => Promise<{ success: boolean; error?: string }>;
 }
 
 /** Create preference setters bound to updatePreferences */
@@ -47,6 +57,18 @@ function createPreferenceSetters(
     setSelectedTimeRange: async (timeRange: TimeRange) =>
       updatePreferences({ selectedTimeRange: timeRange }),
     setCurrentDate: async (date: Date) => updatePreferences({ currentDate: date.toISOString() }),
+    batchUpdate: async (updates: BatchFilterUpdate) => {
+      const payload: Record<string, unknown> = {};
+      if (updates.selectedTags !== undefined) payload.selectedTags = updates.selectedTags;
+      if (updates.selectedContexts !== undefined)
+        payload.selectedContexts = updates.selectedContexts;
+      if (updates.selectedStatus !== undefined) payload.selectedStatus = updates.selectedStatus;
+      if (updates.selectedTimeRange !== undefined)
+        payload.selectedTimeRange = updates.selectedTimeRange;
+      if (updates.currentDate !== undefined)
+        payload.currentDate = updates.currentDate.toISOString();
+      return updatePreferences(payload);
+    },
   };
 }
 

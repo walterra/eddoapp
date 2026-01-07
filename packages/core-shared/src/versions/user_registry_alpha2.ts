@@ -23,6 +23,41 @@ export interface RssFeedConfig {
 /** Email authentication provider type */
 export type EmailProvider = 'gmail' | 'imap';
 
+/** Date handling mode for filter presets */
+export type FilterPresetDateMode = 'relative' | 'fixed';
+
+/** Time range type for filter presets */
+export type FilterPresetTimeRangeType =
+  | 'current-day'
+  | 'current-week'
+  | 'current-month'
+  | 'current-year'
+  | 'all-time'
+  | 'custom';
+
+/** Time range configuration for filter presets */
+export interface FilterPresetTimeRange {
+  type: FilterPresetTimeRangeType;
+  startDate?: string;
+  endDate?: string;
+}
+
+/** Completion status for filter presets */
+export type FilterPresetStatus = 'all' | 'completed' | 'incomplete';
+
+/** Saved filter preset configuration */
+export interface FilterPreset {
+  id: string;
+  name: string;
+  selectedTags: string[];
+  selectedContexts: string[];
+  selectedStatus: FilterPresetStatus;
+  selectedTimeRange: FilterPresetTimeRange;
+  dateMode: FilterPresetDateMode;
+  savedDate?: string;
+  createdAt: string;
+}
+
 /** Email sync configuration */
 export interface EmailSyncConfig {
   /** Authentication provider (gmail for OAuth, imap for credentials) */
@@ -80,6 +115,8 @@ export interface UserPreferences {
   emailSyncInterval?: number; // Minutes between syncs, defaults to 15
   emailSyncTags?: string[]; // Tags to add to synced emails, defaults to ["source:email", "gtd:next"]
   emailLastSync?: string; // ISO timestamp of last successful sync
+  // Filter Presets
+  filterPresets?: FilterPreset[]; // Saved filter preset configurations
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
