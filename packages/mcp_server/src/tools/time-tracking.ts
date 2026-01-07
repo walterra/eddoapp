@@ -4,6 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import { z } from 'zod';
 
+import { logMcpAudit } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext, ToolResponse } from './types.js';
 
@@ -23,24 +24,33 @@ export const startTimeTrackingParameters = z.object({
 
 export type StartTimeTrackingArgs = z.infer<typeof startTimeTrackingParameters>;
 
-/**
- * Execute handler for startTimeTracking tool
- */
+/** Build success response for start time tracking */
+function buildStartResponse(todo: TodoAlpha3, startedAt: string, executionTime: number): string {
+  return createSuccessResponse({
+    summary: 'Time tracking started',
+    data: {
+      id: todo._id,
+      title: todo.title,
+      started_at: startedAt,
+      active_sessions: Object.keys(todo.active).length,
+    },
+    operation: 'start_time_tracking',
+    executionTime,
+  });
+}
+
+/** Execute handler for startTimeTracking tool */
 export async function executeStartTimeTracking(
   args: StartTimeTrackingArgs,
   context: ToolContext,
   getUserDb: GetUserDb,
 ): Promise<string> {
   const db = getUserDb(context);
-
-  context.log.info('Starting time tracking for user', {
-    userId: context.session?.userId,
-    todoId: args.id,
-  });
+  context.log.info('Starting time tracking', { userId: context.session?.userId, todoId: args.id });
 
   try {
     const todo = (await db.get(args.id)) as TodoAlpha3;
-    context.log.debug('Retrieved todo for time tracking start', { title: todo.title });
+    const originalTodo = { ...todo, active: { ...todo.active } };
 
     const now = new Date().toISOString();
     const startTime = Date.now();
@@ -49,32 +59,22 @@ export async function executeStartTimeTracking(
     await db.insert(todo);
     const executionTime = Date.now() - startTime;
 
-    context.log.info('Time tracking started successfully', { title: todo.title, startTime: now });
-
-    return createSuccessResponse({
-      summary: 'Time tracking started',
-      data: {
-        id: todo._id,
-        title: todo.title,
-        started_at: now,
-        active_sessions: Object.keys(todo.active).length,
-      },
-      operation: 'start_time_tracking',
-      executionTime,
+    await logMcpAudit(context, {
+      action: 'time_tracking_start',
+      entityId: todo._id,
+      before: originalTodo,
+      after: todo,
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    context.log.error('Failed to start time tracking', { id: args.id, error: message });
+    context.log.info('Time tracking started', { title: todo.title, startTime: now });
 
+    return buildStartResponse(todo, now, executionTime);
+  } catch (error) {
+    context.log.error('Failed to start time tracking', { id: args.id, error: String(error) });
     return createErrorResponse({
       summary: 'Failed to start time tracking',
       error,
       operation: 'start_time_tracking',
-      recoverySuggestions: [
-        'Verify the todo ID exists using listTodos',
-        'Check if database connection is active',
-        'Stop any existing time tracking first',
-      ],
+      recoverySuggestions: ['Verify the todo ID exists', 'Check database connection'],
     });
   }
 }
@@ -148,60 +148,70 @@ function createNoActiveSessionResponse(todo: TodoAlpha3): string {
   return JSON.stringify(response);
 }
 
-/**
- * Execute handler for stopTimeTracking tool
- */
+/** Params for processStopSession */
+interface StopSessionParams {
+  todo: TodoAlpha3;
+  originalTodo: TodoAlpha3;
+  sessionStart: string;
+  now: string;
+  db: ReturnType<GetUserDb>;
+  context: ToolContext;
+}
+
+/** Process active session and log audit */
+async function processStopSession(params: StopSessionParams): Promise<number> {
+  const { todo, originalTodo, sessionStart, now, db, context } = params;
+  todo.active[sessionStart] = now;
+  const startTime = Date.now();
+  await db.insert(todo);
+  await logMcpAudit(context, {
+    action: 'time_tracking_stop',
+    entityId: todo._id,
+    before: originalTodo,
+    after: todo,
+  });
+  return Date.now() - startTime;
+}
+
+/** Execute handler for stopTimeTracking tool */
 export async function executeStopTimeTracking(
   args: StopTimeTrackingArgs,
   context: ToolContext,
   getUserDb: GetUserDb,
 ): Promise<string> {
   const db = getUserDb(context);
-
-  context.log.info('Stopping time tracking for user', {
-    userId: context.session?.userId,
-    todoId: args.id,
-  });
+  context.log.info('Stopping time tracking', { userId: context.session?.userId, todoId: args.id });
 
   try {
     const todo = (await db.get(args.id)) as TodoAlpha3;
-    context.log.debug('Retrieved todo for time tracking stop', { title: todo.title });
-
+    const originalTodo = { ...todo, active: { ...todo.active } };
     const now = new Date().toISOString();
-    const operationStartTime = Date.now();
 
     const activeSession = Object.entries(todo.active).find(([_, end]) => end === null);
-
     if (!activeSession) {
       context.log.warn('No active time tracking found', { title: todo.title });
       return createNoActiveSessionResponse(todo);
     }
 
     const sessionStart = activeSession[0];
-    todo.active[sessionStart] = now;
-    await db.insert(todo);
-
-    const executionTime = Date.now() - operationStartTime;
-    context.log.info('Time tracking stopped successfully', {
-      title: todo.title,
-      startTime: sessionStart,
-      endTime: now,
+    const executionTime = await processStopSession({
+      todo,
+      originalTodo,
+      sessionStart,
+      now,
+      db,
+      context,
     });
+    context.log.info('Time tracking stopped', { title: todo.title, sessionStart, endTime: now });
 
     return createStopSuccessResponse(todo, sessionStart, now, executionTime);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    context.log.error('Failed to stop time tracking', { id: args.id, error: message });
-
+    context.log.error('Failed to stop time tracking', { id: args.id, error: String(error) });
     return createErrorResponse({
       summary: 'Failed to stop time tracking',
       error,
       operation: 'stop_time_tracking',
-      recoverySuggestions: [
-        'Verify the todo ID exists using listTodos',
-        "Check if there's active time tracking with getActiveTimeTracking",
-        'Check if database connection is active',
-      ],
+      recoverySuggestions: ['Verify the todo ID exists', 'Check for active time tracking'],
     });
   }
 }

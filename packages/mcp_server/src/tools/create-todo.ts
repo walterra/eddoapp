@@ -4,6 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import { z } from 'zod';
 
+import { logMcpAudit } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { CouchServer, GetUserDb, ToolContext } from './types.js';
 
@@ -166,6 +167,13 @@ export async function executeCreateTodo(
     const startTime = Date.now();
     await db.insert(newTodo as TodoAlpha3);
     const executionTime = Date.now() - startTime;
+
+    // Log audit entry
+    await logMcpAudit(context, {
+      action: 'create',
+      entityId: newTodo._id,
+      after: newTodo,
+    });
 
     return createSuccessResponse({
       summary: 'Todo created successfully',
