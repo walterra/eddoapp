@@ -1,10 +1,10 @@
 /**
  * Subtask count indicator for todo list items
+ * Wraps SubtasksPopover to show children on click
  */
 import { type FC } from 'react';
-import { BiGitBranch } from 'react-icons/bi';
 
-import { useChildTodos } from '../hooks/use_parent_child';
+import { SubtasksPopover } from './subtasks_popover';
 
 interface SubtaskIndicatorProps {
   todoId: string;
@@ -12,32 +12,8 @@ interface SubtaskIndicatorProps {
 
 /**
  * Displays a compact indicator showing subtask count and completion status
- * Only renders if the todo has children
+ * Only renders if the todo has children. Clicking opens a popover with subtask list.
  */
 export const SubtaskIndicator: FC<SubtaskIndicatorProps> = ({ todoId }) => {
-  const { data: children, isLoading } = useChildTodos(todoId);
-
-  if (isLoading || !children || children.length === 0) {
-    return null;
-  }
-
-  const completedCount = children.filter((c) => c.completed !== null).length;
-  const totalCount = children.length;
-  const isAllComplete = completedCount === totalCount;
-
-  return (
-    <span
-      className={`inline-flex items-center gap-0.5 text-xs ${
-        isAllComplete
-          ? 'text-green-600 dark:text-green-400'
-          : 'text-neutral-500 dark:text-neutral-400'
-      }`}
-      title={`${completedCount} of ${totalCount} subtasks completed`}
-    >
-      <BiGitBranch size="1em" />
-      <span>
-        {completedCount}/{totalCount}
-      </span>
-    </span>
-  );
+  return <SubtasksPopover todoId={todoId} />;
 };
