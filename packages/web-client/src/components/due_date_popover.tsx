@@ -4,16 +4,12 @@
 import type { Todo } from '@eddo/core-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { addDays, nextMonday, startOfDay } from 'date-fns';
-import { type FC, useRef, useState } from 'react';
+import { type FC, useState } from 'react';
 import { BiCalendar, BiCalendarEvent, BiCalendarWeek } from 'react-icons/bi';
 
+import { useFloatingPosition } from '../hooks/use_floating_position';
 import { useTodoMutation } from '../hooks/use_todo_mutations';
-import {
-  formatDueDate,
-  PopoverMenu,
-  type PopoverPosition,
-  type QuickAction,
-} from './due_date_popover_shared';
+import { formatDueDate, PopoverMenu, type QuickAction } from './due_date_popover_shared';
 
 interface DueDatePopoverProps {
   todo: Todo;
@@ -47,11 +43,13 @@ export const getQuickActions = (): QuickAction[] => {
 
 export const DueDatePopover: FC<DueDatePopoverProps> = ({ todo, children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const updateTodo = useTodoMutation();
   const queryClient = useQueryClient();
   const actions = getQuickActions();
+  const { refs, floatingStyles } = useFloatingPosition({
+    placement: 'bottom-start',
+    open: isOpen,
+  });
 
   const handleSelect = async (date: Date) => {
     setIsOpen(false);
@@ -66,15 +64,6 @@ export const DueDatePopover: FC<DueDatePopoverProps> = ({ todo, children }) => {
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-      });
-    }
-
     setIsOpen(!isOpen);
   };
 
@@ -83,7 +72,7 @@ export const DueDatePopover: FC<DueDatePopoverProps> = ({ todo, children }) => {
       <button
         className="text-primary-600 hover:bg-primary-100 hover:text-primary-700 dark:text-primary-400 dark:hover:bg-primary-900 dark:hover:text-primary-300 cursor-pointer rounded px-1.5 py-0.5"
         onClick={handleToggle}
-        ref={buttonRef}
+        ref={refs.setReference}
         title="Change due date"
         type="button"
       >
@@ -92,9 +81,10 @@ export const DueDatePopover: FC<DueDatePopoverProps> = ({ todo, children }) => {
       {isOpen && (
         <PopoverMenu
           actions={actions}
+          floatingStyles={floatingStyles}
           onClose={() => setIsOpen(false)}
           onSelect={handleSelect}
-          position={position}
+          setFloatingRef={refs.setFloating}
         />
       )}
     </>

@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import { BiGitBranch } from 'react-icons/bi';
 import { MdCheckBox, MdCheckBoxOutlineBlank } from 'react-icons/md';
 
+import { useFloatingPosition } from '../hooks/use_floating_position';
 import { useChildTodos } from '../hooks/use_parent_child';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { TRANSITION_FAST } from '../styles/interactive';
@@ -15,13 +16,8 @@ interface SubtasksPopoverProps {
   todoId: string;
 }
 
-interface PopoverPosition {
-  top: number;
-  left: number;
-}
-
 const POPOVER_STYLES =
-  'fixed z-50 min-w-64 max-w-md rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
+  'z-50 min-w-64 max-w-md rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
 
 /**
  * Hook for popover dismiss behavior (click outside, escape key)
@@ -77,19 +73,26 @@ const SubtaskItem: FC<SubtaskItemProps> = ({ todo, onClick }) => {
 };
 
 interface SubtasksPopoverMenuProps {
-  position: PopoverPosition;
   subtasks: Todo[];
   onClose: () => void;
   onSubtaskClick: (todo: Todo) => void;
+  floatingStyles: object;
+  setFloatingRef: (node: HTMLDivElement | null) => void;
 }
 
 const SubtasksPopoverMenu: FC<SubtasksPopoverMenuProps> = ({
-  position,
   subtasks,
   onClose,
   onSubtaskClick,
+  floatingStyles,
+  setFloatingRef,
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const setRefs = (node: HTMLDivElement | null) => {
+    menuRef.current = node;
+    setFloatingRef(node);
+  };
 
   usePopoverDismiss(menuRef, onClose);
 
@@ -99,8 +102,8 @@ const SubtasksPopoverMenu: FC<SubtasksPopoverMenuProps> = ({
   return createPortal(
     <div
       className={`${POPOVER_STYLES} ${TRANSITION_FAST}`}
-      ref={menuRef}
-      style={{ top: position.top, left: position.left }}
+      ref={setRefs}
+      style={floatingStyles as React.CSSProperties}
     >
       <div className="mb-2 flex items-center justify-between border-b border-neutral-200 pb-2 dark:border-neutral-600">
         <span className="text-xs font-medium text-neutral-500 uppercase dark:text-neutral-400">
@@ -124,14 +127,14 @@ interface SubtasksTriggerProps {
   completedCount: number;
   totalCount: number;
   onClick: (e: React.MouseEvent) => void;
-  buttonRef: React.RefObject<HTMLButtonElement | null>;
+  setReferenceRef: (node: HTMLButtonElement | null) => void;
 }
 
 const SubtasksTrigger: FC<SubtasksTriggerProps> = ({
   completedCount,
   totalCount,
   onClick,
-  buttonRef,
+  setReferenceRef,
 }) => {
   const isAllComplete = completedCount === totalCount;
 
@@ -143,7 +146,7 @@ const SubtasksTrigger: FC<SubtasksTriggerProps> = ({
           : 'text-neutral-500 dark:text-neutral-400'
       }`}
       onClick={onClick}
-      ref={buttonRef}
+      ref={setReferenceRef}
       title={`${completedCount} of ${totalCount} subtasks completed`}
       type="button"
     >
@@ -157,10 +160,12 @@ const SubtasksTrigger: FC<SubtasksTriggerProps> = ({
 
 export const SubtasksPopover: FC<SubtasksPopoverProps> = ({ todoId }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const { data: children, isLoading } = useChildTodos(todoId);
   const { openTodo } = useTodoFlyoutContext();
+  const { refs, floatingStyles } = useFloatingPosition({
+    placement: 'bottom-start',
+    open: isOpen,
+  });
 
   if (isLoading || !children || children.length === 0) {
     return null;
@@ -171,15 +176,6 @@ export const SubtasksPopover: FC<SubtasksPopoverProps> = ({ todoId }) => {
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-      });
-    }
-
     setIsOpen(!isOpen);
   };
 
@@ -191,16 +187,17 @@ export const SubtasksPopover: FC<SubtasksPopoverProps> = ({ todoId }) => {
   return (
     <>
       <SubtasksTrigger
-        buttonRef={buttonRef}
         completedCount={completedCount}
         onClick={handleToggle}
+        setReferenceRef={refs.setReference}
         totalCount={totalCount}
       />
       {isOpen && (
         <SubtasksPopoverMenu
+          floatingStyles={floatingStyles}
           onClose={() => setIsOpen(false)}
           onSubtaskClick={handleSubtaskClick}
-          position={position}
+          setFloatingRef={refs.setFloating}
           subtasks={children}
         />
       )}

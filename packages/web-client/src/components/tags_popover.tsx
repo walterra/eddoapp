@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type FC, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useFloatingPosition } from '../hooks/use_floating_position';
 import { useTags } from '../hooks/use_tags';
 import { useTodoMutation } from '../hooks/use_todo_mutations';
 import { TRANSITION_FAST } from '../styles/interactive';
@@ -16,20 +17,16 @@ interface TagsPopoverProps {
   todo: Todo;
 }
 
-interface PopoverPosition {
-  top: number;
-  left: number;
-}
-
 const POPOVER_STYLES =
-  'fixed z-50 min-w-64 rounded-lg border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
+  'z-50 min-w-64 rounded-lg border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
 
 interface TagsPopoverMenuProps {
-  position: PopoverPosition;
   tags: string[];
   suggestions: string[];
   onClose: () => void;
   onSave: (tags: string[]) => void;
+  floatingStyles: object;
+  setFloatingRef: (node: HTMLDivElement | null) => void;
 }
 
 /**
@@ -58,14 +55,20 @@ const usePopoverDismiss = (
 };
 
 const TagsPopoverMenu: FC<TagsPopoverMenuProps> = ({
-  position,
   tags,
   suggestions,
   onClose,
   onSave,
+  floatingStyles,
+  setFloatingRef,
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const [localTags, setLocalTags] = useState(tags);
+
+  const setRefs = (node: HTMLDivElement | null) => {
+    menuRef.current = node;
+    setFloatingRef(node);
+  };
 
   usePopoverDismiss(menuRef, () => {
     onSave(localTags);
@@ -75,8 +78,8 @@ const TagsPopoverMenu: FC<TagsPopoverMenuProps> = ({
   return createPortal(
     <div
       className={`${POPOVER_STYLES} ${TRANSITION_FAST}`}
-      ref={menuRef}
-      style={{ top: position.top, left: position.left }}
+      ref={setRefs}
+      style={floatingStyles as React.CSSProperties}
     >
       <InlineTagInput
         autoFocus
@@ -95,14 +98,14 @@ const TagsPopoverMenu: FC<TagsPopoverMenuProps> = ({
 interface TagsTriggerProps {
   tags: string[];
   onClick: (e: React.MouseEvent) => void;
-  buttonRef: React.RefObject<HTMLButtonElement | null>;
+  setReferenceRef: (node: HTMLButtonElement | null) => void;
 }
 
-const TagsTrigger: FC<TagsTriggerProps> = ({ tags, onClick, buttonRef }) => (
+const TagsTrigger: FC<TagsTriggerProps> = ({ tags, onClick, setReferenceRef }) => (
   <button
     className="hover:bg-primary-50 dark:hover:bg-primary-900/30 -mx-1 cursor-pointer rounded px-1 py-0.5"
     onClick={onClick}
-    ref={buttonRef}
+    ref={setReferenceRef}
     title="Edit tags"
     type="button"
   >
@@ -116,11 +119,13 @@ const TagsTrigger: FC<TagsTriggerProps> = ({ tags, onClick, buttonRef }) => (
 
 export const TagsPopover: FC<TagsPopoverProps> = ({ todo }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const updateTodo = useTodoMutation();
   const queryClient = useQueryClient();
   const { allTags } = useTags();
+  const { refs, floatingStyles } = useFloatingPosition({
+    placement: 'bottom-start',
+    open: isOpen,
+  });
 
   const handleSave = async (newTags: string[]) => {
     const tagsChanged =
@@ -134,26 +139,18 @@ export const TagsPopover: FC<TagsPopoverProps> = ({ todo }) => {
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-      });
-    }
-
     setIsOpen(!isOpen);
   };
 
   return (
     <>
-      <TagsTrigger buttonRef={buttonRef} onClick={handleToggle} tags={todo.tags} />
+      <TagsTrigger onClick={handleToggle} setReferenceRef={refs.setReference} tags={todo.tags} />
       {isOpen && (
         <TagsPopoverMenu
+          floatingStyles={floatingStyles}
           onClose={() => setIsOpen(false)}
           onSave={handleSave}
-          position={position}
+          setFloatingRef={refs.setFloating}
           suggestions={allTags}
           tags={todo.tags}
         />
