@@ -7,12 +7,20 @@ import {
   ensureAuditDatabase,
   getAuditService,
   type AuditAction,
+  type Env,
   type TodoAlpha3,
 } from '@eddo/core-server';
 
 import type { ToolContext } from './types.js';
 
-const env = createEnv();
+/** Lazy-loaded env to avoid issues during module import */
+let envCache: Env | null = null;
+function getEnv(): Env {
+  if (!envCache) {
+    envCache = createEnv();
+  }
+  return envCache;
+}
 
 /** Options for logging an audit action from MCP */
 export interface McpAuditOptions {
@@ -36,6 +44,8 @@ export async function logMcpAudit(context: ToolContext, options: McpAuditOptions
   const username = context.session.username;
 
   try {
+    const env = getEnv();
+
     // Ensure audit database exists
     await ensureAuditDatabase(env.COUCHDB_URL, env, username);
 
