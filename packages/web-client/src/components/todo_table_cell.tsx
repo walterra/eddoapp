@@ -3,8 +3,8 @@
  */
 import { type DatabaseError, type Todo, getFormattedDuration } from '@eddo/core-client';
 import { format } from 'date-fns';
-import { Checkbox } from 'flowbite-react';
-import { type FC, type ReactElement } from 'react';
+import { type FC, type ReactElement, useState } from 'react';
+import { BiCheck, BiCheckbox, BiCheckboxChecked, BiSolidCopyAlt } from 'react-icons/bi';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { DueDatePopover } from './due_date_popover';
@@ -83,22 +83,65 @@ const TimeTrackedCell: FC<{ activeDuration: number; widthClass: string }> = ({
   </td>
 );
 
+interface CopyIdButtonProps {
+  todoId: string;
+}
+
+const CopyIdButton: FC<CopyIdButtonProps> = ({ todoId }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyId = async () => {
+    await navigator.clipboard.writeText(todoId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <button
+      className={
+        copied
+          ? 'text-green-500'
+          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
+      }
+      onClick={handleCopyId}
+      title={copied ? 'Copied!' : 'Copy ID'}
+      type="button"
+    >
+      {copied ? <BiCheck size="1em" /> : <BiSolidCopyAlt size="1em" />}
+    </button>
+  );
+};
+
 interface StatusCellProps {
   todo: Todo;
   isUpdating: boolean;
   onToggleCheckbox: () => void;
   widthClass: string;
 }
-const StatusCell: FC<StatusCellProps> = ({ todo, isUpdating, onToggleCheckbox, widthClass }) => (
-  <td className={`px-2 py-1 ${widthClass}`}>
-    <Checkbox
-      checked={todo.completed !== null}
-      disabled={isUpdating}
-      key={`checkbox-${todo._id}-${todo.completed !== null}`}
-      onChange={onToggleCheckbox}
-    />
-  </td>
-);
+const StatusCell: FC<StatusCellProps> = ({ todo, isUpdating, onToggleCheckbox, widthClass }) => {
+  const isCompleted = todo.completed !== null;
+
+  return (
+    <td className={`px-2 py-1 ${widthClass}`}>
+      <div className="flex items-center gap-1">
+        <button
+          className={`${isUpdating ? 'opacity-50' : 'cursor-pointer'} ${
+            isCompleted
+              ? 'text-primary-600 dark:text-primary-500'
+              : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
+          }`}
+          disabled={isUpdating}
+          onClick={onToggleCheckbox}
+          title={isCompleted ? 'Mark incomplete' : 'Mark complete'}
+          type="button"
+        >
+          {isCompleted ? <BiCheckboxChecked size="1.4em" /> : <BiCheckbox size="1.4em" />}
+        </button>
+        <CopyIdButton todoId={todo._id} />
+      </div>
+    </td>
+  );
+};
 
 const CompletedCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
   <td
