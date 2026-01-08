@@ -64,6 +64,7 @@ export default defineConfig({
             'packages/core-server/src/**/*.test.ts',
             'packages/core-client/src/**/*.test.ts',
             'packages/core-instrumentation/src/**/*.test.ts',
+            'packages/mcp_server/src/**/*.test.ts',
             'packages/telegram_bot/src/**/*.test.ts',
             'scripts/backup-interactive.test.ts',
             'scripts/backup-retention.test.ts',

@@ -46,7 +46,12 @@ export {
 } from './versions/migrate_user_registry';
 export { isTodoAlpha1, type TodoAlpha1 } from './versions/todo_alpha1';
 export { isTodoAlpha2, migrateToAlpha2, type TodoAlpha2 } from './versions/todo_alpha2';
-export { isTodoAlpha3, migrateToAlpha3, type TodoAlpha3 } from './versions/todo_alpha3';
+export {
+  isTodoAlpha3,
+  migrateToAlpha3,
+  type TodoAlpha3,
+  type TodoNote,
+} from './versions/todo_alpha3';
 export {
   isUserRegistryEntryAlpha1,
   type UserPermission,

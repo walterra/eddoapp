@@ -6,11 +6,17 @@ import type { FastMCP } from 'fastmcp';
 import type nano from 'nano';
 
 import {
+  addNoteDescription,
+  addNoteParameters,
   createTodoDescription,
   createTodoParameters,
+  deleteNoteDescription,
+  deleteNoteParameters,
   deleteTodoDescription,
   deleteTodoParameters,
+  executeAddNote,
   executeCreateTodo,
+  executeDeleteNote,
   executeDeleteTodo,
   executeGetActiveTimeTracking,
   executeGetBriefingData,
@@ -22,6 +28,7 @@ import {
   executeStartTimeTracking,
   executeStopTimeTracking,
   executeToggleCompletion,
+  executeUpdateNote,
   executeUpdateTodo,
   getActiveTimeTrackingDescription,
   getActiveTimeTrackingParameters,
@@ -43,6 +50,8 @@ import {
   stopTimeTrackingParameters,
   toggleCompletionDescription,
   toggleCompletionParameters,
+  updateNoteDescription,
+  updateNoteParameters,
   updateTodoDescription,
   updateTodoParameters,
 } from './index.js';
@@ -104,6 +113,34 @@ function registerTodoTools(
     parameters: deleteTodoParameters,
     execute: wrapToolExecution('deleteTodo', (args, ctx) =>
       executeDeleteTodo(args, ctx, getUserDb),
+    ),
+  });
+}
+
+/** Registers note management tools */
+function registerNoteTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
+  server.addTool({
+    name: 'addNote',
+    description: addNoteDescription,
+    parameters: addNoteParameters,
+    execute: wrapToolExecution('addNote', (args, ctx) => executeAddNote(args, ctx, getUserDb)),
+  });
+
+  server.addTool({
+    name: 'updateNote',
+    description: updateNoteDescription,
+    parameters: updateNoteParameters,
+    execute: wrapToolExecution('updateNote', (args, ctx) =>
+      executeUpdateNote(args, ctx, getUserDb),
+    ),
+  });
+
+  server.addTool({
+    name: 'deleteNote',
+    description: deleteNoteDescription,
+    parameters: deleteNoteParameters,
+    execute: wrapToolExecution('deleteNote', (args, ctx) =>
+      executeDeleteNote(args, ctx, getUserDb),
     ),
   });
 }
@@ -184,6 +221,7 @@ export function registerTools(
   couch: nano.ServerScope,
 ): void {
   registerTodoTools(server, getUserDb, couch);
+  registerNoteTools(server, getUserDb);
   registerTimeTrackingTools(server, getUserDb);
   registerUtilityTools(server, getUserDb);
 }

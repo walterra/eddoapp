@@ -60,6 +60,7 @@ export {
   type TodoAlpha1,
   type TodoAlpha2,
   type TodoAlpha3,
+  type TodoNote,
   type UpdateUserRegistryEntry,
   type UserContext,
   type UserPermission,

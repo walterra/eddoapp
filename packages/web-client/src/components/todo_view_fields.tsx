@@ -1,9 +1,14 @@
 /**
  * Read-only view components for todo display
  */
-import { type Todo, getActiveDuration, getFormattedDuration } from '@eddo/core-client';
+import {
+  type Todo,
+  type TodoNote,
+  getActiveDuration,
+  getFormattedDuration,
+} from '@eddo/core-client';
 import { type FC } from 'react';
-import { BiCheckCircle, BiCircle, BiSubdirectoryRight } from 'react-icons/bi';
+import { BiCheckCircle, BiCircle, BiNote, BiSubdirectoryRight } from 'react-icons/bi';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -187,6 +192,69 @@ const ParentView: FC<{ parentId: string | null | undefined }> = ({ parentId }) =
   );
 };
 
+/** Formats a date string for display */
+function formatNoteDate(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+interface NoteItemProps {
+  note: TodoNote;
+}
+
+const NoteItem: FC<NoteItemProps> = ({ note }) => (
+  <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-900/50">
+    <div className="mb-2 flex items-center justify-between">
+      <span className="text-xs text-neutral-500 dark:text-neutral-400">
+        {formatNoteDate(note.createdAt)}
+      </span>
+      {note.updatedAt && (
+        <span className="text-xs text-neutral-400 italic dark:text-neutral-500">
+          edited {formatNoteDate(note.updatedAt)}
+        </span>
+      )}
+    </div>
+    <div className={`${MARKDOWN_PROSE}`}>
+      <Markdown remarkPlugins={[remarkGfm]}>{note.content}</Markdown>
+    </div>
+  </div>
+);
+
+interface NotesViewProps {
+  notes: TodoNote[] | undefined;
+}
+
+const NotesView: FC<NotesViewProps> = ({ notes }) => {
+  if (!notes || notes.length === 0) {
+    return null;
+  }
+
+  // Sort notes by createdAt descending (newest first)
+  const sortedNotes = [...notes].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  return (
+    <div>
+      <div className={`${LABEL_CLASS} flex items-center gap-1.5`}>
+        <BiNote size="1.1em" />
+        Notes ({notes.length})
+      </div>
+      <div className="mt-2 space-y-2">
+        {sortedNotes.map((note) => (
+          <NoteItem key={note.id} note={note} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const SubtasksView: FC<{ todoId: string }> = ({ todoId }) => {
   const { data: children, isLoading } = useChildTodos(todoId);
 
@@ -246,6 +314,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
 
     <TagsView tags={todo.tags} />
     <SubtasksView todoId={todo._id} />
+    <NotesView notes={todo.notes} />
     <LinkView link={todo.link} />
     <ExternalIdView externalId={todo.externalId ?? null} />
     <TimeTrackingView active={todo.active} />
