@@ -47,7 +47,7 @@ function getErrorMessage(error: unknown): string | null {
  * Fetches initial audit log entries and subscribes to real-time updates.
  */
 export function useAuditLog(options: UseAuditLogOptions = {}) {
-  const { enabled = true, initialLimit = 50 } = options;
+  const { enabled = true, initialLimit = 20 } = options;
   const { authToken } = useAuth();
   const queryClient = useQueryClient();
   const queryEnabled = useQueryEnabled(enabled);
@@ -59,6 +59,7 @@ export function useAuditLog(options: UseAuditLogOptions = {}) {
     staleTime: 1000 * 60,
   });
 
+  // Sync initial data to stream cache for SSE updates to merge with
   useEffect(() => {
     if (data?.entries) {
       queryClient.setQueryData<AuditEntry[]>(AUDIT_LOG_QUERY_KEY, data.entries);
@@ -66,7 +67,17 @@ export function useAuditLog(options: UseAuditLogOptions = {}) {
   }, [data, queryClient]);
 
   const streamState = useAuditLogStream({ enabled: queryEnabled });
-  const entries = queryClient.getQueryData<AuditEntry[]>(AUDIT_LOG_QUERY_KEY) || [];
+
+  // Subscribe to stream cache reactively
+  const streamEntries = useQuery<AuditEntry[]>({
+    queryKey: AUDIT_LOG_QUERY_KEY,
+    queryFn: () => [],
+    enabled: false, // Never fetch, only read from cache
+    staleTime: Infinity,
+  });
+
+  // Use stream cache if populated, otherwise fall back to initial data
+  const entries = streamEntries.data ?? data?.entries ?? [];
   const refresh = useCallback(() => refetch(), [refetch]);
 
   return {

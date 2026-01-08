@@ -12,6 +12,9 @@ import { useAuditLog } from '../hooks/use_audit_log_data';
 /** Width of the sidebar when expanded */
 const SIDEBAR_WIDTH = 280;
 
+/** Maximum entries displayed in the sidebar */
+const MAX_DISPLAY_ENTRIES = 20;
+
 /** Action icons and labels */
 const ACTION_CONFIG: Record<AuditAction, { icon: string; label: string; color: string }> = {
   create: { icon: '+', label: 'Created', color: 'text-green-500' },
@@ -58,6 +61,28 @@ function getEntryTitle(entry: AuditLogAlpha1): string {
   const before = entry.before as { title?: string } | undefined;
   return after?.title || before?.title || entry.entityId.slice(0, 16) + '...';
 }
+
+/** Skeleton loader for audit entries */
+const AuditEntrySkeleton: FC = () => (
+  <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-700">
+    <div className="flex items-start gap-2">
+      <div className="h-5 w-5 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 h-4 w-3/4 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
+      </div>
+    </div>
+  </div>
+);
+
+/** Loading skeleton for initial load */
+const LoadingSkeleton: FC = () => (
+  <>
+    {Array.from({ length: 5 }).map((_, i) => (
+      <AuditEntrySkeleton key={i} />
+    ))}
+  </>
+);
 
 interface AuditEntryItemProps {
   entry: AuditLogAlpha1;
@@ -195,9 +220,7 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="p-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
-            Loading...
-          </div>
+          <LoadingSkeleton />
         ) : filteredEntries.length === 0 ? (
           <div className="p-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
             {sourceFilter === 'all' ? 'No activity yet' : `No ${sourceFilter} activity`}
@@ -206,6 +229,12 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
           filteredEntries.map((entry) => <AuditEntryItem entry={entry} key={entry._id} />)
         )}
       </div>
+
+      {!isLoading && filteredEntries.length > 0 && (
+        <div className="border-t border-neutral-200 px-3 py-2 text-center text-xs text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+          Showing last {Math.min(filteredEntries.length, MAX_DISPLAY_ENTRIES)} activities
+        </div>
+      )}
     </aside>
   );
 };
