@@ -68,6 +68,7 @@ async function processAllIssues(
       githubClient,
       forceResync: ctx.forceResync,
       logger: ctx.logger,
+      username: ctx.user.username,
     });
     incrementStat(stats, result);
   }

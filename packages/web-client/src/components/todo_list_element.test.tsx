@@ -18,6 +18,13 @@ vi.mock('./todo_flyout', () => ({
     ) : null,
 }));
 
+// Mock useAuditLog to avoid AuthProvider dependency
+vi.mock('../hooks/use_audit_log', () => ({
+  useAuditLog: () => ({
+    logAudit: vi.fn(),
+  }),
+}));
+
 vi.mock('./tag_display', () => ({
   TagDisplay: ({ tags }: { tags: string[] }) => (
     <div data-testid="tag-display">

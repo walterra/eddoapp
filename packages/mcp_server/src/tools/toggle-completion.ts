@@ -5,6 +5,7 @@ import type { TodoAlpha3 } from '@eddo/core-server';
 import { getRepeatTodo } from '@eddo/core-server';
 import { z } from 'zod';
 
+import { logMcpAudit } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -85,29 +86,36 @@ async function markCompleted(
   return null;
 }
 
-/**
- * Saves the todo and returns the success response
- */
-async function saveAndRespond(
-  todo: TodoAlpha3,
-  db: ReturnType<GetUserDb>,
-  context: ToolContext,
-  status: string,
-): Promise<string> {
+/** Parameters for saveAndRespond */
+interface SaveAndRespondParams {
+  todo: TodoAlpha3;
+  originalTodo: TodoAlpha3;
+  db: ReturnType<GetUserDb>;
+  context: ToolContext;
+  status: string;
+}
+
+/** Saves the todo and returns the success response */
+async function saveAndRespond(params: SaveAndRespondParams): Promise<string> {
+  const { todo, originalTodo, db, context, status } = params;
   const startTime = Date.now();
   await db.insert(todo);
   const executionTime = Date.now() - startTime;
+
+  // Log audit entry
+  const action = status === 'completed' ? 'complete' : 'uncomplete';
+  await logMcpAudit(context, {
+    action,
+    entityId: todo._id,
+    before: originalTodo,
+    after: todo,
+  });
 
   context.log.info('Todo completion toggled successfully', { title: todo.title, status });
 
   return createSuccessResponse({
     summary: `Todo ${status} successfully`,
-    data: {
-      id: todo._id,
-      title: todo.title,
-      status,
-      completed_at: todo.completed,
-    },
+    data: { id: todo._id, title: todo.title, status, completed_at: todo.completed },
     operation: 'toggle_completion',
     executionTime,
   });
@@ -131,6 +139,7 @@ export async function executeToggleCompletion(
 
   try {
     const todo = (await db.get(args.id)) as TodoAlpha3;
+    const originalTodo = { ...todo }; // Clone for audit
     context.log.debug('Retrieved todo for completion toggle', {
       title: todo.title,
       currentCompleted: todo.completed,
@@ -145,7 +154,7 @@ export async function executeToggleCompletion(
     }
 
     const status = args.completed ? 'completed' : 'uncompleted';
-    return saveAndRespond(todo, db, context, status);
+    return saveAndRespond({ todo, originalTodo, db, context, status });
   } catch (error) {
     return createErrorResponse({
       summary: 'Failed to toggle todo completion',

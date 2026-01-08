@@ -10,11 +10,11 @@ import { type FC, memo, useMemo, useState } from 'react';
 import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';
-import { useTodoFlyout } from '../hooks/use_todo_flyout';
 import {
-  useToggleCompletionMutation,
-  useToggleTimeTrackingMutation,
-} from '../hooks/use_todo_mutations';
+  useAuditedToggleCompletionMutation,
+  useAuditedToggleTimeTrackingMutation,
+} from '../hooks/use_audited_todo_mutations';
+import { useTodoFlyout } from '../hooks/use_todo_flyout';
 import {
   CARD_INTERACTIVE,
   FOCUS_RING,
@@ -165,8 +165,8 @@ const ActionButtons: FC<ActionButtonsProps> = (props) => {
 
 /** Hook for todo list element state */
 const useTodoListState = (todo: Todo, active: boolean, activeDate: string) => {
-  const toggleCompletion = useToggleCompletionMutation();
-  const toggleTimeTracking = useToggleTimeTrackingMutation();
+  const toggleCompletion = useAuditedToggleCompletionMutation();
+  const toggleTimeTracking = useAuditedToggleTimeTrackingMutation();
   const { counter: activeCounter } = useActiveTimer(active);
   const flyout = useTodoFlyout(todo);
   const [error, setError] = useState<DatabaseError | null>(null);

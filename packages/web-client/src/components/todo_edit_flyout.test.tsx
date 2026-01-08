@@ -9,6 +9,13 @@ import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
 import { createTestTodo, populateTestDatabase, renderWithPouchDb, testTodos } from '../test-utils';
 import { TodoEditFlyout } from './todo_edit_flyout';
 
+// Mock useAuditLog to avoid AuthProvider dependency
+vi.mock('../hooks/use_audit_log', () => ({
+  useAuditLog: () => ({
+    logAudit: vi.fn(),
+  }),
+}));
+
 // Mock child components to avoid complex dependencies
 vi.mock('./tag_input', () => ({
   TagInput: ({

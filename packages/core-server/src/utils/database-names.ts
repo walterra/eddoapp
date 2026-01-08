@@ -126,3 +126,35 @@ export function getUserDatabaseConfig(env: Env, username: string) {
     fullUrl: `${env.COUCHDB_URL}/${dbName}`,
   };
 }
+
+/**
+ * Get the audit log database name for a user
+ */
+export function getAuditDatabaseName(env: Env, username: string): string {
+  const prefix = getDatabasePrefix(env);
+  const sanitizedUsername = sanitizeUsername(username);
+  return `${prefix}_audit_${sanitizedUsername}`;
+}
+
+/**
+ * Check if a database name is an audit database
+ */
+export function isAuditDatabase(databaseName: string, env: Env): boolean {
+  const productionPrefix = env.DATABASE_PREFIX;
+  const testPrefix = env.DATABASE_TEST_PREFIX;
+
+  const pattern = new RegExp(`^(?:${productionPrefix}|${testPrefix})_audit_.+$`);
+  return pattern.test(databaseName);
+}
+
+/**
+ * Get database configuration for user's audit database
+ */
+export function getAuditDatabaseConfig(env: Env, username: string) {
+  const dbName = getAuditDatabaseName(env, username);
+  return {
+    url: env.COUCHDB_URL,
+    dbName,
+    fullUrl: `${env.COUCHDB_URL}/${dbName}`,
+  };
+}

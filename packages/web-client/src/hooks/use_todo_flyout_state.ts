@@ -4,7 +4,10 @@
 import { type DatabaseError, type Todo } from '@eddo/core-client';
 import { useCallback, useEffect, useState } from 'react';
 
-import { useDeleteTodoMutation, useSaveTodoMutation } from './use_todo_mutations';
+import {
+  useAuditedDeleteTodoMutation,
+  useAuditedSaveTodoMutation,
+} from './use_audited_todo_mutations';
 
 type FlyoutMode = 'view' | 'edit';
 
@@ -32,8 +35,8 @@ const hasChanges = (original: Todo, edited: Todo): boolean => {
 };
 
 interface MutationHandlerDeps {
-  saveTodoMutation: ReturnType<typeof useSaveTodoMutation>;
-  deleteTodoMutation: ReturnType<typeof useDeleteTodoMutation>;
+  saveTodoMutation: ReturnType<typeof useAuditedSaveTodoMutation>;
+  deleteTodoMutation: ReturnType<typeof useAuditedDeleteTodoMutation>;
   todo: Todo;
   editedTodo: Todo;
   setMode: React.Dispatch<React.SetStateAction<FlyoutMode>>;
@@ -188,8 +191,8 @@ export const useTodoFlyoutState = (
   show: boolean,
   onClose: () => void,
 ): TodoFlyoutState => {
-  const saveTodoMutation = useSaveTodoMutation();
-  const deleteTodoMutation = useDeleteTodoMutation();
+  const saveTodoMutation = useAuditedSaveTodoMutation();
+  const deleteTodoMutation = useAuditedDeleteTodoMutation();
   const state = useFlyoutStateInit(todo, show);
 
   const mutationHandlers = useMutationHandlers({

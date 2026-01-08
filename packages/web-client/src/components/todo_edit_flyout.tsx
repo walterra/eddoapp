@@ -5,8 +5,11 @@ import { type DatabaseError, type Todo } from '@eddo/core-client';
 import { Button, Drawer, DrawerHeader, DrawerItems, Label } from 'flowbite-react';
 import { type FC, useEffect, useState } from 'react';
 
+import {
+  useAuditedDeleteTodoMutation,
+  useAuditedSaveTodoMutation,
+} from '../hooks/use_audited_todo_mutations';
 import { useTags } from '../hooks/use_tags';
-import { useDeleteTodoMutation, useSaveTodoMutation } from '../hooks/use_todo_mutations';
 import { ErrorDisplay } from './todo_edit_error';
 import {
   CompletedField,
@@ -87,8 +90,8 @@ const FlyoutActions: FC<FlyoutActionsProps> = ({
 
 /** Hook for todo edit flyout state and handlers */
 const useTodoEditState = (todo: Todo, onClose: () => void) => {
-  const saveTodoMutation = useSaveTodoMutation();
-  const deleteTodoMutation = useDeleteTodoMutation();
+  const saveTodoMutation = useAuditedSaveTodoMutation();
+  const deleteTodoMutation = useAuditedDeleteTodoMutation();
   const [editedTodo, setEditedTodo] = useState(todo);
   useEffect(() => setEditedTodo(todo), [todo]);
 

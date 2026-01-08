@@ -4,6 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import type nano from 'nano';
 
+import { logSyncAudit } from '../utils/sync-audit.js';
 import type { RssClient, SyncLogger } from './client.js';
 import type { RssItem } from './types.js';
 
@@ -13,6 +14,7 @@ export interface ProcessItemConfig {
   tags: string[];
   rssClient: RssClient;
   logger: SyncLogger;
+  username: string;
 }
 
 export type ProcessItemResult = 'created' | 'updated' | 'skipped';
@@ -57,7 +59,7 @@ function needsUpdate(existingTodo: TodoAlpha3, newTodo: Omit<TodoAlpha3, '_rev'>
  * Process a single RSS item (create or update todo)
  */
 export async function processItem(config: ProcessItemConfig): Promise<ProcessItemResult> {
-  const { db, item, tags, rssClient, logger } = config;
+  const { db, item, tags, rssClient, logger, username } = config;
   const externalId = rssClient.generateExternalId(item);
 
   // Check if todo already exists
@@ -73,6 +75,16 @@ export async function processItem(config: ProcessItemConfig): Promise<ProcessIte
         due: newTodo.due,
       };
       await db.insert(updatedTodo);
+
+      await logSyncAudit({
+        username,
+        source: 'rss-sync',
+        action: 'update',
+        entityId: updatedTodo._id,
+        before: existingTodo,
+        after: updatedTodo,
+        metadata: { feedUrl: item.feedUrl, itemTitle: item.title },
+      });
 
       logger.debug('Updated todo from RSS item', {
         externalId,
@@ -92,6 +104,15 @@ export async function processItem(config: ProcessItemConfig): Promise<ProcessIte
 
   // Create new todo
   await db.insert(newTodo as TodoAlpha3);
+
+  await logSyncAudit({
+    username,
+    source: 'rss-sync',
+    action: 'create',
+    entityId: newTodo._id,
+    after: newTodo,
+    metadata: { feedUrl: item.feedUrl, itemTitle: item.title },
+  });
 
   logger.debug('Created todo from RSS item', {
     externalId,

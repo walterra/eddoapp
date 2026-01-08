@@ -30,6 +30,15 @@ export {
 } from './types/user-registry';
 
 // API versions
+export {
+  createAuditLogEntry,
+  isAuditLogAlpha1,
+  type AuditAction,
+  type AuditEntityType,
+  type AuditLogAlpha1,
+  type AuditSource,
+  type NewAuditLogEntry,
+} from './versions/audit_log_alpha1';
 export { isLatestVersion, migrateTodo } from './versions/migrate';
 export {
   isLatestUserRegistryVersion,

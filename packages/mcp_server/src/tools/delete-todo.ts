@@ -4,6 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import { z } from 'zod';
 
+import { logMcpAudit } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -41,6 +42,13 @@ export async function executeDeleteTodo(
     const startTime = Date.now();
     await db.destroy(todo._id, todo._rev!);
     const executionTime = Date.now() - startTime;
+
+    // Log audit entry
+    await logMcpAudit(context, {
+      action: 'delete',
+      entityId: todo._id,
+      before: todo,
+    });
 
     context.log.info('Todo deleted successfully', { title: todo.title });
 
