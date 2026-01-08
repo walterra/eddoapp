@@ -11,6 +11,7 @@ export {
   decodeJwtPayload,
   generateStableKey,
   getActiveDuration,
+  getActiveDurationInRange,
   getActiveRecordForActivities,
   getActiveRecordForTodos,
   getFormattedDuration,

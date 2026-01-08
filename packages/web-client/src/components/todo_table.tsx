@@ -2,7 +2,6 @@
  * Table view for todos grouped by context
  */
 import { type Activity, type DatabaseError, type Todo } from '@eddo/core-client';
-import { format } from 'date-fns';
 import { Spinner } from 'flowbite-react';
 import { type FC, useMemo } from 'react';
 
@@ -14,7 +13,7 @@ import { EmptyState } from './empty_state';
 import { FormattedMessage } from './formatted_message';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
-import { calculateDateRange } from './todo_board_helpers';
+import { calculateDateRange, type DateRange } from './todo_board_helpers';
 import { useDbInitialization, useTodoBoardData } from './todo_board_state';
 import {
   calculateDurationByContext,
@@ -41,6 +40,7 @@ interface TableDataResult {
   displayError: DatabaseError | null;
   hasNoTodos: boolean;
   hasActiveFilters: boolean;
+  dateRange: DateRange;
 }
 
 const useTableData = (
@@ -88,6 +88,7 @@ const useTableData = (
     displayError: error || (boardData.queryError as DatabaseError | null),
     hasNoTodos,
     hasActiveFilters,
+    dateRange,
   };
 };
 
@@ -133,7 +134,7 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
         />
       ) : (
         <TodoTableContent
-          currentDate={props.currentDate}
+          dateRange={data.dateRange}
           durationByContext={data.durationByContext}
           groupedByContext={data.groupedByContext}
           selectedColumns={props.selectedColumns}
@@ -160,7 +161,7 @@ interface TodoTableContentProps {
   durationByContext: Record<string, string>;
   selectedColumns: string[];
   timeTrackingActive: string[];
-  currentDate: Date;
+  dateRange: DateRange;
 }
 
 const TodoTableContent: FC<TodoTableContentProps> = ({
@@ -168,14 +169,14 @@ const TodoTableContent: FC<TodoTableContentProps> = ({
   durationByContext,
   selectedColumns,
   timeTrackingActive,
-  currentDate,
+  dateRange,
 }) => (
   <div className="overflow-x-auto py-2">
     {groupedByContext.map(([context, contextTodos]) => (
       <ContextGroup
         context={context}
         contextTodos={contextTodos}
-        currentDate={currentDate}
+        dateRange={dateRange}
         durationByContext={durationByContext}
         key={context}
         selectedColumns={selectedColumns}
@@ -191,7 +192,7 @@ interface ContextGroupProps {
   durationByContext: Record<string, string>;
   selectedColumns: string[];
   timeTrackingActive: string[];
-  currentDate: Date;
+  dateRange: DateRange;
 }
 
 const ContextGroup: FC<ContextGroupProps> = ({
@@ -200,7 +201,7 @@ const ContextGroup: FC<ContextGroupProps> = ({
   durationByContext,
   selectedColumns,
   timeTrackingActive,
-  currentDate,
+  dateRange,
 }) => (
   <div className="mb-4">
     <ContextHeader context={context} duration={durationByContext[context]} />
@@ -210,7 +211,7 @@ const ContextGroup: FC<ContextGroupProps> = ({
         <tbody className="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
           {contextTodos.map((todo) => (
             <TodoRow
-              activeDate={format(currentDate, 'yyyy-MM-dd')}
+              dateRange={dateRange}
               key={`${todo._id}-${todo._rev}`}
               selectedColumns={selectedColumns}
               timeTrackingActive={timeTrackingActive.length > 0}
