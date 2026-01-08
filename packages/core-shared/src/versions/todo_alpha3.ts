@@ -4,10 +4,27 @@ import { type TodoAlpha2 } from './todo_alpha2';
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
+/**
+ * Represents a note entry attached to a todo.
+ * Notes function as a work diary for tracking progress and decisions.
+ */
+export interface TodoNote {
+  /** Unique identifier (UUID) */
+  id: string;
+  /** Note content (supports markdown) */
+  content: string;
+  /** ISO timestamp when note was created */
+  createdAt: string;
+  /** ISO timestamp when note was last edited */
+  updatedAt?: string;
+}
+
 export interface TodoAlpha3 extends Omit<TodoAlpha2, 'version'> {
   externalId?: string | null;
   link: string | null;
   parentId?: string | null;
+  /** Optional array of notes attached to this todo */
+  notes?: TodoNote[];
   version: 'alpha3';
 }
 

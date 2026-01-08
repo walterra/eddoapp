@@ -101,3 +101,19 @@ export {
   getRecapDataParameters,
   type GetRecapDataArgs,
 } from './get-recap-data.js';
+
+// Note Tools
+export {
+  addNoteDescription,
+  addNoteParameters,
+  deleteNoteDescription,
+  deleteNoteParameters,
+  executeAddNote,
+  executeDeleteNote,
+  executeUpdateNote,
+  updateNoteDescription,
+  updateNoteParameters,
+  type AddNoteArgs,
+  type DeleteNoteArgs,
+  type UpdateNoteArgs,
+} from './note-tools.js';
