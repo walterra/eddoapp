@@ -19,6 +19,13 @@ vi.mock('../hooks/use_tags', () => ({
   }),
 }));
 
+// Mock useAuditLog to avoid AuthProvider dependency
+vi.mock('../hooks/use_audit_log', () => ({
+  useAuditLog: () => ({
+    logAudit: vi.fn(),
+  }),
+}));
+
 // Mock the InlineTagInput to simplify testing
 vi.mock('./tags_popover_input', () => ({
   InlineTagInput: ({

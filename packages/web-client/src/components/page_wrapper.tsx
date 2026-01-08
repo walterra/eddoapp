@@ -105,8 +105,8 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <div className="flex w-full flex-1 overflow-hidden">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1">
         <main className="flex-1 overflow-auto px-4 pt-4 pb-3" role="main">
           <Header
             databaseName={databaseName}
@@ -118,6 +118,11 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
             showAuditSidebar={showAuditSidebar}
           />
           {children}
+          <footer className="mt-8 pb-3">
+            <a href="https://eddoapp.com" rel="noreferrer" target="_BLANK">
+              eddoapp.com
+            </a>
+          </footer>
         </main>
         {isAuthenticated && showAuditSidebar && (
           <AuditSidebar
@@ -126,11 +131,6 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
           />
         )}
       </div>
-      <footer className="mx-3 mt-auto">
-        <a href="https://eddoapp.com" rel="noreferrer" target="_BLANK">
-          eddoapp.com
-        </a>
-      </footer>
     </div>
   );
 };

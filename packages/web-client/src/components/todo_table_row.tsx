@@ -6,11 +6,11 @@ import { type FC, Fragment, memo, useMemo, useState } from 'react';
 import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';
-import { useTodoFlyout } from '../hooks/use_todo_flyout';
 import {
-  useToggleCompletionMutation,
-  useToggleTimeTrackingMutation,
-} from '../hooks/use_todo_mutations';
+  useAuditedToggleCompletionMutation,
+  useAuditedToggleTimeTrackingMutation,
+} from '../hooks/use_audited_todo_mutations';
+import { useTodoFlyout } from '../hooks/use_todo_flyout';
 import { ICON_BUTTON } from '../styles/interactive';
 import { TodoFlyout } from './todo_flyout';
 import { TodoCell } from './todo_table_cell';
@@ -107,8 +107,8 @@ const RowCells: FC<RowCellsProps> = ({
 
 /** Hook for todo row state and handlers */
 const useTodoRowState = (todo: Todo, activeDate: string) => {
-  const toggleCompletion = useToggleCompletionMutation();
-  const toggleTimeTracking = useToggleTimeTrackingMutation();
+  const toggleCompletion = useAuditedToggleCompletionMutation();
+  const toggleTimeTracking = useAuditedToggleTimeTrackingMutation();
   const flyout = useTodoFlyout(todo);
   const [error, setError] = useState<DatabaseError | null>(null);
 

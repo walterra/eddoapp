@@ -6,9 +6,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type FC, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useAuditedTodoMutation } from '../hooks/use_audited_todo_mutations';
 import { useFloatingPosition } from '../hooks/use_floating_position';
 import { useTags } from '../hooks/use_tags';
-import { useTodoMutation } from '../hooks/use_todo_mutations';
 import { TRANSITION_FAST } from '../styles/interactive';
 import { TagDisplay } from './tag_display';
 import { InlineTagInput } from './tags_popover_input';
@@ -119,7 +119,7 @@ const TagsTrigger: FC<TagsTriggerProps> = ({ tags, onClick, setReferenceRef }) =
 
 export const TagsPopover: FC<TagsPopoverProps> = ({ todo }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const updateTodo = useTodoMutation();
+  const updateTodo = useAuditedTodoMutation();
   const queryClient = useQueryClient();
   const { allTags } = useTags();
   const { refs, floatingStyles } = useFloatingPosition({
@@ -132,7 +132,7 @@ export const TagsPopover: FC<TagsPopoverProps> = ({ todo }) => {
       newTags.length !== todo.tags.length || newTags.some((tag, i) => tag !== todo.tags[i]);
 
     if (tagsChanged) {
-      await updateTodo.mutateAsync({ ...todo, tags: newTags });
+      await updateTodo.mutateAsync({ todo: { ...todo, tags: newTags }, originalTodo: todo });
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     }
   };

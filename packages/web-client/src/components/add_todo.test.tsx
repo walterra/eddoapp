@@ -39,6 +39,13 @@ vi.mock('./database_error_message', () => ({
   ),
 }));
 
+// Mock useAuditLog to avoid AuthProvider dependency
+vi.mock('../hooks/use_audit_log', () => ({
+  useAuditLog: () => ({
+    logAudit: vi.fn(),
+  }),
+}));
+
 vi.mock('./tag_filter', () => ({
   TagFilter: ({
     onTagsChange,

@@ -7,8 +7,8 @@ import { addDays, nextMonday, startOfDay } from 'date-fns';
 import { type FC, useState } from 'react';
 import { BiCalendar, BiCalendarEvent, BiCalendarWeek } from 'react-icons/bi';
 
+import { useAuditedTodoMutation } from '../hooks/use_audited_todo_mutations';
 import { useFloatingPosition } from '../hooks/use_floating_position';
-import { useTodoMutation } from '../hooks/use_todo_mutations';
 import { formatDueDate, PopoverMenu, type QuickAction } from './due_date_popover_shared';
 
 interface DueDatePopoverProps {
@@ -43,7 +43,7 @@ export const getQuickActions = (): QuickAction[] => {
 
 export const DueDatePopover: FC<DueDatePopoverProps> = ({ todo, children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const updateTodo = useTodoMutation();
+  const updateTodo = useAuditedTodoMutation();
   const queryClient = useQueryClient();
   const actions = getQuickActions();
   const { refs, floatingStyles } = useFloatingPosition({
@@ -56,7 +56,7 @@ export const DueDatePopover: FC<DueDatePopoverProps> = ({ todo, children }) => {
     const newDue = formatDueDate(date);
 
     if (newDue !== todo.due) {
-      await updateTodo.mutateAsync({ ...todo, due: newDue });
+      await updateTodo.mutateAsync({ todo: { ...todo, due: newDue }, originalTodo: todo });
       // Invalidate to refetch with correct date filtering
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     }

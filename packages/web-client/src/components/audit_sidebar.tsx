@@ -3,8 +3,9 @@
  * Shows recent todo operations with real-time updates via SSE.
  */
 import { type FC, useState } from 'react';
+import { BiCloud, BiEnvelope, BiGitBranch, BiGlobe, BiRss, BiTerminal } from 'react-icons/bi';
 
-import type { AuditAction, AuditLogAlpha1 } from '@eddo/core-shared';
+import type { AuditAction, AuditLogAlpha1, AuditSource } from '@eddo/core-shared';
 
 import { useAuditLog } from '../hooks/use_audit_log_data';
 
@@ -20,6 +21,16 @@ const ACTION_CONFIG: Record<AuditAction, { icon: string; label: string; color: s
   uncomplete: { icon: '○', label: 'Reopened', color: 'text-yellow-500' },
   time_tracking_start: { icon: '▶', label: 'Started', color: 'text-purple-500' },
   time_tracking_stop: { icon: '■', label: 'Stopped', color: 'text-purple-600' },
+};
+
+/** Source icons and labels */
+const SOURCE_CONFIG: Record<AuditSource, { icon: FC<{ size: string }>; label: string }> = {
+  web: { icon: BiGlobe, label: 'Web' },
+  mcp: { icon: BiTerminal, label: 'MCP' },
+  telegram: { icon: BiCloud, label: 'Telegram' },
+  'github-sync': { icon: BiGitBranch, label: 'GitHub' },
+  'rss-sync': { icon: BiRss, label: 'RSS' },
+  'email-sync': { icon: BiEnvelope, label: 'Email' },
 };
 
 /** Format relative time (e.g., "2 min ago") */
@@ -53,19 +64,25 @@ interface AuditEntryItemProps {
 }
 
 const AuditEntryItem: FC<AuditEntryItemProps> = ({ entry }) => {
-  const config = ACTION_CONFIG[entry.action];
+  const actionConfig = ACTION_CONFIG[entry.action];
+  const sourceConfig = SOURCE_CONFIG[entry.source];
+  const SourceIcon = sourceConfig.icon;
   const title = getEntryTitle(entry);
 
   return (
     <div className="border-b border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
       <div className="flex items-start gap-2">
-        <span className={`font-mono text-lg ${config.color}`}>{config.icon}</span>
+        <span className={`font-mono text-lg ${actionConfig.color}`}>{actionConfig.icon}</span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
             {title}
           </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {config.label} · {formatRelativeTime(entry.timestamp)}
+          <p className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+            {actionConfig.label}
+            <span className="mx-0.5">·</span>
+            <SourceIcon size="0.9em" />
+            <span className="mx-0.5">·</span>
+            {formatRelativeTime(entry.timestamp)}
           </p>
         </div>
       </div>
@@ -111,6 +128,39 @@ const CollapsedToggle: FC<CollapsedToggleProps> = ({ onClick }) => (
   </button>
 );
 
+/** Source filter options */
+const SOURCE_FILTERS: { source: AuditSource | 'all'; label: string }[] = [
+  { source: 'all', label: 'All' },
+  { source: 'web', label: 'Web' },
+  { source: 'mcp', label: 'MCP' },
+  { source: 'github-sync', label: 'GitHub' },
+  { source: 'rss-sync', label: 'RSS' },
+  { source: 'email-sync', label: 'Email' },
+];
+
+interface SourceFilterProps {
+  activeFilter: AuditSource | 'all';
+  onFilterChange: (filter: AuditSource | 'all') => void;
+}
+
+const SourceFilter: FC<SourceFilterProps> = ({ activeFilter, onFilterChange }) => (
+  <div className="flex flex-wrap gap-1 border-b border-neutral-200 px-3 py-2 dark:border-neutral-700">
+    {SOURCE_FILTERS.map(({ source, label }) => (
+      <button
+        className={`rounded px-2 py-0.5 text-xs ${
+          activeFilter === source
+            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300'
+            : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700'
+        }`}
+        key={source}
+        onClick={() => onFilterChange(source)}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+);
+
 export interface AuditSidebarProps {
   /** Whether sidebar is visible */
   isOpen?: boolean;
@@ -120,7 +170,11 @@ export interface AuditSidebarProps {
 
 export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle }) => {
   const [isExpanded, setIsExpanded] = useState(isOpen);
+  const [sourceFilter, setSourceFilter] = useState<AuditSource | 'all'>('all');
   const { entries, isLoading, isConnected } = useAuditLog({ enabled: isExpanded });
+
+  const filteredEntries =
+    sourceFilter === 'all' ? entries : entries.filter((e) => e.source === sourceFilter);
 
   const handleToggle = (expanded: boolean) => {
     setIsExpanded(expanded);
@@ -133,22 +187,23 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
 
   return (
     <aside
-      className="flex h-full flex-col border-l border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900"
-      style={{ width: SIDEBAR_WIDTH }}
+      className="sticky top-0 flex h-screen flex-col border-l border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900"
+      style={{ width: SIDEBAR_WIDTH, minWidth: SIDEBAR_WIDTH }}
     >
       <SidebarHeader isConnected={isConnected} onCollapse={() => handleToggle(false)} />
+      <SourceFilter activeFilter={sourceFilter} onFilterChange={setSourceFilter} />
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="p-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
             Loading...
           </div>
-        ) : entries.length === 0 ? (
+        ) : filteredEntries.length === 0 ? (
           <div className="p-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
-            No activity yet
+            {sourceFilter === 'all' ? 'No activity yet' : `No ${sourceFilter} activity`}
           </div>
         ) : (
-          entries.map((entry) => <AuditEntryItem entry={entry} key={entry._id} />)
+          filteredEntries.map((entry) => <AuditEntryItem entry={entry} key={entry._id} />)
         )}
       </div>
     </aside>

@@ -4,8 +4,8 @@ import { Button, TextInput } from 'flowbite-react';
 import { type FC, useState } from 'react';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { useAuditedCreateTodoMutation } from '../hooks/use_audited_todo_mutations';
 import { useTags } from '../hooks/use_tags';
-import { useCreateTodoMutation } from '../hooks/use_todo_mutations';
 import { DatabaseErrorMessage } from './database_error_message';
 import { TagInput } from './tag_input';
 
@@ -120,7 +120,7 @@ const SubmitButton: FC<SubmitButtonProps> = ({ isPending }) => (
 
 export const AddTodo: FC = () => {
   const { allTags } = useTags();
-  const createTodoMutation = useCreateTodoMutation();
+  const createTodoMutation = useAuditedCreateTodoMutation();
   const [state, setState] = useState<AddTodoFormState>(createInitialState);
   const [validationError, setValidationError] = useState<DatabaseError | null>(null);
 
