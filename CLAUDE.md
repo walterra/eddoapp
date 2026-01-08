@@ -872,6 +872,20 @@ OTEL_TLS_VERIFY=false
 │  └───────────┬─────────────┘    └───────────┬─────────────┘    │
 │              └──────────────┬───────────────┘                   │
 └─────────────────────────────┼───────────────────────────────────┘
+                              │
+┌─────────────────────────────┼───────────────────────────────────┐
+│                     Browser (web-client)                        │
+├─────────────────────────────┼───────────────────────────────────┤
+│  ┌─────────────────────────┐│                                   │
+│  │   OpenTelemetry Web SDK ││                                   │
+│  │  • Fetch instrumentation││                                   │
+│  │  • PouchDB sync spans   ││                                   │
+│  │  • User context         ││                                   │
+│  └───────────┬─────────────┘│                                   │
+│              │    ┌─────────┴─────────┐                         │
+│              └────► /api/telemetry/*  │ (OTLP proxy in web-api) │
+│                   └─────────┬─────────┘                         │
+└─────────────────────────────┼───────────────────────────────────┘
                               ▼
                ┌──────────────────────────────┐
                │       EDOT Collector         │
@@ -883,14 +897,15 @@ OTEL_TLS_VERIFY=false
                               ▼
                ┌──────────────────────────────┐
                │       Elasticsearch          │
-               │  • traces-apm.otel-*         │
+               │  • traces-apm-default        │
                │  • metrics-apm.otel-*        │
                │  • logs-apm.otel-*           │
                └──────────────┬───────────────┘
                               ▼
                ┌──────────────────────────────┐
-               │          Kibana APM          │
-               │  • Services, Traces, Metrics │
+               │       Kibana Discover        │
+               │  • ES|QL trace queries       │
+               │  • Trace waterfall view      │
                └──────────────────────────────┘
 ```
 
@@ -918,7 +933,82 @@ OTEL_SDK_DISABLED=true pnpm dev:telegram-bot
 | `telegram_message_handle` | Incoming message processing | telegram.chat.id, user.id                      |
 | `scheduler_send_briefing` | Daily briefing delivery     | user.id, username, telegram.chat.id            |
 
+### Instrumented Operations (web-client)
+
+| Span Name                  | Description             | Attributes                         |
+| -------------------------- | ----------------------- | ---------------------------------- |
+| `HTTP GET/POST/PUT`        | Fetch API requests      | http.url, http.method, http.status |
+| `pouchdb.sync.started`     | PouchDB sync initiated  | db.system, db.operation            |
+| `pouchdb.sync.active`      | Sync transferring data  | db.system, db.operation            |
+| `pouchdb.sync.paused`      | Sync idle (up to date)  | db.system, db.operation            |
+| `pouchdb.sync.complete`    | Sync finished           | db.system, db.operation            |
+| `pouchdb.sync.error`       | Sync encountered error  | db.system, db.operation, error     |
+| `todo.create`              | Create new todo         | todo.title                         |
+| `todo.update`              | Update existing todo    | todo.id, todo.title                |
+| `todo.save`                | Save todo (with repeat) | todo.id, todo.title                |
+| `todo.delete`              | Delete todo             | todo.id, todo.title                |
+| `todo.complete`            | Mark todo complete      | todo.id, todo.title                |
+| `todo.uncomplete`          | Mark todo incomplete    | todo.id, todo.title                |
+| `todo.time_tracking.start` | Start time tracking     | todo.id, todo.title                |
+| `todo.time_tracking.stop`  | Stop time tracking      | todo.id, todo.title                |
+
+### Browser RUM Configuration
+
+**Environment Variables** (VITE\_ prefix for browser exposure):
+
+```bash
+VITE_OTEL_ENABLED=true              # Enable/disable RUM (default: true)
+VITE_OTEL_SERVICE_NAME=eddo-web-client  # Service name in traces
+VITE_OTEL_SERVICE_VERSION=0.3.0     # Service version
+VITE_OTEL_ENVIRONMENT=development   # Environment name
+VITE_OTEL_TRACES_ENDPOINT=/api/telemetry/v1/traces  # Proxy endpoint
+VITE_OTEL_LOG_LEVEL=warn            # OTEL diagnostics (error|warn|info|debug)
+```
+
+**Server-side** (for OTLP proxy):
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318  # Collector URL
+OTEL_API_KEY=                       # Optional API key for collector auth
+```
+
+### Querying Traces in Kibana Discover
+
+**All web-client traces:**
+
+```sql
+FROM traces-apm-default
+| WHERE service.name == "eddo-web-client"
+| SORT @timestamp DESC
+| LIMIT 20
+```
+
+**HTTP requests:**
+
+```sql
+FROM traces-apm-default
+| WHERE service.name == "eddo-web-client" AND span.name LIKE "HTTP*"
+| SORT @timestamp DESC
+```
+
+**PouchDB sync events:**
+
+```sql
+FROM traces-apm-default
+| WHERE service.name == "eddo-web-client" AND span.name LIKE "pouchdb*"
+| SORT @timestamp DESC
+```
+
+**Find trace by ID (correlate frontend/backend):**
+
+```sql
+FROM traces-apm-default
+| WHERE trace.id == "your-trace-id-here"
+| SORT @timestamp ASC
+```
+
 ### Packages
 
 - `@eddo/core-instrumentation`: Shared Pino logger factory, withSpan() helper, SpanAttributes
+- `packages/web-client/src/telemetry/`: Browser RUM module (OpenTelemetry Web SDK)
 - Configuration: `otel-collector-config.yml`, `docker-compose.otel.yml`

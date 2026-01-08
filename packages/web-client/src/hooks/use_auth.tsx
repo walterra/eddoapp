@@ -1,6 +1,8 @@
 import { isTokenExpired } from '@eddo/core-client';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
+import { clearTelemetryUser, setTelemetryUser } from '../telemetry';
+
 interface AuthToken {
   token: string;
   username: string;
@@ -133,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setAuthToken(null);
     localStorage.removeItem('authToken');
+    clearTelemetryUser();
   }, []);
   const checkTokenExpiration = useCallback(() => {
     if (authToken && isTokenExpired(authToken.token)) {
@@ -146,6 +149,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setAuthToken(loadStoredToken());
   }, []);
+
+  // Update telemetry user context when auth state changes
+  useEffect(() => {
+    if (authToken?.username) {
+      setTelemetryUser(authToken.username);
+    } else {
+      clearTelemetryUser();
+    }
+  }, [authToken?.username]);
+
   useTokenExpirationCheck(authToken, checkTokenExpiration);
 
   const value: AuthContextValue = {

@@ -48,6 +48,10 @@ export const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().default('http://localhost:3000/api/email/oauth/callback'),
+
+  // OpenTelemetry Configuration (for RUM proxy)
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().default('http://localhost:4318'),
+  OTEL_API_KEY: z.string().optional(),
 });
 
 /**
