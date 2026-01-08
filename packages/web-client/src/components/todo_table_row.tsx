@@ -1,7 +1,13 @@
 /**
  * TodoRow component for rendering individual table rows
  */
-import { areTodosEqual, type DatabaseError, getActiveDuration, type Todo } from '@eddo/core-client';
+import {
+  areTodosEqual,
+  type DatabaseError,
+  getActiveDurationInRange,
+  type Todo,
+} from '@eddo/core-client';
+import { format } from 'date-fns';
 import { type FC, Fragment, memo, useMemo, useState } from 'react';
 import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
@@ -16,10 +22,15 @@ import { TodoFlyout } from './todo_flyout';
 import { TodoCell } from './todo_table_cell';
 import { reorderColumnsWithStatusFirst } from './todo_table_helpers';
 
+interface DateRange {
+  startDate: Date;
+  endDate: Date;
+}
+
 interface TodoRowProps {
   todo: Todo;
   selectedColumns: string[];
-  activeDate: string;
+  dateRange: DateRange;
   timeTrackingActive: boolean;
 }
 
@@ -105,8 +116,11 @@ const RowCells: FC<RowCellsProps> = ({
   </>
 );
 
+/** Formats a Date to yyyy-MM-dd string for duration calculation */
+const formatDateForRange = (date: Date): string => format(date, 'yyyy-MM-dd');
+
 /** Hook for todo row state and handlers */
-const useTodoRowState = (todo: Todo, activeDate: string) => {
+const useTodoRowState = (todo: Todo, dateRange: DateRange) => {
   const toggleCompletion = useAuditedToggleCompletionMutation();
   const toggleTimeTracking = useAuditedToggleTimeTrackingMutation();
   const flyout = useTodoFlyout(todo);
@@ -115,10 +129,11 @@ const useTodoRowState = (todo: Todo, activeDate: string) => {
   const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
   const thisButtonActive = Object.values(todo.active).some((d) => d === null);
   const { counter: activeCounter } = useActiveTimer(thisButtonActive);
-  const activeDuration = useMemo(
-    () => getActiveDuration(todo.active, activeDate),
-    [thisButtonActive, activeDate, activeCounter],
-  );
+  const activeDuration = useMemo(() => {
+    const startStr = formatDateForRange(dateRange.startDate);
+    const endStr = formatDateForRange(dateRange.endDate);
+    return getActiveDurationInRange(todo.active, startStr, endStr);
+  }, [thisButtonActive, dateRange.startDate, dateRange.endDate, activeCounter, todo.active]);
 
   const handleToggleCheckbox = async () => {
     if (isUpdating) return;
@@ -156,10 +171,10 @@ const useTodoRowState = (todo: Todo, activeDate: string) => {
 const TodoRowInner: FC<TodoRowProps> = ({
   todo,
   selectedColumns,
-  activeDate,
+  dateRange,
   timeTrackingActive,
 }) => {
-  const state = useTodoRowState(todo, activeDate);
+  const state = useTodoRowState(todo, dateRange);
 
   return (
     <>
@@ -187,7 +202,8 @@ const TodoRowInner: FC<TodoRowProps> = ({
 
 export const TodoRow = memo(TodoRowInner, (prevProps, nextProps) => {
   return (
-    prevProps.activeDate === nextProps.activeDate &&
+    prevProps.dateRange.startDate === nextProps.dateRange.startDate &&
+    prevProps.dateRange.endDate === nextProps.dateRange.endDate &&
     prevProps.timeTrackingActive === nextProps.timeTrackingActive &&
     areTodosEqual(prevProps.todo, nextProps.todo) &&
     JSON.stringify(prevProps.selectedColumns) === JSON.stringify(nextProps.selectedColumns)
