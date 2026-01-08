@@ -89,7 +89,7 @@ function createErrorHandler(
  * Maintains entries in React Query cache under ['audit-log'].
  */
 export function useAuditLogStream(options: UseAuditLogStreamOptions = {}) {
-  const { enabled = true, maxEntries = 100, onEntry } = options;
+  const { enabled = true, maxEntries = 20, onEntry } = options;
   const { authToken, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
