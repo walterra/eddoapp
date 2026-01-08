@@ -36,6 +36,12 @@ export const updateTodoParameters = z.object({
     .nullable()
     .optional()
     .describe('Updated parent todo ID (null to remove parent, making it a root todo)'),
+  metadata: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      'Key-value metadata for extensibility. Use namespaced keys (e.g., "agent:worktree", "github:labels"). Replaces entire metadata object when provided.',
+    ),
 });
 
 export type UpdateTodoArgs = z.infer<typeof updateTodoParameters>;
@@ -54,6 +60,7 @@ function mergeUpdates(todo: TodoAlpha3, args: UpdateTodoArgs): TodoAlpha3 {
     repeat: args.repeat !== undefined ? args.repeat : todo.repeat,
     link: args.link !== undefined ? args.link : todo.link,
     parentId: args.parentId !== undefined ? args.parentId : todo.parentId,
+    metadata: args.metadata !== undefined ? args.metadata : todo.metadata,
   };
 }
 

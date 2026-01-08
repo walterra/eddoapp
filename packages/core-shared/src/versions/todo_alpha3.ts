@@ -25,6 +25,12 @@ export interface TodoAlpha3 extends Omit<TodoAlpha2, 'version'> {
   parentId?: string | null;
   /** Optional array of notes attached to this todo */
   notes?: TodoNote[];
+  /**
+   * Optional key-value metadata for extensibility.
+   * Use namespaced keys by convention: `agent:`, `github:`, `rss:`.
+   * Example: { "agent:worktree": "/path/to/.trees/feature-x", "github:labels": "bug,priority" }
+   */
+  metadata?: Record<string, string>;
   version: 'alpha3';
 }
 

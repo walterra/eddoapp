@@ -109,7 +109,11 @@ interface TodoAlpha3 {
   context: string; // GTD context
   description: string;
   due: string; // ISO date string
-  link: string | null; // Added in alpha3
+  externalId?: string | null; // External system ID (e.g., "github:owner/repo/issues/123")
+  link: string | null; // URL reference
+  metadata?: Record<string, string>; // Extensible key-value data (namespaced: agent:, github:, rss:)
+  notes?: TodoNote[]; // Work diary entries
+  parentId?: string | null; // Parent todo ID for subtasks
   repeat: number | null; // Days
   tags: string[];
   title: string;
