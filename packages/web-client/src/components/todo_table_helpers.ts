@@ -1,7 +1,12 @@
 /**
  * Helper functions for TodoTable component
  */
-import { type Activity, type Todo, getFormattedDurationForActivities } from '@eddo/core-client';
+import {
+  type Activity,
+  type Todo,
+  getActiveDurationInRange,
+  getFormattedDuration,
+} from '@eddo/core-client';
 import { group } from 'd3-array';
 
 import { CONTEXT_DEFAULT } from '../constants';
@@ -120,13 +125,127 @@ export function groupTodosByContext(todos: Todo[]): Array<[string, Todo[]]> {
 }
 
 /**
- * Calculate total duration by context
+ * Filter activities by context
  */
-export function calculateDurationByContext(activities: Activity[]): Record<string, string> {
+function filterActivitiesByContext(activities: Activity[], selectedContexts: string[]): Activity[] {
+  if (selectedContexts.length === 0) return activities;
+  return activities.filter((activity) =>
+    selectedContexts.includes(activity.doc.context || CONTEXT_DEFAULT),
+  );
+}
+
+/**
+ * Filter activities by completion status
+ */
+function filterActivitiesByStatus(
+  activities: Activity[],
+  selectedStatus: CompletionStatus,
+): Activity[] {
+  if (selectedStatus === 'all') return activities;
+  return activities.filter((activity) => {
+    if (selectedStatus === 'completed') return activity.doc.completed !== null;
+    if (selectedStatus === 'incomplete') return activity.doc.completed === null;
+    return true;
+  });
+}
+
+/**
+ * Filter activities by tags
+ */
+function filterActivitiesByTags(activities: Activity[], selectedTags: string[]): Activity[] {
+  if (selectedTags.length === 0) return activities;
+  return activities.filter((activity) =>
+    selectedTags.some((tag) => activity.doc.tags.includes(tag)),
+  );
+}
+
+/**
+ * Apply all filters to activities.
+ * Note: Child activities are NOT filtered out - their time counts toward context totals.
+ * Child activities inherit their parent's context, so context filtering still works.
+ */
+export function filterActivities(
+  activities: Activity[],
+  selectedContexts: string[],
+  selectedStatus: CompletionStatus,
+  selectedTags: string[],
+): Activity[] {
+  let filtered = activities;
+  filtered = filterActivitiesByContext(filtered, selectedContexts);
+  filtered = filterActivitiesByStatus(filtered, selectedStatus);
+  filtered = filterActivitiesByTags(filtered, selectedTags);
+  return filtered;
+}
+
+/**
+ * Calculate total duration by context from pre-computed todo durations.
+ * Only counts time from visible parent items (child time is rolled up into parent).
+ * @param todoDurations - Map of todoId -> duration in ms (including child time)
+ * @param todos - Filtered todos (parents only, no children)
+ */
+export function calculateDurationByContext(
+  todoDurations: Map<string, number>,
+  todos: Todo[],
+): Record<string, string> {
+  const durationByContext = new Map<string, number>();
+
+  for (const todo of todos) {
+    const context = todo.context || CONTEXT_DEFAULT;
+    const duration = todoDurations.get(todo._id) ?? 0;
+    const current = durationByContext.get(context) ?? 0;
+    durationByContext.set(context, current + duration);
+  }
+
   return Object.fromEntries(
-    Array.from(group(activities, (d) => d.doc.context ?? CONTEXT_DEFAULT)).map((d) => [
-      d[0],
-      getFormattedDurationForActivities(d[1]),
+    Array.from(durationByContext.entries()).map(([context, duration]) => [
+      context,
+      getFormattedDuration(duration),
     ]),
   );
+}
+
+/**
+ * Calculate duration per todo (own time + child time).
+ * Returns a map for looking up total duration by todo ID.
+ * @param todos - Filtered todos (parents only)
+ * @param activities - All activities including child activities
+ * @param startDate - Start of date range (yyyy-MM-dd)
+ * @param endDate - End of date range (yyyy-MM-dd)
+ * @returns Map of todoId -> total duration in milliseconds
+ */
+export function calculateTodoDurations(
+  todos: readonly Todo[],
+  activities: readonly Activity[],
+  startDate: string,
+  endDate: string,
+): Map<string, number> {
+  const result = new Map<string, number>();
+
+  // First, calculate own duration for each parent todo
+  for (const todo of todos) {
+    const ownDuration = getActiveDurationInRange(todo.active, startDate, endDate);
+    result.set(todo._id, ownDuration);
+  }
+
+  // Then, add child activity durations to their parents
+  for (const activity of activities) {
+    const parentId = activity.doc.parentId;
+    if (!parentId) continue;
+
+    // Only count if parent is in our filtered list
+    if (!result.has(parentId)) continue;
+
+    // Calculate duration for this activity within date range
+    const entryDate = activity.from.split('T')[0];
+    if (entryDate < startDate || entryDate > endDate) continue;
+
+    const startTime = new Date(activity.from).getTime();
+    const endTime = activity.to !== null ? new Date(activity.to).getTime() : Date.now();
+    const childDuration = endTime - startTime;
+
+    const current = result.get(parentId) ?? 0;
+    result.set(parentId, current + childDuration);
+  }
+
+  return result;
 }

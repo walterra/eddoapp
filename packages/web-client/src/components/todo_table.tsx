@@ -17,6 +17,8 @@ import { calculateDateRange, type DateRange } from './todo_board_helpers';
 import { useDbInitialization, useTodoBoardData } from './todo_board_state';
 import {
   calculateDurationByContext,
+  calculateTodoDurations,
+  filterActivities,
   filterTodos,
   getColumnLabel,
   getColumnWidthClass,
@@ -37,11 +39,63 @@ interface TodoTableProps {
 interface TableDataResult {
   groupedByContext: Array<[string, Todo[]]>;
   durationByContext: Record<string, string>;
+  todoDurations: Map<string, number>;
   displayError: DatabaseError | null;
   hasNoTodos: boolean;
   hasActiveFilters: boolean;
   dateRange: DateRange;
 }
+
+interface FilterParams {
+  selectedTags: string[];
+  selectedContexts: string[];
+  selectedStatus: CompletionStatus;
+}
+
+interface FilteredDataParams extends FilterParams {
+  startDate: string;
+  endDate: string;
+}
+
+/** Filters and groups todos/activities based on user selection */
+const useFilteredData = (
+  boardData: ReturnType<typeof useTodoBoardData>,
+  params: FilteredDataParams,
+) => {
+  const { selectedTags, selectedContexts, selectedStatus, startDate, endDate } = params;
+
+  const filteredTodos = useMemo(
+    () => filterTodos(boardData.todos, selectedContexts, selectedStatus, selectedTags),
+    [boardData.todos, selectedTags, selectedContexts, selectedStatus],
+  );
+
+  const filteredActivities = useMemo(
+    () =>
+      filterActivities(
+        boardData.activities as Activity[],
+        selectedContexts,
+        selectedStatus,
+        selectedTags,
+      ),
+    [boardData.activities, selectedContexts, selectedStatus, selectedTags],
+  );
+
+  const groupedByContext = useMemo(() => groupTodosByContext(filteredTodos), [filteredTodos]);
+
+  // Calculate duration per todo (own + child time)
+  const todoDurations = useMemo(
+    () => calculateTodoDurations(filteredTodos, filteredActivities, startDate, endDate),
+    [filteredTodos, filteredActivities, startDate, endDate],
+  );
+
+  // Context totals = sum of visible todo durations
+  const durationByContext = useMemo(
+    () => calculateDurationByContext(todoDurations, filteredTodos),
+    [todoDurations, filteredTodos],
+  );
+
+  return { filteredTodos, groupedByContext, durationByContext, todoDurations };
+};
 
 const useTableData = (
   props: TodoTableProps,
@@ -61,16 +115,16 @@ const useTableData = (
     isInitialized,
   });
 
-  const filteredTodos = useMemo(
-    () => filterTodos(boardData.todos, selectedContexts, selectedStatus, selectedTags),
-    [boardData.todos, selectedTags, selectedContexts, selectedStatus],
-  );
+  const startDateStr = dateRange.startDate.toISOString().split('T')[0];
+  const endDateStr = dateRange.endDate.toISOString().split('T')[0];
 
-  const groupedByContext = useMemo(() => groupTodosByContext(filteredTodos), [filteredTodos]);
-  const durationByContext = useMemo(
-    () => calculateDurationByContext(boardData.activities as Activity[]),
-    [boardData.activities],
-  );
+  const { groupedByContext, durationByContext, todoDurations } = useFilteredData(boardData, {
+    selectedTags,
+    selectedContexts,
+    selectedStatus,
+    startDate: startDateStr,
+    endDate: endDateStr,
+  });
 
   const hasNoTodos =
     groupedByContext.length === 0 &&
@@ -85,6 +139,7 @@ const useTableData = (
     ...boardData,
     groupedByContext,
     durationByContext,
+    todoDurations,
     displayError: error || (boardData.queryError as DatabaseError | null),
     hasNoTodos,
     hasActiveFilters,
@@ -134,11 +189,11 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
         />
       ) : (
         <TodoTableContent
-          dateRange={data.dateRange}
           durationByContext={data.durationByContext}
           groupedByContext={data.groupedByContext}
           selectedColumns={props.selectedColumns}
           timeTrackingActive={data.timeTrackingActive}
+          todoDurations={data.todoDurations}
         />
       )}
     </div>
@@ -159,28 +214,28 @@ const LoadingSpinner: FC = () => (
 interface TodoTableContentProps {
   groupedByContext: Array<[string, Todo[]]>;
   durationByContext: Record<string, string>;
+  todoDurations: Map<string, number>;
   selectedColumns: string[];
   timeTrackingActive: string[];
-  dateRange: DateRange;
 }
 
 const TodoTableContent: FC<TodoTableContentProps> = ({
   groupedByContext,
   durationByContext,
+  todoDurations,
   selectedColumns,
   timeTrackingActive,
-  dateRange,
 }) => (
   <div className="overflow-x-auto py-2">
     {groupedByContext.map(([context, contextTodos]) => (
       <ContextGroup
         context={context}
         contextTodos={contextTodos}
-        dateRange={dateRange}
         durationByContext={durationByContext}
         key={context}
         selectedColumns={selectedColumns}
         timeTrackingActive={timeTrackingActive}
+        todoDurations={todoDurations}
       />
     ))}
   </div>
@@ -190,18 +245,18 @@ interface ContextGroupProps {
   context: string;
   contextTodos: Todo[];
   durationByContext: Record<string, string>;
+  todoDurations: Map<string, number>;
   selectedColumns: string[];
   timeTrackingActive: string[];
-  dateRange: DateRange;
 }
 
 const ContextGroup: FC<ContextGroupProps> = ({
   context,
   contextTodos,
   durationByContext,
+  todoDurations,
   selectedColumns,
   timeTrackingActive,
-  dateRange,
 }) => (
   <div className="mb-4">
     <ContextHeader context={context} duration={durationByContext[context]} />
@@ -211,11 +266,11 @@ const ContextGroup: FC<ContextGroupProps> = ({
         <tbody className="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
           {contextTodos.map((todo) => (
             <TodoRow
-              dateRange={dateRange}
               key={`${todo._id}-${todo._rev}`}
               selectedColumns={selectedColumns}
               timeTrackingActive={timeTrackingActive.length > 0}
               todo={todo}
+              todoDuration={todoDurations.get(todo._id) ?? 0}
             />
           ))}
         </tbody>

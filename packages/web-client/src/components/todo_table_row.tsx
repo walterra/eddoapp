@@ -1,13 +1,7 @@
 /**
  * TodoRow component for rendering individual table rows
  */
-import {
-  areTodosEqual,
-  type DatabaseError,
-  getActiveDurationInRange,
-  type Todo,
-} from '@eddo/core-client';
-import { format } from 'date-fns';
+import { areTodosEqual, type DatabaseError, type Todo } from '@eddo/core-client';
 import { type FC, Fragment, memo, useMemo, useState } from 'react';
 import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
@@ -22,16 +16,12 @@ import { TodoFlyout } from './todo_flyout';
 import { TodoCell } from './todo_table_cell';
 import { reorderColumnsWithStatusFirst } from './todo_table_helpers';
 
-interface DateRange {
-  startDate: Date;
-  endDate: Date;
-}
-
 interface TodoRowProps {
   todo: Todo;
   selectedColumns: string[];
-  dateRange: DateRange;
   timeTrackingActive: boolean;
+  /** Pre-computed total duration (own + child time) in milliseconds */
+  todoDuration: number;
 }
 
 interface TimeTrackingButtonProps {
@@ -116,11 +106,8 @@ const RowCells: FC<RowCellsProps> = ({
   </>
 );
 
-/** Formats a Date to yyyy-MM-dd string for duration calculation */
-const formatDateForRange = (date: Date): string => format(date, 'yyyy-MM-dd');
-
 /** Hook for todo row state and handlers */
-const useTodoRowState = (todo: Todo, dateRange: DateRange) => {
+const useTodoRowState = (todo: Todo, todoDuration: number) => {
   const toggleCompletion = useAuditedToggleCompletionMutation();
   const toggleTimeTracking = useAuditedToggleTimeTrackingMutation();
   const flyout = useTodoFlyout(todo);
@@ -128,12 +115,14 @@ const useTodoRowState = (todo: Todo, dateRange: DateRange) => {
 
   const isUpdating = toggleCompletion.isPending || toggleTimeTracking.isPending;
   const thisButtonActive = Object.values(todo.active).some((d) => d === null);
+  // useActiveTimer triggers re-renders every second when timer is active
   const { counter: activeCounter } = useActiveTimer(thisButtonActive);
+  // Pre-computed duration already includes child time, just use it directly
+  // activeCounter dependency ensures live updates for active timers
   const activeDuration = useMemo(() => {
-    const startStr = formatDateForRange(dateRange.startDate);
-    const endStr = formatDateForRange(dateRange.endDate);
-    return getActiveDurationInRange(todo.active, startStr, endStr);
-  }, [thisButtonActive, dateRange.startDate, dateRange.endDate, activeCounter, todo.active]);
+    void activeCounter; // Trigger recalc on timer tick
+    return todoDuration;
+  }, [todoDuration, activeCounter]);
 
   const handleToggleCheckbox = async () => {
     if (isUpdating) return;
@@ -171,10 +160,10 @@ const useTodoRowState = (todo: Todo, dateRange: DateRange) => {
 const TodoRowInner: FC<TodoRowProps> = ({
   todo,
   selectedColumns,
-  dateRange,
   timeTrackingActive,
+  todoDuration,
 }) => {
-  const state = useTodoRowState(todo, dateRange);
+  const state = useTodoRowState(todo, todoDuration);
 
   return (
     <>
@@ -202,9 +191,8 @@ const TodoRowInner: FC<TodoRowProps> = ({
 
 export const TodoRow = memo(TodoRowInner, (prevProps, nextProps) => {
   return (
-    prevProps.dateRange.startDate === nextProps.dateRange.startDate &&
-    prevProps.dateRange.endDate === nextProps.dateRange.endDate &&
     prevProps.timeTrackingActive === nextProps.timeTrackingActive &&
+    prevProps.todoDuration === nextProps.todoDuration &&
     areTodosEqual(prevProps.todo, nextProps.todo) &&
     JSON.stringify(prevProps.selectedColumns) === JSON.stringify(nextProps.selectedColumns)
   );
