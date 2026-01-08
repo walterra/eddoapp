@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useViewPreferences } from './use_view_preferences';
+import { sortColumnsByCanonicalOrder, useViewPreferences } from './use_view_preferences';
 
 // Mock useProfile hook
 vi.mock('./use_profile', () => ({
@@ -80,16 +80,16 @@ describe('useViewPreferences Hook', () => {
     expect(result.current.tableColumns).toEqual([
       'status',
       'title',
-      'subtasks',
       'due',
       'tags',
       'timeTracked',
+      'subtasks',
     ]);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBe(null);
   });
 
-  it('returns profile preferences when available', () => {
+  it('returns profile preferences sorted in canonical order regardless of stored order', () => {
     vi.mocked(useProfile).mockReturnValue({
       authToken: 'test-token',
       profile: {
@@ -104,6 +104,7 @@ describe('useViewPreferences Hook', () => {
           dailyBriefing: false,
           dailyRecap: false,
           viewMode: 'table',
+          // Stored in wrong order - should be sorted on read
           tableColumns: ['title', 'due', 'status'],
         },
       },
@@ -122,7 +123,8 @@ describe('useViewPreferences Hook', () => {
     const { result } = renderHook(() => useViewPreferences());
 
     expect(result.current.viewMode).toBe('table');
-    expect(result.current.tableColumns).toEqual(['title', 'due', 'status']);
+    // Returns columns in canonical order: status, title, due, ...
+    expect(result.current.tableColumns).toEqual(['status', 'title', 'due']);
   });
 
   it('calls updatePreferences when setting view mode', async () => {
@@ -220,5 +222,92 @@ describe('useViewPreferences Hook', () => {
     const { result } = renderHook(() => useViewPreferences());
 
     expect(result.current.error).toBe('Failed to load profile');
+  });
+});
+
+describe('sortColumnsByCanonicalOrder', () => {
+  it('sorts columns to match canonical order', () => {
+    // Input in wrong order
+    const input = ['tags', 'title', 'status', 'due'];
+    const result = sortColumnsByCanonicalOrder(input);
+
+    // Should be sorted according to AVAILABLE_COLUMNS order: status, title, due, tags, ...
+    expect(result).toEqual(['status', 'title', 'due', 'tags']);
+  });
+
+  it('preserves all selected columns', () => {
+    const input = ['timeTracked', 'subtasks', 'context'];
+    const result = sortColumnsByCanonicalOrder(input);
+
+    expect(result).toHaveLength(3);
+    expect(result).toContain('timeTracked');
+    expect(result).toContain('subtasks');
+    expect(result).toContain('context');
+  });
+
+  it('returns empty array for empty input', () => {
+    const result = sortColumnsByCanonicalOrder([]);
+    expect(result).toEqual([]);
+  });
+
+  it('handles single column', () => {
+    const result = sortColumnsByCanonicalOrder(['title']);
+    expect(result).toEqual(['title']);
+  });
+
+  it('handles all columns in wrong order', () => {
+    const input = [
+      'description',
+      'link',
+      'repeat',
+      'completed',
+      'status',
+      'timeTracked',
+      'tags',
+      'due',
+      'context',
+      'subtasks',
+      'title',
+    ];
+    const result = sortColumnsByCanonicalOrder(input);
+
+    // Canonical order: status, title, due, tags, timeTracked, subtasks, context, completed, repeat, link, description
+    expect(result).toEqual([
+      'status',
+      'title',
+      'due',
+      'tags',
+      'timeTracked',
+      'subtasks',
+      'context',
+      'completed',
+      'repeat',
+      'link',
+      'description',
+    ]);
+  });
+
+  it('appends unknown columns at the end', () => {
+    const input = ['unknownColumn', 'title', 'due'];
+    const result = sortColumnsByCanonicalOrder(input);
+
+    // Known columns first in order, unknown at end
+    expect(result).toEqual(['title', 'due', 'unknownColumn']);
+  });
+
+  it('preserves order of multiple unknown columns', () => {
+    const input = ['unknown1', 'title', 'unknown2', 'due'];
+    const result = sortColumnsByCanonicalOrder(input);
+
+    // Known columns first in order, unknown at end in original order
+    expect(result).toEqual(['title', 'due', 'unknown1', 'unknown2']);
+  });
+
+  it('does not mutate input array', () => {
+    const input = ['tags', 'title', 'due'];
+    const inputCopy = [...input];
+    sortColumnsByCanonicalOrder(input);
+
+    expect(input).toEqual(inputCopy);
   });
 });
