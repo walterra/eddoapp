@@ -1,10 +1,10 @@
-import { Button } from 'flowbite-react';
 import { type FC, useState } from 'react';
+import { HiOutlineClipboardList, HiOutlineLogout, HiOutlineUser } from 'react-icons/hi';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { usePouchDb } from '../pouch_db';
 import { AuditSidebar } from './audit_sidebar';
-import { DatabaseHealthIndicator } from './database_health_indicator';
+import { HealthIndicatorPopover } from './health_indicator_popover';
 
 import { UserProfile } from './user_profile';
 
@@ -22,20 +22,36 @@ const EddoLogo: FC = () => (
   </pre>
 );
 
-interface AuthButtonsProps {
-  onShowProfile: () => void;
-  onLogout: () => void;
+interface ProfileButtonProps {
+  onClick: () => void;
 }
 
-const AuthButtons: FC<AuthButtonsProps> = ({ onShowProfile, onLogout }) => (
-  <div className="flex space-x-2">
-    <Button color="gray" onClick={onShowProfile} size="sm">
-      Profile
-    </Button>
-    <Button color="gray" onClick={onLogout} size="sm">
-      Logout
-    </Button>
-  </div>
+const ProfileButton: FC<ProfileButtonProps> = ({ onClick }) => (
+  <button
+    aria-label="Profile"
+    className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
+    onClick={onClick}
+    title="Profile"
+    type="button"
+  >
+    <HiOutlineUser className="h-5 w-5" />
+  </button>
+);
+
+interface LogoutButtonProps {
+  onClick: () => void;
+}
+
+const LogoutButton: FC<LogoutButtonProps> = ({ onClick }) => (
+  <button
+    aria-label="Logout"
+    className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
+    onClick={onClick}
+    title="Logout"
+    type="button"
+  >
+    <HiOutlineLogout className="h-5 w-5" />
+  </button>
 );
 
 interface AuditToggleProps {
@@ -45,11 +61,13 @@ interface AuditToggleProps {
 
 const AuditToggle: FC<AuditToggleProps> = ({ isOpen, onToggle }) => (
   <button
-    className={`rounded p-1 text-lg ${isOpen ? 'bg-neutral-200 dark:bg-neutral-700' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}
+    aria-label={isOpen ? 'Hide activity log' : 'Show activity log'}
+    className={`flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-400 ${isOpen ? 'bg-neutral-200 dark:bg-neutral-700' : 'hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
     onClick={onToggle}
     title={isOpen ? 'Hide activity log' : 'Show activity log'}
+    type="button"
   >
-    📋
+    <HiOutlineClipboardList className="h-5 w-5" />
   </button>
 );
 
@@ -77,18 +95,15 @@ const Header: FC<HeaderProps> = ({
       <h1 className="sr-only">Eddo</h1>
       <EddoLogo />
     </div>
-    <div className="flex items-center space-x-4">
+    <div className="flex items-center space-x-1">
       {isAuthenticated && (
         <>
+          <HealthIndicatorPopover databaseName={databaseName} healthCheck={healthCheck} />
           <AuditToggle isOpen={showAuditSidebar} onToggle={onToggleAuditSidebar} />
-          <AuthButtons onLogout={onLogout} onShowProfile={onShowProfile} />
+          <ProfileButton onClick={onShowProfile} />
+          <LogoutButton onClick={onLogout} />
         </>
       )}
-      <DatabaseHealthIndicator
-        databaseName={databaseName}
-        healthCheck={healthCheck}
-        showDetails={true}
-      />
     </div>
   </div>
 );

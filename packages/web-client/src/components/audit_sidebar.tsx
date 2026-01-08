@@ -212,7 +212,7 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
 
   return (
     <aside
-      className="sticky top-0 flex h-screen flex-col border-l border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900"
+      className="sticky top-0 flex h-screen flex-col border-l border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800"
       style={{ width: SIDEBAR_WIDTH, minWidth: SIDEBAR_WIDTH }}
     >
       <SidebarHeader isConnected={isConnected} onCollapse={() => handleToggle(false)} />

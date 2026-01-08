@@ -2,7 +2,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useMemo, useState } from 'react';
 
-import { AddTodo } from './components/add_todo';
 import { Login } from './components/login';
 import { PageWrapper } from './components/page_wrapper';
 import { Register } from './components/register';
@@ -142,7 +141,6 @@ function TodoApp({ logout }: { logout: () => void }) {
   const handlers = useFilterHandlers();
   return (
     <PageWrapper isAuthenticated={true} logout={logout}>
-      <AddTodo />
       <TodoFiltersSection handlers={handlers} viewPrefs={viewPrefs} />
       <TodoContentView
         prefs={handlers.prefs}
