@@ -4,6 +4,7 @@
 import { type Todo } from '@eddo/core-client';
 import { Button, Drawer, DrawerHeader, DrawerItems } from 'flowbite-react';
 import { type FC } from 'react';
+import { createPortal } from 'react-dom';
 import { BiEdit, BiShow } from 'react-icons/bi';
 
 import { useTags } from '../hooks/use_tags';
@@ -220,7 +221,7 @@ export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
     return null;
   }
 
-  return (
+  return createPortal(
     <>
       <Drawer
         className="!w-[640px]"
@@ -248,7 +249,8 @@ export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
           onKeepEditing={state.handleKeepEditing}
         />
       )}
-    </>
+    </>,
+    document.body,
   );
 };
 
