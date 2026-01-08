@@ -25,6 +25,7 @@ import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
 import { emailRoutes } from './routes/email';
 import { rssRoutes } from './routes/rss';
+import { telemetryRoutes } from './routes/telemetry';
 import { userRoutes } from './routes/users';
 import { createRssSyncScheduler } from './rss/sync-scheduler';
 import { logger } from './utils/logger';
@@ -57,6 +58,9 @@ app.route('/auth', authRoutes);
 
 // Email OAuth callback (no JWT required - Google redirects here)
 app.route('/api/email', emailRoutes);
+
+// Telemetry proxy (no JWT required - browser sends traces before auth)
+app.route('/api/telemetry', telemetryRoutes);
 
 // Protected API routes (JWT required)
 // Custom middleware that supports both header and query param tokens (for SSE/EventSource)

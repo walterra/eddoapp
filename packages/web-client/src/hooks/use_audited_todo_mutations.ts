@@ -1,5 +1,5 @@
 /**
- * Audited todo mutations - wraps standard mutations with audit logging.
+ * Audited todo mutations - wraps standard mutations with audit logging and telemetry.
  * Use these instead of the base mutations to automatically log all changes.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import type { Activity, NewTodo, Todo } from '@eddo/core-shared';
 import { getRepeatTodo } from '@eddo/core-shared';
 
 import { usePouchDb } from '../pouch_db';
+import { withSpan } from '../telemetry';
 import { useAuditLog, type AuditAction } from './use_audit_log';
 import {
   rollbackCache,
@@ -32,9 +33,15 @@ export function useAuditedTodoMutation() {
 
   return useMutation<Todo, Error, { todo: Todo; originalTodo: Todo }, UpdateTodoContext>({
     mutationFn: async ({ todo }) => {
-      const current = await safeDb.safeGet<Todo>(todo._id);
-      const todoToSave = current ? { ...todo, _rev: current._rev } : todo;
-      return safeDb.safePut(todoToSave);
+      return withSpan(
+        'todo.update',
+        { 'todo.id': todo._id, 'todo.title': todo.title },
+        async () => {
+          const current = await safeDb.safeGet<Todo>(todo._id);
+          const todoToSave = current ? { ...todo, _rev: current._rev } : todo;
+          return safeDb.safePut(todoToSave);
+        },
+      );
     },
 
     onMutate: async ({ todo }) => {
@@ -86,7 +93,9 @@ export function useAuditedCreateTodoMutation() {
 
   return useMutation<Todo, Error, NewTodo>({
     mutationFn: async (newTodo: NewTodo) => {
-      return safeDb.safePut(newTodo);
+      return withSpan('todo.create', { 'todo.title': newTodo.title }, async () => {
+        return safeDb.safePut(newTodo);
+      });
     },
 
     onSuccess: async (savedTodo) => {
@@ -113,8 +122,14 @@ export function useAuditedDeleteTodoMutation() {
 
   return useMutation<Todo, Error, Todo>({
     mutationFn: async (todo: Todo) => {
-      await safeDb.safeRemove(todo);
-      return todo; // Return the deleted todo for audit logging
+      return withSpan(
+        'todo.delete',
+        { 'todo.id': todo._id, 'todo.title': todo.title },
+        async () => {
+          await safeDb.safeRemove(todo);
+          return todo; // Return the deleted todo for audit logging
+        },
+      );
     },
 
     onMutate: async (todo) => {
@@ -164,19 +179,21 @@ export function useAuditedSaveTodoMutation() {
 
   return useMutation<Todo, Error, { todo: Todo; originalTodo: Todo }>({
     mutationFn: async ({ todo, originalTodo }) => {
-      const current = await safeDb.safeGet<Todo>(todo._id);
-      const todoToSave = current ? { ...todo, _rev: current._rev } : todo;
-      const result = await safeDb.safePut(todoToSave);
+      return withSpan('todo.save', { 'todo.id': todo._id, 'todo.title': todo.title }, async () => {
+        const current = await safeDb.safeGet<Todo>(todo._id);
+        const todoToSave = current ? { ...todo, _rev: current._rev } : todo;
+        const result = await safeDb.safePut(todoToSave);
 
-      if (
-        typeof todo.repeat === 'number' &&
-        todo.completed &&
-        originalTodo.completed !== todo.completed
-      ) {
-        await safeDb.safePut(getRepeatTodo(todo));
-      }
+        if (
+          typeof todo.repeat === 'number' &&
+          todo.completed &&
+          originalTodo.completed !== todo.completed
+        ) {
+          await safeDb.safePut(getRepeatTodo(todo));
+        }
 
-      return result;
+        return result;
+      });
     },
 
     onSuccess: async (savedTodo, { originalTodo }) => {
@@ -212,21 +229,28 @@ export function useAuditedToggleCompletionMutation() {
 
   return useMutation<Todo, Error, Todo>({
     mutationFn: async (todo: Todo) => {
-      const updatedTodo = {
-        ...todo,
-        completed: todo.completed === null ? new Date().toISOString() : null,
-      };
+      const action = todo.completed === null ? 'complete' : 'uncomplete';
+      return withSpan(
+        `todo.${action}`,
+        { 'todo.id': todo._id, 'todo.title': todo.title },
+        async () => {
+          const updatedTodo = {
+            ...todo,
+            completed: todo.completed === null ? new Date().toISOString() : null,
+          };
 
-      const result = await auditedMutation.mutateAsync({
-        todo: updatedTodo,
-        originalTodo: todo,
-      });
+          const result = await auditedMutation.mutateAsync({
+            todo: updatedTodo,
+            originalTodo: todo,
+          });
 
-      if (typeof updatedTodo.repeat === 'number' && updatedTodo.completed) {
-        await safeDb.safePut(getRepeatTodo(updatedTodo));
-      }
+          if (typeof updatedTodo.repeat === 'number' && updatedTodo.completed) {
+            await safeDb.safePut(getRepeatTodo(updatedTodo));
+          }
 
-      return result;
+          return result;
+        },
+      );
     },
   });
 }
@@ -242,41 +266,46 @@ export function useAuditedToggleTimeTrackingMutation() {
 
   return useMutation<Todo, Error, Todo>({
     mutationFn: async (todo: Todo) => {
-      const updatedActive = { ...todo.active };
-      let action: AuditAction;
+      // Determine action first for span name
+      const isStarting =
+        Object.keys(todo.active).length === 0 ||
+        Object.values(todo.active).every((d) => d !== null);
+      const spanName = isStarting ? 'todo.time_tracking.start' : 'todo.time_tracking.stop';
 
-      if (
-        Object.keys(updatedActive).length === 0 ||
-        Object.values(updatedActive).every((d) => d !== null)
-      ) {
-        // Start tracking
-        updatedActive[new Date().toISOString()] = null;
-        action = 'time_tracking_start';
-      } else {
-        // Stop tracking
-        const activeEntry = Object.entries(updatedActive).find((d) => d[1] === null);
-        if (activeEntry) {
-          updatedActive[activeEntry[0]] = new Date().toISOString();
+      return withSpan(spanName, { 'todo.id': todo._id, 'todo.title': todo.title }, async () => {
+        const updatedActive = { ...todo.active };
+        let action: AuditAction;
+
+        if (isStarting) {
+          // Start tracking
+          updatedActive[new Date().toISOString()] = null;
+          action = 'time_tracking_start';
+        } else {
+          // Stop tracking
+          const activeEntry = Object.entries(updatedActive).find((d) => d[1] === null);
+          if (activeEntry) {
+            updatedActive[activeEntry[0]] = new Date().toISOString();
+          }
+          action = 'time_tracking_stop';
         }
-        action = 'time_tracking_stop';
-      }
 
-      const updatedTodo = { ...todo, active: updatedActive };
+        const updatedTodo = { ...todo, active: updatedActive };
 
-      // Get latest _rev
-      const current = await safeDb.safeGet<Todo>(todo._id);
-      const todoToSave = current ? { ...updatedTodo, _rev: current._rev } : updatedTodo;
-      const result = await safeDb.safePut(todoToSave);
+        // Get latest _rev
+        const current = await safeDb.safeGet<Todo>(todo._id);
+        const todoToSave = current ? { ...updatedTodo, _rev: current._rev } : updatedTodo;
+        const result = await safeDb.safePut(todoToSave);
 
-      // Log audit with the action we determined
-      await logAudit({
-        action,
-        entityId: result._id,
-        before: todo,
-        after: result,
+        // Log audit with the action we determined
+        await logAudit({
+          action,
+          entityId: result._id,
+          before: todo,
+          after: result,
+        });
+
+        return result;
       });
-
-      return result;
     },
 
     onMutate: async (todo) => {

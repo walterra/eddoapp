@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 
 import { usePouchDb } from '../pouch_db';
+import { recordSyncEvent } from '../telemetry';
 import { useAuth } from './use_auth';
 import {
   createRemoteDb,
@@ -29,6 +30,7 @@ export const useCouchDbSync = () => {
 
     syncHandler.on('error', (error) => {
       console.error('Sync error:', error);
+      recordSyncEvent('error', { error: String(error) });
       if (isAuthError(error)) {
         handleAuthError();
       }
@@ -36,24 +38,29 @@ export const useCouchDbSync = () => {
     });
 
     syncHandler.on('active', () => {
+      recordSyncEvent('active');
       healthMonitor.updateSyncStatus('syncing');
     });
 
     syncHandler.on('complete', () => {
+      recordSyncEvent('complete');
       healthMonitor.updateSyncStatus('connected');
     });
 
     syncHandler.on('paused', async () => {
+      recordSyncEvent('paused');
       healthMonitor.updateSyncStatus('connected');
       await preWarmIndexes(rawDb, () => isCancelled);
     });
 
+    recordSyncEvent('started');
     healthMonitor.updateSyncStatus('syncing');
 
     return () => {
       isCancelled = true;
       syncHandler.cancel();
       remoteDb.close();
+      recordSyncEvent('cancelled');
       healthMonitor.updateSyncStatus('disconnected');
     };
   }, [sync, authToken, handleAuthError, healthMonitor, rawDb]);
