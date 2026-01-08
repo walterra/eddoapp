@@ -167,7 +167,8 @@ describe('TodoTable', () => {
       await waitFor(() => {
         expect(screen.getByText('Title')).toBeInTheDocument();
         expect(screen.getByText('Due Date')).toBeInTheDocument();
-        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+        // Status column renders a button with "Mark complete" title, not a checkbox
+        expect(screen.getByTitle('Mark complete')).toBeInTheDocument();
         expect(screen.queryByText('Tags')).not.toBeInTheDocument();
       });
     });
@@ -260,7 +261,7 @@ describe('TodoTable', () => {
       });
     });
 
-    it('should render checkbox for todo completion status', async () => {
+    it('should render completion toggle button for todo status', async () => {
       const todos = [
         createTestTodo({
           _id: '2025-01-13T10:00:00.000Z',
@@ -284,9 +285,10 @@ describe('TodoTable', () => {
         expect(screen.getByText('Test todo')).toBeInTheDocument();
       });
 
-      const checkbox = screen.getByRole('checkbox');
-      expect(checkbox).toBeInTheDocument();
-      expect(checkbox).not.toBeChecked();
+      // Status column renders a button with "Mark complete" title for incomplete todos
+      const toggleButton = screen.getByTitle('Mark complete');
+      expect(toggleButton).toBeInTheDocument();
+      expect(toggleButton.tagName).toBe('BUTTON');
     });
   });
 
