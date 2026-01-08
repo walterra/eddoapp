@@ -2,6 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useMemo, useState } from 'react';
 
+import { GlobalTodoFlyout } from './components/global_todo_flyout';
 import { Login } from './components/login';
 import { PageWrapper } from './components/page_wrapper';
 import { Register } from './components/register';
@@ -186,6 +187,7 @@ function AuthenticatedApp({
         <PreferencesStreamProvider />
         <HealthMonitor />
         <TodoApp logout={logout} />
+        <GlobalTodoFlyout />
       </TodoFlyoutProvider>
     </DatabaseChangesProvider>
   );

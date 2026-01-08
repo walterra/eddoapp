@@ -1,7 +1,11 @@
+import { type Todo } from '@eddo/core-client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { TodoFlyoutProvider } from '../hooks/use_todo_flyout';
+import { PouchDbContext, type PouchDbContextType } from '../pouch_db_types';
 
 import { AuditSidebar } from './audit_sidebar';
 
@@ -26,6 +30,24 @@ vi.mock('../hooks/use_auth', () => ({
   })),
 }));
 
+const mockSafeGet = vi.fn();
+
+const mockPouchDbContext = {
+  safeDb: {
+    safeGet: mockSafeGet,
+    safePut: vi.fn(),
+    safeRemove: vi.fn(),
+    safeAllDocs: vi.fn(),
+    safeBulkDocs: vi.fn(),
+    safeQuery: vi.fn(),
+    safeFind: vi.fn(),
+  },
+  changes: vi.fn(),
+  sync: vi.fn(),
+  healthMonitor: {} as PouchDbContextType['healthMonitor'],
+  rawDb: { name: 'test-db' } as unknown as PouchDB.Database,
+} as PouchDbContextType;
+
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -35,10 +57,20 @@ const createTestQueryClient = () =>
 
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <PouchDbContext.Provider value={mockPouchDbContext}>
+        <TodoFlyoutProvider>{ui}</TodoFlyoutProvider>
+      </PouchDbContext.Provider>
+    </QueryClientProvider>,
+  );
 };
 
 describe('AuditSidebar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders sidebar header with Activity title', () => {
     renderWithProviders(<AuditSidebar isOpen={true} />);
     expect(screen.getByText('Activity')).toBeInTheDocument();
@@ -63,6 +95,10 @@ describe('AuditSidebar', () => {
 });
 
 describe('AuditSidebar with entries', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders audit entries', async () => {
     const mockEntries = [
       {
@@ -92,5 +128,106 @@ describe('AuditSidebar with entries', () => {
     renderWithProviders(<AuditSidebar isOpen={true} />);
     expect(screen.getByText('Test Todo')).toBeInTheDocument();
     expect(screen.getByText(/Created/)).toBeInTheDocument();
+  });
+
+  it('makes entries clickable and fetches todo on click', async () => {
+    const mockTodo: Todo = {
+      _id: '2026-01-07T11:00:00.000Z',
+      _rev: '1-abc',
+      title: 'Test Todo',
+      description: '',
+      context: 'work',
+      tags: [],
+      due: '2026-01-08',
+      completed: null,
+      active: {},
+      link: null,
+      repeat: null,
+      version: 'alpha3',
+    };
+
+    mockSafeGet.mockResolvedValue(mockTodo);
+
+    const mockEntries = [
+      {
+        _id: '2026-01-07T12:00:00.000Z',
+        version: 'audit_alpha1' as const,
+        action: 'create' as const,
+        entityType: 'todo' as const,
+        entityId: '2026-01-07T11:00:00.000Z',
+        timestamp: '2026-01-07T12:00:00.000Z',
+        source: 'web' as const,
+        after: { title: 'Test Todo' },
+      },
+    ];
+
+    const { useAuditLog } = await import('../hooks/use_audit_log_data');
+    vi.mocked(useAuditLog).mockReturnValue({
+      entries: mockEntries,
+      isLoading: false,
+      error: null,
+      hasMore: false,
+      isConnected: true,
+      connectionError: null,
+      refresh: vi.fn(),
+      reconnect: vi.fn(),
+    });
+
+    renderWithProviders(<AuditSidebar isOpen={true} />);
+
+    const entryButton = screen.getByRole('button', { name: /Test Todo/i });
+    fireEvent.click(entryButton);
+
+    await waitFor(() => {
+      expect(mockSafeGet).toHaveBeenCalledWith('2026-01-07T11:00:00.000Z');
+    });
+  });
+
+  it('disables deleted entries', async () => {
+    const mockEntries = [
+      {
+        _id: '2026-01-07T12:00:00.000Z',
+        version: 'audit_alpha1' as const,
+        action: 'create' as const,
+        entityType: 'todo' as const,
+        entityId: '2026-01-07T11:00:00.000Z',
+        timestamp: '2026-01-07T12:00:00.000Z',
+        source: 'web' as const,
+        after: { title: 'Test Todo' },
+      },
+      {
+        _id: '2026-01-07T13:00:00.000Z',
+        version: 'audit_alpha1' as const,
+        action: 'delete' as const,
+        entityType: 'todo' as const,
+        entityId: '2026-01-07T11:00:00.000Z',
+        timestamp: '2026-01-07T13:00:00.000Z',
+        source: 'web' as const,
+        before: { title: 'Test Todo' },
+      },
+    ];
+
+    const { useAuditLog } = await import('../hooks/use_audit_log_data');
+    vi.mocked(useAuditLog).mockReturnValue({
+      entries: mockEntries,
+      isLoading: false,
+      error: null,
+      hasMore: false,
+      isConnected: true,
+      connectionError: null,
+      refresh: vi.fn(),
+      reconnect: vi.fn(),
+    });
+
+    renderWithProviders(<AuditSidebar isOpen={true} />);
+
+    // Both entries should be visible
+    const buttons = screen.getAllByRole('button', { name: /Test Todo/i });
+    expect(buttons).toHaveLength(2);
+
+    // Both should be disabled since the entity was deleted
+    buttons.forEach((button) => {
+      expect(button).toBeDisabled();
+    });
   });
 });

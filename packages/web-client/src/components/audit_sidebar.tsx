@@ -2,28 +2,39 @@
  * Collapsible sidebar for displaying audit log entries.
  * Shows recent todo operations with real-time updates via SSE.
  */
-import { type FC, useState } from 'react';
+import { type Todo } from '@eddo/core-client';
+import { type FC, useCallback, useState } from 'react';
 import { BiCloud, BiEnvelope, BiGitBranch, BiGlobe, BiRss, BiTerminal } from 'react-icons/bi';
 
 import type { AuditAction, AuditLogAlpha1, AuditSource } from '@eddo/core-shared';
 
 import { useAuditLog } from '../hooks/use_audit_log_data';
+import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
+import { usePouchDb } from '../pouch_db';
 
 /** Width of the sidebar when expanded */
-const SIDEBAR_WIDTH = 280;
+const SIDEBAR_WIDTH = 320;
 
 /** Maximum entries displayed in the sidebar */
 const MAX_DISPLAY_ENTRIES = 20;
 
 /** Action icons and labels */
 const ACTION_CONFIG: Record<AuditAction, { icon: string; label: string; color: string }> = {
-  create: { icon: '+', label: 'Created', color: 'text-green-500' },
-  update: { icon: '~', label: 'Updated', color: 'text-blue-500' },
-  delete: { icon: '✕', label: 'Deleted', color: 'text-red-500' },
-  complete: { icon: '✓', label: 'Completed', color: 'text-green-600' },
-  uncomplete: { icon: '○', label: 'Reopened', color: 'text-yellow-500' },
-  time_tracking_start: { icon: '▶', label: 'Started', color: 'text-purple-500' },
-  time_tracking_stop: { icon: '■', label: 'Stopped', color: 'text-purple-600' },
+  create: { icon: '+', label: 'Created', color: 'text-neutral-500 dark:text-neutral-400' },
+  update: { icon: '~', label: 'Updated', color: 'text-neutral-500 dark:text-neutral-400' },
+  delete: { icon: '✕', label: 'Deleted', color: 'text-neutral-500 dark:text-neutral-400' },
+  complete: { icon: '✓', label: 'Completed', color: 'text-neutral-500 dark:text-neutral-400' },
+  uncomplete: { icon: '○', label: 'Reopened', color: 'text-neutral-500 dark:text-neutral-400' },
+  time_tracking_start: {
+    icon: '▶',
+    label: 'Started',
+    color: 'text-neutral-500 dark:text-neutral-400',
+  },
+  time_tracking_stop: {
+    icon: '■',
+    label: 'Stopped',
+    color: 'text-neutral-500 dark:text-neutral-400',
+  },
 };
 
 /** Source icons and labels */
@@ -86,32 +97,44 @@ const LoadingSkeleton: FC = () => (
 
 interface AuditEntryItemProps {
   entry: AuditLogAlpha1;
+  onEntryClick: (entityId: string) => void;
+  isDeleted: boolean;
 }
 
-const AuditEntryItem: FC<AuditEntryItemProps> = ({ entry }) => {
+const AuditEntryItem: FC<AuditEntryItemProps> = ({ entry, onEntryClick, isDeleted }) => {
   const actionConfig = ACTION_CONFIG[entry.action];
   const sourceConfig = SOURCE_CONFIG[entry.source];
   const SourceIcon = sourceConfig.icon;
   const title = getEntryTitle(entry);
+  const isClickable = !isDeleted;
+
+  const handleClick = () => {
+    if (isClickable) {
+      onEntryClick(entry.entityId);
+    }
+  };
 
   return (
-    <div className="border-b border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
-      <div className="flex items-start gap-2">
-        <span className={`font-mono text-lg ${actionConfig.color}`}>{actionConfig.icon}</span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-            {title}
-          </p>
-          <p className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
-            {actionConfig.label}
-            <span className="mx-0.5">·</span>
-            <SourceIcon size="0.9em" />
-            <span className="mx-0.5">·</span>
-            {formatRelativeTime(entry.timestamp)}
-          </p>
-        </div>
-      </div>
-    </div>
+    <button
+      className={`w-full border-b border-neutral-200 px-3 py-2 text-left dark:border-neutral-700 ${
+        isClickable
+          ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700'
+          : 'cursor-default opacity-60'
+      }`}
+      disabled={!isClickable}
+      onClick={handleClick}
+      type="button"
+    >
+      <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
+      <p className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+        <span className={`font-mono text-xs ${actionConfig.color}`}>{actionConfig.icon}</span>
+        {actionConfig.label}
+        <span className="mx-0.5">·</span>
+        <SourceIcon size="0.9em" />
+        <span className="mx-0.5">·</span>
+        {formatRelativeTime(entry.timestamp)}
+      </p>
+    </button>
   );
 };
 
@@ -193,13 +216,36 @@ export interface AuditSidebarProps {
   onToggle?: (isOpen: boolean) => void;
 }
 
+/** Hook for handling audit entry clicks */
+const useAuditEntryClick = () => {
+  const { safeDb } = usePouchDb();
+  const { openTodo } = useTodoFlyoutContext();
+
+  return useCallback(
+    async (entityId: string) => {
+      const todo = await safeDb.safeGet<Todo>(entityId);
+      if (todo) {
+        openTodo(todo);
+      }
+    },
+    [safeDb, openTodo],
+  );
+};
+
+/** Determine deleted entity IDs from audit entries */
+const getDeletedEntityIds = (entries: readonly AuditLogAlpha1[]): Set<string> => {
+  return new Set(entries.filter((e) => e.action === 'delete').map((e) => e.entityId));
+};
+
 export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle }) => {
   const [isExpanded, setIsExpanded] = useState(isOpen);
   const [sourceFilter, setSourceFilter] = useState<AuditSource | 'all'>('all');
   const { entries, isLoading, isConnected } = useAuditLog({ enabled: isExpanded });
+  const handleEntryClick = useAuditEntryClick();
 
   const filteredEntries =
     sourceFilter === 'all' ? entries : entries.filter((e) => e.source === sourceFilter);
+  const deletedEntityIds = getDeletedEntityIds(entries);
 
   const handleToggle = (expanded: boolean) => {
     setIsExpanded(expanded);
@@ -226,7 +272,14 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
             {sourceFilter === 'all' ? 'No activity yet' : `No ${sourceFilter} activity`}
           </div>
         ) : (
-          filteredEntries.map((entry) => <AuditEntryItem entry={entry} key={entry._id} />)
+          filteredEntries.map((entry) => (
+            <AuditEntryItem
+              entry={entry}
+              isDeleted={deletedEntityIds.has(entry.entityId)}
+              key={entry._id}
+              onEntryClick={handleEntryClick}
+            />
+          ))
         )}
       </div>
 
