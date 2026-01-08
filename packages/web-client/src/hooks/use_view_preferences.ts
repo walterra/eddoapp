@@ -4,7 +4,58 @@ import { useProfile } from './use_profile';
 
 export type ViewMode = 'kanban' | 'table';
 
-export const DEFAULT_TABLE_COLUMNS = ['status', 'title', 'subtasks', 'due', 'tags', 'timeTracked'];
+/** Column definition with id and display label */
+export interface ColumnDefinition {
+  id: string;
+  label: string;
+}
+
+/** Canonical list of all available columns in display order */
+export const AVAILABLE_COLUMNS: readonly ColumnDefinition[] = [
+  { id: 'status', label: 'Status' },
+  { id: 'title', label: 'Title' },
+  { id: 'due', label: 'Due Date' },
+  { id: 'tags', label: 'Tags' },
+  { id: 'timeTracked', label: 'Time Tracked' },
+  { id: 'subtasks', label: 'Subtasks' },
+  { id: 'context', label: 'Context' },
+  { id: 'completed', label: 'Completed Date' },
+  { id: 'repeat', label: 'Repeat' },
+  { id: 'link', label: 'Link' },
+  { id: 'description', label: 'Description' },
+] as const;
+
+/** Column IDs in canonical order for quick lookup */
+const CANONICAL_COLUMN_ORDER = AVAILABLE_COLUMNS.map((col) => col.id);
+
+/**
+ * Sorts column IDs to match canonical order defined in AVAILABLE_COLUMNS.
+ * Unknown columns are appended at the end in their original order.
+ * @param columns - Array of column IDs to sort
+ * @returns New array sorted by canonical order
+ */
+export function sortColumnsByCanonicalOrder(columns: readonly string[]): string[] {
+  const columnSet = new Set(columns);
+  const sorted: string[] = [];
+
+  // Add columns in canonical order
+  for (const canonicalId of CANONICAL_COLUMN_ORDER) {
+    if (columnSet.has(canonicalId)) {
+      sorted.push(canonicalId);
+    }
+  }
+
+  // Append unknown columns at the end (preserves forward compatibility)
+  for (const col of columns) {
+    if (!CANONICAL_COLUMN_ORDER.includes(col)) {
+      sorted.push(col);
+    }
+  }
+
+  return sorted;
+}
+
+export const DEFAULT_TABLE_COLUMNS = ['status', 'title', 'due', 'tags', 'timeTracked', 'subtasks'];
 
 export interface ViewPreferences {
   viewMode: ViewMode;
@@ -32,7 +83,7 @@ export const useViewPreferences = (): UseViewPreferencesReturn => {
   );
 
   const tableColumns = useMemo<string[]>(
-    () => profile?.preferences?.tableColumns || DEFAULT_TABLE_COLUMNS,
+    () => sortColumnsByCanonicalOrder(profile?.preferences?.tableColumns || DEFAULT_TABLE_COLUMNS),
     [profile?.preferences?.tableColumns],
   );
 

@@ -9,7 +9,11 @@ import { HiOutlineCog } from 'react-icons/hi';
 import { MdTableChart, MdViewKanban } from 'react-icons/md';
 
 import { useFloatingPosition } from '../hooks/use_floating_position';
-import type { ViewMode } from '../hooks/use_view_preferences';
+import {
+  AVAILABLE_COLUMNS,
+  sortColumnsByCanonicalOrder,
+  type ViewMode,
+} from '../hooks/use_view_preferences';
 import { TRANSITION_FAST } from '../styles/interactive';
 
 interface ViewSettingsPopoverProps {
@@ -22,20 +26,6 @@ interface ViewSettingsPopoverProps {
 
 const POPOVER_STYLES =
   'z-50 w-64 rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
-
-const AVAILABLE_COLUMNS = [
-  { id: 'title', label: 'Title' },
-  { id: 'subtasks', label: 'Subtasks' },
-  { id: 'context', label: 'Context' },
-  { id: 'due', label: 'Due Date' },
-  { id: 'tags', label: 'Tags' },
-  { id: 'timeTracked', label: 'Time Tracked' },
-  { id: 'status', label: 'Status' },
-  { id: 'completed', label: 'Completed Date' },
-  { id: 'repeat', label: 'Repeat' },
-  { id: 'link', label: 'Link' },
-  { id: 'description', label: 'Description' },
-];
 
 /** Hook for popover dismiss behavior (click outside, escape key) */
 const usePopoverDismiss = (
@@ -261,9 +251,11 @@ export const ViewSettingsPopover: FC<ViewSettingsPopoverProps> = ({
   const handleToggleColumn = (columnId: string) => {
     const isSelected = tableColumns.includes(columnId);
     if (isSelected && tableColumns.length === 1) return;
-    const newColumns = isSelected
+    const updatedColumns = isSelected
       ? tableColumns.filter((id) => id !== columnId)
       : [...tableColumns, columnId];
+    // Sort to maintain canonical order when columns are toggled
+    const newColumns = sortColumnsByCanonicalOrder(updatedColumns);
     onTableColumnsChange(newColumns);
   };
 
