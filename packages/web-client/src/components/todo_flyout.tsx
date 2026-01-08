@@ -24,6 +24,7 @@ import {
   TitleField,
   validateTimeTracking,
 } from './todo_edit_fields';
+import { MetadataField } from './todo_metadata_field';
 import { NotesField } from './todo_notes_field';
 import { ParentIdField } from './todo_parent_field';
 import { TodoViewFields } from './todo_view_fields';
@@ -112,6 +113,7 @@ const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, o
     <ExternalIdField onChange={onChange} todo={todo} />
     <ParentIdField onChange={onChange} todo={todo} />
     <RepeatField onChange={onChange} todo={todo} />
+    <MetadataField onChange={onChange} todo={todo} />
     <NotesField onChange={onChange} todo={todo} />
     <CompletedField onChange={onChange} todo={todo} />
     <TimeTrackingField activeArray={activeArray} onChange={onChange} todo={todo} />
@@ -253,6 +255,3 @@ export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
     document.body,
   );
 };
-
-// Re-export for backward compatibility during migration
-export { TodoFlyout as TodoEditFlyout };

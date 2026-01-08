@@ -94,6 +94,12 @@ export const createTodoParameters = z.object({
     .describe(
       'Optional parent todo ID for creating subtasks. References the _id of an existing todo to create a parent-child relationship.',
     ),
+  metadata: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe(
+      'Optional key-value metadata for extensibility. Use namespaced keys (e.g., "agent:worktree", "github:labels", "rss:feed_title").',
+    ),
 });
 
 export type CreateTodoArgs = z.infer<typeof createTodoParameters>;
@@ -139,6 +145,7 @@ function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha3, '_rev'> {
     externalId: args.externalId,
     link: args.link,
     parentId: args.parentId,
+    metadata: args.metadata,
     version: 'alpha3',
   };
 }
