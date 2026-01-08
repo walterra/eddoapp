@@ -3,28 +3,17 @@
  */
 import type { FC } from 'react';
 
-import { ColumnPicker } from './column_picker';
+import { AddTodoPopover } from './add_todo_popover';
 import { EddoContextFilter } from './eddo_context_filter';
 import { PresetFilterDropdown } from './preset_filter_dropdown';
 import { StatusFilter } from './status_filter';
 import { TagFilter } from './tag_filter';
 import { TimeRangeFilter } from './time_range_filter';
 import type { FilterRowProps } from './todo_filters_types';
-import { ViewModeToggle } from './view_mode_toggle';
 
 export const FilterRow: FC<FilterRowProps> = (props) => (
   <>
-    <ViewModeToggle
-      isLoading={props.isViewPrefsLoading}
-      onViewModeChange={props.onViewModeChange}
-      viewMode={props.viewMode}
-    />
-    {props.viewMode === 'table' && (
-      <ColumnPicker
-        onColumnsChange={props.onTableColumnsChange}
-        selectedColumns={props.tableColumns}
-      />
-    )}
+    <AddTodoPopover />
     <PresetFilterDropdown
       currentFilters={{
         selectedTags: props.selectedTags,
