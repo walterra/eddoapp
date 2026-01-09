@@ -1,8 +1,8 @@
 /**
  * Graph-based todo visualization using React Flow.
- * Displays todos as nodes with parent/child relationships as edges.
+ * Displays todos as nodes with parent/child relationships and metadata groupings.
  */
-import { type DatabaseError, type Todo } from '@eddo/core-client';
+import { type DatabaseError } from '@eddo/core-client';
 import {
   Background,
   Controls,
@@ -24,6 +24,8 @@ import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
 import { calculateDateRange, filterTodosForGraph } from './todo_board_helpers';
 import { useDbInitialization, useOutdatedTodos, useTodoBoardData } from './todo_board_state';
+import { createAllEdges, createAllNodes } from './todo_graph_helpers';
+import { MetadataNode } from './todo_graph_metadata_node';
 import { TodoNode } from './todo_graph_node';
 
 interface TodoGraphProps {
@@ -34,40 +36,10 @@ interface TodoGraphProps {
   selectedTimeRange: TimeRange;
 }
 
-/** Convert todos to React Flow nodes */
-function todosToNodes(todos: Todo[]): Node[] {
-  return todos.map((todo, index) => ({
-    id: todo._id,
-    type: 'todoNode',
-    position: { x: (index % 5) * 280, y: Math.floor(index / 5) * 120 },
-    data: { todo },
-  }));
-}
-
-/** Create edges from parent/child relationships */
-function createEdges(todos: Todo[]): Edge[] {
-  const edges: Edge[] = [];
-  const todoMap = new Map(todos.map((t) => [t._id, t]));
-
-  for (const todo of todos) {
-    if (todo.parentId && todoMap.has(todo.parentId)) {
-      edges.push({
-        id: `${todo.parentId}-${todo._id}`,
-        source: todo.parentId,
-        target: todo._id,
-        type: 'smoothstep',
-        animated: false,
-        style: { stroke: '#64748b', strokeWidth: 2 },
-      });
-    }
-  }
-
-  return edges;
-}
-
 /** Custom node types for React Flow */
 const nodeTypes = {
   todoNode: TodoNode,
+  metadataNode: MetadataNode,
 };
 
 interface GraphDataResult {
@@ -105,8 +77,8 @@ const useGraphData = (
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
-  const nodes = useMemo(() => todosToNodes(filteredTodos), [filteredTodos]);
-  const edges = useMemo(() => createEdges(filteredTodos), [filteredTodos]);
+  const nodes = useMemo(() => createAllNodes(filteredTodos), [filteredTodos]);
+  const edges = useMemo(() => createAllEdges(filteredTodos), [filteredTodos]);
 
   const hasNoTodos =
     filteredTodos.length === 0 &&
