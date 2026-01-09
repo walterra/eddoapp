@@ -1,8 +1,9 @@
 /**
  * Type definitions for user profile hook
  */
+import { type ThemePreference, type ViewMode } from '@eddo/core-shared';
 
-export type ThemePreference = 'system' | 'light' | 'dark';
+export type { ThemePreference };
 
 export interface RssFeedConfigUI {
   url: string;
@@ -56,7 +57,7 @@ export interface UserPreferences {
   printRecap?: boolean;
   timezone?: string;
   theme?: ThemePreference;
-  viewMode?: 'kanban' | 'table';
+  viewMode?: ViewMode;
   tableColumns?: string[];
   selectedTags?: string[];
   selectedContexts?: string[];
@@ -123,7 +124,7 @@ export interface UpdatePreferencesData {
   printRecap?: boolean;
   timezone?: string;
   theme?: ThemePreference;
-  viewMode?: 'kanban' | 'table';
+  viewMode?: ViewMode;
   tableColumns?: string[];
   selectedTags?: string[];
   selectedContexts?: string[];

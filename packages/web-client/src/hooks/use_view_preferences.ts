@@ -1,8 +1,9 @@
+import { type ViewMode } from '@eddo/core-shared';
 import { useCallback, useMemo } from 'react';
 
 import { useProfile } from './use_profile';
 
-export type ViewMode = 'kanban' | 'table';
+export type { ViewMode };
 
 /** Column definition with id and display label */
 export interface ColumnDefinition {

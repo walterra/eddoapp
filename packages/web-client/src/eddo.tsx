@@ -10,6 +10,7 @@ import type { CompletionStatus } from './components/status_filter';
 import type { TimeRange } from './components/time_range_filter';
 import { TodoBoard } from './components/todo_board';
 import { TodoFilters } from './components/todo_filters';
+import { TodoGraph } from './components/todo_graph';
 import { TodoTable } from './components/todo_table';
 import { createQueryClient } from './config/query_client';
 import { AuthProvider, useAuth } from './hooks/use_auth';
@@ -129,11 +130,17 @@ function TodoContentView({
     selectedTags: prefs.selectedTags,
     selectedTimeRange: prefs.selectedTimeRange,
   };
-  return viewMode === 'kanban' ? (
-    <TodoBoard {...common} />
-  ) : (
-    <TodoTable {...common} selectedColumns={tableColumns} />
-  );
+
+  switch (viewMode) {
+    case 'kanban':
+      return <TodoBoard {...common} />;
+    case 'table':
+      return <TodoTable {...common} selectedColumns={tableColumns} />;
+    case 'graph':
+      return <TodoGraph {...common} />;
+    default:
+      return <TodoBoard {...common} />;
+  }
 }
 
 /** Authenticated todo app content */

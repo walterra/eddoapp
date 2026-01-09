@@ -1,10 +1,11 @@
 import isNil from 'lodash-es/isNil';
 
+import { type ThemePreference, type ViewMode } from '../types/ui-preferences';
 import { UserRegistryEntryAlpha1 } from './user_registry_alpha1';
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
-export type ThemePreference = 'system' | 'light' | 'dark';
+export type { ThemePreference };
 
 /** RSS feed configuration */
 export interface RssFeedConfig {
@@ -85,7 +86,7 @@ export interface UserPreferences {
   printRecap?: boolean; // Enable/disable thermal printer output for recap
   timezone?: string; // Future timezone support
   theme?: ThemePreference; // UI theme preference, defaults to system
-  viewMode?: 'kanban' | 'table'; // Todo view preference, defaults to kanban
+  viewMode?: ViewMode; // Todo view preference, defaults to kanban
   tableColumns?: string[]; // Selected columns for table view
   selectedTags?: string[]; // Filter: selected tags
   selectedContexts?: string[]; // Filter: selected contexts

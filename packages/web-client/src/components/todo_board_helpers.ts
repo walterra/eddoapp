@@ -134,6 +134,23 @@ export function filterTodos(
 }
 
 /**
+ * Apply filters to todos for graph view (includes children for relationship visualization)
+ */
+export function filterTodosForGraph(
+  todos: Todo[],
+  selectedContexts: string[],
+  selectedStatus: CompletionStatus,
+  selectedTags: string[],
+): Todo[] {
+  let filtered = todos;
+  // Note: We don't filter out children in graph view to show parent/child relationships
+  filtered = filterByContext(filtered, selectedContexts);
+  filtered = filterByStatus(filtered, selectedStatus);
+  filtered = filterByTags(filtered, selectedTags);
+  return filtered;
+}
+
+/**
  * Check if activity passes context filter
  */
 function activityPassesContextFilter(todo: Todo, selectedContexts: string[]): boolean {
