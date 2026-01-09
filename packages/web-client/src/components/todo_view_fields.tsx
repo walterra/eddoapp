@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm';
 import { useChildTodos, useParentTodo } from '../hooks/use_parent_child';
 import { TEXT_LINK } from '../styles/interactive';
 import { TagDisplay } from './tag_display';
+import { MetadataView } from './todo_metadata_view';
 
 interface TodoViewFieldsProps {
   todo: Todo;
@@ -317,6 +318,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
     <NotesView notes={todo.notes} />
     <LinkView link={todo.link} />
     <ExternalIdView externalId={todo.externalId ?? null} />
+    <MetadataView metadata={todo.metadata} />
     <TimeTrackingView active={todo.active} />
 
     <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 pt-4 dark:border-neutral-700">

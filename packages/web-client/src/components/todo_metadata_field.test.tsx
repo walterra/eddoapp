@@ -26,80 +26,142 @@ const createMockTodo = (overrides: Partial<Todo> = {}): Todo => ({
 });
 
 describe('MetadataField', () => {
-  it('renders empty when no metadata', () => {
+  it('renders empty state when no metadata', () => {
     const onChange = vi.fn();
     render(<MetadataField onChange={onChange} todo={createMockTodo()} />);
 
-    const textarea = screen.getByLabelText('Metadata');
-    expect(textarea).toHaveValue('');
+    expect(screen.getByText('Metadata')).toBeInTheDocument();
+    expect(screen.getByLabelText('New metadata key')).toBeInTheDocument();
+    expect(screen.getByLabelText('New metadata value')).toBeInTheDocument();
   });
 
-  it('renders existing metadata as formatted JSON', () => {
+  it('renders existing metadata as key/value rows', () => {
     const onChange = vi.fn();
     const todo = createMockTodo({
       metadata: { 'agent:worktree': '/path/to/tree', 'github:labels': 'bug' },
     });
     render(<MetadataField onChange={onChange} todo={todo} />);
 
-    const textarea = screen.getByLabelText('Metadata');
-    expect(textarea).toHaveValue(JSON.stringify(todo.metadata, null, 2));
+    expect(screen.getByText('Metadata (2)')).toBeInTheDocument();
+    const keyInputs = screen.getAllByLabelText('Metadata key');
+    expect(keyInputs).toHaveLength(2);
+    expect(keyInputs[0]).toHaveValue('agent:worktree');
+    expect(keyInputs[1]).toHaveValue('github:labels');
   });
 
-  it('calls onChange with parsed metadata on valid JSON input', () => {
+  it('calls onChange when adding a new key/value pair', () => {
     const onChange = vi.fn();
     render(<MetadataField onChange={onChange} todo={createMockTodo()} />);
 
-    const textarea = screen.getByLabelText('Metadata');
-    fireEvent.change(textarea, { target: { value: '{"agent:test": "value"}' } });
+    const keyInput = screen.getByLabelText('New metadata key');
+    const valueInput = screen.getByLabelText('New metadata value');
+    const addButton = screen.getByLabelText('Add metadata entry');
+
+    fireEvent.change(keyInput, { target: { value: 'agent:test' } });
+    fireEvent.change(valueInput, { target: { value: 'test-value' } });
+    fireEvent.click(addButton);
 
     expect(onChange).toHaveBeenCalledWith(expect.any(Function));
-    // Verify the updater function works correctly
     const updater = onChange.mock.calls[0][0];
     const result = updater(createMockTodo());
-    expect(result.metadata).toEqual({ 'agent:test': 'value' });
+    expect(result.metadata).toEqual({ 'agent:test': 'test-value' });
   });
 
-  it('shows error message for invalid JSON', () => {
+  it('calls onChange when deleting a metadata entry', () => {
     const onChange = vi.fn();
-    render(<MetadataField onChange={onChange} todo={createMockTodo()} />);
+    const todo = createMockTodo({
+      metadata: { key1: 'value1', key2: 'value2' },
+    });
+    render(<MetadataField onChange={onChange} todo={todo} />);
 
-    const textarea = screen.getByLabelText('Metadata');
-    fireEvent.change(textarea, { target: { value: 'not valid json' } });
+    const deleteButtons = screen.getAllByLabelText('Delete metadata entry');
+    fireEvent.click(deleteButtons[0]);
 
-    expect(screen.getByText(/Invalid JSON/)).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalled();
+    const updater = onChange.mock.calls[0][0];
+    const result = updater(todo);
+    expect(result.metadata).toEqual({ key2: 'value2' });
   });
 
-  it('shows error message for non-object JSON', () => {
+  it('calls onChange when editing a key', () => {
     const onChange = vi.fn();
-    render(<MetadataField onChange={onChange} todo={createMockTodo()} />);
+    const todo = createMockTodo({ metadata: { oldKey: 'value' } });
+    render(<MetadataField onChange={onChange} todo={todo} />);
 
-    const textarea = screen.getByLabelText('Metadata');
-    fireEvent.change(textarea, { target: { value: '["array"]' } });
+    const keyInput = screen.getByLabelText('Metadata key');
+    fireEvent.change(keyInput, { target: { value: 'newKey' } });
 
-    expect(screen.getByText(/Invalid JSON/)).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalled();
+    const updater = onChange.mock.calls[0][0];
+    const result = updater(todo);
+    expect(result.metadata).toEqual({ newKey: 'value' });
   });
 
-  it('shows error message for non-string values', () => {
+  it('calls onChange when editing a value', () => {
     const onChange = vi.fn();
-    render(<MetadataField onChange={onChange} todo={createMockTodo()} />);
+    const todo = createMockTodo({ metadata: { key: 'oldValue' } });
+    render(<MetadataField onChange={onChange} todo={todo} />);
 
-    const textarea = screen.getByLabelText('Metadata');
-    fireEvent.change(textarea, { target: { value: '{"key": 123}' } });
+    const valueInput = screen.getByLabelText('Metadata value');
+    fireEvent.change(valueInput, { target: { value: 'newValue' } });
 
-    expect(screen.getByText(/Invalid JSON/)).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalled();
+    const updater = onChange.mock.calls[0][0];
+    const result = updater(todo);
+    expect(result.metadata).toEqual({ key: 'newValue' });
   });
 
-  it('clears metadata when input is emptied', () => {
+  it('shows duplicate key warning', () => {
+    const onChange = vi.fn();
+    const todo = createMockTodo({ metadata: { key1: 'value1' } });
+    render(<MetadataField onChange={onChange} todo={todo} />);
+
+    // Add a duplicate key
+    const keyInput = screen.getByLabelText('New metadata key');
+    const valueInput = screen.getByLabelText('New metadata value');
+    const addButton = screen.getByLabelText('Add metadata entry');
+
+    fireEvent.change(keyInput, { target: { value: 'key1' } });
+    fireEvent.change(valueInput, { target: { value: 'value2' } });
+    fireEvent.click(addButton);
+
+    expect(screen.getByText(/Duplicate keys detected/)).toBeInTheDocument();
+  });
+
+  it('clears metadata when all entries are deleted', () => {
     const onChange = vi.fn();
     const todo = createMockTodo({ metadata: { key: 'value' } });
     render(<MetadataField onChange={onChange} todo={todo} />);
 
-    const textarea = screen.getByLabelText('Metadata');
-    fireEvent.change(textarea, { target: { value: '' } });
+    const deleteButton = screen.getByLabelText('Delete metadata entry');
+    fireEvent.click(deleteButton);
 
     expect(onChange).toHaveBeenCalled();
     const updater = onChange.mock.calls[0][0];
     const result = updater(todo);
     expect(result.metadata).toBeUndefined();
+  });
+
+  it('adds entry on Enter key press in key input', () => {
+    const onChange = vi.fn();
+    render(<MetadataField onChange={onChange} todo={createMockTodo()} />);
+
+    const keyInput = screen.getByLabelText('New metadata key');
+    const valueInput = screen.getByLabelText('New metadata value');
+
+    fireEvent.change(keyInput, { target: { value: 'test-key' } });
+    fireEvent.change(valueInput, { target: { value: 'test-value' } });
+    fireEvent.keyDown(keyInput, { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('has datalist with namespace suggestions', () => {
+    const onChange = vi.fn();
+    render(<MetadataField onChange={onChange} todo={createMockTodo()} />);
+
+    const datalist = document.getElementById('metadata-key-suggestions');
+    expect(datalist).toBeInTheDocument();
+    expect(datalist?.querySelectorAll('option').length).toBeGreaterThan(0);
   });
 });
