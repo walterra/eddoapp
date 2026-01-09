@@ -8,7 +8,6 @@ import {
   extractEmailBody,
   extractSender,
   htmlToMarkdown,
-  stripHtml,
   truncate,
 } from './email-parser.js';
 
@@ -136,26 +135,6 @@ describe('htmlToMarkdown', () => {
     const result = htmlToMarkdown(html);
     // GFM plugin uses single ~ for strikethrough (valid GFM)
     expect(result).toContain('~deleted~');
-  });
-});
-
-describe('stripHtml', () => {
-  it('removes all HTML tags', () => {
-    const html = '<p>Hello <strong>world</strong>!</p>';
-    const result = stripHtml(html);
-    expect(result).toBe('Hello world !');
-  });
-
-  it('decodes HTML entities', () => {
-    const html = '&lt;test&gt; &amp; &quot;quoted&quot;';
-    const result = stripHtml(html);
-    expect(result).toBe('<test> & "quoted"');
-  });
-
-  it('removes style and script tags', () => {
-    const html = '<style>body{}</style><p>Text</p><script>alert(1)</script>';
-    const result = stripHtml(html);
-    expect(result).toBe('Text');
   });
 });
 

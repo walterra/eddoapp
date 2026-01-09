@@ -5,9 +5,10 @@ export { createEmailClient, generateExternalId, mapEmailToTodo } from './client.
 export type { EmailClient, EmailClientOptions, EmailLogger } from './client.js';
 export {
   decodeQuotedPrintable,
+  extractEmailBody,
   extractPlainText,
   extractSender,
-  stripHtml,
+  htmlToMarkdown,
   truncate,
 } from './email-parser.js';
 export { createOAuthStateManager } from './oauth-state-manager.js';
