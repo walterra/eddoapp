@@ -12,6 +12,7 @@ import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 
 export interface TodoNodeData {
   todo: Todo;
+  size: number;
 }
 
 /** Build tooltip text with full details */
@@ -27,11 +28,13 @@ const buildTooltip = (todo: Todo): string => {
 /** Get node style based on todo state */
 const getNodeStyle = (isCompleted: boolean): { bgColor: string; borderColor: string } => {
   if (isCompleted) {
-    return { bgColor: 'bg-green-900', borderColor: 'border-green-800' };
+    // Muted teal for completed - subtle but distinct
+    return { bgColor: 'bg-teal-700', borderColor: 'border-teal-600' };
   }
+  // Warm slate for pending - neutral but inviting
   return {
-    bgColor: 'bg-neutral-700 dark:bg-neutral-600',
-    borderColor: 'border-neutral-600 dark:border-neutral-500',
+    bgColor: 'bg-slate-600',
+    borderColor: 'border-slate-500',
   };
 };
 
@@ -41,7 +44,7 @@ interface TodoNodeProps {
 
 /** Icon-based node for React Flow */
 export const TodoNode: FC<TodoNodeProps> = ({ data }) => {
-  const { todo } = data;
+  const { todo, size } = data;
   const { openTodo } = useTodoFlyoutContext();
   const { bgColor, borderColor } = getNodeStyle(!!todo.completed);
 
@@ -49,13 +52,17 @@ export const TodoNode: FC<TodoNodeProps> = ({ data }) => {
     openTodo(todo);
   }, [openTodo, todo]);
 
+  // Scale icon size proportionally
+  const iconSize = Math.round(size * 0.6);
+
   return (
     <div
-      className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-125 ${bgColor} ${borderColor}`}
+      className={`flex cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-125 ${bgColor} ${borderColor}`}
       onClick={handleClick}
+      style={{ width: size, height: size }}
       title={buildTooltip(todo)}
     >
-      <HiDocumentText className="h-4 w-4 text-white" />
+      <HiDocumentText className="text-white" style={{ width: iconSize, height: iconSize }} />
       <Handle
         className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
         id="center"

@@ -12,14 +12,65 @@ const METADATA_KEYS_TO_VISUALIZE = ['agent:session', 'agent:name'] as const;
 const getMetadataNodeId = (key: string, value: string): string =>
   `metadata:${key}:${value.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
 
+/** Node size range in pixels */
+const MIN_NODE_SIZE = 24;
+const MAX_NODE_SIZE = 56;
+
+/** Get content length (description + title) */
+const getContentLength = (todo: Todo): number => {
+  const descLen = todo.description?.length ?? 0;
+  const titleLen = todo.title?.length ?? 0;
+  return descLen + titleLen;
+};
+
+/** Count children for each todo */
+const countChildren = (todos: Todo[]): Map<string, number> => {
+  const childCount = new Map<string, number>();
+  for (const todo of todos) {
+    if (todo.parentId) {
+      childCount.set(todo.parentId, (childCount.get(todo.parentId) ?? 0) + 1);
+    }
+  }
+  return childCount;
+};
+
+/** Calculate normalized size for a todo based on content length and child count */
+const calculateNodeSize = (
+  contentLen: number,
+  childCount: number,
+  minLen: number,
+  maxLen: number,
+): number => {
+  if (maxLen === minLen) return (MIN_NODE_SIZE + MAX_NODE_SIZE) / 2;
+  // Normalize content length
+  const contentNorm = (contentLen - minLen) / (maxLen - minLen);
+  // Boost for having children (each child adds 0.1, max 0.5 boost)
+  const childBoost = Math.min(childCount * 0.1, 0.5);
+  // Combine factors (content weight 0.7, child weight 0.3 when present)
+  const combined = Math.min(contentNorm + childBoost, 1);
+  return Math.round(MIN_NODE_SIZE + combined * (MAX_NODE_SIZE - MIN_NODE_SIZE));
+};
+
 /** Convert todos to React Flow nodes */
 export function todosToNodes(todos: Todo[]): Node[] {
-  return todos.map((todo, index) => ({
-    id: todo._id,
-    type: 'todoNode',
-    position: { x: (index % 5) * 280, y: Math.floor(index / 5) * 120 },
-    data: { todo },
-  }));
+  // Calculate min/max content lengths
+  const lengths = todos.map(getContentLength);
+  const minLen = Math.min(...lengths);
+  const maxLen = Math.max(...lengths);
+  const childCounts = countChildren(todos);
+
+  return todos.map((todo, index) => {
+    const contentLen = getContentLength(todo);
+    const children = childCounts.get(todo._id) ?? 0;
+    const size = calculateNodeSize(contentLen, children, minLen, maxLen);
+
+    return {
+      id: todo._id,
+      type: 'todoNode',
+      position: { x: (index % 5) * 280, y: Math.floor(index / 5) * 120 },
+      data: { todo, size },
+    };
+  });
 }
 
 /** Extract unique metadata values and create nodes */
@@ -78,7 +129,7 @@ export function createParentChildEdges(todos: Todo[]): Edge[] {
         targetHandle: 'center',
         type: 'curved',
         animated: false,
-        style: { stroke: '#64748b', strokeWidth: 3, strokeOpacity: 0.4 },
+        style: { stroke: '#78716c', strokeWidth: 2 },
       });
     }
   }
@@ -125,10 +176,9 @@ const createMetadataEdge = (
   type: 'curved',
   animated: !isCompleted,
   style: {
-    stroke: '#a855f7',
-    strokeWidth: 3,
-    strokeOpacity: isCompleted ? 0.2 : 0.35,
-    strokeDasharray: isCompleted ? undefined : '5,5',
+    stroke: '#7c3aed',
+    strokeWidth: 2,
+    strokeDasharray: isCompleted ? undefined : '2,3',
   },
 });
 

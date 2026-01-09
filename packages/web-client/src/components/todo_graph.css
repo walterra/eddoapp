@@ -1,0 +1,10 @@
+/* Custom styles for TodoGraph */
+
+/* Slow down animated edge animation */
+.react-flow__edge-path.animated {
+  animation-duration: 1.5s !important;
+}
+
+.react-flow__edge.animated path {
+  animation-duration: 1.5s !important;
+}

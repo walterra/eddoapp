@@ -22,32 +22,32 @@ const getMetadataStyle = (
     case 'agent:session':
       return {
         Icon: RiRobot2Fill,
-        bgColor: 'bg-purple-800',
-        borderColor: 'border-purple-700',
+        bgColor: 'bg-violet-600',
+        borderColor: 'border-violet-500',
       };
     case 'agent:branch':
       return {
         Icon: BiGitBranch,
-        bgColor: 'bg-orange-800',
-        borderColor: 'border-orange-700',
+        bgColor: 'bg-amber-600',
+        borderColor: 'border-amber-500',
       };
     case 'agent:name':
       return {
         Icon: RiRobot2Fill,
-        bgColor: 'bg-pink-800',
-        borderColor: 'border-pink-700',
+        bgColor: 'bg-violet-600',
+        borderColor: 'border-violet-500',
       };
     case 'agent:cwd':
       return {
         Icon: HiDesktopComputer,
-        bgColor: 'bg-cyan-800',
-        borderColor: 'border-cyan-700',
+        bgColor: 'bg-sky-600',
+        borderColor: 'border-sky-500',
       };
     default:
       return {
         Icon: RiRobot2Fill,
-        bgColor: 'bg-purple-800',
-        borderColor: 'border-purple-700',
+        bgColor: 'bg-violet-600',
+        borderColor: 'border-violet-500',
       };
   }
 };

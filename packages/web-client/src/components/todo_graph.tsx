@@ -10,10 +10,12 @@ import {
   type Node,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Spinner } from 'flowbite-react';
-import { type FC, useMemo } from 'react';
+import { type FC, useEffect, useMemo, useRef, useState } from 'react';
+import './todo_graph.css';
 
 import { useForceLayout } from '../hooks/use_force_layout';
 import { usePouchDb } from '../pouch_db';
@@ -117,12 +119,21 @@ const LoadingSpinner: FC = () => (
   </div>
 );
 
-/** Graph content with React Flow and force-directed layout */
-const TodoGraphContent: FC<{ nodes: Node[]; edges: Edge[] }> = ({
-  nodes: initialNodes,
-  edges: initialEdges,
+/** Inner component that can access useReactFlow */
+const GraphRenderer: FC<{ nodes: Node[]; edges: Edge[]; isLayouting: boolean }> = ({
+  nodes,
+  edges,
+  isLayouting,
 }) => {
-  const { nodes, edges, isLayouting } = useForceLayout(initialNodes, initialEdges);
+  const { fitView } = useReactFlow();
+
+  // Fit view whenever nodes change (after layout completes)
+  useEffect(() => {
+    if (!isLayouting && nodes.length > 0) {
+      const timer = setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [nodes, isLayouting, fitView]);
 
   if (isLayouting) {
     return (
@@ -134,19 +145,51 @@ const TodoGraphContent: FC<{ nodes: Node[]; edges: Edge[] }> = ({
   }
 
   return (
-    <div className="h-[calc(100vh-200px)] w-full">
-      <ReactFlow
-        defaultEdgeOptions={{ type: 'curved' }}
-        edgeTypes={edgeTypes}
-        edges={edges}
-        fitView
-        nodeTypes={nodeTypes}
-        nodes={nodes}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background color="#94a3b8" gap={16} size={1} />
-        <Controls />
-      </ReactFlow>
+    <ReactFlow
+      className="h-full w-full"
+      defaultEdgeOptions={{ type: 'curved' }}
+      edgeTypes={edgeTypes}
+      edges={edges}
+      fitView
+      maxZoom={4}
+      minZoom={0.3}
+      nodeTypes={nodeTypes}
+      nodes={nodes}
+      proOptions={{ hideAttribution: true }}
+    >
+      <Background color="#94a3b8" gap={16} size={1} />
+      <Controls className="!border-neutral-700 !bg-neutral-800 !shadow-lg [&>button]:!border-neutral-600 [&>button]:!bg-neutral-700 [&>button]:!fill-neutral-300 [&>button:hover]:!bg-neutral-600" />
+    </ReactFlow>
+  );
+};
+
+/** Graph content with React Flow and force-directed layout */
+const TodoGraphContent: FC<{ nodes: Node[]; edges: Edge[] }> = ({
+  nodes: initialNodes,
+  edges: initialEdges,
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 600 });
+
+  // Measure container dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        setDimensions({ width, height });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+
+  const { nodes, edges, isLayouting } = useForceLayout(initialNodes, initialEdges, dimensions);
+
+  return (
+    <div className="h-[calc(100vh-200px)] w-full" ref={containerRef}>
+      <GraphRenderer edges={edges} isLayouting={isLayouting} nodes={nodes} />
     </div>
   );
 };

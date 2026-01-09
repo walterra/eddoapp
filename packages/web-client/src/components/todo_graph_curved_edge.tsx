@@ -1,27 +1,9 @@
 /**
- * Custom curved edge component inspired by Gephi's edge rendering.
- * Creates smooth curved lines with curvature based on edge position.
+ * Custom curved edge component inspired by node-based editors.
+ * Creates smooth bezier curves similar to chaiNNer/Blender style.
  */
 import { type EdgeProps } from '@xyflow/react';
 import { type FC } from 'react';
-
-/** Calculate curvature offset based on source/target positions */
-const calculateCurvature = (
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-): number => {
-  const dx = targetX - sourceX;
-  const dy = targetY - sourceY;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-
-  // More curvature for longer edges, slight randomization based on position
-  const baseCurvature = Math.min(distance * 0.3, 80);
-  const variation = ((sourceX + sourceY + targetX + targetY) % 50) - 25;
-
-  return baseCurvature + variation;
-};
 
 /** Custom curved edge for graph visualization */
 export const CurvedEdge: FC<EdgeProps> = ({
@@ -33,27 +15,30 @@ export const CurvedEdge: FC<EdgeProps> = ({
   style,
   markerEnd,
 }) => {
-  const curvature = calculateCurvature(sourceX, sourceY, targetX, targetY);
+  // Calculate distance and direction
+  const dx = targetX - sourceX;
+  const dy = targetY - sourceY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
 
-  // Create a custom curved path
+  // Curvature scales with distance, capped for very long edges
+  const curvatureStrength = Math.min(distance * 0.4, 120);
+
+  // Control points for smooth cubic bezier
+  // Offset perpendicular to the line for a nice arc
   const midX = (sourceX + targetX) / 2;
   const midY = (sourceY + targetY) / 2;
 
-  // Calculate perpendicular offset for the curve
-  const dx = targetX - sourceX;
-  const dy = targetY - sourceY;
-  const len = Math.sqrt(dx * dx + dy * dy) || 1;
-
-  // Perpendicular direction
+  // Normalize direction
+  const len = distance || 1;
   const perpX = -dy / len;
   const perpY = dx / len;
 
-  // Control point offset
-  const controlX = midX + perpX * curvature * 0.5;
-  const controlY = midY + perpY * curvature * 0.5;
+  // Single control point for quadratic curve (smoother, simpler)
+  const ctrlX = midX + perpX * curvatureStrength * 0.3;
+  const ctrlY = midY + perpY * curvatureStrength * 0.3;
 
-  // Quadratic bezier path
-  const path = `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${targetX} ${targetY}`;
+  // Quadratic bezier for smooth curve
+  const path = `M ${sourceX} ${sourceY} Q ${ctrlX} ${ctrlY} ${targetX} ${targetY}`;
 
   return (
     <path
