@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- [#417](https://github.com/walterra/eddoapp/pull/417) [`287c11c`](https://github.com/walterra/eddoapp/commit/287c11c509dbd173f4cc20f99b37dec50569f1da) - Add client-side Real User Monitoring (RUM) with OpenTelemetry browser SDK
+
+- [#418](https://github.com/walterra/eddoapp/pull/418) [`8a3d8c4`](https://github.com/walterra/eddoapp/commit/8a3d8c4783a8edfc579a9064dc3deda1818bf7c5) - Add optional metadata field to todos for extensible key-value storage (agent:, github:, rss: namespaces)
+
+- [#407](https://github.com/walterra/eddoapp/pull/407) [`ba4bc49`](https://github.com/walterra/eddoapp/commit/ba4bc4970bb0a3dc9135e2362304fcf0afc80759) - Add notes feature to todos for tracking progress and decisions
+
+- [#406](https://github.com/walterra/eddoapp/pull/406) [`89b757f`](https://github.com/walterra/eddoapp/commit/89b757fe484bf3dc40bc9153ab51c93d42fe2f9c) - Add audit log system tracking all todo CRUD operations with real-time Activity sidebar
+
+- [#399](https://github.com/walterra/eddoapp/pull/399) [`0052a3a`](https://github.com/walterra/eddoapp/commit/0052a3abc1fd54170de02952d84a75e61dcb6ed5) - Add filter presets for saving and quickly applying filter configurations
+
+- [#413](https://github.com/walterra/eddoapp/pull/413) [`f11ec8d`](https://github.com/walterra/eddoapp/commit/f11ec8dc1abe575381e2a1f555cee765f2e9bfb3) - Redesign header and toolbar with cleaner layout, popover-based actions, and keyboard shortcut 'n' for adding todos
+
+- [#402](https://github.com/walterra/eddoapp/pull/402) [`a87fdf3`](https://github.com/walterra/eddoapp/commit/a87fdf37368007db60d091278994e7eed3a0223e) - Add inline editing of tags in table view
+
+- [#428](https://github.com/walterra/eddoapp/pull/428) [`a54fbc5`](https://github.com/walterra/eddoapp/commit/a54fbc50ef2b6ce1fbf8800013e01b1e0b6fe261) - Replace metadata JSON editor with user-friendly key/value CRUD interface with namespace suggestions
+
+- [#404](https://github.com/walterra/eddoapp/pull/404) [`6626b55`](https://github.com/walterra/eddoapp/commit/6626b55f92e0fd77e38b7d1592d5871f9861c49c) - Add parent-child todo relationships (subtasks) with UI for viewing and managing hierarchies
+
+### Patch Changes
+
+- [#412](https://github.com/walterra/eddoapp/pull/412) [`a65b4f3`](https://github.com/walterra/eddoapp/commit/a65b4f36528f54bf463893c747a49e374fc4431e) - Limit activity sidebar to show last 20 entries with skeleton loader and footer indicator
+
+- [#420](https://github.com/walterra/eddoapp/pull/420) [`f19c100`](https://github.com/walterra/eddoapp/commit/f19c1002bfcee88ff9bb9998a94373be1c504cfb) - Add clickable todo entries in activity sidebar to open todo flyout
+
+- [#421](https://github.com/walterra/eddoapp/pull/421) [`f1066b2`](https://github.com/walterra/eddoapp/commit/f1066b23b23b2eee7f0537a8126458907ea6b985) - Fix table column order in gear icon popover - columns now always display in canonical order regardless of stored preferences
+
+- [#411](https://github.com/walterra/eddoapp/pull/411) [`260351e`](https://github.com/walterra/eddoapp/commit/260351e5d0e63cec1176b99a292d7fce78ccdb66) - Fix Time Tracked table column to show duration within selected time range instead of only current date
+
+- [#416](https://github.com/walterra/eddoapp/pull/416) [`0db0c12`](https://github.com/walterra/eddoapp/commit/0db0c125187a0c1d84a6a9e6f6a43ed98c5f169c) - Fix time tracking totals to correctly sum visible todo durations including subtask time
+
+- [#409](https://github.com/walterra/eddoapp/pull/409) [`dd7bc9d`](https://github.com/walterra/eddoapp/commit/dd7bc9dbbeaf525edba7d6ea1fcfcfe67b5d0489) - Fix invalid HTML nesting error where TodoFlyout div was rendered inside tbody
+
 ## 0.5.0
 
 ### Minor Changes
