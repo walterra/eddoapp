@@ -22,32 +22,32 @@ const getMetadataStyle = (
     case 'agent:session':
       return {
         Icon: RiRobot2Fill,
-        bgColor: 'bg-purple-500',
-        borderColor: 'border-purple-400',
+        bgColor: 'bg-purple-800',
+        borderColor: 'border-purple-700',
       };
     case 'agent:branch':
       return {
         Icon: BiGitBranch,
-        bgColor: 'bg-orange-500',
-        borderColor: 'border-orange-400',
+        bgColor: 'bg-orange-800',
+        borderColor: 'border-orange-700',
       };
     case 'agent:name':
       return {
         Icon: RiRobot2Fill,
-        bgColor: 'bg-pink-500',
-        borderColor: 'border-pink-400',
+        bgColor: 'bg-pink-800',
+        borderColor: 'border-pink-700',
       };
     case 'agent:cwd':
       return {
         Icon: HiDesktopComputer,
-        bgColor: 'bg-cyan-500',
-        borderColor: 'border-cyan-400',
+        bgColor: 'bg-cyan-800',
+        borderColor: 'border-cyan-700',
       };
     default:
       return {
         Icon: RiRobot2Fill,
-        bgColor: 'bg-purple-500',
-        borderColor: 'border-purple-400',
+        bgColor: 'bg-purple-800',
+        borderColor: 'border-purple-700',
       };
   }
 };
@@ -77,7 +77,7 @@ export const MetadataNode: FC<MetadataNodeProps> = ({ data }) => {
 
   return (
     <div
-      className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 shadow-md transition-transform hover:scale-125 ${bgColor} ${borderColor}`}
+      className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-125 ${bgColor} ${borderColor}`}
       title={tooltip}
     >
       <Icon className="h-5 w-5 text-white" />

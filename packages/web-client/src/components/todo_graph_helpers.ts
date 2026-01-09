@@ -6,7 +6,7 @@ import type { Todo } from '@eddo/core-shared';
 import type { Edge, Node } from '@xyflow/react';
 
 /** Metadata keys to visualize as nodes */
-const METADATA_KEYS_TO_VISUALIZE = ['agent:session', 'agent:branch', 'agent:name'] as const;
+const METADATA_KEYS_TO_VISUALIZE = ['agent:session', 'agent:name'] as const;
 
 /** Generate unique ID for metadata node */
 const getMetadataNodeId = (key: string, value: string): string =>
@@ -78,7 +78,7 @@ export function createParentChildEdges(todos: Todo[]): Edge[] {
         targetHandle: 'center',
         type: 'curved',
         animated: false,
-        style: { stroke: '#64748b', strokeWidth: 2, strokeOpacity: 0.7 },
+        style: { stroke: '#64748b', strokeWidth: 3, strokeOpacity: 0.4 },
       });
     }
   }
@@ -86,12 +86,10 @@ export function createParentChildEdges(todos: Todo[]): Edge[] {
   return edges;
 }
 
-/** Create edges from metadata nodes to todos */
-export function createMetadataEdges(todos: Todo[]): Edge[] {
-  const edges: Edge[] = [];
+/** Build metadata map from todos */
+const buildMetadataMap = (todos: Todo[]): Map<string, Set<string>> => {
   const metadataMap = new Map<string, Set<string>>();
 
-  // First pass: collect todos per metadata value
   for (const todo of todos) {
     if (!todo.metadata) continue;
 
@@ -110,25 +108,41 @@ export function createMetadataEdges(todos: Todo[]): Edge[] {
     }
   }
 
-  // Second pass: create edges only for metadata with 2+ todos
+  return metadataMap;
+};
+
+/** Create a single metadata edge */
+const createMetadataEdge = (
+  metadataNodeId: string,
+  todoId: string,
+  isCompleted: boolean,
+): Edge => ({
+  id: `metadata:${metadataNodeId}-${todoId}`,
+  source: metadataNodeId,
+  sourceHandle: 'center',
+  target: todoId,
+  targetHandle: 'center',
+  type: 'curved',
+  animated: !isCompleted,
+  style: {
+    stroke: '#a855f7',
+    strokeWidth: 3,
+    strokeOpacity: isCompleted ? 0.2 : 0.35,
+    strokeDasharray: isCompleted ? undefined : '5,5',
+  },
+});
+
+/** Create edges from metadata nodes to todos */
+export function createMetadataEdges(todos: Todo[]): Edge[] {
+  const edges: Edge[] = [];
+  const todoMap = new Map(todos.map((t) => [t._id, t]));
+  const metadataMap = buildMetadataMap(todos);
+
   for (const [metadataNodeId, todoIds] of metadataMap) {
     if (todoIds.size >= 2) {
       for (const todoId of todoIds) {
-        edges.push({
-          id: `metadata:${metadataNodeId}-${todoId}`,
-          source: metadataNodeId,
-          sourceHandle: 'center',
-          target: todoId,
-          targetHandle: 'center',
-          type: 'curved',
-          animated: true,
-          style: {
-            stroke: '#a855f7',
-            strokeWidth: 1.5,
-            strokeOpacity: 0.5,
-            strokeDasharray: '5,5',
-          },
-        });
+        const todo = todoMap.get(todoId);
+        edges.push(createMetadataEdge(metadataNodeId, todoId, !!todo?.completed));
       }
     }
   }
