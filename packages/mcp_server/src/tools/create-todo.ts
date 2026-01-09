@@ -100,6 +100,12 @@ export const createTodoParameters = z.object({
     .describe(
       'Optional key-value metadata for extensibility. Use namespaced keys (e.g., "agent:worktree", "github:labels", "rss:feed_title").',
     ),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional human-readable audit message describing why this todo was created (short, like a git commit message).',
+    ),
 });
 
 export type CreateTodoArgs = z.infer<typeof createTodoParameters>;
@@ -180,6 +186,7 @@ export async function executeCreateTodo(
       action: 'create',
       entityId: newTodo._id,
       after: newTodo,
+      message: args.message,
     });
 
     return createSuccessResponse({

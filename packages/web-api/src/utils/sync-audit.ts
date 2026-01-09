@@ -29,6 +29,8 @@ export interface SyncAuditOptions {
   entityId: string;
   before?: Partial<TodoAlpha3>;
   after?: Partial<TodoAlpha3>;
+  /** Optional human-readable message describing the action (short, like a git commit message) */
+  message?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -37,7 +39,7 @@ export interface SyncAuditOptions {
  * Silently fails if audit logging encounters an error (non-blocking).
  */
 export async function logSyncAudit(options: SyncAuditOptions): Promise<void> {
-  const { username, source, action, entityId, before, after, metadata } = options;
+  const { username, source, action, entityId, before, after, message, metadata } = options;
 
   try {
     const env = getEnv();
@@ -50,6 +52,7 @@ export async function logSyncAudit(options: SyncAuditOptions): Promise<void> {
       source,
       before,
       after,
+      message,
       metadata,
     });
   } catch (error) {

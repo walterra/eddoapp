@@ -45,6 +45,8 @@ export interface AuditLogAlpha1 {
   after?: Partial<TodoAlpha3>;
   /** Source system that triggered the action */
   source: AuditSource;
+  /** Optional human-readable message describing the action (short, like a git commit message) */
+  message?: string;
   /** Optional metadata for additional context */
   metadata?: Record<string, unknown>;
 }

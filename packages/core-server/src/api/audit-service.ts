@@ -31,6 +31,8 @@ export interface LogActionOptions {
   before?: Partial<TodoAlpha3>;
   /** Todo state after the action (for create/update) */
   after?: Partial<TodoAlpha3>;
+  /** Optional human-readable message describing the action (short, like a git commit message) */
+  message?: string;
   /** Optional additional metadata */
   metadata?: Record<string, unknown>;
 }
@@ -87,6 +89,7 @@ async function logAction(
     source: options.source,
     before: options.before,
     after: options.after,
+    message: options.message,
     metadata: options.metadata,
   });
 

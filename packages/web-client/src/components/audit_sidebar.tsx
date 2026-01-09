@@ -126,6 +126,11 @@ const AuditEntryItem: FC<AuditEntryItemProps> = ({ entry, onEntryClick, isDelete
       type="button"
     >
       <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
+      {entry.message && (
+        <p className="truncate text-xs text-neutral-600 italic dark:text-neutral-300">
+          {entry.message}
+        </p>
+      )}
       <p className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
         <span className={`font-mono text-xs ${actionConfig.color}`}>{actionConfig.icon}</span>
         {actionConfig.label}

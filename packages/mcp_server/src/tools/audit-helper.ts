@@ -28,6 +28,8 @@ export interface McpAuditOptions {
   entityId: string;
   before?: Partial<TodoAlpha3>;
   after?: Partial<TodoAlpha3>;
+  /** Optional human-readable message describing the action (short, like a git commit message) */
+  message?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -57,6 +59,7 @@ export async function logMcpAudit(context: ToolContext, options: McpAuditOptions
       source: 'mcp',
       before: options.before,
       after: options.after,
+      message: options.message,
       metadata: options.metadata,
     });
 
