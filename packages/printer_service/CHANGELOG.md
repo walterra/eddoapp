@@ -1,5 +1,13 @@
 # @eddo/printer-service
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [[`f9372853bb347b07adc1e47ba037ad89fce461b1`](https://github.com/walterra/eddoapp/commit/f9372853bb347b07adc1e47ba037ad89fce461b1)]:
+  - @eddo/core-shared@0.6.0
+  - @eddo/core-server@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes
