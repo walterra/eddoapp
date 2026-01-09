@@ -418,8 +418,9 @@ interface RssFeedConfig {
   - Creates new todos only (emails are immutable)
 - **EmailParser** (`email-parser.ts`): Email content extraction
   - Parses MIME messages
-  - Extracts plain text from HTML emails
-  - Handles multipart messages
+  - Converts HTML emails to Markdown (using `turndown` library)
+  - Preserves links, lists, headers, and formatting in todo descriptions
+  - Handles multipart messages (prefers plain text, falls back to HTML→Markdown)
 
 **User Configuration**: Stored in UserPreferences (user_registry_alpha2)
 
