@@ -6,7 +6,7 @@ import type { TodoAlpha3 } from '@eddo/core-shared';
 import { createHash } from 'crypto';
 import { ImapFlow } from 'imapflow';
 
-import { extractPlainText, extractSender, stripHtml, truncate } from './email-parser.js';
+import { extractPlainText, extractSender, truncate } from './email-parser.js';
 import type { EmailItem, ImapConnectionConfig } from './types.js';
 
 /** Logger interface for email client */
@@ -130,7 +130,9 @@ function generateGmailLink(gmailMessageId?: string): string | null {
  */
 export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3, '_rev'> {
   const now = new Date().toISOString();
-  const cleanDescription = item.body ? truncate(stripHtml(item.body), 2000) : '';
+  // Body is already converted to markdown by extractPlainText/extractEmailBody
+  // Allow up to 50KB for newsletter content (newsletters can be quite long)
+  const cleanDescription = item.body ? truncate(item.body, 50000) : '';
 
   return {
     _id: now,

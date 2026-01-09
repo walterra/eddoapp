@@ -75,12 +75,12 @@ describe('email client', () => {
     });
 
     it('truncates long body in description', () => {
-      const longBody = 'A'.repeat(3000);
+      const longBody = 'A'.repeat(60000);
       const email = createTestEmail({ body: longBody });
       const todo = mapEmailToTodo(email, []);
 
-      // Description should be truncated to ~2000 chars
-      expect(todo.description.length).toBeLessThanOrEqual(2003); // 2000 + "..."
+      // Description should be truncated to ~50000 chars (for newsletter content)
+      expect(todo.description.length).toBeLessThanOrEqual(50003); // 50000 + "..."
     });
 
     it('uses receivedDate for todo due date', () => {
