@@ -83,20 +83,61 @@ export function htmlToMarkdown(html: string): string {
 
 /**
  * Basic HTML stripping fallback (used when turndown fails)
+ * Uses iterative approach to avoid regex backtracking vulnerabilities
  */
 function stripHtmlBasic(html: string): string {
-  return html
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
+  let result = html;
+
+  // Remove style tags iteratively (handles nested and malformed tags)
+  let styleStart = result.toLowerCase().indexOf('<style');
+  while (styleStart !== -1) {
+    const styleEnd = result.toLowerCase().indexOf('</style', styleStart);
+    if (styleEnd === -1) {
+      // Unclosed style tag - remove to end
+      result = result.substring(0, styleStart);
+      break;
+    }
+    // Find the closing >
+    const closeTag = result.indexOf('>', styleEnd);
+    if (closeTag === -1) {
+      result = result.substring(0, styleStart);
+      break;
+    }
+    result = result.substring(0, styleStart) + result.substring(closeTag + 1);
+    styleStart = result.toLowerCase().indexOf('<style');
+  }
+
+  // Remove script tags iteratively
+  let scriptStart = result.toLowerCase().indexOf('<script');
+  while (scriptStart !== -1) {
+    const scriptEnd = result.toLowerCase().indexOf('</script', scriptStart);
+    if (scriptEnd === -1) {
+      result = result.substring(0, scriptStart);
+      break;
+    }
+    const closeTag = result.indexOf('>', scriptEnd);
+    if (closeTag === -1) {
+      result = result.substring(0, scriptStart);
+      break;
+    }
+    result = result.substring(0, scriptStart) + result.substring(closeTag + 1);
+    scriptStart = result.toLowerCase().indexOf('<script');
+  }
+
+  // Remove all remaining HTML tags
+  result = result.replace(/<[^>]*>/g, ' ');
+
+  // Decode HTML entities (order matters - decode amp last to avoid double-decode)
+  result = result
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/&amp;/g, '&');
+
+  // Clean up whitespace
+  return result.replace(/\s+/g, ' ').trim();
 }
 
 /**
