@@ -1,4 +1,5 @@
 .env
+.env.local
 .eslintcache
 .pnpm-debug.log
 /node_modules/
@@ -9,7 +10,7 @@ packages/telegram_bot/logs/
 logs/
 backups/
 .testcontainer-url
--e 
+-e
 # Compiled testcontainer setup
 test/*.js
 test/*.d.ts
