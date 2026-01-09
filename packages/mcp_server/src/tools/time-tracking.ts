@@ -20,6 +20,12 @@ export const startTimeTrackingParameters = z.object({
     .describe(
       'The unique identifier of the todo to start time tracking for (ISO timestamp of creation)',
     ),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional human-readable audit message describing why time tracking was started (short, like a git commit message).',
+    ),
 });
 
 export type StartTimeTrackingArgs = z.infer<typeof startTimeTrackingParameters>;
@@ -64,6 +70,7 @@ export async function executeStartTimeTracking(
       entityId: todo._id,
       before: originalTodo,
       after: todo,
+      message: args.message,
     });
     context.log.info('Time tracking started', { title: todo.title, startTime: now });
 
@@ -90,6 +97,12 @@ export const stopTimeTrackingParameters = z.object({
     .string()
     .describe(
       'The unique identifier of the todo to stop time tracking for (ISO timestamp of creation)',
+    ),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional human-readable audit message describing why time tracking was stopped (short, like a git commit message).',
     ),
 });
 
@@ -156,11 +169,12 @@ interface StopSessionParams {
   now: string;
   db: ReturnType<GetUserDb>;
   context: ToolContext;
+  message?: string;
 }
 
 /** Process active session and log audit */
 async function processStopSession(params: StopSessionParams): Promise<number> {
-  const { todo, originalTodo, sessionStart, now, db, context } = params;
+  const { todo, originalTodo, sessionStart, now, db, context, message } = params;
   todo.active[sessionStart] = now;
   const startTime = Date.now();
   await db.insert(todo);
@@ -169,6 +183,7 @@ async function processStopSession(params: StopSessionParams): Promise<number> {
     entityId: todo._id,
     before: originalTodo,
     after: todo,
+    message,
   });
   return Date.now() - startTime;
 }
@@ -201,6 +216,7 @@ export async function executeStopTimeTracking(
       now,
       db,
       context,
+      message: args.message,
     });
     context.log.info('Time tracking stopped', { title: todo.title, sessionStart, endTime: now });
 

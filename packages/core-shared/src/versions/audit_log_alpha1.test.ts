@@ -98,6 +98,35 @@ describe('audit_log_alpha1', () => {
       expect(entry.metadata).toEqual({ userId: 'user123', reason: 'cleanup' });
     });
 
+    it('creates entry with message', () => {
+      const input: NewAuditLogEntry = {
+        action: 'update',
+        entityType: 'todo',
+        entityId: '2026-01-07T11:00:00.000Z',
+        source: 'mcp',
+        before: { title: 'My todo' },
+        after: { title: 'My todo', due: '2026-01-14' },
+        message: 'Added due date for next week',
+      };
+
+      const entry = createAuditLogEntry(input);
+
+      expect(entry.message).toBe('Added due date for next week');
+    });
+
+    it('creates entry without message (backward compatible)', () => {
+      const input: NewAuditLogEntry = {
+        action: 'create',
+        entityType: 'todo',
+        entityId: '2026-01-07T11:00:00.000Z',
+        source: 'web',
+      };
+
+      const entry = createAuditLogEntry(input);
+
+      expect(entry.message).toBeUndefined();
+    });
+
     it('creates entry for time tracking actions', () => {
       const startInput: NewAuditLogEntry = {
         action: 'time_tracking_start',

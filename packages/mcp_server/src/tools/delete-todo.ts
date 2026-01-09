@@ -16,6 +16,12 @@ export const deleteTodoParameters = z.object({
   id: z
     .string()
     .describe('The unique identifier of the todo to delete (ISO timestamp of creation)'),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional human-readable audit message describing why this todo was deleted (short, like a git commit message).',
+    ),
 });
 
 export type DeleteTodoArgs = z.infer<typeof deleteTodoParameters>;
@@ -48,6 +54,7 @@ export async function executeDeleteTodo(
       action: 'delete',
       entityId: todo._id,
       before: todo,
+      message: args.message,
     });
 
     context.log.info('Todo deleted successfully', { title: todo.title });

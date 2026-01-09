@@ -22,6 +22,12 @@ export const toggleCompletionParameters = z.object({
     .string()
     .describe('The unique identifier of the todo to toggle (ISO timestamp of creation)'),
   completed: z.boolean().describe('true to mark as completed, false to mark as incomplete'),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional human-readable audit message describing why this was completed/uncompleted (short, like a git commit message).',
+    ),
 });
 
 export type ToggleCompletionArgs = z.infer<typeof toggleCompletionParameters>;
@@ -93,11 +99,12 @@ interface SaveAndRespondParams {
   db: ReturnType<GetUserDb>;
   context: ToolContext;
   status: string;
+  message?: string;
 }
 
 /** Saves the todo and returns the success response */
 async function saveAndRespond(params: SaveAndRespondParams): Promise<string> {
-  const { todo, originalTodo, db, context, status } = params;
+  const { todo, originalTodo, db, context, status, message } = params;
   const startTime = Date.now();
   await db.insert(todo);
   const executionTime = Date.now() - startTime;
@@ -109,6 +116,7 @@ async function saveAndRespond(params: SaveAndRespondParams): Promise<string> {
     entityId: todo._id,
     before: originalTodo,
     after: todo,
+    message,
   });
 
   context.log.info('Todo completion toggled successfully', { title: todo.title, status });
@@ -154,7 +162,7 @@ export async function executeToggleCompletion(
     }
 
     const status = args.completed ? 'completed' : 'uncompleted';
-    return saveAndRespond({ todo, originalTodo, db, context, status });
+    return saveAndRespond({ todo, originalTodo, db, context, status, message: args.message });
   } catch (error) {
     return createErrorResponse({
       summary: 'Failed to toggle todo completion',

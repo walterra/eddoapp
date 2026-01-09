@@ -42,6 +42,12 @@ export const updateTodoParameters = z.object({
     .describe(
       'Key-value metadata for extensibility. Use namespaced keys (e.g., "agent:worktree", "github:labels"). Replaces entire metadata object when provided.',
     ),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional human-readable audit message describing why this update was made (short, like a git commit message).',
+    ),
 });
 
 export type UpdateTodoArgs = z.infer<typeof updateTodoParameters>;
@@ -104,6 +110,7 @@ export async function executeUpdateTodo(
       entityId: result.id,
       before: todo,
       after: updated,
+      message: args.message,
     });
     context.log.info('Todo updated successfully', { id: result.id, title: updated.title });
 

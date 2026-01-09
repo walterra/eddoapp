@@ -130,6 +130,71 @@ describe('AuditSidebar with entries', () => {
     expect(screen.getByText(/Created/)).toBeInTheDocument();
   });
 
+  it('renders message when present', async () => {
+    const mockEntries = [
+      {
+        _id: '2026-01-07T12:00:00.000Z',
+        version: 'audit_alpha1' as const,
+        action: 'update' as const,
+        entityType: 'todo' as const,
+        entityId: '2026-01-07T11:00:00.000Z',
+        timestamp: '2026-01-07T12:00:00.000Z',
+        source: 'mcp' as const,
+        after: { title: 'Test Todo' },
+        message: 'Added due date for next week',
+      },
+    ];
+
+    const { useAuditLog } = await import('../hooks/use_audit_log_data');
+    vi.mocked(useAuditLog).mockReturnValue({
+      entries: mockEntries,
+      isLoading: false,
+      error: null,
+      hasMore: false,
+      isConnected: true,
+      connectionError: null,
+      refresh: vi.fn(),
+      reconnect: vi.fn(),
+    });
+
+    renderWithProviders(<AuditSidebar isOpen={true} />);
+    expect(screen.getByText('Test Todo')).toBeInTheDocument();
+    expect(screen.getByText('Added due date for next week')).toBeInTheDocument();
+  });
+
+  it('does not render message element when not present', async () => {
+    const mockEntries = [
+      {
+        _id: '2026-01-07T12:00:00.000Z',
+        version: 'audit_alpha1' as const,
+        action: 'create' as const,
+        entityType: 'todo' as const,
+        entityId: '2026-01-07T11:00:00.000Z',
+        timestamp: '2026-01-07T12:00:00.000Z',
+        source: 'web' as const,
+        after: { title: 'Test Todo Without Message' },
+      },
+    ];
+
+    const { useAuditLog } = await import('../hooks/use_audit_log_data');
+    vi.mocked(useAuditLog).mockReturnValue({
+      entries: mockEntries,
+      isLoading: false,
+      error: null,
+      hasMore: false,
+      isConnected: true,
+      connectionError: null,
+      refresh: vi.fn(),
+      reconnect: vi.fn(),
+    });
+
+    renderWithProviders(<AuditSidebar isOpen={true} />);
+    expect(screen.getByText('Test Todo Without Message')).toBeInTheDocument();
+    // No italic message element should exist
+    const italicElements = document.querySelectorAll('.italic');
+    expect(italicElements).toHaveLength(0);
+  });
+
   it('makes entries clickable and fetches todo on click', async () => {
     const mockTodo: Todo = {
       _id: '2026-01-07T11:00:00.000Z',
