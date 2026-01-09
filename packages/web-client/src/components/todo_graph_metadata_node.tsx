@@ -1,10 +1,10 @@
 /**
- * Custom node component for metadata grouping in the graph view.
- * Displays a metadata key-value pair that links to related todos.
+ * Minimal metadata node component for the graph view.
+ * Shows as a colored dot with details on hover.
+ * Edges connect to center of node.
  */
 import { Handle, Position } from '@xyflow/react';
 import { type FC } from 'react';
-import { HiOutlineTag } from 'react-icons/hi';
 
 export interface MetadataNodeData {
   metadataKey: string;
@@ -12,7 +12,7 @@ export interface MetadataNodeData {
   todoCount: number;
 }
 
-/** Get display label for metadata key */
+/** Get short label for tooltip */
 const getKeyLabel = (key: string): string => {
   const labels: Record<string, string> = {
     'agent:session': 'Session',
@@ -21,56 +21,37 @@ const getKeyLabel = (key: string): string => {
     'agent:branch': 'Branch',
     'agent:name': 'Agent',
   };
-  return labels[key] || key.replace('agent:', '').replace(':', ' ');
-};
-
-/** Truncate long values for display */
-const truncateValue = (value: string, maxLength: number = 20): string => {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength)}...`;
+  return labels[key] || key;
 };
 
 interface MetadataNodeProps {
   data: MetadataNodeData;
 }
 
-/** Metadata node component for React Flow */
+/** Minimal dot node for metadata - hover for details */
 export const MetadataNode: FC<MetadataNodeProps> = ({ data }) => {
   const { metadataKey, metadataValue, todoCount } = data;
   const label = getKeyLabel(metadataKey);
-  const displayValue = truncateValue(metadataValue);
+  const tooltip = `${label}: ${metadataValue}\n${todoCount} todos`;
 
   return (
-    <div className="max-w-[200px] min-w-[160px] rounded-lg border-2 border-purple-300 bg-purple-50 px-3 py-2 shadow-md dark:border-purple-700 dark:bg-purple-900/30">
-      {/* Source handle for outgoing edges (to todos) */}
+    <div
+      className="h-6 w-6 cursor-pointer rounded-full border-2 border-purple-400 bg-purple-500 shadow-sm transition-transform hover:scale-150"
+      title={tooltip}
+    >
+      {/* Single centered handle for all connections */}
       <Handle
-        className="!bg-purple-400 dark:!bg-purple-500"
-        position={Position.Bottom}
+        className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+        id="center"
+        position={Position.Top}
         type="source"
       />
-
-      {/* Icon and label */}
-      <div className="flex items-center gap-2">
-        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-purple-200 text-purple-700 dark:bg-purple-800 dark:text-purple-300">
-          <HiOutlineTag className="h-3 w-3" />
-        </div>
-        <span className="text-xs font-semibold text-purple-700 uppercase dark:text-purple-300">
-          {label}
-        </span>
-      </div>
-
-      {/* Value */}
-      <div
-        className="mt-1 truncate text-sm font-medium text-purple-900 dark:text-purple-100"
-        title={metadataValue}
-      >
-        {displayValue}
-      </div>
-
-      {/* Todo count */}
-      <div className="mt-1 text-xs text-purple-600 dark:text-purple-400">
-        {todoCount} {todoCount === 1 ? 'todo' : 'todos'}
-      </div>
+      <Handle
+        className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+        id="center"
+        position={Position.Top}
+        type="target"
+      />
     </div>
   );
 };

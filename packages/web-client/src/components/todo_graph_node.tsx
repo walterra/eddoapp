@@ -1,21 +1,15 @@
 /**
- * Custom node component for todo items in the graph view.
+ * Minimal node component for todo items in the graph view.
+ * Shows as a colored dot with full details on hover.
+ * Edges connect to center of node.
  */
 import { type Todo } from '@eddo/core-shared';
 import { Handle, Position } from '@xyflow/react';
 import { type FC } from 'react';
-import { HiCheck, HiOutlineClock } from 'react-icons/hi';
 
 export interface TodoNodeData {
   todo: Todo;
 }
-
-/** Format due date for display */
-const formatDueDate = (due: string | null): string | null => {
-  if (!due) return null;
-  const date = new Date(due);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-};
 
 /** Check if todo has active time tracking */
 const isTimeTracking = (todo: Todo): boolean => {
@@ -23,105 +17,50 @@ const isTimeTracking = (todo: Todo): boolean => {
   return Object.values(todo.active).some((v) => v === null);
 };
 
-/** Get container class based on todo state */
-const getContainerClass = (isCompleted: boolean, isTracking: boolean): string => {
-  const base = 'min-w-[200px] max-w-[250px] rounded-lg border-2 px-3 py-2 shadow-md transition-all';
-  if (isCompleted)
-    return `${base} border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/30`;
-  if (isTracking)
-    return `${base} border-primary-400 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/30`;
-  return `${base} border-neutral-200 bg-white dark:border-neutral-600 dark:bg-neutral-800`;
+/** Build tooltip text with full details */
+const buildTooltip = (todo: Todo): string => {
+  const parts = [todo.title];
+  if (todo.context) parts.push(`Context: ${todo.context}`);
+  if (todo.due) parts.push(`Due: ${new Date(todo.due).toLocaleDateString()}`);
+  if (todo.tags.length > 0) parts.push(`Tags: ${todo.tags.join(', ')}`);
+  if (todo.completed) parts.push('✓ Completed');
+  return parts.join('\n');
 };
-
-/** Status indicator icon */
-const StatusIcon: FC<{ isCompleted: boolean; isTracking: boolean }> = ({
-  isCompleted,
-  isTracking,
-}) => {
-  const baseClass = 'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded';
-  if (isCompleted) {
-    return (
-      <div className={`${baseClass} bg-green-500 text-white`}>
-        <HiCheck className="h-3 w-3" />
-      </div>
-    );
-  }
-  if (isTracking) {
-    return (
-      <div className={`${baseClass} bg-primary-500 text-white`}>
-        <HiOutlineClock className="h-3 w-3" />
-      </div>
-    );
-  }
-  return <div className={`${baseClass} border border-neutral-300 dark:border-neutral-500`} />;
-};
-
-/** Title text with completion styling */
-const TitleText: FC<{ title: string; isCompleted: boolean }> = ({ title, isCompleted }) => (
-  <span
-    className={`text-sm leading-tight font-medium ${
-      isCompleted
-        ? 'text-neutral-500 line-through dark:text-neutral-400'
-        : 'text-neutral-800 dark:text-neutral-100'
-    }`}
-  >
-    {title}
-  </span>
-);
-
-/** Metadata row with context, due date, and tags */
-const MetadataRow: FC<{ context: string; dueDate: string | null; tags: string[] }> = ({
-  context,
-  dueDate,
-  tags,
-}) => (
-  <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
-    <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-      {context}
-    </span>
-    {dueDate && <span className="text-neutral-500 dark:text-neutral-400">📅 {dueDate}</span>}
-    {tags.slice(0, 2).map((tag: string) => (
-      <span
-        className="bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300 rounded px-1.5 py-0.5"
-        key={tag}
-      >
-        {tag}
-      </span>
-    ))}
-    {tags.length > 2 && <span className="text-neutral-400">+{tags.length - 2}</span>}
-  </div>
-);
 
 interface TodoNodeProps {
   data: TodoNodeData;
 }
 
-/** Todo node component for React Flow */
+/** Minimal dot node for React Flow - hover for details */
 export const TodoNode: FC<TodoNodeProps> = ({ data }) => {
   const { todo } = data;
   const isCompleted = !!todo.completed;
   const isTracking = isTimeTracking(todo);
-  const dueDate = formatDueDate(todo.due);
-  const hasParent = !!todo.parentId;
+
+  // Determine dot color based on state
+  const dotColor = isCompleted
+    ? 'bg-green-500 border-green-400'
+    : isTracking
+      ? 'bg-primary-500 border-primary-400'
+      : 'bg-neutral-100 border-neutral-400 dark:bg-neutral-700 dark:border-neutral-500';
 
   return (
-    <div className={getContainerClass(isCompleted, isTracking)}>
-      {hasParent && (
-        <Handle
-          className="!bg-neutral-400 dark:!bg-neutral-500"
-          position={Position.Top}
-          type="target"
-        />
-      )}
-      <div className="flex items-start gap-2">
-        <StatusIcon isCompleted={isCompleted} isTracking={isTracking} />
-        <TitleText isCompleted={isCompleted} title={todo.title} />
-      </div>
-      <MetadataRow context={todo.context} dueDate={dueDate} tags={todo.tags} />
+    <div
+      className={`h-5 w-5 cursor-pointer rounded-full border-2 shadow-sm transition-transform hover:scale-150 ${dotColor}`}
+      title={buildTooltip(todo)}
+    >
+      {/* Single centered handle for all connections */}
       <Handle
-        className="!bg-neutral-400 dark:!bg-neutral-500"
-        position={Position.Bottom}
+        className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+        id="center"
+        position={Position.Top}
         type="source"
+      />
+      <Handle
+        className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+        id="center"
+        position={Position.Top}
+        type="target"
       />
     </div>
   );

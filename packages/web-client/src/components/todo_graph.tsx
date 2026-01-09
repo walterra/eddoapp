@@ -24,6 +24,7 @@ import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
 import { calculateDateRange, filterTodosForGraph } from './todo_board_helpers';
 import { useDbInitialization, useOutdatedTodos, useTodoBoardData } from './todo_board_state';
+import { CurvedEdge } from './todo_graph_curved_edge';
 import { createAllEdges, createAllNodes } from './todo_graph_helpers';
 import { MetadataNode } from './todo_graph_metadata_node';
 import { TodoNode } from './todo_graph_node';
@@ -40,6 +41,11 @@ interface TodoGraphProps {
 const nodeTypes = {
   todoNode: TodoNode,
   metadataNode: MetadataNode,
+};
+
+/** Custom edge types for React Flow */
+const edgeTypes = {
+  curved: CurvedEdge,
 };
 
 interface GraphDataResult {
@@ -130,7 +136,8 @@ const TodoGraphContent: FC<{ nodes: Node[]; edges: Edge[] }> = ({
   return (
     <div className="h-[calc(100vh-200px)] w-full">
       <ReactFlow
-        defaultEdgeOptions={{ type: 'smoothstep' }}
+        defaultEdgeOptions={{ type: 'curved' }}
+        edgeTypes={edgeTypes}
         edges={edges}
         fitView
         nodeTypes={nodeTypes}

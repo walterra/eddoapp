@@ -73,10 +73,12 @@ export function createParentChildEdges(todos: Todo[]): Edge[] {
       edges.push({
         id: `parent:${todo.parentId}-${todo._id}`,
         source: todo.parentId,
+        sourceHandle: 'center',
         target: todo._id,
-        type: 'smoothstep',
+        targetHandle: 'center',
+        type: 'curved',
         animated: false,
-        style: { stroke: '#64748b', strokeWidth: 2 },
+        style: { stroke: '#64748b', strokeWidth: 2, strokeOpacity: 0.7 },
       });
     }
   }
@@ -115,10 +117,17 @@ export function createMetadataEdges(todos: Todo[]): Edge[] {
         edges.push({
           id: `metadata:${metadataNodeId}-${todoId}`,
           source: metadataNodeId,
+          sourceHandle: 'center',
           target: todoId,
-          type: 'smoothstep',
-          animated: false,
-          style: { stroke: '#a855f7', strokeWidth: 1.5, strokeDasharray: '5,5' },
+          targetHandle: 'center',
+          type: 'curved',
+          animated: true,
+          style: {
+            stroke: '#a855f7',
+            strokeWidth: 1.5,
+            strokeOpacity: 0.5,
+            strokeDasharray: '5,5',
+          },
         });
       }
     }
