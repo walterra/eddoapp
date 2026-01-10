@@ -87,18 +87,15 @@ const useGraphData = (
   error: DatabaseError | null,
 ): GraphDataResult & ReturnType<typeof useTodoBoardData> => {
   const { currentDate, selectedTags, selectedContexts, selectedStatus, selectedTimeRange } = props;
-
   const dateRange = useMemo(
     () => calculateDateRange(currentDate, selectedTimeRange),
     [currentDate, selectedTimeRange],
   );
-
   const boardData = useTodoBoardData({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
     isInitialized,
   });
-
   useOutdatedTodos(boardData.outdatedTodosMemo);
 
   const filteredTodos = useMemo(
@@ -124,7 +121,6 @@ const useGraphData = (
     () => createAllEdges(filteredTodos, auditEntries),
     [filteredTodos, auditEntries],
   );
-
   const hasNoTodos =
     filteredTodos.length === 0 &&
     !boardData.isLoading &&
