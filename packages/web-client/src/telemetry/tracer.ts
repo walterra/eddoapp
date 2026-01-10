@@ -55,9 +55,19 @@ function createResource(config: TelemetryConfig): Resource {
 /** Creates and configures tracer provider */
 function createTracerProvider(config: TelemetryConfig, resource: Resource): WebTracerProvider {
   const exporter = new OTLPTraceExporter({ url: config.tracesEndpoint });
+
+  // Configure batch processor with smaller batches to avoid Beacon API's 64KB limit
+  // Default values are too large for browser environments
+  const batchProcessor = new BatchSpanProcessor(exporter, {
+    maxQueueSize: 100, // Max spans in queue (default: 2048)
+    maxExportBatchSize: 10, // Max spans per export (default: 512)
+    scheduledDelayMillis: 1000, // Export interval (default: 5000ms)
+    exportTimeoutMillis: 30000, // Export timeout (default: 30000ms)
+  });
+
   const provider = new WebTracerProvider({
     resource,
-    spanProcessors: [new BatchSpanProcessor(exporter)],
+    spanProcessors: [batchProcessor],
   });
 
   provider.register({
