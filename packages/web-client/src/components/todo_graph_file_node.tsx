@@ -124,7 +124,7 @@ export const FileNode: FC<FileNodeProps> = ({ data }) => {
 
       {/* Node icon */}
       <div
-        className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-125 ${bgColor} ${borderColor}`}
+        className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-105 ${bgColor} ${borderColor}`}
         title={tooltip}
       >
         <Icon className="h-4 w-4 text-white" />

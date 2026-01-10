@@ -97,7 +97,7 @@ export const MetadataNode: FC<MetadataNodeProps> = ({ data }) => {
       )}
 
       <div
-        className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-125 ${bgColor} ${borderColor}`}
+        className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-105 ${bgColor} ${borderColor}`}
         title={tooltip}
       >
         <Icon className="h-5 w-5 text-white" />

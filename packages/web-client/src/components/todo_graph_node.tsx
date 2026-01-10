@@ -77,8 +77,8 @@ export const TodoNode: FC<TodoNodeProps> = ({ data }) => {
   // Scale icon size proportionally
   const iconSize = Math.round(size * 0.6);
 
-  // Scale up highlighted nodes significantly for visibility
-  const scale = isHighlighted ? 2 : 1;
+  // Scale up highlighted nodes for visibility (very subtle - color change is primary indicator)
+  const scale = isHighlighted ? 1.05 : 1;
   const iconColor = isHighlighted ? 'text-yellow-900' : 'text-white';
 
   return (
@@ -95,7 +95,7 @@ export const TodoNode: FC<TodoNodeProps> = ({ data }) => {
 
       {/* Node icon */}
       <div
-        className={`flex cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-all duration-150 hover:scale-125 ${bgColor} ${borderColor} ${extraClasses}`}
+        className={`flex cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-all duration-150 hover:scale-105 ${bgColor} ${borderColor} ${extraClasses}`}
         onClick={handleClick}
         style={{
           width: size,

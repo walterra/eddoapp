@@ -20,6 +20,7 @@ import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'reac
 import './todo_graph.css';
 
 import { useAuditForTodos } from '../hooks/use_audit_for_todos';
+import { useAuditLogEntries } from '../hooks/use_audit_log_stream';
 import { useForceLayout } from '../hooks/use_force_layout';
 import { useHighlightContext } from '../hooks/use_highlight_context';
 import { usePouchDb } from '../pouch_db';
@@ -35,6 +36,7 @@ import { FileNode } from './todo_graph_file_node';
 import { createAllEdges, createAllNodes } from './todo_graph_helpers';
 import { MetadataNode } from './todo_graph_metadata_node';
 import { TodoNode } from './todo_graph_node';
+import { UserNode } from './todo_graph_user_node';
 
 interface TodoGraphProps {
   currentDate: Date;
@@ -49,6 +51,7 @@ const nodeTypes = {
   todoNode: TodoNode,
   metadataNode: MetadataNode,
   fileNode: FileNode,
+  userNode: UserNode,
 };
 
 /** Custom edge types for React Flow */
@@ -64,6 +67,18 @@ interface GraphDataResult {
   hasActiveFilters: boolean;
   showLoadingSpinner: boolean;
 }
+
+/** Merge audit entries from todo-linked and SSE stream sources */
+const mergeAuditEntries = (
+  todoLinked: ReturnType<typeof useAuditLogEntries>,
+  sseStream: ReturnType<typeof useAuditLogEntries>,
+): ReturnType<typeof useAuditLogEntries> => {
+  const byId = new Map(todoLinked.map((e) => [e._id, e]));
+  for (const entry of sseStream) {
+    if (!byId.has(entry._id)) byId.set(entry._id, entry);
+  }
+  return Array.from(byId.values());
+};
 
 /** Hook for filtered graph data */
 const useGraphData = (
@@ -91,24 +106,31 @@ const useGraphData = (
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
-  // Fetch audit entries using IDs from todos' auditLog arrays
-  const { entries: auditEntries } = useAuditForTodos({
+  // Fetch audit entries from two sources and merge them
+  const { entries: todoLinkedEntries } = useAuditForTodos({
     todos: filteredTodos,
     enabled: isInitialized && filteredTodos.length > 0,
   });
+  const sseStreamEntries = useAuditLogEntries();
+  const auditEntries = useMemo(
+    () => mergeAuditEntries(todoLinkedEntries, sseStreamEntries),
+    [todoLinkedEntries, sseStreamEntries],
+  );
 
   const nodes = useMemo(
     () => createAllNodes(filteredTodos, auditEntries),
     [filteredTodos, auditEntries],
   );
-  const edges = useMemo(() => createAllEdges(filteredTodos), [filteredTodos]);
+  const edges = useMemo(
+    () => createAllEdges(filteredTodos, auditEntries),
+    [filteredTodos, auditEntries],
+  );
 
   const hasNoTodos =
     filteredTodos.length === 0 &&
     !boardData.isLoading &&
     isInitialized &&
     boardData.todosQuery.isFetched;
-
   const hasActiveFilters =
     selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
 
