@@ -2,21 +2,11 @@
  * Graph-based todo visualization using React Flow.
  * Displays todos as nodes with parent/child relationships and metadata groupings.
  */
-import { type DatabaseError } from '@eddo/core-client';
-import {
-  applyNodeChanges,
-  Background,
-  Controls,
-  type Edge,
-  type Node,
-  type NodeChange,
-  ReactFlow,
-  ReactFlowProvider,
-  useReactFlow,
-} from '@xyflow/react';
+import { type DatabaseError, type Todo } from '@eddo/core-client';
+import { type Edge, type Node, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Spinner } from 'flowbite-react';
-import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import './todo_graph.css';
 
 import { useAuditForTodos } from '../hooks/use_audit_for_todos';
@@ -31,12 +21,8 @@ import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
 import { calculateDateRange, filterTodosForGraph } from './todo_board_helpers';
 import { useDbInitialization, useOutdatedTodos, useTodoBoardData } from './todo_board_state';
-import { CurvedEdge } from './todo_graph_curved_edge';
-import { FileNode } from './todo_graph_file_node';
 import { createAllEdges, createAllNodes } from './todo_graph_helpers';
-import { MetadataNode } from './todo_graph_metadata_node';
-import { TodoNode } from './todo_graph_node';
-import { UserNode } from './todo_graph_user_node';
+import { GraphRenderer } from './todo_graph_renderer';
 
 interface TodoGraphProps {
   currentDate: Date;
@@ -45,19 +31,6 @@ interface TodoGraphProps {
   selectedStatus: CompletionStatus;
   selectedTimeRange: TimeRange;
 }
-
-/** Custom node types for React Flow */
-const nodeTypes = {
-  todoNode: TodoNode,
-  metadataNode: MetadataNode,
-  fileNode: FileNode,
-  userNode: UserNode,
-};
-
-/** Custom edge types for React Flow */
-const edgeTypes = {
-  curved: CurvedEdge,
-};
 
 interface GraphDataResult {
   nodes: Node[];
@@ -80,6 +53,42 @@ const mergeAuditEntries = (
   return Array.from(byId.values());
 };
 
+/** Hook to fetch and merge audit entries from multiple sources */
+const useMergedAuditEntries = (todos: Todo[], isInitialized: boolean) => {
+  const { entries: todoLinkedEntries } = useAuditForTodos({
+    todos,
+    enabled: isInitialized && todos.length > 0,
+  });
+  const sseStreamEntries = useAuditLogEntries();
+  return useMemo(
+    () => mergeAuditEntries(todoLinkedEntries, sseStreamEntries),
+    [todoLinkedEntries, sseStreamEntries],
+  );
+};
+
+interface GraphStatusParams {
+  filteredTodos: Todo[];
+  isLoading: boolean;
+  isInitialized: boolean;
+  isFetched: boolean;
+  selectedTags: string[];
+  selectedContexts: string[];
+  selectedStatus: CompletionStatus;
+}
+
+/** Compute derived state for empty/filter status */
+const computeGraphStatus = (params: GraphStatusParams) => ({
+  hasNoTodos:
+    params.filteredTodos.length === 0 &&
+    !params.isLoading &&
+    params.isInitialized &&
+    params.isFetched,
+  hasActiveFilters:
+    params.selectedTags.length > 0 ||
+    params.selectedContexts.length > 0 ||
+    params.selectedStatus !== 'all',
+});
+
 /** Hook for filtered graph data */
 const useGraphData = (
   props: TodoGraphProps,
@@ -87,10 +96,12 @@ const useGraphData = (
   error: DatabaseError | null,
 ): GraphDataResult & ReturnType<typeof useTodoBoardData> => {
   const { currentDate, selectedTags, selectedContexts, selectedStatus, selectedTimeRange } = props;
+
   const dateRange = useMemo(
     () => calculateDateRange(currentDate, selectedTimeRange),
     [currentDate, selectedTimeRange],
   );
+
   const boardData = useTodoBoardData({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
@@ -103,16 +114,7 @@ const useGraphData = (
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
-  // Fetch and merge audit entries from todo-linked and SSE sources
-  const { entries: todoLinkedEntries } = useAuditForTodos({
-    todos: filteredTodos,
-    enabled: isInitialized && filteredTodos.length > 0,
-  });
-  const auditEntries = useMemo(
-    () => mergeAuditEntries(todoLinkedEntries, useAuditLogEntries()),
-    [todoLinkedEntries],
-  );
-
+  const auditEntries = useMergedAuditEntries(filteredTodos, isInitialized);
   const nodes = useMemo(
     () => createAllNodes(filteredTodos, auditEntries),
     [filteredTodos, auditEntries],
@@ -121,13 +123,16 @@ const useGraphData = (
     () => createAllEdges(filteredTodos, auditEntries),
     [filteredTodos, auditEntries],
   );
-  const hasNoTodos =
-    filteredTodos.length === 0 &&
-    !boardData.isLoading &&
-    isInitialized &&
-    boardData.todosQuery.isFetched;
-  const hasActiveFilters =
-    selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
+
+  const { hasNoTodos, hasActiveFilters } = computeGraphStatus({
+    filteredTodos,
+    isLoading: boardData.isLoading,
+    isInitialized,
+    isFetched: boardData.todosQuery.isFetched,
+    selectedTags,
+    selectedContexts,
+    selectedStatus,
+  });
 
   return {
     ...boardData,
@@ -150,82 +155,6 @@ const LoadingSpinner: FC = () => (
     <span className="ml-3 text-neutral-600 dark:text-neutral-400">Loading todos...</span>
   </div>
 );
-
-/** Apply highlight state to nodes */
-const applyHighlight = (nodes: Node[], highlightedId: string | null): Node[] => {
-  return nodes.map((node) => {
-    if (node.type !== 'todoNode') return node;
-    const isHighlighted = node.id === highlightedId;
-    return {
-      ...node,
-      data: { ...node.data, isHighlighted },
-    };
-  });
-};
-
-interface GraphRendererProps {
-  nodes: Node[];
-  edges: Edge[];
-  isLayouting: boolean;
-  highlightedTodoId: string | null;
-}
-
-/** Inner component that can access useReactFlow */
-const GraphRenderer: FC<GraphRendererProps> = ({
-  nodes: layoutedNodes,
-  edges,
-  isLayouting,
-  highlightedTodoId,
-}) => {
-  const { fitView } = useReactFlow();
-  const [nodes, setNodes] = useState(() => applyHighlight(layoutedNodes, highlightedTodoId));
-
-  // Update nodes when layout changes OR highlight changes
-  useEffect(() => {
-    setNodes(applyHighlight(layoutedNodes, highlightedTodoId));
-  }, [layoutedNodes, highlightedTodoId]);
-
-  // Handle node dragging
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
-  }, []);
-
-  // Fit view whenever layouted nodes change (after layout completes)
-  useEffect(() => {
-    if (!isLayouting && layoutedNodes.length > 0) {
-      const timer = setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [layoutedNodes, isLayouting, fitView]);
-
-  if (isLayouting) {
-    return (
-      <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center">
-        <Spinner aria-label="Calculating layout" size="lg" />
-        <span className="ml-3 text-neutral-600 dark:text-neutral-400">Arranging nodes...</span>
-      </div>
-    );
-  }
-
-  return (
-    <ReactFlow
-      className="h-full w-full"
-      defaultEdgeOptions={{ type: 'curved' }}
-      edgeTypes={edgeTypes}
-      edges={edges}
-      fitView
-      maxZoom={4}
-      minZoom={0.3}
-      nodeTypes={nodeTypes}
-      nodes={nodes}
-      onNodesChange={onNodesChange}
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background color="#94a3b8" gap={16} size={1} />
-      <Controls className="!border-neutral-700 !bg-neutral-800 !shadow-lg [&>button]:!border-neutral-600 [&>button]:!bg-neutral-700 [&>button]:!fill-neutral-300 [&>button:hover]:!bg-neutral-600" />
-    </ReactFlow>
-  );
-};
 
 interface TodoGraphContentProps {
   nodes: Node[];
