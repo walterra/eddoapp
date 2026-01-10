@@ -31,6 +31,7 @@ import type { TimeRange } from './time_range_filter';
 import { calculateDateRange, filterTodosForGraph } from './todo_board_helpers';
 import { useDbInitialization, useOutdatedTodos, useTodoBoardData } from './todo_board_state';
 import { CurvedEdge } from './todo_graph_curved_edge';
+import { FileNode } from './todo_graph_file_node';
 import { createAllEdges, createAllNodes } from './todo_graph_helpers';
 import { MetadataNode } from './todo_graph_metadata_node';
 import { TodoNode } from './todo_graph_node';
@@ -47,6 +48,7 @@ interface TodoGraphProps {
 const nodeTypes = {
   todoNode: TodoNode,
   metadataNode: MetadataNode,
+  fileNode: FileNode,
 };
 
 /** Custom edge types for React Flow */
@@ -159,17 +161,12 @@ const GraphRenderer: FC<GraphRendererProps> = ({
   highlightedTodoId,
 }) => {
   const { fitView } = useReactFlow();
-  const [nodes, setNodes] = useState(layoutedNodes);
+  const [nodes, setNodes] = useState(() => applyHighlight(layoutedNodes, highlightedTodoId));
 
-  // Update nodes when layout changes
+  // Update nodes when layout changes OR highlight changes
   useEffect(() => {
-    setNodes(layoutedNodes);
-  }, [layoutedNodes]);
-
-  // Apply highlight when highlighted ID changes
-  useEffect(() => {
-    setNodes((currentNodes) => applyHighlight(currentNodes, highlightedTodoId));
-  }, [highlightedTodoId]);
+    setNodes(applyHighlight(layoutedNodes, highlightedTodoId));
+  }, [layoutedNodes, highlightedTodoId]);
 
   // Handle node dragging
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -216,17 +213,17 @@ const GraphRenderer: FC<GraphRendererProps> = ({
 interface TodoGraphContentProps {
   nodes: Node[];
   edges: Edge[];
+  highlightedTodoId: string | null;
 }
 
 /** Graph content with React Flow and force-directed layout */
 const TodoGraphContent: FC<TodoGraphContentProps> = ({
   nodes: initialNodes,
   edges: initialEdges,
+  highlightedTodoId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  // Get highlight from context here to avoid re-rendering parent components
-  const { highlightedTodoId } = useHighlightContext();
 
   // Measure container dimensions
   useEffect(() => {
@@ -266,6 +263,8 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
   const { safeDb, rawDb } = usePouchDb();
   const { error, setError, isInitialized } = useDbInitialization(safeDb, rawDb);
   const data = useGraphData(props, isInitialized, error);
+  // Get highlight context here, outside ReactFlowProvider
+  const { highlightedTodoId } = useHighlightContext();
 
   if (data.displayError && data.nodes.length === 0 && !data.isLoading) {
     const handleError = () => {
@@ -304,7 +303,11 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
         />
       ) : (
         <ReactFlowProvider>
-          <TodoGraphContent edges={data.edges} nodes={data.nodes} />
+          <TodoGraphContent
+            edges={data.edges}
+            highlightedTodoId={highlightedTodoId}
+            nodes={data.nodes}
+          />
         </ReactFlowProvider>
       )}
     </div>

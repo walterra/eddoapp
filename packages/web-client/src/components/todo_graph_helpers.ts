@@ -5,6 +5,8 @@
 import type { AuditLogAlpha1, Todo } from '@eddo/core-shared';
 import type { Edge, Node } from '@xyflow/react';
 
+import { createFileEdges, createFileNodes } from './todo_graph_file_helpers';
+
 /** Metadata keys to visualize as nodes */
 const METADATA_KEYS_TO_VISUALIZE = ['agent:session', 'agent:name'] as const;
 
@@ -343,16 +345,18 @@ export function createMetadataEdges(todos: Todo[]): Edge[] {
   return edges;
 }
 
-/** Combine all nodes (todos + metadata) */
+/** Combine all nodes (todos + metadata + files) */
 export function createAllNodes(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Node[] {
   const todoNodes = todosToNodes(todos);
   const metadataNodes = createMetadataNodes(todos, auditEntries);
-  return [...metadataNodes, ...todoNodes];
+  const fileNodes = createFileNodes(todos);
+  return [...metadataNodes, ...fileNodes, ...todoNodes];
 }
 
-/** Combine all edges (parent/child + metadata) */
+/** Combine all edges (parent/child + metadata + files) */
 export function createAllEdges(todos: Todo[]): Edge[] {
   const parentChildEdges = createParentChildEdges(todos);
   const metadataEdges = createMetadataEdges(todos);
-  return [...parentChildEdges, ...metadataEdges];
+  const fileEdges = createFileEdges(todos);
+  return [...parentChildEdges, ...metadataEdges, ...fileEdges];
 }

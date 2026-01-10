@@ -2,7 +2,7 @@
  * Context for sharing highlighted todo ID between components.
  * Used for cross-component highlighting (e.g., sidebar hover → graph node).
  */
-import { createContext, type FC, type ReactNode, useContext, useState } from 'react';
+import { createContext, type FC, type ReactNode, useContext, useMemo, useState } from 'react';
 
 interface HighlightContextValue {
   /** Currently highlighted todo ID, or null if none */
@@ -21,11 +21,13 @@ interface HighlightProviderProps {
 export const HighlightProvider: FC<HighlightProviderProps> = ({ children }) => {
   const [highlightedTodoId, setHighlightedTodoId] = useState<string | null>(null);
 
-  return (
-    <HighlightContext.Provider value={{ highlightedTodoId, setHighlightedTodoId }}>
-      {children}
-    </HighlightContext.Provider>
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({ highlightedTodoId, setHighlightedTodoId }),
+    [highlightedTodoId],
   );
+
+  return <HighlightContext.Provider value={contextValue}>{children}</HighlightContext.Provider>;
 };
 
 /** Hook to access highlight context */
