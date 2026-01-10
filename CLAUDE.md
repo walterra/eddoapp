@@ -111,7 +111,7 @@ interface TodoAlpha3 {
   due: string; // ISO date string
   externalId?: string | null; // External system ID (e.g., "github:owner/repo/issues/123")
   link: string | null; // URL reference
-  metadata?: Record<string, string>; // Extensible key-value data (namespaced: agent:, github:, rss:)
+  metadata?: Record<string, string | string[]>; // Extensible key-value data (namespaced: agent:, github:, rss:)
   notes?: TodoNote[]; // Work diary entries
   parentId?: string | null; // Parent todo ID for subtasks
   repeat: number | null; // Days

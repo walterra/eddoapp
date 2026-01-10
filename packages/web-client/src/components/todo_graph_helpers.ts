@@ -8,6 +8,19 @@ import type { Edge, Node } from '@xyflow/react';
 /** Metadata keys to visualize as nodes */
 const METADATA_KEYS_TO_VISUALIZE = ['agent:session', 'agent:name'] as const;
 
+/**
+ * Extract a string value from metadata.
+ * Returns undefined if the value is an array (arrays are not visualized as nodes).
+ */
+const getMetadataStringValue = (
+  metadata: Record<string, string | string[]> | undefined,
+  key: string,
+): string | undefined => {
+  const value = metadata?.[key];
+  if (typeof value === 'string') return value;
+  return undefined;
+};
+
 /** Generate unique ID for metadata node */
 const getMetadataNodeId = (key: string, value: string): string =>
   `metadata:${key}:${value.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
@@ -99,7 +112,9 @@ const findLastMessageForSession = (
   auditEntries: AuditLogAlpha1[],
 ): string | undefined => {
   // Find todos that belong to this session
-  const sessionTodos = todos.filter((todo) => todo.metadata?.['agent:session'] === sessionId);
+  const sessionTodos = todos.filter(
+    (todo) => getMetadataStringValue(todo.metadata, 'agent:session') === sessionId,
+  );
 
   if (sessionTodos.length === 0) return undefined;
 
@@ -146,7 +161,9 @@ const findLastMessageForAgentName = (
   auditEntries: AuditLogAlpha1[],
 ): string | undefined => {
   // Find all todos for this agent
-  const agentTodos = todos.filter((t) => t.metadata?.['agent:name'] === agentName);
+  const agentTodos = todos.filter(
+    (t) => getMetadataStringValue(t.metadata, 'agent:name') === agentName,
+  );
 
   if (agentTodos.length === 0) return undefined;
 
@@ -204,7 +221,7 @@ export function createMetadataNodes(todos: Todo[], auditEntries: AuditLogAlpha1[
     if (!todo.metadata) continue;
 
     for (const key of METADATA_KEYS_TO_VISUALIZE) {
-      const value = todo.metadata[key];
+      const value = getMetadataStringValue(todo.metadata, key);
       if (!value) continue;
 
       const nodeId = getMetadataNodeId(key, value);
@@ -271,7 +288,7 @@ const buildMetadataMap = (todos: Todo[]): Map<string, Set<string>> => {
     if (!todo.metadata) continue;
 
     for (const key of METADATA_KEYS_TO_VISUALIZE) {
-      const value = todo.metadata[key];
+      const value = getMetadataStringValue(todo.metadata, key);
       if (!value) continue;
 
       const nodeId = getMetadataNodeId(key, value);

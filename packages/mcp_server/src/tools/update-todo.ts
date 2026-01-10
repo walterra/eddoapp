@@ -44,10 +44,10 @@ export const updateTodoParameters = z.object({
     .optional()
     .describe('Updated parent todo ID (null to remove parent, making it a root todo)'),
   metadata: z
-    .record(z.string(), z.string())
+    .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .optional()
     .describe(
-      'Key-value metadata for extensibility. Use namespaced keys (e.g., "agent:worktree", "github:labels"). Replaces entire metadata object when provided.',
+      'Key-value metadata for extensibility. Values can be strings or arrays of strings. Use namespaced keys (e.g., "agent:worktree", "github:labels": ["bug", "priority"]). Replaces entire metadata object when provided.',
     ),
   message: z
     .string()
