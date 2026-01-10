@@ -52,7 +52,8 @@ describe('createAllNodes', () => {
       const nodes = createAllNodes(todos, []);
 
       const todoNode = nodes.find((n) => n.id === 'todo-1');
-      expect(todoNode?.data.todo.title).toBe('Test Title');
+      const data = todoNode?.data as { todo: Todo } | undefined;
+      expect(data?.todo.title).toBe('Test Title');
     });
 
     it('assigns larger size to todos with more content', () => {
@@ -69,7 +70,9 @@ describe('createAllNodes', () => {
 
       const shortNode = nodes.find((n) => n.id === 'short');
       const longNode = nodes.find((n) => n.id === 'long');
-      expect(longNode?.data.size).toBeGreaterThan(shortNode?.data.size);
+      const shortSize = (shortNode?.data as { size: number } | undefined)?.size ?? 0;
+      const longSize = (longNode?.data as { size: number } | undefined)?.size ?? 0;
+      expect(longSize).toBeGreaterThan(shortSize);
     });
 
     it('assigns larger size to todos with more children', () => {
@@ -85,8 +88,10 @@ describe('createAllNodes', () => {
 
       const parentNode = nodes.find((n) => n.id === 'parent');
       const standaloneNode = nodes.find((n) => n.id === 'standalone');
+      const parentSize = (parentNode?.data as { size: number } | undefined)?.size ?? 0;
+      const standaloneSize = (standaloneNode?.data as { size: number } | undefined)?.size ?? 0;
       // Parent should have larger size due to children
-      expect(parentNode?.data.size).toBeGreaterThanOrEqual(standaloneNode?.data.size ?? 0);
+      expect(parentSize).toBeGreaterThanOrEqual(standaloneSize);
     });
   });
 
