@@ -27,6 +27,8 @@ const couchConnection = nano(env.COUCHDB_URL);
 const listQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(50),
   startAfter: z.string().optional(),
+  /** Comma-separated list of entity IDs to filter by */
+  entityIds: z.string().optional(),
 });
 
 /** Schema for creating audit log entries */
@@ -61,10 +63,17 @@ auditLogApp.get('/', async (c) => {
       const query = listQuerySchema.parse(c.req.query());
       span.setAttribute('audit.limit', query.limit);
 
+      // Parse entityIds from comma-separated string
+      const entityIds = query.entityIds ? query.entityIds.split(',').filter(Boolean) : undefined;
+      if (entityIds) {
+        span.setAttribute('audit.entity_ids_count', entityIds.length);
+      }
+
       const auditService = createAuditService(env.COUCHDB_URL, env, username);
       const result = await auditService.getEntries({
         limit: query.limit,
         startAfter: query.startAfter,
+        entityIds,
       });
 
       span.setAttribute('audit.entries_count', result.entries.length);

@@ -115,6 +115,42 @@ const findLastMessageForSession = (
   return latest.message || formatAuditAction(latest);
 };
 
+/** Find the last audit message for an agent name across all sessions */
+const findLastMessageForAgentName = (
+  agentName: string,
+  todos: Todo[],
+  auditEntries: AuditLogAlpha1[],
+): string | undefined => {
+  // Find all sessions for this agent
+  const agentTodos = todos.filter((t) => t.metadata?.['agent:name'] === agentName);
+  const agentSessions = [
+    ...new Set(agentTodos.map((t) => t.metadata?.['agent:session']).filter(Boolean) as string[]),
+  ];
+
+  // Find most recent message across all sessions
+  for (const sessionId of agentSessions) {
+    const msg = findLastMessageForSession(sessionId, todos, auditEntries);
+    if (msg) return msg;
+  }
+  return undefined;
+};
+
+/** Get last message for a metadata node */
+const getLastMessageForMetadata = (
+  key: string,
+  value: string,
+  todos: Todo[],
+  auditEntries: AuditLogAlpha1[],
+): string | undefined => {
+  if (key === 'agent:session') {
+    return findLastMessageForSession(value, todos, auditEntries);
+  }
+  if (key === 'agent:name') {
+    return findLastMessageForAgentName(value, todos, auditEntries);
+  }
+  return undefined;
+};
+
 /** Extract unique metadata values and create nodes */
 export function createMetadataNodes(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Node[] {
   const metadataMap = new Map<string, { key: string; value: string; todoIds: Set<string> }>();
@@ -143,9 +179,8 @@ export function createMetadataNodes(todos: Todo[], auditEntries: AuditLogAlpha1[
 
   for (const [nodeId, { key, value, todoIds }] of metadataMap) {
     if (todoIds.size >= 2) {
-      // Find last message for session nodes
-      const lastMessage =
-        key === 'agent:session' ? findLastMessageForSession(value, todos, auditEntries) : undefined;
+      // Find last message for agent-related nodes
+      const lastMessage = getLastMessageForMetadata(key, value, todos, auditEntries);
 
       nodes.push({
         id: nodeId,

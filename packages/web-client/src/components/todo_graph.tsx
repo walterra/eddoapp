@@ -4,20 +4,22 @@
  */
 import { type DatabaseError } from '@eddo/core-client';
 import {
+  applyNodeChanges,
   Background,
   Controls,
   type Edge,
   type Node,
+  type NodeChange,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Spinner } from 'flowbite-react';
-import { type FC, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './todo_graph.css';
 
-import { useAuditLog } from '../hooks/use_audit_log_data';
+import { useAuditForTodos } from '../hooks/use_audit_for_todos';
 import { useForceLayout } from '../hooks/use_force_layout';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
@@ -81,12 +83,20 @@ const useGraphData = (
 
   useOutdatedTodos(boardData.outdatedTodosMemo);
 
-  const { entries: auditEntries } = useAuditLog({ enabled: isInitialized });
-
   const filteredTodos = useMemo(
     () => filterTodosForGraph(boardData.todos, selectedContexts, selectedStatus, selectedTags),
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
+
+  // Get todo IDs for audit lookup
+  const todoIds = useMemo(() => filteredTodos.map((t) => t._id), [filteredTodos]);
+
+  // Fetch audit entries specifically for displayed todos (server-side filtered)
+  const { entries: auditEntries } = useAuditForTodos({
+    todoIds,
+    enabled: isInitialized && todoIds.length > 0,
+    limit: 100,
+  });
 
   const nodes = useMemo(
     () => createAllNodes(filteredTodos, auditEntries),
@@ -127,19 +137,30 @@ const LoadingSpinner: FC = () => (
 
 /** Inner component that can access useReactFlow */
 const GraphRenderer: FC<{ nodes: Node[]; edges: Edge[]; isLayouting: boolean }> = ({
-  nodes,
+  nodes: layoutedNodes,
   edges,
   isLayouting,
 }) => {
   const { fitView } = useReactFlow();
+  const [nodes, setNodes] = useState(layoutedNodes);
 
-  // Fit view whenever nodes change (after layout completes)
+  // Update nodes when layout changes
   useEffect(() => {
-    if (!isLayouting && nodes.length > 0) {
+    setNodes(layoutedNodes);
+  }, [layoutedNodes]);
+
+  // Handle node dragging
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, []);
+
+  // Fit view whenever layouted nodes change (after layout completes)
+  useEffect(() => {
+    if (!isLayouting && layoutedNodes.length > 0) {
       const timer = setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 50);
       return () => clearTimeout(timer);
     }
-  }, [nodes, isLayouting, fitView]);
+  }, [layoutedNodes, isLayouting, fitView]);
 
   if (isLayouting) {
     return (
@@ -161,6 +182,7 @@ const GraphRenderer: FC<{ nodes: Node[]; edges: Edge[]; isLayouting: boolean }> 
       minZoom={0.3}
       nodeTypes={nodeTypes}
       nodes={nodes}
+      onNodesChange={onNodesChange}
       proOptions={{ hideAttribution: true }}
     >
       <Background color="#94a3b8" gap={16} size={1} />

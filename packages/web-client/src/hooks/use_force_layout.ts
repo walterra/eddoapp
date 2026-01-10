@@ -19,13 +19,14 @@ import {
   type SimulationLinkDatum,
   type SimulationNodeDatum,
 } from 'd3-force';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface SimNode extends SimulationNodeDatum {
   id: string;
   x: number;
   y: number;
   targetX?: number; // Target X based on creation date
+  targetY?: number; // Target Y based on creation date (for tall viewports)
 }
 
 interface SimLink extends SimulationLinkDatum<SimNode> {
@@ -49,9 +50,13 @@ const getCreationTime = (nodeId: string): number => {
   return isNaN(timestamp) ? Date.now() : timestamp;
 };
 
-/** Calculate target X positions based on creation dates */
-const calculateTargetPositions = (nodes: SimNode[], width: number): Map<string, number> => {
-  const positions = new Map<string, number>();
+/** Calculate target positions based on creation dates - always horizontal timeline */
+const calculateTargetPositions = (
+  nodes: SimNode[],
+  width: number,
+  height: number,
+): Map<string, { x: number; y: number }> => {
+  const positions = new Map<string, { x: number; y: number }>();
 
   // Get all timestamps
   const timestamps = nodes.map((n) => ({ id: n.id, time: getCreationTime(n.id) }));
@@ -60,11 +65,13 @@ const calculateTargetPositions = (nodes: SimNode[], width: number): Map<string, 
   const maxTime = Math.max(...times);
   const timeRange = maxTime - minTime || 1;
 
-  // Normalize to X positions (older=left, newer=right)
+  // Always use horizontal timeline (older=left, newer=right)
+  // Y position centered
   for (const { id, time } of timestamps) {
     const normalized = (time - minTime) / timeRange;
     const targetX = PADDING + normalized * (width - 2 * PADDING);
-    positions.set(id, targetX);
+    const targetY = height / 2;
+    positions.set(id, { x: targetX, y: targetY });
   }
 
   return positions;
@@ -79,17 +86,18 @@ const createSimNodes = (nodes: Node[], width: number, height: number): SimNode[]
     y: 0,
   }));
 
-  // Calculate target X positions based on creation time
-  const targetPositions = calculateTargetPositions(basicNodes, width);
+  // Calculate target positions based on creation time and aspect ratio
+  const targetPositions = calculateTargetPositions(basicNodes, width, height);
 
-  // Initialize nodes at their target X with random Y spread
+  // Initialize nodes near their target positions with jitter
   return nodes.map((node) => {
-    const targetX = targetPositions.get(node.id) ?? width / 2;
+    const target = targetPositions.get(node.id) ?? { x: width / 2, y: height / 2 };
     return {
       id: node.id,
-      x: targetX + (Math.random() - 0.5) * 100, // Start near target X with jitter
-      y: height / 2 + (Math.random() - 0.5) * height * 0.6, // Random Y spread
-      targetX,
+      x: target.x + (Math.random() - 0.5) * 100,
+      y: target.y + (Math.random() - 0.5) * 100,
+      targetX: target.x,
+      targetY: target.y,
     };
   });
 };
@@ -153,16 +161,10 @@ const runSimulation = (params: SimulationParams): Node[] => {
     // Collision: larger radius to prevent overlap, more iterations
     .force('collide', forceCollide(35).strength(1).iterations(4));
 
-  // Calculate aspect ratio to balance forces
-  // For a wide viewport (e.g., 16:9), we want stronger X force to spread horizontally
-  const aspectRatio = width / height;
-  const xStrength = 0.2 * aspectRatio; // Scale X force by aspect ratio
-  const yStrength = 0.2 / aspectRatio; // Inverse for Y
-
-  // X position: pull toward target X based on creation date
-  simulation.force('x', forceX<SimNode>((d) => d.targetX ?? width / 2).strength(xStrength));
-  // Y position: centering
-  simulation.force('y', forceY(height / 2).strength(yStrength));
+  // X position: pull toward target X based on creation date (timeline)
+  simulation.force('x', forceX<SimNode>((d) => d.targetX ?? width / 2).strength(0.2));
+  // Y position: center vertically
+  simulation.force('y', forceY<SimNode>((d) => d.targetY ?? height / 2).strength(0.1));
 
   // Run more iterations for better convergence
   simulation.stop();
@@ -176,6 +178,8 @@ const runSimulation = (params: SimulationParams): Node[] => {
     return {
       ...node,
       position: { x: simNode?.x ?? node.position.x, y: simNode?.y ?? node.position.y },
+      // Enable smooth position transitions
+      style: { ...node.style, transition: 'transform 0.3s ease-out' },
     };
   });
 };
@@ -200,11 +204,21 @@ export function useForceLayout(
   const { width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT } = options;
   const [isLayouting, setIsLayouting] = useState(true);
   const [layoutedNodes, setLayoutedNodes] = useState<Node[]>(initialNodes);
+  const previousPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
 
-  const simNodes = useMemo(
-    () => createSimNodes(initialNodes, width, height),
-    [initialNodes, width, height],
-  );
+  // Create sim nodes with previous positions as seeds
+  const simNodes = useMemo(() => {
+    const nodes = createSimNodes(initialNodes, width, height);
+    // Use previous positions as starting points for existing nodes
+    return nodes.map((node) => {
+      const prevPos = previousPositionsRef.current.get(node.id);
+      if (prevPos) {
+        return { ...node, x: prevPos.x, y: prevPos.y };
+      }
+      return node;
+    });
+  }, [initialNodes, width, height]);
+
   const simLinks = useMemo(() => createSimLinks(initialEdges), [initialEdges]);
 
   useEffect(() => {
@@ -214,6 +228,14 @@ export function useForceLayout(
     }
     setIsLayouting(true);
     const newNodes = runSimulation({ initialNodes, simNodes, simLinks, width, height });
+
+    // Store positions for next layout cycle
+    const newPositions = new Map<string, { x: number; y: number }>();
+    newNodes.forEach((node) => {
+      newPositions.set(node.id, { x: node.position.x, y: node.position.y });
+    });
+    previousPositionsRef.current = newPositions;
+
     setLayoutedNodes(newNodes);
     setIsLayouting(false);
   }, [initialNodes, simNodes, simLinks, width, height]);

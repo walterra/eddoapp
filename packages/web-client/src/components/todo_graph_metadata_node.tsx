@@ -67,12 +67,6 @@ const getKeyLabel = (key: string): string => {
   return labels[key] || key;
 };
 
-/** Truncate message for display */
-const truncateMessage = (message: string, maxLen: number = 60): string => {
-  if (message.length <= maxLen) return message;
-  return message.slice(0, maxLen - 3) + '...';
-};
-
 interface MetadataNodeProps {
   data: MetadataNodeData;
 }
@@ -88,9 +82,15 @@ export const MetadataNode: FC<MetadataNodeProps> = ({ data }) => {
     <div className="relative">
       {/* Speech bubble for last message */}
       {lastMessage && (
-        <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap">
-          <div className="rounded-lg bg-violet-900 px-3 py-1.5 text-xs text-violet-100 shadow-lg">
-            {truncateMessage(lastMessage)}
+        <div
+          className="absolute bottom-full left-1/2 z-[9999] mb-2"
+          style={{ transform: 'translateX(-50%)' }}
+        >
+          <div
+            className="rounded-lg bg-violet-900 px-4 py-2 text-xs leading-relaxed text-violet-100 shadow-xl"
+            style={{ minWidth: '200px', maxWidth: '350px' }}
+          >
+            {lastMessage}
           </div>
           {/* Speech bubble tail */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-violet-900" />
