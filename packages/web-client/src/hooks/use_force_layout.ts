@@ -10,7 +10,6 @@
  */
 import type { Edge, Node } from '@xyflow/react';
 import {
-  forceCenter,
   forceCollide,
   forceLink,
   forceManyBody,
@@ -35,9 +34,9 @@ interface SimLink extends SimulationLinkDatum<SimNode> {
 }
 
 /** Default canvas dimensions (will be overridden by actual viewport) */
-const DEFAULT_WIDTH = 1200;
-const DEFAULT_HEIGHT = 600;
-const PADDING = 50;
+const DEFAULT_WIDTH = 1600;
+const DEFAULT_HEIGHT = 800;
+const PADDING = 100;
 
 /** Extract creation timestamp from node ID (ISO timestamp format) */
 const getCreationTime = (nodeId: string): number => {
@@ -72,20 +71,27 @@ const calculateTargetPositions = (nodes: SimNode[], width: number): Map<string, 
 };
 
 /** Create simulation nodes from React Flow nodes */
-const createSimNodes = (nodes: Node[], width: number): SimNode[] => {
-  const simNodes = nodes.map((node) => ({
+const createSimNodes = (nodes: Node[], width: number, height: number): SimNode[] => {
+  // First pass: create basic nodes to calculate target positions
+  const basicNodes = nodes.map((node) => ({
     id: node.id,
-    x: node.position.x,
-    y: node.position.y,
+    x: 0,
+    y: 0,
   }));
 
   // Calculate target X positions based on creation time
-  const targetPositions = calculateTargetPositions(simNodes, width);
+  const targetPositions = calculateTargetPositions(basicNodes, width);
 
-  return simNodes.map((node) => ({
-    ...node,
-    targetX: targetPositions.get(node.id) ?? width / 2,
-  }));
+  // Initialize nodes at their target X with random Y spread
+  return nodes.map((node) => {
+    const targetX = targetPositions.get(node.id) ?? width / 2;
+    return {
+      id: node.id,
+      x: targetX + (Math.random() - 0.5) * 100, // Start near target X with jitter
+      y: height / 2 + (Math.random() - 0.5) * height * 0.6, // Random Y spread
+      targetX,
+    };
+  });
 };
 
 /** Create simulation links from React Flow edges */
@@ -142,16 +148,21 @@ const runSimulation = (params: SimulationParams): Node[] => {
           return 1 / Math.min(sourceDegree, targetDegree);
         }),
     )
-    // Many-body: stronger repulsion for better separation
-    .force('charge', forceManyBody().strength(-400).distanceMax(500))
-    // Center: pull toward canvas center
-    .force('center', forceCenter(width / 2, height / 2))
+    // Many-body: stronger repulsion for better separation of unconnected nodes
+    .force('charge', forceManyBody().strength(-500).distanceMax(600))
     // Collision: larger radius to prevent overlap, more iterations
-    .force('collide', forceCollide(35).strength(1).iterations(4))
-    // X position: pull toward target X based on creation date (moderate strength)
-    .force('x', forceX<SimNode>((d) => d.targetX ?? width / 2).strength(0.15))
-    // Y position: gentle centering
-    .force('y', forceY(height / 2).strength(0.05));
+    .force('collide', forceCollide(35).strength(1).iterations(4));
+
+  // Calculate aspect ratio to balance forces
+  // For a wide viewport (e.g., 16:9), we want stronger X force to spread horizontally
+  const aspectRatio = width / height;
+  const xStrength = 0.2 * aspectRatio; // Scale X force by aspect ratio
+  const yStrength = 0.2 / aspectRatio; // Inverse for Y
+
+  // X position: pull toward target X based on creation date
+  simulation.force('x', forceX<SimNode>((d) => d.targetX ?? width / 2).strength(xStrength));
+  // Y position: centering
+  simulation.force('y', forceY(height / 2).strength(yStrength));
 
   // Run more iterations for better convergence
   simulation.stop();
@@ -190,7 +201,10 @@ export function useForceLayout(
   const [isLayouting, setIsLayouting] = useState(true);
   const [layoutedNodes, setLayoutedNodes] = useState<Node[]>(initialNodes);
 
-  const simNodes = useMemo(() => createSimNodes(initialNodes, width), [initialNodes, width]);
+  const simNodes = useMemo(
+    () => createSimNodes(initialNodes, width, height),
+    [initialNodes, width, height],
+  );
   const simLinks = useMemo(() => createSimLinks(initialEdges), [initialEdges]);
 
   useEffect(() => {

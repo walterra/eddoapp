@@ -17,6 +17,7 @@ import { Spinner } from 'flowbite-react';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import './todo_graph.css';
 
+import { useAuditLog } from '../hooks/use_audit_log_data';
 import { useForceLayout } from '../hooks/use_force_layout';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
@@ -80,12 +81,17 @@ const useGraphData = (
 
   useOutdatedTodos(boardData.outdatedTodosMemo);
 
+  const { entries: auditEntries } = useAuditLog({ enabled: isInitialized });
+
   const filteredTodos = useMemo(
     () => filterTodosForGraph(boardData.todos, selectedContexts, selectedStatus, selectedTags),
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
-  const nodes = useMemo(() => createAllNodes(filteredTodos), [filteredTodos]);
+  const nodes = useMemo(
+    () => createAllNodes(filteredTodos, auditEntries),
+    [filteredTodos, auditEntries],
+  );
   const edges = useMemo(() => createAllEdges(filteredTodos), [filteredTodos]);
 
   const hasNoTodos =
@@ -169,27 +175,35 @@ const TodoGraphContent: FC<{ nodes: Node[]; edges: Edge[] }> = ({
   edges: initialEdges,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 1200, height: 600 });
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
 
   // Measure container dimensions
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        setDimensions({ width, height });
+        if (width > 0 && height > 0) {
+          setDimensions({ width, height });
+        }
       }
     };
 
-    updateDimensions();
+    // Use requestAnimationFrame to ensure layout is complete
+    requestAnimationFrame(updateDimensions);
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  const { nodes, edges, isLayouting } = useForceLayout(initialNodes, initialEdges, dimensions);
+  // Wait for dimensions before running layout
+  const { nodes, edges, isLayouting } = useForceLayout(
+    initialNodes,
+    initialEdges,
+    dimensions ?? { width: 1600, height: 800 },
+  );
 
   return (
     <div className="h-[calc(100vh-200px)] w-full" ref={containerRef}>
-      <GraphRenderer edges={edges} isLayouting={isLayouting} nodes={nodes} />
+      <GraphRenderer edges={edges} isLayouting={isLayouting || !dimensions} nodes={nodes} />
     </div>
   );
 };

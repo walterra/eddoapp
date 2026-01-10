@@ -2,7 +2,7 @@
  * Helper functions for TodoGraph component.
  * Handles node/edge creation for todos and metadata.
  */
-import type { Todo } from '@eddo/core-shared';
+import type { AuditLogAlpha1, Todo } from '@eddo/core-shared';
 import type { Edge, Node } from '@xyflow/react';
 
 /** Metadata keys to visualize as nodes */
@@ -73,8 +73,50 @@ export function todosToNodes(todos: Todo[]): Node[] {
   });
 }
 
+/** Format audit action as readable text */
+const formatAuditAction = (entry: AuditLogAlpha1): string => {
+  const actionLabels: Record<string, string> = {
+    create: 'Created task',
+    update: 'Updated task',
+    delete: 'Deleted task',
+    complete: 'Completed task',
+    uncomplete: 'Reopened task',
+    time_tracking_start: 'Started tracking',
+    time_tracking_stop: 'Stopped tracking',
+  };
+  const action = actionLabels[entry.action] || entry.action;
+  const title = entry.after?.title || entry.before?.title;
+  return title ? `${action}: ${title}` : action;
+};
+
+/** Find the last audit activity for a session by matching todo IDs */
+const findLastMessageForSession = (
+  sessionId: string,
+  todos: Todo[],
+  auditEntries: AuditLogAlpha1[],
+): string | undefined => {
+  // Find todo IDs that belong to this session
+  const sessionTodoIds = new Set(
+    todos.filter((todo) => todo.metadata?.['agent:session'] === sessionId).map((todo) => todo._id),
+  );
+
+  if (sessionTodoIds.size === 0) return undefined;
+
+  // Find audit entries for these todos
+  const relevantEntries = auditEntries.filter((entry) => sessionTodoIds.has(entry.entityId));
+
+  if (relevantEntries.length === 0) return undefined;
+
+  // Sort by timestamp descending and get the most recent
+  const sorted = relevantEntries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const latest = sorted[0];
+
+  // Return message if available, otherwise format the action
+  return latest.message || formatAuditAction(latest);
+};
+
 /** Extract unique metadata values and create nodes */
-export function createMetadataNodes(todos: Todo[]): Node[] {
+export function createMetadataNodes(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Node[] {
   const metadataMap = new Map<string, { key: string; value: string; todoIds: Set<string> }>();
 
   for (const todo of todos) {
@@ -101,11 +143,15 @@ export function createMetadataNodes(todos: Todo[]): Node[] {
 
   for (const [nodeId, { key, value, todoIds }] of metadataMap) {
     if (todoIds.size >= 2) {
+      // Find last message for session nodes
+      const lastMessage =
+        key === 'agent:session' ? findLastMessageForSession(value, todos, auditEntries) : undefined;
+
       nodes.push({
         id: nodeId,
         type: 'metadataNode',
         position: { x: -200 + (index % 3) * 220, y: -150 + Math.floor(index / 3) * 100 },
-        data: { metadataKey: key, metadataValue: value, todoCount: todoIds.size },
+        data: { metadataKey: key, metadataValue: value, todoCount: todoIds.size, lastMessage },
       });
       index++;
     }
@@ -201,9 +247,9 @@ export function createMetadataEdges(todos: Todo[]): Edge[] {
 }
 
 /** Combine all nodes (todos + metadata) */
-export function createAllNodes(todos: Todo[]): Node[] {
+export function createAllNodes(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Node[] {
   const todoNodes = todosToNodes(todos);
-  const metadataNodes = createMetadataNodes(todos);
+  const metadataNodes = createMetadataNodes(todos, auditEntries);
   return [...metadataNodes, ...todoNodes];
 }
 
