@@ -5,7 +5,7 @@ import type { TodoAlpha3 } from '@eddo/core-server';
 import { getRepeatTodo } from '@eddo/core-server';
 import { z } from 'zod';
 
-import { logMcpAudit } from './audit-helper.js';
+import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -109,15 +109,18 @@ async function saveAndRespond(params: SaveAndRespondParams): Promise<string> {
   await db.insert(todo);
   const executionTime = Date.now() - startTime;
 
-  // Log audit entry
+  // Log audit entry and push audit ID to todo
   const action = status === 'completed' ? 'complete' : 'uncomplete';
-  await logMcpAudit(context, {
+  const auditId = await logMcpAudit(context, {
     action,
     entityId: todo._id,
     before: originalTodo,
     after: todo,
     message,
   });
+  if (auditId) {
+    pushAuditIdToTodo(db, todo._id, auditId, context);
+  }
 
   context.log.info('Todo completion toggled successfully', { title: todo.title, status });
 

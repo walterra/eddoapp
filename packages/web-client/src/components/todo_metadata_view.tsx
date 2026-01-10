@@ -8,8 +8,27 @@ const LABEL_CLASS =
   'text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide';
 
 interface MetadataViewProps {
-  metadata: Record<string, string> | undefined;
+  metadata: Record<string, string | string[]> | undefined;
 }
+
+/** Format a metadata value for display */
+const formatValue = (value: string | string[]): React.ReactNode => {
+  if (Array.isArray(value)) {
+    return (
+      <span className="flex flex-wrap gap-1">
+        {value.map((v, i) => (
+          <span
+            className="rounded bg-neutral-200 px-1.5 py-0.5 dark:bg-neutral-700"
+            key={`${v}-${i}`}
+          >
+            {v}
+          </span>
+        ))}
+      </span>
+    );
+  }
+  return value;
+};
 
 export const MetadataView: FC<MetadataViewProps> = ({ metadata }) => {
   if (!metadata || Object.keys(metadata).length === 0) {
@@ -30,7 +49,7 @@ export const MetadataView: FC<MetadataViewProps> = ({ metadata }) => {
                   {key}
                 </td>
                 <td className="px-3 py-2 align-top font-mono text-xs break-all text-neutral-900 dark:text-white">
-                  {value}
+                  {formatValue(value)}
                 </td>
               </tr>
             ))}

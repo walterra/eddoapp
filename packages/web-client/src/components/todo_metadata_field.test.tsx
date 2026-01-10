@@ -164,4 +164,61 @@ describe('MetadataField', () => {
     expect(datalist).toBeInTheDocument();
     expect(datalist?.querySelectorAll('option').length).toBeGreaterThan(0);
   });
+
+  it('renders array values as comma-separated string', () => {
+    const onChange = vi.fn();
+    const todo = createMockTodo({
+      metadata: { 'github:labels': ['bug', 'priority'] },
+    });
+    render(<MetadataField onChange={onChange} todo={todo} />);
+
+    const valueInput = screen.getByLabelText('Metadata value');
+    expect(valueInput).toHaveValue('bug, priority');
+  });
+
+  it('toggles between array and string mode', () => {
+    const onChange = vi.fn();
+    const todo = createMockTodo({
+      metadata: { key: 'value' },
+    });
+    render(<MetadataField onChange={onChange} todo={todo} />);
+
+    // Find and click the array toggle button
+    const toggleButton = screen.getByLabelText('Switch to array');
+    fireEvent.click(toggleButton);
+
+    expect(onChange).toHaveBeenCalled();
+    const updater = onChange.mock.calls[0][0];
+    const result = updater(todo);
+    // After toggling to array mode, single value becomes array with one element
+    expect(result.metadata).toEqual({ key: ['value'] });
+  });
+
+  it('converts comma-separated string to array when in array mode', () => {
+    const onChange = vi.fn();
+    const todo = createMockTodo({
+      metadata: { 'github:labels': ['bug'] },
+    });
+    render(<MetadataField onChange={onChange} todo={todo} />);
+
+    const valueInput = screen.getByLabelText('Metadata value');
+    fireEvent.change(valueInput, { target: { value: 'bug, feature, priority' } });
+
+    expect(onChange).toHaveBeenCalled();
+    const updater = onChange.mock.calls[0][0];
+    const result = updater(todo);
+    expect(result.metadata).toEqual({ 'github:labels': ['bug', 'feature', 'priority'] });
+  });
+
+  it('preserves array mode indicator for existing array values', () => {
+    const onChange = vi.fn();
+    const todo = createMockTodo({
+      metadata: { tags: ['a', 'b'] },
+    });
+    render(<MetadataField onChange={onChange} todo={todo} />);
+
+    // The toggle button should show "Switch to single value" for array mode
+    const toggleButton = screen.getByLabelText('Switch to single value');
+    expect(toggleButton).toBeInTheDocument();
+  });
 });

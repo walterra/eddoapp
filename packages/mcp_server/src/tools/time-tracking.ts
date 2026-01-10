@@ -4,7 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import { z } from 'zod';
 
-import { logMcpAudit } from './audit-helper.js';
+import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext, ToolResponse } from './types.js';
 
@@ -65,13 +65,16 @@ export async function executeStartTimeTracking(
     await db.insert(todo);
     const executionTime = Date.now() - startTime;
 
-    await logMcpAudit(context, {
+    const auditId = await logMcpAudit(context, {
       action: 'time_tracking_start',
       entityId: todo._id,
       before: originalTodo,
       after: todo,
       message: args.message,
     });
+    if (auditId) {
+      pushAuditIdToTodo(db, todo._id, auditId, context);
+    }
     context.log.info('Time tracking started', { title: todo.title, startTime: now });
 
     return buildStartResponse(todo, now, executionTime);
@@ -178,13 +181,16 @@ async function processStopSession(params: StopSessionParams): Promise<number> {
   todo.active[sessionStart] = now;
   const startTime = Date.now();
   await db.insert(todo);
-  await logMcpAudit(context, {
+  const auditId = await logMcpAudit(context, {
     action: 'time_tracking_stop',
     entityId: todo._id,
     before: originalTodo,
     after: todo,
     message,
   });
+  if (auditId) {
+    pushAuditIdToTodo(db, todo._id, auditId, context);
+  }
   return Date.now() - startTime;
 }
 

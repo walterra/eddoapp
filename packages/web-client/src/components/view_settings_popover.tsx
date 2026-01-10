@@ -7,6 +7,7 @@ import { type FC, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HiOutlineCog } from 'react-icons/hi';
 import { MdTableChart, MdViewKanban } from 'react-icons/md';
+import { TbVectorTriangle } from 'react-icons/tb';
 
 import { useFloatingPosition } from '../hooks/use_floating_position';
 import {
@@ -25,7 +26,7 @@ interface ViewSettingsPopoverProps {
 }
 
 const POPOVER_STYLES =
-  'z-50 w-64 rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
+  'z-50 w-72 rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-600 dark:bg-neutral-800';
 
 /** Hook for popover dismiss behavior (click outside, escape key) */
 const usePopoverDismiss = (
@@ -68,7 +69,7 @@ const ViewModeButton: FC<ViewModeButtonProps> = ({
   disabled,
 }) => (
   <button
-    className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm ${
+    className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm ${
       currentMode === mode
         ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
         : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
@@ -93,7 +94,7 @@ const ViewModeSection: FC<ViewModeSectionProps> = ({ viewMode, onViewModeChange,
     <div className="mb-2 text-xs font-semibold text-neutral-500 uppercase dark:text-neutral-400">
       View Mode
     </div>
-    <div className="flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-700">
+    <div className="grid grid-cols-3 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-700">
       <ViewModeButton
         currentMode={viewMode}
         disabled={isLoading}
@@ -109,6 +110,14 @@ const ViewModeSection: FC<ViewModeSectionProps> = ({ viewMode, onViewModeChange,
         label="Table"
         mode="table"
         onClick={() => onViewModeChange('table')}
+      />
+      <ViewModeButton
+        currentMode={viewMode}
+        disabled={isLoading}
+        icon={<TbVectorTriangle size="1.2em" />}
+        label="Graph"
+        mode="graph"
+        onClick={() => onViewModeChange('graph')}
       />
     </div>
   </div>

@@ -9,6 +9,7 @@ import { BiCloud, BiEnvelope, BiGitBranch, BiGlobe, BiRss, BiTerminal } from 're
 import type { AuditAction, AuditLogAlpha1, AuditSource } from '@eddo/core-shared';
 
 import { useAuditLog } from '../hooks/use_audit_log_data';
+import { useHighlightContext } from '../hooks/use_highlight_context';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { usePouchDb } from '../pouch_db';
 
@@ -95,36 +96,19 @@ const LoadingSkeleton: FC = () => (
   </>
 );
 
-interface AuditEntryItemProps {
+interface AuditEntryContentProps {
   entry: AuditLogAlpha1;
-  onEntryClick: (entityId: string) => void;
-  isDeleted: boolean;
 }
 
-const AuditEntryItem: FC<AuditEntryItemProps> = ({ entry, onEntryClick, isDeleted }) => {
+/** Content within an audit entry button */
+const AuditEntryContent: FC<AuditEntryContentProps> = ({ entry }) => {
   const actionConfig = ACTION_CONFIG[entry.action];
   const sourceConfig = SOURCE_CONFIG[entry.source];
   const SourceIcon = sourceConfig.icon;
   const title = getEntryTitle(entry);
-  const isClickable = !isDeleted;
-
-  const handleClick = () => {
-    if (isClickable) {
-      onEntryClick(entry.entityId);
-    }
-  };
 
   return (
-    <button
-      className={`w-full border-b border-neutral-200 px-3 py-2 text-left dark:border-neutral-700 ${
-        isClickable
-          ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700'
-          : 'cursor-default opacity-60'
-      }`}
-      disabled={!isClickable}
-      onClick={handleClick}
-      type="button"
-    >
+    <>
       <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
       {entry.message && (
         <p className="truncate text-xs text-neutral-600 italic dark:text-neutral-300">
@@ -139,6 +123,45 @@ const AuditEntryItem: FC<AuditEntryItemProps> = ({ entry, onEntryClick, isDelete
         <span className="mx-0.5">·</span>
         {formatRelativeTime(entry.timestamp)}
       </p>
+    </>
+  );
+};
+
+interface AuditEntryItemProps {
+  entry: AuditLogAlpha1;
+  onEntryClick: (entityId: string) => void;
+  onEntryHover: (entityId: string | null) => void;
+  isDeleted: boolean;
+}
+
+const AuditEntryItem: FC<AuditEntryItemProps> = ({
+  entry,
+  onEntryClick,
+  onEntryHover,
+  isDeleted,
+}) => {
+  const isClickable = !isDeleted;
+
+  const handleClick = () => isClickable && onEntryClick(entry.entityId);
+  const handleMouseEnter = () => !isDeleted && onEntryHover(entry.entityId);
+  const handleMouseLeave = () => onEntryHover(null);
+
+  const className = `w-full border-b border-neutral-200 px-3 py-2 text-left dark:border-neutral-700 ${
+    isClickable
+      ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700'
+      : 'cursor-default opacity-60'
+  }`;
+
+  return (
+    <button
+      className={className}
+      disabled={!isClickable}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      type="button"
+    >
+      <AuditEntryContent entry={entry} />
     </button>
   );
 };
@@ -242,11 +265,56 @@ const getDeletedEntityIds = (entries: readonly AuditLogAlpha1[]): Set<string> =>
   return new Set(entries.filter((e) => e.action === 'delete').map((e) => e.entityId));
 };
 
+interface EntryListProps {
+  entries: readonly AuditLogAlpha1[];
+  deletedEntityIds: Set<string>;
+  isLoading: boolean;
+  sourceFilter: AuditSource | 'all';
+  onEntryClick: (entityId: string) => void;
+  onEntryHover: (entityId: string | null) => void;
+}
+
+/** List of audit entries */
+const EntryList: FC<EntryListProps> = ({
+  entries,
+  deletedEntityIds,
+  isLoading,
+  sourceFilter,
+  onEntryClick,
+  onEntryHover,
+}) => {
+  if (isLoading) return <LoadingSkeleton />;
+
+  if (entries.length === 0) {
+    const message = sourceFilter === 'all' ? 'No activity yet' : `No ${sourceFilter} activity`;
+    return (
+      <div className="p-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
+        {message}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {entries.map((entry) => (
+        <AuditEntryItem
+          entry={entry}
+          isDeleted={deletedEntityIds.has(entry.entityId)}
+          key={entry._id}
+          onEntryClick={onEntryClick}
+          onEntryHover={onEntryHover}
+        />
+      ))}
+    </>
+  );
+};
+
 export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle }) => {
   const [isExpanded, setIsExpanded] = useState(isOpen);
   const [sourceFilter, setSourceFilter] = useState<AuditSource | 'all'>('all');
   const { entries, isLoading, isConnected } = useAuditLog({ enabled: isExpanded });
   const handleEntryClick = useAuditEntryClick();
+  const { setHighlightedTodoId } = useHighlightContext();
 
   const filteredEntries =
     sourceFilter === 'all' ? entries : entries.filter((e) => e.source === sourceFilter);
@@ -257,9 +325,12 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
     onToggle?.(expanded);
   };
 
-  if (!isExpanded) {
-    return <CollapsedToggle onClick={() => handleToggle(true)} />;
-  }
+  const handleEntryHover = useCallback(
+    (entityId: string | null) => setHighlightedTodoId(entityId),
+    [setHighlightedTodoId],
+  );
+
+  if (!isExpanded) return <CollapsedToggle onClick={() => handleToggle(true)} />;
 
   return (
     <aside
@@ -268,26 +339,16 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
     >
       <SidebarHeader isConnected={isConnected} onCollapse={() => handleToggle(false)} />
       <SourceFilter activeFilter={sourceFilter} onFilterChange={setSourceFilter} />
-
       <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <LoadingSkeleton />
-        ) : filteredEntries.length === 0 ? (
-          <div className="p-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
-            {sourceFilter === 'all' ? 'No activity yet' : `No ${sourceFilter} activity`}
-          </div>
-        ) : (
-          filteredEntries.map((entry) => (
-            <AuditEntryItem
-              entry={entry}
-              isDeleted={deletedEntityIds.has(entry.entityId)}
-              key={entry._id}
-              onEntryClick={handleEntryClick}
-            />
-          ))
-        )}
+        <EntryList
+          deletedEntityIds={deletedEntityIds}
+          entries={filteredEntries}
+          isLoading={isLoading}
+          onEntryClick={handleEntryClick}
+          onEntryHover={handleEntryHover}
+          sourceFilter={sourceFilter}
+        />
       </div>
-
       {!isLoading && filteredEntries.length > 0 && (
         <div className="border-t border-neutral-200 px-3 py-2 text-center text-xs text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
           Showing last {Math.min(filteredEntries.length, MAX_DISPLAY_ENTRIES)} activities

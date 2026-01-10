@@ -43,6 +43,8 @@ export interface AuditService {
   logAction: (options: LogActionOptions) => Promise<AuditLogAlpha1>;
   /** Get recent audit entries */
   getEntries: (options?: AuditListOptions) => Promise<AuditListResult>;
+  /** Get audit entries by their document IDs */
+  getByIds: (ids: string[]) => Promise<AuditLogAlpha1[]>;
   /** Get the underlying audit database */
   getDatabase: () => AuditDatabase;
 }
@@ -71,6 +73,7 @@ export function createAuditService(couchUrl: string, env: Env, username: string)
   return {
     logAction: (options) => logAction(context, options),
     getEntries: (options) => context.auditDb.list(options),
+    getByIds: (ids) => context.auditDb.getByIds(ids),
     getDatabase: () => auditDb,
   };
 }

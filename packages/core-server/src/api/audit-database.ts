@@ -14,6 +14,8 @@ export interface AuditDatabase {
   insert: (entry: Omit<AuditLogAlpha1, '_rev'>) => Promise<AuditLogAlpha1>;
   /** Get audit entries with pagination (newest first) */
   list: (options?: AuditListOptions) => Promise<AuditListResult>;
+  /** Get audit entries by their IDs (document _id values) */
+  getByIds: (ids: string[]) => Promise<AuditLogAlpha1[]>;
   /** Get the underlying nano database instance */
   raw: () => nano.DocumentScope<AuditLogAlpha1>;
 }
@@ -24,6 +26,8 @@ export interface AuditListOptions {
   limit?: number;
   /** Start key for pagination (exclusive, use last _id from previous page) */
   startAfter?: string;
+  /** Filter to only include entries for these entity IDs */
+  entityIds?: string[];
 }
 
 /** Result of listing audit entries */
@@ -52,7 +56,7 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 /**
- * Ensure the audit database exists for a user
+ * Ensure the audit database exists for a user and has required indexes
  * @param couchUrl - CouchDB connection URL
  * @param env - Environment configuration
  * @param username - Username to create audit database for
@@ -65,14 +69,34 @@ export async function ensureAuditDatabase(
   const couchConnection = nano(couchUrl);
   const dbName = getAuditDatabaseName(env, username);
 
+  let dbCreated = false;
   try {
     await couchConnection.db.get(dbName);
   } catch (error: unknown) {
     if (isNotFoundError(error)) {
       await couchConnection.db.create(dbName);
       console.log(`Created audit database: ${dbName}`);
+      dbCreated = true;
     } else {
       throw error;
+    }
+  }
+
+  // Ensure entityId index exists (for filtering by todo ID)
+  if (dbCreated) {
+    const db = couchConnection.db.use(dbName);
+    try {
+      await db.createIndex({
+        index: {
+          fields: ['entityId', '_id'],
+        },
+        name: 'entityId-id-index',
+        ddoc: 'entityId-index',
+      });
+      console.log(`Created entityId index for audit database: ${dbName}`);
+    } catch (indexError) {
+      // Index might already exist, that's fine
+      console.log(`Index creation skipped for ${dbName}:`, indexError);
     }
   }
 }
@@ -100,6 +124,7 @@ export function createAuditDatabase(couchUrl: string, env: Env, username: string
   return {
     insert: (entry) => insertEntry(context, entry),
     list: (options) => listEntries(context, options),
+    getByIds: (ids) => getEntriesByIds(context, ids),
     raw: () => db,
   };
 }
@@ -122,7 +147,12 @@ async function listEntries(
   context: AuditDatabaseContext,
   options: AuditListOptions = {},
 ): Promise<AuditListResult> {
-  const { limit = 50, startAfter } = options;
+  const { limit = 50, startAfter, entityIds } = options;
+
+  // If filtering by entityIds, use a different approach
+  if (entityIds && entityIds.length > 0) {
+    return listEntriesByEntityIds(context, { limit, startAfter, entityIds });
+  }
 
   // Use _all_docs with descending order to get newest first
   // CouchDB sorts by _id, and our IDs are ISO timestamps
@@ -149,6 +179,92 @@ async function listEntries(
   const hasMore = result.rows.length > limit;
 
   return { entries, hasMore };
+}
+
+/**
+ * List audit entries filtered by entity IDs (newest first)
+ * Uses Mango query with entityId filter
+ */
+async function listEntriesByEntityIds(
+  context: AuditDatabaseContext,
+  options: Required<Pick<AuditListOptions, 'entityIds'>> & Omit<AuditListOptions, 'entityIds'>,
+): Promise<AuditListResult> {
+  const { limit = 50, entityIds } = options;
+
+  // Ensure the index exists (lazy creation for existing databases)
+  await ensureEntityIdIndex(context);
+
+  // Use Mango query to filter by entityId
+  const selector: nano.MangoSelector = {
+    entityId: { $in: entityIds },
+  };
+
+  // Fetch more than limit to ensure we get enough after filtering
+  // and to check if there are more results
+  const query: nano.MangoQuery = {
+    selector,
+    limit: limit + 1,
+    sort: [{ _id: 'desc' }],
+    use_index: 'entityId-index',
+  };
+
+  const result = await context.db.find(query);
+
+  const entries = result.docs.slice(0, limit);
+  const hasMore = result.docs.length > limit;
+
+  return { entries, hasMore };
+}
+
+/** Cache to track which databases have had their index ensured */
+const indexEnsuredCache = new Set<string>();
+
+/**
+ * Ensure the entityId index exists (lazy creation for existing databases)
+ */
+async function ensureEntityIdIndex(context: AuditDatabaseContext): Promise<void> {
+  const cacheKey = `${context.username}`;
+  if (indexEnsuredCache.has(cacheKey)) {
+    return;
+  }
+
+  try {
+    await context.db.createIndex({
+      index: {
+        fields: ['entityId', '_id'],
+      },
+      name: 'entityId-id-index',
+      ddoc: 'entityId-index',
+    });
+  } catch {
+    // Index might already exist, that's fine
+  }
+
+  indexEnsuredCache.add(cacheKey);
+}
+
+/**
+ * Get audit entries by their document IDs
+ * Uses CouchDB bulk fetch for efficiency
+ */
+async function getEntriesByIds(
+  context: AuditDatabaseContext,
+  ids: string[],
+): Promise<AuditLogAlpha1[]> {
+  if (ids.length === 0) return [];
+
+  // Use _all_docs with keys to fetch specific documents
+  const result = await context.db.fetch({ keys: ids });
+
+  // Filter out errors and missing docs, return valid entries
+  const entries: AuditLogAlpha1[] = [];
+  for (const row of result.rows) {
+    // Check for valid document (not an error row and has doc)
+    if ('doc' in row && row.doc && !('error' in row)) {
+      entries.push(row.doc as AuditLogAlpha1);
+    }
+  }
+  return entries;
 }
 
 /**

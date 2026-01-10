@@ -3,10 +3,11 @@
  */
 import { type DatabaseError, type Todo, getFormattedDuration } from '@eddo/core-client';
 import { format } from 'date-fns';
-import { type FC, type ReactElement, useState } from 'react';
-import { BiCheck, BiCheckbox, BiCheckboxChecked, BiSolidCopyAlt } from 'react-icons/bi';
+import { type FC, type ReactElement } from 'react';
+import { BiCheckbox, BiCheckboxChecked } from 'react-icons/bi';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { CopyIdButton } from './copy_id_button';
 import { DueDatePopover } from './due_date_popover';
 import { FormattedMessage } from './formatted_message';
 import { SubtasksPopover } from './subtasks_popover';
@@ -82,35 +83,6 @@ const TimeTrackedCell: FC<{ activeDuration: number; widthClass: string }> = ({
     {activeDuration > 0 ? getFormattedDuration(activeDuration) : '-'}
   </td>
 );
-
-interface CopyIdButtonProps {
-  todoId: string;
-}
-
-const CopyIdButton: FC<CopyIdButtonProps> = ({ todoId }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyId = async () => {
-    await navigator.clipboard.writeText(todoId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <button
-      className={
-        copied
-          ? 'text-green-500'
-          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
-      }
-      onClick={handleCopyId}
-      title={copied ? 'Copied!' : 'Copy ID'}
-      type="button"
-    >
-      {copied ? <BiCheck size="1em" /> : <BiSolidCopyAlt size="1em" />}
-    </button>
-  );
-};
 
 interface StatusCellProps {
   todo: Todo;

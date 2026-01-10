@@ -27,6 +27,10 @@ const couchConnection = nano(env.COUCHDB_URL);
 const listQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(50),
   startAfter: z.string().optional(),
+  /** Comma-separated list of entity IDs to filter by */
+  entityIds: z.string().optional(),
+  /** Comma-separated list of audit entry IDs to fetch directly */
+  ids: z.string().optional(),
 });
 
 /** Schema for creating audit log entries */
@@ -62,9 +66,26 @@ auditLogApp.get('/', async (c) => {
       span.setAttribute('audit.limit', query.limit);
 
       const auditService = createAuditService(env.COUCHDB_URL, env, username);
+
+      // If fetching by specific audit entry IDs, use direct lookup
+      const ids = query.ids ? query.ids.split(',').filter(Boolean) : undefined;
+      if (ids && ids.length > 0) {
+        span.setAttribute('audit.ids_count', ids.length);
+        const entries = await auditService.getByIds(ids);
+        span.setAttribute('audit.entries_count', entries.length);
+        return c.json({ entries, hasMore: false });
+      }
+
+      // Otherwise, use standard list with optional entityIds filter
+      const entityIds = query.entityIds ? query.entityIds.split(',').filter(Boolean) : undefined;
+      if (entityIds) {
+        span.setAttribute('audit.entity_ids_count', entityIds.length);
+      }
+
       const result = await auditService.getEntries({
         limit: query.limit,
         startAfter: query.startAfter,
+        entityIds,
       });
 
       span.setAttribute('audit.entries_count', result.entries.length);

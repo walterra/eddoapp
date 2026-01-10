@@ -15,6 +15,7 @@ interface TodoFieldProps {
 interface MetadataEntry {
   key: string;
   value: string;
+  isArray: boolean;
 }
 
 /** Common namespace prefixes for metadata keys */
@@ -35,6 +36,7 @@ interface MetadataRowProps {
   entry: MetadataEntry;
   onKeyChange: (newKey: string) => void;
   onValueChange: (newValue: string) => void;
+  onToggleArray: () => void;
   onDelete: () => void;
   isKeyDuplicate: boolean;
 }
@@ -43,6 +45,7 @@ const MetadataRow: FC<MetadataRowProps> = ({
   entry,
   onKeyChange,
   onValueChange,
+  onToggleArray,
   onDelete,
   isKeyDuplicate,
 }) => (
@@ -63,12 +66,21 @@ const MetadataRow: FC<MetadataRowProps> = ({
       <TextInput
         aria-label="Metadata value"
         onChange={(e) => onValueChange(e.target.value)}
-        placeholder="value"
+        placeholder={entry.isArray ? 'comma-separated values' : 'value'}
         sizing="sm"
         type="text"
         value={entry.value}
       />
     </div>
+    <Button
+      aria-label={entry.isArray ? 'Switch to single value' : 'Switch to array'}
+      color={entry.isArray ? 'purple' : 'gray'}
+      onClick={onToggleArray}
+      size="xs"
+      title={entry.isArray ? 'Array mode (comma-separated)' : 'Single value mode'}
+    >
+      [ ]
+    </Button>
     <Button aria-label="Delete metadata entry" color="red" onClick={onDelete} size="xs">
       <BiTrash size="1em" />
     </Button>
@@ -168,16 +180,37 @@ const AddMetadataRow: FC<AddMetadataRowProps> = ({ onAdd }) => {
 };
 
 /** Convert metadata object to array of entries for editing */
-function metadataToEntries(metadata: Record<string, string> | undefined): MetadataEntry[] {
+function metadataToEntries(
+  metadata: Record<string, string | string[]> | undefined,
+): MetadataEntry[] {
   if (!metadata) return [];
-  return Object.entries(metadata).map(([key, value]) => ({ key, value }));
+  return Object.entries(metadata).map(([key, value]) => {
+    if (Array.isArray(value)) {
+      return { key, value: value.join(', '), isArray: true };
+    }
+    return { key, value, isArray: false };
+  });
 }
 
 /** Convert entries array back to metadata object */
-function entriesToMetadata(entries: MetadataEntry[]): Record<string, string> | undefined {
+function entriesToMetadata(
+  entries: MetadataEntry[],
+): Record<string, string | string[]> | undefined {
   const validEntries = entries.filter((e) => e.key.trim() !== '');
   if (validEntries.length === 0) return undefined;
-  return Object.fromEntries(validEntries.map((e) => [e.key, e.value]));
+  return Object.fromEntries(
+    validEntries.map((e) => {
+      if (e.isArray) {
+        // Split by comma and trim each value, filter empty strings
+        const arrayValue = e.value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v !== '');
+        return [e.key, arrayValue.length > 0 ? arrayValue : ['']];
+      }
+      return [e.key, e.value];
+    }),
+  );
 }
 
 /** Find duplicate keys in entries */
@@ -197,6 +230,7 @@ function findDuplicateKeys(entries: MetadataEntry[]): Set<string> {
 interface MetadataHandlers {
   handleKeyChange: (index: number, newKey: string) => void;
   handleValueChange: (index: number, newValue: string) => void;
+  handleToggleArray: (index: number) => void;
   handleDelete: (index: number) => void;
   handleAdd: (key: string, value: string) => void;
 }
@@ -223,11 +257,16 @@ function useMetadataHandlers(
       newEntries[index] = { ...newEntries[index], value: newValue };
       updateEntries(newEntries);
     },
+    handleToggleArray: (index: number) => {
+      const newEntries = [...entries];
+      newEntries[index] = { ...newEntries[index], isArray: !newEntries[index].isArray };
+      updateEntries(newEntries);
+    },
     handleDelete: (index: number) => {
       updateEntries(entries.filter((_, i) => i !== index));
     },
     handleAdd: (key: string, value: string) => {
-      updateEntries([...entries, { key, value }]);
+      updateEntries([...entries, { key, value, isArray: false }]);
     },
   };
 }
@@ -247,6 +286,7 @@ const MetadataList: FC<MetadataListProps> = ({ entries, duplicateKeys, handlers 
         key={index}
         onDelete={() => handlers.handleDelete(index)}
         onKeyChange={(newKey) => handlers.handleKeyChange(index, newKey)}
+        onToggleArray={() => handlers.handleToggleArray(index)}
         onValueChange={(newValue) => handlers.handleValueChange(index, newValue)}
       />
     ))}
