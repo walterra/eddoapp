@@ -30,58 +30,58 @@ interface FileStyle {
   borderColor: string;
 }
 
-/** Default style for unknown file types (desaturated) */
-const DEFAULT_STYLE: FileStyle = {
+/** Desaturated cold blue style for all file nodes */
+const FILE_STYLE: FileStyle = {
   Icon: VscFile,
-  bgColor: 'bg-slate-500',
-  borderColor: 'border-slate-400',
+  bgColor: 'bg-sky-600/70',
+  borderColor: 'border-sky-500/70',
 };
 
-/** File extension to style mapping (desaturated colors) */
-const FILE_STYLES: Record<string, FileStyle> = {
-  // Code files - muted yellow/amber
-  ts: { Icon: VscFileCode, bgColor: 'bg-amber-500/70', borderColor: 'border-amber-400/70' },
-  tsx: { Icon: VscFileCode, bgColor: 'bg-amber-500/70', borderColor: 'border-amber-400/70' },
-  js: { Icon: VscFileCode, bgColor: 'bg-amber-500/70', borderColor: 'border-amber-400/70' },
-  jsx: { Icon: VscFileCode, bgColor: 'bg-amber-500/70', borderColor: 'border-amber-400/70' },
-  mjs: { Icon: VscFileCode, bgColor: 'bg-amber-500/70', borderColor: 'border-amber-400/70' },
-  cjs: { Icon: VscFileCode, bgColor: 'bg-amber-500/70', borderColor: 'border-amber-400/70' },
-  // Style files - muted pink
-  css: { Icon: VscFileCode, bgColor: 'bg-pink-500/70', borderColor: 'border-pink-400/70' },
-  scss: { Icon: VscFileCode, bgColor: 'bg-pink-500/70', borderColor: 'border-pink-400/70' },
-  sass: { Icon: VscFileCode, bgColor: 'bg-pink-500/70', borderColor: 'border-pink-400/70' },
-  less: { Icon: VscFileCode, bgColor: 'bg-pink-500/70', borderColor: 'border-pink-400/70' },
-  // JSON/config - muted orange
-  json: { Icon: VscJson, bgColor: 'bg-orange-500/70', borderColor: 'border-orange-400/70' },
-  jsonc: { Icon: VscJson, bgColor: 'bg-orange-500/70', borderColor: 'border-orange-400/70' },
-  // Markdown/docs - muted blue
-  md: { Icon: VscMarkdown, bgColor: 'bg-blue-500/70', borderColor: 'border-blue-400/70' },
-  mdx: { Icon: VscMarkdown, bgColor: 'bg-blue-500/70', borderColor: 'border-blue-400/70' },
-  txt: { Icon: VscMarkdown, bgColor: 'bg-blue-500/70', borderColor: 'border-blue-400/70' },
-  rst: { Icon: VscMarkdown, bgColor: 'bg-blue-500/70', borderColor: 'border-blue-400/70' },
-  // Data files - muted teal
-  sql: { Icon: BiData, bgColor: 'bg-teal-500/70', borderColor: 'border-teal-400/70' },
-  csv: { Icon: BiData, bgColor: 'bg-teal-500/70', borderColor: 'border-teal-400/70' },
-  xml: { Icon: BiData, bgColor: 'bg-teal-500/70', borderColor: 'border-teal-400/70' },
-  yaml: { Icon: BiData, bgColor: 'bg-teal-500/70', borderColor: 'border-teal-400/70' },
-  yml: { Icon: BiData, bgColor: 'bg-teal-500/70', borderColor: 'border-teal-400/70' },
-  toml: { Icon: BiData, bgColor: 'bg-teal-500/70', borderColor: 'border-teal-400/70' },
-  // Media files - muted indigo
-  png: { Icon: VscFileMedia, bgColor: 'bg-indigo-500/70', borderColor: 'border-indigo-400/70' },
-  jpg: { Icon: VscFileMedia, bgColor: 'bg-indigo-500/70', borderColor: 'border-indigo-400/70' },
-  jpeg: { Icon: VscFileMedia, bgColor: 'bg-indigo-500/70', borderColor: 'border-indigo-400/70' },
-  gif: { Icon: VscFileMedia, bgColor: 'bg-indigo-500/70', borderColor: 'border-indigo-400/70' },
-  svg: { Icon: VscFileMedia, bgColor: 'bg-indigo-500/70', borderColor: 'border-indigo-400/70' },
-  webp: { Icon: VscFileMedia, bgColor: 'bg-indigo-500/70', borderColor: 'border-indigo-400/70' },
-  ico: { Icon: VscFileMedia, bgColor: 'bg-indigo-500/70', borderColor: 'border-indigo-400/70' },
-  // Archive files - muted stone
-  zip: { Icon: VscFileZip, bgColor: 'bg-stone-500/70', borderColor: 'border-stone-400/70' },
-  tar: { Icon: VscFileZip, bgColor: 'bg-stone-500/70', borderColor: 'border-stone-400/70' },
-  gz: { Icon: VscFileZip, bgColor: 'bg-stone-500/70', borderColor: 'border-stone-400/70' },
-  rar: { Icon: VscFileZip, bgColor: 'bg-stone-500/70', borderColor: 'border-stone-400/70' },
-  '7z': { Icon: VscFileZip, bgColor: 'bg-stone-500/70', borderColor: 'border-stone-400/70' },
-  // PDF - muted red
-  pdf: { Icon: VscFilePdf, bgColor: 'bg-red-500/70', borderColor: 'border-red-400/70' },
+/** File extension to icon mapping (all use same desaturated cold blue) */
+const FILE_ICONS: Record<string, typeof VscFile> = {
+  // Code files
+  ts: VscFileCode,
+  tsx: VscFileCode,
+  js: VscFileCode,
+  jsx: VscFileCode,
+  mjs: VscFileCode,
+  cjs: VscFileCode,
+  // Style files
+  css: VscFileCode,
+  scss: VscFileCode,
+  sass: VscFileCode,
+  less: VscFileCode,
+  // JSON/config
+  json: VscJson,
+  jsonc: VscJson,
+  // Markdown/docs
+  md: VscMarkdown,
+  mdx: VscMarkdown,
+  txt: VscMarkdown,
+  rst: VscMarkdown,
+  // Data files
+  sql: BiData,
+  csv: BiData,
+  xml: BiData,
+  yaml: BiData,
+  yml: BiData,
+  toml: BiData,
+  // Media files
+  png: VscFileMedia,
+  jpg: VscFileMedia,
+  jpeg: VscFileMedia,
+  gif: VscFileMedia,
+  svg: VscFileMedia,
+  webp: VscFileMedia,
+  ico: VscFileMedia,
+  // Archive files
+  zip: VscFileZip,
+  tar: VscFileZip,
+  gz: VscFileZip,
+  rar: VscFileZip,
+  '7z': VscFileZip,
+  // PDF
+  pdf: VscFilePdf,
 };
 
 /** Get file extension from path */
@@ -90,9 +90,12 @@ const getFileExtension = (filePath: string): string => {
   return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
 };
 
-/** Get icon and color based on file extension */
-const getFileStyle = (filePath: string): FileStyle =>
-  FILE_STYLES[getFileExtension(filePath)] ?? DEFAULT_STYLE;
+/** Get icon based on file extension (all use same desaturated cold blue color) */
+const getFileStyle = (filePath: string): FileStyle => ({
+  Icon: FILE_ICONS[getFileExtension(filePath)] ?? VscFile,
+  bgColor: FILE_STYLE.bgColor,
+  borderColor: FILE_STYLE.borderColor,
+});
 
 interface FileNodeProps {
   data: FileNodeData;
