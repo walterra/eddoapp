@@ -106,15 +106,14 @@ const useGraphData = (
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
-  // Fetch audit entries from two sources and merge them
+  // Fetch and merge audit entries from todo-linked and SSE sources
   const { entries: todoLinkedEntries } = useAuditForTodos({
     todos: filteredTodos,
     enabled: isInitialized && filteredTodos.length > 0,
   });
-  const sseStreamEntries = useAuditLogEntries();
   const auditEntries = useMemo(
-    () => mergeAuditEntries(todoLinkedEntries, sseStreamEntries),
-    [todoLinkedEntries, sseStreamEntries],
+    () => mergeAuditEntries(todoLinkedEntries, useAuditLogEntries()),
+    [todoLinkedEntries],
   );
 
   const nodes = useMemo(
