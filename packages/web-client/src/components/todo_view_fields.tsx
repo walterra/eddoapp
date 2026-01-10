@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 
 import { useChildTodos, useParentTodo } from '../hooks/use_parent_child';
 import { TEXT_LINK } from '../styles/interactive';
+import { CopyIdButton } from './copy_id_button';
 import { TagDisplay } from './tag_display';
 import { MetadataView } from './todo_metadata_view';
 
@@ -62,12 +63,27 @@ const StatusBadge: FC<{ completed: string | null }> = ({ completed }) => {
   );
 };
 
+/** Formats created date as short string */
+const formatCreatedDate = (id: string): string => {
+  const date = new Date(id);
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
 const TitleView: FC<{ todo: Todo }> = ({ todo }) => (
   <div>
     <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{todo.title}</h2>
     <div className="mt-2 flex items-center gap-3">
       <StatusBadge completed={todo.completed} />
       <span className="text-sm text-neutral-500 dark:text-neutral-400">{todo.context}</span>
+      <span className="text-neutral-300 dark:text-neutral-600">•</span>
+      <span className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+        {formatCreatedDate(todo._id)}
+        <CopyIdButton size="sm" todoId={todo._id} />
+      </span>
     </div>
   </div>
 );
@@ -126,10 +142,6 @@ const CompletedView: FC<{ completed: string | null }> = ({ completed }) => (
   <FieldRow label="Completed">
     {completed ? new Date(completed).toLocaleString() : EMPTY_VALUE}
   </FieldRow>
-);
-
-const CreatedView: FC<{ id: string }> = ({ id }) => (
-  <FieldRow label="Created">{new Date(id).toLocaleString()}</FieldRow>
 );
 
 interface TimeTrackingViewProps {
@@ -321,9 +333,8 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
     <MetadataView metadata={todo.metadata} />
     <TimeTrackingView active={todo.active} />
 
-    <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 pt-4 dark:border-neutral-700">
+    <div className="border-t border-neutral-200 pt-4 dark:border-neutral-700">
       <CompletedView completed={todo.completed} />
-      <CreatedView id={todo._id} />
     </div>
   </div>
 );

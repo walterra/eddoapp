@@ -14,6 +14,8 @@ export interface AuditDatabase {
   insert: (entry: Omit<AuditLogAlpha1, '_rev'>) => Promise<AuditLogAlpha1>;
   /** Get audit entries with pagination (newest first) */
   list: (options?: AuditListOptions) => Promise<AuditListResult>;
+  /** Get audit entries by their IDs (document _id values) */
+  getByIds: (ids: string[]) => Promise<AuditLogAlpha1[]>;
   /** Get the underlying nano database instance */
   raw: () => nano.DocumentScope<AuditLogAlpha1>;
 }
@@ -122,6 +124,7 @@ export function createAuditDatabase(couchUrl: string, env: Env, username: string
   return {
     insert: (entry) => insertEntry(context, entry),
     list: (options) => listEntries(context, options),
+    getByIds: (ids) => getEntriesByIds(context, ids),
     raw: () => db,
   };
 }
@@ -238,6 +241,30 @@ async function ensureEntityIdIndex(context: AuditDatabaseContext): Promise<void>
   }
 
   indexEnsuredCache.add(cacheKey);
+}
+
+/**
+ * Get audit entries by their document IDs
+ * Uses CouchDB bulk fetch for efficiency
+ */
+async function getEntriesByIds(
+  context: AuditDatabaseContext,
+  ids: string[],
+): Promise<AuditLogAlpha1[]> {
+  if (ids.length === 0) return [];
+
+  // Use _all_docs with keys to fetch specific documents
+  const result = await context.db.fetch({ keys: ids });
+
+  // Filter out errors and missing docs, return valid entries
+  const entries: AuditLogAlpha1[] = [];
+  for (const row of result.rows) {
+    // Check for valid document (not an error row and has doc)
+    if ('doc' in row && row.doc && !('error' in row)) {
+      entries.push(row.doc as AuditLogAlpha1);
+    }
+  }
+  return entries;
 }
 
 /**

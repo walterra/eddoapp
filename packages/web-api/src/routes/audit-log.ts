@@ -29,6 +29,8 @@ const listQuerySchema = z.object({
   startAfter: z.string().optional(),
   /** Comma-separated list of entity IDs to filter by */
   entityIds: z.string().optional(),
+  /** Comma-separated list of audit entry IDs to fetch directly */
+  ids: z.string().optional(),
 });
 
 /** Schema for creating audit log entries */
@@ -63,13 +65,23 @@ auditLogApp.get('/', async (c) => {
       const query = listQuerySchema.parse(c.req.query());
       span.setAttribute('audit.limit', query.limit);
 
-      // Parse entityIds from comma-separated string
+      const auditService = createAuditService(env.COUCHDB_URL, env, username);
+
+      // If fetching by specific audit entry IDs, use direct lookup
+      const ids = query.ids ? query.ids.split(',').filter(Boolean) : undefined;
+      if (ids && ids.length > 0) {
+        span.setAttribute('audit.ids_count', ids.length);
+        const entries = await auditService.getByIds(ids);
+        span.setAttribute('audit.entries_count', entries.length);
+        return c.json({ entries, hasMore: false });
+      }
+
+      // Otherwise, use standard list with optional entityIds filter
       const entityIds = query.entityIds ? query.entityIds.split(',').filter(Boolean) : undefined;
       if (entityIds) {
         span.setAttribute('audit.entity_ids_count', entityIds.length);
       }
 
-      const auditService = createAuditService(env.COUCHDB_URL, env, username);
       const result = await auditService.getEntries({
         limit: query.limit,
         startAfter: query.startAfter,

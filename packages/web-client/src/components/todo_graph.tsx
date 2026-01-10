@@ -21,6 +21,7 @@ import './todo_graph.css';
 
 import { useAuditForTodos } from '../hooks/use_audit_for_todos';
 import { useForceLayout } from '../hooks/use_force_layout';
+import { useHighlightContext } from '../hooks/use_highlight_context';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
@@ -88,14 +89,10 @@ const useGraphData = (
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
-  // Get todo IDs for audit lookup
-  const todoIds = useMemo(() => filteredTodos.map((t) => t._id), [filteredTodos]);
-
-  // Fetch audit entries specifically for displayed todos (server-side filtered)
+  // Fetch audit entries using IDs from todos' auditLog arrays
   const { entries: auditEntries } = useAuditForTodos({
-    todoIds,
-    enabled: isInitialized && todoIds.length > 0,
-    limit: 100,
+    todos: filteredTodos,
+    enabled: isInitialized && filteredTodos.length > 0,
   });
 
   const nodes = useMemo(
@@ -135,11 +132,31 @@ const LoadingSpinner: FC = () => (
   </div>
 );
 
+/** Apply highlight state to nodes */
+const applyHighlight = (nodes: Node[], highlightedId: string | null): Node[] => {
+  return nodes.map((node) => {
+    if (node.type !== 'todoNode') return node;
+    const isHighlighted = node.id === highlightedId;
+    return {
+      ...node,
+      data: { ...node.data, isHighlighted },
+    };
+  });
+};
+
+interface GraphRendererProps {
+  nodes: Node[];
+  edges: Edge[];
+  isLayouting: boolean;
+  highlightedTodoId: string | null;
+}
+
 /** Inner component that can access useReactFlow */
-const GraphRenderer: FC<{ nodes: Node[]; edges: Edge[]; isLayouting: boolean }> = ({
+const GraphRenderer: FC<GraphRendererProps> = ({
   nodes: layoutedNodes,
   edges,
   isLayouting,
+  highlightedTodoId,
 }) => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes] = useState(layoutedNodes);
@@ -148,6 +165,11 @@ const GraphRenderer: FC<{ nodes: Node[]; edges: Edge[]; isLayouting: boolean }> 
   useEffect(() => {
     setNodes(layoutedNodes);
   }, [layoutedNodes]);
+
+  // Apply highlight when highlighted ID changes
+  useEffect(() => {
+    setNodes((currentNodes) => applyHighlight(currentNodes, highlightedTodoId));
+  }, [highlightedTodoId]);
 
   // Handle node dragging
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -191,13 +213,20 @@ const GraphRenderer: FC<{ nodes: Node[]; edges: Edge[]; isLayouting: boolean }> 
   );
 };
 
+interface TodoGraphContentProps {
+  nodes: Node[];
+  edges: Edge[];
+}
+
 /** Graph content with React Flow and force-directed layout */
-const TodoGraphContent: FC<{ nodes: Node[]; edges: Edge[] }> = ({
+const TodoGraphContent: FC<TodoGraphContentProps> = ({
   nodes: initialNodes,
   edges: initialEdges,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+  // Get highlight from context here to avoid re-rendering parent components
+  const { highlightedTodoId } = useHighlightContext();
 
   // Measure container dimensions
   useEffect(() => {
@@ -216,16 +245,18 @@ const TodoGraphContent: FC<{ nodes: Node[]; edges: Edge[] }> = ({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  // Wait for dimensions before running layout
-  const { nodes, edges, isLayouting } = useForceLayout(
-    initialNodes,
-    initialEdges,
-    dimensions ?? { width: 1600, height: 800 },
-  );
+  // Wait for dimensions before running layout - memoize to prevent re-layout on highlight
+  const layoutOptions = useMemo(() => dimensions ?? { width: 1600, height: 800 }, [dimensions]);
+  const { nodes, edges, isLayouting } = useForceLayout(initialNodes, initialEdges, layoutOptions);
 
   return (
     <div className="h-[calc(100vh-200px)] w-full" ref={containerRef}>
-      <GraphRenderer edges={edges} isLayouting={isLayouting || !dimensions} nodes={nodes} />
+      <GraphRenderer
+        edges={edges}
+        highlightedTodoId={highlightedTodoId}
+        isLayouting={isLayouting || !dimensions}
+        nodes={nodes}
+      />
     </div>
   );
 };

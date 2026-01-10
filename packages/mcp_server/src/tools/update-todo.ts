@@ -4,7 +4,7 @@
 import type { TodoAlpha3 } from '@eddo/core-server';
 import { z } from 'zod';
 
-import { logMcpAudit } from './audit-helper.js';
+import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -31,6 +31,13 @@ export const updateTodoParameters = z.object({
       'Updated repeat interval in days (null to disable). gtd:calendar repeats from due date, gtd:habit repeats from completion date',
     ),
   link: z.string().nullable().optional().describe('Updated URL or reference link (null to remove)'),
+  externalId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      'Updated external system ID for syncing (e.g., "github:owner/repo/issues/123"). Used for deduplication during periodic imports. Set to null to remove.',
+    ),
   parentId: z
     .string()
     .nullable()
@@ -52,6 +59,11 @@ export const updateTodoParameters = z.object({
 
 export type UpdateTodoArgs = z.infer<typeof updateTodoParameters>;
 
+/** Helper to pick value: use arg if defined, otherwise keep existing */
+function pickValue<T>(argValue: T | undefined, existingValue: T): T {
+  return argValue !== undefined ? argValue : existingValue;
+}
+
 /**
  * Merges update arguments with existing todo
  */
@@ -63,10 +75,11 @@ function mergeUpdates(todo: TodoAlpha3, args: UpdateTodoArgs): TodoAlpha3 {
     context: args.context ?? todo.context,
     due: args.due ?? todo.due,
     tags: args.tags ?? todo.tags,
-    repeat: args.repeat !== undefined ? args.repeat : todo.repeat,
-    link: args.link !== undefined ? args.link : todo.link,
-    parentId: args.parentId !== undefined ? args.parentId : todo.parentId,
-    metadata: args.metadata !== undefined ? args.metadata : todo.metadata,
+    repeat: pickValue(args.repeat, todo.repeat),
+    link: pickValue(args.link, todo.link),
+    externalId: pickValue(args.externalId, todo.externalId),
+    parentId: pickValue(args.parentId, todo.parentId),
+    metadata: pickValue(args.metadata, todo.metadata),
   };
 }
 
@@ -105,13 +118,16 @@ export async function executeUpdateTodo(
     const result = await db.insert(updated);
     const executionTime = Date.now() - startTime;
 
-    await logMcpAudit(context, {
+    const auditId = await logMcpAudit(context, {
       action: 'update',
       entityId: result.id,
       before: todo,
       after: updated,
       message: args.message,
     });
+    if (auditId) {
+      pushAuditIdToTodo(db, result.id, auditId, context);
+    }
     context.log.info('Todo updated successfully', { id: result.id, title: updated.title });
 
     return buildUpdateResponse(args, result.id, updated.title, executionTime);

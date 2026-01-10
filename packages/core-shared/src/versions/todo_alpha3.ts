@@ -31,6 +31,12 @@ export interface TodoAlpha3 extends Omit<TodoAlpha2, 'version'> {
    * Example: { "agent:worktree": "/path/to/.trees/feature-x", "github:labels": "bug,priority" }
    */
   metadata?: Record<string, string>;
+  /**
+   * Optional array of audit log entry IDs (ISO timestamps).
+   * References entries in the user's audit database (eddo_audit_<username>).
+   * Populated automatically after audit writes; eventual consistency.
+   */
+  auditLog?: string[];
   version: 'alpha3';
 }
 

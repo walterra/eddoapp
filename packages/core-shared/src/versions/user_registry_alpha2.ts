@@ -88,6 +88,7 @@ export interface UserPreferences {
   theme?: ThemePreference; // UI theme preference, defaults to system
   viewMode?: ViewMode; // Todo view preference, defaults to kanban
   tableColumns?: string[]; // Selected columns for table view
+  activitySidebarOpen?: boolean; // Activity sidebar visibility state
   selectedTags?: string[]; // Filter: selected tags
   selectedContexts?: string[]; // Filter: selected contexts
   selectedStatus?: 'all' | 'completed' | 'incomplete'; // Filter: completion status
@@ -146,6 +147,7 @@ export function createDefaultUserPreferences(): UserPreferences {
     theme: 'system',
     viewMode: 'kanban',
     tableColumns: ['title', 'due', 'tags', 'timeTracked', 'status'],
+    activitySidebarOpen: false,
     selectedTags: [],
     selectedContexts: [],
     selectedStatus: 'all',

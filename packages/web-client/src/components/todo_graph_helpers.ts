@@ -89,21 +89,42 @@ const formatAuditAction = (entry: AuditLogAlpha1): string => {
   return title ? `${action}: ${title}` : action;
 };
 
-/** Find the last audit activity for a session by matching todo IDs */
+/**
+ * Find the last audit activity for a session using the auditLog array on todos.
+ * Uses direct audit ID lookup for reliability.
+ */
 const findLastMessageForSession = (
   sessionId: string,
   todos: Todo[],
   auditEntries: AuditLogAlpha1[],
 ): string | undefined => {
-  // Find todo IDs that belong to this session
-  const sessionTodoIds = new Set(
-    todos.filter((todo) => todo.metadata?.['agent:session'] === sessionId).map((todo) => todo._id),
-  );
+  // Find todos that belong to this session
+  const sessionTodos = todos.filter((todo) => todo.metadata?.['agent:session'] === sessionId);
 
-  if (sessionTodoIds.size === 0) return undefined;
+  if (sessionTodos.length === 0) return undefined;
 
-  // Find audit entries for these todos
-  const relevantEntries = auditEntries.filter((entry) => sessionTodoIds.has(entry.entityId));
+  // Collect all audit IDs from session todos (using the new auditLog field)
+  const sessionAuditIds = new Set<string>();
+  for (const todo of sessionTodos) {
+    if (todo.auditLog) {
+      for (const auditId of todo.auditLog) {
+        sessionAuditIds.add(auditId);
+      }
+    }
+  }
+
+  // Find matching audit entries using direct ID lookup
+  // Fall back to entityId matching if auditLog is empty (backward compatibility)
+  let relevantEntries: AuditLogAlpha1[];
+
+  if (sessionAuditIds.size > 0) {
+    // New approach: direct audit ID lookup
+    relevantEntries = auditEntries.filter((entry) => sessionAuditIds.has(entry._id));
+  } else {
+    // Fallback: match by entityId (for older data without auditLog)
+    const sessionTodoIds = new Set(sessionTodos.map((t) => t._id));
+    relevantEntries = auditEntries.filter((entry) => sessionTodoIds.has(entry.entityId));
+  }
 
   if (relevantEntries.length === 0) return undefined;
 
@@ -115,24 +136,48 @@ const findLastMessageForSession = (
   return latest.message || formatAuditAction(latest);
 };
 
-/** Find the last audit message for an agent name across all sessions */
+/**
+ * Find the last audit message for an agent name across ALL sessions.
+ * Collects all audit IDs from all agent todos and finds the most recent.
+ */
 const findLastMessageForAgentName = (
   agentName: string,
   todos: Todo[],
   auditEntries: AuditLogAlpha1[],
 ): string | undefined => {
-  // Find all sessions for this agent
+  // Find all todos for this agent
   const agentTodos = todos.filter((t) => t.metadata?.['agent:name'] === agentName);
-  const agentSessions = [
-    ...new Set(agentTodos.map((t) => t.metadata?.['agent:session']).filter(Boolean) as string[]),
-  ];
 
-  // Find most recent message across all sessions
-  for (const sessionId of agentSessions) {
-    const msg = findLastMessageForSession(sessionId, todos, auditEntries);
-    if (msg) return msg;
+  if (agentTodos.length === 0) return undefined;
+
+  // Collect ALL audit IDs from all agent todos
+  const allAuditIds = new Set<string>();
+  for (const todo of agentTodos) {
+    if (todo.auditLog) {
+      for (const auditId of todo.auditLog) {
+        allAuditIds.add(auditId);
+      }
+    }
   }
-  return undefined;
+
+  // Find matching audit entries
+  let relevantEntries: AuditLogAlpha1[];
+
+  if (allAuditIds.size > 0) {
+    relevantEntries = auditEntries.filter((entry) => allAuditIds.has(entry._id));
+  } else {
+    // Fallback for older data
+    const agentTodoIds = new Set(agentTodos.map((t) => t._id));
+    relevantEntries = auditEntries.filter((entry) => agentTodoIds.has(entry.entityId));
+  }
+
+  if (relevantEntries.length === 0) return undefined;
+
+  // Sort by timestamp descending and get the most recent
+  const sorted = relevantEntries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const latest = sorted[0];
+
+  return latest.message || formatAuditAction(latest);
 };
 
 /** Get last message for a metadata node */

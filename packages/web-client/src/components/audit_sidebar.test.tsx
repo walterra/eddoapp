@@ -4,6 +4,7 @@ import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { HighlightProvider } from '../hooks/use_highlight_context';
 import { TodoFlyoutProvider } from '../hooks/use_todo_flyout';
 import { PouchDbContext, type PouchDbContextType } from '../pouch_db_types';
 
@@ -60,7 +61,9 @@ const renderWithProviders = (ui: React.ReactElement) => {
   return render(
     <QueryClientProvider client={queryClient}>
       <PouchDbContext.Provider value={mockPouchDbContext}>
-        <TodoFlyoutProvider>{ui}</TodoFlyoutProvider>
+        <HighlightProvider>
+          <TodoFlyoutProvider>{ui}</TodoFlyoutProvider>
+        </HighlightProvider>
       </PouchDbContext.Provider>
     </QueryClientProvider>,
   );

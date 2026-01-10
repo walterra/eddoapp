@@ -20,6 +20,6 @@
 }
 
 /* Ensure metadata nodes with speech bubbles are on top */
-.react-flow__node[data-id^="metadata:"] {
+.react-flow__node[data-id^='metadata:'] {
   z-index: 1000 !important;
 }

@@ -59,6 +59,7 @@ export interface UserPreferences {
   theme?: ThemePreference;
   viewMode?: ViewMode;
   tableColumns?: string[];
+  activitySidebarOpen?: boolean;
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: 'all' | 'completed' | 'incomplete';
@@ -126,6 +127,7 @@ export interface UpdatePreferencesData {
   theme?: ThemePreference;
   viewMode?: ViewMode;
   tableColumns?: string[];
+  activitySidebarOpen?: boolean;
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: 'all' | 'completed' | 'incomplete';

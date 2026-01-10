@@ -18,6 +18,7 @@ import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
 import { useFilterPreferences } from './hooks/use_filter_preferences';
+import { HighlightProvider } from './hooks/use_highlight_context';
 import { usePreferencesStream } from './hooks/use_preferences_stream';
 import { initializeTheme } from './hooks/use_theme';
 import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
@@ -189,13 +190,15 @@ function AuthenticatedApp({
 
   return (
     <DatabaseChangesProvider>
-      <TodoFlyoutProvider>
-        <CouchdbSyncProvider />
-        <PreferencesStreamProvider />
-        <HealthMonitor />
-        <TodoApp logout={logout} />
-        <GlobalTodoFlyout />
-      </TodoFlyoutProvider>
+      <HighlightProvider>
+        <TodoFlyoutProvider>
+          <CouchdbSyncProvider />
+          <PreferencesStreamProvider />
+          <HealthMonitor />
+          <TodoApp logout={logout} />
+          <GlobalTodoFlyout />
+        </TodoFlyoutProvider>
+      </HighlightProvider>
     </DatabaseChangesProvider>
   );
 }

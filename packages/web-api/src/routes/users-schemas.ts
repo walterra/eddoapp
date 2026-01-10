@@ -35,6 +35,7 @@ export const updatePreferencesSchema = z.object({
   theme: z.enum(['system', 'light', 'dark']).optional(),
   viewMode: z.enum(['kanban', 'table', 'graph']).optional(),
   tableColumns: z.array(z.string()).optional(),
+  activitySidebarOpen: z.boolean().optional(),
   selectedTags: z.array(z.string()).optional(),
   selectedContexts: z.array(z.string()).optional(),
   selectedStatus: z.enum(['all', 'completed', 'incomplete']).optional(),
