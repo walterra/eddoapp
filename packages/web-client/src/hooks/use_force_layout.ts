@@ -2,6 +2,11 @@
  * Hook for force-directed graph layout using d3-force.
  * Optimized based on Mike Bostock's best practices for graph visualization.
  *
+ * Key optimizations:
+ * - Structure-based memoization: only re-layout when node/edge structure changes
+ * - Data updates (lastMessage, todoCount) don't trigger expensive re-layout
+ * - Previous positions used as seeds for incremental updates
+ *
  * Key tuning parameters:
  * - alphaDecay: Lower = more iterations, better layout (default 0.0228)
  * - velocityDecay: Higher = faster settling, less drift (default 0.4)
@@ -195,6 +200,56 @@ interface UseForceLayoutResult {
   isLayouting: boolean;
 }
 
+/**
+ * Create a structural fingerprint that only changes when graph topology changes.
+ * Node data changes (lastMessage, todoCount, etc.) don't affect this key.
+ */
+const createStructureKey = (nodes: Node[], edges: Edge[]): string => {
+  const nodeIds = nodes
+    .map((n) => n.id)
+    .sort()
+    .join(',');
+  const edgeKeys = edges
+    .map((e) => `${e.source}->${e.target}`)
+    .sort()
+    .join(',');
+  return `nodes:[${nodeIds}]|edges:[${edgeKeys}]`;
+};
+
+/**
+ * Merge fresh node data onto existing positions.
+ * Preserves layout positions while updating node data (lastMessage, etc.)
+ */
+const mergeDataOntoPositions = (
+  freshNodes: Node[],
+  positionMap: Map<string, { x: number; y: number }>,
+): Node[] =>
+  freshNodes.map((node) => {
+    const pos = positionMap.get(node.id);
+    return pos
+      ? { ...node, position: pos, style: { ...node.style, transition: 'transform 0.3s ease-out' } }
+      : node;
+  });
+
+/** Create sim nodes with previous positions as seeds */
+const createSimNodesWithSeeds = (
+  nodes: Node[],
+  width: number,
+  height: number,
+  positionsRef: React.RefObject<Map<string, { x: number; y: number }>>,
+): SimNode[] =>
+  createSimNodes(nodes, width, height).map((node) => {
+    const prevPos = positionsRef.current?.get(node.id);
+    return prevPos ? { ...node, x: prevPos.x, y: prevPos.y } : node;
+  });
+
+/** Store positions from layouted nodes */
+const storePositions = (nodes: Node[]): Map<string, { x: number; y: number }> => {
+  const positions = new Map<string, { x: number; y: number }>();
+  nodes.forEach((node) => positions.set(node.id, { x: node.position.x, y: node.position.y }));
+  return positions;
+};
+
 /** Apply force-directed layout to nodes */
 export function useForceLayout(
   initialNodes: Node[],
@@ -204,41 +259,37 @@ export function useForceLayout(
   const { width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT } = options;
   const [isLayouting, setIsLayouting] = useState(true);
   const [layoutedNodes, setLayoutedNodes] = useState<Node[]>(initialNodes);
-  const previousPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const lastLayoutKeyRef = useRef<string>('');
 
-  // Create sim nodes with previous positions as seeds
-  const simNodes = useMemo(() => {
-    const nodes = createSimNodes(initialNodes, width, height);
-    // Use previous positions as starting points for existing nodes
-    return nodes.map((node) => {
-      const prevPos = previousPositionsRef.current.get(node.id);
-      if (prevPos) {
-        return { ...node, x: prevPos.x, y: prevPos.y };
-      }
-      return node;
-    });
-  }, [initialNodes, width, height]);
+  const structureKey = useMemo(
+    () => createStructureKey(initialNodes, initialEdges),
+    [initialNodes, initialEdges],
+  );
 
-  const simLinks = useMemo(() => createSimLinks(initialEdges), [initialEdges]);
-
+  // Run layout only when structure changes
   useEffect(() => {
+    if (structureKey === lastLayoutKeyRef.current) return;
     if (initialNodes.length === 0) {
       setIsLayouting(false);
+      lastLayoutKeyRef.current = structureKey;
       return;
     }
     setIsLayouting(true);
+    const simNodes = createSimNodesWithSeeds(initialNodes, width, height, positionsRef);
+    const simLinks = createSimLinks(initialEdges);
     const newNodes = runSimulation({ initialNodes, simNodes, simLinks, width, height });
-
-    // Store positions for next layout cycle
-    const newPositions = new Map<string, { x: number; y: number }>();
-    newNodes.forEach((node) => {
-      newPositions.set(node.id, { x: node.position.x, y: node.position.y });
-    });
-    previousPositionsRef.current = newPositions;
-
+    positionsRef.current = storePositions(newNodes);
+    lastLayoutKeyRef.current = structureKey;
     setLayoutedNodes(newNodes);
     setIsLayouting(false);
-  }, [initialNodes, simNodes, simLinks, width, height]);
+  }, [structureKey, initialNodes, initialEdges, width, height]);
+
+  // Merge data updates without re-layout
+  useEffect(() => {
+    if (positionsRef.current.size === 0 || structureKey !== lastLayoutKeyRef.current) return;
+    setLayoutedNodes(mergeDataOntoPositions(initialNodes, positionsRef.current));
+  }, [initialNodes, structureKey]);
 
   return { nodes: layoutedNodes, edges: initialEdges, isLayouting };
 }
