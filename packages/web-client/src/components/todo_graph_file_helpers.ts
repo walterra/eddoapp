@@ -115,7 +115,7 @@ const createFileToSessionEdge = (fileNodeId: string, sessionNodeId: string): Edg
   type: 'curved',
   animated: false,
   style: {
-    stroke: '#10b981', // emerald-500 for file connections
+    stroke: '#7c3aed', // violet-600 to match agent/session color
     strokeWidth: 1.5,
   },
 });
