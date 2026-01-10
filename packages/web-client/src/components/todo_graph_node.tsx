@@ -60,6 +60,10 @@ interface TodoNodeProps {
   data: TodoNodeData;
 }
 
+/** Truncate title for display */
+const truncateTitle = (title: string, maxLen = 30): string =>
+  title.length > maxLen ? `${title.slice(0, maxLen)}...` : title;
+
 /** Icon-based node for React Flow */
 export const TodoNode: FC<TodoNodeProps> = ({ data }) => {
   const { todo, size, isHighlighted = false } = data;
@@ -78,30 +82,43 @@ export const TodoNode: FC<TodoNodeProps> = ({ data }) => {
   const iconColor = isHighlighted ? 'text-yellow-900' : 'text-white';
 
   return (
-    <div
-      className={`flex cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-all duration-150 hover:scale-125 ${bgColor} ${borderColor} ${extraClasses}`}
-      onClick={handleClick}
-      style={{
-        width: size,
-        height: size,
-        transform: `scale(${scale})`,
-        zIndex: isHighlighted ? 1000 : 1,
-      }}
-      title={buildTooltip(todo)}
-    >
-      <HiDocumentText className={iconColor} style={{ width: iconSize, height: iconSize }} />
-      <Handle
-        className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
-        id="center"
-        position={Position.Top}
-        type="source"
-      />
-      <Handle
-        className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
-        id="center"
-        position={Position.Top}
-        type="target"
-      />
+    <div className="group relative">
+      {/* Title label - only visible on hover */}
+      <div
+        className="absolute bottom-full left-1/2 z-10 mb-1 opacity-0 transition-opacity group-hover:opacity-100"
+        style={{ transform: 'translateX(-50%)' }}
+      >
+        <div className="max-w-48 truncate rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-200 shadow">
+          {truncateTitle(todo.title)}
+        </div>
+      </div>
+
+      {/* Node icon */}
+      <div
+        className={`flex cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-all duration-150 hover:scale-125 ${bgColor} ${borderColor} ${extraClasses}`}
+        onClick={handleClick}
+        style={{
+          width: size,
+          height: size,
+          transform: `scale(${scale})`,
+          zIndex: isHighlighted ? 1000 : 1,
+        }}
+        title={buildTooltip(todo)}
+      >
+        <HiDocumentText className={iconColor} style={{ width: iconSize, height: iconSize }} />
+        <Handle
+          className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+          id="center"
+          position={Position.Top}
+          type="source"
+        />
+        <Handle
+          className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+          id="center"
+          position={Position.Top}
+          type="target"
+        />
+      </div>
     </div>
   );
 };

@@ -80,7 +80,7 @@ export const MetadataNode: FC<MetadataNodeProps> = ({ data }) => {
 
   return (
     <div className="relative">
-      {/* Speech bubble for last message */}
+      {/* Speech bubble for last message - always visible */}
       {lastMessage && (
         <div
           className="absolute bottom-full left-1/2 z-[9999] mb-2"
@@ -92,18 +92,15 @@ export const MetadataNode: FC<MetadataNodeProps> = ({ data }) => {
           >
             {lastMessage}
           </div>
-          {/* Speech bubble tail */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-violet-900" />
         </div>
       )}
 
-      {/* Node icon */}
       <div
         className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm border-2 shadow-md transition-transform hover:scale-125 ${bgColor} ${borderColor}`}
         title={tooltip}
       >
         <Icon className="h-5 w-5 text-white" />
-        {/* Centered handles */}
         <Handle
           className="!top-1/2 !left-1/2 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
           id="center"

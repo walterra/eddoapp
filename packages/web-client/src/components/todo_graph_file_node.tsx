@@ -105,10 +105,10 @@ export const FileNode: FC<FileNodeProps> = ({ data }) => {
   const { Icon, bgColor, borderColor } = getFileStyle(filePath);
 
   return (
-    <div className="relative">
-      {/* File name label */}
+    <div className="group relative">
+      {/* File name label - only visible on hover */}
       <div
-        className="absolute bottom-full left-1/2 z-10 mb-1"
+        className="absolute bottom-full left-1/2 z-10 mb-1 opacity-0 transition-opacity group-hover:opacity-100"
         style={{ transform: 'translateX(-50%)' }}
       >
         <div
