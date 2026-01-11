@@ -115,8 +115,9 @@ const useTableData = (
     isInitialized,
   });
 
-  const startDateStr = dateRange.startDate.toISOString().split('T')[0];
-  const endDateStr = dateRange.endDate.toISOString().split('T')[0];
+  // dateRange already contains YYYY-MM-DD strings (no conversion needed)
+  const startDateStr = dateRange.startDate;
+  const endDateStr = dateRange.endDate;
 
   const { groupedByContext, durationByContext, todoDurations } = useFilteredData(boardData, {
     selectedTags,

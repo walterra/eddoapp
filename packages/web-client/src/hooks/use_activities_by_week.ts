@@ -4,17 +4,20 @@ import type { Activity, Todo } from '@eddo/core-shared';
 import { usePouchDb } from '../pouch_db';
 
 interface UseActivitiesByWeekParams {
-  startDate: Date;
-  endDate: Date;
+  /** Start date in YYYY-MM-DD format */
+  startDate: string;
+  /** End date in YYYY-MM-DD format */
+  endDate: string;
   enabled?: boolean;
 }
 
 /**
  * Fetches activities (time tracking entries) for a date range.
  * Uses Mango query to find todos with active entries, then expands and filters client-side.
+ * Uses date-only strings (YYYY-MM-DD) for comparison to avoid timezone issues.
  *
- * @param startDate - Start of the date range
- * @param endDate - End of the date range
+ * @param startDate - Start date in YYYY-MM-DD format
+ * @param endDate - End date in YYYY-MM-DD format
  * @param enabled - Whether the query should run
  * @returns TanStack Query result with activities data
  */
@@ -26,13 +29,14 @@ export function useActivitiesByWeek({
   const { safeDb } = usePouchDb();
 
   return useQuery({
-    queryKey: ['activities', 'byActive', startDate.toISOString(), endDate.toISOString()],
+    queryKey: ['activities', 'byActive', startDate, endDate],
     queryFn: async () => {
       const timerId = `fetchActivities-${Date.now()}`;
       console.time(timerId);
 
-      const startKey = startDate.toISOString();
-      const endKey = endDate.toISOString();
+      // Use date-only prefix for comparison (avoids timezone issues)
+      const startKey = startDate;
+      const endKey = endDate + 'T\uffff';
 
       // Use Mango to find todos that have active entries
       // Note: PouchDB defaults to limit=25, so we set a high limit
@@ -48,7 +52,7 @@ export function useActivitiesByWeek({
       const activities: Activity[] = [];
       for (const todo of todos) {
         for (const [from, to] of Object.entries(todo.active)) {
-          // Check if this activity overlaps with the date range
+          // Check if this activity overlaps with the date range using date prefix comparison
           if (from >= startKey && from <= endKey) {
             activities.push({
               doc: todo,

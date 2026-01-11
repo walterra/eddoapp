@@ -9,12 +9,10 @@ import {
 } from '@eddo/core-client';
 import { group } from 'd3-array';
 import {
-  add,
-  endOfDay,
   endOfMonth,
   endOfWeek,
   endOfYear,
-  startOfDay,
+  format,
   startOfMonth,
   startOfWeek,
   startOfYear,
@@ -24,59 +22,73 @@ import { CONTEXT_DEFAULT } from '../constants';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
 
-/** Date range for filtering */
+/** Date range for filtering using date-only strings (YYYY-MM-DD) */
 export interface DateRange {
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
 }
 
 /** Re-export Activity type for convenience */
 export type ActivityItem = Activity;
 
 /**
- * Calculate date range based on selected time range
+ * Format a date as YYYY-MM-DD string (date-only, no timezone issues)
+ */
+function formatDateOnly(date: Date): string {
+  return format(date, 'yyyy-MM-dd');
+}
+
+/**
+ * Calculate date range based on selected time range.
+ * Returns date-only strings (YYYY-MM-DD) to avoid timezone conversion issues.
+ * Queries should use these as prefixes for ISO string comparison.
  */
 export function calculateDateRange(currentDate: Date, selectedTimeRange: TimeRange): DateRange {
-  // TODO The 'add' is a CEST quick fix
-  const currentStartOfWeek = add(startOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
-  const currentEndOfWeek = add(endOfWeek(currentDate, { weekStartsOn: 1 }), { hours: 2 });
+  const currentStartOfWeek = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const currentEndOfWeek = endOfWeek(currentDate, { weekStartsOn: 1 });
 
   switch (selectedTimeRange.type) {
     case 'current-day':
       return {
-        startDate: add(startOfDay(currentDate), { hours: 2 }),
-        endDate: add(endOfDay(currentDate), { hours: 2 }),
+        startDate: formatDateOnly(currentDate),
+        endDate: formatDateOnly(currentDate),
       };
     case 'current-week':
       return {
-        startDate: currentStartOfWeek,
-        endDate: currentEndOfWeek,
+        startDate: formatDateOnly(currentStartOfWeek),
+        endDate: formatDateOnly(currentEndOfWeek),
       };
     case 'current-month':
       return {
-        startDate: add(startOfMonth(currentDate), { hours: 2 }),
-        endDate: add(endOfMonth(currentDate), { hours: 2 }),
+        startDate: formatDateOnly(startOfMonth(currentDate)),
+        endDate: formatDateOnly(endOfMonth(currentDate)),
       };
     case 'current-year':
       return {
-        startDate: add(startOfYear(currentDate), { hours: 2 }),
-        endDate: add(endOfYear(currentDate), { hours: 2 }),
+        startDate: formatDateOnly(startOfYear(currentDate)),
+        endDate: formatDateOnly(endOfYear(currentDate)),
       };
     case 'custom':
       if (selectedTimeRange.startDate && selectedTimeRange.endDate) {
         return {
-          startDate: new Date(selectedTimeRange.startDate + 'T00:00:00'),
-          endDate: new Date(selectedTimeRange.endDate + 'T23:59:59'),
+          startDate: selectedTimeRange.startDate,
+          endDate: selectedTimeRange.endDate,
         };
       }
-      return { startDate: currentStartOfWeek, endDate: currentEndOfWeek };
+      return {
+        startDate: formatDateOnly(currentStartOfWeek),
+        endDate: formatDateOnly(currentEndOfWeek),
+      };
     case 'all-time':
       return {
-        startDate: new Date('2000-01-01'),
-        endDate: new Date('2099-12-31'),
+        startDate: '2000-01-01',
+        endDate: '2099-12-31',
       };
     default:
-      return { startDate: currentStartOfWeek, endDate: currentEndOfWeek };
+      return {
+        startDate: formatDateOnly(currentStartOfWeek),
+        endDate: formatDateOnly(currentEndOfWeek),
+      };
   }
 }
 
@@ -212,7 +224,7 @@ export function groupByContextAndDate(
         return (d as ActivityItem).doc.context ?? CONTEXT_DEFAULT;
       },
       (d) => {
-        // TODO The 'split' is a CEST quick fix
+        // Extract date-only portion (YYYY-MM-DD) from ISO strings for grouping
         if (isLatestVersion(d)) {
           return d.due.split('T')[0];
         }
@@ -246,7 +258,7 @@ export function calculateDurationByContextAndDate(
     group(
       activities,
       (d) => d.doc.context ?? CONTEXT_DEFAULT,
-      // TODO The 'split' is a CEST quick fix
+      // Extract date-only portion (YYYY-MM-DD) from ISO strings for grouping
       (d) => d.from.split('T')[0],
     ),
   );
