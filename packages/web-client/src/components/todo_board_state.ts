@@ -16,7 +16,8 @@ import type { ActivityItem } from './todo_board_helpers';
 /**
  * Check if a due date needs normalization (missing time component)
  */
-function needsDueDateNormalization(due: string): boolean {
+function needsDueDateNormalization(due: string | undefined | null): boolean {
+  if (!due) return false;
   // Valid ISO format should contain 'T' for time component
   return !due.includes('T');
 }
