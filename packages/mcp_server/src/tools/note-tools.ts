@@ -74,7 +74,7 @@ async function logAndRespond(options: AuditAndRespondOptions): Promise<string> {
     after,
   });
   if (auditId) {
-    pushAuditIdToTodo(db, after._id, auditId, context);
+    await pushAuditIdToTodo(db, after._id, auditId, context);
   }
   return createSuccessResponse({
     summary: `Note ${getOperationVerb(operation)} successfully`,

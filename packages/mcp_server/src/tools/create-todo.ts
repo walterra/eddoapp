@@ -189,7 +189,7 @@ export async function executeCreateTodo(
       message: args.message,
     });
     if (auditId) {
-      pushAuditIdToTodo(db, newTodo._id, auditId, context);
+      await pushAuditIdToTodo(db, newTodo._id, auditId, context);
     }
 
     return createSuccessResponse({

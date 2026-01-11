@@ -126,7 +126,7 @@ export async function executeUpdateTodo(
       message: args.message,
     });
     if (auditId) {
-      pushAuditIdToTodo(db, result.id, auditId, context);
+      await pushAuditIdToTodo(db, result.id, auditId, context);
     }
     context.log.info('Todo updated successfully', { id: result.id, title: updated.title });
 

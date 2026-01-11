@@ -86,19 +86,30 @@ export async function logMcpAudit(
   }
 }
 
+/** Maximum retries for conflict resolution */
+const MAX_RETRIES = 5;
+
+/** Check if error is a CouchDB conflict error */
+function isConflictError(error: unknown): boolean {
+  if (error && typeof error === 'object') {
+    const err = error as { statusCode?: number; error?: string };
+    return err.statusCode === 409 || err.error === 'conflict';
+  }
+  return false;
+}
+
 /**
  * Push an audit entry ID to a todo's auditLog array.
- * Fire-and-forget: does not block, silently fails on error.
- * Uses eventual consistency - the audit ID will be added asynchronously.
+ * Includes retry logic for CouchDB revision conflicts.
+ * Silently fails on error (non-blocking to main operation).
  */
-export function pushAuditIdToTodo(
+export async function pushAuditIdToTodo(
   db: DocumentScope<TodoAlpha3>,
   todoId: string,
   auditId: string,
   context: ToolContext,
-): void {
-  // Fire-and-forget: don't await, just log errors
-  (async () => {
+): Promise<void> {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const todo = await db.get(todoId);
       const auditLog = todo.auditLog ?? [];
@@ -107,12 +118,23 @@ export function pushAuditIdToTodo(
       await db.insert({ ...todo, auditLog });
 
       context.log.debug('Audit ID pushed to todo', { todoId, auditId });
+      return; // Success, exit retry loop
     } catch (error) {
+      if (isConflictError(error) && attempt < MAX_RETRIES - 1) {
+        // Conflict detected, retry with fresh document
+        context.log.debug('Conflict on audit push, retrying', {
+          todoId,
+          auditId,
+          attempt: attempt + 1,
+        });
+        continue;
+      }
       context.log.warn('Failed to push audit ID to todo', {
         error: error instanceof Error ? error.message : String(error),
         todoId,
         auditId,
       });
+      return; // Give up after max retries or non-conflict error
     }
-  })();
+  }
 }

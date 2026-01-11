@@ -73,7 +73,7 @@ export async function executeStartTimeTracking(
       message: args.message,
     });
     if (auditId) {
-      pushAuditIdToTodo(db, todo._id, auditId, context);
+      await pushAuditIdToTodo(db, todo._id, auditId, context);
     }
     context.log.info('Time tracking started', { title: todo.title, startTime: now });
 
@@ -189,7 +189,7 @@ async function processStopSession(params: StopSessionParams): Promise<number> {
     message,
   });
   if (auditId) {
-    pushAuditIdToTodo(db, todo._id, auditId, context);
+    await pushAuditIdToTodo(db, todo._id, auditId, context);
   }
   return Date.now() - startTime;
 }

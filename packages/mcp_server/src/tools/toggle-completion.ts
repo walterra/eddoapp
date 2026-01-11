@@ -119,7 +119,7 @@ async function saveAndRespond(params: SaveAndRespondParams): Promise<string> {
     message,
   });
   if (auditId) {
-    pushAuditIdToTodo(db, todo._id, auditId, context);
+    await pushAuditIdToTodo(db, todo._id, auditId, context);
   }
 
   context.log.info('Todo completion toggled successfully', { title: todo.title, status });
