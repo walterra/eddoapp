@@ -14,6 +14,12 @@ export {
 } from './types/database-health';
 export { type NewTodo, type Todo } from './types/todo';
 export {
+  type CompletionStatus,
+  type ThemePreference,
+  type TimeRangeType,
+  type ViewMode,
+} from './types/ui-preferences';
+export {
   type CreateUserRegistryEntry,
   type CreateUserRequest,
   type LinkTelegramRequest,
@@ -65,7 +71,6 @@ export {
   type EmailProvider,
   type EmailSyncConfig,
   type RssFeedConfig,
-  type ThemePreference,
   type UserPreferences,
   type UserRegistryEntryAlpha2,
 } from './versions/user_registry_alpha2';

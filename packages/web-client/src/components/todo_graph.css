@@ -1,0 +1,25 @@
+/* Custom styles for TodoGraph */
+
+/* Slow down animated edge animation */
+.react-flow__edge-path.animated {
+  animation-duration: 1.5s !important;
+}
+
+.react-flow__edge.animated path {
+  animation-duration: 1.5s !important;
+}
+
+/* Smooth transitions for node position changes */
+.react-flow__node {
+  transition: transform 0.3s ease-out !important;
+}
+
+/* Smooth transitions for edge path changes */
+.react-flow__edge-path {
+  transition: d 0.3s ease-out;
+}
+
+/* Ensure metadata nodes with speech bubbles are on top */
+.react-flow__node[data-id^='metadata:'] {
+  z-index: 1000 !important;
+}

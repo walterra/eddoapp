@@ -1,12 +1,42 @@
-import { type FC, useState } from 'react';
+import { type FC, useCallback, useEffect, useState } from 'react';
 import { HiOutlineClipboardList, HiOutlineLogout, HiOutlineUser } from 'react-icons/hi';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
+import { useProfile } from '../hooks/use_profile';
 import { usePouchDb } from '../pouch_db';
 import { AuditSidebar } from './audit_sidebar';
 import { HealthIndicatorPopover } from './health_indicator_popover';
 
 import { UserProfile } from './user_profile';
+
+/** Hook for activity sidebar state with optimistic updates and persistence */
+function useActivitySidebar() {
+  const { profile, updatePreferences } = useProfile();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Sync local state when profile loads or changes
+  useEffect(() => {
+    if (profile?.preferences?.activitySidebarOpen !== undefined) {
+      setIsOpen(profile.preferences.activitySidebarOpen);
+    }
+  }, [profile?.preferences?.activitySidebarOpen]);
+
+  const toggle = useCallback(() => {
+    const newState = !isOpen;
+    setIsOpen(newState);
+    void updatePreferences({ activitySidebarOpen: newState });
+  }, [isOpen, updatePreferences]);
+
+  const setOpen = useCallback(
+    (open: boolean) => {
+      setIsOpen(open);
+      void updatePreferences({ activitySidebarOpen: open });
+    },
+    [updatePreferences],
+  );
+
+  return { isOpen, toggle, setOpen };
+}
 
 interface PageWrapperProps {
   children?: React.ReactNode;
@@ -112,7 +142,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   const { healthCheck } = useDatabaseHealth();
   const { rawDb } = usePouchDb();
   const [showProfile, setShowProfile] = useState(false);
-  const [showAuditSidebar, setShowAuditSidebar] = useState(false);
+  const activitySidebar = useActivitySidebar();
   const databaseName = rawDb.name;
 
   if (showProfile) {
@@ -129,8 +159,8 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
             isAuthenticated={isAuthenticated}
             onLogout={logout}
             onShowProfile={() => setShowProfile(true)}
-            onToggleAuditSidebar={() => setShowAuditSidebar(!showAuditSidebar)}
-            showAuditSidebar={showAuditSidebar}
+            onToggleAuditSidebar={activitySidebar.toggle}
+            showAuditSidebar={activitySidebar.isOpen}
           />
           {children}
           <footer className="mt-8 pb-3">
@@ -139,11 +169,8 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
             </a>
           </footer>
         </main>
-        {isAuthenticated && showAuditSidebar && (
-          <AuditSidebar
-            isOpen={showAuditSidebar}
-            onToggle={(isOpen) => setShowAuditSidebar(isOpen)}
-          />
+        {isAuthenticated && activitySidebar.isOpen && (
+          <AuditSidebar isOpen={activitySidebar.isOpen} onToggle={activitySidebar.setOpen} />
         )}
       </div>
     </div>

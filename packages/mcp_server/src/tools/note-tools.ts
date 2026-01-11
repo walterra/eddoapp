@@ -4,7 +4,7 @@
 import type { TodoAlpha3, TodoNote } from '@eddo/core-server';
 import { z } from 'zod';
 
-import { logMcpAudit } from './audit-helper.js';
+import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -46,6 +46,7 @@ function noteNotFoundResponse(noteId: string, todoId: string, operation: string)
 
 interface AuditAndRespondOptions {
   context: ToolContext;
+  db: ReturnType<GetUserDb>;
   before: TodoAlpha3;
   after: TodoAlpha3;
   responseData: Record<string, unknown>;
@@ -65,8 +66,16 @@ function getOperationVerb(operation: string): string {
 
 /** Logs audit and returns success response for note operations */
 async function logAndRespond(options: AuditAndRespondOptions): Promise<string> {
-  const { context, before, after, responseData, operation, startTime } = options;
-  await logMcpAudit(context, { action: 'update', entityId: after._id, before, after });
+  const { context, db, before, after, responseData, operation, startTime } = options;
+  const auditId = await logMcpAudit(context, {
+    action: 'update',
+    entityId: after._id,
+    before,
+    after,
+  });
+  if (auditId) {
+    await pushAuditIdToTodo(db, after._id, auditId, context);
+  }
   return createSuccessResponse({
     summary: `Note ${getOperationVerb(operation)} successfully`,
     data: responseData,
@@ -108,6 +117,7 @@ export async function executeAddNote(
 
     return logAndRespond({
       context,
+      db,
       before: todo,
       after: updatedTodo,
       startTime,
@@ -175,6 +185,7 @@ export async function executeUpdateNote(
 
     return logAndRespond({
       context,
+      db,
       before: todo,
       after: updatedTodo,
       startTime,
@@ -234,6 +245,7 @@ export async function executeDeleteNote(
       deletedNote.content.substring(0, 50) + (deletedNote.content.length > 50 ? '...' : '');
     return logAndRespond({
       context,
+      db,
       before: todo,
       after: updatedTodo,
       startTime,

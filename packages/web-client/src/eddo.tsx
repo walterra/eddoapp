@@ -10,6 +10,7 @@ import type { CompletionStatus } from './components/status_filter';
 import type { TimeRange } from './components/time_range_filter';
 import { TodoBoard } from './components/todo_board';
 import { TodoFilters } from './components/todo_filters';
+import { TodoGraph } from './components/todo_graph';
 import { TodoTable } from './components/todo_table';
 import { createQueryClient } from './config/query_client';
 import { AuthProvider, useAuth } from './hooks/use_auth';
@@ -17,6 +18,7 @@ import { useCouchDbSync } from './hooks/use_couchdb_sync';
 import { DatabaseChangesProvider } from './hooks/use_database_changes';
 import { useDatabaseHealth } from './hooks/use_database_health';
 import { useFilterPreferences } from './hooks/use_filter_preferences';
+import { HighlightProvider } from './hooks/use_highlight_context';
 import { usePreferencesStream } from './hooks/use_preferences_stream';
 import { initializeTheme } from './hooks/use_theme';
 import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
@@ -129,11 +131,17 @@ function TodoContentView({
     selectedTags: prefs.selectedTags,
     selectedTimeRange: prefs.selectedTimeRange,
   };
-  return viewMode === 'kanban' ? (
-    <TodoBoard {...common} />
-  ) : (
-    <TodoTable {...common} selectedColumns={tableColumns} />
-  );
+
+  switch (viewMode) {
+    case 'kanban':
+      return <TodoBoard {...common} />;
+    case 'table':
+      return <TodoTable {...common} selectedColumns={tableColumns} />;
+    case 'graph':
+      return <TodoGraph {...common} />;
+    default:
+      return <TodoBoard {...common} />;
+  }
 }
 
 /** Authenticated todo app content */
@@ -182,13 +190,15 @@ function AuthenticatedApp({
 
   return (
     <DatabaseChangesProvider>
-      <TodoFlyoutProvider>
-        <CouchdbSyncProvider />
-        <PreferencesStreamProvider />
-        <HealthMonitor />
-        <TodoApp logout={logout} />
-        <GlobalTodoFlyout />
-      </TodoFlyoutProvider>
+      <HighlightProvider>
+        <TodoFlyoutProvider>
+          <CouchdbSyncProvider />
+          <PreferencesStreamProvider />
+          <HealthMonitor />
+          <TodoApp logout={logout} />
+          <GlobalTodoFlyout />
+        </TodoFlyoutProvider>
+      </HighlightProvider>
     </DatabaseChangesProvider>
   );
 }
