@@ -4,15 +4,27 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '../../', '');
+  const vitePort = parseInt(env.VITE_PORT || '5173');
+  const apiPort = parseInt(env.PORT || '3000');
 
   return {
     plugins: [react()],
     server: {
-      port: parseInt(env.PORT || '5173'),
+      port: vitePort,
       host: '0.0.0.0',
       hmr: {
-        port: 5173,
+        port: vitePort,
         host: 'localhost',
+      },
+      proxy: {
+        '/auth': {
+          target: `http://localhost:${apiPort}`,
+          changeOrigin: true,
+        },
+        '/api': {
+          target: `http://localhost:${apiPort}`,
+          changeOrigin: true,
+        },
       },
     },
     build: {

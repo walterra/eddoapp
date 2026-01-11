@@ -65,15 +65,43 @@ function pickValue<T>(argValue: T | undefined, existingValue: T): T {
 }
 
 /**
+ * Normalize due date to full ISO format (YYYY-MM-DDTHH:mm:ss.sssZ).
+ * Accepts:
+ * - Full ISO: "2026-01-07T23:59:59.999Z" -> unchanged
+ * - Date only: "2026-01-07" -> "2026-01-07T23:59:59.999Z"
+ * - undefined -> returns undefined (no change)
+ */
+function normalizeDueDate(due: string | undefined): string | undefined {
+  if (!due) {
+    return undefined;
+  }
+
+  // Check if it's already a full ISO string (contains 'T')
+  if (due.includes('T')) {
+    return due;
+  }
+
+  // Date-only format (YYYY-MM-DD) -> add end of day time
+  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) {
+    return due + 'T23:59:59.999Z';
+  }
+
+  // Invalid format - log warning and use as-is with time appended
+  console.warn(`Invalid due date format: "${due}". Expected ISO format. Appending default time.`);
+  return due + 'T23:59:59.999Z';
+}
+
+/**
  * Merges update arguments with existing todo
  */
 function mergeUpdates(todo: TodoAlpha3, args: UpdateTodoArgs): TodoAlpha3 {
+  const normalizedDue = normalizeDueDate(args.due);
   return {
     ...todo,
     title: args.title ?? todo.title,
     description: args.description ?? todo.description,
     context: args.context ?? todo.context,
-    due: args.due ?? todo.due,
+    due: normalizedDue ?? todo.due,
     tags: args.tags ?? todo.tags,
     repeat: pickValue(args.repeat, todo.repeat),
     link: pickValue(args.link, todo.link),

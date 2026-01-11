@@ -12,6 +12,14 @@ export interface TestTodoData extends Record<string, unknown> {
   tags?: string[];
 }
 
+/**
+ * Converts a date string to full ISO timestamp with end-of-day time.
+ * Due dates are normalized to T23:59:59.999Z format by the MCP server.
+ */
+function toEndOfDayTimestamp(dateStr: string): string {
+  return `${dateStr}T23:59:59.999Z`;
+}
+
 export const createTestTodoData = {
   /**
    * Basic minimal todo with required fields only
@@ -19,7 +27,7 @@ export const createTestTodoData = {
   basic: (): TestTodoData => ({
     title: 'Test Todo',
     context: 'work',
-    due: '2025-06-30',
+    due: toEndOfDayTimestamp('2025-06-30'),
   }),
 
   /**
@@ -28,7 +36,7 @@ export const createTestTodoData = {
   complete: (): TestTodoData => ({
     title: 'Complete Test Todo',
     context: 'private',
-    due: '2025-07-15',
+    due: toEndOfDayTimestamp('2025-07-15'),
     description: 'Comprehensive test todo with all fields',
     link: 'https://example.com/test',
     repeat: 7,
@@ -41,7 +49,7 @@ export const createTestTodoData = {
   withTimeTracking: (): TestTodoData => ({
     title: 'Time Tracking Todo',
     context: 'work',
-    due: '2025-06-28',
+    due: toEndOfDayTimestamp('2025-06-28'),
     description: 'Todo for testing time tracking functionality',
     tags: ['time-tracking', 'test'],
   }),
@@ -52,7 +60,7 @@ export const createTestTodoData = {
   forCompletion: (): TestTodoData => ({
     title: 'Todo for Completion Test',
     context: 'personal',
-    due: '2025-06-25',
+    due: toEndOfDayTimestamp('2025-06-25'),
     description: 'This todo will be marked as completed',
     tags: ['completion', 'test'],
   }),
@@ -63,7 +71,7 @@ export const createTestTodoData = {
   repeating: (): TestTodoData => ({
     title: 'Daily Repeating Todo',
     context: 'work',
-    due: '2025-06-27',
+    due: toEndOfDayTimestamp('2025-06-27'),
     description: 'Todo that repeats daily',
     repeat: 1,
     tags: ['repeat', 'daily'],
@@ -75,7 +83,7 @@ export const createTestTodoData = {
   withTags: (tags: string[]): TestTodoData => ({
     title: 'Tagged Todo',
     context: 'work',
-    due: '2025-06-29',
+    due: toEndOfDayTimestamp('2025-06-29'),
     description: 'Todo with custom tags for testing',
     tags,
   }),
@@ -86,7 +94,7 @@ export const createTestTodoData = {
   withContext: (context: string): TestTodoData => ({
     title: `${context} Context Todo`,
     context,
-    due: '2025-07-01',
+    due: toEndOfDayTimestamp('2025-07-01'),
     description: `Todo in ${context} context`,
     tags: ['context-test'],
   }),
@@ -109,7 +117,9 @@ export const createTestTodoData = {
     return Array.from({ length: count }, (_, i) => ({
       title: `${baseTitle} ${i + 1}`,
       context: i % 2 === 0 ? 'work' : 'private',
-      due: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      due: toEndOfDayTimestamp(
+        new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      ),
       description: `Batch test todo number ${i + 1}`,
       tags: ['batch', `item-${i + 1}`],
     }));

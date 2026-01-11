@@ -132,11 +132,38 @@ async function ensureUserDatabase(
 }
 
 /**
+ * Normalize due date to full ISO format (YYYY-MM-DDTHH:mm:ss.sssZ).
+ * Accepts:
+ * - Full ISO: "2026-01-07T23:59:59.999Z" -> unchanged
+ * - Date only: "2026-01-07" -> "2026-01-07T23:59:59.999Z"
+ * - undefined/null -> today at 23:59:59.999Z
+ */
+function normalizeDueDate(due: string | undefined): string {
+  if (!due) {
+    return new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
+  }
+
+  // Check if it's already a full ISO string (contains 'T')
+  if (due.includes('T')) {
+    return due;
+  }
+
+  // Date-only format (YYYY-MM-DD) -> add end of day time
+  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) {
+    return due + 'T23:59:59.999Z';
+  }
+
+  // Invalid format - log warning and use as-is with time appended
+  console.warn(`Invalid due date format: "${due}". Expected ISO format. Appending default time.`);
+  return due + 'T23:59:59.999Z';
+}
+
+/**
  * Builds a new TodoAlpha3 object from the provided arguments
  */
 function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha3, '_rev'> {
   const now = new Date().toISOString();
-  const dueDate = args.due || new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
+  const dueDate = normalizeDueDate(args.due);
 
   return {
     _id: now,
