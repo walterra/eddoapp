@@ -3,6 +3,7 @@
  */
 import { type FC, useCallback } from 'react';
 
+import { useDateNavigationKeys } from '../hooks/use_date_navigation_keys';
 import { useEddoContexts } from '../hooks/use_eddo_contexts';
 import type { CurrentFilterState } from '../hooks/use_filter_presets';
 import { useTags } from '../hooks/use_tags';
@@ -22,7 +23,6 @@ function useApplyPresetHandler(props: TodoFiltersProps) {
   return useCallback(
     (filters: CurrentFilterState) => {
       if (props.batchUpdateFilters) {
-        // Use batch update to avoid conflicts
         props.batchUpdateFilters({
           selectedTags: filters.selectedTags,
           selectedContexts: filters.selectedContexts,
@@ -31,7 +31,6 @@ function useApplyPresetHandler(props: TodoFiltersProps) {
           currentDate: filters.currentDate,
         });
       } else {
-        // Fallback to individual setters
         props.setSelectedTags(filters.selectedTags);
         props.setSelectedContexts(filters.selectedContexts);
         props.setSelectedStatus(filters.selectedStatus);
@@ -50,14 +49,25 @@ function useApplyPresetHandler(props: TodoFiltersProps) {
   );
 }
 
+/** Hook for period navigation with keyboard support (left/right arrows) */
+function usePeriodNavigation(props: TodoFiltersProps) {
+  const handleNavigate = useCallback(
+    (direction: 'prev' | 'next') => {
+      props.setCurrentDate(navigatePeriod(props.currentDate, props.selectedTimeRange, direction));
+    },
+    [props.currentDate, props.selectedTimeRange, props.setCurrentDate],
+  );
+
+  useDateNavigationKeys({ timeRange: props.selectedTimeRange, onNavigate: handleNavigate });
+
+  return handleNavigate;
+}
+
 export const TodoFilters: FC<TodoFiltersProps> = (props) => {
   const { allTags } = useTags();
   const { allContexts } = useEddoContexts();
   const handleApplyPreset = useApplyPresetHandler(props);
-
-  const handleNavigate = (direction: 'prev' | 'next') => {
-    props.setCurrentDate(navigatePeriod(props.currentDate, props.selectedTimeRange, direction));
-  };
+  const handleNavigate = usePeriodNavigation(props);
 
   return (
     <div className="flex items-center justify-between bg-white pb-3 dark:bg-neutral-800">
