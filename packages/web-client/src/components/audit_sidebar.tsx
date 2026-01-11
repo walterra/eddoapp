@@ -13,10 +13,10 @@ import { useHighlightContext } from '../hooks/use_highlight_context';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { usePouchDb } from '../pouch_db';
 
+import { formatRelativeTime, getDeletedEntityIds, getEntryTitle } from './audit_sidebar_helpers';
+
 /** Width of the sidebar when expanded */
 const SIDEBAR_WIDTH = 320;
-
-/** Maximum entries displayed in the sidebar */
 const MAX_DISPLAY_ENTRIES = 20;
 
 /** Action icons and labels */
@@ -48,32 +48,6 @@ const SOURCE_CONFIG: Record<AuditSource, { icon: FC<{ size: string }>; label: st
   'email-sync': { icon: BiEnvelope, label: 'Email' },
 };
 
-/** Format relative time (e.g., "2 min ago") */
-function formatRelativeTime(timestamp: string): string {
-  const now = Date.now();
-  const then = new Date(timestamp).getTime();
-  const diffMs = now - then;
-
-  const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 60) return 'just now';
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-/** Get title from audit entry */
-function getEntryTitle(entry: AuditLogAlpha1): string {
-  const after = entry.after as { title?: string } | undefined;
-  const before = entry.before as { title?: string } | undefined;
-  return after?.title || before?.title || entry.entityId.slice(0, 16) + '...';
-}
-
 /** Skeleton loader for audit entries */
 const AuditEntrySkeleton: FC = () => (
   <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-700">
@@ -87,7 +61,6 @@ const AuditEntrySkeleton: FC = () => (
   </div>
 );
 
-/** Loading skeleton for initial load */
 const LoadingSkeleton: FC = () => (
   <>
     {Array.from({ length: 5 }).map((_, i) => (
@@ -96,20 +69,15 @@ const LoadingSkeleton: FC = () => (
   </>
 );
 
-interface AuditEntryContentProps {
-  entry: AuditLogAlpha1;
-}
-
-/** Content within an audit entry button */
-const AuditEntryContent: FC<AuditEntryContentProps> = ({ entry }) => {
+const AuditEntryContent: FC<{ entry: AuditLogAlpha1 }> = ({ entry }) => {
   const actionConfig = ACTION_CONFIG[entry.action];
   const sourceConfig = SOURCE_CONFIG[entry.source];
   const SourceIcon = sourceConfig.icon;
-  const title = getEntryTitle(entry);
-
   return (
     <>
-      <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
+      <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+        {getEntryTitle(entry)}
+      </p>
       {entry.message && (
         <p className="truncate text-xs text-neutral-600 italic dark:text-neutral-300">
           {entry.message}
@@ -141,24 +109,18 @@ const AuditEntryItem: FC<AuditEntryItemProps> = ({
   isDeleted,
 }) => {
   const isClickable = !isDeleted;
-
-  const handleClick = () => isClickable && onEntryClick(entry.entityId);
-  const handleMouseEnter = () => !isDeleted && onEntryHover(entry.entityId);
-  const handleMouseLeave = () => onEntryHover(null);
-
   const className = `w-full border-b border-neutral-200 px-3 py-2 text-left dark:border-neutral-700 ${
     isClickable
       ? 'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700'
       : 'cursor-default opacity-60'
   }`;
-
   return (
     <button
       className={className}
       disabled={!isClickable}
-      onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onClick={() => isClickable && onEntryClick(entry.entityId)}
+      onMouseEnter={() => !isDeleted && onEntryHover(entry.entityId)}
+      onMouseLeave={() => onEntryHover(null)}
       type="button"
     >
       <AuditEntryContent entry={entry} />
@@ -166,12 +128,10 @@ const AuditEntryItem: FC<AuditEntryItemProps> = ({
   );
 };
 
-interface SidebarHeaderProps {
-  isConnected: boolean;
-  onCollapse: () => void;
-}
-
-const SidebarHeader: FC<SidebarHeaderProps> = ({ isConnected, onCollapse }) => (
+const SidebarHeader: FC<{ isConnected: boolean; onCollapse: () => void }> = ({
+  isConnected,
+  onCollapse,
+}) => (
   <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2 dark:border-neutral-700">
     <div className="flex items-center gap-2">
       <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Activity</h2>
@@ -190,11 +150,7 @@ const SidebarHeader: FC<SidebarHeaderProps> = ({ isConnected, onCollapse }) => (
   </div>
 );
 
-interface CollapsedToggleProps {
-  onClick: () => void;
-}
-
-const CollapsedToggle: FC<CollapsedToggleProps> = ({ onClick }) => (
+const CollapsedToggle: FC<{ onClick: () => void }> = ({ onClick }) => (
   <button
     className="fixed top-1/2 right-0 z-10 -translate-y-1/2 rounded-l-md border border-r-0 border-neutral-200 bg-white px-1 py-3 text-neutral-600 shadow-sm hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
     onClick={onClick}
@@ -204,7 +160,6 @@ const CollapsedToggle: FC<CollapsedToggleProps> = ({ onClick }) => (
   </button>
 );
 
-/** Source filter options */
 const SOURCE_FILTERS: { source: AuditSource | 'all'; label: string }[] = [
   { source: 'all', label: 'All' },
   { source: 'web', label: 'Web' },
@@ -214,12 +169,10 @@ const SOURCE_FILTERS: { source: AuditSource | 'all'; label: string }[] = [
   { source: 'email-sync', label: 'Email' },
 ];
 
-interface SourceFilterProps {
+const SourceFilter: FC<{
   activeFilter: AuditSource | 'all';
-  onFilterChange: (filter: AuditSource | 'all') => void;
-}
-
-const SourceFilter: FC<SourceFilterProps> = ({ activeFilter, onFilterChange }) => (
+  onFilterChange: (f: AuditSource | 'all') => void;
+}> = ({ activeFilter, onFilterChange }) => (
   <div className="flex flex-wrap gap-1 border-b border-neutral-200 px-3 py-2 dark:border-neutral-700">
     {SOURCE_FILTERS.map(({ source, label }) => (
       <button
@@ -238,31 +191,20 @@ const SourceFilter: FC<SourceFilterProps> = ({ activeFilter, onFilterChange }) =
 );
 
 export interface AuditSidebarProps {
-  /** Whether sidebar is visible */
   isOpen?: boolean;
-  /** Callback when sidebar is toggled */
   onToggle?: (isOpen: boolean) => void;
 }
 
-/** Hook for handling audit entry clicks */
 const useAuditEntryClick = () => {
   const { safeDb } = usePouchDb();
   const { openTodo } = useTodoFlyoutContext();
-
   return useCallback(
     async (entityId: string) => {
       const todo = await safeDb.safeGet<Todo>(entityId);
-      if (todo) {
-        openTodo(todo);
-      }
+      if (todo) openTodo(todo);
     },
     [safeDb, openTodo],
   );
-};
-
-/** Determine deleted entity IDs from audit entries */
-const getDeletedEntityIds = (entries: readonly AuditLogAlpha1[]): Set<string> => {
-  return new Set(entries.filter((e) => e.action === 'delete').map((e) => e.entityId));
 };
 
 interface EntryListProps {
@@ -274,7 +216,6 @@ interface EntryListProps {
   onEntryHover: (entityId: string | null) => void;
 }
 
-/** List of audit entries */
 const EntryList: FC<EntryListProps> = ({
   entries,
   deletedEntityIds,
@@ -284,7 +225,6 @@ const EntryList: FC<EntryListProps> = ({
   onEntryHover,
 }) => {
   if (isLoading) return <LoadingSkeleton />;
-
   if (entries.length === 0) {
     const message = sourceFilter === 'all' ? 'No activity yet' : `No ${sourceFilter} activity`;
     return (
@@ -293,7 +233,6 @@ const EntryList: FC<EntryListProps> = ({
       </div>
     );
   }
-
   return (
     <>
       {entries.map((entry) => (
@@ -312,12 +251,13 @@ const EntryList: FC<EntryListProps> = ({
 export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle }) => {
   const [isExpanded, setIsExpanded] = useState(isOpen);
   const [sourceFilter, setSourceFilter] = useState<AuditSource | 'all'>('all');
-  const { entries, isLoading, isConnected } = useAuditLog({ enabled: isExpanded });
+  const { entries, getFilteredEntries, isLoading, isConnected } = useAuditLog({
+    enabled: isExpanded,
+  });
   const handleEntryClick = useAuditEntryClick();
   const { setHighlightedTodoId } = useHighlightContext();
 
-  const filteredEntries =
-    sourceFilter === 'all' ? entries : entries.filter((e) => e.source === sourceFilter);
+  const filteredEntries = getFilteredEntries(sourceFilter, MAX_DISPLAY_ENTRIES);
   const deletedEntityIds = getDeletedEntityIds(entries);
 
   const handleToggle = (expanded: boolean) => {

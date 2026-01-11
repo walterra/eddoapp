@@ -33,6 +33,11 @@ const listQuerySchema = z.object({
   ids: z.string().optional(),
 });
 
+/** Query schema for listing entries by source */
+const listBySourceQuerySchema = z.object({
+  limitPerSource: z.coerce.number().min(1).max(50).default(20),
+});
+
 /** Schema for creating audit log entries */
 const createAuditEntrySchema = z.object({
   action: z.enum([
@@ -106,6 +111,64 @@ auditLogApp.get('/', async (c) => {
       return c.json({ error: 'Failed to fetch audit log' }, 500);
     }
   });
+});
+
+/**
+ * GET /api/audit-log/by-source
+ * Fetch audit log entries grouped by source (20 per source by default)
+ */
+auditLogApp.get('/by-source', async (c) => {
+  return withSpan(
+    'audit_log_list_by_source',
+    { 'audit.operation': 'list_by_source' },
+    async (span) => {
+      const payload = c.get('jwtPayload') as jwt.JwtPayload;
+      const username = payload.username;
+
+      span.setAttribute('user.name', username);
+
+      try {
+        const query = listBySourceQuerySchema.parse(c.req.query());
+        span.setAttribute('audit.limit_per_source', query.limitPerSource);
+
+        // Ensure database and design docs exist
+        await ensureAuditDatabase(env.COUCHDB_URL, env, username);
+
+        const auditService = createAuditService(env.COUCHDB_URL, env, username);
+        const entriesBySource = await auditService.getEntriesBySource({
+          limitPerSource: query.limitPerSource,
+        });
+
+        const totalEntries = Object.values(entriesBySource).reduce(
+          (sum, entries) => sum + entries.length,
+          0,
+        );
+        span.setAttribute('audit.total_entries', totalEntries);
+
+        return c.json({ entriesBySource });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return c.json({ error: 'Invalid query parameters' }, 400);
+        }
+
+        if (isNotFoundError(error)) {
+          return c.json({
+            entriesBySource: {
+              web: [],
+              mcp: [],
+              telegram: [],
+              'github-sync': [],
+              'rss-sync': [],
+              'email-sync': [],
+            },
+          });
+        }
+
+        logger.error({ error, username }, 'Failed to fetch audit log by source');
+        return c.json({ error: 'Failed to fetch audit log by source' }, 500);
+      }
+    },
+  );
 });
 
 /**

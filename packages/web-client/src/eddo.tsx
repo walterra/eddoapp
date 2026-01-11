@@ -205,11 +205,17 @@ function AuthenticatedApp({
 
 function EddoContent() {
   const { username, isAuthenticated, authenticate, register, logout, isAuthenticating } = useAuth();
+
+  // Create PouchDB context - recreated when username changes
+  // Note: We don't close the old database here because PouchDB handles
+  // multiple instances gracefully, and closing causes issues with in-flight operations
   const pouchDbContext = useMemo(
     () => (isAuthenticated && username ? createUserPouchDbContext(username) : null),
     [isAuthenticated, username],
   );
-  const queryClient = useMemo(() => createQueryClient(), []);
+
+  // Recreate queryClient when username changes to clear cache between users
+  const queryClient = useMemo(() => createQueryClient(), [username]);
 
   return (
     <QueryClientProvider client={queryClient}>
