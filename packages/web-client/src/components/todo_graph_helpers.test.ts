@@ -117,7 +117,7 @@ describe('createAllNodes', () => {
       expect(metadataNodes[0].data.todoCount).toBe(2);
     });
 
-    it('does not create metadata node for single todo', () => {
+    it('creates metadata node for single todo', () => {
       const todos = [
         createMockTodo({
           _id: 'todo-1',
@@ -128,7 +128,8 @@ describe('createAllNodes', () => {
       const nodes = createAllNodes(todos, []);
 
       const metadataNodes = nodes.filter((n) => n.type === 'metadataNode');
-      expect(metadataNodes).toHaveLength(0);
+      expect(metadataNodes).toHaveLength(1);
+      expect(metadataNodes[0].data.todoCount).toBe(1);
     });
 
     it('creates separate nodes for different sessions', () => {

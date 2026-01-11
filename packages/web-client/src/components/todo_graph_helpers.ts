@@ -238,23 +238,20 @@ export function createMetadataNodes(todos: Todo[], auditEntries: AuditLogAlpha1[
     }
   }
 
-  // Only create nodes for metadata shared by 2+ todos (more interesting groupings)
   const nodes: Node[] = [];
   let index = 0;
 
   for (const [nodeId, { key, value, todoIds }] of metadataMap) {
-    if (todoIds.size >= 2) {
-      // Find last message for agent-related nodes
-      const lastMessage = getLastMessageForMetadata(key, value, todos, auditEntries);
+    // Find last message for agent-related nodes
+    const lastMessage = getLastMessageForMetadata(key, value, todos, auditEntries);
 
-      nodes.push({
-        id: nodeId,
-        type: 'metadataNode',
-        position: { x: -200 + (index % 3) * 220, y: -150 + Math.floor(index / 3) * 100 },
-        data: { metadataKey: key, metadataValue: value, todoCount: todoIds.size, lastMessage },
-      });
-      index++;
-    }
+    nodes.push({
+      id: nodeId,
+      type: 'metadataNode',
+      position: { x: -200 + (index % 3) * 220, y: -150 + Math.floor(index / 3) * 100 },
+      data: { metadataKey: key, metadataValue: value, todoCount: todoIds.size, lastMessage },
+    });
+    index++;
   }
 
   return nodes;
@@ -335,11 +332,9 @@ export function createMetadataEdges(todos: Todo[]): Edge[] {
   const metadataMap = buildMetadataMap(todos);
 
   for (const [metadataNodeId, todoIds] of metadataMap) {
-    if (todoIds.size >= 2) {
-      for (const todoId of todoIds) {
-        const todo = todoMap.get(todoId);
-        edges.push(createMetadataEdge(metadataNodeId, todoId, !!todo?.completed));
-      }
+    for (const todoId of todoIds) {
+      const todo = todoMap.get(todoId);
+      edges.push(createMetadataEdge(metadataNodeId, todoId, !!todo?.completed));
     }
   }
 
