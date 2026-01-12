@@ -22,15 +22,15 @@ export const PeriodNavigation: FC<PeriodNavigationProps> = ({
     <>
       <Button className="p-0" color="gray" onClick={() => onNavigate('prev')} size="xs">
         <RiArrowLeftSLine size="2em" />
-      </Button>{' '}
+      </Button>
       <button
-        className={`cursor-pointer font-semibold ${TRANSITION} hover:text-primary-600 dark:hover:text-primary-400 rounded-lg text-neutral-900 dark:text-white ${FOCUS_RING}`}
+        className={`cursor-pointer font-semibold whitespace-nowrap ${TRANSITION} hover:text-primary-600 dark:hover:text-primary-400 rounded-lg text-neutral-900 dark:text-white ${FOCUS_RING}`}
         onClick={onReset}
         title="Return to current period"
         type="button"
       >
         {getPeriodLabel(currentDate, selectedTimeRange)}
-      </button>{' '}
+      </button>
       <Button className="p-0" color="gray" onClick={() => onNavigate('next')} size="xs">
         <RiArrowRightSLine size="2em" />
       </Button>

@@ -256,14 +256,14 @@ interface AddTodoTriggerProps {
 const AddTodoTrigger: FC<AddTodoTriggerProps> = ({ onClick, setReferenceRef }) => (
   <button
     aria-label="Add todo (n)"
-    className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 flex h-8 items-center gap-1.5 rounded-lg px-3 text-white"
+    className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 flex h-8 items-center gap-1.5 rounded-lg px-2 text-white md:px-3"
     onClick={onClick}
     ref={setReferenceRef}
     title="Add todo (n)"
     type="button"
   >
     <HiPlus className="h-4 w-4" />
-    <span className="text-sm font-medium">Add todo</span>
+    <span className="hidden text-sm font-medium md:inline">Add todo</span>
   </button>
 );
 
