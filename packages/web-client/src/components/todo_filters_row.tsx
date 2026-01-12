@@ -13,7 +13,10 @@ import type { FilterRowProps } from './todo_filters_types';
 
 export const FilterRow: FC<FilterRowProps> = (props) => (
   <>
-    <AddTodoPopover />
+    {/* AddTodoPopover shown here only on xl screens, otherwise in top bar */}
+    <div className="hidden xl:block">
+      <AddTodoPopover />
+    </div>
     <PresetFilterDropdown
       currentFilters={{
         selectedTags: props.selectedTags,

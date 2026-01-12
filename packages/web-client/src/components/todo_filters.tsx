@@ -7,7 +7,9 @@ import { useDateNavigationKeys } from '../hooks/use_date_navigation_keys';
 import { useEddoContexts } from '../hooks/use_eddo_contexts';
 import type { CurrentFilterState } from '../hooks/use_filter_presets';
 import { useTags } from '../hooks/use_tags';
+import type { ViewMode } from '../hooks/use_view_preferences';
 
+import { AddTodoPopover } from './add_todo_popover';
 import { navigatePeriod } from './todo_filters_helpers';
 import { PeriodNavigation } from './todo_filters_navigation';
 import { FilterRow } from './todo_filters_row';
@@ -63,6 +65,42 @@ function usePeriodNavigation(props: TodoFiltersProps) {
   return handleNavigate;
 }
 
+interface TopBarProps {
+  currentDate: Date;
+  selectedTimeRange: TodoFiltersProps['selectedTimeRange'];
+  isViewPrefsLoading?: boolean;
+  tableColumns: string[];
+  viewMode: ViewMode;
+  onNavigate: (direction: 'prev' | 'next') => void;
+  onReset: () => void;
+  onTableColumnsChange: TodoFiltersProps['onTableColumnsChange'];
+  onViewModeChange: TodoFiltersProps['onViewModeChange'];
+}
+
+/** Top bar with Add todo (left on mobile) + Date nav + settings (right) */
+const TopBar: FC<TopBarProps> = (props) => (
+  <div className="order-1 flex w-full items-center gap-2 xl:order-2 xl:ml-auto xl:w-auto">
+    <div className="xl:hidden">
+      <AddTodoPopover />
+    </div>
+    <div className="ml-auto flex items-center gap-2">
+      <PeriodNavigation
+        currentDate={props.currentDate}
+        onNavigate={props.onNavigate}
+        onReset={props.onReset}
+        selectedTimeRange={props.selectedTimeRange}
+      />
+      <ViewSettingsPopover
+        isLoading={props.isViewPrefsLoading}
+        onTableColumnsChange={props.onTableColumnsChange}
+        onViewModeChange={props.onViewModeChange}
+        tableColumns={props.tableColumns}
+        viewMode={props.viewMode}
+      />
+    </div>
+  </div>
+);
+
 export const TodoFilters: FC<TodoFiltersProps> = (props) => {
   const { allTags } = useTags();
   const { allContexts } = useEddoContexts();
@@ -70,8 +108,8 @@ export const TodoFilters: FC<TodoFiltersProps> = (props) => {
   const handleNavigate = usePeriodNavigation(props);
 
   return (
-    <div className="flex items-center justify-between bg-white pb-3 dark:bg-neutral-800">
-      <div className="flex items-center space-x-2">
+    <div className="flex flex-col gap-2 bg-white pb-3 xl:flex-row xl:flex-wrap xl:items-center dark:bg-neutral-800">
+      <div className="order-2 flex flex-wrap items-center gap-2 xl:order-1">
         <FilterRow
           allContexts={allContexts}
           allTags={allTags}
@@ -92,21 +130,17 @@ export const TodoFilters: FC<TodoFiltersProps> = (props) => {
           viewMode={props.viewMode}
         />
       </div>
-      <div className="flex items-center space-x-2">
-        <PeriodNavigation
-          currentDate={props.currentDate}
-          onNavigate={handleNavigate}
-          onReset={() => props.setCurrentDate(new Date())}
-          selectedTimeRange={props.selectedTimeRange}
-        />
-        <ViewSettingsPopover
-          isLoading={props.isViewPrefsLoading}
-          onTableColumnsChange={props.onTableColumnsChange}
-          onViewModeChange={props.onViewModeChange}
-          tableColumns={props.tableColumns}
-          viewMode={props.viewMode}
-        />
-      </div>
+      <TopBar
+        currentDate={props.currentDate}
+        isViewPrefsLoading={props.isViewPrefsLoading}
+        onNavigate={handleNavigate}
+        onReset={() => props.setCurrentDate(new Date())}
+        onTableColumnsChange={props.onTableColumnsChange}
+        onViewModeChange={props.onViewModeChange}
+        selectedTimeRange={props.selectedTimeRange}
+        tableColumns={props.tableColumns}
+        viewMode={props.viewMode}
+      />
     </div>
   );
 };
