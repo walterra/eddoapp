@@ -272,8 +272,53 @@ export function createParentChildEdges(todos: Todo[]): Edge[] {
         targetHandle: 'center',
         type: 'curved',
         animated: false,
-        style: { stroke: '#78716c', strokeWidth: 2 },
+        style: { stroke: EDGE_COLOR_DEFAULT, strokeWidth: 2 },
       });
+    }
+  }
+
+  return edges;
+}
+
+/** Default gray color for edges (matches pending todo border) */
+const EDGE_COLOR_DEFAULT = '#64748b'; // slate-500
+
+/** Desaturated wine red for blocking edges */
+const EDGE_COLOR_BLOCKING = '#7f1d3d'; // desaturated rose
+
+/** Create a single blockedBy edge */
+const createBlockedByEdge = (blockerId: string, blockedId: string, isComplete: boolean): Edge => ({
+  id: `blocked:${blockerId}-${blockedId}`,
+  source: blockerId,
+  sourceHandle: 'center',
+  target: blockedId,
+  targetHandle: 'center',
+  type: 'curved',
+  animated: false,
+  style: {
+    stroke: isComplete ? EDGE_COLOR_DEFAULT : EDGE_COLOR_BLOCKING,
+    strokeWidth: 2,
+    strokeDasharray: isComplete ? undefined : '5,5',
+  },
+  label: isComplete ? undefined : '🚫 blocks',
+  labelStyle: isComplete ? undefined : { fontSize: 10, fill: EDGE_COLOR_BLOCKING },
+  labelBgStyle: isComplete ? undefined : { fill: '#1f2937', fillOpacity: 0.8 },
+  labelBgPadding: isComplete ? undefined : ([4, 2] as [number, number]),
+});
+
+/** Create edges from blockedBy relationships */
+export function createBlockedByEdges(todos: Todo[]): Edge[] {
+  const edges: Edge[] = [];
+  const todoMap = new Map(todos.map((t) => [t._id, t]));
+
+  for (const todo of todos) {
+    if (!todo.blockedBy || todo.blockedBy.length === 0) continue;
+
+    for (const blockerId of todo.blockedBy) {
+      if (!todoMap.has(blockerId)) continue;
+
+      const blocker = todoMap.get(blockerId);
+      edges.push(createBlockedByEdge(blockerId, todo._id, !!blocker?.completed));
     }
   }
 
@@ -350,11 +395,12 @@ export function createAllNodes(todos: Todo[], auditEntries: AuditLogAlpha1[] = [
   return [...metadataNodes, ...fileNodes, ...userNodes, ...todoNodes];
 }
 
-/** Combine all edges (parent/child + metadata + files + user) */
+/** Combine all edges (parent/child + blockedBy + metadata + files + user) */
 export function createAllEdges(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Edge[] {
   const parentChildEdges = createParentChildEdges(todos);
+  const blockedByEdges = createBlockedByEdges(todos);
   const metadataEdges = createMetadataEdges(todos);
   const fileEdges = createFileEdges(todos);
   const userEdges = createUserEdges(todos, auditEntries);
-  return [...parentChildEdges, ...metadataEdges, ...fileEdges, ...userEdges];
+  return [...parentChildEdges, ...blockedByEdges, ...metadataEdges, ...fileEdges, ...userEdges];
 }

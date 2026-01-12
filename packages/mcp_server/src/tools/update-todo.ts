@@ -43,6 +43,13 @@ export const updateTodoParameters = z.object({
     .nullable()
     .optional()
     .describe('Updated parent todo ID (null to remove parent, making it a root todo)'),
+  blockedBy: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .describe(
+      'Updated array of todo IDs that block this task. Use with gtd:blocked tag. Set to null or empty array to remove all blockers.',
+    ),
   metadata: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .optional()
@@ -107,6 +114,15 @@ function mergeUpdates(todo: TodoAlpha3, args: UpdateTodoArgs): TodoAlpha3 {
     link: pickValue(args.link, todo.link),
     externalId: pickValue(args.externalId, todo.externalId),
     parentId: pickValue(args.parentId, todo.parentId),
+    // null means "clear blockers" (convert to undefined for storage)
+    // undefined means "don't change" (keep existing)
+    // array means "set these blockers"
+    blockedBy:
+      args.blockedBy === null
+        ? undefined // Clear: store as undefined (no blockers)
+        : args.blockedBy !== undefined
+          ? args.blockedBy // Set: use provided array
+          : todo.blockedBy, // Keep: preserve existing
     metadata: pickValue(args.metadata, todo.metadata),
   };
 }
