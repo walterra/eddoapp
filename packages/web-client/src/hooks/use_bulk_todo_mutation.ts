@@ -5,7 +5,7 @@ import type { Todo } from '@eddo/core-shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { usePouchDb } from '../pouch_db';
-import { recentMutations } from './use_todo_mutations';
+import { recentMutations } from './use_recent_mutations';
 import {
   rollbackCache,
   snapshotCacheState,

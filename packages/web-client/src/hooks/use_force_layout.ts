@@ -261,6 +261,7 @@ export function useForceLayout(
   const [layoutedNodes, setLayoutedNodes] = useState<Node[]>(initialNodes);
   const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const lastLayoutKeyRef = useRef<string>('');
+  const justLayoutedRef = useRef(false);
 
   const structureKey = useMemo(
     () => createStructureKey(initialNodes, initialEdges),
@@ -273,6 +274,7 @@ export function useForceLayout(
     if (initialNodes.length === 0) {
       setIsLayouting(false);
       lastLayoutKeyRef.current = structureKey;
+      justLayoutedRef.current = true;
       return;
     }
     setIsLayouting(true);
@@ -281,12 +283,18 @@ export function useForceLayout(
     const newNodes = runSimulation({ initialNodes, simNodes, simLinks, width, height });
     positionsRef.current = storePositions(newNodes);
     lastLayoutKeyRef.current = structureKey;
+    justLayoutedRef.current = true;
     setLayoutedNodes(newNodes);
     setIsLayouting(false);
   }, [structureKey, initialNodes, initialEdges, width, height]);
 
-  // Merge data updates without re-layout
+  // Merge data updates without re-layout (skip if we just ran layout)
   useEffect(() => {
+    // Skip if we just ran the full layout in this render cycle
+    if (justLayoutedRef.current) {
+      justLayoutedRef.current = false;
+      return;
+    }
     if (positionsRef.current.size === 0 || structureKey !== lastLayoutKeyRef.current) return;
     setLayoutedNodes(mergeDataOntoPositions(initialNodes, positionsRef.current));
   }, [initialNodes, structureKey]);

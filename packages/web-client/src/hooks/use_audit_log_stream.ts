@@ -35,6 +35,9 @@ export const AUDIT_LOG_QUERY_KEY = ['audit-log'] as const;
 /** Default max entries per source bucket */
 const DEFAULT_MAX_ENTRIES_PER_SOURCE = 20;
 
+/** Debounce delay for batching SSE updates (ms) */
+const SSE_UPDATE_DEBOUNCE_MS = 100;
+
 /** All audit sources */
 const AUDIT_SOURCES: readonly AuditSource[] = [
   'web',
@@ -101,22 +104,87 @@ function addEntryToBuckets(
   };
 }
 
-/** Create audit entry handler that buckets by source */
-function createEntryHandler(
-  queryClient: QueryClient,
-  maxEntriesPerSource: number,
-  setState: React.Dispatch<React.SetStateAction<AuditStreamState>>,
-  onEntry?: (entry: AuditEntry) => void,
-): (event: MessageEvent) => void {
+/** Pending entries buffer for debounced updates */
+interface PendingEntriesBuffer {
+  entries: AuditEntry[];
+  lastEventId: string | null;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+/** Options for flushing pending entries */
+interface FlushOptions {
+  buffer: PendingEntriesBuffer;
+  queryClient: QueryClient;
+  maxEntriesPerSource: number;
+  setState: React.Dispatch<React.SetStateAction<AuditStreamState>>;
+  onEntry?: (entry: AuditEntry) => void;
+}
+
+/** Flush pending entries to query cache */
+function flushPendingEntries(options: FlushOptions): void {
+  const { buffer, queryClient, maxEntriesPerSource, setState, onEntry } = options;
+  if (buffer.entries.length === 0) return;
+
+  const entriesToFlush = [...buffer.entries];
+  const lastEventId = buffer.lastEventId;
+
+  // Clear the buffer
+  buffer.entries = [];
+  buffer.timer = null;
+
+  // Apply all pending entries in one batch update
+  queryClient.setQueryData<AuditEntriesBySource>(AUDIT_LOG_QUERY_KEY, (old) => {
+    let currentBuckets = old || createEmptyBuckets();
+    for (const entry of entriesToFlush) {
+      currentBuckets = addEntryToBuckets(currentBuckets, entry, maxEntriesPerSource);
+    }
+    return currentBuckets;
+  });
+
+  setState((prev) => ({ ...prev, lastEventId: lastEventId || prev.lastEventId }));
+
+  // Call onEntry for each entry (if provided)
+  if (onEntry) {
+    for (const entry of entriesToFlush) {
+      onEntry(entry);
+    }
+  }
+}
+
+/** Options for creating entry handler */
+interface EntryHandlerOptions {
+  queryClient: QueryClient;
+  maxEntriesPerSource: number;
+  setState: React.Dispatch<React.SetStateAction<AuditStreamState>>;
+  pendingBuffer: PendingEntriesBuffer;
+  onEntry?: (entry: AuditEntry) => void;
+}
+
+/** Create debounced audit entry handler that batches updates */
+function createEntryHandler(options: EntryHandlerOptions): (event: MessageEvent) => void {
+  const { queryClient, maxEntriesPerSource, setState, pendingBuffer, onEntry } = options;
   return (event) => {
     try {
       const entry = JSON.parse(event.data) as AuditEntry;
-      queryClient.setQueryData<AuditEntriesBySource>(AUDIT_LOG_QUERY_KEY, (old) => {
-        const currentBuckets = old || createEmptyBuckets();
-        return addEntryToBuckets(currentBuckets, entry, maxEntriesPerSource);
-      });
-      setState((prev) => ({ ...prev, lastEventId: event.lastEventId || prev.lastEventId }));
-      if (onEntry) onEntry(entry);
+
+      // Add to pending buffer
+      pendingBuffer.entries.push(entry);
+      pendingBuffer.lastEventId = event.lastEventId || pendingBuffer.lastEventId;
+
+      // Clear existing timer and set new one
+      if (pendingBuffer.timer) {
+        clearTimeout(pendingBuffer.timer);
+      }
+
+      pendingBuffer.timer = setTimeout(() => {
+        flushPendingEntries({
+          buffer: pendingBuffer,
+          queryClient,
+          maxEntriesPerSource,
+          setState,
+          onEntry,
+        });
+      }, SSE_UPDATE_DEBOUNCE_MS);
     } catch (err) {
       console.error('[AuditStream] Failed to parse entry:', err);
     }
@@ -133,6 +201,75 @@ function createErrorHandler(
   };
 }
 
+/** Refs used by the SSE stream hook */
+interface StreamRefs {
+  eventSource: React.MutableRefObject<EventSource | null>;
+  pendingBuffer: React.MutableRefObject<PendingEntriesBuffer>;
+}
+
+/** Options for cleanup function */
+interface CleanupOptions {
+  refs: StreamRefs;
+  queryClient: QueryClient;
+  maxEntriesPerSource: number;
+  setState: React.Dispatch<React.SetStateAction<AuditStreamState>>;
+}
+
+/** Create cleanup function for SSE connection */
+function createCleanup(options: CleanupOptions): () => void {
+  const { refs, queryClient, maxEntriesPerSource, setState } = options;
+  return () => {
+    if (refs.eventSource.current) {
+      refs.eventSource.current.close();
+      refs.eventSource.current = null;
+    }
+    if (refs.pendingBuffer.current.timer) {
+      clearTimeout(refs.pendingBuffer.current.timer);
+      refs.pendingBuffer.current.timer = null;
+    }
+    if (refs.pendingBuffer.current.entries.length > 0) {
+      flushPendingEntries({
+        buffer: refs.pendingBuffer.current,
+        queryClient,
+        maxEntriesPerSource,
+        setState,
+      });
+    }
+  };
+}
+
+/** Options for connect function */
+interface ConnectOptions extends CleanupOptions {
+  token: string;
+  cleanup: () => void;
+  onEntry?: (entry: AuditEntry) => void;
+}
+
+/** Create connect function for SSE connection */
+function createConnect(options: ConnectOptions): () => void {
+  const { refs, queryClient, maxEntriesPerSource, setState, token, cleanup, onEntry } = options;
+  return () => {
+    cleanup();
+    refs.pendingBuffer.current = { entries: [], lastEventId: null, timer: null };
+    const eventSource = new EventSource(buildAuditSSEUrl(token));
+    refs.eventSource.current = eventSource;
+    eventSource.addEventListener('connected', createConnectedHandler(setState));
+    eventSource.addEventListener(
+      'audit-entry',
+      createEntryHandler({
+        queryClient,
+        maxEntriesPerSource,
+        setState,
+        pendingBuffer: refs.pendingBuffer.current,
+        onEntry,
+      }),
+    );
+    eventSource.addEventListener('heartbeat', () => {});
+    eventSource.onerror = createErrorHandler(setState);
+    eventSource.onopen = () => setState((prev) => ({ ...prev, isConnected: true, error: null }));
+  };
+}
+
 /**
  * Subscribes to real-time audit log updates via SSE.
  * Maintains entries bucketed by source in React Query cache under ['audit-log'].
@@ -141,32 +278,22 @@ export function useAuditLogStream(options: UseAuditLogStreamOptions = {}) {
   const { enabled = true, maxEntriesPerSource = DEFAULT_MAX_ENTRIES_PER_SOURCE, onEntry } = options;
   const { authToken, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-
   const [state, setState] = useState<AuditStreamState>(INITIAL_STATE);
-  const eventSourceRef = useRef<EventSource | null>(null);
 
-  const cleanup = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-  }, []);
+  const refs: StreamRefs = {
+    eventSource: useRef<EventSource | null>(null),
+    pendingBuffer: useRef<PendingEntriesBuffer>({ entries: [], lastEventId: null, timer: null }),
+  };
+
+  const cleanupOpts: CleanupOptions = { refs, queryClient, maxEntriesPerSource, setState };
+  const cleanup = useCallback(
+    () => createCleanup(cleanupOpts)(),
+    [queryClient, maxEntriesPerSource],
+  );
 
   const connect = useCallback(() => {
     if (!authToken?.token || !enabled) return;
-    cleanup();
-
-    const eventSource = new EventSource(buildAuditSSEUrl(authToken.token));
-    eventSourceRef.current = eventSource;
-
-    eventSource.addEventListener('connected', createConnectedHandler(setState));
-    eventSource.addEventListener(
-      'audit-entry',
-      createEntryHandler(queryClient, maxEntriesPerSource, setState, onEntry),
-    );
-    eventSource.addEventListener('heartbeat', () => {});
-    eventSource.onerror = createErrorHandler(setState);
-    eventSource.onopen = () => setState((prev) => ({ ...prev, isConnected: true, error: null }));
+    createConnect({ ...cleanupOpts, token: authToken.token, cleanup, onEntry })();
   }, [authToken?.token, enabled, cleanup, queryClient, maxEntriesPerSource, onEntry]);
 
   useEffect(() => {
