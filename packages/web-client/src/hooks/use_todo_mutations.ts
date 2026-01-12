@@ -4,6 +4,7 @@ import type { Activity, NewTodo, Todo } from '@eddo/core-shared';
 import { getRepeatTodo } from '@eddo/core-shared';
 
 import { usePouchDb } from '../pouch_db';
+import { recentMutations } from './use_recent_mutations';
 import {
   rollbackCache,
   snapshotCacheState,
@@ -13,11 +14,8 @@ import {
   type UpdateTodoContext,
 } from './use_todo_mutations_helpers';
 
-/**
- * Track recently mutated document IDs to skip redundant invalidations.
- * The changes listener checks this to avoid re-fetching data we just updated.
- */
-export const recentMutations = new Set<string>();
+// Re-export for backward compatibility
+export { recentMutations } from './use_recent_mutations';
 
 /**
  * Mutation hook for updating todos with optimistic updates.

@@ -214,14 +214,11 @@ const drawerTheme = {
   },
 };
 
-export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
+/** Inner component that uses hooks - only rendered when flyout is open */
+const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
   const { allTags } = useTags();
   const state = useTodoFlyoutState(todo, show, onClose);
   const activeArray = Object.entries(state.editedTodo.active);
-
-  if (!show) {
-    return null;
-  }
 
   return createPortal(
     <>
@@ -254,4 +251,16 @@ export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
     </>,
     document.body,
   );
+};
+
+/**
+ * Flyout panel for viewing and editing todo items.
+ * Only mounts hooks when actually shown to avoid creating mutations for every row.
+ */
+export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
+  if (!show) {
+    return null;
+  }
+
+  return <TodoFlyoutInner onClose={onClose} show={show} todo={todo} />;
 };

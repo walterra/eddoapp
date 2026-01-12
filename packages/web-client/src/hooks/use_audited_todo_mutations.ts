@@ -10,6 +10,7 @@ import { getRepeatTodo } from '@eddo/core-shared';
 import { usePouchDb } from '../pouch_db';
 import { withSpan } from '../telemetry';
 import { useAuditLog, type AuditAction } from './use_audit_log';
+import { recentMutations } from './use_recent_mutations';
 import {
   rollbackCache,
   snapshotCacheState,
@@ -19,8 +20,8 @@ import {
   type UpdateTodoContext,
 } from './use_todo_mutations_helpers';
 
-/** Track recently mutated document IDs to skip redundant invalidations */
-export const recentMutations = new Set<string>();
+// Re-export for backward compatibility
+export { recentMutations } from './use_recent_mutations';
 
 /**
  * Audited mutation hook for updating todos with optimistic updates.

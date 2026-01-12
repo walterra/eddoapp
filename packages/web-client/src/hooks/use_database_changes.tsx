@@ -15,7 +15,7 @@ import {
 } from 'react';
 
 import { usePouchDb } from '../pouch_db';
-import { recentMutations } from './use_todo_mutations';
+import { recentMutations } from './use_recent_mutations';
 
 /** Debounce delay for query invalidation (ms) */
 const INVALIDATION_DEBOUNCE_MS = 150;
