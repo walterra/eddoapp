@@ -89,10 +89,13 @@ export {
 
 // Server-specific API
 export {
+  AUDIT_SOURCES,
   createAuditDatabase,
   ensureAuditDatabase,
   getAuditDatabase,
   type AuditDatabase,
+  type AuditEntriesBySource,
+  type AuditListBySourceOptions,
   type AuditListOptions,
   type AuditListResult,
 } from './api/audit-database';

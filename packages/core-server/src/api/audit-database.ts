@@ -2,11 +2,24 @@
  * Audit database factory for per-user audit log storage.
  * Each user has their own audit database: eddo_audit_<username>
  */
-import { type AuditLogAlpha1 } from '@eddo/core-shared';
+import { type AuditLogAlpha1, type AuditSource } from '@eddo/core-shared';
 import nano from 'nano';
 
 import { type Env } from '../config/env';
 import { getAuditDatabaseName, sanitizeUsername } from '../utils/database-names';
+
+/** All audit sources for bucketed queries */
+export const AUDIT_SOURCES: readonly AuditSource[] = [
+  'web',
+  'mcp',
+  'telegram',
+  'github-sync',
+  'rss-sync',
+  'email-sync',
+] as const;
+
+/** Entries grouped by source */
+export type AuditEntriesBySource = Record<AuditSource, AuditLogAlpha1[]>;
 
 /** Audit database instance with typed operations */
 export interface AuditDatabase {
@@ -16,6 +29,8 @@ export interface AuditDatabase {
   list: (options?: AuditListOptions) => Promise<AuditListResult>;
   /** Get audit entries by their IDs (document _id values) */
   getByIds: (ids: string[]) => Promise<AuditLogAlpha1[]>;
+  /** Get entries grouped by source (20 per source, newest first) */
+  listBySource: (options?: AuditListBySourceOptions) => Promise<AuditEntriesBySource>;
   /** Get the underlying nano database instance */
   raw: () => nano.DocumentScope<AuditLogAlpha1>;
 }
@@ -28,6 +43,12 @@ export interface AuditListOptions {
   startAfter?: string;
   /** Filter to only include entries for these entity IDs */
   entityIds?: string[];
+}
+
+/** Options for listing audit entries by source */
+export interface AuditListBySourceOptions {
+  /** Maximum number of entries per source (default: 20) */
+  limitPerSource?: number;
 }
 
 /** Result of listing audit entries */
@@ -46,6 +67,20 @@ interface AuditDatabaseContext {
   username: string;
 }
 
+/** Design document for audit database views */
+const AUDIT_DESIGN_DOC = {
+  _id: '_design/queries',
+  views: {
+    by_source: {
+      map: `function(doc) {
+        if (doc.source && doc.timestamp) {
+          emit([doc.source, doc.timestamp], null);
+        }
+      }`,
+    },
+  },
+};
+
 /**
  * Check if error is a 404 not found
  */
@@ -53,6 +88,45 @@ function isNotFoundError(error: unknown): boolean {
   return Boolean(
     error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404,
   );
+}
+
+/**
+ * Check if error is a 409 conflict
+ */
+function isConflictError(error: unknown): boolean {
+  return Boolean(
+    error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 409,
+  );
+}
+
+/**
+ * Update existing design document with current definition
+ */
+async function updateAuditDesignDoc(db: nano.DocumentScope<AuditLogAlpha1>): Promise<void> {
+  try {
+    const existing = await db.get('_design/queries');
+    await db.insert({ ...AUDIT_DESIGN_DOC, _rev: existing._rev });
+  } catch (updateError: unknown) {
+    // Ignore conflicts during update (concurrent setup)
+    if (!isConflictError(updateError)) {
+      throw updateError;
+    }
+  }
+}
+
+/**
+ * Setup design documents for audit database
+ */
+async function setupAuditDesignDoc(db: nano.DocumentScope<AuditLogAlpha1>): Promise<void> {
+  try {
+    await db.insert(AUDIT_DESIGN_DOC);
+  } catch (error: unknown) {
+    if (isConflictError(error)) {
+      await updateAuditDesignDoc(db);
+    } else {
+      throw error;
+    }
+  }
 }
 
 /**
@@ -82,9 +156,13 @@ export async function ensureAuditDatabase(
     }
   }
 
+  const db = couchConnection.db.use<AuditLogAlpha1>(dbName);
+
+  // Setup design documents (for new and existing databases to support migrations)
+  await setupAuditDesignDoc(db);
+
   // Ensure entityId index exists (for filtering by todo ID)
   if (dbCreated) {
-    const db = couchConnection.db.use(dbName);
     try {
       await db.createIndex({
         index: {
@@ -125,6 +203,7 @@ export function createAuditDatabase(couchUrl: string, env: Env, username: string
     insert: (entry) => insertEntry(context, entry),
     list: (options) => listEntries(context, options),
     getByIds: (ids) => getEntriesByIds(context, ids),
+    listBySource: (options) => listEntriesBySource(context, options),
     raw: () => db,
   };
 }
@@ -265,6 +344,67 @@ async function getEntriesByIds(
     }
   }
   return entries;
+}
+
+/**
+ * Query entries for a single source using the by_source view
+ */
+async function queryEntriesForSource(
+  context: AuditDatabaseContext,
+  source: AuditSource,
+  limit: number,
+): Promise<AuditLogAlpha1[]> {
+  try {
+    const result = await context.db.view('queries', 'by_source', {
+      startkey: [source, '\ufff0'],
+      endkey: [source],
+      descending: true,
+      limit,
+      include_docs: true,
+    });
+
+    return result.rows.filter((row) => row.doc).map((row) => row.doc as unknown as AuditLogAlpha1);
+  } catch (error: unknown) {
+    // View might not exist yet if design doc hasn't been created
+    if (isNotFoundError(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * List entries grouped by source (N per source, newest first)
+ */
+async function listEntriesBySource(
+  context: AuditDatabaseContext,
+  options: AuditListBySourceOptions = {},
+): Promise<AuditEntriesBySource> {
+  const { limitPerSource = 20 } = options;
+
+  // Query all sources in parallel
+  const results = await Promise.all(
+    AUDIT_SOURCES.map(async (source) => ({
+      source,
+      entries: await queryEntriesForSource(context, source, limitPerSource),
+    })),
+  );
+
+  // Build result object
+  const entriesBySource: AuditEntriesBySource = {
+    web: [],
+    mcp: [],
+    telegram: [],
+    'github-sync': [],
+    'rss-sync': [],
+    'email-sync': [],
+  };
+
+  for (const { source, entries } of results) {
+    entriesBySource[source] = entries;
+  }
+
+  return entriesBySource;
 }
 
 /**

@@ -15,6 +15,8 @@ import {
   createAuditDatabase,
   ensureAuditDatabase,
   type AuditDatabase,
+  type AuditEntriesBySource,
+  type AuditListBySourceOptions,
   type AuditListOptions,
   type AuditListResult,
 } from './audit-database';
@@ -45,6 +47,8 @@ export interface AuditService {
   getEntries: (options?: AuditListOptions) => Promise<AuditListResult>;
   /** Get audit entries by their document IDs */
   getByIds: (ids: string[]) => Promise<AuditLogAlpha1[]>;
+  /** Get entries grouped by source (20 per source by default) */
+  getEntriesBySource: (options?: AuditListBySourceOptions) => Promise<AuditEntriesBySource>;
   /** Get the underlying audit database */
   getDatabase: () => AuditDatabase;
 }
@@ -74,6 +78,7 @@ export function createAuditService(couchUrl: string, env: Env, username: string)
     logAction: (options) => logAction(context, options),
     getEntries: (options) => context.auditDb.list(options),
     getByIds: (ids) => context.auditDb.getByIds(ids),
+    getEntriesBySource: (options) => context.auditDb.listBySource(options),
     getDatabase: () => auditDb,
   };
 }

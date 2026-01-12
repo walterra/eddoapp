@@ -13,7 +13,11 @@ import { useMemo } from 'react';
 
 import type { AuditLogAlpha1, Todo } from '@eddo/core-shared';
 
-import { AUDIT_LOG_QUERY_KEY, type AuditEntry } from './use_audit_log_stream';
+import {
+  aggregateEntries,
+  AUDIT_LOG_QUERY_KEY,
+  type AuditEntriesBySource,
+} from './use_audit_log_stream';
 import { useAuth } from './use_auth';
 
 interface AuditLogResponse {
@@ -60,8 +64,9 @@ function partitionCachedAndMissing(
   const cached: AuditLogAlpha1[] = [];
   const missing: string[] = [];
 
-  // Get SSE cache entries
-  const sseEntries = queryClient.getQueryData<AuditEntry[]>(AUDIT_LOG_QUERY_KEY) || [];
+  // Get SSE cache entries (now bucketed by source)
+  const sseBuckets = queryClient.getQueryData<AuditEntriesBySource>(AUDIT_LOG_QUERY_KEY);
+  const sseEntries = sseBuckets ? aggregateEntries(sseBuckets) : [];
   const sseEntriesById = new Map(sseEntries.map((e) => [e._id, e]));
 
   for (const id of auditIds) {
