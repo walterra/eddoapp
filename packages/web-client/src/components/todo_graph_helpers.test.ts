@@ -342,4 +342,68 @@ describe('createAllEdges', () => {
       expect(fileEdges).toHaveLength(1);
     });
   });
+
+  describe('blockedBy edges', () => {
+    it('creates edge from blocker to blocked todo', () => {
+      const todos = [
+        createMockTodo({ _id: 'blocker' }),
+        createMockTodo({ _id: 'blocked', blockedBy: ['blocker'] }),
+      ];
+
+      const edges = createAllEdges(todos, []);
+
+      const blockedEdges = edges.filter((e) => e.id.startsWith('blocked:'));
+      expect(blockedEdges).toHaveLength(1);
+      expect(blockedEdges[0].source).toBe('blocker');
+      expect(blockedEdges[0].target).toBe('blocked');
+    });
+
+    it('does not create edge when blocker is not in list', () => {
+      const todos = [createMockTodo({ _id: 'blocked', blockedBy: ['missing-blocker'] })];
+
+      const edges = createAllEdges(todos, []);
+
+      const blockedEdges = edges.filter((e) => e.id.startsWith('blocked:'));
+      expect(blockedEdges).toHaveLength(0);
+    });
+
+    it('creates multiple edges for multiple blockers', () => {
+      const todos = [
+        createMockTodo({ _id: 'blocker-1' }),
+        createMockTodo({ _id: 'blocker-2' }),
+        createMockTodo({ _id: 'blocked', blockedBy: ['blocker-1', 'blocker-2'] }),
+      ];
+
+      const edges = createAllEdges(todos, []);
+
+      const blockedEdges = edges.filter((e) => e.id.startsWith('blocked:'));
+      expect(blockedEdges).toHaveLength(2);
+    });
+
+    it('uses desaturated wine red style for incomplete blockers', () => {
+      const todos = [
+        createMockTodo({ _id: 'blocker', completed: null }),
+        createMockTodo({ _id: 'blocked', blockedBy: ['blocker'] }),
+      ];
+
+      const edges = createAllEdges(todos, []);
+
+      const blockedEdge = edges.find((e) => e.id.startsWith('blocked:'));
+      expect(blockedEdge?.animated).toBe(false);
+      expect(blockedEdge?.style?.stroke).toBe('#7f1d3d'); // desaturated rose
+    });
+
+    it('uses gray non-animated style for completed blockers', () => {
+      const todos = [
+        createMockTodo({ _id: 'blocker', completed: '2026-01-01T12:00:00.000Z' }),
+        createMockTodo({ _id: 'blocked', blockedBy: ['blocker'] }),
+      ];
+
+      const edges = createAllEdges(todos, []);
+
+      const blockedEdge = edges.find((e) => e.id.startsWith('blocked:'));
+      expect(blockedEdge?.animated).toBe(false);
+      expect(blockedEdge?.style?.stroke).toBe('#64748b'); // slate-500 (matches pending todo)
+    });
+  });
 });

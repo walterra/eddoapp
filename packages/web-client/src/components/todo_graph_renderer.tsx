@@ -42,6 +42,21 @@ const applyHighlight = (nodes: Node[], highlightedId: string | null): Node[] =>
     return { ...node, data: { ...node.data, isHighlighted: node.id === highlightedId } };
   });
 
+/** Loading spinner shown during layout calculation */
+const LayoutingSpinner: FC = () => (
+  <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center">
+    <Spinner aria-label="Calculating layout" size="lg" />
+    <span className="ml-3 text-neutral-600 dark:text-neutral-400">Arranging nodes...</span>
+  </div>
+);
+
+/** Controls styling for light/dark mode */
+const CONTROLS_CLASS =
+  '!border-neutral-300 !bg-white !shadow-lg dark:!border-neutral-700 dark:!bg-neutral-800 ' +
+  '[&>button]:!border-neutral-200 [&>button]:!bg-neutral-50 [&>button]:!fill-neutral-600 ' +
+  'dark:[&>button]:!border-neutral-600 dark:[&>button]:!bg-neutral-700 dark:[&>button]:!fill-neutral-300 ' +
+  '[&>button:hover]:!bg-neutral-100 dark:[&>button:hover]:!bg-neutral-600';
+
 export interface GraphRendererProps {
   nodes: Node[];
   edges: Edge[];
@@ -74,14 +89,7 @@ export const GraphRenderer: FC<GraphRendererProps> = ({
     }
   }, [layoutedNodes, isLayouting, fitView]);
 
-  if (isLayouting) {
-    return (
-      <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center">
-        <Spinner aria-label="Calculating layout" size="lg" />
-        <span className="ml-3 text-neutral-600 dark:text-neutral-400">Arranging nodes...</span>
-      </div>
-    );
-  }
+  if (isLayouting) return <LayoutingSpinner />;
 
   return (
     <ReactFlow
@@ -97,8 +105,13 @@ export const GraphRenderer: FC<GraphRendererProps> = ({
       onNodesChange={onNodesChange}
       proOptions={{ hideAttribution: true }}
     >
-      <Background color="#94a3b8" gap={16} size={1} />
-      <Controls className="!border-neutral-700 !bg-neutral-800 !shadow-lg [&>button]:!border-neutral-600 [&>button]:!bg-neutral-700 [&>button]:!fill-neutral-300 [&>button:hover]:!bg-neutral-600" />
+      <Background
+        className="!bg-neutral-100 dark:!bg-neutral-800"
+        color="#94a3b8"
+        gap={16}
+        size={1}
+      />
+      <Controls className={CONTROLS_CLASS} />
       <GraphLegend />
     </ReactFlow>
   );

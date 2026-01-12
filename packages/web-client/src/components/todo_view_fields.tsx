@@ -16,6 +16,7 @@ import { useChildTodos, useParentTodo } from '../hooks/use_parent_child';
 import { TEXT_LINK } from '../styles/interactive';
 import { CopyIdButton } from './copy_id_button';
 import { TagDisplay } from './tag_display';
+import { BlockedByView } from './todo_blocked_by_view';
 import { MetadataView } from './todo_metadata_view';
 
 interface TodoViewFieldsProps {
@@ -318,6 +319,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
   <div className="flex flex-col gap-6">
     <TitleView todo={todo} />
     <ParentView parentId={todo.parentId} />
+    <BlockedByView blockedBy={todo.blockedBy} />
     <DescriptionView description={todo.description} />
 
     <div className="grid grid-cols-2 gap-4">

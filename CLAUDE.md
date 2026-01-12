@@ -105,6 +105,7 @@ This is a GTD-inspired todo and time tracking application built as a monorepo wi
 interface TodoAlpha3 {
   _id: string; // ISO timestamp of creation
   active: Record<string, string | null>; // Time tracking entries
+  blockedBy?: string[]; // Todo IDs that must complete first (use with gtd:blocked tag)
   completed: string | null;
   context: string; // GTD context
   description: string;

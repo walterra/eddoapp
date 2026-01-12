@@ -38,6 +38,12 @@ export interface TodoAlpha3 extends Omit<TodoAlpha2, 'version'> {
    * Populated automatically after audit writes; eventual consistency.
    */
   auditLog?: string[];
+  /**
+   * Optional array of todo IDs that must complete before this task becomes actionable.
+   * Use with `gtd:blocked` tag to indicate internal task dependencies.
+   * Distinct from `gtd:waiting` which indicates external blocks (people, events).
+   */
+  blockedBy?: string[];
   version: 'alpha3';
 }
 

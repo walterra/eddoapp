@@ -80,3 +80,23 @@ export function useChildCount(parentId: string | null | undefined, enabled = tru
     enabled: !!safeDb && !!parentId && enabled,
   });
 }
+
+/**
+ * Fetches a todo by ID (generic version for any relationship lookup)
+ * @param todoId - The _id of the todo to fetch
+ * @param enabled - Whether the query should run
+ */
+export function useTodoById(todoId: string | null | undefined, enabled = true) {
+  const { safeDb } = usePouchDb();
+
+  return useQuery({
+    queryKey: ['todos', 'byId', todoId],
+    queryFn: async () => {
+      if (!todoId) return null;
+
+      const todo = await safeDb.safeGet<Todo>(todoId);
+      return todo;
+    },
+    enabled: !!safeDb && !!todoId && enabled,
+  });
+}

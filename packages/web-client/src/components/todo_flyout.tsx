@@ -10,6 +10,7 @@ import { BiEdit, BiShow } from 'react-icons/bi';
 import { useTags } from '../hooks/use_tags';
 import { useTodoFlyoutState } from '../hooks/use_todo_flyout_state';
 import { BTN_GHOST, BTN_PRIMARY, TRANSITION } from '../styles/interactive';
+import { BlockedByField } from './todo_blocked_by_field';
 import { ErrorDisplay } from './todo_edit_error';
 import {
   CompletedField,
@@ -112,6 +113,7 @@ const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, o
     <LinkField onChange={onChange} todo={todo} />
     <ExternalIdField onChange={onChange} todo={todo} />
     <ParentIdField onChange={onChange} todo={todo} />
+    <BlockedByField onChange={onChange} todo={todo} />
     <RepeatField onChange={onChange} todo={todo} />
     <MetadataField onChange={onChange} todo={todo} />
     <NotesField onChange={onChange} todo={todo} />

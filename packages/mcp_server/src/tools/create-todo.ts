@@ -94,6 +94,12 @@ export const createTodoParameters = z.object({
     .describe(
       'Optional parent todo ID for creating subtasks. References the _id of an existing todo to create a parent-child relationship.',
     ),
+  blockedBy: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Optional array of todo IDs that must complete before this task becomes actionable. Use with gtd:blocked tag for internal task dependencies. Distinct from gtd:waiting which is for external blocks.',
+    ),
   metadata: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .optional()
@@ -178,6 +184,7 @@ function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha3, '_rev'> {
     externalId: args.externalId,
     link: args.link,
     parentId: args.parentId,
+    blockedBy: args.blockedBy,
     metadata: args.metadata,
     version: 'alpha3',
   };
