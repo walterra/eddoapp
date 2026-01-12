@@ -17,6 +17,7 @@ import { type FC, useCallback, useEffect, useState } from 'react';
 
 import { CurvedEdge } from './todo_graph_curved_edge';
 import { FileNode } from './todo_graph_file_node';
+import { GraphLegend } from './todo_graph_legend';
 import { MetadataNode } from './todo_graph_metadata_node';
 import { TodoNode } from './todo_graph_node';
 import { UserNode } from './todo_graph_user_node';
@@ -98,6 +99,7 @@ export const GraphRenderer: FC<GraphRendererProps> = ({
     >
       <Background color="#94a3b8" gap={16} size={1} />
       <Controls className="!border-neutral-700 !bg-neutral-800 !shadow-lg [&>button]:!border-neutral-600 [&>button]:!bg-neutral-700 [&>button]:!fill-neutral-300 [&>button:hover]:!bg-neutral-600" />
+      <GraphLegend />
     </ReactFlow>
   );
 };
