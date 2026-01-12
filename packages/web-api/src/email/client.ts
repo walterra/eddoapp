@@ -6,8 +6,20 @@ import type { TodoAlpha3 } from '@eddo/core-shared';
 import { createHash } from 'crypto';
 import { ImapFlow } from 'imapflow';
 
-import { extractPlainText, extractSender, truncate } from './email-parser.js';
+import { truncate } from './email-parser.js';
+import type { MoveResult } from './imap-helpers.js';
+import {
+  connectWithTimeout,
+  createImapOptions,
+  ensureFolderExists,
+  fetchEmailsFromImap,
+  markEmailsAsRead,
+  moveEmailsToFolder,
+  safeLogout,
+} from './imap-helpers.js';
 import type { EmailItem, ImapConnectionConfig } from './types.js';
+
+export type { MoveResult } from './imap-helpers.js';
 
 /** Logger interface for email client */
 export interface EmailLogger {
@@ -25,10 +37,18 @@ export interface EmailClientOptions {
 
 /** Email client interface */
 export interface EmailClient {
-  /** Fetch unread emails from configured folder */
+  /** Fetch emails from configured folder */
   fetchEmails(config: ImapConnectionConfig, accessToken?: string): Promise<EmailItem[]>;
   /** Mark emails as read by UID */
   markAsRead(config: ImapConnectionConfig, uids: number[], accessToken?: string): Promise<void>;
+  /** Move emails to eddo-processed folder */
+  moveToProcessed(
+    config: ImapConnectionConfig,
+    uids: number[],
+    accessToken?: string,
+  ): Promise<MoveResult>;
+  /** Ensure destination folder exists, create if not */
+  ensureProcessedFolder(config: ImapConnectionConfig, accessToken?: string): Promise<boolean>;
   /** Map email item to todo */
   mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3, '_rev'>;
   /** Generate external ID for deduplication */
@@ -39,8 +59,8 @@ const DEFAULT_OPTIONS: Required<EmailClientOptions> = {
   timeoutMs: 30000,
 };
 
-const GMAIL_IMAP_HOST = 'imap.gmail.com';
-const GMAIL_IMAP_PORT = 993;
+/** Destination folder for processed emails */
+export const PROCESSED_FOLDER = 'eddo-processed';
 
 /**
  * Generates a short hash from a string (first 8 chars of SHA256)
@@ -60,67 +80,10 @@ export function generateExternalId(item: EmailItem): string {
 }
 
 /**
- * Creates Gmail OAuth IMAP options
- */
-function createGmailImapOptions(
-  config: ImapConnectionConfig,
-  accessToken: string,
-): ConstructorParameters<typeof ImapFlow>[0] {
-  return {
-    host: GMAIL_IMAP_HOST,
-    port: GMAIL_IMAP_PORT,
-    secure: true,
-    logger: {
-      debug: (msg: unknown) => console.log('[IMAP DEBUG]', msg),
-      info: (msg: unknown) => console.log('[IMAP INFO]', msg),
-      warn: (msg: unknown) => console.warn('[IMAP WARN]', msg),
-      error: (msg: unknown) => console.error('[IMAP ERROR]', msg),
-    },
-    auth: {
-      user: config.imapUser || config.oauthEmail || '',
-      accessToken,
-    },
-  };
-}
-
-/**
- * Creates plain IMAP options
- */
-function createPlainImapOptions(
-  config: ImapConnectionConfig,
-): ConstructorParameters<typeof ImapFlow>[0] {
-  return {
-    host: config.imapHost || '',
-    port: config.imapPort || 993,
-    secure: true,
-    auth: {
-      user: config.imapUser || '',
-      pass: config.imapPassword || '',
-    },
-    logger: false,
-  };
-}
-
-/**
- * Creates IMAP connection options based on sync config
- */
-function createImapOptions(
-  config: ImapConnectionConfig,
-  accessToken?: string,
-): ConstructorParameters<typeof ImapFlow>[0] {
-  if (config.provider === 'gmail' && accessToken) {
-    return createGmailImapOptions(config, accessToken);
-  }
-  return createPlainImapOptions(config);
-}
-
-/**
  * Generates Gmail deep link URL from message ID
  */
 function generateGmailLink(gmailMessageId?: string): string | null {
   if (!gmailMessageId) return null;
-  // Gmail uses hex-encoded message ID in the URL
-  // Format: https://mail.google.com/mail/u/0/#inbox/<hex-message-id>
   const hexId = BigInt(gmailMessageId).toString(16);
   return `https://mail.google.com/mail/u/0/#inbox/${hexId}`;
 }
@@ -130,8 +93,6 @@ function generateGmailLink(gmailMessageId?: string): string | null {
  */
 export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3, '_rev'> {
   const now = new Date().toISOString();
-  // Body is already converted to markdown by extractPlainText/extractEmailBody
-  // Allow up to 50KB for newsletter content (newsletters can be quite long)
   const cleanDescription = item.body ? truncate(item.body, 50000) : '';
 
   return {
@@ -148,173 +109,6 @@ export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3
     title: item.subject || 'No Subject',
     version: 'alpha3',
   };
-}
-
-/** IMAP message with envelope */
-interface ImapMessage {
-  flags?: Set<string>;
-  envelope?: {
-    subject?: string;
-    date?: Date;
-    messageId?: string;
-    from?: Array<{ address?: string; name?: string }>;
-  };
-  source?: Buffer;
-  uid: number;
-  /** Gmail-specific message ID for deep linking */
-  emailId?: string;
-}
-
-/**
- * Converts IMAP message to EmailItem
- */
-function messageToEmailItem(message: ImapMessage, folder: string): EmailItem | null {
-  if (!message.envelope) return null;
-
-  const { from, fromName } = extractSender(message.envelope);
-  const body = message.source ? extractPlainText(message.source) : '';
-
-  return {
-    subject: message.envelope.subject || 'No Subject',
-    body,
-    from,
-    fromName,
-    receivedDate: message.envelope.date?.toISOString() || new Date().toISOString(),
-    messageId: message.envelope.messageId || `${message.uid}@unknown`,
-    uid: message.uid,
-    folder,
-    gmailMessageId: message.emailId,
-  };
-}
-
-/**
- * Processes messages from IMAP fetch iterator
- */
-async function processMessages(
-  messages: AsyncGenerator<ImapMessage>,
-  folder: string,
-): Promise<EmailItem[]> {
-  const emails: EmailItem[] = [];
-  let totalMessages = 0;
-  let skippedNoEnvelope = 0;
-
-  for await (const message of messages) {
-    totalMessages++;
-
-    if (!message.envelope) {
-      skippedNoEnvelope++;
-      continue;
-    }
-
-    const emailItem = messageToEmailItem(message, folder);
-    if (emailItem) emails.push(emailItem);
-  }
-
-  console.log(
-    `[EMAIL] Processed ${totalMessages} messages: ${emails.length} kept, ${skippedNoEnvelope} skipped (no envelope)`,
-  );
-
-  return emails;
-}
-
-/**
- * Fetches emails from IMAP folder with lock
- */
-async function fetchWithLock(client: ImapFlow, folder: string): Promise<EmailItem[]> {
-  let lock;
-  try {
-    lock = await client.getMailboxLock(folder);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    // Check for common folder-not-found patterns
-    if (
-      message.includes('Command failed') ||
-      message.includes('NO') ||
-      message.includes('not exist')
-    ) {
-      throw new Error(
-        `Folder "${folder}" does not exist. Please create a label called "${folder}" in Gmail.`,
-      );
-    }
-    throw error;
-  }
-
-  try {
-    const messages = client.fetch('1:*', {
-      envelope: true,
-      source: true,
-      flags: true,
-      uid: true,
-    }) as AsyncGenerator<ImapMessage>;
-
-    return await processMessages(messages, folder);
-  } finally {
-    lock.release();
-  }
-}
-
-/**
- * Fetches emails from IMAP folder
- */
-async function fetchEmailsFromImap(
-  client: ImapFlow,
-  folder: string,
-  logger: EmailLogger,
-): Promise<EmailItem[]> {
-  try {
-    const emails = await fetchWithLock(client, folder);
-    logger.debug('Fetched emails from folder', { folder, count: emails.length });
-    return emails;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('does not exist')) {
-      logger.warn('Email folder does not exist', { folder });
-      return [];
-    }
-    throw error;
-  }
-}
-
-/**
- * Marks emails as read by UID
- */
-async function markEmailsAsRead(
-  client: ImapFlow,
-  folder: string,
-  uids: number[],
-  logger: EmailLogger,
-): Promise<void> {
-  if (uids.length === 0) return;
-
-  const lock = await client.getMailboxLock(folder);
-  try {
-    await client.messageFlagsAdd(uids, ['\\Seen'], { uid: true });
-    logger.debug('Marked emails as read', { folder, count: uids.length });
-  } finally {
-    lock.release();
-  }
-}
-
-/**
- * Safely logs out from IMAP client
- */
-async function safeLogout(client: ImapFlow): Promise<void> {
-  try {
-    await client.logout();
-  } catch {
-    // Ignore logout errors
-  }
-}
-
-/**
- * Connects to IMAP with timeout
- */
-async function connectWithTimeout(client: ImapFlow, timeoutMs: number): Promise<void> {
-  await Promise.race([
-    client.connect(),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Connection timeout')), timeoutMs),
-    ),
-  ]);
 }
 
 /**
@@ -353,7 +147,7 @@ function createFetchEmails(options: Required<EmailClientOptions>, logger: EmailL
 /**
  * Creates mark as read implementation
  */
-function createMarkAsRead(logger: EmailLogger) {
+function createMarkAsRead(options: Required<EmailClientOptions>, logger: EmailLogger) {
   return async (
     config: ImapConnectionConfig,
     uids: number[],
@@ -366,8 +160,70 @@ function createMarkAsRead(logger: EmailLogger) {
     const client = new ImapFlow(imapOptions);
 
     try {
-      await client.connect();
+      await connectWithTimeout(client, options.timeoutMs);
       await markEmailsAsRead(client, folder, uids, logger);
+    } finally {
+      await safeLogout(client);
+    }
+  };
+}
+
+/**
+ * Creates ensure processed folder implementation
+ */
+function createEnsureProcessedFolder(options: Required<EmailClientOptions>, logger: EmailLogger) {
+  return async (config: ImapConnectionConfig, accessToken?: string): Promise<boolean> => {
+    const imapOptions = createImapOptions(config, accessToken);
+    const client = new ImapFlow(imapOptions);
+
+    try {
+      await connectWithTimeout(client, options.timeoutMs);
+      return await ensureFolderExists(client, PROCESSED_FOLDER, logger);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to ensure processed folder', { error: message });
+      return false;
+    } finally {
+      await safeLogout(client);
+    }
+  };
+}
+
+/**
+ * Creates move to processed implementation
+ */
+function createMoveToProcessed(options: Required<EmailClientOptions>, logger: EmailLogger) {
+  return async (
+    config: ImapConnectionConfig,
+    uids: number[],
+    accessToken?: string,
+  ): Promise<MoveResult> => {
+    if (uids.length === 0) return { moved: [], failed: [] };
+
+    const sourceFolder = config.folder || 'eddo';
+    const imapOptions = createImapOptions(config, accessToken);
+    const client = new ImapFlow(imapOptions);
+
+    try {
+      await connectWithTimeout(client, options.timeoutMs);
+
+      const folderReady = await ensureFolderExists(client, PROCESSED_FOLDER, logger);
+      if (!folderReady) {
+        logger.error('Cannot move emails - failed to ensure destination folder');
+        return { moved: [], failed: uids };
+      }
+
+      return await moveEmailsToFolder({
+        client,
+        sourceFolder,
+        destFolder: PROCESSED_FOLDER,
+        uids,
+        logger,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to move emails to processed', { error: message });
+      return { moved: [], failed: uids };
     } finally {
       await safeLogout(client);
     }
@@ -392,7 +248,9 @@ export function createEmailClient(
 
   return {
     fetchEmails: createFetchEmails(options, logger),
-    markAsRead: createMarkAsRead(logger),
+    markAsRead: createMarkAsRead(options, logger),
+    moveToProcessed: createMoveToProcessed(options, logger),
+    ensureProcessedFolder: createEnsureProcessedFolder(options, logger),
     mapEmailToTodo,
     generateExternalId,
   };
