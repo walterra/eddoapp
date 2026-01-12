@@ -46,8 +46,8 @@ vi.mock('../database_setup', () => ({
 }));
 
 // Mock data hooks
-vi.mock('../hooks/use_todos_by_week', () => ({
-  useTodosByWeek: vi.fn(),
+vi.mock('../hooks/use_todos_by_date_range', () => ({
+  useTodosByDateRange: vi.fn(),
 }));
 
 vi.mock('../hooks/use_activities_by_week', () => ({
@@ -69,7 +69,7 @@ vi.mock('../hooks/use_database_changes', () => ({
 
 import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
 import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
-import { useTodosByWeek } from '../hooks/use_todos_by_week';
+import { useTodosByDateRange } from '../hooks/use_todos_by_date_range';
 
 describe('TodoTable', () => {
   const defaultProps = {
@@ -88,12 +88,12 @@ describe('TodoTable', () => {
     vi.clearAllMocks();
 
     // Default mock returns
-    vi.mocked(useTodosByWeek).mockReturnValue({
+    vi.mocked(useTodosByDateRange).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useTodosByWeek>);
+    } as unknown as ReturnType<typeof useTodosByDateRange>);
 
     vi.mocked(useActivitiesByWeek).mockReturnValue({
       data: [],
@@ -127,12 +127,12 @@ describe('TodoTable', () => {
         }),
       ];
 
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: todos,
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(<TodoTable {...defaultProps} />, { testDb: testDb.contextValue });
 
@@ -145,7 +145,7 @@ describe('TodoTable', () => {
     });
 
     it('should render only selected columns headers', async () => {
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: [
           createTestTodo({
             _id: '2025-01-13T10:00:00.000Z',
@@ -157,7 +157,7 @@ describe('TodoTable', () => {
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(
         <TodoTable {...defaultProps} selectedColumns={['title', 'due', 'status']} />,
@@ -174,7 +174,7 @@ describe('TodoTable', () => {
     });
 
     it('should show Actions column always', async () => {
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: [
           createTestTodo({
             _id: '2025-01-13T10:00:00.000Z',
@@ -186,7 +186,7 @@ describe('TodoTable', () => {
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(<TodoTable {...defaultProps} selectedColumns={['title']} />, {
         testDb: testDb.contextValue,
@@ -198,7 +198,7 @@ describe('TodoTable', () => {
     });
 
     it('should render status column first when included', async () => {
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: [
           createTestTodo({
             _id: '2025-01-13T10:00:00.000Z',
@@ -210,7 +210,7 @@ describe('TodoTable', () => {
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(
         <TodoTable {...defaultProps} selectedColumns={['title', 'due', 'status']} />,
@@ -240,12 +240,12 @@ describe('TodoTable', () => {
         }),
       ];
 
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: todos,
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(<TodoTable {...defaultProps} />, { testDb: testDb.contextValue });
 
@@ -272,12 +272,12 @@ describe('TodoTable', () => {
         }),
       ];
 
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: todos,
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(<TodoTable {...defaultProps} />, { testDb: testDb.contextValue });
 
@@ -309,12 +309,12 @@ describe('TodoTable', () => {
         }),
       ];
 
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: todos,
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(<TodoTable {...defaultProps} selectedContexts={['work']} />, {
         testDb: testDb.contextValue,
@@ -344,12 +344,12 @@ describe('TodoTable', () => {
         }),
       ];
 
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: todos,
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(<TodoTable {...defaultProps} selectedStatus="completed" />, {
         testDb: testDb.contextValue,
@@ -379,12 +379,12 @@ describe('TodoTable', () => {
         }),
       ];
 
-      vi.mocked(useTodosByWeek).mockReturnValue({
+      vi.mocked(useTodosByDateRange).mockReturnValue({
         data: todos,
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-      } as unknown as ReturnType<typeof useTodosByWeek>);
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
 
       renderWithPouchDb(<TodoTable {...defaultProps} selectedTags={['urgent']} />, {
         testDb: testDb.contextValue,
