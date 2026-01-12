@@ -1,8 +1,13 @@
 /**
  * Email sync module exports
  */
-export { createEmailClient, generateExternalId, mapEmailToTodo } from './client.js';
-export type { EmailClient, EmailClientOptions, EmailLogger } from './client.js';
+export {
+  PROCESSED_FOLDER,
+  createEmailClient,
+  generateExternalId,
+  mapEmailToTodo,
+} from './client.js';
+export type { EmailClient, EmailClientOptions, EmailLogger, MoveResult } from './client.js';
 export {
   decodeQuotedPrintable,
   extractEmailBody,
@@ -19,6 +24,7 @@ export {
   createSyncStats,
   findTodoByExternalId,
   incrementStat,
+  markTodoAsMoved,
   processEmail,
 } from './sync-helpers.js';
 export type { ProcessEmailConfig, ProcessEmailResult, SyncStats } from './sync-helpers.js';

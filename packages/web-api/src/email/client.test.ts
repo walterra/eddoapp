@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createEmailClient, generateExternalId, mapEmailToTodo } from './client.js';
+import {
+  createEmailClient,
+  generateExternalId,
+  mapEmailToTodo,
+  PROCESSED_FOLDER,
+} from './client.js';
 import type { EmailItem } from './types.js';
 
 /** Create a valid EmailItem for testing */
@@ -143,6 +148,37 @@ describe('email client', () => {
       const email = createTestEmail();
 
       expect(client.generateExternalId(email)).toBe(generateExternalId(email));
+    });
+
+    it('client has moveToProcessed method', () => {
+      const client = createEmailClient({}, mockLogger);
+
+      expect(typeof client.moveToProcessed).toBe('function');
+    });
+
+    it('client has ensureProcessedFolder method', () => {
+      const client = createEmailClient({}, mockLogger);
+
+      expect(typeof client.ensureProcessedFolder).toBe('function');
+    });
+
+    it('moveToProcessed returns empty result for empty UIDs', async () => {
+      const client = createEmailClient({}, mockLogger);
+      const config = {
+        provider: 'gmail' as const,
+        folder: 'eddo',
+      };
+
+      const result = await client.moveToProcessed(config, []);
+
+      expect(result.moved).toEqual([]);
+      expect(result.failed).toEqual([]);
+    });
+  });
+
+  describe('PROCESSED_FOLDER constant', () => {
+    it('has expected value', () => {
+      expect(PROCESSED_FOLDER).toBe('eddo-processed');
     });
   });
 });

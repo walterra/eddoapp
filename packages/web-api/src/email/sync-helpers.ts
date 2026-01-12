@@ -17,7 +17,15 @@ export interface ProcessEmailConfig {
   username: string;
 }
 
-export type ProcessEmailResult = 'created' | 'skipped';
+/** Result of processing a single email */
+export interface ProcessEmailResult {
+  /** Processing outcome */
+  status: 'created' | 'skipped' | 'needs_move';
+  /** Email UID for move tracking */
+  uid: number;
+  /** Todo ID if created or found */
+  todoId?: string;
+}
 
 /**
  * Find todo by externalId using CouchDB index
@@ -44,6 +52,13 @@ export async function findTodoByExternalId(
 }
 
 /**
+ * Check if todo needs to be moved (exists but email:moved is not set)
+ */
+function todoNeedsMove(todo: TodoAlpha3): boolean {
+  return todo.metadata?.['email:moved'] !== 'true';
+}
+
+/**
  * Process a single email (create todo if not exists)
  */
 export async function processEmail(config: ProcessEmailConfig): Promise<ProcessEmailResult> {
@@ -54,23 +69,41 @@ export async function processEmail(config: ProcessEmailConfig): Promise<ProcessE
   const existingTodo = await findTodoByExternalId(db, externalId, logger);
 
   if (existingTodo) {
-    logger.debug('Email already synced, skipping', {
+    // Check if this todo exists but email wasn't moved (retry scenario)
+    if (todoNeedsMove(existingTodo)) {
+      logger.debug('Email exists but not moved, will retry move', {
+        externalId,
+        subject: email.subject,
+        todoId: existingTodo._id,
+      });
+      return { status: 'needs_move', uid: email.uid, todoId: existingTodo._id };
+    }
+
+    logger.debug('Email already synced and moved, skipping', {
       externalId,
       subject: email.subject,
     });
-    return 'skipped';
+    return { status: 'skipped', uid: email.uid };
   }
 
-  // Create new todo
+  // Create new todo with email:uid metadata for move tracking
   const newTodo = emailClient.mapEmailToTodo(email, tags);
-  await db.insert(newTodo as TodoAlpha3);
+  const todoWithMetadata: Omit<TodoAlpha3, '_rev'> = {
+    ...newTodo,
+    metadata: {
+      ...newTodo.metadata,
+      'email:uid': String(email.uid),
+    },
+  };
+
+  await db.insert(todoWithMetadata as TodoAlpha3);
 
   await logSyncAudit({
     username,
     source: 'email-sync',
     action: 'create',
-    entityId: newTodo._id,
-    after: newTodo,
+    entityId: todoWithMetadata._id,
+    after: todoWithMetadata,
     metadata: { subject: email.subject, from: email.from },
   });
 
@@ -78,9 +111,10 @@ export async function processEmail(config: ProcessEmailConfig): Promise<ProcessE
     externalId,
     subject: email.subject,
     from: email.from,
+    uid: email.uid,
   });
 
-  return 'created';
+  return { status: 'created', uid: email.uid, todoId: todoWithMetadata._id };
 }
 
 export interface SyncStats {
@@ -103,14 +137,47 @@ export function createSyncStats(): SyncStats {
 }
 
 /**
- * Increment stat counter
+ * Mark todo as moved by setting email:moved metadata
  */
-export function incrementStat(stats: SyncStats, result: ProcessEmailResult | 'error'): void {
-  if (result === 'error') {
+export async function markTodoAsMoved(
+  db: nano.DocumentScope<TodoAlpha3>,
+  todoId: string,
+  logger: EmailLogger,
+): Promise<boolean> {
+  try {
+    const doc = await db.get(todoId);
+    const updated: TodoAlpha3 = {
+      ...doc,
+      metadata: {
+        ...doc.metadata,
+        'email:moved': 'true',
+      },
+    };
+    await db.insert(updated);
+    logger.debug('Marked todo as moved', { todoId });
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error('Failed to mark todo as moved', { todoId, error: message });
+    return false;
+  }
+}
+
+/**
+ * Increment stat counter based on processing result
+ */
+export function incrementStat(
+  stats: SyncStats,
+  result: ProcessEmailResult | { status: 'error' },
+): void {
+  const status = typeof result === 'object' && 'status' in result ? result.status : result;
+
+  if (status === 'error') {
     stats.errors++;
-  } else if (result === 'created') {
+  } else if (status === 'created') {
     stats.created++;
   } else {
+    // 'skipped' or 'needs_move' both count as skipped for stats
     stats.skipped++;
   }
 }
