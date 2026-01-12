@@ -476,8 +476,8 @@ importers:
         specifier: ^3.25.4
         version: 3.25.4(hono@4.11.1)
       grammy:
-        specifier: ^1.38.3
-        version: 1.38.3
+        specifier: ^1.38.4
+        version: 1.38.4
       marked:
         specifier: ^17.0.1
         version: 17.0.1
@@ -5090,8 +5090,8 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  grammy@1.38.3:
-    resolution: {integrity: sha512-1eQwNfxrRQ0JOFqd3n1nKqyWkHvCQRCNiH8e5aYm27mIjGPobgss58XN8GORC2ejAWM2+NSdUknrMhYj87cjGg==}
+  grammy@1.38.4:
+    resolution: {integrity: sha512-z07Kin3HgRwMdy40KUs+c9fmNBvGlSxGwcqY8NAH0a8KULGFYEMQaFAo3ge0V5tvmgr02Jgubkf54KjHLAMCbw==}
     engines: {node: ^12.20.0 || >=14.13.1}
 
   gtoken@8.0.0:
@@ -13289,7 +13289,7 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  grammy@1.38.3:
+  grammy@1.38.4:
     dependencies:
       '@grammyjs/types': 3.22.2
       abort-controller: 3.0.0
