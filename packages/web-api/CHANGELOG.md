@@ -1,5 +1,19 @@
 # @eddo/web-api
 
+## 0.6.0
+
+### Minor Changes
+
+- [#426](https://github.com/walterra/eddoapp/pull/426) [`f937285`](https://github.com/walterra/eddoapp/commit/f9372853bb347b07adc1e47ba037ad89fce461b1) - Add optional message field to audit log entries for human-readable activity descriptions
+
+- [#424](https://github.com/walterra/eddoapp/pull/424) [`7bc78f1`](https://github.com/walterra/eddoapp/commit/7bc78f1687988374e0e7fe227f1f1dc56ade4a32) - Email sync now converts HTML emails to Markdown, preserving links, lists, and formatting in todo descriptions
+
+### Patch Changes
+
+- Updated dependencies [[`f9372853bb347b07adc1e47ba037ad89fce461b1`](https://github.com/walterra/eddoapp/commit/f9372853bb347b07adc1e47ba037ad89fce461b1)]:
+  - @eddo/core-shared@0.6.0
+  - @eddo/core-server@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes

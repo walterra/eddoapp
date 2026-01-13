@@ -1,5 +1,21 @@
 # @eddo/web-client
 
+## 0.6.0
+
+### Minor Changes
+
+- [#426](https://github.com/walterra/eddoapp/pull/426) [`f937285`](https://github.com/walterra/eddoapp/commit/f9372853bb347b07adc1e47ba037ad89fce461b1) - Add optional message field to audit log entries for human-readable activity descriptions
+
+### Patch Changes
+
+- [#436](https://github.com/walterra/eddoapp/pull/436) [`d65041f`](https://github.com/walterra/eddoapp/commit/d65041fb8f5fac6a3c285c337fb2cf84695763c0) - Add keyboard navigation for date periods - left/right arrow keys navigate to previous/next period
+
+- [#438](https://github.com/walterra/eddoapp/pull/438) [`66cba25`](https://github.com/walterra/eddoapp/commit/66cba25a94e38774f83980dc89f8b96023e0d8b5) - Fix bug where user data persists after logout/login as different user. QueryClient is now recreated when username changes to ensure cache isolation between users.
+
+- Updated dependencies [[`f9372853bb347b07adc1e47ba037ad89fce461b1`](https://github.com/walterra/eddoapp/commit/f9372853bb347b07adc1e47ba037ad89fce461b1)]:
+  - @eddo/core-shared@0.6.0
+  - @eddo/core-client@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes
