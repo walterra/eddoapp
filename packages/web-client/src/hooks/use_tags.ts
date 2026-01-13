@@ -1,5 +1,6 @@
 /**
- * React hook for tag management and autocomplete
+ * React hook for tag management and autocomplete.
+ * Uses Mango query with tags index for efficient tag extraction.
  */
 import { type Todo } from '@eddo/core-client';
 import { useEffect, useState } from 'react';
@@ -17,7 +18,8 @@ export interface TagsState {
 }
 
 /**
- * Hook for fetching all existing tags for autocomplete
+ * Hook for fetching all existing tags for autocomplete.
+ * Uses Mango query with fields projection to only fetch tags, not full documents.
  */
 export const useTags = (): TagsState => {
   const { safeDb } = usePouchDb();
@@ -32,19 +34,20 @@ export const useTags = (): TagsState => {
         setIsLoading(true);
         setError(null);
 
-        const todos = await safeDb.safeAllDocs<Todo>();
+        // Query alpha3 documents, fetching only the tags field
+        // PouchDB-find doesn't support $gt: [] for arrays, so we filter client-side
+        const todos = await safeDb.safeFind<Pick<Todo, 'tags'>>(
+          { version: 'alpha3' },
+          { fields: ['tags'] },
+        );
 
+        // Extract unique tags from results, filtering out malformed data
         const tagSet = new Set<string>();
-
-        todos.forEach((todo) => {
-          if (todo.tags && Array.isArray(todo.tags)) {
-            todo.tags.forEach((tag) => {
-              if (tag.trim()) {
-                tagSet.add(tag.trim());
-              }
-            });
-          }
-        });
+        const validTags = todos
+          .filter((todo) => Array.isArray(todo.tags))
+          .flatMap((todo) => todo.tags!)
+          .filter((tag) => tag && tag.trim());
+        validTags.forEach((tag) => tagSet.add(tag.trim()));
 
         setAllTags(Array.from(tagSet).sort());
       } catch (err) {
@@ -56,7 +59,7 @@ export const useTags = (): TagsState => {
     };
 
     fetchTags();
-  }, [safeDb, changeCount]); // Re-fetch when database changes
+  }, [safeDb, changeCount]);
 
   return {
     allTags,

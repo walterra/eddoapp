@@ -165,16 +165,47 @@ interface PrefetchConfig {
   isLoading: boolean;
 }
 
+/** Maximum number of date range queries to keep in cache */
+const MAX_CACHED_RANGES = 5;
+
+/**
+ * Cleans up old date range queries to prevent memory bloat.
+ * Keeps only the N most recent queries.
+ */
+function cleanupOldQueries(queryClient: ReturnType<typeof useQueryClient>): void {
+  const allQueries = queryClient.getQueriesData<Todo[]>({
+    queryKey: ['todos', 'byDueDate'],
+  });
+
+  if (allQueries.length <= MAX_CACHED_RANGES) return;
+
+  // Sort by last updated time (oldest first) and remove excess
+  const queryStates = allQueries
+    .map(([queryKey]) => ({
+      queryKey,
+      state: queryClient.getQueryState(queryKey),
+    }))
+    .filter((q) => q.state)
+    .sort((a, b) => (a.state!.dataUpdatedAt || 0) - (b.state!.dataUpdatedAt || 0));
+
+  const toRemove = queryStates.slice(0, queryStates.length - MAX_CACHED_RANGES);
+  toRemove.forEach(({ queryKey }) => queryClient.removeQueries({ queryKey, exact: true }));
+}
+
 /**
  * Prefetches adjacent date ranges in the background using requestIdleCallback.
  * Automatically detects range type (day/week/month) and prefetches accordingly.
  * Only prefetches if data is not already cached.
+ * Cleans up old cached queries to prevent memory bloat.
  */
 function usePrefetchAdjacentRanges(config: PrefetchConfig): void {
   const { safeDb, queryClient, startDate, endDate, enabled, isLoading } = config;
 
   useEffect(() => {
     if (!safeDb || !enabled || isLoading) return;
+
+    // Clean up old queries to prevent memory bloat
+    cleanupOldQueries(queryClient);
 
     const prefetchRange = (start: string, end: string) => {
       const queryKey = ['todos', 'byDueDate', start, end];

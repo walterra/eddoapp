@@ -18,7 +18,6 @@ import { useDbInitialization, useTodoBoardData } from './todo_board_state';
 import {
   calculateDurationByContext,
   calculateTodoDurations,
-  filterActivities,
   filterTodos,
   getColumnLabel,
   getColumnWidthClass,
@@ -57,6 +56,22 @@ interface FilteredDataParams extends FilterParams {
   endDate: string;
 }
 
+/**
+ * Pre-calculate durations for ALL todos once when source data changes.
+ * This avoids recalculating when only filters change.
+ */
+const useAllTodoDurations = (
+  todos: readonly Todo[],
+  activities: readonly Activity[],
+  startDate: string,
+  endDate: string,
+): Map<string, number> => {
+  return useMemo(
+    () => calculateTodoDurations(todos, activities, startDate, endDate),
+    [todos, activities, startDate, endDate],
+  );
+};
+
 /** Filters and groups todos/activities based on user selection */
 const useFilteredData = (
   boardData: ReturnType<typeof useTodoBoardData>,
@@ -64,29 +79,32 @@ const useFilteredData = (
 ) => {
   const { selectedTags, selectedContexts, selectedStatus, startDate, endDate } = params;
 
+  // Pre-calculate ALL durations once (independent of filters)
+  const allTodoDurations = useAllTodoDurations(
+    boardData.todos,
+    boardData.activities as Activity[],
+    startDate,
+    endDate,
+  );
+
   const filteredTodos = useMemo(
     () => filterTodos(boardData.todos, selectedContexts, selectedStatus, selectedTags),
     [boardData.todos, selectedTags, selectedContexts, selectedStatus],
   );
 
-  const filteredActivities = useMemo(
-    () =>
-      filterActivities(
-        boardData.activities as Activity[],
-        selectedContexts,
-        selectedStatus,
-        selectedTags,
-      ),
-    [boardData.activities, selectedContexts, selectedStatus, selectedTags],
-  );
-
   const groupedByContext = useMemo(() => groupTodosByContext(filteredTodos), [filteredTodos]);
 
-  // Calculate duration per todo (own + child time)
-  const todoDurations = useMemo(
-    () => calculateTodoDurations(filteredTodos, filteredActivities, startDate, endDate),
-    [filteredTodos, filteredActivities, startDate, endDate],
-  );
+  // Filter the pre-calculated durations to only include visible todos
+  const todoDurations = useMemo(() => {
+    const filtered = new Map<string, number>();
+    for (const todo of filteredTodos) {
+      const duration = allTodoDurations.get(todo._id);
+      if (duration !== undefined) {
+        filtered.set(todo._id, duration);
+      }
+    }
+    return filtered;
+  }, [filteredTodos, allTodoDurations]);
 
   // Context totals = sum of visible todo durations
   const durationByContext = useMemo(

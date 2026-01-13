@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PouchDbContext, type PouchDbContextType } from '../pouch_db_types';
 import '../test-polyfill';
-import { createTestPouchDb, destroyTestPouchDb } from '../test-setup';
+import { createTestIndexes, createTestPouchDb, destroyTestPouchDb } from '../test-setup';
 import { useTags } from './use_tags';
 
 // Create a test version of the DatabaseChangesProvider for testing
@@ -87,6 +87,7 @@ describe('useTags', () => {
     const setup = createTestPouchDb();
     testDb = setup.db;
     contextValue = setup.contextValue;
+    await createTestIndexes(testDb);
   });
 
   afterEach(async () => {
@@ -234,9 +235,9 @@ describe('useTags', () => {
     it('handles database errors gracefully', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      // Mock safeAllDocs to throw an error
+      // Mock safeFind to throw an error
       const mockError = new Error('Database connection failed');
-      vi.spyOn(contextValue.safeDb, 'safeAllDocs').mockRejectedValue(mockError);
+      vi.spyOn(contextValue.safeDb, 'safeFind').mockRejectedValue(mockError);
 
       const { result } = renderHookWithContext();
 
@@ -256,7 +257,7 @@ describe('useTags', () => {
 
       // First, simulate an error
       const mockError = new Error('Network error');
-      vi.spyOn(contextValue.safeDb, 'safeAllDocs')
+      vi.spyOn(contextValue.safeDb, 'safeFind')
         .mockRejectedValueOnce(mockError)
         .mockResolvedValueOnce([createTestTodo('todo1', ['work'])]);
 

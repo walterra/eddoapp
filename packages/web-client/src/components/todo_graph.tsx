@@ -16,7 +16,7 @@ import {
   useAuditLogEntriesBySource,
 } from '../hooks/use_audit_log_stream';
 import { useForceLayout } from '../hooks/use_force_layout';
-import { useHighlightContext } from '../hooks/use_highlight_context';
+import { useHighlightedTodoId } from '../hooks/use_highlight_context';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
@@ -212,7 +212,7 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
   const { error, setError, isInitialized } = useDbInitialization(safeDb, rawDb);
   const data = useGraphData(props, isInitialized, error);
   // Get highlight context here, outside ReactFlowProvider
-  const { highlightedTodoId } = useHighlightContext();
+  const highlightedTodoId = useHighlightedTodoId();
 
   if (data.displayError && data.nodes.length === 0 && !data.isLoading) {
     const handleError = () => {
