@@ -3,12 +3,12 @@
  * Provides expandable rows with nested children support
  */
 import type { Todo } from '@eddo/core-client';
-import { flexRender, type ColumnDef, type Row } from '@tanstack/react-table';
+import { flexRender, type Row } from '@tanstack/react-table';
 import { type FC } from 'react';
 
 import { type SubtaskCount } from '../hooks/use_parent_child';
 import { ChildRow } from './todo_table_child_row';
-import { type TodoRowData } from './todo_table_columns';
+import { type TodoColumnDef, type TodoRowData } from './todo_table_columns';
 import { ExpandToggle } from './todo_table_expand_toggle';
 import { RowActions } from './todo_table_row_actions';
 
@@ -20,8 +20,7 @@ export interface ExpandableRowsProps {
   expandedIds: Set<string>;
   toggleExpanded: (todoId: string) => void;
   childrenByParent: Map<string, Todo[]>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: ColumnDef<TodoRowData, any>[];
+  columns: TodoColumnDef[];
   containerRef: React.RefObject<HTMLDivElement>;
   useVirtualization: boolean;
 }
@@ -63,8 +62,7 @@ interface ExpandableRowProps {
   expandedIds: Set<string>;
   toggleExpanded: (todoId: string) => void;
   childrenByParent: Map<string, Todo[]>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: ColumnDef<TodoRowData, any>[];
+  columns: TodoColumnDef[];
   depth: number;
 }
 

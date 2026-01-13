@@ -15,6 +15,9 @@ import { FormattedMessage } from './formatted_message';
 import { SubtasksPopover } from './subtasks_popover';
 import { TagsPopover } from './tags_popover';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Table columns have mixed value types
+export type TodoColumnDef = ColumnDef<TodoRowData, any>;
+
 /** Row data passed to table - todo plus computed values */
 export interface TodoRowData {
   todo: Todo;
@@ -83,9 +86,8 @@ const TitleCell: FC<{ row: TodoRowData }> = ({ row }) => {
   );
 };
 
-/** All column definitions - uses any for mixed accessor types */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const allColumns: Record<string, ColumnDef<TodoRowData, any>> = {
+/** All column definitions */
+export const allColumns: Record<string, TodoColumnDef> = {
   status: columnHelper.display({
     id: 'status',
     header: '',
@@ -223,8 +225,7 @@ export const allColumns: Record<string, ColumnDef<TodoRowData, any>> = {
  * @param selectedColumns - Array of column IDs to include
  * @returns Array of column definitions in order
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildColumns(selectedColumns: string[]): ColumnDef<TodoRowData, any>[] {
+export function buildColumns(selectedColumns: string[]): TodoColumnDef[] {
   // Always put status first if present
   const orderedIds = selectedColumns.includes('status')
     ? ['status', ...selectedColumns.filter((id) => id !== 'status')]

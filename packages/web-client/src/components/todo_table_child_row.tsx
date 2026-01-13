@@ -3,11 +3,11 @@
  * Supports recursive (fractal) expansion to any depth
  */
 import type { Todo } from '@eddo/core-client';
-import { flexRender, type ColumnDef } from '@tanstack/react-table';
+import { flexRender } from '@tanstack/react-table';
 import { type FC } from 'react';
 
 import { type SubtaskCount } from '../hooks/use_parent_child';
-import { type TodoRowData } from './todo_table_columns';
+import { type TodoColumnDef, type TodoRowData } from './todo_table_columns';
 import { ExpandToggle } from './todo_table_expand_toggle';
 import { RowActions } from './todo_table_row_actions';
 
@@ -19,8 +19,7 @@ export interface ChildRowProps {
   expandedIds: Set<string>;
   toggleExpanded: (todoId: string) => void;
   childrenByParent: Map<string, Todo[]>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: ColumnDef<TodoRowData, any>[];
+  columns: TodoColumnDef[];
   depth: number;
 }
 
@@ -89,12 +88,7 @@ const getDepthClasses = (depth: number): string => {
 };
 
 /** Creates cell context for rendering column cells */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const createCellContext = (
-  rowData: TodoRowData,
-  column: ColumnDef<TodoRowData, any>,
-  index: number,
-) => ({
+const createCellContext = (rowData: TodoRowData, column: TodoColumnDef, index: number) => ({
   row: { original: rowData },
   getValue: () =>
     'accessorFn' in column && column.accessorFn ? column.accessorFn(rowData, index) : undefined,
@@ -108,8 +102,7 @@ interface ChildRowCellsProps {
   isExpanded: boolean;
   timeTrackingActive: boolean;
   toggleExpanded: (todoId: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: ColumnDef<TodoRowData, any>[];
+  columns: TodoColumnDef[];
   depth: number;
 }
 
