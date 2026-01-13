@@ -9,7 +9,7 @@ import { ensureDesignDocuments } from '../database_setup';
 import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
 import { useDelayedLoading } from '../hooks/use_delayed_loading';
 import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
-import { useTodosByWeek } from '../hooks/use_todos_by_week';
+import { useTodosByDateRange } from '../hooks/use_todos_by_date_range';
 import { usePouchDb } from '../pouch_db';
 import type { ActivityItem } from './todo_board_helpers';
 
@@ -105,7 +105,7 @@ export function useTodoBoardData({
   endDate: string;
   isInitialized: boolean;
 }) {
-  const todosQuery = useTodosByWeek({ startDate, endDate, enabled: isInitialized });
+  const todosQuery = useTodosByDateRange({ startDate, endDate, enabled: isInitialized });
   const activitiesQuery = useActivitiesByWeek({ startDate, endDate, enabled: isInitialized });
   const timeTrackingQuery = useTimeTrackingActive({ enabled: isInitialized });
 

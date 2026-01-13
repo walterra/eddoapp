@@ -44,25 +44,71 @@ export function isAuthError(error: unknown): boolean {
   return errorWithStatus.status === 401 || errorWithStatus.status === 403;
 }
 
+/** Index selectors that match actual query patterns */
+const INDEX_SELECTORS = [
+  // Primary: version + due compound index (used by useTodosByDateRange)
+  { version: 'alpha3', due: { $gt: null } },
+  // Secondary: version + context + due (used by context filtering)
+  { version: 'alpha3', context: { $gt: null }, due: { $gt: null } },
+  // Tertiary: version + completed + due (used by status filtering)
+  { version: 'alpha3', completed: { $gt: null }, due: { $gt: null } },
+];
+
 /**
- * Pre-warm indexes after sync to avoid query-time rebuilding
+ * Warm a single index using requestIdleCallback to avoid blocking UI.
+ * Returns a promise that resolves when warming is complete or cancelled.
+ */
+function warmIndexInBackground(
+  rawDb: PouchDB.Database,
+  selector: PouchDB.Find.Selector,
+  isCancelled: () => boolean,
+): Promise<void> {
+  return new Promise((resolve) => {
+    // Use requestIdleCallback if available, otherwise setTimeout
+    const scheduleTask =
+      typeof requestIdleCallback !== 'undefined'
+        ? (cb: () => void) => requestIdleCallback(cb, { timeout: 5000 })
+        : (cb: () => void) => setTimeout(cb, 100);
+
+    scheduleTask(async () => {
+      if (isCancelled()) {
+        resolve();
+        return;
+      }
+
+      try {
+        // Minimal query to trigger index build: limit 1, only fetch _id
+        await rawDb.find({
+          selector,
+          limit: 1,
+          fields: ['_id'],
+        });
+      } catch {
+        // Ignore warming errors - indexes will build on first real query
+      }
+      resolve();
+    });
+  });
+}
+
+/**
+ * Pre-warm indexes after sync to avoid query-time rebuilding.
+ * Uses requestIdleCallback to run in background without blocking UI.
  */
 export async function preWarmIndexes(
   rawDb: PouchDB.Database,
   isCancelled: () => boolean,
 ): Promise<void> {
-  try {
-    if (isCancelled()) return;
-    await rawDb.find({
-      selector: { version: 'alpha3' },
-      limit: 0,
-    });
-    if (!isCancelled()) {
-      console.log('✅ Indexes pre-warmed after sync');
-    }
-  } catch (err) {
-    if (!isCancelled()) {
-      console.warn('⚠️  Index pre-warming failed:', err);
-    }
+  console.time('preWarmIndexes');
+
+  // Warm indexes sequentially in background
+  for (const selector of INDEX_SELECTORS) {
+    if (isCancelled()) break;
+    await warmIndexInBackground(rawDb, selector, isCancelled);
+  }
+
+  if (!isCancelled()) {
+    console.timeEnd('preWarmIndexes');
+    console.log('✅ Indexes pre-warmed after sync');
   }
 }

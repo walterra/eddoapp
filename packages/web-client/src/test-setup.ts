@@ -15,6 +15,12 @@ PouchDB.plugin(PouchDBFind);
 
 let testDbCounter = 0;
 
+/** Creates required indexes for Mango queries */
+export async function createTestIndexes(db: PouchDB.Database): Promise<void> {
+  await db.createIndex({ index: { fields: ['version'] } });
+  await db.createIndex({ index: { fields: ['version', 'due'] } });
+}
+
 // Create real PouchDB instance with memory adapter for testing
 export const createTestPouchDb = () => {
   // Use unique names to avoid conflicts

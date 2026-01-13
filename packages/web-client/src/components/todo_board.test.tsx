@@ -651,9 +651,10 @@ describe('TodoBoard', () => {
       // Wait a bit to ensure no additional calls are made
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Allow for some variance in call count due to component lifecycle
-      // The important thing is it shouldn't increase dramatically (like +3 for a new week)
-      expect(mockSafeFind.mock.calls.length).toBeLessThanOrEqual(initialCallCount + 3);
+      // Allow for some variance in call count due to component lifecycle and prefetch calls
+      // The hook prefetches adjacent weeks in background (up to +2 calls for prev/next week)
+      // The important thing is it shouldn't increase dramatically (like +6 for fetching new data)
+      expect(mockSafeFind.mock.calls.length).toBeLessThanOrEqual(initialCallCount + 5);
     });
   });
 });

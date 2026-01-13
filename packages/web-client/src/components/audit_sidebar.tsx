@@ -9,7 +9,7 @@ import { BiCloud, BiEnvelope, BiGitBranch, BiGlobe, BiRss, BiTerminal } from 're
 import type { AuditAction, AuditLogAlpha1, AuditSource } from '@eddo/core-shared';
 
 import { useAuditLog } from '../hooks/use_audit_log_data';
-import { useHighlightContext } from '../hooks/use_highlight_context';
+import { useSetHighlightedTodoId } from '../hooks/use_highlight_context';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { usePouchDb } from '../pouch_db';
 
@@ -255,7 +255,7 @@ export const AuditSidebar: FC<AuditSidebarProps> = ({ isOpen = true, onToggle })
     enabled: isExpanded,
   });
   const handleEntryClick = useAuditEntryClick();
-  const { setHighlightedTodoId } = useHighlightContext();
+  const setHighlightedTodoId = useSetHighlightedTodoId();
 
   const filteredEntries = getFilteredEntries(sourceFilter, MAX_DISPLAY_ENTRIES);
   const deletedEntityIds = getDeletedEntityIds(entries);

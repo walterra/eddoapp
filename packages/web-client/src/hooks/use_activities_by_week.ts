@@ -1,7 +1,31 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import type { Activity, Todo } from '@eddo/core-shared';
 import { usePouchDb } from '../pouch_db';
+
+/** Maximum number of activity range queries to keep in cache */
+const MAX_CACHED_RANGES = 5;
+
+/** Cleans up old activity queries to prevent memory bloat */
+function cleanupOldActivityQueries(queryClient: ReturnType<typeof useQueryClient>): void {
+  const allQueries = queryClient.getQueriesData<Activity[]>({
+    queryKey: ['activities', 'byActive'],
+  });
+
+  if (allQueries.length <= MAX_CACHED_RANGES) return;
+
+  const queryStates = allQueries
+    .map(([queryKey]) => ({
+      queryKey,
+      state: queryClient.getQueryState(queryKey),
+    }))
+    .filter((q) => q.state)
+    .sort((a, b) => (a.state!.dataUpdatedAt || 0) - (b.state!.dataUpdatedAt || 0));
+
+  const toRemove = queryStates.slice(0, queryStates.length - MAX_CACHED_RANGES);
+  toRemove.forEach(({ queryKey }) => queryClient.removeQueries({ queryKey, exact: true }));
+}
 
 interface UseActivitiesByWeekParams {
   /** Start date in YYYY-MM-DD format */
@@ -27,6 +51,12 @@ export function useActivitiesByWeek({
   enabled = true,
 }: UseActivitiesByWeekParams) {
   const { safeDb } = usePouchDb();
+  const queryClient = useQueryClient();
+
+  // Clean up old activity queries to prevent memory bloat
+  useEffect(() => {
+    cleanupOldActivityQueries(queryClient);
+  }, [queryClient, startDate, endDate]);
 
   return useQuery({
     queryKey: ['activities', 'byActive', startDate, endDate],

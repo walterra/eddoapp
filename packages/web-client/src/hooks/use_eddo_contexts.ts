@@ -1,4 +1,8 @@
-import type { Todo } from '@eddo/core-shared';
+/**
+ * React hook for context management and filtering.
+ * Uses Mango query with context index for efficient context extraction.
+ */
+import { type Todo } from '@eddo/core-client';
 import { useEffect, useState } from 'react';
 
 import { usePouchDb } from '../pouch_db';
@@ -10,6 +14,10 @@ export interface EddoContextsState {
   error: Error | null;
 }
 
+/**
+ * Hook for fetching all existing contexts for filtering.
+ * Uses Mango query with fields projection to only fetch context, not full documents.
+ */
 export const useEddoContexts = (): EddoContextsState => {
   const { safeDb } = usePouchDb();
   const { changeCount } = useDatabaseChanges();
@@ -23,15 +31,19 @@ export const useEddoContexts = (): EddoContextsState => {
         setIsLoading(true);
         setError(null);
 
-        const todos = await safeDb.safeAllDocs<Todo>();
+        // Query alpha3 documents, fetching only the context field
+        const todos = await safeDb.safeFind<Pick<Todo, 'context'>>(
+          { version: 'alpha3' },
+          { fields: ['context'] },
+        );
 
+        // Extract unique contexts from results
         const contextSet = new Set<string>();
-
-        todos.forEach((todo) => {
+        for (const todo of todos) {
           if (todo.context && todo.context.trim()) {
             contextSet.add(todo.context.trim());
           }
-        });
+        }
 
         setAllContexts(Array.from(contextSet).sort());
       } catch (err) {
