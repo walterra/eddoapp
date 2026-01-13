@@ -10,6 +10,8 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.14",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.18",
     "@types/d3-force": "^3.0.10",
     "@xyflow/react": "^12.10.0",
     "d3-array": "^3.0.3",

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '../test-polyfill';
 import { createTestPouchDb } from '../test-setup';
 import { createTestTodo, renderWithPouchDb } from '../test-utils';
+import { GlobalTodoFlyout } from './global_todo_flyout';
 import { TodoTable } from './todo_table';
 
 // Mock child components
@@ -247,7 +248,13 @@ describe('TodoTable', () => {
         refetch: vi.fn(),
       } as unknown as ReturnType<typeof useTodosByDateRange>);
 
-      renderWithPouchDb(<TodoTable {...defaultProps} />, { testDb: testDb.contextValue });
+      renderWithPouchDb(
+        <>
+          <TodoTable {...defaultProps} />
+          <GlobalTodoFlyout />
+        </>,
+        { testDb: testDb.contextValue },
+      );
 
       await waitFor(() => {
         expect(screen.getByText('Test todo')).toBeInTheDocument();
