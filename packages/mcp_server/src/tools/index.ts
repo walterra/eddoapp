@@ -117,3 +117,23 @@ export {
   type DeleteNoteArgs,
   type UpdateNoteArgs,
 } from './note-tools.js';
+
+// Attachment Tools
+export {
+  deleteAttachmentDescription,
+  deleteAttachmentParameters,
+  executeDeleteAttachment,
+  executeGetAttachment,
+  executeListAttachments,
+  executeUploadAttachment,
+  getAttachmentDescription,
+  getAttachmentParameters,
+  listAttachmentsDescription,
+  listAttachmentsParameters,
+  uploadAttachmentDescription,
+  uploadAttachmentParameters,
+  type DeleteAttachmentArgs,
+  type GetAttachmentArgs,
+  type ListAttachmentsArgs,
+  type UploadAttachmentArgs,
+} from './attachment-tools.js';

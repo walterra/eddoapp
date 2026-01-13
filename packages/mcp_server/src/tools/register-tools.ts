@@ -10,28 +10,36 @@ import {
   addNoteParameters,
   createTodoDescription,
   createTodoParameters,
+  deleteAttachmentDescription,
+  deleteAttachmentParameters,
   deleteNoteDescription,
   deleteNoteParameters,
   deleteTodoDescription,
   deleteTodoParameters,
   executeAddNote,
   executeCreateTodo,
+  executeDeleteAttachment,
   executeDeleteNote,
   executeDeleteTodo,
   executeGetActiveTimeTracking,
+  executeGetAttachment,
   executeGetBriefingData,
   executeGetRecapData,
   executeGetServerInfo,
   executeGetTodo,
   executeGetUserInfo,
+  executeListAttachments,
   executeListTodos,
   executeStartTimeTracking,
   executeStopTimeTracking,
   executeToggleCompletion,
   executeUpdateNote,
   executeUpdateTodo,
+  executeUploadAttachment,
   getActiveTimeTrackingDescription,
   getActiveTimeTrackingParameters,
+  getAttachmentDescription,
+  getAttachmentParameters,
   getBriefingDataDescription,
   getBriefingDataParameters,
   getRecapDataDescription,
@@ -42,6 +50,8 @@ import {
   getTodoParameters,
   getUserInfoDescription,
   getUserInfoParameters,
+  listAttachmentsDescription,
+  listAttachmentsParameters,
   listTodosDescription,
   listTodosParameters,
   startTimeTrackingDescription,
@@ -54,6 +64,8 @@ import {
   updateNoteParameters,
   updateTodoDescription,
   updateTodoParameters,
+  uploadAttachmentDescription,
+  uploadAttachmentParameters,
 } from './index.js';
 import { wrapToolExecution } from './tool-wrapper.js';
 import type { ToolContext, UserSession } from './types.js';
@@ -175,6 +187,45 @@ function registerTimeTrackingTools(server: FastMCP<UserSession>, getUserDb: GetU
   });
 }
 
+/** Registers attachment management tools */
+function registerAttachmentTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
+  server.addTool({
+    name: 'uploadAttachment',
+    description: uploadAttachmentDescription,
+    parameters: uploadAttachmentParameters,
+    execute: wrapToolExecution('uploadAttachment', (args, ctx) =>
+      executeUploadAttachment(args, ctx, getUserDb),
+    ),
+  });
+
+  server.addTool({
+    name: 'getAttachment',
+    description: getAttachmentDescription,
+    parameters: getAttachmentParameters,
+    execute: wrapToolExecution('getAttachment', (args, ctx) =>
+      executeGetAttachment(args, ctx, getUserDb),
+    ),
+  });
+
+  server.addTool({
+    name: 'deleteAttachment',
+    description: deleteAttachmentDescription,
+    parameters: deleteAttachmentParameters,
+    execute: wrapToolExecution('deleteAttachment', (args, ctx) =>
+      executeDeleteAttachment(args, ctx, getUserDb),
+    ),
+  });
+
+  server.addTool({
+    name: 'listAttachments',
+    description: listAttachmentsDescription,
+    parameters: listAttachmentsParameters,
+    execute: wrapToolExecution('listAttachments', (args, ctx) =>
+      executeListAttachments(args, ctx, getUserDb),
+    ),
+  });
+}
+
 /** Registers utility and info tools */
 function registerUtilityTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
   server.addTool({
@@ -222,6 +273,7 @@ export function registerTools(
 ): void {
   registerTodoTools(server, getUserDb, couch);
   registerNoteTools(server, getUserDb);
+  registerAttachmentTools(server, getUserDb);
   registerTimeTrackingTools(server, getUserDb);
   registerUtilityTools(server, getUserDb);
 }
