@@ -17,6 +17,11 @@ export interface TodoNote {
   createdAt: string;
   /** ISO timestamp when note was last edited */
   updatedAt?: string;
+  /**
+   * Optional array of attachment filenames for this note.
+   * References keys in the parent todo's `_attachments` with namespace `note/{noteId}/{filename}`.
+   */
+  attachments?: string[];
 }
 
 export interface TodoAlpha3 extends Omit<TodoAlpha2, 'version'> {
