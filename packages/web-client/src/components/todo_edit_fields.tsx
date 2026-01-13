@@ -2,12 +2,12 @@
  * Form field components for todo editing
  */
 import { type Todo, getActiveDuration, getFormattedDuration } from '@eddo/core-client';
-import { Button, Checkbox, Label, Textarea, TextInput } from 'flowbite-react';
-import { type FC, useState } from 'react';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Button, Checkbox, Label, TextInput } from 'flowbite-react';
+import { type FC } from 'react';
 
 import { TagInput } from './tag_input';
+// Re-export DescriptionField from dedicated module
+export { DescriptionField } from './todo_description_field';
 
 interface TodoFieldProps {
   todo: Todo;
@@ -45,54 +45,6 @@ export const TitleField: FC<TodoFieldProps> = ({ todo, onChange }) => (
     />
   </div>
 );
-
-export const DescriptionField: FC<TodoFieldProps> = ({ todo, onChange }) => {
-  const [isPreview, setIsPreview] = useState(false);
-  const hasContent = todo.description.trim().length > 0;
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <Label htmlFor="eddoTodoDescription">Description</Label>
-        {hasContent && (
-          <div className="flex gap-1">
-            <Button
-              color={isPreview ? 'gray' : 'blue'}
-              onClick={() => setIsPreview(false)}
-              size="xs"
-            >
-              Edit
-            </Button>
-            <Button
-              color={isPreview ? 'blue' : 'gray'}
-              onClick={() => setIsPreview(true)}
-              size="xs"
-            >
-              Preview
-            </Button>
-          </div>
-        )}
-      </div>
-      {isPreview ? (
-        <div
-          aria-label="Description preview"
-          className="prose prose-sm dark:prose-invert prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800 dark:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 max-w-none rounded-lg border border-neutral-300 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-700"
-        >
-          <Markdown remarkPlugins={[remarkGfm]}>{todo.description}</Markdown>
-        </div>
-      ) : (
-        <Textarea
-          aria-label="Description"
-          id="eddoTodoDescription"
-          onChange={(e) => onChange((t) => ({ ...t, description: e.target.value }))}
-          placeholder="Add a description... (supports Markdown)"
-          rows={6}
-          value={todo.description}
-        />
-      )}
-    </div>
-  );
-};
 
 export const LinkField: FC<TodoFieldProps> = ({ todo, onChange }) => (
   <div>
