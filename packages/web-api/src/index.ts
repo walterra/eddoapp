@@ -72,7 +72,7 @@ app.use('/api/*', async (c, next) => {
     c.req.raw.headers.set('Authorization', `Bearer ${tokenParam}`);
   }
   // Apply standard JWT middleware
-  const jwtMiddleware = jwt({ secret: config.jwtSecret });
+  const jwtMiddleware = jwt({ secret: config.jwtSecret, alg: 'HS256' });
   return jwtMiddleware(c, next);
 });
 app.route('/api/db', dbProxyRoutes);
