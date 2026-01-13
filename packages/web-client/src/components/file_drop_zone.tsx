@@ -19,6 +19,8 @@ export interface FileDropZoneProps {
   multiple?: boolean;
   /** Whether the component is disabled */
   disabled?: boolean;
+  /** Enable mobile camera capture (default: true on mobile) */
+  enableCamera?: boolean;
 }
 
 /** Maps MIME types to react-dropzone Accept format */
@@ -98,6 +100,11 @@ function useFileDropzone(
  * Drag and drop zone for file uploads using react-dropzone.
  * Supports drag-drop and click-to-select.
  */
+/** Detects if running on a mobile device */
+function isMobileDevice(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 export const FileDropZone: FC<FileDropZoneProps> = ({
   onFilesDropped,
   onValidationError,
@@ -106,6 +113,7 @@ export const FileDropZone: FC<FileDropZoneProps> = ({
   className = '',
   multiple = true,
   disabled = false,
+  enableCamera,
 }) => {
   const isDisabled = disabled || isUploading;
   const { getRootProps, getInputProps, isDragActive } = useFileDropzone(
@@ -117,11 +125,13 @@ export const FileDropZone: FC<FileDropZoneProps> = ({
 
   const rootProps = getRootProps();
   const inputProps = getInputProps();
+  const showCamera = enableCamera ?? isMobileDevice();
 
   return (
     <div className={className}>
       <DropZoneContainer
         containerClasses={getContainerClasses(isDragActive, !isDisabled)}
+        enableCamera={showCamera}
         inputProps={inputProps}
         isDisabled={isDisabled}
         isDragActive={isDragActive}
@@ -142,6 +152,7 @@ const DropZoneContainer: FC<{
   isDisabled: boolean;
   isUploading: boolean;
   isDragActive: boolean;
+  enableCamera: boolean;
   children?: ReactNode;
 }> = ({
   containerClasses,
@@ -150,6 +161,7 @@ const DropZoneContainer: FC<{
   isDisabled,
   isUploading,
   isDragActive,
+  enableCamera,
   children,
 }) => (
   <div
@@ -164,8 +176,25 @@ const DropZoneContainer: FC<{
     role="button"
     tabIndex={isDisabled ? -1 : 0}
   >
+    {/* Standard file input */}
     <input {...inputProps} style={undefined} />
-    <DropZoneContent isDragActive={isDragActive} isUploading={isUploading}>
+    {/* Mobile camera capture input - uses capture attribute */}
+    {enableCamera && (
+      <input
+        accept="image/*"
+        capture="environment"
+        className="sr-only"
+        disabled={isDisabled}
+        id="camera-capture-input"
+        onChange={inputProps.onChange}
+        type="file"
+      />
+    )}
+    <DropZoneContent
+      enableCamera={enableCamera}
+      isDragActive={isDragActive}
+      isUploading={isUploading}
+    >
       {children}
     </DropZoneContent>
   </div>
@@ -175,8 +204,9 @@ const DropZoneContainer: FC<{
 const DropZoneContent: FC<{
   isUploading: boolean;
   isDragActive: boolean;
+  enableCamera: boolean;
   children?: ReactNode;
-}> = ({ isUploading, isDragActive, children }) => {
+}> = ({ isUploading, isDragActive, enableCamera, children }) => {
   if (isUploading) {
     return (
       <div className="flex flex-col items-center justify-center text-neutral-500">
@@ -186,11 +216,14 @@ const DropZoneContent: FC<{
     );
   }
   if (children) return <>{children}</>;
-  return <DefaultContent isDragActive={isDragActive} />;
+  return <DefaultContent enableCamera={enableCamera} isDragActive={isDragActive} />;
 };
 
 /** Default content for drop zone */
-const DefaultContent: FC<{ isDragActive: boolean }> = ({ isDragActive }) => {
+const DefaultContent: FC<{ isDragActive: boolean; enableCamera: boolean }> = ({
+  isDragActive,
+  enableCamera,
+}) => {
   const maxSizeMB = MAX_ATTACHMENT_SIZE / (1024 * 1024);
   return (
     <div className="flex flex-col items-center justify-center text-neutral-500 dark:text-neutral-400">
@@ -200,12 +233,12 @@ const DefaultContent: FC<{ isDragActive: boolean }> = ({ isDragActive }) => {
           <span className="text-blue-600 dark:text-blue-400">Drop files here</span>
         ) : (
           <>
-            <span className="text-blue-600 dark:text-blue-400">Click to upload</span> or drag and
-            drop
+            <span className="text-blue-600 dark:text-blue-400">Click to upload</span>
+            {enableCamera ? ' or take photo' : ' or drag and drop'}
           </>
         )}
       </p>
-      <p className="mt-1 text-xs">Images & PDFs up to {maxSizeMB}MB</p>
+      <p className="mt-1 text-xs">Images & PDFs up to {maxSizeMB}MB (auto-compressed)</p>
     </div>
   );
 };

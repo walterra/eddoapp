@@ -10,6 +10,7 @@ import {
 } from '@eddo/core-shared';
 
 import { usePouchDb } from '../pouch_db';
+import { compressImage } from '../utils/image_compression';
 import { recentMutations } from './use_recent_mutations';
 
 /** Result of an attachment upload operation */
@@ -22,6 +23,10 @@ export interface UploadAttachmentResult {
   contentType: string;
   /** Size in bytes */
   size: number;
+  /** Original size before compression (if compressed) */
+  originalSize?: number;
+  /** Whether the file was compressed */
+  wasCompressed: boolean;
 }
 
 /** Parameters for uploading an attachment */
@@ -34,6 +39,8 @@ export interface UploadAttachmentParams {
   type: AttachmentType;
   /** Note ID (required if type is 'note') */
   noteId?: string;
+  /** Whether to auto-compress images (default: true) */
+  autoCompress?: boolean;
 }
 
 /** Parameters for deleting an attachment */
@@ -52,23 +59,43 @@ export interface GetAttachmentParams {
   key: string;
 }
 
-/** Creates upload mutation for attachments */
+/** Creates upload mutation for attachments with auto-compression */
 function useUploadMutation(
   rawDb: PouchDB.Database,
   queryClient: ReturnType<typeof useQueryClient>,
 ) {
   return useMutation<UploadAttachmentResult, Error, UploadAttachmentParams>({
-    mutationFn: async ({ todoId, file, type, noteId }) => {
-      const validation = validateAttachment(file.size, file.type);
+    mutationFn: async ({ todoId, file, type, noteId, autoCompress = true }) => {
+      // Auto-compress images if enabled
+      let fileToUpload = file;
+      let wasCompressed = false;
+      let originalSize: number | undefined;
+
+      if (autoCompress) {
+        const result = await compressImage(file);
+        fileToUpload = result.file;
+        wasCompressed = result.wasCompressed;
+        originalSize = wasCompressed ? result.originalSize : undefined;
+      }
+
+      // Validate the (possibly compressed) file
+      const validation = validateAttachment(fileToUpload.size, fileToUpload.type);
       if (!validation.valid) {
         throw new Error(validation.error);
       }
 
-      const key = buildAttachmentKey(type, file.name, noteId);
+      const key = buildAttachmentKey(type, fileToUpload.name, noteId);
       const doc = await rawDb.get(todoId);
-      await rawDb.putAttachment(todoId, key, doc._rev!, file, file.type);
+      await rawDb.putAttachment(todoId, key, doc._rev!, fileToUpload, fileToUpload.type);
 
-      return { key, filename: file.name, contentType: file.type, size: file.size };
+      return {
+        key,
+        filename: fileToUpload.name,
+        contentType: fileToUpload.type,
+        size: fileToUpload.size,
+        originalSize,
+        wasCompressed,
+      };
     },
     onSuccess: (_, { todoId }) => {
       recentMutations.add(todoId);
@@ -96,7 +123,7 @@ function useDeleteMutation(
 
 /**
  * Hook for managing PouchDB attachments on todo documents.
- * Provides upload, delete, get, and list operations.
+ * Provides upload (with auto-compression), delete, get, and list operations.
  */
 export function useAttachment() {
   const { rawDb } = usePouchDb();
