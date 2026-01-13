@@ -19,7 +19,7 @@
     "events": "^3.3.0",
     "flowbite": "^4.0.1",
     "flowbite-react": "^0.12.10",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.22",
     "pouchdb-browser": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "react": "^19.2.3",
