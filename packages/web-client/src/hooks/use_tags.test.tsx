@@ -1,4 +1,5 @@
 import { type TodoAlpha3 } from '@eddo/core-client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
 import { renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
@@ -82,26 +83,35 @@ vi.mock('./use_database_changes', () => ({
 describe('useTags', () => {
   let testDb: PouchDB.Database;
   let contextValue: PouchDbContextType;
+  let queryClient: QueryClient;
 
   beforeEach(async () => {
     const setup = createTestPouchDb();
     testDb = setup.db;
     contextValue = setup.contextValue;
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+      },
+    });
     await createTestIndexes(testDb);
   });
 
   afterEach(async () => {
+    queryClient.clear();
     await destroyTestPouchDb(testDb);
   });
 
   const renderHookWithContext = () => {
     return renderHook(() => useTags(), {
       wrapper: ({ children }) => (
-        <PouchDbContext.Provider value={contextValue}>
-          <TestDatabaseChangesProvider pouchDbContext={contextValue}>
-            {children}
-          </TestDatabaseChangesProvider>
-        </PouchDbContext.Provider>
+        <QueryClientProvider client={queryClient}>
+          <PouchDbContext.Provider value={contextValue}>
+            <TestDatabaseChangesProvider pouchDbContext={contextValue}>
+              {children}
+            </TestDatabaseChangesProvider>
+          </PouchDbContext.Provider>
+        </QueryClientProvider>
       ),
     });
   };
@@ -233,11 +243,9 @@ describe('useTags', () => {
 
   describe('Error handling', () => {
     it('handles database errors gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      // Mock safeFind to throw an error
+      // Mock rawDb.query to throw an error
       const mockError = new Error('Database connection failed');
-      vi.spyOn(contextValue.safeDb, 'safeFind').mockRejectedValue(mockError);
+      vi.spyOn(contextValue.rawDb!, 'query').mockRejectedValue(mockError);
 
       const { result } = renderHookWithContext();
 
@@ -245,11 +253,9 @@ describe('useTags', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
+      // TanStack Query captures the error and exposes it via the error property
       expect(result.current.allTags).toEqual([]);
       expect(result.current.error).toEqual(mockError);
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch tags:', mockError);
-
-      consoleSpy.mockRestore();
     });
 
     it.skip('resets error on successful refetch', async () => {
@@ -257,9 +263,13 @@ describe('useTags', () => {
 
       // First, simulate an error
       const mockError = new Error('Network error');
-      vi.spyOn(contextValue.safeDb, 'safeFind')
+      vi.spyOn(contextValue.rawDb!, 'query')
         .mockRejectedValueOnce(mockError)
-        .mockResolvedValueOnce([createTestTodo('todo1', ['work'])]);
+        .mockResolvedValueOnce({
+          rows: [{ id: '1', key: 'work', value: 1 }],
+          total_rows: 1,
+          offset: 0,
+        });
 
       const { result } = renderHookWithContext();
 

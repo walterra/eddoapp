@@ -7,6 +7,7 @@ import { type FC, type ReactElement } from 'react';
 import { BiCheckbox, BiCheckboxChecked } from 'react-icons/bi';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { type SubtaskCount } from '../hooks/use_parent_child';
 import { CopyIdButton } from './copy_id_button';
 import { DueDatePopover } from './due_date_popover';
 import { FormattedMessage } from './formatted_message';
@@ -21,6 +22,8 @@ interface TodoCellProps {
   isUpdating: boolean;
   activeDuration: number;
   onToggleCheckbox: () => void;
+  /** Pre-computed subtask count (avoids N+1 queries) */
+  subtaskCount?: SubtaskCount;
 }
 
 const TitleCell: FC<{ todo: Todo; error: DatabaseError | null; widthClass: string }> = ({
@@ -154,9 +157,19 @@ const DescriptionCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthCl
   </td>
 );
 
-const SubtasksCell: FC<{ todo: Todo; widthClass: string }> = ({ todo, widthClass }) => (
+interface SubtasksCellProps {
+  todo: Todo;
+  widthClass: string;
+  subtaskCount?: SubtaskCount;
+}
+
+const SubtasksCell: FC<SubtasksCellProps> = ({ todo, widthClass, subtaskCount }) => (
   <td className={`px-2 py-1 text-xs ${widthClass}`}>
-    <SubtasksPopover todoId={todo._id} />
+    {subtaskCount && subtaskCount.total > 0 ? (
+      <SubtasksPopover subtaskCount={subtaskCount} todoId={todo._id} />
+    ) : (
+      <span className="text-neutral-400">-</span>
+    )}
   </td>
 );
 
@@ -167,13 +180,16 @@ interface CellRenderContext {
   activeDuration: number;
   onToggleCheckbox: () => void;
   widthClass: string;
+  subtaskCount?: SubtaskCount;
 }
 
 type CellRenderer = (ctx: CellRenderContext) => ReactElement;
 
 const CELL_RENDERERS: Record<string, CellRenderer> = {
   title: (ctx) => <TitleCell error={ctx.error} todo={ctx.todo} widthClass={ctx.widthClass} />,
-  subtasks: (ctx) => <SubtasksCell todo={ctx.todo} widthClass={ctx.widthClass} />,
+  subtasks: (ctx) => (
+    <SubtasksCell subtaskCount={ctx.subtaskCount} todo={ctx.todo} widthClass={ctx.widthClass} />
+  ),
   context: (ctx) => <ContextCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   due: (ctx) => <DueCell todo={ctx.todo} widthClass={ctx.widthClass} />,
   tags: (ctx) => <TagsCell todo={ctx.todo} widthClass={ctx.widthClass} />,
@@ -203,6 +219,7 @@ export const TodoCell: FC<TodoCellProps> = ({
   isUpdating,
   activeDuration,
   onToggleCheckbox,
+  subtaskCount,
 }) => {
   const widthClass = getColumnWidthClass(columnId);
   const ctx: CellRenderContext = {
@@ -212,6 +229,7 @@ export const TodoCell: FC<TodoCellProps> = ({
     activeDuration,
     onToggleCheckbox,
     widthClass,
+    subtaskCount,
   };
   const renderer = CELL_RENDERERS[columnId];
   return renderer ? renderer(ctx) : <DefaultCell />;
