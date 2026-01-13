@@ -77,6 +77,29 @@ export const ChildRow: FC<ChildRowProps> = (props) => {
   );
 };
 
+/** Returns Tailwind classes for row depth-based styling */
+const getDepthClasses = (depth: number): string => {
+  const base = 'border-b border-neutral-200 dark:border-neutral-700';
+  const depthStyles: Record<number, string> = {
+    1: 'bg-black/[0.02] hover:bg-neutral-100 dark:bg-white/[0.02] dark:hover:bg-neutral-700',
+    2: 'bg-black/[0.04] hover:bg-neutral-100 dark:bg-white/[0.04] dark:hover:bg-neutral-700',
+    3: 'bg-black/[0.06] hover:bg-neutral-100 dark:bg-white/[0.06] dark:hover:bg-neutral-700',
+  };
+  return `${base} ${depthStyles[Math.min(depth, 3)] ?? 'hover:bg-neutral-50 dark:hover:bg-neutral-700'}`;
+};
+
+/** Creates cell context for rendering column cells */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const createCellContext = (
+  rowData: TodoRowData,
+  column: ColumnDef<TodoRowData, any>,
+  index: number,
+) => ({
+  row: { original: rowData },
+  getValue: () =>
+    'accessorFn' in column && column.accessorFn ? column.accessorFn(rowData, index) : undefined,
+});
+
 interface ChildRowCellsProps {
   rowData: TodoRowData;
   todo: Todo;
@@ -91,42 +114,15 @@ interface ChildRowCellsProps {
 }
 
 /** Render cells for a child row */
-const ChildRowCells: FC<ChildRowCellsProps> = ({
-  rowData,
-  todo,
-  duration,
-  hasChildren,
-  isExpanded,
-  timeTrackingActive,
-  toggleExpanded,
-  columns,
-  depth,
-}) => (
-  <tr
-    className={`border-b border-neutral-200 dark:border-neutral-700 ${
-      depth === 1
-        ? 'bg-black/[0.02] hover:bg-neutral-100 dark:bg-white/[0.02] dark:hover:bg-neutral-700'
-        : depth === 2
-          ? 'bg-black/[0.04] hover:bg-neutral-100 dark:bg-white/[0.04] dark:hover:bg-neutral-700'
-          : depth >= 3
-            ? 'bg-black/[0.06] hover:bg-neutral-100 dark:bg-white/[0.06] dark:hover:bg-neutral-700'
-            : 'hover:bg-neutral-50 dark:hover:bg-neutral-700'
-    }`}
-  >
-    {columns.map((column, index) => {
-      const cellContext = {
-        row: { original: rowData },
-        getValue: () => {
-          if ('accessorFn' in column && column.accessorFn) {
-            return column.accessorFn(rowData, index);
-          }
-          return undefined;
-        },
-      };
-      return (
+const ChildRowCells: FC<ChildRowCellsProps> = (props) => {
+  const { rowData, todo, duration, hasChildren, isExpanded, timeTrackingActive } = props;
+  const { toggleExpanded, columns, depth } = props;
+
+  return (
+    <tr className={getDepthClasses(depth)}>
+      {columns.map((column, index) => (
         <td className="px-2 py-1" key={column.id}>
           {index === 1 ? (
-            // Title column - add expand toggle and indentation here
             <div className="flex items-center">
               <ExpandToggle
                 depth={depth}
@@ -134,14 +130,16 @@ const ChildRowCells: FC<ChildRowCellsProps> = ({
                 isExpanded={isExpanded}
                 onToggle={() => toggleExpanded(todo._id)}
               />
-              {column.cell ? flexRender(column.cell, cellContext as never) : null}
+              {column.cell
+                ? flexRender(column.cell, createCellContext(rowData, column, index) as never)
+                : null}
             </div>
           ) : column.cell ? (
-            flexRender(column.cell, cellContext as never)
+            flexRender(column.cell, createCellContext(rowData, column, index) as never)
           ) : null}
         </td>
-      );
-    })}
-    <RowActions timeTrackingActive={timeTrackingActive} todo={todo} todoDuration={duration} />
-  </tr>
-);
+      ))}
+      <RowActions timeTrackingActive={timeTrackingActive} todo={todo} todoDuration={duration} />
+    </tr>
+  );
+};
