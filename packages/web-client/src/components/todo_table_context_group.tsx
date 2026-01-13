@@ -1,16 +1,17 @@
 /**
  * Context group component for TodoTable
- * Renders a single context section with its todos
+ * Renders a single context section with its todos and expandable subtask trees
  */
 import type { Todo } from '@eddo/core-client';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { type FC, useMemo, useRef } from 'react';
+import { type FC, useCallback, useMemo, useRef, useState } from 'react';
 
+import { useExpandedChildren } from '../hooks/use_expanded_children';
 import { type SubtaskCount } from '../hooks/use_parent_child';
 import { BulkDueDatePopover } from './bulk_due_date_popover';
 import { FormattedMessage } from './formatted_message';
 import { buildColumns, type TodoRowData } from './todo_table_columns';
-import { StandardRows, VirtualizedRows } from './todo_table_rows';
+import { ExpandableRows } from './todo_table_rows';
 
 /** Minimum rows before virtualization kicks in */
 const VIRTUALIZATION_THRESHOLD = 50;
@@ -30,63 +31,83 @@ const useRowData = (
   contextTodos: Todo[],
   todoDurations: Map<string, number>,
   subtaskCounts: Map<string, SubtaskCount>,
-): TodoRowData[] => {
-  return useMemo<TodoRowData[]>(() => {
-    return contextTodos.map((todo) => ({
-      todo,
-      duration: todoDurations.get(todo._id) ?? 0,
-      subtaskCount: subtaskCounts.get(todo._id),
-      isUpdating: false,
-      error: null,
-      onToggleCheckbox: () => {},
-    }));
-  }, [contextTodos, todoDurations, subtaskCounts]);
+): TodoRowData[] =>
+  useMemo<TodoRowData[]>(
+    () =>
+      contextTodos.map((todo) => ({
+        todo,
+        duration: todoDurations.get(todo._id) ?? 0,
+        subtaskCount: subtaskCounts.get(todo._id),
+        isUpdating: false,
+        error: null,
+        onToggleCheckbox: () => {},
+      })),
+    [contextTodos, todoDurations, subtaskCounts],
+  );
+
+/** Hook for expansion state management */
+const useExpansion = () => {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const { childrenByParent, childSubtaskCounts } = useExpandedChildren(expandedIds);
+
+  const toggleExpanded = useCallback((todoId: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(todoId)) {
+        next.delete(todoId);
+      } else {
+        next.add(todoId);
+      }
+      return next;
+    });
+  }, []);
+
+  return { expandedIds, childrenByParent, childSubtaskCounts, toggleExpanded };
 };
 
-export const ContextGroup: FC<ContextGroupProps> = ({
-  context,
-  contextTodos,
-  durationByContext,
-  todoDurations,
-  subtaskCounts,
-  selectedColumns,
-  timeTrackingActive,
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hasActiveTimeTracking = timeTrackingActive.length > 0;
+export const ContextGroup: FC<ContextGroupProps> = (props) => {
+  const { context, contextTodos, durationByContext, todoDurations, subtaskCounts } = props;
+  const { selectedColumns, timeTrackingActive } = props;
 
-  const data = useRowData(contextTodos, todoDurations, subtaskCounts);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { expandedIds, childrenByParent, childSubtaskCounts, toggleExpanded } = useExpansion();
+
+  // Merge subtask counts: parent counts + counts for expanded children
+  const allSubtaskCounts = useMemo(() => {
+    const merged = new Map(subtaskCounts);
+    for (const [id, count] of childSubtaskCounts) {
+      merged.set(id, count);
+    }
+    return merged;
+  }, [subtaskCounts, childSubtaskCounts]);
+
+  const data = useRowData(contextTodos, todoDurations, allSubtaskCounts);
   const columns = useMemo(() => buildColumns(selectedColumns), [selectedColumns]);
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
+  const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
   const rows = table.getRowModel().rows;
-  const useVirtualization = rows.length > VIRTUALIZATION_THRESHOLD;
 
   return (
     <div className="mb-4">
       <ContextHeader context={context} duration={durationByContext[context]} />
-      <TableContainer containerRef={containerRef} useVirtualization={useVirtualization}>
+      <TableContainer
+        containerRef={containerRef}
+        useVirtualization={rows.length > VIRTUALIZATION_THRESHOLD}
+      >
         <table className="w-full table-fixed divide-y divide-neutral-200 dark:divide-neutral-700">
           <TableHead contextTodos={contextTodos} table={table} />
-          {useVirtualization ? (
-            <VirtualizedRows
-              containerRef={containerRef as React.RefObject<HTMLDivElement>}
-              rows={rows}
-              timeTrackingActive={hasActiveTimeTracking}
-              todoDurations={todoDurations}
-            />
-          ) : (
-            <StandardRows
-              rows={rows}
-              timeTrackingActive={hasActiveTimeTracking}
-              todoDurations={todoDurations}
-            />
-          )}
+          <ExpandableRows
+            childrenByParent={childrenByParent}
+            columns={columns}
+            containerRef={containerRef as React.RefObject<HTMLDivElement>}
+            expandedIds={expandedIds}
+            rows={rows}
+            subtaskCounts={allSubtaskCounts}
+            timeTrackingActive={timeTrackingActive.length > 0}
+            todoDurations={todoDurations}
+            toggleExpanded={toggleExpanded}
+            useVirtualization={rows.length > VIRTUALIZATION_THRESHOLD}
+          />
         </table>
       </TableContainer>
     </div>
@@ -124,13 +145,11 @@ interface TableHeadProps {
   contextTodos: readonly Todo[];
 }
 
-/** Column width in pixels, or undefined for flexible (title column) */
 const ACTIONS_WIDTH = 96;
 
 const TableColGroup: FC<{ headers: { id: string; getSize: () => number }[] }> = ({ headers }) => (
   <colgroup>
     {headers.map((header) => {
-      // Title column is flexible - no explicit width
       const width = header.id === 'title' ? undefined : header.getSize();
       return <col key={header.id} style={{ width: width ? `${width}px` : undefined }} />;
     })}
@@ -140,7 +159,6 @@ const TableColGroup: FC<{ headers: { id: string; getSize: () => number }[] }> = 
 
 const TableHead: FC<TableHeadProps> = ({ table, contextTodos }) => {
   const headers = table.getHeaderGroups().flatMap((hg) => hg.headers);
-
   return (
     <>
       <TableColGroup headers={headers} />
@@ -171,7 +189,6 @@ interface TableHeaderCellProps {
   todos: readonly Todo[];
 }
 
-/** Header cell with optional bulk actions */
 const TableHeaderCell: FC<TableHeaderCellProps> = ({ columnId, children, todos }) => {
   if (columnId === 'due') {
     return <BulkDueDatePopover todos={todos}>{children}</BulkDueDatePopover>;
