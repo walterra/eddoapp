@@ -26,7 +26,7 @@ const getButtonTitle = (count: number): string =>
 
 /** Get button class based on whether there are incomplete todos */
 const getButtonClass = (hasIncompleteTodos: boolean): string =>
-  `cursor-pointer rounded px-1 py-0.5 ${
+  `cursor-pointer rounded px-1 py-0.5 uppercase ${
     hasIncompleteTodos
       ? 'hover:bg-primary-100 hover:text-primary-700 dark:hover:bg-primary-900 dark:hover:text-primary-300'
       : 'cursor-default opacity-50'
