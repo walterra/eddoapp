@@ -43,7 +43,7 @@
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/typography": "^0.5.19",
     "@testcontainers/couchdb": "^11.10.0",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/react": "^16.3.1",
     "@testing-library/react-hooks": "^8.0.1",
     "@types/d3-array": "^3.2.2",
     "@types/lodash-es": "^4.17.6",
