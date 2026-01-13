@@ -1,5 +1,15 @@
 # @eddo/telegram-bot
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [[`f9372853bb347b07adc1e47ba037ad89fce461b1`](https://github.com/walterra/eddoapp/commit/f9372853bb347b07adc1e47ba037ad89fce461b1), [`7bc78f1687988374e0e7fe227f1f1dc56ade4a32`](https://github.com/walterra/eddoapp/commit/7bc78f1687988374e0e7fe227f1f1dc56ade4a32)]:
+  - @eddo/core-shared@0.6.0
+  - @eddo/core-server@0.6.0
+  - @eddo/web-api@0.6.0
+  - @eddo/printer-service@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes
