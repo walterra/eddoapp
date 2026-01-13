@@ -15,10 +15,44 @@ PouchDB.plugin(PouchDBFind);
 
 let testDbCounter = 0;
 
-/** Creates required indexes for Mango queries */
+/** Creates required indexes and design documents for tests */
 export async function createTestIndexes(db: PouchDB.Database): Promise<void> {
+  // Mango indexes
   await db.createIndex({ index: { fields: ['version'] } });
   await db.createIndex({ index: { fields: ['version', 'due'] } });
+
+  // MapReduce design documents for tags and contexts
+  await db.put({
+    _id: '_design/tags',
+    views: {
+      by_tag: {
+        map: `function(doc) {
+          if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
+            for (var i = 0; i < doc.tags.length; i++) {
+              var tag = (doc.tags[i] || '').trim();
+              if (tag) emit(tag, 1);
+            }
+          }
+        }`,
+        reduce: '_count',
+      },
+    },
+  });
+
+  await db.put({
+    _id: '_design/contexts',
+    views: {
+      by_context: {
+        map: `function(doc) {
+          if (doc.version === 'alpha3' && doc.context) {
+            var ctx = doc.context.trim();
+            if (ctx) emit(ctx, 1);
+          }
+        }`,
+        reduce: '_count',
+      },
+    },
+  });
 }
 
 // Create real PouchDB instance with memory adapter for testing

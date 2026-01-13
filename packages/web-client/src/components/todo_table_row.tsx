@@ -10,6 +10,7 @@ import {
   useAuditedToggleCompletionMutation,
   useAuditedToggleTimeTrackingMutation,
 } from '../hooks/use_audited_todo_mutations';
+import { type SubtaskCount } from '../hooks/use_parent_child';
 import { useTodoFlyout } from '../hooks/use_todo_flyout';
 import { ICON_BUTTON } from '../styles/interactive';
 import { TodoFlyout } from './todo_flyout';
@@ -22,6 +23,8 @@ interface TodoRowProps {
   timeTrackingActive: boolean;
   /** Pre-computed total duration (own + child time) in milliseconds */
   todoDuration: number;
+  /** Pre-computed subtask count (avoids N+1 queries) */
+  subtaskCount?: SubtaskCount;
 }
 
 interface TimeTrackingButtonProps {
@@ -80,6 +83,7 @@ interface RowCellsProps {
   isUpdating: boolean;
   error: DatabaseError | null;
   onToggleCheckbox: () => void;
+  subtaskCount?: SubtaskCount;
 }
 
 const RowCells: FC<RowCellsProps> = ({
@@ -89,6 +93,7 @@ const RowCells: FC<RowCellsProps> = ({
   isUpdating,
   error,
   onToggleCheckbox,
+  subtaskCount,
 }) => (
   <>
     {columns.map((columnId) => (
@@ -99,6 +104,7 @@ const RowCells: FC<RowCellsProps> = ({
           error={error}
           isUpdating={isUpdating}
           onToggleCheckbox={onToggleCheckbox}
+          subtaskCount={subtaskCount}
           todo={todo}
         />
       </Fragment>
@@ -162,6 +168,7 @@ const TodoRowInner: FC<TodoRowProps> = ({
   selectedColumns,
   timeTrackingActive,
   todoDuration,
+  subtaskCount,
 }) => {
   const state = useTodoRowState(todo, todoDuration);
 
@@ -174,6 +181,7 @@ const TodoRowInner: FC<TodoRowProps> = ({
           error={state.error}
           isUpdating={state.isUpdating}
           onToggleCheckbox={state.handleToggleCheckbox}
+          subtaskCount={subtaskCount}
           todo={todo}
         />
         <TodoRowActions
@@ -190,9 +198,14 @@ const TodoRowInner: FC<TodoRowProps> = ({
 };
 
 export const TodoRow = memo(TodoRowInner, (prevProps, nextProps) => {
+  const subtaskCountEqual =
+    prevProps.subtaskCount?.total === nextProps.subtaskCount?.total &&
+    prevProps.subtaskCount?.completed === nextProps.subtaskCount?.completed;
+
   return (
     prevProps.timeTrackingActive === nextProps.timeTrackingActive &&
     prevProps.todoDuration === nextProps.todoDuration &&
+    subtaskCountEqual &&
     areTodosEqual(prevProps.todo, nextProps.todo) &&
     JSON.stringify(prevProps.selectedColumns) === JSON.stringify(nextProps.selectedColumns)
   );

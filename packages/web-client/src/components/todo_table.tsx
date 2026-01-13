@@ -2,29 +2,24 @@
  * Table view for todos grouped by context
  */
 import { type Activity, type DatabaseError, type Todo } from '@eddo/core-client';
-import { Spinner } from 'flowbite-react';
 import { type FC, useMemo } from 'react';
 
+import { type SubtaskCount, useSubtaskCountsForParents } from '../hooks/use_parent_child';
 import { usePouchDb } from '../pouch_db';
-import { BulkDueDatePopover } from './bulk_due_date_popover';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
 import { EmptyState } from './empty_state';
-import { FormattedMessage } from './formatted_message';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
 import { calculateDateRange, type DateRange } from './todo_board_helpers';
 import { useDbInitialization, useTodoBoardData } from './todo_board_state';
+import { LoadingSpinner, TodoTableContent } from './todo_table_content';
 import {
   calculateDurationByContext,
   calculateTodoDurations,
   filterTodos,
-  getColumnLabel,
-  getColumnWidthClass,
   groupTodosByContext,
-  reorderColumnsWithStatusFirst,
 } from './todo_table_helpers';
-import { TodoRow } from './todo_table_row';
 
 interface TodoTableProps {
   currentDate: Date;
@@ -39,6 +34,7 @@ interface TableDataResult {
   groupedByContext: Array<[string, Todo[]]>;
   durationByContext: Record<string, string>;
   todoDurations: Map<string, number>;
+  subtaskCounts: Map<string, SubtaskCount>;
   displayError: DatabaseError | null;
   hasNoTodos: boolean;
   hasActiveFilters: boolean;
@@ -115,6 +111,27 @@ const useFilteredData = (
   return { filteredTodos, groupedByContext, durationByContext, todoDurations };
 };
 
+/** Computes derived state flags from table data */
+const useTableFlags = (
+  groupedByContext: Array<[string, Todo[]]>,
+  boardData: ReturnType<typeof useTodoBoardData>,
+  isInitialized: boolean,
+  filters: FilterParams,
+) => {
+  const hasNoTodos =
+    groupedByContext.length === 0 &&
+    !boardData.isLoading &&
+    isInitialized &&
+    boardData.todosQuery.isFetched;
+
+  const hasActiveFilters =
+    filters.selectedTags.length > 0 ||
+    filters.selectedContexts.length > 0 ||
+    filters.selectedStatus !== 'all';
+
+  return { hasNoTodos, hasActiveFilters };
+};
+
 const useTableData = (
   props: TodoTableProps,
   isInitialized: boolean,
@@ -133,32 +150,34 @@ const useTableData = (
     isInitialized,
   });
 
-  // dateRange already contains YYYY-MM-DD strings (no conversion needed)
-  const startDateStr = dateRange.startDate;
-  const endDateStr = dateRange.endDate;
+  const { groupedByContext, durationByContext, todoDurations, filteredTodos } = useFilteredData(
+    boardData,
+    {
+      selectedTags,
+      selectedContexts,
+      selectedStatus,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+    },
+  );
 
-  const { groupedByContext, durationByContext, todoDurations } = useFilteredData(boardData, {
-    selectedTags,
-    selectedContexts,
-    selectedStatus,
-    startDate: startDateStr,
-    endDate: endDateStr,
-  });
+  // Get IDs of visible todos to fetch their children's counts
+  const visibleParentIds = useMemo(() => filteredTodos.map((t) => t._id), [filteredTodos]);
+  const { data: subtaskCounts } = useSubtaskCountsForParents(visibleParentIds, isInitialized);
 
-  const hasNoTodos =
-    groupedByContext.length === 0 &&
-    !boardData.isLoading &&
-    isInitialized &&
-    boardData.todosQuery.isFetched;
-
-  const hasActiveFilters =
-    selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
+  const { hasNoTodos, hasActiveFilters } = useTableFlags(
+    groupedByContext,
+    boardData,
+    isInitialized,
+    { selectedTags, selectedContexts, selectedStatus },
+  );
 
   return {
     ...boardData,
     groupedByContext,
     durationByContext,
     todoDurations,
+    subtaskCounts: subtaskCounts ?? new Map<string, SubtaskCount>(),
     displayError: error || (boardData.queryError as DatabaseError | null),
     hasNoTodos,
     hasActiveFilters,
@@ -211,6 +230,7 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
           durationByContext={data.durationByContext}
           groupedByContext={data.groupedByContext}
           selectedColumns={props.selectedColumns}
+          subtaskCounts={data.subtaskCounts}
           timeTrackingActive={data.timeTrackingActive}
           todoDurations={data.todoDurations}
         />
@@ -218,134 +238,3 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
     </div>
   );
 };
-
-const LoadingSpinner: FC = () => (
-  <div
-    aria-label="Loading todos"
-    className="flex min-h-64 items-center justify-center bg-neutral-50 dark:bg-neutral-800"
-    role="status"
-  >
-    <Spinner aria-label="Loading" size="lg" />
-    <span className="ml-3 text-neutral-600 dark:text-neutral-400">Loading todos...</span>
-  </div>
-);
-
-interface TodoTableContentProps {
-  groupedByContext: Array<[string, Todo[]]>;
-  durationByContext: Record<string, string>;
-  todoDurations: Map<string, number>;
-  selectedColumns: string[];
-  timeTrackingActive: string[];
-}
-
-const TodoTableContent: FC<TodoTableContentProps> = ({
-  groupedByContext,
-  durationByContext,
-  todoDurations,
-  selectedColumns,
-  timeTrackingActive,
-}) => (
-  <div className="overflow-x-auto py-2">
-    {groupedByContext.map(([context, contextTodos]) => (
-      <ContextGroup
-        context={context}
-        contextTodos={contextTodos}
-        durationByContext={durationByContext}
-        key={context}
-        selectedColumns={selectedColumns}
-        timeTrackingActive={timeTrackingActive}
-        todoDurations={todoDurations}
-      />
-    ))}
-  </div>
-);
-
-interface ContextGroupProps {
-  context: string;
-  contextTodos: Todo[];
-  durationByContext: Record<string, string>;
-  todoDurations: Map<string, number>;
-  selectedColumns: string[];
-  timeTrackingActive: string[];
-}
-
-const ContextGroup: FC<ContextGroupProps> = ({
-  context,
-  contextTodos,
-  durationByContext,
-  todoDurations,
-  selectedColumns,
-  timeTrackingActive,
-}) => (
-  <div className="mb-4">
-    <ContextHeader context={context} duration={durationByContext[context]} />
-    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
-      <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-        <TableHeader contextTodos={contextTodos} selectedColumns={selectedColumns} />
-        <tbody className="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
-          {contextTodos.map((todo) => (
-            <TodoRow
-              key={`${todo._id}-${todo._rev}`}
-              selectedColumns={selectedColumns}
-              timeTrackingActive={timeTrackingActive.length > 0}
-              todo={todo}
-              todoDuration={todoDurations.get(todo._id) ?? 0}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
-
-const ContextHeader: FC<{ context: string; duration: string }> = ({ context, duration }) => (
-  <div className="mb-1 flex items-center justify-between">
-    <h3 className="text-xs font-semibold tracking-wide text-neutral-700 uppercase dark:text-neutral-300">
-      <FormattedMessage message={context} />
-    </h3>
-    <span className="text-xs text-neutral-500 dark:text-neutral-400">{duration}</span>
-  </div>
-);
-
-interface TableHeaderProps {
-  selectedColumns: string[];
-  contextTodos: readonly Todo[];
-}
-
-/**
- * Render column header content, with bulk action popover for due date column
- */
-const ColumnHeaderContent: FC<{ columnId: string; contextTodos: readonly Todo[] }> = ({
-  columnId,
-  contextTodos,
-}) => {
-  const label = getColumnLabel(columnId);
-
-  if (columnId === 'due') {
-    return <BulkDueDatePopover todos={contextTodos}>{label}</BulkDueDatePopover>;
-  }
-
-  return <>{label}</>;
-};
-
-const TableHeader: FC<TableHeaderProps> = ({ selectedColumns, contextTodos }) => (
-  <thead className="bg-neutral-50 dark:bg-neutral-700">
-    <tr>
-      {reorderColumnsWithStatusFirst(selectedColumns).map((columnId) => (
-        <th
-          className={`px-2 py-1 text-left text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400 ${getColumnWidthClass(columnId)}`}
-          key={columnId}
-          scope="col"
-        >
-          <ColumnHeaderContent columnId={columnId} contextTodos={contextTodos} />
-        </th>
-      ))}
-      <th
-        className="w-24 px-2 py-1 text-right text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400"
-        scope="col"
-      >
-        Actions
-      </th>
-    </tr>
-  </thead>
-);

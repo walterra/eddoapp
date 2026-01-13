@@ -2,10 +2,17 @@
  * Hooks for parent-child todo relationships
  */
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import type { Todo } from '@eddo/core-shared';
 
 import { usePouchDb } from '../pouch_db';
+
+/** Subtask count info for a parent todo */
+export interface SubtaskCount {
+  total: number;
+  completed: number;
+}
 
 /**
  * Fetches children (subtasks) of a todo by parentId
@@ -98,5 +105,54 @@ export function useTodoById(todoId: string | null | undefined, enabled = true) {
       return todo;
     },
     enabled: !!safeDb && !!todoId && enabled,
+  });
+}
+
+/**
+ * Fetches child todos for specific parent IDs and computes subtask counts.
+ * Only queries children whose parentId is in the provided list.
+ * Single query shared across all table rows - avoids N+1 queries.
+ * @param parentIds - Array of parent todo IDs to fetch children for
+ * @param enabled - Whether the query should run
+ * @returns Map<parentId, SubtaskCount>
+ */
+export function useSubtaskCountsForParents(parentIds: string[], enabled = true) {
+  const { safeDb } = usePouchDb();
+
+  // Create a stable key from sorted parent IDs
+  const parentIdsKey = useMemo(() => [...parentIds].sort().join(','), [parentIds]);
+
+  return useQuery({
+    queryKey: ['todos', 'subtaskCounts', parentIdsKey],
+    queryFn: async () => {
+      if (parentIds.length === 0) {
+        return new Map<string, SubtaskCount>();
+      }
+
+      // Query children where parentId is one of our visible parents
+      // PouchDB Mango supports $in operator for this
+      const children = await safeDb.safeFind<Todo>(
+        {
+          version: 'alpha3',
+          parentId: { $in: parentIds },
+        },
+        { limit: 10000 },
+      );
+
+      // Compute counts per parent
+      const counts = new Map<string, SubtaskCount>();
+      for (const child of children) {
+        if (!child.parentId) continue;
+        const existing = counts.get(child.parentId) ?? { total: 0, completed: 0 };
+        existing.total += 1;
+        if (child.completed !== null) {
+          existing.completed += 1;
+        }
+        counts.set(child.parentId, existing);
+      }
+
+      return counts;
+    },
+    enabled: !!safeDb && enabled && parentIds.length > 0,
   });
 }

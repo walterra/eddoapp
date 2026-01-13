@@ -1,5 +1,7 @@
 /**
- * SubtasksPopover component for displaying child todos in a popover
+ * SubtasksPopover component for displaying child todos in a popover.
+ * Uses pre-computed subtask counts to avoid N+1 queries.
+ * Only fetches full children data when popover is opened.
  */
 import type { Todo } from '@eddo/core-client';
 import { type FC, useEffect, useRef, useState } from 'react';
@@ -8,12 +10,14 @@ import { BiGitBranch } from 'react-icons/bi';
 import { MdCheckBox, MdCheckBoxOutlineBlank } from 'react-icons/md';
 
 import { useFloatingPosition } from '../hooks/use_floating_position';
-import { useChildTodos } from '../hooks/use_parent_child';
+import { type SubtaskCount, useChildTodos } from '../hooks/use_parent_child';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { TRANSITION_FAST } from '../styles/interactive';
 
 interface SubtasksPopoverProps {
   todoId: string;
+  /** Pre-computed subtask count (avoids N+1 queries) */
+  subtaskCount?: SubtaskCount;
 }
 
 const POPOVER_STYLES =
@@ -73,21 +77,24 @@ const SubtaskItem: FC<SubtaskItemProps> = ({ todo, onClick }) => {
 };
 
 interface SubtasksPopoverMenuProps {
-  subtasks: Todo[];
+  todoId: string;
   onClose: () => void;
   onSubtaskClick: (todo: Todo) => void;
   floatingStyles: object;
   setFloatingRef: (node: HTMLDivElement | null) => void;
 }
 
+/** Menu content that fetches children only when rendered (popover is open) */
 const SubtasksPopoverMenu: FC<SubtasksPopoverMenuProps> = ({
-  subtasks,
+  todoId,
   onClose,
   onSubtaskClick,
   floatingStyles,
   setFloatingRef,
 }) => {
   const menuRef = useRef<HTMLDivElement | null>(null);
+  // Only fetch children when popover is actually open
+  const { data: subtasks, isLoading } = useChildTodos(todoId);
 
   const setRefs = (node: HTMLDivElement | null) => {
     menuRef.current = node;
@@ -96,8 +103,8 @@ const SubtasksPopoverMenu: FC<SubtasksPopoverMenuProps> = ({
 
   usePopoverDismiss(menuRef, onClose);
 
-  const completedCount = subtasks.filter((c) => c.completed !== null).length;
-  const totalCount = subtasks.length;
+  const completedCount = subtasks?.filter((c) => c.completed !== null).length ?? 0;
+  const totalCount = subtasks?.length ?? 0;
 
   return createPortal(
     <div
@@ -113,11 +120,15 @@ const SubtasksPopoverMenu: FC<SubtasksPopoverMenuProps> = ({
           {completedCount}/{totalCount} completed
         </span>
       </div>
-      <div className="max-h-64 space-y-0.5 overflow-y-auto">
-        {subtasks.map((subtask) => (
-          <SubtaskItem key={subtask._id} onClick={() => onSubtaskClick(subtask)} todo={subtask} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="py-2 text-center text-xs text-neutral-500">Loading...</div>
+      ) : (
+        <div className="max-h-64 space-y-0.5 overflow-y-auto">
+          {subtasks?.map((subtask) => (
+            <SubtaskItem key={subtask._id} onClick={() => onSubtaskClick(subtask)} todo={subtask} />
+          ))}
+        </div>
+      )}
     </div>,
     document.body,
   );
@@ -158,21 +169,18 @@ const SubtasksTrigger: FC<SubtasksTriggerProps> = ({
   );
 };
 
-export const SubtasksPopover: FC<SubtasksPopoverProps> = ({ todoId }) => {
+export const SubtasksPopover: FC<SubtasksPopoverProps> = ({ todoId, subtaskCount }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: children, isLoading } = useChildTodos(todoId);
   const { openTodo } = useTodoFlyoutContext();
   const { refs, floatingStyles } = useFloatingPosition({
     placement: 'bottom-start',
     open: isOpen,
   });
 
-  if (isLoading || !children || children.length === 0) {
+  // Use pre-computed count - don't render anything if no subtasks
+  if (!subtaskCount || subtaskCount.total === 0) {
     return null;
   }
-
-  const completedCount = children.filter((c) => c.completed !== null).length;
-  const totalCount = children.length;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -187,10 +195,10 @@ export const SubtasksPopover: FC<SubtasksPopoverProps> = ({ todoId }) => {
   return (
     <>
       <SubtasksTrigger
-        completedCount={completedCount}
+        completedCount={subtaskCount.completed}
         onClick={handleToggle}
         setReferenceRef={refs.setReference}
-        totalCount={totalCount}
+        totalCount={subtaskCount.total}
       />
       {isOpen && (
         <SubtasksPopoverMenu
@@ -198,7 +206,7 @@ export const SubtasksPopover: FC<SubtasksPopoverProps> = ({ todoId }) => {
           onClose={() => setIsOpen(false)}
           onSubtaskClick={handleSubtaskClick}
           setFloatingRef={refs.setFloating}
-          subtasks={children}
+          todoId={todoId}
         />
       )}
     </>
