@@ -62,9 +62,11 @@ const ErrorState: FC<{ error: string }> = ({ error }) => (
  * Renders via portal to escape flyout/drawer stacking context.
  */
 export const ImageLightbox: FC<ImageLightboxProps> = ({ show, onClose, docId }) => {
-  const { url, isLoading, error } = useAttachmentUrl(docId);
+  // Only fetch if we have a valid docId
+  const { url, isLoading, error } = useAttachmentUrl(show && docId ? docId : '');
 
-  if (!show) return null;
+  // Don't render if not shown or no docId
+  if (!show || !docId) return null;
 
   const lightboxContent = (
     <div
@@ -72,7 +74,10 @@ export const ImageLightbox: FC<ImageLightboxProps> = ({ show, onClose, docId }) 
       onClick={onClose}
     >
       <CloseButton onClick={onClose} />
-      <div className="max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="flex max-h-[90vh] max-w-[90vw] items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isLoading && <LoadingState />}
         {error && <ErrorState error={error} />}
         {url && (
