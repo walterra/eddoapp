@@ -1,0 +1,18 @@
+/**
+ * Docker container management module for pi-coding-agent sessions.
+ */
+
+export { createContainerManager, type ContainerManager } from './container-manager';
+export { onRpcEvent, sendRpcCommand, setupRpcStream, type ContainerStream } from './rpc-stream';
+export type {
+  ContainerConfig,
+  ContainerInfo,
+  ContainerManagerConfig,
+  ContainerOperationResult,
+  ContainerState,
+  RpcCommand,
+  RpcEvent,
+  RpcEventCallback,
+  RpcResponse,
+  SpawnContainerOptions,
+} from './types';
