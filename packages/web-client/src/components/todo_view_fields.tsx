@@ -90,7 +90,7 @@ const TitleView: FC<{ todo: Todo }> = ({ todo }) => (
 );
 
 const DescriptionView: FC<{ description: string; todoId: string }> = ({ description, todoId }) => {
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxDocId, setLightboxDocId] = useState<string | null>(null);
 
   if (!description.trim()) {
     return <FieldRow label="Description">{EMPTY_VALUE}</FieldRow>;
@@ -102,15 +102,14 @@ const DescriptionView: FC<{ description: string; todoId: string }> = ({ descript
       <div
         className={`${MARKDOWN_PROSE_CLASSES} mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-600 dark:bg-neutral-900/50`}
       >
-        <AttachmentMarkdown onImageClick={setLightboxImage} todoId={todoId}>
+        <AttachmentMarkdown onImageClick={setLightboxDocId} todoId={todoId}>
           {description}
         </AttachmentMarkdown>
       </div>
       <ImageLightbox
-        attachmentKey={lightboxImage ?? ''}
-        onClose={() => setLightboxImage(null)}
-        show={!!lightboxImage}
-        todoId={todoId}
+        docId={lightboxDocId ?? ''}
+        onClose={() => setLightboxDocId(null)}
+        show={!!lightboxDocId}
       />
     </div>
   );

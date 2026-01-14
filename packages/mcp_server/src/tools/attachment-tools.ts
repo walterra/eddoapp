@@ -1,18 +1,17 @@
 /**
- * Attachment Tools - Upload, get, delete, and list attachments on todos
- * Uses CouchDB native attachments with base64 encoding for MCP transport
+ * Attachment Tools - Upload, get, delete, and list attachments
+ * Uses a separate attachments database, decoupled from todo documents
  */
 import {
-  buildAttachmentKey,
-  getAttachmentKeys,
-  parseAttachmentKey,
+  buildAttachmentDocId,
   validateAttachment,
+  type AttachmentDoc,
   type AttachmentType,
 } from '@eddo/core-shared';
 import { z } from 'zod';
 
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
-import type { GetUserDb, ToolContext } from './types.js';
+import type { GetAttachmentsDb, ToolContext } from './types.js';
 
 interface UploadValidationParams {
   size: number;
@@ -52,7 +51,7 @@ function validateUploadArgs(params: UploadValidationParams, operation: string): 
 // UPLOAD ATTACHMENT
 // ============================================================================
 
-export const uploadAttachmentDescription = `Upload an attachment to a todo. Attachments can be added to the description (type: 'desc') or to a specific note (type: 'note'). Supported types: JPEG, PNG, GIF, WebP images and PDF documents. Maximum size: 5MB. The attachment can be referenced in markdown as ![alt](attachment:key).`;
+export const uploadAttachmentDescription = `Upload an attachment to a todo. Attachments are stored in a separate database, decoupled from todo documents. Attachments can be added to the description (type: 'desc') or to a specific note (type: 'note'). Supported types: JPEG, PNG, GIF, WebP images and PDF documents. Maximum size: 5MB. The attachment can be referenced in markdown as ![alt](attachment:desc/filename.png).`;
 
 export const uploadAttachmentParameters = z.object({
   todoId: z.string().describe('The unique identifier of the todo'),
@@ -67,13 +66,41 @@ export const uploadAttachmentParameters = z.object({
 
 export type UploadAttachmentArgs = z.infer<typeof uploadAttachmentParameters>;
 
-/** Uploads an attachment to a todo */
+/** Creates attachment document with optional existing revision */
+async function createAttachmentDoc(
+  db: ReturnType<GetAttachmentsDb>,
+  args: UploadAttachmentArgs,
+  docId: string,
+  size: number,
+): Promise<AttachmentDoc> {
+  const doc: AttachmentDoc = {
+    _id: docId,
+    todoId: args.todoId,
+    type: args.type as AttachmentType,
+    noteId: args.noteId,
+    filename: args.filename,
+    contentType: args.contentType,
+    size,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const existing = await db.get(docId);
+    doc._rev = existing._rev;
+  } catch {
+    // Document doesn't exist, that's fine
+  }
+
+  return doc;
+}
+
+/** Uploads an attachment to the attachments database */
 export async function executeUploadAttachment(
   args: UploadAttachmentArgs,
   context: ToolContext,
-  getUserDb: GetUserDb,
+  getAttachmentsDb: GetAttachmentsDb,
 ): Promise<string> {
-  const db = getUserDb(context);
+  const db = getAttachmentsDb(context);
   const operation = 'upload_attachment';
   context.log.info('Uploading attachment', { todoId: args.todoId, filename: args.filename });
 
@@ -87,21 +114,28 @@ export async function executeUploadAttachment(
     );
     if (validationError) return validationError;
 
-    const key = buildAttachmentKey(args.type as AttachmentType, args.filename, args.noteId);
-    const todo = await db.get(args.todoId);
-    await db.attachment.insert(args.todoId, key, buffer, args.contentType, { rev: todo._rev });
+    const docId = buildAttachmentDocId(
+      args.todoId,
+      args.type as AttachmentType,
+      args.filename,
+      args.noteId,
+    );
+    const attachmentDoc = await createAttachmentDoc(db, args, docId, buffer.length);
+    const result = await db.insert(attachmentDoc);
+    await db.attachment.insert(docId, 'file', buffer, args.contentType, { rev: result.rev });
 
-    context.log.info('Attachment uploaded', { todoId: args.todoId, key, size: buffer.length });
+    const attachmentPath = docId.split('/').slice(1).join('/');
+    context.log.info('Attachment uploaded', { docId, size: buffer.length });
 
     return createSuccessResponse({
       summary: 'Attachment uploaded successfully',
       data: {
+        docId,
         todoId: args.todoId,
-        key,
         filename: args.filename,
         contentType: args.contentType,
         size: buffer.length,
-        markdownRef: `![${args.filename}](attachment:${key})`,
+        markdownRef: `![${args.filename}](attachment:${attachmentPath})`,
       },
       operation,
       executionTime: Date.now() - startTime,
@@ -120,40 +154,46 @@ export async function executeUploadAttachment(
 // GET ATTACHMENT
 // ============================================================================
 
-export const getAttachmentDescription = `Get an attachment from a todo as base64 encoded data. Use the key returned from listAttachments or uploadAttachment.`;
+export const getAttachmentDescription = `Get an attachment as base64 encoded data. Use the docId returned from listAttachments or uploadAttachment.`;
 
 export const getAttachmentParameters = z.object({
-  todoId: z.string().describe('The unique identifier of the todo'),
-  key: z.string().describe("The attachment key (e.g., 'desc/screenshot.png')"),
+  docId: z.string().describe("The attachment document ID (e.g., 'todoId/desc/screenshot.png')"),
 });
 
 export type GetAttachmentArgs = z.infer<typeof getAttachmentParameters>;
 
-/** Gets an attachment from a todo as base64 */
+/** Gets an attachment as base64 */
 export async function executeGetAttachment(
   args: GetAttachmentArgs,
   context: ToolContext,
-  getUserDb: GetUserDb,
+  getAttachmentsDb: GetAttachmentsDb,
 ): Promise<string> {
-  const db = getUserDb(context);
+  const db = getAttachmentsDb(context);
   const operation = 'get_attachment';
-  context.log.info('Getting attachment', { todoId: args.todoId, key: args.key });
+  context.log.info('Getting attachment', { docId: args.docId });
 
   try {
     const startTime = Date.now();
-    const buffer = await db.attachment.get(args.todoId, args.key);
 
-    const todo = await db.get(args.todoId, { attachments: true });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const attachments = (todo as any)._attachments ?? {};
-    const contentType = attachments[args.key]?.content_type ?? 'application/octet-stream';
+    // Get attachment document for metadata
+    const doc = await db.get(args.docId);
+
+    // Get the actual blob
+    const buffer = await db.attachment.get(args.docId, 'file');
 
     const base64Data = Buffer.from(buffer).toString('base64');
-    context.log.info('Attachment retrieved', { todoId: args.todoId, key: args.key });
+    context.log.info('Attachment retrieved', { docId: args.docId });
 
     return createSuccessResponse({
       summary: 'Attachment retrieved successfully',
-      data: { todoId: args.todoId, key: args.key, contentType, size: buffer.length, base64Data },
+      data: {
+        docId: args.docId,
+        todoId: doc.todoId,
+        filename: doc.filename,
+        contentType: doc.contentType,
+        size: doc.size,
+        base64Data,
+      },
       operation,
       executionTime: Date.now() - startTime,
     });
@@ -163,7 +203,7 @@ export async function executeGetAttachment(
       error,
       operation,
       recoverySuggestions: [
-        'Verify the todo ID and attachment key exist',
+        'Verify the attachment document ID exists',
         'Use listAttachments to see available attachments',
       ],
     });
@@ -177,32 +217,33 @@ export async function executeGetAttachment(
 export const deleteAttachmentDescription = `Delete an attachment from a todo.`;
 
 export const deleteAttachmentParameters = z.object({
-  todoId: z.string().describe('The unique identifier of the todo'),
-  key: z.string().describe("The attachment key to delete (e.g., 'desc/screenshot.png')"),
+  docId: z
+    .string()
+    .describe("The attachment document ID to delete (e.g., 'todoId/desc/screenshot.png')"),
 });
 
 export type DeleteAttachmentArgs = z.infer<typeof deleteAttachmentParameters>;
 
-/** Deletes an attachment from a todo */
+/** Deletes an attachment document */
 export async function executeDeleteAttachment(
   args: DeleteAttachmentArgs,
   context: ToolContext,
-  getUserDb: GetUserDb,
+  getAttachmentsDb: GetAttachmentsDb,
 ): Promise<string> {
-  const db = getUserDb(context);
+  const db = getAttachmentsDb(context);
   const operation = 'delete_attachment';
-  context.log.info('Deleting attachment', { todoId: args.todoId, key: args.key });
+  context.log.info('Deleting attachment', { docId: args.docId });
 
   try {
     const startTime = Date.now();
-    const todo = await db.get(args.todoId);
-    await db.attachment.destroy(args.todoId, args.key, { rev: todo._rev! });
+    const doc = await db.get(args.docId);
+    await db.destroy(args.docId, doc._rev!);
 
-    context.log.info('Attachment deleted', { todoId: args.todoId, key: args.key });
+    context.log.info('Attachment deleted', { docId: args.docId });
 
     return createSuccessResponse({
       summary: 'Attachment deleted successfully',
-      data: { todoId: args.todoId, deletedKey: args.key },
+      data: { deletedDocId: args.docId, todoId: doc.todoId },
       operation,
       executionTime: Date.now() - startTime,
     });
@@ -212,7 +253,7 @@ export async function executeDeleteAttachment(
       error,
       operation,
       recoverySuggestions: [
-        'Verify the todo ID and attachment key exist',
+        'Verify the attachment document ID exists',
         'Use listAttachments to see available attachments',
       ],
     });
@@ -223,7 +264,7 @@ export async function executeDeleteAttachment(
 // LIST ATTACHMENTS
 // ============================================================================
 
-export const listAttachmentsDescription = `List all attachments on a todo. Returns attachment keys, content types, and sizes.`;
+export const listAttachmentsDescription = `List all attachments for a todo. Returns attachment document IDs, content types, and sizes.`;
 
 export const listAttachmentsParameters = z.object({
   todoId: z.string().describe('The unique identifier of the todo'),
@@ -231,37 +272,47 @@ export const listAttachmentsParameters = z.object({
 
 export type ListAttachmentsArgs = z.infer<typeof listAttachmentsParameters>;
 
-/** Builds attachment info from key and metadata */
-function buildAttachmentInfo(key: string, info: { content_type?: string; length?: number }) {
-  const parsed = parseAttachmentKey(key);
+/** Builds attachment info from document */
+function buildAttachmentInfo(doc: AttachmentDoc) {
+  // Build markdown ref path (without todoId prefix)
+  const pathParts = doc._id.split('/');
+  const attachmentPath = pathParts.slice(1).join('/');
+
   return {
-    key,
-    type: parsed?.type ?? 'unknown',
-    noteId: parsed?.noteId,
-    filename: parsed?.filename ?? key,
-    contentType: info?.content_type ?? 'unknown',
-    size: info?.length ?? 0,
-    markdownRef: `![](attachment:${key})`,
+    docId: doc._id,
+    type: doc.type,
+    noteId: doc.noteId,
+    filename: doc.filename,
+    contentType: doc.contentType,
+    size: doc.size,
+    createdAt: doc.createdAt,
+    markdownRef: `![${doc.filename}](attachment:${attachmentPath})`,
   };
 }
 
-/** Lists all attachments on a todo */
+/** Lists all attachments for a todo */
 export async function executeListAttachments(
   args: ListAttachmentsArgs,
   context: ToolContext,
-  getUserDb: GetUserDb,
+  getAttachmentsDb: GetAttachmentsDb,
 ): Promise<string> {
-  const db = getUserDb(context);
+  const db = getAttachmentsDb(context);
   const operation = 'list_attachments';
   context.log.info('Listing attachments', { todoId: args.todoId });
 
   try {
     const startTime = Date.now();
-    const todo = await db.get(args.todoId, { attachments: false });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const attachmentsObj = (todo as any)._attachments ?? {};
-    const keys = getAttachmentKeys(attachmentsObj);
-    const attachments = keys.map((key) => buildAttachmentInfo(key, attachmentsObj[key]));
+
+    // Query for all documents starting with the todoId prefix
+    const result = await db.list({
+      startkey: `${args.todoId}/`,
+      endkey: `${args.todoId}/\ufff0`,
+      include_docs: true,
+    });
+
+    const attachments = result.rows
+      .filter((row) => row.doc)
+      .map((row) => buildAttachmentInfo(row.doc as AttachmentDoc));
 
     context.log.info('Attachments listed', { todoId: args.todoId, count: attachments.length });
 

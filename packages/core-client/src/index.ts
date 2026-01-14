@@ -67,4 +67,10 @@ export {
 } from '@eddo/core-shared';
 
 // Client-specific configuration
-export { clientEnvSchema, getUserDbName, validateClientEnv, type ClientEnv } from './config';
+export {
+  clientEnvSchema,
+  getAttachmentsDbName,
+  getUserDbName,
+  validateClientEnv,
+  type ClientEnv,
+} from './config';

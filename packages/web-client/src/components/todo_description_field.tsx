@@ -1,11 +1,12 @@
 /**
- * Description field component for todo editing with attachment upload support
+ * Description field component for todo editing with attachment upload support.
+ * Uploads go to a separate attachments database, decoupled from todo updates.
  */
 import type { Todo } from '@eddo/core-client';
 import { Button, Label, Textarea } from 'flowbite-react';
-import { type FC, useCallback, useState } from 'react';
+import { useCallback, useRef, useState, type FC } from 'react';
 
-import { useAttachment } from '../hooks/use_attachment';
+import { useAttachment, type UploadAttachmentResult } from '../hooks/use_attachment';
 import { useImagePaste } from '../hooks/use_image_paste';
 import { AttachmentMarkdown, MARKDOWN_PROSE_CLASSES } from './attachment_markdown';
 import { FileDropZone } from './file_drop_zone';
@@ -35,7 +36,7 @@ const PreviewToggle: FC<{
 const DescriptionPreview: FC<{
   todoId: string;
   description: string;
-  onImageClick: (key: string) => void;
+  onImageClick: (docId: string) => void;
 }> = ({ todoId, description, onImageClick }) => (
   <div
     aria-label="Description preview"
@@ -90,39 +91,54 @@ const DescriptionEditor: FC<DescriptionEditorProps> = ({
   </div>
 );
 
-/** Hook for managing description field upload logic */
-function useDescriptionUpload(todo: Todo, onChange: DescriptionFieldProps['onChange']) {
+/**
+ * Inserts markdown reference into description.
+ * Format: ![filename](attachment:desc/filename.png)
+ */
+function insertMarkdownIntoDescription(
+  result: UploadAttachmentResult,
+  onChangeRef: React.RefObject<DescriptionFieldProps['onChange']>,
+): void {
+  // Extract the path portion (desc/filename) from docId (todoId/desc/filename)
+  const pathParts = result.docId.split('/');
+  const attachmentPath = pathParts.slice(1).join('/'); // Remove todoId prefix
+  const markdownRef = `![${result.filename}](attachment:${attachmentPath})`;
+
+  console.log('[DescriptionField] Inserting markdown:', markdownRef);
+
+  onChangeRef.current?.((t) => {
+    const newDescription = t.description + (t.description ? '\n\n' : '') + markdownRef;
+    return { ...t, description: newDescription };
+  });
+}
+
+/** Hook for file upload handling */
+function useFileUploadHandler(
+  todoId: string,
+  onChangeRef: React.RefObject<DescriptionFieldProps['onChange']>,
+) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const { uploadAttachment, isUploading } = useAttachment();
-
-  const insertMarkdownRef = useCallback(
-    (markdownRef: string) => {
-      onChange((t) => ({
-        ...t,
-        description: t.description + (t.description ? '\n\n' : '') + markdownRef,
-      }));
-    },
-    [onChange],
-  );
 
   const handleFilesDropped = useCallback(
     async (files: File[]) => {
       setUploadError(null);
+      console.log('[DescriptionField] Starting upload for', files.length, 'files, todoId:', todoId);
+
       for (const file of files) {
         try {
-          const result = await uploadAttachment.mutateAsync({
-            todoId: todo._id,
-            file,
-            type: 'desc',
-          });
-          insertMarkdownRef(`![${result.filename}](attachment:${result.key})`);
+          console.log('[DescriptionField] Uploading:', file.name, file.size, file.type);
+          const result = await uploadAttachment.mutateAsync({ todoId, file, type: 'desc' });
+          console.log('[DescriptionField] Upload success:', result);
+          insertMarkdownIntoDescription(result, onChangeRef);
         } catch (err) {
+          console.error('[DescriptionField] Upload failed:', err);
           setUploadError(err instanceof Error ? err.message : 'Upload failed');
           break;
         }
       }
     },
-    [todo._id, uploadAttachment, insertMarkdownRef],
+    [todoId, uploadAttachment, onChangeRef],
   );
 
   return { handleFilesDropped, isUploading, uploadError, setUploadError };
@@ -130,15 +146,20 @@ function useDescriptionUpload(todo: Todo, onChange: DescriptionFieldProps['onCha
 
 /**
  * Description field with edit/preview toggle, attachment upload, and paste support.
+ * Uploads are stored in a separate attachments database, decoupled from todo saves.
  */
 export const DescriptionField: FC<DescriptionFieldProps> = ({ todo, onChange }) => {
   const [isPreview, setIsPreview] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const hasContent = todo.description.trim().length > 0;
 
-  const { handleFilesDropped, isUploading, uploadError, setUploadError } = useDescriptionUpload(
-    todo,
-    onChange,
+  // Use ref to always have latest onChange without stale closure
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const { handleFilesDropped, isUploading, uploadError, setUploadError } = useFileUploadHandler(
+    todo._id,
+    onChangeRef,
   );
 
   useImagePaste({
@@ -171,10 +192,9 @@ export const DescriptionField: FC<DescriptionFieldProps> = ({ todo, onChange }) 
       )}
 
       <ImageLightbox
-        attachmentKey={lightboxImage ?? ''}
+        docId={lightboxImage ?? ''}
         onClose={() => setLightboxImage(null)}
         show={!!lightboxImage}
-        todoId={todo._id}
       />
     </div>
   );

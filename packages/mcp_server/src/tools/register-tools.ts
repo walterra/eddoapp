@@ -1,7 +1,7 @@
 /**
  * MCP tool registration with tracing support
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { AttachmentDoc, TodoAlpha3 } from '@eddo/core-server';
 import type { FastMCP } from 'fastmcp';
 import type nano from 'nano';
 
@@ -71,6 +71,7 @@ import { wrapToolExecution } from './tool-wrapper.js';
 import type { ToolContext, UserSession } from './types.js';
 
 type GetUserDbFn = (context: ToolContext) => nano.DocumentScope<TodoAlpha3>;
+type GetAttachmentsDbFn = (context: ToolContext) => nano.DocumentScope<AttachmentDoc>;
 
 /** Registers todo CRUD tools */
 function registerTodoTools(
@@ -188,13 +189,16 @@ function registerTimeTrackingTools(server: FastMCP<UserSession>, getUserDb: GetU
 }
 
 /** Registers attachment management tools */
-function registerAttachmentTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
+function registerAttachmentTools(
+  server: FastMCP<UserSession>,
+  getAttachmentsDb: GetAttachmentsDbFn,
+): void {
   server.addTool({
     name: 'uploadAttachment',
     description: uploadAttachmentDescription,
     parameters: uploadAttachmentParameters,
     execute: wrapToolExecution('uploadAttachment', (args, ctx) =>
-      executeUploadAttachment(args, ctx, getUserDb),
+      executeUploadAttachment(args, ctx, getAttachmentsDb),
     ),
   });
 
@@ -203,7 +207,7 @@ function registerAttachmentTools(server: FastMCP<UserSession>, getUserDb: GetUse
     description: getAttachmentDescription,
     parameters: getAttachmentParameters,
     execute: wrapToolExecution('getAttachment', (args, ctx) =>
-      executeGetAttachment(args, ctx, getUserDb),
+      executeGetAttachment(args, ctx, getAttachmentsDb),
     ),
   });
 
@@ -212,7 +216,7 @@ function registerAttachmentTools(server: FastMCP<UserSession>, getUserDb: GetUse
     description: deleteAttachmentDescription,
     parameters: deleteAttachmentParameters,
     execute: wrapToolExecution('deleteAttachment', (args, ctx) =>
-      executeDeleteAttachment(args, ctx, getUserDb),
+      executeDeleteAttachment(args, ctx, getAttachmentsDb),
     ),
   });
 
@@ -221,7 +225,7 @@ function registerAttachmentTools(server: FastMCP<UserSession>, getUserDb: GetUse
     description: listAttachmentsDescription,
     parameters: listAttachmentsParameters,
     execute: wrapToolExecution('listAttachments', (args, ctx) =>
-      executeListAttachments(args, ctx, getUserDb),
+      executeListAttachments(args, ctx, getAttachmentsDb),
     ),
   });
 }
@@ -269,11 +273,12 @@ function registerUtilityTools(server: FastMCP<UserSession>, getUserDb: GetUserDb
 export function registerTools(
   server: FastMCP<UserSession>,
   getUserDb: GetUserDbFn,
+  getAttachmentsDb: GetAttachmentsDbFn,
   couch: nano.ServerScope,
 ): void {
   registerTodoTools(server, getUserDb, couch);
   registerNoteTools(server, getUserDb);
-  registerAttachmentTools(server, getUserDb);
+  registerAttachmentTools(server, getAttachmentsDb);
   registerTimeTrackingTools(server, getUserDb);
   registerUtilityTools(server, getUserDb);
 }

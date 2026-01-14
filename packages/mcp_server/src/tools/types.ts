@@ -1,7 +1,7 @@
 /**
  * Shared types for MCP tool handlers
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { AttachmentDoc, TodoAlpha3 } from '@eddo/core-server';
 import type { Context } from 'fastmcp';
 import type nano from 'nano';
 
@@ -12,6 +12,7 @@ import type nano from 'nano';
 export interface UserSession extends Record<string, unknown> {
   userId: string;
   dbName: string;
+  attachmentsDbName: string;
   username: string;
 }
 
@@ -47,6 +48,11 @@ export interface ToolResponse {
  * Database accessor function type
  */
 export type GetUserDb = (context: ToolContext) => nano.DocumentScope<TodoAlpha3>;
+
+/**
+ * Attachments database accessor function type
+ */
+export type GetAttachmentsDb = (context: ToolContext) => nano.DocumentScope<AttachmentDoc>;
 
 /**
  * CouchDB nano server instance type

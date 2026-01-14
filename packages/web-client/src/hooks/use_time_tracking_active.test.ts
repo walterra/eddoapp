@@ -51,6 +51,7 @@ describe('useTimeTrackingActive', () => {
       changes: vi.fn() as never,
       sync: null as never,
       healthMonitor: null as never,
+      attachmentsDb: null as never,
     });
   });
 
@@ -178,6 +179,7 @@ describe('useTimeTrackingActive', () => {
       changes: vi.fn() as never,
       sync: null as never,
       healthMonitor: null as never,
+      attachmentsDb: null as never,
     });
 
     const { result } = renderHook(() => useTimeTrackingActive(), {

@@ -1,3 +1,6 @@
+/**
+ * Markdown renderer with support for attachment images from the attachments database.
+ */
 import { type FC, useMemo } from 'react';
 import Markdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,7 +19,7 @@ export interface AttachmentMarkdownProps {
   /** Additional CSS classes for the container */
   className?: string;
   /** Callback when an image is clicked (for lightbox) */
-  onImageClick?: (attachmentKey: string) => void;
+  onImageClick?: (docId: string) => void;
 }
 
 /** Checks if a URL is an attachment reference */
@@ -24,15 +27,20 @@ function isAttachmentUrl(url: string | undefined): boolean {
   return url?.startsWith(ATTACHMENT_PREFIX) ?? false;
 }
 
-/** Extracts attachment key from URL */
-function getAttachmentKey(url: string): string {
-  return url.slice(ATTACHMENT_PREFIX.length);
+/**
+ * Extracts attachment document ID from markdown URL.
+ * Input: attachment:desc/filename.png
+ * Output: {todoId}/desc/filename.png (full docId)
+ */
+function getAttachmentDocId(url: string, todoId: string): string {
+  const path = url.slice(ATTACHMENT_PREFIX.length);
+  return `${todoId}/${path}`;
 }
 
 /** Creates markdown components with attachment support */
 function createAttachmentComponents(
   todoId: string,
-  onImageClick?: (key: string) => void,
+  onImageClick?: (docId: string) => void,
 ): Partial<Components> {
   return {
     img: ({ src, alt }) => {
@@ -41,14 +49,13 @@ function createAttachmentComponents(
         return <img alt={alt ?? ''} className="max-w-full" src={src} />;
       }
 
-      const attachmentKey = getAttachmentKey(src!);
+      const docId = getAttachmentDocId(src!, todoId);
       return (
         <AttachmentImage
-          alt={alt ?? attachmentKey}
-          attachmentKey={attachmentKey}
+          alt={alt ?? docId}
           className="my-2 max-w-full"
-          onClick={onImageClick ? () => onImageClick(attachmentKey) : undefined}
-          todoId={todoId}
+          docId={docId}
+          onClick={onImageClick ? () => onImageClick(docId) : undefined}
         />
       );
     },
@@ -58,6 +65,7 @@ function createAttachmentComponents(
 /**
  * Renders markdown content with support for attachment images.
  * Attachment URLs use the format: `![alt](attachment:desc/filename.png)`
+ * Which resolves to docId: `{todoId}/desc/filename.png`
  *
  * @example
  * <AttachmentMarkdown todoId="2024-01-01T00:00:00.000Z">

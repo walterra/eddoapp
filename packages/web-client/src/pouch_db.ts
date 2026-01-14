@@ -1,4 +1,9 @@
-import { DatabaseHealthMonitor, getUserDbName, validateClientEnv } from '@eddo/core-client';
+import {
+  DatabaseHealthMonitor,
+  getAttachmentsDbName,
+  getUserDbName,
+  validateClientEnv,
+} from '@eddo/core-client';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import { useContext } from 'react';
@@ -25,12 +30,20 @@ export function createUserPouchDbContext(username: string): PouchDbContextType {
   const safeDbOperations = createSafeDbOperations(pouchDb);
   const healthMonitor = new DatabaseHealthMonitor(pouchDb);
 
+  // Create separate attachments database
+  const attachmentsDbName = getAttachmentsDbName(username, env);
+  const attachmentsDb = new PouchDB(attachmentsDbName, {
+    revs_limit: 3, // Attachments rarely update, keep fewer revisions
+    auto_compaction: true,
+  });
+
   return {
     safeDb: safeDbOperations,
     changes: pouchDb.changes.bind(pouchDb),
     sync: pouchDb.sync.bind(pouchDb),
     healthMonitor,
     rawDb: pouchDb,
+    attachmentsDb,
   };
 }
 

@@ -5,6 +5,7 @@ export {
   // Database monitoring
   DatabaseHealthMonitor,
   DatabaseOperationError,
+  buildAttachmentDocId,
   createAuditLogEntry,
   createDefaultUserPreferences,
   decodeJwtPayload,
@@ -32,8 +33,11 @@ export {
   migrateToAlpha3,
   migrateTodo,
   migrateUserRegistryEntry,
+  parseAttachmentDocId,
   shuffle,
   type Activity,
+  // Attachment types
+  type AttachmentDoc,
   // Audit log types
   type AuditAction,
   type AuditEntityType,

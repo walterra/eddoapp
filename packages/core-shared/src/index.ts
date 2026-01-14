@@ -1,5 +1,6 @@
 // Types
 export { type Activity } from './types/activity';
+export { buildAttachmentDocId, parseAttachmentDocId, type AttachmentDoc } from './types/attachment';
 export {
   DatabaseErrorType,
   DatabaseOperationError,

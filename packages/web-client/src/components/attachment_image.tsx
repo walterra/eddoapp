@@ -1,13 +1,14 @@
+/**
+ * Component for displaying attachment images from the attachments database.
+ */
 import { useEffect, useState, type FC } from 'react';
 
 import { usePouchDb } from '../pouch_db';
 
 /** Props for AttachmentImage component */
 export interface AttachmentImageProps {
-  /** Todo document ID containing the attachment */
-  todoId: string;
-  /** Attachment key (e.g., 'desc/screenshot.png') */
-  attachmentKey: string;
+  /** Attachment document ID (format: todoId/desc/filename or todoId/note/noteId/filename) */
+  docId: string;
   /** Alt text for the image */
   alt?: string;
   /** Additional CSS classes */
@@ -55,8 +56,8 @@ const ErrorPlaceholder: FC<{ error: string; className?: string }> = ({ error, cl
 );
 
 /** Hook to load attachment blob and create object URL */
-function useAttachmentImage(todoId: string, attachmentKey: string) {
-  const { rawDb } = usePouchDb();
+function useAttachmentImage(docId: string) {
+  const { attachmentsDb } = usePouchDb();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,15 +67,22 @@ function useAttachmentImage(todoId: string, attachmentKey: string) {
     let cancelled = false;
 
     async function loadImage() {
+      if (!docId) {
+        setError('No attachment ID');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError(null);
-        const blob = await rawDb.getAttachment(todoId, attachmentKey);
+        const blob = await attachmentsDb.getAttachment(docId, 'file');
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob as Blob);
         setImageUrl(objectUrl);
       } catch (err) {
         if (cancelled) return;
+        console.error('[AttachmentImage] Failed to load:', docId, err);
         setError(err instanceof Error ? err.message : 'Failed to load image');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -87,23 +95,22 @@ function useAttachmentImage(todoId: string, attachmentKey: string) {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [rawDb, todoId, attachmentKey]);
+  }, [attachmentsDb, docId]);
 
   return { imageUrl, error, isLoading };
 }
 
 /**
- * Displays an image attachment from PouchDB.
+ * Displays an image attachment from the attachments database.
  * Fetches the blob lazily and creates an object URL for display.
  */
 export const AttachmentImage: FC<AttachmentImageProps> = ({
-  todoId,
-  attachmentKey,
+  docId,
   alt = 'Attachment',
   className = '',
   onClick,
 }) => {
-  const { imageUrl, error, isLoading } = useAttachmentImage(todoId, attachmentKey);
+  const { imageUrl, error, isLoading } = useAttachmentImage(docId);
 
   const containerClass = `rounded overflow-hidden ${className}`;
 
@@ -125,15 +132,12 @@ export const AttachmentImage: FC<AttachmentImageProps> = ({
  * Hook to get an object URL for an attachment.
  * Useful when you need the URL outside of the component.
  */
-export function useAttachmentUrl(
-  todoId: string,
-  attachmentKey: string,
-): {
+export function useAttachmentUrl(docId: string): {
   url: string | null;
   isLoading: boolean;
   error: string | null;
 } {
-  const { rawDb } = usePouchDb();
+  const { attachmentsDb } = usePouchDb();
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,9 +147,15 @@ export function useAttachmentUrl(
     let cancelled = false;
 
     async function load() {
+      if (!docId) {
+        setError('No attachment ID');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
-        const blob = await rawDb.getAttachment(todoId, attachmentKey);
+        const blob = await attachmentsDb.getAttachment(docId, 'file');
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob as Blob);
         setUrl(objectUrl);
@@ -163,7 +173,7 @@ export function useAttachmentUrl(
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [rawDb, todoId, attachmentKey]);
+  }, [attachmentsDb, docId]);
 
   return { url, isLoading, error };
 }

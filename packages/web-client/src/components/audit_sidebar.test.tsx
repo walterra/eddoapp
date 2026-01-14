@@ -80,6 +80,7 @@ const mockPouchDbContext = {
   sync: vi.fn(),
   healthMonitor: {} as PouchDbContextType['healthMonitor'],
   rawDb: { name: 'test-db' } as unknown as PouchDB.Database,
+  attachmentsDb: { name: 'test-attachments-db' } as unknown as PouchDB.Database,
 } as PouchDbContextType;
 
 const createTestQueryClient = () =>
