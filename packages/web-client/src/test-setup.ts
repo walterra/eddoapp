@@ -61,6 +61,10 @@ export const createTestPouchDb = () => {
   const dbName = `test-db-${Date.now()}-${++testDbCounter}`;
   const db = new PouchDB(dbName, { adapter: 'memory' });
 
+  // Create attachments db for testing
+  const attachmentsDbName = `test-attachments-${Date.now()}-${testDbCounter}`;
+  const attachmentsDb = new PouchDB(attachmentsDbName, { adapter: 'memory' });
+
   const safeDbOperations = createSafeDbOperations(db);
   const healthMonitor = new DatabaseHealthMonitor(db);
 
@@ -70,9 +74,10 @@ export const createTestPouchDb = () => {
     sync: db.sync.bind(db),
     healthMonitor,
     rawDb: db,
+    attachmentsDb,
   };
 
-  return { db, contextValue };
+  return { db, attachmentsDb, contextValue };
 };
 
 // Helper to destroy test database

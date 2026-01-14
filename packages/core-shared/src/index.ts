@@ -1,5 +1,6 @@
 // Types
 export { type Activity } from './types/activity';
+export { buildAttachmentDocId, parseAttachmentDocId, type AttachmentDoc } from './types/attachment';
 export {
   DatabaseErrorType,
   DatabaseOperationError,
@@ -88,6 +89,23 @@ export {
 
 // Utils
 export { areTodosEqual } from './utils/are_todos_equal';
+export {
+  ALLOWED_ATTACHMENT_TYPES,
+  MAX_ATTACHMENT_SIZE,
+  buildAttachmentKey,
+  filterAttachmentsByType,
+  getAttachmentKeys,
+  getAttachmentsForNote,
+  getMimeTypeFromFilename,
+  isAllowedContentType,
+  parseAttachmentKey,
+  sanitizeFilename,
+  validateAttachment,
+  type AllowedAttachmentType,
+  type AttachmentType,
+  type AttachmentValidationResult,
+  type ParsedAttachmentKey,
+} from './utils/attachment';
 export { generateStableKey } from './utils/generate_stable_key';
 export { getActiveDuration, getActiveDurationInRange } from './utils/get_active_duration';
 export { getActiveRecordForActivities } from './utils/get_active_record_for_activities';

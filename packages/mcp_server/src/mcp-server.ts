@@ -10,7 +10,12 @@
 import { Agent, setGlobalDispatcher } from 'undici';
 setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
 
-import { type TodoAlpha3, getCouchDbConfig, validateEnv } from '@eddo/core-server';
+import {
+  type AttachmentDoc,
+  type TodoAlpha3,
+  getCouchDbConfig,
+  validateEnv,
+} from '@eddo/core-server';
 import { context, propagation } from '@opentelemetry/api';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
@@ -87,7 +92,12 @@ const server = new FastMCP<UserSession>({
 
     if (!username) {
       logger.debug('MCP connection without user headers (connection handshake)');
-      const session = { userId: 'anonymous', dbName: 'default', username: 'anonymous' };
+      const session = {
+        userId: 'anonymous',
+        dbName: 'default',
+        attachmentsDbName: 'default_attachments',
+        username: 'anonymous',
+      };
       storeTraceContext(session, extractedContext);
       return session;
     }
@@ -98,9 +108,13 @@ const server = new FastMCP<UserSession>({
       'MCP user authenticated',
     );
 
+    // Build attachments database name (parallel to user db)
+    const attachmentsDbName = authResult.dbName.replace('_user_', '_attachments_');
+
     const session = {
       userId: authResult.userId,
       dbName: authResult.dbName,
+      attachmentsDbName,
       username: authResult.username,
     };
     storeTraceContext(session, extractedContext);
@@ -109,7 +123,7 @@ const server = new FastMCP<UserSession>({
 });
 
 /**
- * Gets the user's database from context
+ * Gets the user's todo database from context
  */
 function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
   if (!context.session) {
@@ -125,8 +139,25 @@ function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
   return couch.db.use<TodoAlpha3>(context.session.dbName);
 }
 
+/**
+ * Gets the user's attachments database from context
+ */
+function getAttachmentsDb(context: ToolContext): nano.DocumentScope<AttachmentDoc> {
+  if (!context.session) {
+    throw new Error('No user session available');
+  }
+
+  if (context.session.userId === 'anonymous') {
+    throw new Error(
+      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID)',
+    );
+  }
+
+  return couch.db.use<AttachmentDoc>(context.session.attachmentsDbName);
+}
+
 // Register all tools with tracing
-registerTools(server, getUserDb, couch);
+registerTools(server, getUserDb, getAttachmentsDb, couch);
 
 // Export the server instance and control functions
 export const mcpServer = server;

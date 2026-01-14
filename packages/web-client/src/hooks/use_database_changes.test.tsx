@@ -223,6 +223,7 @@ describe('useDatabaseChanges Hook', () => {
         sync: testContext.sync,
         healthMonitor: testContext.healthMonitor,
         rawDb: testContext.rawDb,
+        attachmentsDb: testContext.attachmentsDb,
       };
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -288,6 +289,7 @@ describe('useDatabaseChanges Hook', () => {
         sync: testContext.sync,
         healthMonitor: testContext.healthMonitor,
         rawDb: testContext.rawDb,
+        attachmentsDb: testContext.attachmentsDb,
       };
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (

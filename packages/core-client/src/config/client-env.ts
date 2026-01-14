@@ -30,14 +30,35 @@ export function validateClientEnv(env: unknown): ClientEnv {
 }
 
 /**
+ * Get database prefix based on environment
+ */
+function getDbPrefix(env: ClientEnv): string {
+  return env.NODE_ENV === 'test' ? 'eddo_test' : 'eddo';
+}
+
+/**
+ * Sanitize username for database naming
+ */
+function sanitizeUsername(username: string): string {
+  return username.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+}
+
+/**
  * Get the user-specific database name for PouchDB
  * This should match the server-side pattern: {prefix}_user_{username}
  */
 export function getUserDbName(username: string, env: ClientEnv): string {
-  // For now, use 'eddo' as the default prefix to match server behavior
-  // In the future, this could be configurable via environment
-  const prefix = env.NODE_ENV === 'test' ? 'eddo_test' : 'eddo';
-  // Sanitize username to match server-side sanitization
-  const sanitizedUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  const prefix = getDbPrefix(env);
+  const sanitizedUsername = sanitizeUsername(username);
   return `${prefix}_user_${sanitizedUsername}`;
+}
+
+/**
+ * Get the user-specific attachments database name
+ * Pattern: {prefix}_attachments_{username}
+ */
+export function getAttachmentsDbName(username: string, env: ClientEnv): string {
+  const prefix = getDbPrefix(env);
+  const sanitizedUsername = sanitizeUsername(username);
+  return `${prefix}_attachments_${sanitizedUsername}`;
 }

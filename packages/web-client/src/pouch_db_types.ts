@@ -19,6 +19,8 @@ export type PouchDbContextType = {
   sync: (remoteDb: PouchDbDatabase | string, options?: PouchDbSyncOptions) => PouchDbSyncResult;
   healthMonitor: DatabaseHealthMonitor;
   rawDb: PouchDbDatabase;
+  /** Attachments database (separate from todos) */
+  attachmentsDb: PouchDbDatabase;
 };
 
 export const PouchDbContext = createContext<PouchDbContextType | null>(null);

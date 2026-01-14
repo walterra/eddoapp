@@ -169,6 +169,23 @@ export function useAuditedDeleteTodoMutation() {
   });
 }
 
+/** Optimistic update handler for save mutation */
+async function handleSaveOnMutate(
+  queryClient: ReturnType<typeof useQueryClient>,
+  todo: Todo,
+): Promise<UpdateTodoContext> {
+  recentMutations.add(todo._id);
+  await queryClient.cancelQueries({ queryKey: ['todos'] });
+  await queryClient.cancelQueries({ queryKey: ['activities'] });
+
+  const context = snapshotCacheState(queryClient);
+  updateTodosCache(queryClient, todo);
+  updateActivitiesCache(queryClient, todo);
+  updateTimeTrackingCache(queryClient, todo);
+
+  return context;
+}
+
 /**
  * Audited mutation hook for saving/updating a todo with repeat handling.
  * Logs appropriate action after successful save.
@@ -178,7 +195,7 @@ export function useAuditedSaveTodoMutation() {
   const queryClient = useQueryClient();
   const { logAudit } = useAuditLog();
 
-  return useMutation<Todo, Error, { todo: Todo; originalTodo: Todo }>({
+  return useMutation<Todo, Error, { todo: Todo; originalTodo: Todo }, UpdateTodoContext>({
     mutationFn: async ({ todo, originalTodo }) => {
       return withSpan('todo.save', { 'todo.id': todo._id, 'todo.title': todo.title }, async () => {
         const current = await safeDb.safeGet<Todo>(todo._id);
@@ -192,9 +209,13 @@ export function useAuditedSaveTodoMutation() {
         ) {
           await safeDb.safePut(getRepeatTodo(todo));
         }
-
         return result;
       });
+    },
+
+    onMutate: ({ todo }) => handleSaveOnMutate(queryClient, todo),
+    onError: (_err, _vars, context) => {
+      if (context) rollbackCache(queryClient, context);
     },
 
     onSuccess: async (savedTodo, { originalTodo }) => {
@@ -202,20 +223,14 @@ export function useAuditedSaveTodoMutation() {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
 
-      // Determine action type
-      let action: AuditAction = 'update';
-      if (originalTodo.completed === null && savedTodo.completed !== null) {
-        action = 'complete';
-      } else if (originalTodo.completed !== null && savedTodo.completed === null) {
-        action = 'uncomplete';
-      }
+      const action: AuditAction =
+        originalTodo.completed === null && savedTodo.completed !== null
+          ? 'complete'
+          : originalTodo.completed !== null && savedTodo.completed === null
+            ? 'uncomplete'
+            : 'update';
 
-      await logAudit({
-        action,
-        entityId: savedTodo._id,
-        before: originalTodo,
-        after: savedTodo,
-      });
+      await logAudit({ action, entityId: savedTodo._id, before: originalTodo, after: savedTodo });
     },
   });
 }

@@ -1,1 +1,7 @@
-export { clientEnvSchema, getUserDbName, validateClientEnv, type ClientEnv } from './client-env';
+export {
+  clientEnvSchema,
+  getAttachmentsDbName,
+  getUserDbName,
+  validateClientEnv,
+  type ClientEnv,
+} from './client-env';

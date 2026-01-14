@@ -7,14 +7,15 @@ import {
   getActiveDuration,
   getFormattedDuration,
 } from '@eddo/core-client';
-import { type FC } from 'react';
+import { type FC, useState } from 'react';
 import { BiCheckCircle, BiCircle, BiNote, BiSubdirectoryRight } from 'react-icons/bi';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import { useChildTodos, useParentTodo } from '../hooks/use_parent_child';
 import { TEXT_LINK } from '../styles/interactive';
+import { AttachmentMarkdown, MARKDOWN_PROSE_CLASSES } from './attachment_markdown';
 import { CopyIdButton } from './copy_id_button';
+import { ImageLightbox } from './image_lightbox';
+import { NoteViewItem } from './note_view_item';
 import { TagDisplay } from './tag_display';
 import { BlockedByView } from './todo_blocked_by_view';
 import { MetadataView } from './todo_metadata_view';
@@ -23,9 +24,7 @@ interface TodoViewFieldsProps {
   todo: Todo;
 }
 
-/** Markdown prose styles for consistent rendering */
-const MARKDOWN_PROSE =
-  'prose prose-sm dark:prose-invert prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800 dark:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 max-w-none';
+/** Markdown prose styles - use MARKDOWN_PROSE_CLASSES from attachment_markdown */
 
 /** Label styling for field headers */
 const LABEL_CLASS =
@@ -89,7 +88,9 @@ const TitleView: FC<{ todo: Todo }> = ({ todo }) => (
   </div>
 );
 
-const DescriptionView: FC<{ description: string }> = ({ description }) => {
+const DescriptionView: FC<{ description: string; todoId: string }> = ({ description, todoId }) => {
+  const [lightboxDocId, setLightboxDocId] = useState<string | null>(null);
+
   if (!description.trim()) {
     return <FieldRow label="Description">{EMPTY_VALUE}</FieldRow>;
   }
@@ -98,10 +99,17 @@ const DescriptionView: FC<{ description: string }> = ({ description }) => {
     <div>
       <div className={LABEL_CLASS}>Description</div>
       <div
-        className={`${MARKDOWN_PROSE} mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-600 dark:bg-neutral-900/50`}
+        className={`${MARKDOWN_PROSE_CLASSES} mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-600 dark:bg-neutral-900/50`}
       >
-        <Markdown remarkPlugins={[remarkGfm]}>{description}</Markdown>
+        <AttachmentMarkdown onImageClick={setLightboxDocId} todoId={todoId}>
+          {description}
+        </AttachmentMarkdown>
       </div>
+      <ImageLightbox
+        docId={lightboxDocId ?? ''}
+        onClose={() => setLightboxDocId(null)}
+        show={!!lightboxDocId}
+      />
     </div>
   );
 };
@@ -206,45 +214,12 @@ const ParentView: FC<{ parentId: string | null | undefined }> = ({ parentId }) =
   );
 };
 
-/** Formats a date string for display */
-function formatNoteDate(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-interface NoteItemProps {
-  note: TodoNote;
-}
-
-const NoteItem: FC<NoteItemProps> = ({ note }) => (
-  <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-900/50">
-    <div className="mb-2 flex items-center justify-between">
-      <span className="text-xs text-neutral-500 dark:text-neutral-400">
-        {formatNoteDate(note.createdAt)}
-      </span>
-      {note.updatedAt && (
-        <span className="text-xs text-neutral-400 italic dark:text-neutral-500">
-          edited {formatNoteDate(note.updatedAt)}
-        </span>
-      )}
-    </div>
-    <div className={`${MARKDOWN_PROSE}`}>
-      <Markdown remarkPlugins={[remarkGfm]}>{note.content}</Markdown>
-    </div>
-  </div>
-);
-
 interface NotesViewProps {
+  todoId: string;
   notes: TodoNote[] | undefined;
 }
 
-const NotesView: FC<NotesViewProps> = ({ notes }) => {
+const NotesView: FC<NotesViewProps> = ({ todoId, notes }) => {
   if (!notes || notes.length === 0) {
     return null;
   }
@@ -262,7 +237,7 @@ const NotesView: FC<NotesViewProps> = ({ notes }) => {
       </div>
       <div className="mt-2 space-y-2">
         {sortedNotes.map((note) => (
-          <NoteItem key={note.id} note={note} />
+          <NoteViewItem key={note.id} note={note} todoId={todoId} />
         ))}
       </div>
     </div>
@@ -320,7 +295,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
     <TitleView todo={todo} />
     <ParentView parentId={todo.parentId} />
     <BlockedByView blockedBy={todo.blockedBy} />
-    <DescriptionView description={todo.description} />
+    <DescriptionView description={todo.description} todoId={todo._id} />
 
     <div className="grid grid-cols-2 gap-4">
       <DueDateView due={todo.due} />
@@ -329,7 +304,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
 
     <TagsView tags={todo.tags} />
     <SubtasksView todoId={todo._id} />
-    <NotesView notes={todo.notes} />
+    <NotesView notes={todo.notes} todoId={todo._id} />
     <LinkView link={todo.link} />
     <ExternalIdView externalId={todo.externalId ?? null} />
     <MetadataView metadata={todo.metadata} />

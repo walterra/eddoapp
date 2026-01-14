@@ -16,6 +16,8 @@ interface UserDatabaseContext {
   username: string;
   userDatabaseName: string;
   userDatabaseUrl: string;
+  attachmentsDatabaseName: string;
+  attachmentsDatabaseUrl: string;
 }
 
 declare module 'hono' {
@@ -57,14 +59,19 @@ export const userDatabaseMiddleware = createMiddleware(async (c, next) => {
 
     // Create user database context
     const userDatabaseName = getUserDatabaseName(env, decoded.username);
+    // Attachments database name follows pattern: eddo_attachments_{username}
+    const attachmentsDatabaseName = userDatabaseName.replace('_user_', '_attachments_');
     // Use helper to get base URL without credentials for fetch API compatibility
     const userDatabaseUrl = `${config.getCouchDbBaseUrl()}${userDatabaseName}`;
+    const attachmentsDatabaseUrl = `${config.getCouchDbBaseUrl()}${attachmentsDatabaseName}`;
 
     const userDbContext: UserDatabaseContext = {
       userId: decoded.userId,
       username: decoded.username,
       userDatabaseName,
       userDatabaseUrl,
+      attachmentsDatabaseName,
+      attachmentsDatabaseUrl,
     };
 
     // Set user database context in Hono context
@@ -93,59 +100,68 @@ interface ProxyRequestOptions {
   headers?: Record<string, string>;
 }
 
-/**
- * Helper function to proxy requests to user-specific CouchDB database
- */
-export async function proxyUserCouchDBRequest(
-  userDbContext: UserDatabaseContext,
+/** Checks if response contains binary attachment data */
+function isBinaryResponse(contentType: string | null): boolean {
+  if (!contentType) return false;
+  // Binary types: images, PDFs, and octet-stream (CouchDB default for attachments)
+  return (
+    contentType.startsWith('image/') ||
+    contentType === 'application/pdf' ||
+    contentType === 'application/octet-stream'
+  );
+}
+
+/** Builds request headers with auth */
+function buildRequestHeaders(headers?: Record<string, string>): Record<string, string> {
+  const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...headers };
+  const authHeader = config.getCouchDbAuthHeader();
+  if (authHeader) requestHeaders['Authorization'] = authHeader;
+  return requestHeaders;
+}
+
+/** Filters sensitive headers from response */
+function filterResponseHeaders(response: Response): Headers {
+  const filtered = new Headers();
+  response.headers.forEach((value, key) => {
+    const lowerKey = key.toLowerCase();
+    if (!lowerKey.includes('authorization') && !lowerKey.includes('cookie')) {
+      filtered.set(key, value);
+    }
+  });
+  return filtered;
+}
+
+/** Creates response with appropriate body type */
+async function createProxyResponse(
+  response: Response,
+  filteredHeaders: Headers,
+): Promise<Response> {
+  const contentType = response.headers.get('Content-Type');
+  const body = isBinaryResponse(contentType) ? await response.arrayBuffer() : await response.text();
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: filteredHeaders,
+  });
+}
+
+/** Common proxy logic for CouchDB requests */
+async function proxyCouchDBRequest(
+  baseUrl: string,
   options: ProxyRequestOptions,
 ): Promise<Response> {
   const { method, path, body, headers } = options;
-  // Remove leading slash from path if present
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-
-  // Build full URL to user's database
-  const couchdbUrl = `${userDbContext.userDatabaseUrl}/${cleanPath}`;
-
-  const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...headers,
-  };
-
-  // Add authentication for user's database using the same pattern as config
-  const authHeader = config.getCouchDbAuthHeader();
-  if (authHeader) {
-    requestHeaders['Authorization'] = authHeader;
-  }
+  const couchdbUrl = `${baseUrl}/${cleanPath}`;
 
   try {
     const response = await fetch(couchdbUrl, {
       method,
-      headers: requestHeaders,
+      headers: buildRequestHeaders(headers),
       body: method !== 'GET' && method !== 'HEAD' ? body : undefined,
     });
 
-    // Get response body
-    const responseBody = await response.text();
-
-    // Create response with CouchDB headers but filter out sensitive ones
-    const filteredHeaders = new Headers();
-    response.headers.forEach((value, key) => {
-      // Filter out sensitive headers
-      if (
-        !key.toLowerCase().includes('authorization') &&
-        !key.toLowerCase().includes('cookie') &&
-        !key.toLowerCase().includes('set-cookie')
-      ) {
-        filteredHeaders.set(key, value);
-      }
-    });
-
-    return new Response(responseBody, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: filteredHeaders,
-    });
+    return createProxyResponse(response, filterResponseHeaders(response));
   } catch (error) {
     logger.error({ error }, 'CouchDB proxy error');
     return new Response(JSON.stringify({ error: 'Database connection failed' }), {
@@ -153,4 +169,24 @@ export async function proxyUserCouchDBRequest(
       headers: { 'Content-Type': 'application/json' },
     });
   }
+}
+
+/**
+ * Helper function to proxy requests to user-specific CouchDB database
+ */
+export async function proxyUserCouchDBRequest(
+  userDbContext: UserDatabaseContext,
+  options: ProxyRequestOptions,
+): Promise<Response> {
+  return proxyCouchDBRequest(userDbContext.userDatabaseUrl, options);
+}
+
+/**
+ * Helper function to proxy requests to user-specific attachments database
+ */
+export async function proxyAttachmentsCouchDBRequest(
+  userDbContext: UserDatabaseContext,
+  options: ProxyRequestOptions,
+): Promise<Response> {
+  return proxyCouchDBRequest(userDbContext.attachmentsDatabaseUrl, options);
 }

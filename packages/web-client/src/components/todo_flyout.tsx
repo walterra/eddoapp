@@ -159,39 +159,44 @@ const EditModeActions: FC<EditModeActionsProps> = ({
 );
 
 interface FlyoutContentProps {
-  todo: Todo;
   state: ReturnType<typeof useTodoFlyoutState>;
   allTags: string[];
   activeArray: Array<[string, string | null]>;
 }
 
-const FlyoutContent: FC<FlyoutContentProps> = ({ todo, state, allTags, activeArray }) => (
-  <div className="flex h-full flex-col">
-    <div className="flex-1 overflow-y-auto p-4">
-      {state.error && <ErrorDisplay error={state.error} onClear={state.clearError} />}
+const FlyoutContent: FC<FlyoutContentProps> = ({ state, allTags, activeArray }) => {
+  // Use editedTodo for both view and edit modes to ensure consistency after save.
+  // The editedTodo is synced from todo prop when flyout opens or todo changes.
+  const displayTodo = state.editedTodo;
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-y-auto p-4">
+        {state.error && <ErrorDisplay error={state.error} onClear={state.clearError} />}
+        {state.mode === 'view' ? (
+          <TodoViewFields todo={displayTodo} />
+        ) : (
+          <EditFormFields
+            activeArray={activeArray}
+            allTags={allTags}
+            onChange={state.setEditedTodo}
+            todo={displayTodo}
+          />
+        )}
+      </div>
       {state.mode === 'view' ? (
-        <TodoViewFields todo={todo} />
+        <ViewModeActions isDeleting={state.isDeleting} onDelete={state.handleDelete} />
       ) : (
-        <EditFormFields
-          activeArray={activeArray}
-          allTags={allTags}
-          onChange={state.setEditedTodo}
-          todo={state.editedTodo}
+        <EditModeActions
+          isActiveValid={validateTimeTracking(activeArray)}
+          isSaving={state.isSaving}
+          onCancel={state.handleCancelEdit}
+          onSave={state.handleSave}
         />
       )}
     </div>
-    {state.mode === 'view' ? (
-      <ViewModeActions isDeleting={state.isDeleting} onDelete={state.handleDelete} />
-    ) : (
-      <EditModeActions
-        isActiveValid={validateTimeTracking(activeArray)}
-        isSaving={state.isSaving}
-        onCancel={state.handleCancelEdit}
-        onSave={state.handleSave}
-      />
-    )}
-  </div>
-);
+  );
+};
 
 /** Custom theme for Flowbite Drawer to use neutral palette instead of gray */
 const drawerTheme = {
@@ -241,7 +246,7 @@ const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
           )}
         />
         <DrawerItems>
-          <FlyoutContent activeArray={activeArray} allTags={allTags} state={state} todo={todo} />
+          <FlyoutContent activeArray={activeArray} allTags={allTags} state={state} />
         </DrawerItems>
       </Drawer>
       {state.showUnsavedDialog && (
