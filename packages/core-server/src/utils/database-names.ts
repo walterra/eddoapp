@@ -158,3 +158,35 @@ export function getAuditDatabaseConfig(env: Env, username: string) {
     fullUrl: `${env.COUCHDB_URL}/${dbName}`,
   };
 }
+
+/**
+ * Get the chat database name for a user
+ */
+export function getChatDatabaseName(env: Env, username: string): string {
+  const prefix = getDatabasePrefix(env);
+  const sanitizedUsername = sanitizeUsername(username);
+  return `${prefix}_chat_${sanitizedUsername}`;
+}
+
+/**
+ * Check if a database name is a chat database
+ */
+export function isChatDatabase(databaseName: string, env: Env): boolean {
+  const productionPrefix = env.DATABASE_PREFIX;
+  const testPrefix = env.DATABASE_TEST_PREFIX;
+
+  const pattern = new RegExp(`^(?:${productionPrefix}|${testPrefix})_chat_.+$`);
+  return pattern.test(databaseName);
+}
+
+/**
+ * Get database configuration for user's chat database
+ */
+export function getChatDatabaseConfig(env: Env, username: string) {
+  const dbName = getChatDatabaseName(env, username);
+  return {
+    url: env.COUCHDB_URL,
+    dbName,
+    fullUrl: `${env.COUCHDB_URL}/${dbName}`,
+  };
+}

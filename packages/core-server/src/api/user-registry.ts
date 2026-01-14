@@ -12,6 +12,7 @@ import nano from 'nano';
 
 import { type Env } from '../config/env';
 import {
+  getChatDatabaseName,
   getUserDatabaseName,
   getUserRegistryDatabaseConfig,
   sanitizeUsername,
@@ -267,14 +268,16 @@ async function ensureDatabaseExists(
 }
 
 /**
- * Ensure user database and attachments database exist for a user
+ * Ensure user database, attachments database, and chat database exist for a user
  */
 async function ensureUserDatabase(context: UserRegistryContext, username: string): Promise<void> {
   const dbName = getUserDatabaseName(context.env, username);
   const attachmentsDbName = dbName.replace('_user_', '_attachments_');
+  const chatDbName = getChatDatabaseName(context.env, username);
 
   await ensureDatabaseExists(context.couchConnection, dbName);
   await ensureDatabaseExists(context.couchConnection, attachmentsDbName);
+  await ensureDatabaseExists(context.couchConnection, chatDbName);
 }
 
 /**
