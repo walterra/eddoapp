@@ -7,11 +7,13 @@ import { BiImage } from 'react-icons/bi';
 import { useAttachment } from '../hooks/use_attachment';
 import { AttachmentImage } from './attachment_image';
 import { FileDropZone } from './file_drop_zone';
+import { ImageLightbox } from './image_lightbox';
 
 interface NoteAttachmentsDisplayProps {
   todoId: string;
   noteId: string;
   attachments?: string[];
+  onImageClick: (docId: string) => void;
 }
 
 /** Displays existing note attachments as thumbnails */
@@ -19,19 +21,24 @@ const NoteAttachmentsDisplay: FC<NoteAttachmentsDisplayProps> = ({
   todoId,
   noteId,
   attachments,
+  onImageClick,
 }) => {
   if (!attachments || attachments.length === 0) return null;
 
   return (
     <div className="mb-2 flex flex-wrap gap-2">
-      {attachments.map((filename) => (
-        <AttachmentImage
-          alt={filename}
-          className="h-20 w-20 object-cover"
-          docId={`${todoId}/note/${noteId}/${filename}`}
-          key={filename}
-        />
-      ))}
+      {attachments.map((filename) => {
+        const docId = `${todoId}/note/${noteId}/${filename}`;
+        return (
+          <AttachmentImage
+            alt={filename}
+            className="h-20 w-20 cursor-pointer object-cover hover:opacity-80"
+            docId={docId}
+            key={filename}
+            onClick={() => onImageClick(docId)}
+          />
+        );
+      })}
     </div>
   );
 };
@@ -71,16 +78,13 @@ export interface NoteAttachmentsProps {
   onAttachmentsChange: (attachments: string[]) => void;
 }
 
-/**
- * Combined component for displaying and uploading note attachments.
- * Handles upload logic internally and reports changes via callback.
- */
-export const NoteAttachments: FC<NoteAttachmentsProps> = ({
-  todoId,
-  noteId,
-  attachments,
-  onAttachmentsChange,
-}) => {
+/** Hook for handling file uploads to note attachments */
+function useNoteAttachmentUpload(
+  todoId: string,
+  noteId: string,
+  attachments: string[] | undefined,
+  onAttachmentsChange: (attachments: string[]) => void,
+) {
   const { uploadAttachment, isUploading } = useAttachment();
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -91,12 +95,7 @@ export const NoteAttachments: FC<NoteAttachmentsProps> = ({
 
       for (const file of files) {
         try {
-          const result = await uploadAttachment.mutateAsync({
-            todoId,
-            file,
-            type: 'note',
-            noteId,
-          });
+          const result = await uploadAttachment.mutateAsync({ todoId, file, type: 'note', noteId });
           newAttachments.push(result.filename);
         } catch (err) {
           setUploadError(err instanceof Error ? err.message : 'Upload failed');
@@ -111,13 +110,44 @@ export const NoteAttachments: FC<NoteAttachmentsProps> = ({
     [todoId, noteId, attachments, uploadAttachment, onAttachmentsChange],
   );
 
+  return { handleFilesDropped, isUploading, uploadError };
+}
+
+/**
+ * Combined component for displaying and uploading note attachments.
+ * Handles upload logic internally and reports changes via callback.
+ */
+export const NoteAttachments: FC<NoteAttachmentsProps> = ({
+  todoId,
+  noteId,
+  attachments,
+  onAttachmentsChange,
+}) => {
+  const { handleFilesDropped, isUploading, uploadError } = useNoteAttachmentUpload(
+    todoId,
+    noteId,
+    attachments,
+    onAttachmentsChange,
+  );
+  const [lightboxDocId, setLightboxDocId] = useState<string | null>(null);
+
   return (
     <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-600">
-      <NoteAttachmentsDisplay attachments={attachments} noteId={noteId} todoId={todoId} />
+      <NoteAttachmentsDisplay
+        attachments={attachments}
+        noteId={noteId}
+        onImageClick={setLightboxDocId}
+        todoId={todoId}
+      />
       <NoteAttachmentsUpload
         isUploading={isUploading}
         onFilesDropped={handleFilesDropped}
         uploadError={uploadError}
+      />
+      <ImageLightbox
+        docId={lightboxDocId ?? ''}
+        onClose={() => setLightboxDocId(null)}
+        show={!!lightboxDocId}
       />
     </div>
   );

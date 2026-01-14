@@ -1,7 +1,9 @@
 /**
  * Lightbox component for viewing attachment images in full size.
+ * Uses a portal to render outside the flyout/drawer context.
  */
 import { type FC } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useAttachmentUrl } from './attachment_image';
 
@@ -57,15 +59,16 @@ const ErrorState: FC<{ error: string }> = ({ error }) => (
 
 /**
  * Full-screen lightbox for viewing attachment images.
+ * Renders via portal to escape flyout/drawer stacking context.
  */
 export const ImageLightbox: FC<ImageLightboxProps> = ({ show, onClose, docId }) => {
   const { url, isLoading, error } = useAttachmentUrl(docId);
 
   if (!show) return null;
 
-  return (
+  const lightboxContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
       onClick={onClose}
     >
       <CloseButton onClick={onClose} />
@@ -82,4 +85,6 @@ export const ImageLightbox: FC<ImageLightboxProps> = ({ show, onClose, docId }) 
       </div>
     </div>
   );
+
+  return createPortal(lightboxContent, document.body);
 };

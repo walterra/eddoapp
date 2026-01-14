@@ -100,6 +100,51 @@ interface ProxyRequestOptions {
   headers?: Record<string, string>;
 }
 
+/** Checks if response contains binary attachment data */
+function isBinaryResponse(contentType: string | null): boolean {
+  if (!contentType) return false;
+  // Binary types: images, PDFs, and octet-stream (CouchDB default for attachments)
+  return (
+    contentType.startsWith('image/') ||
+    contentType === 'application/pdf' ||
+    contentType === 'application/octet-stream'
+  );
+}
+
+/** Builds request headers with auth */
+function buildRequestHeaders(headers?: Record<string, string>): Record<string, string> {
+  const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...headers };
+  const authHeader = config.getCouchDbAuthHeader();
+  if (authHeader) requestHeaders['Authorization'] = authHeader;
+  return requestHeaders;
+}
+
+/** Filters sensitive headers from response */
+function filterResponseHeaders(response: Response): Headers {
+  const filtered = new Headers();
+  response.headers.forEach((value, key) => {
+    const lowerKey = key.toLowerCase();
+    if (!lowerKey.includes('authorization') && !lowerKey.includes('cookie')) {
+      filtered.set(key, value);
+    }
+  });
+  return filtered;
+}
+
+/** Creates response with appropriate body type */
+async function createProxyResponse(
+  response: Response,
+  filteredHeaders: Headers,
+): Promise<Response> {
+  const contentType = response.headers.get('Content-Type');
+  const body = isBinaryResponse(contentType) ? await response.arrayBuffer() : await response.text();
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: filteredHeaders,
+  });
+}
+
 /** Common proxy logic for CouchDB requests */
 async function proxyCouchDBRequest(
   baseUrl: string,
@@ -109,40 +154,14 @@ async function proxyCouchDBRequest(
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   const couchdbUrl = `${baseUrl}/${cleanPath}`;
 
-  const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...headers,
-  };
-
-  const authHeader = config.getCouchDbAuthHeader();
-  if (authHeader) {
-    requestHeaders['Authorization'] = authHeader;
-  }
-
   try {
     const response = await fetch(couchdbUrl, {
       method,
-      headers: requestHeaders,
+      headers: buildRequestHeaders(headers),
       body: method !== 'GET' && method !== 'HEAD' ? body : undefined,
     });
 
-    const responseBody = await response.text();
-    const filteredHeaders = new Headers();
-    response.headers.forEach((value, key) => {
-      if (
-        !key.toLowerCase().includes('authorization') &&
-        !key.toLowerCase().includes('cookie') &&
-        !key.toLowerCase().includes('set-cookie')
-      ) {
-        filteredHeaders.set(key, value);
-      }
-    });
-
-    return new Response(responseBody, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: filteredHeaders,
-    });
+    return createProxyResponse(response, filterResponseHeaders(response));
   } catch (error) {
     logger.error({ error }, 'CouchDB proxy error');
     return new Response(JSON.stringify({ error: 'Database connection failed' }), {
