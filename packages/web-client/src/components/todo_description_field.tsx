@@ -93,7 +93,7 @@ const DescriptionEditor: FC<DescriptionEditorProps> = ({
 
 /**
  * Inserts markdown reference into description.
- * Format: ![filename](attachment:desc/filename.png)
+ * Format: ![original-name](attachment:desc/hashed-filename.png)
  */
 function insertMarkdownIntoDescription(
   result: UploadAttachmentResult,
@@ -102,7 +102,9 @@ function insertMarkdownIntoDescription(
   // Extract the path portion (desc/filename) from docId (todoId/desc/filename)
   const pathParts = result.docId.split('/');
   const attachmentPath = pathParts.slice(1).join('/'); // Remove todoId prefix
-  const markdownRef = `![${result.filename}](attachment:${attachmentPath})`;
+  // Use original filename for alt text (readable), hashed filename in path (unique)
+  const altText = result.originalFilename || result.filename;
+  const markdownRef = `![${altText}](attachment:${attachmentPath})`;
 
   onChangeRef.current?.((t) => {
     const newDescription = t.description + (t.description ? '\n\n' : '') + markdownRef;
