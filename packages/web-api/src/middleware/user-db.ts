@@ -16,6 +16,8 @@ interface UserDatabaseContext {
   username: string;
   userDatabaseName: string;
   userDatabaseUrl: string;
+  attachmentsDatabaseName: string;
+  attachmentsDatabaseUrl: string;
 }
 
 declare module 'hono' {
@@ -57,14 +59,19 @@ export const userDatabaseMiddleware = createMiddleware(async (c, next) => {
 
     // Create user database context
     const userDatabaseName = getUserDatabaseName(env, decoded.username);
+    // Attachments database name follows pattern: eddo_attachments_{username}
+    const attachmentsDatabaseName = userDatabaseName.replace('_user_', '_attachments_');
     // Use helper to get base URL without credentials for fetch API compatibility
     const userDatabaseUrl = `${config.getCouchDbBaseUrl()}${userDatabaseName}`;
+    const attachmentsDatabaseUrl = `${config.getCouchDbBaseUrl()}${attachmentsDatabaseName}`;
 
     const userDbContext: UserDatabaseContext = {
       userId: decoded.userId,
       username: decoded.username,
       userDatabaseName,
       userDatabaseUrl,
+      attachmentsDatabaseName,
+      attachmentsDatabaseUrl,
     };
 
     // Set user database context in Hono context
@@ -93,26 +100,20 @@ interface ProxyRequestOptions {
   headers?: Record<string, string>;
 }
 
-/**
- * Helper function to proxy requests to user-specific CouchDB database
- */
-export async function proxyUserCouchDBRequest(
-  userDbContext: UserDatabaseContext,
+/** Common proxy logic for CouchDB requests */
+async function proxyCouchDBRequest(
+  baseUrl: string,
   options: ProxyRequestOptions,
 ): Promise<Response> {
   const { method, path, body, headers } = options;
-  // Remove leading slash from path if present
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-
-  // Build full URL to user's database
-  const couchdbUrl = `${userDbContext.userDatabaseUrl}/${cleanPath}`;
+  const couchdbUrl = `${baseUrl}/${cleanPath}`;
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...headers,
   };
 
-  // Add authentication for user's database using the same pattern as config
   const authHeader = config.getCouchDbAuthHeader();
   if (authHeader) {
     requestHeaders['Authorization'] = authHeader;
@@ -125,13 +126,9 @@ export async function proxyUserCouchDBRequest(
       body: method !== 'GET' && method !== 'HEAD' ? body : undefined,
     });
 
-    // Get response body
     const responseBody = await response.text();
-
-    // Create response with CouchDB headers but filter out sensitive ones
     const filteredHeaders = new Headers();
     response.headers.forEach((value, key) => {
-      // Filter out sensitive headers
       if (
         !key.toLowerCase().includes('authorization') &&
         !key.toLowerCase().includes('cookie') &&
@@ -153,4 +150,24 @@ export async function proxyUserCouchDBRequest(
       headers: { 'Content-Type': 'application/json' },
     });
   }
+}
+
+/**
+ * Helper function to proxy requests to user-specific CouchDB database
+ */
+export async function proxyUserCouchDBRequest(
+  userDbContext: UserDatabaseContext,
+  options: ProxyRequestOptions,
+): Promise<Response> {
+  return proxyCouchDBRequest(userDbContext.userDatabaseUrl, options);
+}
+
+/**
+ * Helper function to proxy requests to user-specific attachments database
+ */
+export async function proxyAttachmentsCouchDBRequest(
+  userDbContext: UserDatabaseContext,
+  options: ProxyRequestOptions,
+): Promise<Response> {
+  return proxyCouchDBRequest(userDbContext.attachmentsDatabaseUrl, options);
 }

@@ -3,26 +3,37 @@
  */
 import PouchDB from 'pouchdb-browser';
 
+/** Creates authenticated fetch function for PouchDB */
+function createAuthenticatedFetch(authToken: string) {
+  return (url: RequestInfo | URL, opts?: RequestInit) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    };
+
+    if (opts?.headers) {
+      Object.assign(headers, opts.headers);
+    }
+
+    return fetch(url, { ...opts, headers });
+  };
+}
+
 /**
- * Create authenticated remote PouchDB connection
+ * Create authenticated remote PouchDB connection for user database
  */
 export function createRemoteDb(authToken: string): PouchDB.Database {
   return new PouchDB(`${window.location.origin}/api/db`, {
-    fetch: (url, opts) => {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`,
-      };
+    fetch: createAuthenticatedFetch(authToken),
+  });
+}
 
-      if (opts?.headers) {
-        Object.assign(headers, opts.headers);
-      }
-
-      return fetch(url, {
-        ...opts,
-        headers,
-      });
-    },
+/**
+ * Create authenticated remote PouchDB connection for attachments database
+ */
+export function createRemoteAttachmentsDb(authToken: string): PouchDB.Database {
+  return new PouchDB(`${window.location.origin}/api/attachments-db`, {
+    fetch: createAuthenticatedFetch(authToken),
   });
 }
 

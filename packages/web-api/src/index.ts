@@ -20,6 +20,7 @@ import path from 'path';
 import { config } from './config';
 import { createEmailSyncScheduler } from './email/sync-scheduler';
 import { createGithubSyncScheduler } from './github/sync-scheduler';
+import { attachmentsDbProxyRoutes } from './routes/attachments-db-proxy';
 import { auditLogRoutes } from './routes/audit-log';
 import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
@@ -76,6 +77,7 @@ app.use('/api/*', async (c, next) => {
   return jwtMiddleware(c, next);
 });
 app.route('/api/db', dbProxyRoutes);
+app.route('/api/attachments-db', attachmentsDbProxyRoutes);
 app.route('/api/users', userRoutes);
 app.route('/api/rss', rssRoutes);
 app.route('/api/audit-log', auditLogRoutes);
