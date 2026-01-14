@@ -7,12 +7,18 @@ import PouchDB from 'pouchdb-browser';
 function createAuthenticatedFetch(authToken: string) {
   return (url: RequestInfo | URL, opts?: RequestInit) => {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       Authorization: `Bearer ${authToken}`,
     };
 
+    // Only set Content-Type if not already provided (PouchDB sets it for attachments)
     if (opts?.headers) {
-      Object.assign(headers, opts.headers);
+      const existingHeaders = opts.headers as Record<string, string>;
+      if (!existingHeaders['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
+      Object.assign(headers, existingHeaders);
+    } else {
+      headers['Content-Type'] = 'application/json';
     }
 
     return fetch(url, { ...opts, headers });
