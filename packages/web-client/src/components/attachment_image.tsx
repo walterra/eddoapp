@@ -112,6 +112,9 @@ export const AttachmentImage: FC<AttachmentImageProps> = ({
 }) => {
   const { imageUrl, error, isLoading } = useAttachmentImage(docId);
 
+  // Don't render anything if no docId provided
+  if (!docId) return null;
+
   const containerClass = `rounded overflow-hidden ${className}`;
 
   if (isLoading) return <LoadingPlaceholder className={containerClass} />;
