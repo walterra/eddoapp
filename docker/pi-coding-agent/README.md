@@ -13,9 +13,10 @@ Pi-coding-agent has full bash access and can read/write files. Running it in a D
 
 ## Build
 
+Build from repository root (required for COPY commands):
+
 ```bash
-cd docker/pi-coding-agent
-docker build -t pi-coding-agent:latest .
+docker build -t pi-coding-agent:latest -f docker/pi-coding-agent/Dockerfile .
 ```
 
 ## Usage
@@ -91,6 +92,37 @@ The agent streams JSON events:
 | `/workspace`                      | Working directory (mount your repo here) |
 | `/sessions`                       | Session storage for JSONL files          |
 | `/home/agent/.pi/agent/auth.json` | API key configuration                    |
+
+## Included Skills and Extensions
+
+The image includes Eddo-specific skills and extensions from `packages/chat-agent/`:
+
+### Skills
+
+Located at `/home/agent/.pi/agent/skills/`:
+
+- **eddo-todo**: GTD-style todo management via Eddo MCP server
+- **eddo-work**: Structured work phases (REFINE → IMPLEMENT → REVIEW → COMPLETE)
+
+### Extensions
+
+Located at `/home/agent/.pi/agent/extensions/`:
+
+- **graphviz-chart.ts**: Render Graphviz DOT specifications
+- **vega-chart.ts**: Render Vega-Lite chart specifications
+
+### MCP Server Access
+
+The eddo-todo skill needs to reach the Eddo MCP server on the host:
+
+```bash
+docker run -i --rm \
+  -e EDDO_MCP_URL=http://host.docker.internal:3001/mcp \
+  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  pi-coding-agent:latest
+```
+
+**Note**: `host.docker.internal` works on Docker Desktop. For Linux, add `--add-host=host.docker.internal:host-gateway`.
 
 ## Security Notes
 

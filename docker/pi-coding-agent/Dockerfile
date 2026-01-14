@@ -1,7 +1,7 @@
 # Pi Coding Agent Docker Image
 # Isolated container for running @mariozechner/pi-coding-agent in RPC mode
 #
-# Build: docker build -t pi-coding-agent:latest .
+# Build: docker build -t pi-coding-agent:latest -f docker/pi-coding-agent/Dockerfile .
 # Run:   docker run -i --rm pi-coding-agent:latest
 
 FROM node:22-slim
@@ -15,16 +15,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ripgrep \
     fd-find \
     tree \
+    graphviz \
+    python3 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s $(which fdfind) /usr/local/bin/fd
+
+# Install Python packages for vega-chart extension
+RUN pip3 install --break-system-packages altair pandas vl-convert-python
 
 # Install pi-coding-agent globally
 RUN npm install -g @mariozechner/pi-coding-agent
 
 # Create non-root user for security
 RUN useradd -m -s /bin/bash agent \
-    && mkdir -p /workspace /sessions /home/agent/.pi/agent \
+    && mkdir -p /workspace /sessions /home/agent/.pi/agent/skills /home/agent/.pi/agent/extensions \
     && chown -R agent:agent /workspace /sessions /home/agent
+
+# Copy skills and extensions (as root, then fix ownership)
+COPY --chown=agent:agent packages/chat-agent/skills/ /home/agent/.pi/agent/skills/
+COPY --chown=agent:agent packages/chat-agent/extensions/ /home/agent/.pi/agent/extensions/
+
+# Install skill dependencies
+WORKDIR /home/agent/.pi/agent/skills/eddo-todo
+RUN npm install --omit=dev
 
 # Switch to non-root user
 USER agent
