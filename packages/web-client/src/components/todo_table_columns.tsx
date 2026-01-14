@@ -1,13 +1,14 @@
 /**
  * TanStack Table column definitions for TodoTable
  */
-import { getFormattedDuration, type DatabaseError, type Todo } from '@eddo/core-client';
+import { getFormattedDuration, type Todo } from '@eddo/core-client';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { type FC, type ReactNode } from 'react';
+import { useCallback, type FC, type ReactNode } from 'react';
 import { BiCheckbox, BiCheckboxChecked } from 'react-icons/bi';
 
 import { CONTEXT_DEFAULT } from '../constants';
+import { useAuditedToggleCompletionMutation } from '../hooks/use_audited_todo_mutations';
 import { type SubtaskCount } from '../hooks/use_parent_child';
 import { CopyIdButton } from './copy_id_button';
 import { DueDatePopover } from './due_date_popover';
@@ -23,9 +24,6 @@ export interface TodoRowData {
   todo: Todo;
   duration: number;
   subtaskCount?: SubtaskCount;
-  isUpdating: boolean;
-  error: DatabaseError | null;
-  onToggleCheckbox: () => void;
 }
 
 const columnHelper = createColumnHelper<TodoRowData>();
@@ -34,18 +32,24 @@ const columnHelper = createColumnHelper<TodoRowData>();
 const StatusCell: FC<{
   row: TodoRowData;
 }> = ({ row }) => {
+  const toggleCompletion = useAuditedToggleCompletionMutation();
   const isCompleted = row.todo.completed !== null;
+
+  const handleToggle = useCallback(async () => {
+    if (toggleCompletion.isPending) return;
+    await toggleCompletion.mutateAsync(row.todo);
+  }, [toggleCompletion, row.todo]);
 
   return (
     <div className="flex items-center gap-1">
       <button
-        className={`${row.isUpdating ? 'opacity-50' : 'cursor-pointer'} ${
+        className={`${toggleCompletion.isPending ? 'opacity-50' : 'cursor-pointer'} ${
           isCompleted
             ? 'text-primary-600 dark:text-primary-500'
             : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
         }`}
-        disabled={row.isUpdating}
-        onClick={row.onToggleCheckbox}
+        disabled={toggleCompletion.isPending}
+        onClick={handleToggle}
         title={isCompleted ? 'Mark incomplete' : 'Mark complete'}
         type="button"
       >
@@ -58,12 +62,9 @@ const StatusCell: FC<{
 
 /** Title cell with link support */
 const TitleCell: FC<{ row: TodoRowData }> = ({ row }) => {
-  const { todo, error } = row;
+  const { todo } = row;
   return (
     <div className="text-xs">
-      {error && (
-        <div className="text-error-600 dark:text-error-400 mb-0.5 text-xs">Failed to update</div>
-      )}
       <span
         className={
           todo.completed ? 'text-neutral-400 line-through' : 'text-neutral-900 dark:text-white'

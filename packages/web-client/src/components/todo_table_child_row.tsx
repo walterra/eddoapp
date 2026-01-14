@@ -32,9 +32,6 @@ const buildRowData = (
   todo,
   duration,
   subtaskCount,
-  isUpdating: false,
-  error: null,
-  onToggleCheckbox: () => {},
 });
 
 /** Maximum nesting depth to prevent infinite recursion */

@@ -241,6 +241,7 @@ export function useAuditedSaveTodoMutation() {
  */
 export function useAuditedToggleCompletionMutation() {
   const { safeDb } = usePouchDb();
+  const queryClient = useQueryClient();
   const auditedMutation = useAuditedTodoMutation();
 
   return useMutation<Todo, Error, Todo>({
@@ -267,6 +268,11 @@ export function useAuditedToggleCompletionMutation() {
           return result;
         },
       );
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
     },
   });
 }

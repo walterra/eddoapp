@@ -38,9 +38,6 @@ const useRowData = (
         todo,
         duration: todoDurations.get(todo._id) ?? 0,
         subtaskCount: subtaskCounts.get(todo._id),
-        isUpdating: false,
-        error: null,
-        onToggleCheckbox: () => {},
       })),
     [contextTodos, todoDurations, subtaskCounts],
   );
@@ -94,7 +91,7 @@ export const ContextGroup: FC<ContextGroupProps> = (props) => {
         containerRef={containerRef}
         useVirtualization={rows.length > VIRTUALIZATION_THRESHOLD}
       >
-        <table className="w-full table-fixed divide-y divide-neutral-200 dark:divide-neutral-700">
+        <table className="w-full min-w-[800px] table-fixed divide-y divide-neutral-200 dark:divide-neutral-700">
           <TableHead contextTodos={contextTodos} table={table} />
           <ExpandableRows
             childrenByParent={childrenByParent}
@@ -131,9 +128,9 @@ interface TableContainerProps {
 
 const TableContainer: FC<TableContainerProps> = ({ containerRef, useVirtualization, children }) => (
   <div
-    className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800"
+    className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800"
     ref={containerRef}
-    style={{ maxHeight: useVirtualization ? '600px' : undefined, overflow: 'auto' }}
+    style={{ maxHeight: useVirtualization ? '600px' : undefined, overflowY: 'auto' }}
   >
     {children}
   </div>
