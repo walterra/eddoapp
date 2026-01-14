@@ -2,10 +2,20 @@
  * Chat session helper functions for CRUD operations.
  */
 
-import { createChatDatabase, type Env } from '@eddo/core-server';
-import type { ChatSession, CreateChatSessionRequest, SessionEntry } from '@eddo/core-shared';
+import { createChatDatabase, getAttachmentsDatabaseName, type Env } from '@eddo/core-server';
+import type {
+  ChatAttachmentDoc,
+  ChatSession,
+  ContentBlock,
+  CreateChatSessionRequest,
+  SessionEntry,
+  SessionMessageEntry,
+} from '@eddo/core-shared';
+import nano from 'nano';
 
 import type { RepoManager } from '../git';
+import { logger } from '../utils/logger';
+import { migrateContentImages, processContentImages } from './chat-image-service';
 
 /** Chat service context for helpers */
 export interface ChatHelperContext {
@@ -20,6 +30,16 @@ export function getChatDb(
   username: string,
 ): ReturnType<typeof createChatDatabase> {
   return createChatDatabase(ctx.couchUrl, ctx.env, username);
+}
+
+/** Get attachments database for a user */
+function getAttachmentsDb(
+  ctx: ChatHelperContext,
+  username: string,
+): nano.DocumentScope<ChatAttachmentDoc> {
+  const couchConnection = nano(ctx.couchUrl);
+  const dbName = getAttachmentsDatabaseName(ctx.env, username);
+  return couchConnection.db.use<ChatAttachmentDoc>(dbName);
 }
 
 /** Create a new chat session */
@@ -70,14 +90,102 @@ export async function listSessions(
   }
 }
 
-/** Get all entries for a session */
+/** Get content blocks from a chat message (if it has image-capable content) */
+function getMessageContentBlocks(message: SessionMessageEntry['message']): ContentBlock[] | null {
+  // BashExecutionMessage doesn't have content property
+  if (message.role === 'bashExecution') return null;
+
+  const content = message.content;
+  // UserMessage can have string content
+  if (typeof content === 'string') return null;
+
+  return content as ContentBlock[];
+}
+
+/** Check if content has base64 images */
+function hasBase64Images(content: ContentBlock[]): boolean {
+  return content.some(
+    (block) =>
+      block.type === 'image' &&
+      'source' in block &&
+      (block as { source?: { type?: string; data?: string } }).source?.type === 'base64' &&
+      typeof (block as { source?: { type?: string; data?: string } }).source?.data === 'string',
+  );
+}
+
+/** Check if an entry needs image migration */
+function needsImageMigration(entry: SessionEntry): boolean {
+  if (entry.type !== 'message') return false;
+  const msgEntry = entry as SessionMessageEntry;
+  const content = getMessageContentBlocks(msgEntry.message);
+  if (!content) return false;
+
+  return hasBase64Images(content);
+}
+
+/** Migrate images in entries lazily (on read) */
+async function migrateEntriesImages(
+  ctx: ChatHelperContext,
+  username: string,
+  _sessionId: string,
+  entries: SessionEntry[],
+): Promise<SessionEntry[]> {
+  const attachmentsDb = getAttachmentsDb(ctx, username);
+  const results: SessionEntry[] = [];
+
+  for (const entry of entries) {
+    if (!needsImageMigration(entry)) {
+      results.push(entry);
+      continue;
+    }
+
+    const msgEntry = entry as SessionMessageEntry;
+    const content = getMessageContentBlocks(msgEntry.message);
+    if (!content) {
+      results.push(entry);
+      continue;
+    }
+
+    try {
+      const migrationResult = await migrateContentImages(content, attachmentsDb);
+      if (migrationResult.migrated) {
+        // Update the entry in the database with migrated content
+        const updatedEntry: SessionEntry = {
+          ...entry,
+          message: {
+            ...msgEntry.message,
+            content: migrationResult.content,
+          },
+        } as SessionEntry;
+
+        // Note: We're updating the entry in place. The chatDb doesn't have
+        // an updateEntry method, so we'll just return the migrated version
+        // for display. The next save will use the new format.
+        logger.info({ entryId: entry.id }, 'Lazily migrated images in chat entry');
+        results.push(updatedEntry);
+      } else {
+        results.push(entry);
+      }
+    } catch (error) {
+      logger.error({ error, entryId: entry.id }, 'Failed to migrate images in chat entry');
+      results.push(entry);
+    }
+  }
+
+  return results;
+}
+
+/** Get all entries for a session (with lazy image migration) */
 export async function getSessionEntries(
   ctx: ChatHelperContext,
   username: string,
   sessionId: string,
 ): Promise<SessionEntry[]> {
   const chatDb = getChatDb(ctx, username);
-  return chatDb.getEntries(sessionId);
+  const entries = await chatDb.getEntries(sessionId);
+
+  // Lazily migrate any entries with base64 images
+  return migrateEntriesImages(ctx, username, sessionId, entries);
 }
 
 /** Options for appending an entry */
@@ -89,10 +197,57 @@ export interface AppendEntryOptions {
   timestamp?: string;
 }
 
+/** Check if entry has content that may contain images */
+function hasImageContent(entry: Omit<SessionEntry, 'id' | 'timestamp'>): boolean {
+  if (entry.type !== 'message') return false;
+  const msgEntry = entry as Omit<SessionMessageEntry, 'id' | 'timestamp'>;
+  const content = getMessageContentBlocks(msgEntry.message);
+  return content !== null && content.some((block) => block.type === 'image');
+}
+
+/** Process images in message entry and return updated entry */
+async function processEntryImages(
+  ctx: ChatHelperContext,
+  username: string,
+  entry: Omit<SessionEntry, 'id' | 'timestamp'>,
+): Promise<Omit<SessionEntry, 'id' | 'timestamp'>> {
+  if (!hasImageContent(entry)) return entry;
+
+  const attachmentsDb = getAttachmentsDb(ctx, username);
+  const msgEntry = entry as Omit<SessionMessageEntry, 'id' | 'timestamp'>;
+  const content = getMessageContentBlocks(msgEntry.message);
+  if (!content) return entry;
+
+  try {
+    const result = await processContentImages(content, attachmentsDb);
+    if (result.extractedCount > 0) {
+      logger.info(
+        { extracted: result.extractedCount, deduplicated: result.deduplicatedCount },
+        'Processed images in chat entry',
+      );
+      return {
+        ...entry,
+        message: {
+          ...msgEntry.message,
+          content: result.content,
+        },
+      } as Omit<SessionEntry, 'id' | 'timestamp'>;
+    }
+  } catch (error) {
+    logger.error({ error }, 'Failed to process images in chat entry, storing inline');
+  }
+
+  return entry;
+}
+
 /** Append an entry to a session (optionally with a specific timestamp) */
 export async function appendEntry(opts: AppendEntryOptions): Promise<string> {
   const chatDb = getChatDb(opts.ctx, opts.username);
-  return chatDb.appendEntryWithTimestamp(opts.sessionId, opts.entry, opts.timestamp);
+
+  // Process images before saving (extract to attachments, replace with URLs)
+  const processedEntry = await processEntryImages(opts.ctx, opts.username, opts.entry);
+
+  return chatDb.appendEntryWithTimestamp(opts.sessionId, processedEntry, opts.timestamp);
 }
 
 /** Delete session options */

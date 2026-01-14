@@ -25,9 +25,11 @@ interface PiToolCallContent {
   arguments: JSONObject;
 }
 
+/** Pi-coding-agent image content (direct base64 format) */
 interface PiImageContent {
   type: 'image';
-  source: { type: 'base64'; mediaType: string; data: string } | { type: 'url'; url: string };
+  data: string; // base64 encoded image data
+  mimeType: string; // e.g., "image/jpeg", "image/png"
 }
 
 type PiContentBlock = PiTextContent | PiThinkingContent | PiToolCallContent | PiImageContent;
@@ -66,6 +68,21 @@ function extractTextContent(content: string | PiContentBlock[]): string {
     .join('\n');
 }
 
+/** Extract images from content blocks */
+function extractImages(content: PiContentBlock[]): ImagePart[] {
+  return content
+    .filter((c): c is PiImageContent => c.type === 'image')
+    .map(
+      (img): ImagePart => ({
+        type: 'image',
+        image: `data:${img.mimeType};base64,${img.data}`,
+      }),
+    );
+}
+
+/** Image content part */
+type ImagePart = { type: 'image'; image: string };
+
 /** Assistant-ui content part type */
 type ContentPart =
   | { type: 'text'; text: string }
@@ -77,9 +94,10 @@ type ContentPart =
       args: JSONObject;
       argsText: string;
       result?: string;
+      resultImages?: ImagePart[];
       isError?: boolean;
     }
-  | { type: 'image'; image: string };
+  | ImagePart;
 
 /** Convert pi content block to assistant-ui format */
 function convertContentBlock(
@@ -95,6 +113,7 @@ function convertContentBlock(
 
     case 'toolCall': {
       const result = toolResults.get(block.id);
+      const resultImages = result ? extractImages(result.content) : [];
       return {
         type: 'tool-call',
         toolCallId: block.id,
@@ -102,18 +121,16 @@ function convertContentBlock(
         args: block.arguments,
         argsText: JSON.stringify(block.arguments, null, 2),
         result: result ? extractTextContent(result.content) : undefined,
+        resultImages, // Images from tool result
         isError: result?.isError,
       };
     }
 
     case 'image':
-      if (block.source.type === 'base64') {
-        return {
-          type: 'image',
-          image: `data:${block.source.mediaType};base64,${block.source.data}`,
-        };
-      }
-      return { type: 'image', image: block.source.url };
+      return {
+        type: 'image',
+        image: `data:${block.mimeType};base64,${block.data}`,
+      };
 
     default:
       return null;
@@ -131,40 +148,58 @@ function buildToolResultsMap(messages: PiMessage[]): Map<string, PiToolResultMes
   return map;
 }
 
+/** Convert user message to assistant-ui format */
+function convertUserMessage(msg: PiUserMessage, id: string, createdAt: Date): ThreadMessageLike {
+  const text = typeof msg.content === 'string' ? msg.content : extractTextContent(msg.content);
+  return { id, role: 'user', content: [{ type: 'text', text }], createdAt };
+}
+
+/** Convert assistant message content blocks */
+function convertAssistantContent(
+  blocks: PiContentBlock[],
+  toolResults: Map<string, PiToolResultMessage>,
+): ContentPart[] {
+  const content: ContentPart[] = [];
+
+  for (const block of blocks) {
+    const converted = convertContentBlock(block, toolResults);
+    if (!converted) continue;
+
+    content.push(converted);
+
+    // Add tool result images after tool call
+    if (converted.type === 'tool-call' && converted.resultImages?.length) {
+      content.push(...converted.resultImages);
+    }
+  }
+
+  return content;
+}
+
+/** Convert assistant message to assistant-ui format */
+function convertAssistantMessage(
+  msg: PiAssistantMessage,
+  id: string,
+  createdAt: Date,
+  toolResults: Map<string, PiToolResultMessage>,
+): ThreadMessageLike {
+  const content = convertAssistantContent(msg.content, toolResults);
+  return { id, role: 'assistant', content: content as ThreadMessageLike['content'], createdAt };
+}
+
 /** Convert a single pi message to assistant-ui format */
 function convertMessage(
   msg: PiMessage,
   index: number,
   toolResults: Map<string, PiToolResultMessage>,
 ): ThreadMessageLike | null {
-  // Skip toolResult messages - they're merged into tool-call parts
   if (msg.role === 'toolResult') return null;
 
   const id = `msg-${index}-${msg.timestamp ?? Date.now()}`;
   const createdAt = msg.timestamp ? new Date(msg.timestamp) : new Date();
 
-  if (msg.role === 'user') {
-    const text = typeof msg.content === 'string' ? msg.content : extractTextContent(msg.content);
-    return {
-      id,
-      role: 'user',
-      content: [{ type: 'text', text }],
-      createdAt,
-    };
-  }
-
-  if (msg.role === 'assistant') {
-    const content = msg.content
-      .map((block) => convertContentBlock(block, toolResults))
-      .filter((c): c is ContentPart => c !== null);
-
-    return {
-      id,
-      role: 'assistant',
-      content: content as ThreadMessageLike['content'],
-      createdAt,
-    };
-  }
+  if (msg.role === 'user') return convertUserMessage(msg, id, createdAt);
+  if (msg.role === 'assistant') return convertAssistantMessage(msg, id, createdAt, toolResults);
 
   return null;
 }
