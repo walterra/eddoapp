@@ -140,19 +140,38 @@ const NoteEditor: FC<NoteEditorProps> = ({ todoId, note, onUpdate, onDelete }) =
 };
 
 interface AddNoteFormProps {
+  todoId: string;
+  noteId: string;
   content: string;
+  attachments: string[];
   onChange: (content: string) => void;
+  onAttachmentsChange: (attachments: string[]) => void;
   onAdd: () => void;
   onCancel: () => void;
 }
 
-const AddNoteForm: FC<AddNoteFormProps> = ({ content, onChange, onAdd, onCancel }) => (
+const AddNoteForm: FC<AddNoteFormProps> = ({
+  todoId,
+  noteId,
+  content,
+  attachments,
+  onChange,
+  onAttachmentsChange,
+  onAdd,
+  onCancel,
+}) => (
   <div className="mb-3 space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/30">
     <Textarea
       onChange={(e) => onChange(e.target.value)}
       placeholder="Add a note... (supports Markdown)"
       rows={3}
       value={content}
+    />
+    <NoteAttachments
+      attachments={attachments}
+      noteId={noteId}
+      onAttachmentsChange={onAttachmentsChange}
+      todoId={todoId}
     />
     <div className="flex justify-end gap-2">
       <Button color="gray" onClick={onCancel} size="xs">
@@ -172,11 +191,12 @@ interface NotesFieldProps {
 
 /** Creates handlers for note operations */
 function useNoteHandlers(onChange: NotesFieldProps['onChange']) {
-  const addNote = (content: string) => {
+  const addNote = (noteId: string, content: string, attachments?: string[]) => {
     const newNote: TodoNote = {
-      id: generateNoteId(),
+      id: noteId,
       content,
       createdAt: new Date().toISOString(),
+      ...(attachments && attachments.length > 0 && { attachments }),
     };
     onChange((t) => ({ ...t, notes: [...(t.notes ?? []), newNote] }));
   };
@@ -231,18 +251,44 @@ const NotesList: FC<NotesListProps> = ({ todoId, notes, onUpdate, onDelete }) =>
   );
 };
 
-export const NotesField: FC<NotesFieldProps> = ({ todo, onChange }) => {
-  const [newNoteContent, setNewNoteContent] = useState('');
-  const [isAddingNote, setIsAddingNote] = useState(false);
-  const { addNote, updateNote, deleteNote } = useNoteHandlers(onChange);
-  const notes = todo.notes ?? [];
+/** State for the new note form */
+interface NewNoteState {
+  content: string;
+  attachments: string[];
+  noteId: string;
+  isAdding: boolean;
+}
 
-  const handleAdd = () => {
-    if (!newNoteContent.trim()) return;
-    addNote(newNoteContent.trim());
-    setNewNoteContent('');
-    setIsAddingNote(false);
+const initialNewNoteState: NewNoteState = {
+  content: '',
+  attachments: [],
+  noteId: '',
+  isAdding: false,
+};
+
+/** Hook for managing new note form state */
+function useNewNoteState(addNote: ReturnType<typeof useNoteHandlers>['addNote']) {
+  const [state, setState] = useState<NewNoteState>(initialNewNoteState);
+
+  const start = () =>
+    setState({ ...initialNewNoteState, noteId: generateNoteId(), isAdding: true });
+  const cancel = () => setState(initialNewNoteState);
+  const setContent = (content: string) => setState((s) => ({ ...s, content }));
+  const setAttachments = (attachments: string[]) => setState((s) => ({ ...s, attachments }));
+
+  const submit = () => {
+    if (!state.content.trim()) return;
+    addNote(state.noteId, state.content.trim(), state.attachments);
+    setState(initialNewNoteState);
   };
+
+  return { state, start, cancel, setContent, setAttachments, submit };
+}
+
+export const NotesField: FC<NotesFieldProps> = ({ todo, onChange }) => {
+  const { addNote, updateNote, deleteNote } = useNoteHandlers(onChange);
+  const newNote = useNewNoteState(addNote);
+  const notes = todo.notes ?? [];
 
   return (
     <div>
@@ -251,28 +297,29 @@ export const NotesField: FC<NotesFieldProps> = ({ todo, onChange }) => {
           <BiNote size="1.1em" />
           Notes {notes.length > 0 && `(${notes.length})`}
         </Label>
-        {!isAddingNote && (
-          <Button color="gray" onClick={() => setIsAddingNote(true)} size="xs">
+        {!newNote.state.isAdding && (
+          <Button color="gray" onClick={newNote.start} size="xs">
             <BiPlus className="mr-1" size="1em" />
             Add Note
           </Button>
         )}
       </div>
-      {isAddingNote && (
+      {newNote.state.isAdding && (
         <AddNoteForm
-          content={newNoteContent}
-          onAdd={handleAdd}
-          onCancel={() => {
-            setIsAddingNote(false);
-            setNewNoteContent('');
-          }}
-          onChange={setNewNoteContent}
+          attachments={newNote.state.attachments}
+          content={newNote.state.content}
+          noteId={newNote.state.noteId}
+          onAdd={newNote.submit}
+          onAttachmentsChange={newNote.setAttachments}
+          onCancel={newNote.cancel}
+          onChange={newNote.setContent}
+          todoId={todo._id}
         />
       )}
       {notes.length > 0 && (
         <NotesList notes={notes} onDelete={deleteNote} onUpdate={updateNote} todoId={todo._id} />
       )}
-      {notes.length === 0 && !isAddingNote && (
+      {notes.length === 0 && !newNote.state.isAdding && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           No notes yet. Add notes to track progress and decisions.
         </p>
