@@ -249,21 +249,32 @@ function migrateIfNeeded(
   return entry;
 }
 
-/**
- * Ensure user database exists for a user
- */
-async function ensureUserDatabase(context: UserRegistryContext, username: string): Promise<void> {
-  const dbName = getUserDatabaseName(context.env, username);
+/** Creates a CouchDB database if it doesn't exist */
+async function ensureDatabaseExists(
+  couchConnection: UserRegistryContext['couchConnection'],
+  dbName: string,
+): Promise<void> {
   try {
-    await context.couchConnection.db.get(dbName);
+    await couchConnection.db.get(dbName);
   } catch (error: unknown) {
     if (isNotFoundError(error)) {
-      await context.couchConnection.db.create(dbName);
-      console.log(`Created user database: ${dbName}`);
+      await couchConnection.db.create(dbName);
+      console.log(`Created database: ${dbName}`);
     } else {
       throw error;
     }
   }
+}
+
+/**
+ * Ensure user database and attachments database exist for a user
+ */
+async function ensureUserDatabase(context: UserRegistryContext, username: string): Promise<void> {
+  const dbName = getUserDatabaseName(context.env, username);
+  const attachmentsDbName = dbName.replace('_user_', '_attachments_');
+
+  await ensureDatabaseExists(context.couchConnection, dbName);
+  await ensureDatabaseExists(context.couchConnection, attachmentsDbName);
 }
 
 /**
