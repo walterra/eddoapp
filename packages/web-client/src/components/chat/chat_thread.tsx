@@ -1,14 +1,15 @@
 /**
- * Chat thread component - main chat interface.
+ * Chat thread component using assistant-ui for rendering.
  */
 
-import type { SessionMessageEntry } from '@eddo/core-shared';
-import { useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import type { RpcEvent } from '../../hooks/use_chat_api';
 import { useChatSession, useSendPrompt, useStartSession } from '../../hooks/use_chat_api';
-import { ChatInput } from './chat_input';
-import { ChatMessages } from './chat_messages';
+import { Thread } from './assistant-ui';
+import { ChatRuntimeProvider } from './chat_runtime_provider';
+import type { PiMessage } from './pi-message-converter';
+import { BashToolUI, EditToolUI, GenericToolUI, ReadToolUI, WriteToolUI } from './tool_renderers';
 
 /** Props for ChatThread */
 export interface ChatThreadProps {
@@ -39,35 +40,79 @@ function SessionNotRunning({
   );
 }
 
-/** Handle streaming events and update text */
-function createStreamingHandler(setStreamingText: (fn: (prev: string) => string) => void) {
-  return (event: RpcEvent) => {
-    if (event.type === 'message_update') {
-      const assistantEvent = event.assistantMessageEvent as
-        | { type: string; delta?: string }
-        | undefined;
-      if (assistantEvent?.type === 'text_delta' && assistantEvent.delta) {
-        setStreamingText((prev) => prev + assistantEvent.delta);
-      }
-    } else if (event.type === 'agent_end') {
-      setStreamingText(() => '');
-    }
-  };
+/** Entry with message */
+interface MessageEntry {
+  type: 'message';
+  message: PiMessage;
+}
+
+/** Check if entry is a message entry */
+function isMessageEntry(entry: { type: string }): entry is MessageEntry {
+  return entry.type === 'message';
+}
+
+/** Convert database entries to PiMessage format */
+function entriesToPiMessages(entries: Array<{ type: string; message?: unknown }>): PiMessage[] {
+  return entries
+    .filter(isMessageEntry)
+    .map((e) => e.message)
+    .filter((m) => m.role === 'user' || m.role === 'assistant' || m.role === 'toolResult');
+}
+
+/** Active chat thread with assistant-ui rendering */
+function ActiveChatThread({
+  sessionId,
+  initialMessages,
+}: {
+  sessionId: string;
+  initialMessages: PiMessage[];
+}) {
+  const { sendPrompt, abort } = useSendPrompt(sessionId);
+
+  const handleSendMessage = useCallback(
+    async (text: string, onEvent: (event: RpcEvent) => void) => {
+      await sendPrompt(text, onEvent);
+    },
+    [sendPrompt],
+  );
+
+  const handleCancel = useCallback(async () => {
+    abort();
+  }, [abort]);
+
+  return (
+    <ChatRuntimeProvider
+      initialMessages={initialMessages}
+      onCancel={handleCancel}
+      onSendMessage={handleSendMessage}
+    >
+      {/* Register tool UI renderers */}
+      <BashToolUI />
+      <ReadToolUI />
+      <WriteToolUI />
+      <EditToolUI />
+      <GenericToolUI />
+
+      {/* Main thread UI */}
+      <div className="flex h-full flex-col">
+        <Thread />
+      </div>
+    </ChatRuntimeProvider>
+  );
 }
 
 /** Chat thread component */
 export function ChatThread({ sessionId }: ChatThreadProps) {
   const { data: sessionData, isLoading, error } = useChatSession(sessionId);
-  const { sendPrompt, abort, isStreaming } = useSendPrompt(sessionId);
   const startSession = useStartSession();
-  const [streamingText, setStreamingText] = useState('');
 
   const handleStartSession = () => startSession.mutateAsync(sessionId).catch(console.error);
 
-  const handleSend = async (message: string) => {
-    setStreamingText('');
-    await sendPrompt(message, createStreamingHandler(setStreamingText));
-  };
+  // Convert entries to PiMessages
+  const initialMessages = useMemo(() => {
+    if (!sessionData?.entries) return [];
+    return entriesToPiMessages(sessionData.entries);
+  }, [sessionData?.entries]);
 
   if (isLoading) {
     return (
@@ -85,7 +130,7 @@ export function ChatThread({ sessionId }: ChatThreadProps) {
     );
   }
 
-  const { session, entries } = sessionData;
+  const { session } = sessionData;
 
   if (session.containerState !== 'running') {
     return (
@@ -97,12 +142,8 @@ export function ChatThread({ sessionId }: ChatThreadProps) {
     );
   }
 
-  const messageEntries = entries.filter((e): e is SessionMessageEntry => e.type === 'message');
-
+  // Key by sessionId to force remount when switching sessions
   return (
-    <div className="flex h-full flex-col">
-      <ChatMessages entries={messageEntries} streamingText={streamingText} />
-      <ChatInput isStreaming={isStreaming} onAbort={abort} onSend={handleSend} />
-    </div>
+    <ActiveChatThread initialMessages={initialMessages} key={sessionId} sessionId={sessionId} />
   );
 }

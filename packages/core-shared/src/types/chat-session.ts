@@ -205,6 +205,11 @@ export interface ChatSessionOperations {
   update(sessionId: string, updates: UpdateChatSessionRequest): Promise<ChatSession>;
   delete(sessionId: string): Promise<void>;
   appendEntry(sessionId: string, entry: Omit<SessionEntry, 'id' | 'timestamp'>): Promise<string>;
+  appendEntryWithTimestamp(
+    sessionId: string,
+    entry: Omit<SessionEntry, 'id' | 'timestamp'>,
+    timestamp?: string,
+  ): Promise<string>;
   getEntries(sessionId: string): Promise<SessionEntry[]>;
   getBranch(sessionId: string, fromEntryId?: string): Promise<SessionEntry[]>;
 }
