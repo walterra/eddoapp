@@ -60,19 +60,21 @@ function useAttachmentImage(docId: string) {
   const { attachmentsDb } = usePouchDb();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!!docId);
 
   useEffect(() => {
+    // Skip loading if no docId
+    if (!docId) {
+      setIsLoading(false);
+      setError(null);
+      setImageUrl(null);
+      return;
+    }
+
     let objectUrl: string | null = null;
     let cancelled = false;
 
     async function loadImage() {
-      if (!docId) {
-        setError('No attachment ID');
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
         setError(null);
@@ -82,7 +84,6 @@ function useAttachmentImage(docId: string) {
         setImageUrl(objectUrl);
       } catch (err) {
         if (cancelled) return;
-        console.error('[AttachmentImage] Failed to load:', docId, err);
         setError(err instanceof Error ? err.message : 'Failed to load image');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -143,21 +144,24 @@ export function useAttachmentUrl(docId: string): {
   const { attachmentsDb } = usePouchDb();
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!!docId);
 
   useEffect(() => {
+    // Skip loading if no docId
+    if (!docId) {
+      setIsLoading(false);
+      setError(null);
+      setUrl(null);
+      return;
+    }
+
     let objectUrl: string | null = null;
     let cancelled = false;
 
     async function load() {
-      if (!docId) {
-        setError('No attachment ID');
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
+        setError(null);
         const blob = await attachmentsDb.getAttachment(docId, 'file');
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob as Blob);
