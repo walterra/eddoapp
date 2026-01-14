@@ -267,7 +267,7 @@ const initialNewNoteState: NewNoteState = {
 };
 
 /** Hook for managing new note form state */
-function useNewNoteState(addNote: ReturnType<typeof useNoteHandlers>['addNote']) {
+function useNewNoteState() {
   const [state, setState] = useState<NewNoteState>(initialNewNoteState);
 
   const start = () =>
@@ -275,20 +275,21 @@ function useNewNoteState(addNote: ReturnType<typeof useNoteHandlers>['addNote'])
   const cancel = () => setState(initialNewNoteState);
   const setContent = (content: string) => setState((s) => ({ ...s, content }));
   const setAttachments = (attachments: string[]) => setState((s) => ({ ...s, attachments }));
+  const reset = () => setState(initialNewNoteState);
 
-  const submit = () => {
-    if (!state.content.trim()) return;
-    addNote(state.noteId, state.content.trim(), state.attachments);
-    setState(initialNewNoteState);
-  };
-
-  return { state, start, cancel, setContent, setAttachments, submit };
+  return { state, start, cancel, setContent, setAttachments, reset };
 }
 
 export const NotesField: FC<NotesFieldProps> = ({ todo, onChange }) => {
   const { addNote, updateNote, deleteNote } = useNoteHandlers(onChange);
-  const newNote = useNewNoteState(addNote);
+  const newNote = useNewNoteState();
   const notes = todo.notes ?? [];
+
+  const handleAddNote = () => {
+    if (!newNote.state.content.trim()) return;
+    addNote(newNote.state.noteId, newNote.state.content.trim(), newNote.state.attachments);
+    newNote.reset();
+  };
 
   return (
     <div>
@@ -309,7 +310,7 @@ export const NotesField: FC<NotesFieldProps> = ({ todo, onChange }) => {
           attachments={newNote.state.attachments}
           content={newNote.state.content}
           noteId={newNote.state.noteId}
-          onAdd={newNote.submit}
+          onAdd={handleAddNote}
           onAttachmentsChange={newNote.setAttachments}
           onCancel={newNote.cancel}
           onChange={newNote.setContent}

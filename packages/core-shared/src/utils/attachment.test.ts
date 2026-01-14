@@ -6,6 +6,7 @@ import {
   filterAttachmentsByType,
   getAttachmentKeys,
   getAttachmentsForNote,
+  getMimeTypeFromFilename,
   isAllowedContentType,
   MAX_ATTACHMENT_SIZE,
   parseAttachmentKey,
@@ -217,6 +218,40 @@ describe('attachment utilities', () => {
 
     it('excludes description attachments', () => {
       expect(getAttachmentsForNote(keys, 'desc')).toEqual([]);
+    });
+  });
+
+  describe('getMimeTypeFromFilename', () => {
+    it('returns correct MIME type for image extensions', () => {
+      expect(getMimeTypeFromFilename('photo.png')).toBe('image/png');
+      expect(getMimeTypeFromFilename('photo.jpg')).toBe('image/jpeg');
+      expect(getMimeTypeFromFilename('photo.jpeg')).toBe('image/jpeg');
+      expect(getMimeTypeFromFilename('photo.gif')).toBe('image/gif');
+      expect(getMimeTypeFromFilename('photo.webp')).toBe('image/webp');
+    });
+
+    it('returns correct MIME type for PDF', () => {
+      expect(getMimeTypeFromFilename('document.pdf')).toBe('application/pdf');
+    });
+
+    it('handles uppercase extensions', () => {
+      expect(getMimeTypeFromFilename('photo.PNG')).toBe('image/png');
+      expect(getMimeTypeFromFilename('photo.JPG')).toBe('image/jpeg');
+      expect(getMimeTypeFromFilename('document.PDF')).toBe('application/pdf');
+    });
+
+    it('returns null for unknown extensions', () => {
+      expect(getMimeTypeFromFilename('file.txt')).toBeNull();
+      expect(getMimeTypeFromFilename('file.zip')).toBeNull();
+      expect(getMimeTypeFromFilename('file.mp4')).toBeNull();
+    });
+
+    it('returns null for files without extension', () => {
+      expect(getMimeTypeFromFilename('filename')).toBeNull();
+    });
+
+    it('handles filenames with multiple dots', () => {
+      expect(getMimeTypeFromFilename('my.file.name.png')).toBe('image/png');
     });
   });
 

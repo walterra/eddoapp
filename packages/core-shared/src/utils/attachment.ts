@@ -17,6 +17,27 @@ export const ALLOWED_ATTACHMENT_TYPES = [
 
 export type AllowedAttachmentType = (typeof ALLOWED_ATTACHMENT_TYPES)[number];
 
+/** File extension to MIME type mapping */
+const EXTENSION_TO_MIME: Record<string, AllowedAttachmentType> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  pdf: 'application/pdf',
+};
+
+/**
+ * Gets MIME type from filename extension.
+ * @param filename - Filename with extension
+ * @returns MIME type or null if extension not recognized
+ */
+export function getMimeTypeFromFilename(filename: string): AllowedAttachmentType | null {
+  const ext = filename.toLowerCase().split('.').pop();
+  if (!ext) return null;
+  return EXTENSION_TO_MIME[ext] ?? null;
+}
+
 /** Attachment location types */
 export type AttachmentType = 'desc' | 'note';
 

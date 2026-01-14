@@ -96,6 +96,7 @@ export {
   filterAttachmentsByType,
   getAttachmentKeys,
   getAttachmentsForNote,
+  getMimeTypeFromFilename,
   isAllowedContentType,
   parseAttachmentKey,
   sanitizeFilename,
