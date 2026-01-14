@@ -56,6 +56,12 @@ export interface RssFeedConfigUI {
   addedAt: string;
 }
 
+export interface AiProviderKeysUI {
+  anthropicApiKey?: string;
+  openaiApiKey?: string;
+  geminiApiKey?: string;
+}
+
 export interface ProfileData {
   username: string;
   email: string;
@@ -87,6 +93,7 @@ export interface ProfileData {
     emailSyncInterval?: number;
     emailSyncTags?: string[];
     emailLastSync?: string;
+    aiProviderKeys?: AiProviderKeysUI;
   };
 }
 
@@ -147,6 +154,8 @@ export interface IntegrationsTabProps {
   onConnectGmail: () => Promise<void>;
   onDisconnectEmail: () => Promise<void>;
   isEmailResyncing: boolean;
+  // AI Provider Keys
+  onSaveAiKeys: (keys: AiProviderKeysUI) => Promise<void>;
 }
 
 export interface PreferencesTabProps {

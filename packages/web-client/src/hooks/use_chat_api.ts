@@ -10,7 +10,14 @@ const API_BASE = '/api/chat';
 
 /** Get auth token from localStorage */
 function getAuthToken(): string | null {
-  return localStorage.getItem('token');
+  const stored = localStorage.getItem('authToken');
+  if (!stored) return null;
+  try {
+    const parsed = JSON.parse(stored);
+    return parsed.token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Fetch with auth header */

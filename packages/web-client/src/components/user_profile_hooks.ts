@@ -17,6 +17,7 @@ import {
 } from './user_profile_handlers';
 import { useRssActionHandlers } from './user_profile_rss_hooks';
 import type {
+  AiProviderKeysUI,
   EmailFormState,
   GithubFormState,
   PreferencesFormState,
@@ -45,7 +46,7 @@ export function useFormInitialization(profile: UserProfile | null, setters: Form
   }, [profile, setFormState, setPreferencesState, setGithubState, setRssState]);
 }
 
-/** Partial update data for preferences - can include general, github, or rss prefs */
+/** Partial update data for preferences - can include general, github, rss, or ai prefs */
 interface PreferencesUpdateData extends Partial<PreferencesFormState> {
   githubSync?: boolean;
   githubToken?: string | null;
@@ -54,6 +55,7 @@ interface PreferencesUpdateData extends Partial<PreferencesFormState> {
   rssSync?: boolean;
   rssSyncInterval?: number;
   rssSyncTags?: string[];
+  aiProviderKeys?: AiProviderKeysUI;
 }
 
 interface FormActions {
@@ -254,6 +256,24 @@ function useTelegramHandlers(config: FormHandlersConfig) {
   return { handleLinkTelegram, handleUnlinkTelegram };
 }
 
+/** Create AI keys save handler */
+function useAiKeysHandler(config: FormHandlersConfig) {
+  const { setFormError, setSuccess, actions } = config;
+  return useCallback(
+    async (keys: AiProviderKeysUI) => {
+      setFormError('');
+      setSuccess(null);
+      const result = await actions.updatePreferences({ aiProviderKeys: keys });
+      if (result.success) {
+        setSuccess('AI provider keys saved successfully');
+      } else {
+        setFormError(result.error || 'Failed to save AI provider keys');
+      }
+    },
+    [setFormError, setSuccess, actions],
+  );
+}
+
 /** Create profile action handlers */
 export function useProfileActionHandlers(config: FormHandlersConfig) {
   const handleEditToggle = useEditToggleHandler(config);
@@ -285,11 +305,13 @@ export function useProfileActionHandlers(config: FormHandlersConfig) {
     updatePreferences: config.actions.updatePreferences,
     emailResyncMutate: config.actions.emailResyncMutate,
   });
+  const handleSaveAiKeys = useAiKeysHandler(config);
 
   return {
     handleEditToggle,
     handleSaveProfile,
     handleChangePassword,
+    handleSaveAiKeys,
     ...telegramHandlers,
     ...preferencesHandlers,
     ...rssHandlers,

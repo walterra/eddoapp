@@ -152,7 +152,10 @@ export async function handleSessionLifecycle(
           result = await chatService.abortSession(username, sessionId);
           break;
       }
-      if (!result.success) return c.json({ error: result.error }, 400);
+      if (!result.success) {
+        logger.warn({ sessionId, action, error: result.error }, `Session ${action} failed`);
+        return c.json({ error: result.error }, 400);
+      }
       return c.json({ success: true });
     } catch (error) {
       logger.error({ error, sessionId }, `Failed to ${action} session`);
