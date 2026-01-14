@@ -104,8 +104,6 @@ function insertMarkdownIntoDescription(
   const attachmentPath = pathParts.slice(1).join('/'); // Remove todoId prefix
   const markdownRef = `![${result.filename}](attachment:${attachmentPath})`;
 
-  console.log('[DescriptionField] Inserting markdown:', markdownRef);
-
   onChangeRef.current?.((t) => {
     const newDescription = t.description + (t.description ? '\n\n' : '') + markdownRef;
     return { ...t, description: newDescription };
@@ -123,16 +121,12 @@ function useFileUploadHandler(
   const handleFilesDropped = useCallback(
     async (files: File[]) => {
       setUploadError(null);
-      console.log('[DescriptionField] Starting upload for', files.length, 'files, todoId:', todoId);
 
       for (const file of files) {
         try {
-          console.log('[DescriptionField] Uploading:', file.name, file.size, file.type);
           const result = await uploadAttachment.mutateAsync({ todoId, file, type: 'desc' });
-          console.log('[DescriptionField] Upload success:', result);
           insertMarkdownIntoDescription(result, onChangeRef);
         } catch (err) {
-          console.error('[DescriptionField] Upload failed:', err);
           setUploadError(err instanceof Error ? err.message : 'Upload failed');
           break;
         }
