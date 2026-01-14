@@ -15,14 +15,17 @@ import {
 } from '@eddo/core-shared';
 
 import { usePouchDb } from '../pouch_db';
+import { generateHashedFilename } from '../utils/file_hash';
 import { compressImage } from '../utils/image_compression';
 
 /** Result of an attachment upload operation */
 export interface UploadAttachmentResult {
   /** Attachment document ID */
   docId: string;
-  /** File name */
+  /** Hashed filename (e.g., "a1b2c3d4e5f6.png") */
   filename: string;
+  /** Original filename before hashing */
+  originalFilename: string;
   /** MIME type */
   contentType: string;
   /** Size in bytes */
@@ -59,16 +62,24 @@ export interface GetAttachmentParams {
   docId: string;
 }
 
-/** Compresses file if enabled and returns file info */
+/** Compresses file if enabled and generates hashed filename */
 async function prepareFileForUpload(file: File, autoCompress: boolean) {
-  if (!autoCompress) {
-    return { file, wasCompressed: false, originalSize: undefined };
-  }
-  const result = await compressImage(file);
+  // First compress if needed
+  const compressed = autoCompress ? await compressImage(file) : { file, wasCompressed: false };
+
+  // Generate content-based hash filename
+  const hashedName = await generateHashedFilename(compressed.file);
+
+  // Create new file with hashed name
+  const hashedFile = new File([compressed.file], hashedName, { type: compressed.file.type });
+
   return {
-    file: result.file,
-    wasCompressed: result.wasCompressed,
-    originalSize: result.wasCompressed ? result.originalSize : undefined,
+    file: hashedFile,
+    originalName: file.name,
+    wasCompressed: compressed.wasCompressed,
+    originalSize: compressed.wasCompressed
+      ? (compressed as { originalSize?: number }).originalSize
+      : undefined,
   };
 }
 
@@ -133,6 +144,7 @@ function useUploadMutation(
       return {
         docId,
         filename: prepared.file.name,
+        originalFilename: prepared.originalName,
         contentType: prepared.file.type,
         size: prepared.file.size,
         originalSize: prepared.originalSize,
