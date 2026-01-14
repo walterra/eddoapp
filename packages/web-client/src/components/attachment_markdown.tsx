@@ -10,6 +10,31 @@ import { AttachmentImage } from './attachment_image';
 /** Prefix for attachment URLs in markdown */
 const ATTACHMENT_PREFIX = 'attachment:';
 
+/**
+ * Custom URL transform that allows attachment: protocol.
+ * By default, react-markdown strips non-standard protocols for security.
+ */
+function urlTransform(url: string): string | null {
+  // Allow attachment: protocol
+  if (url.startsWith(ATTACHMENT_PREFIX)) {
+    return url;
+  }
+  // Allow standard protocols
+  const safeProtocols = ['http:', 'https:', 'mailto:', 'tel:'];
+  try {
+    const parsed = new URL(url, 'http://example.com');
+    if (safeProtocols.some((p) => parsed.protocol === p)) {
+      return url;
+    }
+  } catch {
+    // Relative URLs are fine
+    if (!url.includes(':')) {
+      return url;
+    }
+  }
+  return null;
+}
+
 /** Props for AttachmentMarkdown component */
 export interface AttachmentMarkdownProps {
   /** Markdown content to render */
@@ -43,13 +68,19 @@ function createAttachmentComponents(
   onImageClick?: (docId: string) => void,
 ): Partial<Components> {
   return {
-    img: ({ src, alt }) => {
-      if (!isAttachmentUrl(src)) {
-        // Regular external image
-        return <img alt={alt ?? ''} className="max-w-full" src={src} />;
+    img: ({ src, alt, node }) => {
+      // react-markdown may pass src in node.properties for some cases
+      const imgSrc = src || (node?.properties?.src as string | undefined);
+
+      if (!isAttachmentUrl(imgSrc)) {
+        // Regular external image - only render if we have a valid src
+        if (!imgSrc) {
+          return <span className="text-red-500">[Invalid image: {alt}]</span>;
+        }
+        return <img alt={alt ?? ''} className="max-w-full" src={imgSrc} />;
       }
 
-      const docId = getAttachmentDocId(src!, todoId);
+      const docId = getAttachmentDocId(imgSrc!, todoId);
       return (
         <AttachmentImage
           alt={alt ?? docId}
@@ -87,7 +118,7 @@ export const AttachmentMarkdown: FC<AttachmentMarkdownProps> = ({
 
   return (
     <div className={className}>
-      <Markdown components={components} remarkPlugins={[remarkGfm]}>
+      <Markdown components={components} remarkPlugins={[remarkGfm]} urlTransform={urlTransform}>
         {children}
       </Markdown>
     </div>
