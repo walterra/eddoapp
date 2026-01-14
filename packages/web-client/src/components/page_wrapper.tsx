@@ -245,7 +245,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   const { openTodoById } = useTodoFlyoutContext();
   const databaseName = rawDb.name;
 
-  const handleSelectTodo = useCallback(
+const handleSelectTodo = useCallback(
     (todoId: string) => {
       void openTodoById(todoId);
     },
