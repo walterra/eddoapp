@@ -1,6 +1,7 @@
 /**
  * Minimal Thread component for assistant-ui rendering.
  * Based on assistant-ui primitives but simplified for our use case.
+ * Styled to match Eddo's activity sidebar and table view.
  */
 
 import {
@@ -19,8 +20,8 @@ import { MarkdownText } from './markdown-text';
 export const Thread: FC = () => {
   return (
     <ImageLightboxProvider>
-      <ThreadPrimitive.Root className="flex h-full flex-col bg-white dark:bg-gray-900">
-        <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto p-4">
+      <ThreadPrimitive.Root className="flex h-full flex-col bg-neutral-50 dark:bg-neutral-800">
+        <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto">
           <ThreadPrimitive.Empty>
             <ThreadWelcome />
           </ThreadPrimitive.Empty>
@@ -33,7 +34,7 @@ export const Thread: FC = () => {
           />
         </ThreadPrimitive.Viewport>
 
-        <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+        <div className="border-t border-neutral-200 p-3 dark:border-neutral-700">
           <Composer />
         </div>
       </ThreadPrimitive.Root>
@@ -44,12 +45,12 @@ export const Thread: FC = () => {
 /** Welcome message when thread is empty */
 const ThreadWelcome: FC = () => {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
+    <div className="flex flex-1 flex-col items-center justify-center p-4">
       <div className="text-center">
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300">
+        <h2 className="text-lg font-semibold text-neutral-700 dark:text-neutral-300">
           Start a conversation
         </h2>
-        <p className="mt-2 text-gray-500 dark:text-gray-400">
+        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
           Type a message to begin chatting with the AI assistant.
         </p>
       </div>
@@ -63,7 +64,7 @@ const Composer: FC = () => {
     <ComposerPrimitive.Root className="flex items-end gap-2">
       <ComposerPrimitive.Input
         autoFocus
-        className="flex-1 resize-none rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+        className="focus:border-primary-500 focus:ring-primary-500 flex-1 resize-none rounded-lg border border-neutral-300 bg-white p-3 text-sm outline-none focus:ring-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
         placeholder="Type a message..."
         rows={1}
       />
@@ -71,7 +72,7 @@ const Composer: FC = () => {
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <button
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            className="bg-primary-600 hover:bg-primary-700 flex h-10 w-10 items-center justify-center rounded-lg text-white disabled:opacity-50"
             type="submit"
           >
             <ArrowUpIcon className="h-5 w-5" />
@@ -96,8 +97,8 @@ const Composer: FC = () => {
 /** User message component */
 const UserMessage: FC = () => {
   return (
-    <MessagePrimitive.Root className="mb-4 flex justify-end">
-      <div className="max-w-[80%] rounded-lg bg-blue-600 px-4 py-2 text-white">
+    <MessagePrimitive.Root className="border-b border-neutral-200 px-3 py-3 dark:border-neutral-700">
+      <div className="text-sm text-neutral-900 dark:text-neutral-100">
         <MessagePrimitive.Content />
       </div>
     </MessagePrimitive.Root>
@@ -120,11 +121,11 @@ const ImageBlock: FC<{ image: string }> = ({ image }) => {
   );
 };
 
-/** Assistant message component */
+/** Assistant message component - full width */
 const AssistantMessage: FC = () => {
   return (
-    <MessagePrimitive.Root className="mb-4 w-full">
-      <div className="max-w-[80%] overflow-hidden rounded-lg bg-gray-100 px-4 py-2 dark:bg-gray-700">
+    <MessagePrimitive.Root className="w-full border-b border-neutral-200 bg-white px-3 py-3 dark:border-neutral-700 dark:bg-neutral-900">
+      <div className="w-full overflow-hidden text-sm text-neutral-900 dark:text-neutral-100">
         <MessagePrimitive.Content
           components={{
             Text: MarkdownText,
@@ -151,9 +152,11 @@ const ReasoningBlock: FC = () => {
 /** Action bar for assistant messages */
 const AssistantActionBar: FC = () => {
   return (
-    <ActionBarPrimitive.Root className="mt-1 flex gap-1 text-xs text-gray-500">
+    <ActionBarPrimitive.Root className="mt-2 flex gap-1 text-xs text-neutral-500 dark:text-neutral-400">
       <ActionBarPrimitive.Copy asChild>
-        <button className="rounded px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700">Copy</button>
+        <button className="rounded px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+          Copy
+        </button>
       </ActionBarPrimitive.Copy>
     </ActionBarPrimitive.Root>
   );

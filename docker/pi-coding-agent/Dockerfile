@@ -32,9 +32,10 @@ RUN useradd -m -s /bin/bash agent \
     && mkdir -p /workspace /sessions /home/agent/.pi/agent/skills /home/agent/.pi/agent/extensions \
     && chown -R agent:agent /workspace /sessions /home/agent
 
-# Copy skills and extensions (as root, then fix ownership)
+# Copy skills, extensions, and agent instructions (as root, then fix ownership)
 COPY --chown=agent:agent packages/chat-agent/skills/ /home/agent/.pi/agent/skills/
 COPY --chown=agent:agent packages/chat-agent/extensions/ /home/agent/.pi/agent/extensions/
+COPY --chown=agent:agent packages/chat-agent/AGENTS.md /home/agent/.pi/agent/AGENTS.md
 
 # Install skill dependencies
 WORKDIR /home/agent/.pi/agent/skills/eddo-todo

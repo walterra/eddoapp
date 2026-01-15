@@ -64,7 +64,7 @@ export function useChatSessions() {
 }
 
 /** Use single chat session with entries */
-export function useChatSession(sessionId: string | null) {
+export function useChatSession(sessionId: string | null, options?: { refetchInterval?: number }) {
   return useQuery({
     queryKey: ['chat', 'session', sessionId],
     queryFn: async (): Promise<GetSessionResponse | null> => {
@@ -74,6 +74,7 @@ export function useChatSession(sessionId: string | null) {
       return response.json();
     },
     enabled: !!sessionId,
+    refetchInterval: options?.refetchInterval,
   });
 }
 
@@ -114,6 +115,17 @@ export function useDeleteSession() {
   });
 }
 
+/** Start session error with details */
+export class StartSessionError extends Error {
+  constructor(
+    message: string,
+    public readonly details?: string,
+  ) {
+    super(message);
+    this.name = 'StartSessionError';
+  }
+}
+
 /** Start session mutation */
 export function useStartSession() {
   const queryClient = useQueryClient();
@@ -123,9 +135,13 @@ export function useStartSession() {
       const response = await fetchWithAuth(`${API_BASE}/sessions/${sessionId}/start`, {
         method: 'POST',
       });
-      if (!response.ok) throw new Error('Failed to start session');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new StartSessionError(data.error ?? 'Failed to start session', data.error);
+      }
     },
-    onSuccess: (_, sessionId) => {
+    onSettled: (_, __, sessionId) => {
+      // Always refresh session to get latest setup logs
       queryClient.invalidateQueries({ queryKey: ['chat', 'session', sessionId] });
     },
   });

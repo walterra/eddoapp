@@ -19,12 +19,31 @@ import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Compute reference path using ESM import.meta.url
+const GRAPHVIZ_REFERENCE_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  'graphviz-reference.md',
+);
 
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: 'graphviz_chart',
     label: 'Graphviz Chart',
     description: `Render a Graphviz DOT specification as a PNG image.
+
+IMPORTANT: Before using this tool, read the complete reference documentation at:
+${GRAPHVIZ_REFERENCE_PATH}
+
+The reference contains critical information about:
+- DOT language syntax for graphs, nodes, and edges
+- All node shapes (box, cylinder, diamond, ellipse, etc.)
+- Edge styles and arrow types
+- Clusters and subgraphs
+- Layout engines (dot, neato, fdp, circo, twopi)
+- Professional theming (light/dark themes, SaaS aesthetics)
+- Common patterns (flowcharts, architecture diagrams, state machines)
 
 Pass a complete DOT graph definition. Supports:
 - Graph types: graph (undirected), digraph (directed), strict

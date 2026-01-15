@@ -15,13 +15,27 @@ import { Type } from '@sinclair/typebox';
 import { execSync } from 'node:child_process';
 import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Compute reference path using ESM import.meta.url
+const VEGA_REFERENCE_PATH = join(dirname(fileURLToPath(import.meta.url)), 'vega-lite-reference.md');
 
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: 'vega_chart',
     label: 'Vega-Lite Chart',
     description: `Render a Vega-Lite specification as a PNG image.
+
+IMPORTANT: Before using this tool, read the complete reference documentation at:
+${VEGA_REFERENCE_PATH}
+
+The reference contains critical information about:
+- Data types (N, O, Q, T) and encoding channels
+- All mark types and their properties
+- Common pitfalls (dot-notation fields, label truncation, facet issues)
+- Professional chart patterns with complete working examples
+- Theming and best practices
 
 Pass a complete Vega-Lite JSON spec. The agent has full control over:
 - Mark types: bar, line, point, area, rect, arc, rule, text, boxplot, etc.

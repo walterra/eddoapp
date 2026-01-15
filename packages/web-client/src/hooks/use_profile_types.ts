@@ -60,6 +60,8 @@ export interface UserPreferences {
   viewMode?: ViewMode;
   tableColumns?: string[];
   activitySidebarOpen?: boolean;
+  chatSidebarOpen?: boolean;
+  chatSidebarSessionId?: string;
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: 'all' | 'completed' | 'incomplete';
@@ -128,6 +130,8 @@ export interface UpdatePreferencesData {
   viewMode?: ViewMode;
   tableColumns?: string[];
   activitySidebarOpen?: boolean;
+  chatSidebarOpen?: boolean;
+  chatSidebarSessionId?: string;
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: 'all' | 'completed' | 'incomplete';

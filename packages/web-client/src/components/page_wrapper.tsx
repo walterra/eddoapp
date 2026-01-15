@@ -1,19 +1,13 @@
+/**
+ * Page wrapper component - manages app views and sidebar state.
+ */
 import { type FC, useCallback, useEffect, useState } from 'react';
-import {
-  HiOutlineChat,
-  HiOutlineClipboardList,
-  HiOutlineLogout,
-  HiOutlineUser,
-} from 'react-icons/hi';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { useProfile } from '../hooks/use_profile';
-import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { usePouchDb } from '../pouch_db';
-import { AuditSidebar } from './audit_sidebar';
-import { ChatPage } from './chat';
-import { HealthIndicatorPopover } from './health_indicator_popover';
-import { SearchPopover } from './search_popover';
+import { ChatView } from './chat_view';
+import { TodosView } from './todos_view';
 import { UserProfile } from './user_profile';
 
 /** Hook for activity sidebar state with optimistic updates and persistence */
@@ -44,213 +38,102 @@ function useActivitySidebar() {
   return { isOpen, toggle, setOpen };
 }
 
+/** Hook for chat sidebar state with optimistic updates and persistence */
+function useChatSidebar() {
+  const { profile, updatePreferences } = useProfile();
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.preferences?.chatSidebarOpen !== undefined) {
+      setIsOpen(profile.preferences.chatSidebarOpen);
+    }
+    if (profile?.preferences?.chatSidebarSessionId !== undefined) {
+      setSelectedSessionId(profile.preferences.chatSidebarSessionId ?? null);
+    }
+  }, [profile?.preferences?.chatSidebarOpen, profile?.preferences?.chatSidebarSessionId]);
+
+  const setOpen = useCallback(
+    (open: boolean) => {
+      setIsOpen(open);
+      void updatePreferences({ chatSidebarOpen: open });
+    },
+    [updatePreferences],
+  );
+
+  const setSession = useCallback(
+    (sessionId: string | null) => {
+      setSelectedSessionId(sessionId);
+      void updatePreferences({ chatSidebarSessionId: sessionId ?? undefined });
+    },
+    [updatePreferences],
+  );
+
+  const open = useCallback(
+    (sessionId?: string) => {
+      setIsOpen(true);
+      if (sessionId) setSelectedSessionId(sessionId);
+      void updatePreferences({
+        chatSidebarOpen: true,
+        ...(sessionId ? { chatSidebarSessionId: sessionId } : {}),
+      });
+    },
+    [updatePreferences],
+  );
+
+  const close = useCallback(() => {
+    setIsOpen(false);
+    void updatePreferences({ chatSidebarOpen: false });
+  }, [updatePreferences]);
+
+  return { isOpen, selectedSessionId, setOpen, setSession, open, close };
+}
+
+/** Props for PageWrapper */
 interface PageWrapperProps {
   children?: React.ReactNode;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
-const EddoLogo: FC = () => (
-  <pre aria-label="Eddo logo" className="m-0 p-0 font-mono text-sm leading-tight" role="img">
-    {`   ┓ ┓
-┏┓┏┫┏┫┏┓
-┗ ┗┻┗┻┗┛`}
-  </pre>
-);
-
-const ProfileButton: FC<{ onClick: () => void }> = ({ onClick }) => (
-  <button
-    aria-label="Profile"
-    className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
-    onClick={onClick}
-    title="Profile"
-    type="button"
-  >
-    <HiOutlineUser className="h-5 w-5" />
-  </button>
-);
-
-const LogoutButton: FC<{ onClick: () => void }> = ({ onClick }) => (
-  <button
-    aria-label="Logout"
-    className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
-    onClick={onClick}
-    title="Logout"
-    type="button"
-  >
-    <HiOutlineLogout className="h-5 w-5" />
-  </button>
-);
-
-const AuditToggle: FC<{ isOpen: boolean; onToggle: () => void }> = ({ isOpen, onToggle }) => (
-  <button
-    aria-label={isOpen ? 'Hide activity log' : 'Show activity log'}
-    className={`flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-400 ${isOpen ? 'bg-neutral-200 dark:bg-neutral-700' : 'hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
-    onClick={onToggle}
-    title={isOpen ? 'Hide activity log' : 'Show activity log'}
-    type="button"
-  >
-    <HiOutlineClipboardList className="h-5 w-5" />
-  </button>
-);
-
-const ChatButton: FC<{ onClick: () => void }> = ({ onClick }) => (
-  <button
-    aria-label="AI Chat"
-    className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
-    onClick={onClick}
-    title="AI Chat"
-    type="button"
-  >
-    <HiOutlineChat className="h-5 w-5" />
-  </button>
-);
-
-interface HeaderProps {
-  isAuthenticated: boolean;
-  databaseName: string;
-  healthCheck: ReturnType<typeof useDatabaseHealth>['healthCheck'];
-  onShowChat: () => void;
-  onShowProfile: () => void;
-  onLogout: () => void;
-  showAuditSidebar: boolean;
-  onToggleAuditSidebar: () => void;
-  onSelectTodo: (todoId: string) => void;
-}
-
-const Header: FC<HeaderProps> = ({
-  isAuthenticated,
-  databaseName,
-  healthCheck,
-  onShowChat,
-  onShowProfile,
-  onLogout,
-  showAuditSidebar,
-  onToggleAuditSidebar,
-  onSelectTodo,
-}) => (
-  <div className="mb-2 flex items-center justify-between">
-    <div>
-      <h1 className="sr-only">Eddo</h1>
-      <EddoLogo />
-    </div>
-    <div className="flex items-center space-x-1">
-      {isAuthenticated && (
-        <>
-          <SearchPopover onSelectTodo={onSelectTodo} />
-          <HealthIndicatorPopover databaseName={databaseName} healthCheck={healthCheck} />
-          <ChatButton onClick={onShowChat} />
-          <AuditToggle isOpen={showAuditSidebar} onToggle={onToggleAuditSidebar} />
-          <ProfileButton onClick={onShowProfile} />
-          <LogoutButton onClick={onLogout} />
-        </>
-      )}
-    </div>
-  </div>
-);
-
 /** App view type */
 export type AppView = 'todos' | 'profile' | 'chat';
 
-/** Chat view header with navigation */
-const ChatViewHeader: FC<{
-  onBack: () => void;
-  onProfile: () => void;
-  onLogout: () => void;
-}> = ({ onBack, onProfile, onLogout }) => (
-  <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2 dark:border-neutral-700">
-    <button
-      className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-      onClick={onBack}
-      type="button"
-    >
-      ← Back to Todos
-    </button>
-    <div className="flex items-center space-x-1">
-      <ProfileButton onClick={onProfile} />
-      <LogoutButton onClick={onLogout} />
-    </div>
-  </div>
-);
+/** Hook for chat navigation handlers */
+function useChatNavigation(
+  chatSidebar: ReturnType<typeof useChatSidebar>,
+  setCurrentView: (view: AppView) => void,
+) {
+  const handleDockChat = useCallback(() => {
+    chatSidebar.open();
+    setCurrentView('todos');
+  }, [chatSidebar, setCurrentView]);
 
-/** Chat view wrapper */
-const ChatView: FC<{
-  onBack: () => void;
-  onProfile: () => void;
-  onLogout: () => void;
-}> = ({ onBack, onProfile, onLogout }) => (
-  <div className="flex h-screen w-full flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900">
-    <ChatViewHeader onBack={onBack} onLogout={onLogout} onProfile={onProfile} />
-    <div className="min-h-0 flex-1">
-      <ChatPage />
-    </div>
-  </div>
-);
+  const handleExpandChat = useCallback(() => {
+    chatSidebar.close();
+    setCurrentView('chat');
+  }, [chatSidebar, setCurrentView]);
 
-/** Todos view wrapper */
-const TodosView: FC<{
-  children: React.ReactNode;
-  isAuthenticated: boolean;
-  logout: () => void;
-  onShowChat: () => void;
-  onShowProfile: () => void;
-  onSelectTodo: (todoId: string) => void;
-  activitySidebar: ReturnType<typeof useActivitySidebar>;
-  databaseName: string;
-  healthCheck: ReturnType<typeof useDatabaseHealth>['healthCheck'];
-}> = ({
-  children,
-  isAuthenticated,
-  logout,
-  onShowChat,
-  onShowProfile,
-  onSelectTodo,
-  activitySidebar,
-  databaseName,
-  healthCheck,
-}) => (
-  <div className="flex h-screen w-full flex-col overflow-hidden">
-    <div className="flex min-h-0 flex-1">
-      <main className="flex-1 overflow-auto px-4 pt-4 pb-3" role="main">
-        <Header
-          databaseName={databaseName}
-          healthCheck={healthCheck}
-          isAuthenticated={isAuthenticated}
-          onLogout={logout}
-          onSelectTodo={onSelectTodo}
-          onShowChat={onShowChat}
-          onShowProfile={onShowProfile}
-          onToggleAuditSidebar={activitySidebar.toggle}
-          showAuditSidebar={activitySidebar.isOpen}
-        />
-        {children}
-        <footer className="mt-8 pb-3">
-          <a href="https://eddoapp.com" rel="noreferrer" target="_BLANK">
-            eddoapp.com
-          </a>
-        </footer>
-      </main>
-      {isAuthenticated && activitySidebar.isOpen && (
-        <AuditSidebar isOpen={activitySidebar.isOpen} onToggle={activitySidebar.setOpen} />
-      )}
-    </div>
-  </div>
-);
+  const handleChatClick = useCallback(() => {
+    if (chatSidebar.isOpen) {
+      chatSidebar.close();
+    } else {
+      chatSidebar.open();
+    }
+  }, [chatSidebar]);
 
+  return { handleDockChat, handleExpandChat, handleChatClick };
+}
+
+/** Main page wrapper component */
 export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenticated }) => {
   const { healthCheck } = useDatabaseHealth();
   const { rawDb } = usePouchDb();
   const [currentView, setCurrentView] = useState<AppView>('todos');
   const activitySidebar = useActivitySidebar();
-  const { openTodoById } = useTodoFlyoutContext();
+  const chatSidebar = useChatSidebar();
   const databaseName = rawDb.name;
-
-const handleSelectTodo = useCallback(
-    (todoId: string) => {
-      void openTodoById(todoId);
-    },
-    [openTodoById],
-  );
+  const chatNav = useChatNavigation(chatSidebar, setCurrentView);
 
   if (currentView === 'profile') {
     return <UserProfile onClose={() => setCurrentView('todos')} />;
@@ -260,6 +143,7 @@ const handleSelectTodo = useCallback(
     return (
       <ChatView
         onBack={() => setCurrentView('todos')}
+        onDock={chatNav.handleDockChat}
         onLogout={logout}
         onProfile={() => setCurrentView('profile')}
       />
@@ -269,12 +153,13 @@ const handleSelectTodo = useCallback(
   return (
     <TodosView
       activitySidebar={activitySidebar}
+      chatSidebar={chatSidebar}
       databaseName={databaseName}
       healthCheck={healthCheck}
       isAuthenticated={isAuthenticated}
       logout={logout}
-      onSelectTodo={handleSelectTodo}
-      onShowChat={() => setCurrentView('chat')}
+      onExpandChat={chatNav.handleExpandChat}
+      onShowChat={chatNav.handleChatClick}
       onShowProfile={() => setCurrentView('profile')}
     >
       {children}
