@@ -12,6 +12,7 @@ import prompts from 'prompts';
 
 import {
   buildWorkspacePackages,
+  checkDefaultUserExists,
   checkVersionedPrerequisite,
   createDefaultUser,
   displayPrerequisites,
@@ -146,7 +147,14 @@ async function promptEnvFile(
 }
 
 /** Prompt for default user creation */
-async function promptUserCreation(): Promise<{ create: boolean; password?: string }> {
+async function promptUserCreation(
+  userExists: boolean,
+): Promise<{ create: boolean; password?: string }> {
+  if (userExists) {
+    console.log(chalk.green('  ✓ User eddo_pi_agent already exists\n'));
+    return { create: false };
+  }
+
   console.log(chalk.gray('  ℹ️  The eddo_pi_agent user is required for MCP/agentic access.'));
   console.log(
     chalk.gray('     In this version, it is the only user capable of AI agent integration.\n'),
@@ -182,7 +190,8 @@ async function promptForOptions(
 
   let userConfig = { create: false, password: undefined as string | undefined };
   if (servicesRunning || startDocker) {
-    userConfig = await promptUserCreation();
+    const userExists = servicesRunning && checkDefaultUserExists();
+    userConfig = await promptUserCreation(userExists);
   }
 
   return {

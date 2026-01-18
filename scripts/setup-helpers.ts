@@ -258,6 +258,22 @@ export function ensureLogsDirectory(rootDir: string): void {
 }
 
 /**
+ * Check if default user already exists by querying CouchDB directly
+ */
+export function checkDefaultUserExists(): boolean {
+  try {
+    // Quick check if user registry database exists and has the user
+    const result = execSync(
+      'curl -sf http://admin:password@localhost:5984/user_registry_alpha2/eddo_pi_agent',
+      { stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf-8' },
+    );
+    return result.includes('"username":"eddo_pi_agent"');
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Create default development user directly in CouchDB
  * Creates the eddo_pi_agent user used by the eddo-todo skill for MCP access
  * Returns true if user was created or already exists
