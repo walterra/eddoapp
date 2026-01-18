@@ -14,10 +14,15 @@ import { logger } from '../utils/logger';
 
 const telemetryApp = new Hono();
 
-/** Gets OTEL collector endpoint from environment */
-function getOtelEndpoint(): string {
+/** Gets OTEL collector endpoint from environment, returns null if not configured */
+function getOtelEndpoint(): string | null {
   const env = createEnv();
-  return env.OTEL_EXPORTER_OTLP_ENDPOINT;
+  const endpoint = env.OTEL_EXPORTER_OTLP_ENDPOINT;
+  // Default endpoint means OTEL isn't explicitly configured
+  if (!endpoint || endpoint === 'http://localhost:4318') {
+    return null;
+  }
+  return endpoint;
 }
 
 /** Gets optional OTEL API key from environment */
@@ -67,6 +72,12 @@ async function proxyToOtel(
  */
 telemetryApp.post('/v1/traces', async (c) => {
   const otelEndpoint = getOtelEndpoint();
+
+  // Silently accept when OTEL not configured (dev mode without collector)
+  if (!otelEndpoint) {
+    return c.json({ status: 'ok', message: 'OTEL not configured, traces discarded' }, 200);
+  }
+
   const tracesUrl = `${otelEndpoint}/v1/traces`;
 
   try {
@@ -77,7 +88,7 @@ telemetryApp.post('/v1/traces', async (c) => {
 
     return await proxyToOtel(tracesUrl, body, headers);
   } catch (error) {
-    logger.error({ error, tracesUrl }, 'Failed to proxy traces to OTEL collector');
+    logger.warn({ error, tracesUrl }, 'Failed to proxy traces to OTEL collector');
     return c.json({ error: 'Failed to send telemetry' }, 502);
   }
 });
@@ -88,6 +99,12 @@ telemetryApp.post('/v1/traces', async (c) => {
  */
 telemetryApp.post('/v1/metrics', async (c) => {
   const otelEndpoint = getOtelEndpoint();
+
+  // Silently accept when OTEL not configured (dev mode without collector)
+  if (!otelEndpoint) {
+    return c.json({ status: 'ok', message: 'OTEL not configured, metrics discarded' }, 200);
+  }
+
   const metricsUrl = `${otelEndpoint}/v1/metrics`;
 
   try {
@@ -98,7 +115,7 @@ telemetryApp.post('/v1/metrics', async (c) => {
 
     return await proxyToOtel(metricsUrl, body, headers);
   } catch (error) {
-    logger.error({ error, metricsUrl }, 'Failed to proxy metrics to OTEL collector');
+    logger.warn({ error, metricsUrl }, 'Failed to proxy metrics to OTEL collector');
     return c.json({ error: 'Failed to send telemetry' }, 502);
   }
 });
@@ -109,6 +126,12 @@ telemetryApp.post('/v1/metrics', async (c) => {
  */
 telemetryApp.post('/v1/logs', async (c) => {
   const otelEndpoint = getOtelEndpoint();
+
+  // Silently accept when OTEL not configured (dev mode without collector)
+  if (!otelEndpoint) {
+    return c.json({ status: 'ok', message: 'OTEL not configured, logs discarded' }, 200);
+  }
+
   const logsUrl = `${otelEndpoint}/v1/logs`;
 
   try {
@@ -119,7 +142,7 @@ telemetryApp.post('/v1/logs', async (c) => {
 
     return await proxyToOtel(logsUrl, body, headers);
   } catch (error) {
-    logger.error({ error, logsUrl }, 'Failed to proxy logs to OTEL collector');
+    logger.warn({ error, logsUrl }, 'Failed to proxy logs to OTEL collector');
     return c.json({ error: 'Failed to send telemetry' }, 502);
   }
 });
