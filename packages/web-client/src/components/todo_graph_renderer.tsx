@@ -1,10 +1,10 @@
 /**
  * Graph renderer component for React Flow visualization.
  * Handles node highlighting, dragging, and layout state.
+ * Uses theme system for customizable visual appearance.
  */
 import {
   applyNodeChanges,
-  Background,
   Controls,
   type Edge,
   type Node,
@@ -13,26 +13,35 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import { Spinner } from 'flowbite-react';
-import { type FC, useCallback, useEffect, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { CurvedEdge } from './todo_graph_curved_edge';
-import { FileNode } from './todo_graph_file_node';
-import { GraphLegend } from './todo_graph_legend';
-import { MetadataNode } from './todo_graph_metadata_node';
-import { TodoNode } from './todo_graph_node';
-import { UserNode } from './todo_graph_user_node';
+import { type RoadNetworkData } from '../hooks/use_isometric_layout';
 
-/** Custom node types for React Flow */
+import { useCurrentTheme } from './todo_graph/themes/context';
+import { GroundTileNode } from './todo_graph_ground_tile_node';
+import { ThemeSelector } from './todo_graph_theme_selector';
+import { ThemedEdge } from './todo_graph_themed_edge';
+import { ThemedGraphLegend } from './todo_graph_themed_legend';
+import {
+  ThemedFileNode,
+  ThemedMetadataNode,
+  ThemedTodoNode,
+  ThemedUserNode,
+} from './todo_graph_themed_nodes';
+import { WalkingCharacter } from './walking_character';
+
+/** Custom node types for React Flow - using themed wrappers */
 const nodeTypes = {
-  todoNode: TodoNode,
-  metadataNode: MetadataNode,
-  fileNode: FileNode,
-  userNode: UserNode,
+  todoNode: ThemedTodoNode,
+  metadataNode: ThemedMetadataNode,
+  fileNode: ThemedFileNode,
+  userNode: ThemedUserNode,
+  groundTileNode: GroundTileNode,
 };
 
 /** Custom edge types for React Flow */
 const edgeTypes = {
-  curved: CurvedEdge,
+  curved: ThemedEdge,
 };
 
 /** Apply highlight state to nodes */
@@ -50,28 +59,19 @@ const LayoutingSpinner: FC = () => (
   </div>
 );
 
-/** Controls styling for light/dark mode */
-const CONTROLS_CLASS =
-  '!border-neutral-300 !bg-white !shadow-lg dark:!border-neutral-700 dark:!bg-neutral-800 ' +
-  '[&>button]:!border-neutral-200 [&>button]:!bg-neutral-50 [&>button]:!fill-neutral-600 ' +
-  'dark:[&>button]:!border-neutral-600 dark:[&>button]:!bg-neutral-700 dark:[&>button]:!fill-neutral-300 ' +
-  '[&>button:hover]:!bg-neutral-100 dark:[&>button:hover]:!bg-neutral-600';
-
 export interface GraphRendererProps {
   nodes: Node[];
   edges: Edge[];
   isLayouting: boolean;
   highlightedTodoId: string | null;
+  /** Road network data for walking character animation (Village theme only) */
+  roadNetwork?: RoadNetworkData | null;
+  /** Original nodes with fresh data (for walking character messages) */
+  originalNodes?: Node[];
 }
 
-/** Inner component that can access useReactFlow */
-export const GraphRenderer: FC<GraphRendererProps> = ({
-  nodes: layoutedNodes,
-  edges,
-  isLayouting,
-  highlightedTodoId,
-}) => {
-  const { fitView } = useReactFlow();
+/** Custom hook for managing node state and highlighting */
+const useNodeState = (layoutedNodes: Node[], highlightedTodoId: string | null) => {
   const [nodes, setNodes] = useState(() => applyHighlight(layoutedNodes, highlightedTodoId));
 
   useEffect(() => {
@@ -82,37 +82,69 @@ export const GraphRenderer: FC<GraphRendererProps> = ({
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
+  return { nodes, onNodesChange };
+};
+
+/** Custom hook for auto-fitting view after layout */
+const useFitViewEffect = (layoutedNodes: Node[], isLayouting: boolean) => {
+  const { fitView } = useReactFlow();
+
   useEffect(() => {
     if (!isLayouting && layoutedNodes.length > 0) {
       const timer = setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 50);
       return () => clearTimeout(timer);
     }
   }, [layoutedNodes, isLayouting, fitView]);
+};
+
+/** Inner component that can access useReactFlow and theme */
+export const GraphRenderer: FC<GraphRendererProps> = ({
+  nodes: layoutedNodes,
+  edges,
+  isLayouting,
+  highlightedTodoId,
+  roadNetwork,
+  originalNodes,
+}) => {
+  const theme = useCurrentTheme();
+  const { nodes, onNodesChange } = useNodeState(layoutedNodes, highlightedTodoId);
+
+  useFitViewEffect(layoutedNodes, isLayouting);
+
+  // Memoize background component to avoid re-renders
+  const BackgroundComponent = useMemo(() => theme.Background, [theme]);
 
   if (isLayouting) return <LayoutingSpinner />;
 
+  // Check if nodes should be draggable (default true, but Village theme locks them)
+  const nodesDraggable = theme.nodesDraggable ?? true;
+
+  // Only show walking character for Village theme (isometric layout)
+  const showWalkingCharacter = theme.id === 'rpg2' && roadNetwork;
+
   return (
     <ReactFlow
-      className="h-full w-full"
+      className={`h-full w-full ${theme.classPrefix}`}
       defaultEdgeOptions={{ type: 'curved' }}
       edgeTypes={edgeTypes}
       edges={edges}
       fitView
+      key={theme.id}
       maxZoom={4}
       minZoom={0.3}
       nodeTypes={nodeTypes}
       nodes={nodes}
+      nodesDraggable={nodesDraggable}
       onNodesChange={onNodesChange}
       proOptions={{ hideAttribution: true }}
     >
-      <Background
-        className="!bg-neutral-100 dark:!bg-neutral-800"
-        color="#94a3b8"
-        gap={16}
-        size={1}
-      />
-      <Controls className={CONTROLS_CLASS} />
-      <GraphLegend />
+      <BackgroundComponent />
+      {showWalkingCharacter && (
+        <WalkingCharacter nodes={originalNodes ?? layoutedNodes} roadNetwork={roadNetwork} />
+      )}
+      <Controls className={theme.controlsClassName} />
+      <ThemedGraphLegend />
+      <ThemeSelector />
     </ReactFlow>
   );
 };

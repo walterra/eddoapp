@@ -17,6 +17,7 @@ import {
 } from '../hooks/use_audit_log_stream';
 import { useForceLayout } from '../hooks/use_force_layout';
 import { useHighlightedTodoId } from '../hooks/use_highlight_context';
+import { useIsometricLayout } from '../hooks/use_isometric_layout';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
@@ -25,6 +26,7 @@ import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
 import { calculateDateRange, filterTodosForGraph } from './todo_board_helpers';
 import { useDbInitialization, useOutdatedTodos, useTodoBoardData } from './todo_board_state';
+import { GraphThemeProvider, useCurrentTheme } from './todo_graph/themes/context';
 import { createAllEdges, createAllNodes } from './todo_graph_helpers';
 import { GraphRenderer } from './todo_graph_renderer';
 
@@ -158,13 +160,66 @@ const LoadingSpinner: FC = () => (
   </div>
 );
 
+/** Error fallback wrapper */
+const ErrorFallback: FC<{
+  error: DatabaseError;
+  onRetry: () => void;
+}> = ({ error, onRetry }) => (
+  <div className="bg-neutral-50 p-8 dark:bg-neutral-800">
+    <DatabaseErrorFallback error={error} onDismiss={onRetry} onRetry={onRetry} />
+  </div>
+);
+
 interface TodoGraphContentProps {
   nodes: Node[];
   edges: Edge[];
   highlightedTodoId: string | null;
 }
 
-/** Graph content with React Flow and force-directed layout */
+interface LayoutOptions {
+  width: number;
+  height: number;
+}
+
+/** Force layout content component */
+const ForceLayoutContent: FC<{
+  nodes: Node[];
+  edges: Edge[];
+  options: LayoutOptions;
+  highlightedTodoId: string | null;
+}> = ({ nodes, edges, options, highlightedTodoId }) => {
+  const result = useForceLayout(nodes, edges, options);
+  return (
+    <GraphRenderer
+      edges={result.edges}
+      highlightedTodoId={highlightedTodoId}
+      isLayouting={result.isLayouting}
+      nodes={result.nodes}
+    />
+  );
+};
+
+/** Isometric layout content component */
+const IsometricLayoutContent: FC<{
+  nodes: Node[];
+  edges: Edge[];
+  options: LayoutOptions;
+  highlightedTodoId: string | null;
+}> = ({ nodes, edges, options, highlightedTodoId }) => {
+  const result = useIsometricLayout(nodes, edges, options);
+  return (
+    <GraphRenderer
+      edges={result.edges}
+      highlightedTodoId={highlightedTodoId}
+      isLayouting={result.isLayouting}
+      nodes={result.nodes}
+      originalNodes={nodes}
+      roadNetwork={result.roadNetwork}
+    />
+  );
+};
+
+/** Graph content with theme-aware layout */
 const TodoGraphContent: FC<TodoGraphContentProps> = ({
   nodes: initialNodes,
   edges: initialEdges,
@@ -172,6 +227,8 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+  const theme = useCurrentTheme();
+  const layoutAlgorithm = theme.layout ?? 'force';
 
   // Measure container dimensions
   useEffect(() => {
@@ -184,24 +241,31 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
       }
     };
 
-    // Use requestAnimationFrame to ensure layout is complete
     requestAnimationFrame(updateDimensions);
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  // Wait for dimensions before running layout - memoize to prevent re-layout on highlight
   const layoutOptions = useMemo(() => dimensions ?? { width: 1600, height: 800 }, [dimensions]);
-  const { nodes, edges, isLayouting } = useForceLayout(initialNodes, initialEdges, layoutOptions);
+
+  // Render layout-specific component to avoid running both hooks
+  const LayoutContent =
+    layoutAlgorithm === 'isometric' ? IsometricLayoutContent : ForceLayoutContent;
 
   return (
     <div className="h-[calc(100vh-200px)] w-full" ref={containerRef}>
-      <GraphRenderer
-        edges={edges}
-        highlightedTodoId={highlightedTodoId}
-        isLayouting={isLayouting || !dimensions}
-        nodes={nodes}
-      />
+      {dimensions ? (
+        <LayoutContent
+          edges={initialEdges}
+          highlightedTodoId={highlightedTodoId}
+          nodes={initialNodes}
+          options={layoutOptions}
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <span className="text-neutral-500">Loading...</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -211,27 +275,22 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
   const { safeDb, rawDb } = usePouchDb();
   const { error, setError, isInitialized } = useDbInitialization(safeDb, rawDb);
   const data = useGraphData(props, isInitialized, error);
-  // Get highlight context here, outside ReactFlowProvider
   const highlightedTodoId = useHighlightedTodoId();
 
-  if (data.displayError && data.nodes.length === 0 && !data.isLoading) {
-    const handleError = () => {
-      setError(null);
-      data.todosQuery.refetch();
-      data.activitiesQuery.refetch();
-    };
-    return (
-      <div className="bg-neutral-50 p-8 dark:bg-neutral-800">
-        <DatabaseErrorFallback
-          error={data.displayError}
-          onDismiss={handleError}
-          onRetry={handleError}
-        />
-      </div>
-    );
-  }
+  const handleRetry = () => {
+    setError(null);
+    data.todosQuery.refetch();
+    data.activitiesQuery.refetch();
+  };
 
+  if (data.displayError && data.nodes.length === 0 && !data.isLoading) {
+    return <ErrorFallback error={data.displayError} onRetry={handleRetry} />;
+  }
   if (data.showLoadingSpinner) return <LoadingSpinner />;
+
+  const emptyDescription = data.hasActiveFilters
+    ? 'Try adjusting your filters or select a different time range.'
+    : 'Get started by adding your first todo above.';
 
   return (
     <div className="bg-neutral-50 dark:bg-neutral-800">
@@ -241,22 +300,17 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
         </div>
       )}
       {data.hasNoTodos ? (
-        <EmptyState
-          description={
-            data.hasActiveFilters
-              ? 'Try adjusting your filters or select a different time range.'
-              : 'Get started by adding your first todo above.'
-          }
-          title="No todos found"
-        />
+        <EmptyState description={emptyDescription} title="No todos found" />
       ) : (
-        <ReactFlowProvider>
-          <TodoGraphContent
-            edges={data.edges}
-            highlightedTodoId={highlightedTodoId}
-            nodes={data.nodes}
-          />
-        </ReactFlowProvider>
+        <GraphThemeProvider>
+          <ReactFlowProvider>
+            <TodoGraphContent
+              edges={data.edges}
+              highlightedTodoId={highlightedTodoId}
+              nodes={data.nodes}
+            />
+          </ReactFlowProvider>
+        </GraphThemeProvider>
       )}
     </div>
   );

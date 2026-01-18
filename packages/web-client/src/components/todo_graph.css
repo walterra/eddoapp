@@ -23,3 +23,8 @@
 .react-flow__node[data-id^='metadata:'] {
   z-index: 1000 !important;
 }
+
+/* For Village theme: ensure z-index from style is applied to node wrappers */
+.theme-rpg2 .react-flow__node {
+  /* Let inline z-index from node.style take effect */
+}
