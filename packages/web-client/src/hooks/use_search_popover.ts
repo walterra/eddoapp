@@ -50,6 +50,34 @@ function useFocusOnOpen(isOpen: boolean, inputRef: React.RefObject<HTMLInputElem
   }, [isOpen, inputRef]);
 }
 
+/** Debounced search config */
+interface DebouncedSearchConfig {
+  clearResults: () => void;
+  includeCompleted: boolean;
+  searchTodos: ReturnType<typeof useSearch>['searchTodos'];
+}
+
+/** Creates a debounced search handler. */
+function useDebouncedSearch(config: DebouncedSearchConfig) {
+  const { clearResults, includeCompleted, searchTodos } = config;
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  return useCallback(
+    (searchQuery: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (searchQuery.length < 2) {
+        clearResults();
+        return;
+      }
+      debounceRef.current = setTimeout(
+        () => void searchTodos({ includeCompleted, limit: 15, query: searchQuery }),
+        300,
+      );
+    },
+    [searchTodos, clearResults, includeCompleted],
+  );
+}
+
 /** Handler config */
 interface HandlerConfig {
   clearResults: () => void;
@@ -76,22 +104,8 @@ function useSearchHandlers(config: HandlerConfig) {
     setIsOpen,
     setQuery,
   } = config;
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSearch = useCallback(
-    (searchQuery: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (searchQuery.length < 2) {
-        clearResults();
-        return;
-      }
-      debounceRef.current = setTimeout(
-        () => void searchTodos({ includeCompleted, limit: 15, query: searchQuery }),
-        300,
-      );
-    },
-    [searchTodos, clearResults, includeCompleted],
-  );
+  const handleSearch = useDebouncedSearch({ clearResults, includeCompleted, searchTodos });
 
   const handleQueryChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
