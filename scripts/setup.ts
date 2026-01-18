@@ -13,6 +13,7 @@ import prompts from 'prompts';
 import {
   buildWorkspacePackages,
   checkVersionedPrerequisite,
+  createDefaultUser,
   displayPrerequisites,
   displaySummary,
   ensureLogsDirectory,
@@ -109,29 +110,22 @@ function displayConfigStatus(): boolean {
   return envExists;
 }
 
-/**
- * Prompt user for setup options
- */
-async function promptForOptions(
-  servicesRunning: boolean,
+/** Prompt for Docker services */
+async function promptDockerServices(servicesRunning: boolean): Promise<boolean> {
+  if (servicesRunning) return false;
+  const { startDocker } = await prompts({
+    type: 'confirm',
+    name: 'startDocker',
+    message: 'Start Docker services (CouchDB + Elasticsearch)?',
+    initial: true,
+  });
+  return startDocker;
+}
+
+/** Prompt for .env file generation */
+async function promptEnvFile(
   envExists: boolean,
-): Promise<SetupConfig> {
-  const config: SetupConfig = {
-    startDocker: false,
-    generateEnv: false,
-    envOverwrite: false,
-  };
-
-  if (!servicesRunning) {
-    const { startDocker } = await prompts({
-      type: 'confirm',
-      name: 'startDocker',
-      message: 'Start Docker services (CouchDB + Elasticsearch)?',
-      initial: true,
-    });
-    config.startDocker = startDocker;
-  }
-
+): Promise<{ generate: boolean; overwrite: boolean }> {
   if (!envExists) {
     const { generateEnv } = await prompts({
       type: 'confirm',
@@ -139,19 +133,65 @@ async function promptForOptions(
       message: 'Generate .env file with development defaults?',
       initial: true,
     });
-    config.generateEnv = generateEnv;
-  } else {
-    const { overwriteEnv } = await prompts({
-      type: 'confirm',
-      name: 'overwriteEnv',
-      message: '.env exists. Overwrite with fresh defaults?',
-      initial: false,
-    });
-    config.generateEnv = overwriteEnv;
-    config.envOverwrite = overwriteEnv;
+    return { generate: generateEnv, overwrite: false };
   }
 
-  return config;
+  const { overwriteEnv } = await prompts({
+    type: 'confirm',
+    name: 'overwriteEnv',
+    message: '.env exists. Overwrite with fresh defaults?',
+    initial: false,
+  });
+  return { generate: overwriteEnv, overwrite: overwriteEnv };
+}
+
+/** Prompt for default user creation */
+async function promptUserCreation(): Promise<{ create: boolean; password?: string }> {
+  console.log(chalk.gray('  ℹ️  The eddo_pi_agent user is required for MCP/agentic access.'));
+  console.log(
+    chalk.gray('     In this version, it is the only user capable of AI agent integration.\n'),
+  );
+
+  const { createUser } = await prompts({
+    type: 'confirm',
+    name: 'createUser',
+    message: 'Create eddo_pi_agent user?',
+    initial: true,
+  });
+
+  if (!createUser) return { create: false };
+
+  const { userPassword } = await prompts({
+    type: 'password',
+    name: 'userPassword',
+    message: 'Password for eddo_pi_agent (leave empty for default):',
+  });
+
+  return { create: true, password: userPassword || undefined };
+}
+
+/**
+ * Prompt user for setup options
+ */
+async function promptForOptions(
+  servicesRunning: boolean,
+  envExists: boolean,
+): Promise<SetupConfig> {
+  const startDocker = await promptDockerServices(servicesRunning);
+  const envConfig = await promptEnvFile(envExists);
+
+  let userConfig = { create: false, password: undefined as string | undefined };
+  if (servicesRunning || startDocker) {
+    userConfig = await promptUserCreation();
+  }
+
+  return {
+    startDocker,
+    generateEnv: envConfig.generate,
+    envOverwrite: envConfig.overwrite,
+    createUser: userConfig.create,
+    userPassword: userConfig.password,
+  };
 }
 
 /**
@@ -178,6 +218,11 @@ async function executeSetup(config: SetupConfig, servicesRunning: boolean): Prom
 
   // Build workspace packages (core-shared, core-server, etc.)
   buildWorkspacePackages(ROOT_DIR);
+
+  // Create default user (eddo_pi_agent) for MCP access
+  if (dockerStarted && config.createUser) {
+    createDefaultUser(ROOT_DIR, config.userPassword);
+  }
 
   return dockerStarted;
 }

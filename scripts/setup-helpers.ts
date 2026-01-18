@@ -19,6 +19,8 @@ export interface SetupConfig {
   startDocker: boolean;
   generateEnv: boolean;
   envOverwrite: boolean;
+  createUser: boolean;
+  userPassword?: string;
 }
 
 /**
@@ -253,6 +255,27 @@ export function ensureLogsDirectory(rootDir: string): void {
     fs.mkdirSync(logsDir, { recursive: true });
     console.log(chalk.green('  ✓ Created logs directory'));
   }
+}
+
+/**
+ * Create default development user directly in CouchDB
+ * Creates the eddo_pi_agent user used by the eddo-todo skill for MCP access
+ * Returns true if user was created or already exists
+ * @param password - Optional custom password (defaults to 'eddo_pi_agent')
+ */
+export function createDefaultUser(rootDir: string, password?: string): boolean {
+  const args = ['dev:create-user'];
+  if (password) {
+    args.push('--', '--password', password);
+  }
+
+  const result = spawnSync('pnpm', args, {
+    cwd: rootDir,
+    stdio: 'inherit', // Show output directly
+    encoding: 'utf-8',
+  });
+
+  return result.status === 0;
 }
 
 /**
