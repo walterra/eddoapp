@@ -12,7 +12,7 @@
 // Load .env file before importing modules that need env vars
 import 'dotenv-mono/load';
 
-import { createEnv, createUserRegistry } from '@eddo/core-server';
+import { createChatDatabase, createEnv, createUserRegistry } from '@eddo/core-server';
 import {
   createDefaultUserPreferences,
   DESIGN_DOCS,
@@ -111,22 +111,29 @@ async function setupIndexes(db: DocumentScope<Record<string, unknown>>): Promise
 async function setupUserDatabase(
   userRegistry: ReturnType<typeof createUserRegistry>,
   username: string,
+  env: ReturnType<typeof createEnv>,
+  couchUrl: string,
 ): Promise<void> {
-  // Ensure user database exists
+  // Ensure user database exists (creates user db, attachments db, and chat db)
   if (!userRegistry.ensureUserDatabase) {
     throw new Error('User registry does not support user database operations');
   }
   await userRegistry.ensureUserDatabase(username);
 
-  // Get the user database instance
+  // Get the user database instance and setup design docs/indexes
   if (!userRegistry.getUserDatabase) {
     throw new Error('User registry does not support user database operations');
   }
   const userDb = userRegistry.getUserDatabase(username) as DocumentScope<Record<string, unknown>>;
-
-  // Setup design documents and indexes
   await setupDesignDocuments(userDb);
   await setupIndexes(userDb);
+
+  // Setup chat database design documents
+  console.log(chalk.blue('  Setting up chat database...'));
+  const chatDb = createChatDatabase(couchUrl, env, username);
+  await chatDb.ensureDatabase();
+  await chatDb.setupDesignDocuments();
+  console.log(chalk.green('  ✓ Chat database ready'));
 }
 
 async function createDefaultUser(password: string): Promise<boolean> {
@@ -143,7 +150,7 @@ async function createDefaultUser(password: string): Promise<boolean> {
 
       // Still ensure database is set up properly
       console.log(chalk.blue('  Verifying database setup...'));
-      await setupUserDatabase(userRegistry, DEFAULT_USERNAME);
+      await setupUserDatabase(userRegistry, DEFAULT_USERNAME, env, env.COUCHDB_URL);
 
       return true;
     }
@@ -170,7 +177,7 @@ async function createDefaultUser(password: string): Promise<boolean> {
 
     // Setup user database with design docs and indexes
     console.log(chalk.blue('  Setting up user database...'));
-    await setupUserDatabase(userRegistry, DEFAULT_USERNAME);
+    await setupUserDatabase(userRegistry, DEFAULT_USERNAME, env, env.COUCHDB_URL);
 
     console.log(chalk.green('\n✅ Default user setup complete!\n'));
     console.log(chalk.gray(`  Username: ${DEFAULT_USERNAME}`));
