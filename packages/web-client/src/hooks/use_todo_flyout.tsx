@@ -13,9 +13,12 @@ import {
   useState,
 } from 'react';
 
+import { usePouchDb } from '../pouch_db';
+
 interface TodoFlyoutContextValue {
   openTodoId: string | null;
   openTodo: (todo: Todo) => void;
+  openTodoById: (todoId: string) => Promise<void>;
   closeFlyout: () => void;
   updateTodo: (todo: Todo) => void;
   currentTodo: Todo | null;
@@ -30,11 +33,25 @@ interface TodoFlyoutProviderProps {
 export const TodoFlyoutProvider: FC<TodoFlyoutProviderProps> = ({ children }) => {
   const [openTodoId, setOpenTodoId] = useState<string | null>(null);
   const [currentTodo, setCurrentTodo] = useState<Todo | null>(null);
+  const { rawDb } = usePouchDb();
 
   const openTodo = useCallback((todo: Todo) => {
     setOpenTodoId(todo._id);
     setCurrentTodo(todo);
   }, []);
+
+  const openTodoById = useCallback(
+    async (todoId: string) => {
+      try {
+        const todo = await rawDb.get(todoId);
+        setOpenTodoId(todo._id);
+        setCurrentTodo(todo as Todo);
+      } catch (error) {
+        console.error('Failed to open todo by ID:', error);
+      }
+    },
+    [rawDb],
+  );
 
   const closeFlyout = useCallback(() => {
     setOpenTodoId(null);
@@ -50,7 +67,7 @@ export const TodoFlyoutProvider: FC<TodoFlyoutProviderProps> = ({ children }) =>
     [openTodoId],
   );
 
-  const value = { openTodoId, openTodo, closeFlyout, updateTodo, currentTodo };
+  const value = { openTodoId, openTodo, openTodoById, closeFlyout, updateTodo, currentTodo };
 
   return <TodoFlyoutContext.Provider value={value}>{children}</TodoFlyoutContext.Provider>;
 };

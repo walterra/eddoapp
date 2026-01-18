@@ -137,3 +137,11 @@ export {
   type ListAttachmentsArgs,
   type UploadAttachmentArgs,
 } from './attachment-tools.js';
+
+// Search Todos
+export {
+  executeSearchTodos,
+  searchTodosDescription,
+  searchTodosParameters,
+  type SearchTodosArgs,
+} from './search-todos.js';

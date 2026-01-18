@@ -3,10 +3,11 @@ import { HiOutlineClipboardList, HiOutlineLogout, HiOutlineUser } from 'react-ic
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { useProfile } from '../hooks/use_profile';
+import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { usePouchDb } from '../pouch_db';
 import { AuditSidebar } from './audit_sidebar';
 import { HealthIndicatorPopover } from './health_indicator_popover';
-
+import { SearchPopover } from './search_popover';
 import { UserProfile } from './user_profile';
 
 /** Hook for activity sidebar state with optimistic updates and persistence */
@@ -109,6 +110,7 @@ interface HeaderProps {
   onLogout: () => void;
   showAuditSidebar: boolean;
   onToggleAuditSidebar: () => void;
+  onSelectTodo: (todoId: string) => void;
 }
 
 const Header: FC<HeaderProps> = ({
@@ -119,6 +121,7 @@ const Header: FC<HeaderProps> = ({
   onLogout,
   showAuditSidebar,
   onToggleAuditSidebar,
+  onSelectTodo,
 }) => (
   <div className="mb-2 flex items-center justify-between">
     <div>
@@ -128,6 +131,7 @@ const Header: FC<HeaderProps> = ({
     <div className="flex items-center space-x-1">
       {isAuthenticated && (
         <>
+          <SearchPopover onSelectTodo={onSelectTodo} />
           <HealthIndicatorPopover databaseName={databaseName} healthCheck={healthCheck} />
           <AuditToggle isOpen={showAuditSidebar} onToggle={onToggleAuditSidebar} />
           <ProfileButton onClick={onShowProfile} />
@@ -143,7 +147,15 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   const { rawDb } = usePouchDb();
   const [showProfile, setShowProfile] = useState(false);
   const activitySidebar = useActivitySidebar();
+  const { openTodoById } = useTodoFlyoutContext();
   const databaseName = rawDb.name;
+
+  const handleSelectTodo = useCallback(
+    (todoId: string) => {
+      void openTodoById(todoId);
+    },
+    [openTodoById],
+  );
 
   if (showProfile) {
     return <UserProfile onClose={() => setShowProfile(false)} />;
@@ -158,6 +170,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
             healthCheck={healthCheck}
             isAuthenticated={isAuthenticated}
             onLogout={logout}
+            onSelectTodo={handleSelectTodo}
             onShowProfile={() => setShowProfile(true)}
             onToggleAuditSidebar={activitySidebar.toggle}
             showAuditSidebar={activitySidebar.isOpen}

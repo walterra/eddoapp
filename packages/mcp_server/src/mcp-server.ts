@@ -16,6 +16,7 @@ import {
   getCouchDbConfig,
   validateEnv,
 } from '@eddo/core-server';
+import { Client } from '@elastic/elasticsearch';
 import { context, propagation } from '@opentelemetry/api';
 import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
@@ -51,6 +52,32 @@ const env = validateEnv(process.env);
 // Initialize nano connection
 const couchDbConfig = getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
+
+// Initialize Elasticsearch client (optional - for search functionality)
+let esClient: Client | null = null;
+const esUrl = process.env.ELASTICSEARCH_URL;
+if (esUrl) {
+  try {
+    esClient = new Client({
+      node: esUrl,
+      tls: esUrl.startsWith('https')
+        ? { rejectUnauthorized: process.env.ELASTICSEARCH_TLS_VERIFY !== 'false' }
+        : undefined,
+    });
+    logger.info({ esUrl }, 'Elasticsearch client initialized');
+  } catch (error) {
+    logger.warn({ error, esUrl }, 'Failed to initialize Elasticsearch client - search disabled');
+  }
+} else {
+  logger.info('ELASTICSEARCH_URL not set - search functionality disabled');
+}
+
+/**
+ * Gets the Elasticsearch client (or null if not configured)
+ */
+function getEsClient(): Client | null {
+  return esClient;
+}
 
 /**
  * Server instructions for LLM consumption
@@ -156,8 +183,14 @@ function getAttachmentsDb(context: ToolContext): nano.DocumentScope<AttachmentDo
   return couch.db.use<AttachmentDoc>(context.session.attachmentsDbName);
 }
 
-// Register all tools with tracing
-registerTools(server, getUserDb, getAttachmentsDb, couch);
+// Register all tools with tracing (including search if ES is available)
+registerTools({
+  couch,
+  getAttachmentsDb,
+  getEsClient,
+  getUserDb,
+  server,
+});
 
 // Export the server instance and control functions
 export const mcpServer = server;
@@ -191,25 +224,33 @@ export async function startMcpServer(port: number = 3001): Promise<void> {
       httpStream: { port },
     });
 
+    const tools = [
+      'createTodo',
+      'listTodos',
+      'getTodo',
+      'updateTodo',
+      'toggleTodoCompletion',
+      'deleteTodo',
+      'startTimeTracking',
+      'stopTimeTracking',
+      'getActiveTimeTracking',
+      'getServerInfo',
+      'getUserInfo',
+      'getBriefingData',
+      'getRecapData',
+    ];
+
+    // Add search tool if ES is available
+    if (esClient) {
+      tools.push('searchTodos');
+    }
+
     logger.info(
       {
         port,
         endpoint: `http://localhost:${port}/mcp`,
-        tools: [
-          'createTodo',
-          'listTodos',
-          'getTodo',
-          'updateTodo',
-          'toggleTodoCompletion',
-          'deleteTodo',
-          'startTimeTracking',
-          'stopTimeTracking',
-          'getActiveTimeTracking',
-          'getServerInfo',
-          'getUserInfo',
-          'getBriefingData',
-          'getRecapData',
-        ],
+        tools,
+        searchEnabled: !!esClient,
       },
       'MCP server started',
     );
