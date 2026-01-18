@@ -12,8 +12,8 @@
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { createDefaultUserPreferences } from '@eddo/core-shared';
 import chalk from 'chalk';
-import { hashPassword } from '../packages/web-api/src/utils/crypto.js';
-import { setupUserDatabase } from '../packages/web-api/src/utils/setup-user-db.js';
+import { hashPassword } from '../packages/web-api/src/utils/crypto.ts';
+import { setupUserDatabase } from '../packages/web-api/src/utils/setup-user-db.ts';
 
 const DEFAULT_USERNAME = 'eddo_pi_agent';
 const DEFAULT_EMAIL = 'eddo_pi_agent@localhost';
