@@ -143,16 +143,12 @@ async function createDefaultUser(password: string): Promise<boolean> {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
-    // Check if user already exists
+    // Check if user already exists - delete and recreate to ensure clean state
     const existingUser = await userRegistry.findByUsername(DEFAULT_USERNAME);
     if (existingUser) {
-      console.log(chalk.green(`✓ User "${DEFAULT_USERNAME}" already exists`));
-
-      // Still ensure database is set up properly
-      console.log(chalk.blue('  Verifying database setup...'));
-      await setupUserDatabase(userRegistry, DEFAULT_USERNAME, env, env.COUCHDB_URL);
-
-      return true;
+      console.log(chalk.yellow(`  User "${DEFAULT_USERNAME}" exists, recreating...`));
+      await userRegistry.delete(existingUser._id);
+      console.log(chalk.green(`  ✓ Removed existing user`));
     }
 
     // Hash password
