@@ -133,6 +133,8 @@ Issues sync periodically (default: hourly) with:
 
 Provides programmatic access to todos via Model Context Protocol. Test with `pnpm test:mcp`.
 
+> **⚠️ Security Note**: The MCP server currently has no proper authentication. It uses a simple `X-User-ID` header for user identification without verification. Do not expose the MCP server to untrusted networks.
+
 ## Backup & Disaster Recovery
 
 Eddo includes automated backup and restore capabilities:
