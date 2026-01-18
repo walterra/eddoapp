@@ -15,6 +15,9 @@
 #   COUCHDB_USERNAME       - CouchDB admin username (default: admin)
 #   COUCHDB_PASSWORD       - CouchDB admin password (default: password)
 
+# Project name for grouping in Docker Desktop
+name: eddo
+
 services:
   otel-collector:
     image: elastic/elastic-agent:9.2.2

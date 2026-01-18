@@ -36,6 +36,7 @@ export {
   type SessionMessageEntry,
   type SessionRepository,
   type SessionStats,
+  type SetupLogEntry,
   type StopReason,
   type TextContent,
   type ThinkingContent,
@@ -116,6 +117,7 @@ export {
 export {
   createDefaultUserPreferences,
   isUserRegistryEntryAlpha2,
+  type AiProviderKeys,
   type EmailProvider,
   type EmailSyncConfig,
   type RssFeedConfig,
@@ -153,6 +155,19 @@ export {
   type AttachmentValidationResult,
   type ParsedAttachmentKey,
 } from './utils/attachment';
+export {
+  buildChatImageDocId,
+  buildChatImageUrl,
+  createChatAttachmentDoc,
+  extractAndHashImages,
+  extractBase64Images,
+  hashImageContent,
+  isBase64Image,
+  isUrlImage,
+  replaceImagesWithUrls,
+  type ChatAttachmentDoc,
+  type ExtractedImage,
+} from './utils/chat-attachments';
 export { generateStableKey } from './utils/generate_stable_key';
 export { getActiveDuration, getActiveDurationInRange } from './utils/get_active_duration';
 export { getActiveRecordForActivities } from './utils/get_active_record_for_activities';

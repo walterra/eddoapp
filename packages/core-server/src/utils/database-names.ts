@@ -160,6 +160,15 @@ export function getAuditDatabaseConfig(env: Env, username: string) {
 }
 
 /**
+ * Get the attachments database name for a user
+ */
+export function getAttachmentsDatabaseName(env: Env, username: string): string {
+  const prefix = getDatabasePrefix(env);
+  const sanitizedUsername = sanitizeUsername(username);
+  return `${prefix}_attachments_${sanitizedUsername}`;
+}
+
+/**
  * Get the chat database name for a user
  */
 export function getChatDatabaseName(env: Env, username: string): string {

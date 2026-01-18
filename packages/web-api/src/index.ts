@@ -119,10 +119,17 @@ if (!isDevelopment) {
 
     try {
       const response = await fetch(`${viteDevServerUrl}${requestPath}`);
-
-      // Forward the response from Vite dev server
-      const body = await response.text();
       const contentType = response.headers.get('content-type') || 'text/html';
+
+      // Use arrayBuffer for binary content (images, fonts, etc.)
+      const isBinary =
+        contentType.startsWith('image/') ||
+        contentType.startsWith('font/') ||
+        contentType.startsWith('audio/') ||
+        contentType.startsWith('video/') ||
+        contentType === 'application/octet-stream';
+
+      const body = isBinary ? await response.arrayBuffer() : await response.text();
 
       return new Response(body, {
         status: response.status,

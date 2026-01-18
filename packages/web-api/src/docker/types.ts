@@ -15,6 +15,10 @@ export interface ContainerConfig {
   sessionDir: string;
   /** Git directory (bare clone) to mount */
   gitDir?: string;
+  /** Main git directory for reference (optional) */
+  mainGitDir?: string;
+  /** Pi agent config directory path */
+  piConfigDir?: string;
   /** Environment variables */
   env?: Record<string, string>;
   /** Memory limit in MB */
@@ -87,6 +91,8 @@ export type RpcEventCallback = (event: RpcEvent) => void;
 export interface SpawnContainerOptions {
   /** Session ID */
   sessionId: string;
+  /** Username for container context */
+  username?: string;
   /** Container configuration */
   config: ContainerConfig;
   /** Callback for RPC events */

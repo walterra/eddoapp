@@ -59,6 +59,13 @@ export interface FilterPreset {
   createdAt: string;
 }
 
+/** AI provider API keys for chat agent */
+export interface AiProviderKeys {
+  anthropicApiKey?: string;
+  openaiApiKey?: string;
+  geminiApiKey?: string;
+}
+
 /** Email sync configuration */
 export interface EmailSyncConfig {
   /** Authentication provider (gmail for OAuth, imap for credentials) */
@@ -120,6 +127,8 @@ export interface UserPreferences {
   emailSyncError?: string; // Error message if sync failed (e.g., OAuth token expired)
   // Filter Presets
   filterPresets?: FilterPreset[]; // Saved filter preset configurations
+  // AI Provider Keys
+  aiProviderKeys?: AiProviderKeys; // API keys for chat agent (Anthropic, OpenAI, Gemini)
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {

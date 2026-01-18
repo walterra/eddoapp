@@ -1,6 +1,9 @@
 # Project name for grouping in Docker Desktop
 name: eddo
 
+# Project name for grouping in Docker Desktop
+name: eddo
+
 services:
   # CouchDB service
   couchdb:

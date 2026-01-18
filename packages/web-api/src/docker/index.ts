@@ -4,6 +4,7 @@
 
 export { createContainerManager, type ContainerManager } from './container-manager';
 export { onRpcEvent, sendRpcCommand, setupRpcStream, type ContainerStream } from './rpc-stream';
+export { createSearxngManager, type SearxngManager } from './searxng-manager';
 export type {
   ContainerConfig,
   ContainerInfo,

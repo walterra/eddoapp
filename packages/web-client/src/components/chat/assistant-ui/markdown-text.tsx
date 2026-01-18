@@ -3,9 +3,18 @@
  */
 
 import { useMessagePartText } from '@assistant-ui/react';
-import type { FC } from 'react';
+import type { AnchorHTMLAttributes, FC } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+/** Custom link component that opens in new tab */
+function ExternalLink({ href, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return (
+    <a href={href} rel="noopener noreferrer" target="_blank" {...props}>
+      {children}
+    </a>
+  );
+}
 
 /** Markdown text component for message content */
 export const MarkdownText: FC = () => {
@@ -14,7 +23,9 @@ export const MarkdownText: FC = () => {
 
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+      <ReactMarkdown components={{ a: ExternalLink }} remarkPlugins={[remarkGfm]}>
+        {text}
+      </ReactMarkdown>
     </div>
   );
 };

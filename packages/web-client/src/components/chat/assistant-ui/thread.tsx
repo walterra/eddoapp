@@ -12,29 +12,32 @@ import {
 import { ArrowUpIcon, Square } from 'lucide-react';
 import type { FC } from 'react';
 
+import { ImageLightboxProvider, useImageLightbox } from './image-lightbox-context';
 import { MarkdownText } from './markdown-text';
 
 /** Main Thread component */
 export const Thread: FC = () => {
   return (
-    <ThreadPrimitive.Root className="flex h-full flex-col bg-white dark:bg-gray-900">
-      <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto p-4">
-        <ThreadPrimitive.Empty>
-          <ThreadWelcome />
-        </ThreadPrimitive.Empty>
+    <ImageLightboxProvider>
+      <ThreadPrimitive.Root className="flex h-full flex-col bg-white dark:bg-gray-900">
+        <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto p-4">
+          <ThreadPrimitive.Empty>
+            <ThreadWelcome />
+          </ThreadPrimitive.Empty>
 
-        <ThreadPrimitive.Messages
-          components={{
-            UserMessage,
-            AssistantMessage,
-          }}
-        />
-      </ThreadPrimitive.Viewport>
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage,
+              AssistantMessage,
+            }}
+          />
+        </ThreadPrimitive.Viewport>
 
-      <div className="border-t border-gray-200 p-4 dark:border-gray-700">
-        <Composer />
-      </div>
-    </ThreadPrimitive.Root>
+        <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+          <Composer />
+        </div>
+      </ThreadPrimitive.Root>
+    </ImageLightboxProvider>
   );
 };
 
@@ -101,6 +104,22 @@ const UserMessage: FC = () => {
   );
 };
 
+/** Image component for message content with lightbox support */
+const ImageBlock: FC<{ image: string }> = ({ image }) => {
+  const { openLightbox } = useImageLightbox();
+
+  return (
+    <div className="my-2">
+      <img
+        alt="Generated content"
+        className="max-w-full cursor-pointer rounded-lg shadow-md transition-opacity hover:opacity-90"
+        onClick={() => openLightbox(image)}
+        src={image}
+      />
+    </div>
+  );
+};
+
 /** Assistant message component */
 const AssistantMessage: FC = () => {
   return (
@@ -110,6 +129,7 @@ const AssistantMessage: FC = () => {
           components={{
             Text: MarkdownText,
             Reasoning: ReasoningBlock,
+            Image: ImageBlock,
           }}
         />
       </div>

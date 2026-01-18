@@ -8,7 +8,9 @@ import type nano from 'nano';
 import { withSpan } from '../utils/logger.js';
 import type { EmailLogger } from './client.js';
 import {
+  disableEmailSyncWithError,
   filterSyncEnabledUsers,
+  OAuthInvalidGrantError,
   shouldSyncUser,
   syncUserWithSpan,
   updateLastSyncTime,
@@ -27,6 +29,28 @@ export { shouldSyncUser } from './user-sync-operations.js';
 interface CheckAndSyncConfig {
   logger: EmailLogger;
   getUserDb: EmailSyncSchedulerConfig['getUserDb'];
+}
+
+/** Handle user sync error - disable sync for OAuth errors, log others */
+async function handleUserSyncError(
+  error: unknown,
+  user: { _id: string; username: string },
+  logger: EmailLogger,
+): Promise<void> {
+  if (error instanceof OAuthInvalidGrantError) {
+    logger.warn('Disabling email sync due to invalid OAuth token', {
+      userId: user._id,
+      username: user.username,
+    });
+    await disableEmailSyncWithError(user._id, error.message, logger);
+    return;
+  }
+
+  logger.error('Failed to sync emails for user', {
+    userId: user._id,
+    username: user.username,
+    error: error instanceof Error ? error.message : String(error),
+  });
 }
 
 /**
@@ -60,11 +84,7 @@ async function checkAndSyncAllUsers(config: CheckAndSyncConfig): Promise<void> {
           await updateLastSyncTime(user._id, logger);
           syncedCount++;
         } catch (error) {
-          logger.error('Failed to sync emails for user', {
-            userId: user._id,
-            username: user.username,
-            error: error instanceof Error ? error.message : String(error),
-          });
+          await handleUserSyncError(error, user, logger);
         }
       }
 

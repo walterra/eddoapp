@@ -167,6 +167,7 @@ export {
   extractUsernameFromDatabaseName,
   generateLinkingCode,
   getAllUserDatabaseNames,
+  getAttachmentsDatabaseName,
   getAuditDatabaseConfig,
   getAuditDatabaseName,
   getChatDatabaseConfig,
