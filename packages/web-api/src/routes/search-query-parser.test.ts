@@ -122,7 +122,7 @@ describe('search-query-parser', () => {
   });
 
   describe('generateWhereConditions', () => {
-    const escapeString = (s: string) => s.replace(/"/g, '\\"');
+    const escapeString = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
     it('should generate MATCH condition for search text', () => {
       const parsed = parseSearchQuery('meeting');
