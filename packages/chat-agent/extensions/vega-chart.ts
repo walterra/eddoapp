@@ -141,11 +141,14 @@ chart.save('${tmpPng}', scale_factor=2)
 print('OK')
 `;
 
-        const result = execSync(`python3 -c "${pythonScript.replace(/"/g, '\\"')}"`, {
-          encoding: 'utf-8',
-          timeout: 30000,
-          maxBuffer: 10 * 1024 * 1024,
-        });
+        const result = execSync(
+          `python3 -c "${pythonScript.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`,
+          {
+            encoding: 'utf-8',
+            timeout: 30000,
+            maxBuffer: 10 * 1024 * 1024,
+          },
+        );
 
         if (!result.includes('OK')) {
           throw new Error('Chart generation failed');
