@@ -5,7 +5,16 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
-    ignores: ['dist/', 'coverage/', 'public/', '**/public/', '**/dist/'],
+    ignores: [
+      'dist/',
+      'coverage/',
+      'public/',
+      '**/public/',
+      '**/dist/',
+      // Standalone skill scripts - run outside of main app context
+      'packages/chat-agent/skills/**/*.js',
+      'packages/chat-agent/extensions/**/*.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

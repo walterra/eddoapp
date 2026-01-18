@@ -1,0 +1,9 @@
+{
+  "name": "eddo-todo-skill",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Pi coding agent skill for Eddo todo management via MCP",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1"
+  }
+}

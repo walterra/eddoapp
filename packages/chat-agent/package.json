@@ -1,0 +1,14 @@
+{
+  "name": "@eddo/chat-agent",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Skills and extensions for Eddo chat agent running in Docker containers",
+  "type": "module",
+  "files": [
+    "skills",
+    "extensions"
+  ],
+  "scripts": {
+    "build": "echo 'No build required - skills are runtime JavaScript'"
+  }
+}
