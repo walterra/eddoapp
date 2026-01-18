@@ -181,10 +181,19 @@ export async function handlePrompt(c: Context, chatService: ChatService) {
   return streamSSE(c, async (stream) => {
     const containerManager = chatService.getContainerManager();
 
+    // Stream all events to client, persist on message_end
     const unsubscribe = containerManager.onRpcEvent(sessionId, (event: RpcEvent) => {
       stream.writeSSE({ data: JSON.stringify(event), event: event.type });
+
+      // Persist each message as it completes
       if (event.type === 'message_end') {
-        persistMessageEvent(chatService, username, sessionId, event);
+        persistMessageEnd(chatService, username, sessionId, event);
+      }
+
+      // Log agent_end for debugging
+      if (event.type === 'agent_end') {
+        const agentEndEvent = event as { messages?: unknown[] };
+        logger.info({ messageCount: agentEndEvent.messages?.length ?? 0 }, 'agent_end received');
       }
     });
 
@@ -217,26 +226,38 @@ async function waitForAgentEnd(
   });
 }
 
-/** Persist a message event to the database */
-function persistMessageEvent(
+/** Message from pi-coding-agent */
+interface AgentMessage {
+  role: 'user' | 'assistant';
+  content: unknown[];
+  timestamp?: number;
+  [key: string]: unknown;
+}
+
+/** Persist a message from message_end event */
+function persistMessageEnd(
   chatService: ChatService,
   username: string,
   sessionId: string,
   event: RpcEvent,
 ): void {
-  if (event.type !== 'message_end') return;
+  const messageEvent = event as { message?: AgentMessage };
+  if (!messageEvent.message) {
+    logger.warn({ event }, 'message_end has no message');
+    return;
+  }
 
-  const eventWithMessage = event as { message?: unknown };
-  if (!eventWithMessage.message) return;
-
-  // SessionMessageEntry structure (parentId comes from SessionEntryBase)
+  const message = messageEvent.message;
   const entry = {
-    type: 'message',
-    parentId: null, // Would need proper tracking
-    message: eventWithMessage.message,
+    type: 'message' as const,
+    parentId: null,
+    message,
   };
 
+  // Use original timestamp if available
+  const timestamp = message.timestamp ? new Date(message.timestamp).toISOString() : undefined;
+
   chatService
-    .appendEntry(username, sessionId, entry as Parameters<typeof chatService.appendEntry>[2])
+    .appendEntryWithTimestamp(username, sessionId, entry, timestamp)
     .catch((err) => logger.error({ err, sessionId }, 'Failed to persist message'));
 }

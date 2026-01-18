@@ -35,8 +35,6 @@ const isNotFoundError = (err: unknown): boolean =>
 
 const generateSessionId = (): string => `session_${new Date().toISOString()}_${getRandomHex(4)}`;
 
-const generateEntryId = (): string => getRandomHex(4);
-
 /** Create a chat database instance for a user */
 export function createChatDatabase(
   couchUrl: string,
@@ -63,6 +61,11 @@ export function createChatDatabase(
     delete: (sessionId: string) => deleteSession(context, sessionId),
     appendEntry: (sessionId: string, entry: Omit<SessionEntry, 'id' | 'timestamp'>) =>
       appendEntry(context, sessionId, entry),
+    appendEntryWithTimestamp: (
+      sessionId: string,
+      entry: Omit<SessionEntry, 'id' | 'timestamp'>,
+      timestamp?: string,
+    ) => appendEntryWithTimestamp(context, sessionId, entry, timestamp),
     getEntries: (sessionId: string) => getEntries(context, sessionId),
     getBranch: (sessionId: string, fromEntryId?: string) =>
       getBranch(context, sessionId, fromEntryId),
@@ -196,13 +199,29 @@ async function appendEntry(
   sessionId: string,
   entry: Omit<SessionEntry, 'id' | 'timestamp'>,
 ): Promise<string> {
-  const entryId = generateEntryId();
-  const timestamp = new Date().toISOString();
+  return appendEntryWithTimestamp(context, sessionId, entry, undefined);
+}
+
+/** Generate a sortable entry ID from timestamp */
+function generateSortableEntryId(timestamp: string): string {
+  // Use ISO timestamp + random suffix for uniqueness (allows correct lexicographic sort)
+  return `${timestamp}_${getRandomHex(4)}`;
+}
+
+/** Append an entry to a session with optional custom timestamp */
+async function appendEntryWithTimestamp(
+  context: ChatDatabaseContext,
+  sessionId: string,
+  entry: Omit<SessionEntry, 'id' | 'timestamp'>,
+  timestamp?: string,
+): Promise<string> {
+  const entryTimestamp = timestamp ?? new Date().toISOString();
+  const entryId = generateSortableEntryId(entryTimestamp);
 
   const fullEntry: SessionEntry = {
     ...entry,
     id: entryId,
-    timestamp,
+    timestamp: entryTimestamp,
   } as SessionEntry;
 
   const doc: ChatMessageDoc = {
@@ -243,6 +262,11 @@ async function updateSessionStatsForMessage(
   }
 }
 
+/** Sort entries by timestamp */
+function sortEntriesByTimestamp(entries: SessionEntry[]): SessionEntry[] {
+  return entries.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
 /** Get all entries for a session */
 async function getEntries(
   context: ChatDatabaseContext,
@@ -258,7 +282,10 @@ async function getEntries(
         include_docs: true,
       },
     );
-    return result.rows.filter((row) => row.doc).map((row) => (row.doc as ChatMessageDoc).entry);
+    const entries = result.rows
+      .filter((row) => row.doc)
+      .map((row) => (row.doc as ChatMessageDoc).entry);
+    return sortEntriesByTimestamp(entries);
   } catch (error: unknown) {
     if (isNotFoundError(error)) {
       // Fall back to all_docs with prefix filter
@@ -267,9 +294,10 @@ async function getEntries(
         startkey: `entry_${sessionId}_`,
         endkey: `entry_${sessionId}_\ufff0`,
       });
-      return result.rows
+      const entries = result.rows
         .filter((row) => row.doc && 'entry' in (row.doc as object))
         .map((row) => (row.doc as ChatMessageDoc).entry);
+      return sortEntriesByTimestamp(entries);
     }
     throw error;
   }
