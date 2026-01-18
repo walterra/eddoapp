@@ -11,9 +11,11 @@ import path from 'path';
 import prompts from 'prompts';
 
 import {
+  buildWorkspacePackages,
   checkVersionedPrerequisite,
   displayPrerequisites,
   displaySummary,
+  ensureLogsDirectory,
   generateEnvFile,
   isContainerRunning,
   isCouchDBHealthy,
@@ -170,6 +172,12 @@ async function executeSetup(config: SetupConfig, servicesRunning: boolean): Prom
   if (config.generateEnv) {
     generateEnvFile(ROOT_DIR, config.envOverwrite);
   }
+
+  // Ensure logs directory exists (needed by pnpm dev)
+  ensureLogsDirectory(ROOT_DIR);
+
+  // Build workspace packages (core-shared, core-server, etc.)
+  buildWorkspacePackages(ROOT_DIR);
 
   return dockerStarted;
 }

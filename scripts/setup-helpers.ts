@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { execSync, spawn } from 'child_process';
+import { execSync, spawn, spawnSync } from 'child_process';
 import fs from 'fs';
 import ora from 'ora';
 import path from 'path';
@@ -217,6 +217,41 @@ export function isElasticsearchHealthy(): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Build workspace packages (core-shared, core-server, core-client)
+ */
+export function buildWorkspacePackages(rootDir: string): boolean {
+  const spinner = ora('Building workspace packages...').start();
+
+  const result = spawnSync('pnpm', ['build'], {
+    cwd: rootDir,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    encoding: 'utf-8',
+  });
+
+  if (result.status === 0) {
+    spinner.succeed(chalk.green('Workspace packages built successfully'));
+    return true;
+  } else {
+    spinner.fail(chalk.red('Failed to build workspace packages'));
+    if (result.stderr) {
+      console.error(chalk.red(result.stderr.toString().slice(0, 500)));
+    }
+    return false;
+  }
+}
+
+/**
+ * Ensure logs directory exists
+ */
+export function ensureLogsDirectory(rootDir: string): void {
+  const logsDir = path.join(rootDir, 'logs');
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+    console.log(chalk.green('  ✓ Created logs directory'));
   }
 }
 
