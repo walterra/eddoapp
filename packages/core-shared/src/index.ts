@@ -36,6 +36,7 @@ export {
   type SessionMessageEntry,
   type SessionRepository,
   type SessionStats,
+  type SetupLogEntry,
   type StopReason,
   type TextContent,
   type ThinkingContent,
@@ -116,6 +117,7 @@ export {
 export {
   createDefaultUserPreferences,
   isUserRegistryEntryAlpha2,
+  type AiProviderKeys,
   type EmailProvider,
   type EmailSyncConfig,
   type RssFeedConfig,

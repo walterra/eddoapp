@@ -51,6 +51,7 @@ export {
   type SessionMessageEntry,
   type SessionRepository,
   type SessionStats,
+  type SetupLogEntry,
   type ThinkingLevelChangeEntry,
   type UpdateChatSessionRequest,
   type WorktreeState,

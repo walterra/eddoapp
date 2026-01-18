@@ -22,6 +22,15 @@ export interface SessionRepository {
   ref?: string;
 }
 
+/** Setup log entry for tracking session initialization progress */
+export interface SetupLogEntry {
+  step: string;
+  status: 'started' | 'completed' | 'failed';
+  message: string;
+  timestamp: string;
+  error?: string;
+}
+
 /** Session statistics */
 export interface SessionStats {
   messageCount: number;
@@ -52,6 +61,8 @@ export interface ChatSession {
   thinkingLevel?: ThinkingLevel;
   stats: SessionStats;
   parentSessionId?: string;
+  setupLogs?: SetupLogEntry[];
+  setupError?: string;
 }
 
 /** Session entry types (from pi-coding-agent JSONL format) */
@@ -195,6 +206,8 @@ export interface UpdateChatSessionRequest {
   modelId?: string;
   thinkingLevel?: ThinkingLevel;
   stats?: Partial<SessionStats>;
+  setupLogs?: SetupLogEntry[];
+  setupError?: string;
 }
 
 /** Chat session operations interface */
