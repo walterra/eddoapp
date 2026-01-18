@@ -141,8 +141,9 @@ export function useStartSession() {
       }
     },
     onSettled: (_, __, sessionId) => {
-      // Always refresh session to get latest setup logs
+      // Always refresh session and sessions list to get latest state
       queryClient.invalidateQueries({ queryKey: ['chat', 'session', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['chat', 'sessions'] });
     },
   });
 }
@@ -160,6 +161,7 @@ export function useStopSession() {
     },
     onSuccess: (_, sessionId) => {
       queryClient.invalidateQueries({ queryKey: ['chat', 'session', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['chat', 'sessions'] });
     },
   });
 }

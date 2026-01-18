@@ -14,6 +14,7 @@ import {
   buildLabelFilters,
   buildMounts,
   DEFAULT_NETWORK_NAME,
+  DOCKER_PROJECT_NAME,
   getContainerLabels,
   getContainerName,
   mapContainerInfo,
@@ -106,6 +107,8 @@ async function ensureNetwork(ctx: ContainerManagerContext): Promise<boolean> {
         Driver: 'bridge',
         Labels: {
           [`${ctx.config.labelPrefix}.managed`]: 'true',
+          'com.docker.compose.project': DOCKER_PROJECT_NAME,
+          'com.docker.compose.network': networkName,
           description: 'Isolated network for Eddo chat agent containers',
         },
       });

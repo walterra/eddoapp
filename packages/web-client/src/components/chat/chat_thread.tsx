@@ -128,22 +128,50 @@ function ErrorPanel({ error }: { error: string }) {
   );
 }
 
+/** Check if logs contain any failed step */
+function logsHaveError(logs: SetupLogEntry[]): boolean {
+  return logs.some((log) => log.status === 'failed');
+}
+
+/** Determine if setup logs should be displayed */
+function shouldShowSetupLogs(
+  containerState: string,
+  hasError: boolean,
+  setupLogs?: SetupLogEntry[],
+): boolean {
+  if (!setupLogs || setupLogs.length === 0) return false;
+  const isStarting = containerState === 'creating' || containerState === 'pending';
+  return hasError || isStarting || logsHaveError(setupLogs);
+}
+
+/** Compute display flags for SessionNotRunning */
+function computeSessionDisplayFlags(
+  containerState: string,
+  setupError?: string,
+  setupLogs?: SetupLogEntry[],
+): { hasError: boolean; showLogs: boolean; showErrorPanel: boolean } {
+  const hasError = !!setupError || containerState === 'error';
+  const showLogs = shouldShowSetupLogs(containerState, hasError, setupLogs);
+  const showErrorPanel = hasError && !showLogs && !!setupError;
+  return { hasError, showLogs, showErrorPanel };
+}
+
 /** Session not running state component */
 function SessionNotRunning(props: SessionNotRunningProps) {
   const { containerState, isPending, onStart, setupError, setupLogs } = props;
-  const hasLogs = setupLogs && setupLogs.length > 0;
-  const hasError = !!setupError || containerState === 'error';
-
-  // Show error panel if we have an error but no logs (e.g., early failure)
-  const showErrorPanel = hasError && !hasLogs && setupError;
+  const { hasError, showLogs, showErrorPanel } = computeSessionDisplayFlags(
+    containerState,
+    setupError,
+    setupLogs,
+  );
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
       <div className="text-center">
         <StatusHeader containerState={containerState} hasError={hasError} />
       </div>
-      {hasLogs && <SetupLogsPanel logs={setupLogs} />}
-      {showErrorPanel && <ErrorPanel error={setupError} />}
+      {showLogs && setupLogs && <SetupLogsPanel logs={setupLogs} />}
+      {showErrorPanel && <ErrorPanel error={setupError!} />}
       <StartButton hasError={hasError} isPending={isPending} onStart={onStart} />
     </div>
   );
@@ -207,6 +235,24 @@ function ActiveChatThread({
   );
 }
 
+/** Loading state */
+function LoadingState() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="text-gray-500 dark:text-gray-400">Loading session...</div>
+    </div>
+  );
+}
+
+/** Error state */
+function ErrorState() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="text-red-500">Failed to load session</div>
+    </div>
+  );
+}
+
 /** Chat thread component */
 export function ChatThread({ sessionId }: ChatThreadProps) {
   const startSession = useStartSession();
@@ -219,41 +265,24 @@ export function ChatThread({ sessionId }: ChatThreadProps) {
     refetchInterval: isStarting ? 500 : undefined,
   });
 
-  // Extract error message from mutation error (fallback when setupError not in DB)
   const mutationError = startSession.error?.message;
 
-  const handleStartSession = () => {
-    startSession.reset(); // Clear previous error
-    startSession.mutateAsync(sessionId).catch(() => {
-      // Error is captured in startSession.error, no need to log
-    });
-  };
+  const handleStartSession = useCallback(() => {
+    startSession.reset();
+    startSession.mutateAsync(sessionId).catch(() => {});
+  }, [startSession, sessionId]);
 
   const initialMessages = useMemo(() => {
     if (!sessionData?.entries) return [];
     return entriesToPiMessages(sessionData.entries);
   }, [sessionData?.entries]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading session...</div>
-      </div>
-    );
-  }
-
-  if (error || !sessionData) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-red-500">Failed to load session</div>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingState />;
+  if (error || !sessionData) return <ErrorState />;
 
   const { session } = sessionData;
 
   if (session.containerState !== 'running') {
-    // Use mutation error as fallback if setupError not persisted to DB yet
     const displayError = session.setupError ?? mutationError;
     return (
       <SessionNotRunning

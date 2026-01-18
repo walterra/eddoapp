@@ -18,8 +18,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     graphviz \
     python3 \
     python3-pip \
+    ca-certificates \
+    gpg \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s $(which fdfind) /usr/local/bin/fd
+
+# Install GitHub CLI (gh)
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages for vega-chart extension
 RUN pip3 install --break-system-packages altair pandas vl-convert-python
@@ -41,6 +52,9 @@ COPY --chown=agent:agent packages/chat-agent/AGENTS.md /home/agent/.pi/agent/AGE
 WORKDIR /home/agent/.pi/agent/skills/eddo-todo
 RUN npm install --omit=dev
 
+WORKDIR /home/agent/.pi/agent/skills/searxng-search
+RUN npm install --omit=dev
+
 # Switch to non-root user
 USER agent
 WORKDIR /workspace
@@ -54,6 +68,8 @@ RUN git config --global user.email "agent@eddo.local" \
 # Default environment variables
 ENV NODE_ENV=production
 ENV PI_CODING_AGENT_DIR=/home/agent/.pi/agent
+# SearXNG URL for web search (container networking)
+ENV SEARXNG_URL=http://searxng:8080
 
 # Entry point: run pi in RPC mode
 # API keys should be passed via environment variables or mounted auth.json
