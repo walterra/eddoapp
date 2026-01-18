@@ -17,6 +17,7 @@ import { logger as honoLogger } from 'hono/logger';
 import nano from 'nano';
 import path from 'path';
 
+import { createChatRoutes, createChatService } from './chat';
 import { config } from './config';
 import {
   createElasticsearchClientFromEnv,
@@ -88,6 +89,12 @@ app.route('/api/users', userRoutes);
 app.route('/api/rss', rssRoutes);
 app.route('/api/audit-log', auditLogRoutes);
 app.route('/api/search', searchRoutes);
+
+// Chat service and routes
+const env = createEnv();
+const chatService = createChatService({ env, couchUrl: env.COUCHDB_URL });
+const chatRoutes = createChatRoutes(chatService);
+app.route('/api/chat', chatRoutes);
 
 if (!isDevelopment) {
   // Production: Serve static files from public directory
