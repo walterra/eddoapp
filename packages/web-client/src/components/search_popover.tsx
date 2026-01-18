@@ -3,10 +3,10 @@
  */
 import { Popover } from 'flowbite-react';
 import type { FC } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { HiOutlineSearch } from 'react-icons/hi';
 
-import { useSearch, type SearchResult } from '../hooks/use_search';
+import type { SearchResult } from '../hooks/use_search';
+import { useSearchPopover } from '../hooks/use_search_popover';
 import { FOCUS_RING, TRANSITION } from '../styles/interactive';
 import { IncludeCompletedCheckbox, SearchInput, SearchResults } from './search_popover_content';
 
@@ -19,7 +19,7 @@ export interface SearchPopoverProps {
 const PopoverContent: FC<{
   error: string | null;
   includeCompleted: boolean;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   isSearching: boolean;
   onClear: () => void;
   onIncludeCompletedChange: (checked: boolean) => void;
@@ -77,107 +77,30 @@ const SearchButton: FC<{ onClick: () => void }> = ({ onClick }) => (
 
 /** Search popover with input and results */
 export const SearchPopover: FC<SearchPopoverProps> = ({ onSelectTodo }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [includeCompleted, setIncludeCompleted] = useState(true);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const { clearResults, error, isSearching, results, searchTodos } = useSearch();
-
-  useKeyboardShortcut(isOpen, setIsOpen, inputRef);
-  useFocusOnOpen(isOpen, inputRef);
-
-  const handleSearch = useCallback(
-    (searchQuery: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (searchQuery.length < 2) return clearResults();
-      debounceRef.current = setTimeout(
-        () => void searchTodos({ includeCompleted, limit: 15, query: searchQuery }),
-        300,
-      );
-    },
-    [searchTodos, clearResults, includeCompleted],
-  );
-
-  const handleQueryChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setQuery(e.target.value);
-      handleSearch(e.target.value);
-    },
-    [handleSearch],
-  );
-  const handleSelect = useCallback(
-    (todoId: string) => {
-      onSelectTodo(todoId);
-      setIsOpen(false);
-      setQuery('');
-      clearResults();
-    },
-    [onSelectTodo, clearResults],
-  );
-  const handleClear = useCallback(() => {
-    setQuery('');
-    clearResults();
-    inputRef.current?.focus();
-  }, [clearResults]);
-  const handleIncludeCompletedChange = useCallback(
-    (checked: boolean) => {
-      setIncludeCompleted(checked);
-      if (query.length >= 2) void searchTodos({ includeCompleted: checked, limit: 15, query });
-    },
-    [query, searchTodos],
-  );
+  const state = useSearchPopover(onSelectTodo);
 
   return (
     <Popover
       arrow={false}
       content={
         <PopoverContent
-          error={error}
-          includeCompleted={includeCompleted}
-          inputRef={inputRef}
-          isSearching={isSearching}
-          onClear={handleClear}
-          onIncludeCompletedChange={handleIncludeCompletedChange}
-          onQueryChange={handleQueryChange}
-          onSelect={handleSelect}
-          query={query}
-          results={results}
+          error={state.error}
+          includeCompleted={state.includeCompleted}
+          inputRef={state.inputRef}
+          isSearching={state.isSearching}
+          onClear={state.handleClear}
+          onIncludeCompletedChange={state.handleIncludeCompletedChange}
+          onQueryChange={state.handleQueryChange}
+          onSelect={state.handleSelect}
+          query={state.query}
+          results={state.results}
         />
       }
-      onOpenChange={setIsOpen}
-      open={isOpen}
+      onOpenChange={state.setIsOpen}
+      open={state.isOpen}
       placement="bottom-start"
     >
-      <SearchButton onClick={() => setIsOpen(true)} />
+      <SearchButton onClick={() => state.setIsOpen(true)} />
     </Popover>
   );
 };
-
-/** Keyboard shortcut hook */
-function useKeyboardShortcut(
-  isOpen: boolean,
-  setIsOpen: (open: boolean) => void,
-  inputRef: React.RefObject<HTMLInputElement>,
-): void {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsOpen(true);
-        setTimeout(() => inputRef.current?.focus(), 100);
-      }
-      if (e.key === 'Escape' && isOpen) setIsOpen(false);
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, setIsOpen, inputRef]);
-}
-
-/** Focus on open hook */
-function useFocusOnOpen(isOpen: boolean, inputRef: React.RefObject<HTMLInputElement>): void {
-  useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
-  }, [isOpen, inputRef]);
-}

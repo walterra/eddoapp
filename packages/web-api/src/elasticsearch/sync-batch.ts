@@ -108,7 +108,7 @@ async function executeBulkOperation(
 }
 
 /** Builds span attributes for bulk operation. */
-function buildSpanAttributes(docsToProcess: PendingDoc[]): Record<string, unknown> {
+function buildSpanAttributes(docsToProcess: PendingDoc[]): Record<string, string | number> {
   const indexCount = docsToProcess.filter((d) => d.action === 'index').length;
   const deleteCount = docsToProcess.filter((d) => d.action === 'delete').length;
   const indices = docsToProcess.reduce(
@@ -146,7 +146,7 @@ function buildBulkOperations(docsToProcess: PendingDoc[]): object[] {
 /** Handles bulk operation result and logging. */
 function handleBulkResult(
   result: BulkResult,
-  span: { setAttribute: (key: string, value: unknown) => void },
+  span: { setAttribute: (key: string, value: string | number | boolean) => void },
   logger: Logger,
   count: number,
 ): void {

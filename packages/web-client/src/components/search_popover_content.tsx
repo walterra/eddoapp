@@ -55,7 +55,7 @@ const SearchResultItem: FC<SearchResultItemProps> = ({ onSelect, result }) => {
 
 /** Renders the search input field with clear button */
 export const SearchInput: FC<{
-  inputRef: RefObject<HTMLInputElement>;
+  inputRef: RefObject<HTMLInputElement | null>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
   query: string;

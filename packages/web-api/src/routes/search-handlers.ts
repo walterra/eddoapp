@@ -295,7 +295,7 @@ function buildSuggestQuery(indexName: string, params: z.infer<typeof suggestSche
 function handleSearchError(
   c: HonoContext,
   error: unknown,
-  span: { setAttribute: (key: string, value: unknown) => void },
+  span: { setAttribute: (key: string, value: string | number | boolean) => void },
   message: string,
 ): Response {
   logger.error({ error }, message);
