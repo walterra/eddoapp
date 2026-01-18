@@ -13,11 +13,15 @@
 import 'dotenv-mono/load';
 
 import { createEnv, createUserRegistry } from '@eddo/core-server';
-import { createDefaultUserPreferences } from '@eddo/core-shared';
+import {
+  createDefaultUserPreferences,
+  DESIGN_DOCS,
+  type DesignDocument,
+  REQUIRED_INDEXES,
+} from '@eddo/core-shared';
 import bcrypt from 'bcryptjs';
 import chalk from 'chalk';
-
-import { setupUserDatabase } from '../packages/web-api/src/utils/setup-user-db';
+import type { DocumentScope } from 'nano';
 
 const SALT_ROUNDS = 12;
 const DEFAULT_USERNAME = 'eddo_pi_agent';
@@ -42,6 +46,89 @@ function parseArgs(): { password: string } {
   return { password };
 }
 
+/** Fetch existing design document, returns null if not found */
+async function fetchExistingDesignDoc(
+  db: DocumentScope<Record<string, unknown>>,
+  docId: string,
+): Promise<DesignDocument | null> {
+  try {
+    return (await db.get(docId)) as DesignDocument;
+  } catch (error: unknown) {
+    const isNotFound =
+      error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 404;
+    if (!isNotFound) throw error;
+    return null;
+  }
+}
+
+/** Check if design document needs update */
+function needsDesignDocUpdate(existingDoc: DesignDocument | null, newDoc: DesignDocument): boolean {
+  return !existingDoc || JSON.stringify(existingDoc.views) !== JSON.stringify(newDoc.views);
+}
+
+/** Update or create a single design document */
+async function updateDesignDocument(
+  db: DocumentScope<Record<string, unknown>>,
+  designDoc: DesignDocument,
+): Promise<void> {
+  const existingDoc = await fetchExistingDesignDoc(db, designDoc._id);
+
+  if (!needsDesignDocUpdate(existingDoc, designDoc)) {
+    console.log(chalk.green(`  ✓ Design document ${designDoc._id} already up to date`));
+    return;
+  }
+
+  const docToInsert: DesignDocument = { ...designDoc, _rev: existingDoc?._rev };
+  await db.insert(docToInsert);
+  console.log(chalk.green(`  ✓ Design document ${designDoc._id} created`));
+}
+
+/** Create design documents in the user database */
+async function setupDesignDocuments(db: DocumentScope<Record<string, unknown>>): Promise<void> {
+  for (const designDoc of DESIGN_DOCS) {
+    await updateDesignDocument(db, designDoc);
+  }
+}
+
+/** Create indexes in the user database */
+async function setupIndexes(db: DocumentScope<Record<string, unknown>>): Promise<void> {
+  for (const indexDef of REQUIRED_INDEXES) {
+    const response = await db.createIndex({
+      index: indexDef.index,
+      name: indexDef.name,
+      type: indexDef.type,
+    });
+
+    if (response.result === 'created') {
+      console.log(chalk.green(`  ✓ Index ${indexDef.name} created`));
+    } else {
+      console.log(chalk.green(`  ✓ Index ${indexDef.name} already exists`));
+    }
+  }
+}
+
+/** Setup user database with design docs and indexes */
+async function setupUserDatabase(
+  userRegistry: ReturnType<typeof createUserRegistry>,
+  username: string,
+): Promise<void> {
+  // Ensure user database exists
+  if (!userRegistry.ensureUserDatabase) {
+    throw new Error('User registry does not support user database operations');
+  }
+  await userRegistry.ensureUserDatabase(username);
+
+  // Get the user database instance
+  if (!userRegistry.getUserDatabase) {
+    throw new Error('User registry does not support user database operations');
+  }
+  const userDb = userRegistry.getUserDatabase(username) as DocumentScope<Record<string, unknown>>;
+
+  // Setup design documents and indexes
+  await setupDesignDocuments(userDb);
+  await setupIndexes(userDb);
+}
+
 async function createDefaultUser(password: string): Promise<boolean> {
   console.log(chalk.blue('\n📝 Creating default development user...\n'));
 
@@ -53,6 +140,11 @@ async function createDefaultUser(password: string): Promise<boolean> {
     const existingUser = await userRegistry.findByUsername(DEFAULT_USERNAME);
     if (existingUser) {
       console.log(chalk.green(`✓ User "${DEFAULT_USERNAME}" already exists`));
+
+      // Still ensure database is set up properly
+      console.log(chalk.blue('  Verifying database setup...'));
+      await setupUserDatabase(userRegistry, DEFAULT_USERNAME);
+
       return true;
     }
 
@@ -77,8 +169,8 @@ async function createDefaultUser(password: string): Promise<boolean> {
     console.log(chalk.green(`✓ User "${DEFAULT_USERNAME}" created (ID: ${user._id})`));
 
     // Setup user database with design docs and indexes
-    console.log(chalk.blue('  Setting up user database with design docs...'));
-    await setupUserDatabase(DEFAULT_USERNAME);
+    console.log(chalk.blue('  Setting up user database...'));
+    await setupUserDatabase(userRegistry, DEFAULT_USERNAME);
 
     console.log(chalk.green('\n✅ Default user setup complete!\n'));
     console.log(chalk.gray(`  Username: ${DEFAULT_USERNAME}`));
