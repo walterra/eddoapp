@@ -9,6 +9,9 @@
  *   pnpm dev:create-user --password mypass  # Uses custom password
  */
 
+// Load .env file before importing modules that need env vars
+import 'dotenv-mono/load';
+
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { createDefaultUserPreferences } from '@eddo/core-shared';
 import bcrypt from 'bcryptjs';
