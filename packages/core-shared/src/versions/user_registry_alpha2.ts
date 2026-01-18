@@ -117,6 +117,7 @@ export interface UserPreferences {
   emailSyncInterval?: number; // Minutes between syncs, defaults to 15
   emailSyncTags?: string[]; // Tags to add to synced emails, defaults to ["source:email", "gtd:next"]
   emailLastSync?: string; // ISO timestamp of last successful sync
+  emailSyncError?: string; // Error message if sync failed (e.g., OAuth token expired)
   // Filter Presets
   filterPresets?: FilterPreset[]; // Saved filter preset configurations
 }
