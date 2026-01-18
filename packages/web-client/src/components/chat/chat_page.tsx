@@ -110,70 +110,77 @@ const ChatArea: FC<{
   </main>
 );
 
-/** Props for ChatPage */
-export interface ChatPageProps {
-  /** Optional initial session ID to select */
-  initialSessionId?: string;
-}
-
-/** Main chat page component */
-export const ChatPage: FC<ChatPageProps> = ({ initialSessionId }) => {
+/** Hook for chat page session state management */
+function useChatPageState(initialSessionId?: string) {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     initialSessionId ?? getLastSessionId(),
   );
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
 
-  // Persist selected session to localStorage
   useEffect(() => {
     saveLastSessionId(selectedSessionId);
   }, [selectedSessionId]);
 
-  const handleSelectSession = useCallback((sessionId: string) => {
-    setSelectedSessionId(sessionId);
-  }, []);
-
-  const handleSessionCreated = (sessionId: string) => {
+  const handleSelectSession = useCallback((id: string) => setSelectedSessionId(id), []);
+  const handleSessionCreated = useCallback((id: string) => {
     setShowNewDialog(false);
-    setSelectedSessionId(sessionId);
-  };
-
-  const handleSessionDeleted = () => {
-    if (sessionToDelete && sessionToDelete._id === selectedSessionId) {
-      setSelectedSessionId(null);
-    }
+    setSelectedSessionId(id);
+  }, []);
+  const handleSessionDeleted = useCallback(() => {
+    if (sessionToDelete && sessionToDelete._id === selectedSessionId) setSelectedSessionId(null);
     setSessionToDelete(null);
-  };
-
-  // Clear selection if the saved session no longer exists
+  }, [sessionToDelete, selectedSessionId]);
   const handleSessionsLoaded = useCallback(
-    (selectedExists: boolean) => {
-      if (selectedSessionId && !selectedExists) {
-        setSelectedSessionId(null);
-      }
+    (exists: boolean) => {
+      if (selectedSessionId && !exists) setSelectedSessionId(null);
     },
     [selectedSessionId],
   );
 
+  return {
+    selectedSessionId,
+    showNewDialog,
+    setShowNewDialog,
+    sessionToDelete,
+    setSessionToDelete,
+    handleSelectSession,
+    handleSessionCreated,
+    handleSessionDeleted,
+    handleSessionsLoaded,
+  };
+}
+
+/** Props for ChatPage */
+export interface ChatPageProps {
+  initialSessionId?: string;
+}
+
+/** Main chat page component */
+export const ChatPage: FC<ChatPageProps> = ({ initialSessionId }) => {
+  const s = useChatPageState(initialSessionId);
   return (
     <div className="flex h-full">
       <SessionSidebar
-        onDeleteSession={setSessionToDelete}
-        onNewSession={() => setShowNewDialog(true)}
-        onSelectSession={handleSelectSession}
-        onSessionsLoaded={handleSessionsLoaded}
-        selectedSessionId={selectedSessionId}
+        onDeleteSession={s.setSessionToDelete}
+        onNewSession={() => s.setShowNewDialog(true)}
+        onSelectSession={s.handleSelectSession}
+        onSessionsLoaded={s.handleSessionsLoaded}
+        selectedSessionId={s.selectedSessionId}
       />
-      <ChatArea onNewSession={() => setShowNewDialog(true)} selectedSessionId={selectedSessionId} />
+      <ChatArea
+        onNewSession={() => s.setShowNewDialog(true)}
+        selectedSessionId={s.selectedSessionId}
+      />
       <NewSessionDialog
-        isOpen={showNewDialog}
-        onClose={() => setShowNewDialog(false)}
-        onCreated={handleSessionCreated}
+        isOpen={s.showNewDialog}
+        onClose={() => s.setShowNewDialog(false)}
+        onCreated={s.handleSessionCreated}
       />
       <DeleteSessionDialog
-        onClose={() => setSessionToDelete(null)}
-        onDeleted={handleSessionDeleted}
-        session={sessionToDelete}
+        onClose={() => s.setSessionToDelete(null)}
+        onDeleted={s.handleSessionDeleted}
+        session={s.sessionToDelete}
       />
     </div>
   );
