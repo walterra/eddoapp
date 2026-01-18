@@ -11,18 +11,13 @@
 
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { createDefaultUserPreferences } from '@eddo/core-shared';
-import bcrypt from 'bcryptjs';
 import chalk from 'chalk';
+import { hashPassword } from '../packages/web-api/src/utils/crypto.js';
 import { setupUserDatabase } from '../packages/web-api/src/utils/setup-user-db.js';
 
-const SALT_ROUNDS = 12;
 const DEFAULT_USERNAME = 'eddo_pi_agent';
 const DEFAULT_EMAIL = 'eddo_pi_agent@localhost';
 const DEFAULT_PASSWORD = 'eddo_pi_agent';
-
-async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, SALT_ROUNDS);
-}
 
 function parseArgs(): { password: string } {
   const args = process.argv.slice(2);
