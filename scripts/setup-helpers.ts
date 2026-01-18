@@ -136,12 +136,14 @@ export function displayPrerequisites(results: PrerequisiteResult[]): boolean {
 
 /**
  * Start Docker services using docker-compose
+ * Only starts couchdb and elasticsearch (not the app service which requires building)
  */
 export async function startDockerServices(rootDir: string): Promise<boolean> {
   const spinner = ora('Starting Docker services...').start();
 
   return new Promise((resolve) => {
-    const dockerCompose = spawn('docker', ['compose', 'up', '-d'], {
+    // Only start couchdb and elasticsearch, not the app service
+    const dockerCompose = spawn('docker', ['compose', 'up', '-d', 'couchdb', 'elasticsearch'], {
       cwd: rootDir,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
