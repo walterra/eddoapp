@@ -343,7 +343,14 @@ MCP_SERVER_URL=http://localhost:3001/mcp
 /**
  * Display final summary and next steps
  */
-export function displaySummary(dockerStarted: boolean): void {
+export function displaySummary(success: boolean): void {
+  if (!success) {
+    console.log('\n' + chalk.bold.red('❌ Setup incomplete - some steps failed.\n'));
+    console.log(chalk.gray('Troubleshooting? Run: pnpm dev:doctor'));
+    console.log('');
+    return;
+  }
+
   console.log('\n' + chalk.bold.green('🎉 Setup complete!\n'));
 
   console.log(chalk.bold('Next steps:'));
@@ -354,13 +361,6 @@ export function displaySummary(dockerStarted: boolean): void {
   console.log('  2. Open the app in your browser:');
   console.log(chalk.cyan('     http://localhost:3000'));
   console.log('');
-
-  if (!dockerStarted) {
-    console.log('  3. If you need to start Docker services manually:');
-    console.log(chalk.cyan('     docker compose up -d'));
-    console.log('');
-  }
-
   console.log(chalk.gray('Troubleshooting? Run: pnpm dev:doctor'));
   console.log('');
 }

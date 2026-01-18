@@ -13,16 +13,15 @@ import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { createDefaultUserPreferences } from '@eddo/core-shared';
 import bcrypt from 'bcryptjs';
 import chalk from 'chalk';
-import { setupUserDatabase } from '../packages/web-api/src/utils/setup-user-db.ts';
 
 const SALT_ROUNDS = 12;
 const DEFAULT_USERNAME = 'eddo_pi_agent';
+const DEFAULT_EMAIL = 'eddo_pi_agent@localhost';
+const DEFAULT_PASSWORD = 'eddo_pi_agent';
 
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);
 }
-const DEFAULT_EMAIL = 'eddo_pi_agent@localhost';
-const DEFAULT_PASSWORD = 'eddo_pi_agent';
 
 function parseArgs(): { password: string } {
   const args = process.argv.slice(2);
@@ -55,7 +54,7 @@ async function createDefaultUser(password: string): Promise<boolean> {
     // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Create user in registry
+    // Create user in registry (this also creates the user database)
     const user = await userRegistry.create({
       username: DEFAULT_USERNAME,
       email: DEFAULT_EMAIL,
@@ -71,11 +70,6 @@ async function createDefaultUser(password: string): Promise<boolean> {
     });
 
     console.log(chalk.green(`✓ User "${DEFAULT_USERNAME}" created (ID: ${user._id})`));
-
-    // Setup user database with design docs and indexes
-    console.log(chalk.blue('  Setting up user database...'));
-    await setupUserDatabase(DEFAULT_USERNAME);
-
     console.log(chalk.green('\n✅ Default user setup complete!\n'));
     console.log(chalk.gray(`  Username: ${DEFAULT_USERNAME}`));
     console.log(

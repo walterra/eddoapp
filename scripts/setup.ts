@@ -229,11 +229,12 @@ async function executeSetup(config: SetupConfig, servicesRunning: boolean): Prom
   buildWorkspacePackages(ROOT_DIR);
 
   // Create default user (eddo_pi_agent) for MCP access
+  let userCreated = true;
   if (dockerStarted && config.createUser) {
-    createDefaultUser(ROOT_DIR, config.userPassword);
+    userCreated = createDefaultUser(ROOT_DIR, config.userPassword);
   }
 
-  return dockerStarted;
+  return dockerStarted && (!config.createUser || userCreated);
 }
 
 /**
@@ -268,10 +269,14 @@ async function main(): Promise<void> {
   console.log('');
 
   // Execute setup
-  const dockerStarted = await executeSetup(config, servicesRunning);
+  const success = await executeSetup(config, servicesRunning);
 
   // Display summary
-  displaySummary(dockerStarted);
+  displaySummary(success);
+
+  if (!success) {
+    process.exit(1);
+  }
 }
 
 // Run the setup wizard
