@@ -100,6 +100,8 @@
     "build:web-client": "pnpm --filter @eddo/web-client build",
     "build:web-api": "pnpm --filter @eddo/web-api build",
     "build:printer": "pnpm --filter @eddo/printer-service build",
+    "setup": "tsx scripts/setup.ts",
+    "doctor": "tsx scripts/doctor.ts",
     "dev": "FORCE_COLOR=1 npm-run-all --parallel --print-label dev:web-client dev:web-api 2>&1 | while IFS= read -r line; do echo \"[$(date '+%Y-%m-%d %H:%M:%S')] $line\"; done | tee logs/dev-$(date +%Y%m%d-%H%M%S).log",
     "dev:web-client": "FORCE_COLOR=1 pnpm --filter @eddo/web-client dev",
     "dev:web-api": "FORCE_COLOR=1 pnpm --filter @eddo/web-api dev",

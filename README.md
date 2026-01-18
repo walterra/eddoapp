@@ -37,13 +37,28 @@ Key patterns: database-centric design, offline-first architecture, and automatic
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Clone and install
+git clone https://github.com/walterra/eddoapp.git
+cd eddoapp
 pnpm install
 
-# Start development (client + MCP server)
+# Interactive setup (checks prereqs, starts Docker, generates .env)
+pnpm setup
+
+# Start development server
 pnpm dev
 
-# Start telegram bot
+# Open http://localhost:3000 in your browser
+```
+
+**Troubleshooting?** Run `pnpm doctor` to diagnose environment issues.
+
+**Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0, Docker
+
+### Additional Commands
+
+```bash
+# Start telegram bot (requires TELEGRAM_BOT_TOKEN and ANTHROPIC_API_KEY)
 pnpm dev:telegram-bot
 
 # Run tests
@@ -52,8 +67,6 @@ pnpm test
 # Build for production
 pnpm build
 ```
-
-**Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0
 
 ## Components
 
