@@ -242,7 +242,12 @@ async function executeSetup(config: SetupConfig, servicesRunning: boolean): Prom
  */
 async function main(): Promise<void> {
   console.log(chalk.bold.blue('\n🚀 Eddo Development Setup\n'));
-  console.log(chalk.gray('This wizard will help you set up your development environment.\n'));
+
+  console.log(chalk.yellow.bold('  ⚠️  ALPHA SOFTWARE - LOCAL DEVELOPMENT ONLY'));
+  console.log(chalk.yellow('  Not ready for production. Do not deploy to servers.'));
+  console.log(chalk.yellow('  No security hardening. Data integrity not guaranteed.\n'));
+
+  console.log(chalk.gray('This wizard will help you set up your local development environment.\n'));
 
   // Check prerequisites
   const prerequisites = checkPrerequisites();
