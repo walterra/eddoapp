@@ -42,7 +42,7 @@ git clone https://github.com/walterra/eddoapp.git
 cd eddoapp
 pnpm install
 
-# Interactive setup (checks prereqs, starts Docker, generates .env)
+# Interactive setup wizard
 pnpm dev:setup
 
 # Start development server
@@ -51,9 +51,29 @@ pnpm dev
 # Open http://localhost:3000 in your browser
 ```
 
-**Troubleshooting?** Run `pnpm dev:doctor` to diagnose environment issues.
-
 **Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0, Docker
+
+### What `pnpm dev:setup` Does
+
+The setup wizard guides you through:
+
+1. **Checks prerequisites** - Node.js, pnpm, Docker, Git versions
+2. **Starts Docker services** - CouchDB and Elasticsearch containers
+3. **Generates `.env` file** - Development defaults
+4. **Builds workspace packages** - Core libraries needed by the app
+5. **Creates default user** - `eddo_pi_agent` for MCP/agentic access
+
+> **Note**: The `eddo_pi_agent` user is currently the only user capable of AI agent integration via MCP. You'll be prompted to set a password during setup.
+
+### Troubleshooting
+
+Run `pnpm dev:doctor` to diagnose environment issues. It checks:
+
+- Prerequisite versions
+- Docker daemon and container status
+- Service health (CouchDB, Elasticsearch)
+- Port availability
+- Configuration files
 
 ### Additional Commands
 
@@ -66,6 +86,9 @@ pnpm test
 
 # Build for production
 pnpm build
+
+# Create default user manually (if skipped during setup)
+pnpm dev:create-user
 ```
 
 ## Components
