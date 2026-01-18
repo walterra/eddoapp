@@ -320,6 +320,9 @@ LOG_LEVEL=info
 # MCP Server (for telegram bot and external integrations)
 MCP_SERVER_URL=http://localhost:3001/mcp
 
+# Disable browser telemetry (no OTEL collector running by default)
+VITE_OTEL_ENABLED=false
+
 # ============================================
 # Optional: Uncomment and configure as needed
 # ============================================
