@@ -2,7 +2,7 @@
  * Chat service orchestrating sessions, git worktrees, and containers.
  */
 
-import { createChatDatabase, type Env } from '@eddo/core-server';
+import type { Env } from '@eddo/core-server';
 import type { ChatSession, CreateChatSessionRequest, SessionEntry } from '@eddo/core-shared';
 
 import { createContainerManager, type ContainerManager, type RpcEventCallback } from '../docker';
@@ -49,7 +49,7 @@ export function createChatService(config: ChatServiceConfig) {
       deleteSessionHelper(
         {
           ...ctx,
-          removeContainer: (sid, uname) => ctx.containerManager.removeContainer(sid, uname),
+          removeContainer: (sid) => ctx.containerManager.removeContainer(sid),
           removeWorktree: (slug, sid) => ctx.repoManager.removeWorktree(slug, sid),
         },
         username,
@@ -79,7 +79,6 @@ export function createChatService(config: ChatServiceConfig) {
     getContainerManager: () => ctx.containerManager,
   };
 }
-
 
 /** Ensure worktree is created for a session */
 async function ensureWorktree(
@@ -169,7 +168,7 @@ async function stopSession(
   const session = await chatDb.get(sessionId);
   if (!session) return { success: false, error: 'Session not found' };
 
-  const result = await ctx.containerManager.stopContainer(sessionId, username);
+  const result = await ctx.containerManager.stopContainer(sessionId);
   if (result.success) await chatDb.update(sessionId, { containerState: 'stopped' });
   return result;
 }
