@@ -2,6 +2,7 @@
  * MCP tool registration with tracing support
  */
 import type { AttachmentDoc, TodoAlpha3 } from '@eddo/core-server';
+import type { Client } from '@elastic/elasticsearch';
 import type { FastMCP } from 'fastmcp';
 import type nano from 'nano';
 
@@ -30,6 +31,7 @@ import {
   executeGetUserInfo,
   executeListAttachments,
   executeListTodos,
+  executeSearchTodos,
   executeStartTimeTracking,
   executeStopTimeTracking,
   executeToggleCompletion,
@@ -54,6 +56,8 @@ import {
   listAttachmentsParameters,
   listTodosDescription,
   listTodosParameters,
+  searchTodosDescription,
+  searchTodosParameters,
   startTimeTrackingDescription,
   startTimeTrackingParameters,
   stopTimeTrackingDescription,
@@ -72,6 +76,7 @@ import type { ToolContext, UserSession } from './types.js';
 
 type GetUserDbFn = (context: ToolContext) => nano.DocumentScope<TodoAlpha3>;
 type GetAttachmentsDbFn = (context: ToolContext) => nano.DocumentScope<AttachmentDoc>;
+type GetEsClientFn = () => Client | null;
 
 /** Registers todo CRUD tools */
 function registerTodoTools(
@@ -230,6 +235,22 @@ function registerAttachmentTools(
   });
 }
 
+/** Registers search tools (requires Elasticsearch) */
+function registerSearchTools(
+  server: FastMCP<UserSession>,
+  getEsClient: GetEsClientFn,
+  getUserDb: GetUserDbFn,
+): void {
+  server.addTool({
+    name: 'searchTodos',
+    description: searchTodosDescription,
+    parameters: searchTodosParameters,
+    execute: wrapToolExecution('searchTodos', (args, ctx) =>
+      executeSearchTodos(args, ctx, getEsClient, getUserDb),
+    ),
+  });
+}
+
 /** Registers utility and info tools */
 function registerUtilityTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
   server.addTool({
@@ -267,18 +288,29 @@ function registerUtilityTools(server: FastMCP<UserSession>, getUserDb: GetUserDb
   });
 }
 
+/** Options for registering MCP tools */
+export interface RegisterToolsOptions {
+  server: FastMCP<UserSession>;
+  getUserDb: GetUserDbFn;
+  getAttachmentsDb: GetAttachmentsDbFn;
+  couch: nano.ServerScope;
+  getEsClient?: GetEsClientFn;
+}
+
 /**
- * Registers all MCP tools on the server with tracing wrappers
+ * Registers all MCP tools on the server with tracing wrappers.
  */
-export function registerTools(
-  server: FastMCP<UserSession>,
-  getUserDb: GetUserDbFn,
-  getAttachmentsDb: GetAttachmentsDbFn,
-  couch: nano.ServerScope,
-): void {
+export function registerTools(options: RegisterToolsOptions): void {
+  const { couch, getAttachmentsDb, getEsClient, getUserDb, server } = options;
+
   registerTodoTools(server, getUserDb, couch);
   registerNoteTools(server, getUserDb);
   registerAttachmentTools(server, getAttachmentsDb);
   registerTimeTrackingTools(server, getUserDb);
   registerUtilityTools(server, getUserDb);
+
+  // Register search tools only if ES client getter is provided
+  if (getEsClient) {
+    registerSearchTools(server, getEsClient, getUserDb);
+  }
 }

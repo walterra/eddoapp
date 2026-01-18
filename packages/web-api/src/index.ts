@@ -18,6 +18,11 @@ import nano from 'nano';
 import path from 'path';
 
 import { config } from './config';
+import {
+  createElasticsearchClientFromEnv,
+  createSyncService,
+  type SyncService,
+} from './elasticsearch';
 import { createEmailSyncScheduler } from './email/sync-scheduler';
 import { createGithubSyncScheduler } from './github/sync-scheduler';
 import { attachmentsDbProxyRoutes } from './routes/attachments-db-proxy';
@@ -26,6 +31,7 @@ import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
 import { emailRoutes } from './routes/email';
 import { rssRoutes } from './routes/rss';
+import { searchRoutes } from './routes/search';
 import { telemetryRoutes } from './routes/telemetry';
 import { userRoutes } from './routes/users';
 import { createRssSyncScheduler } from './rss/sync-scheduler';
@@ -81,6 +87,7 @@ app.route('/api/attachments-db', attachmentsDbProxyRoutes);
 app.route('/api/users', userRoutes);
 app.route('/api/rss', rssRoutes);
 app.route('/api/audit-log', auditLogRoutes);
+app.route('/api/search', searchRoutes);
 
 if (!isDevelopment) {
   // Production: Serve static files from public directory
@@ -135,6 +142,9 @@ let rssSchedulerInstance: ReturnType<typeof createRssSyncScheduler> | null = nul
 // Email sync scheduler instance (initialized after database setup)
 let emailSchedulerInstance: ReturnType<typeof createEmailSyncScheduler> | null = null;
 
+// Elasticsearch sync service instance
+let esSyncServiceInstance: SyncService | null = null;
+
 // Export getter for scheduler instance
 export function getGithubScheduler() {
   if (!githubSchedulerInstance) {
@@ -157,6 +167,14 @@ export function getEmailScheduler() {
     throw new Error('Email scheduler not initialized yet');
   }
   return emailSchedulerInstance;
+}
+
+// Export getter for Elasticsearch sync service instance
+export function getEsSyncService() {
+  if (!esSyncServiceInstance) {
+    throw new Error('Elasticsearch sync service not initialized yet');
+  }
+  return esSyncServiceInstance;
 }
 
 // Initialize database
@@ -186,6 +204,32 @@ function createSyncLoggerAdapter(childLogger: typeof logger) {
     error: (msg: string, meta?: unknown) => childLogger.error(meta ?? {}, msg),
     debug: (msg: string, meta?: unknown) => childLogger.debug(meta ?? {}, msg),
   };
+}
+
+/** Initialize Elasticsearch sync service */
+async function initializeElasticsearchSync(couch: ReturnType<typeof nano>) {
+  // Check if Elasticsearch URL is configured
+  const esUrl = process.env.ELASTICSEARCH_URL;
+  if (!esUrl) {
+    logger.warn('ELASTICSEARCH_URL not configured, skipping Elasticsearch sync');
+    return;
+  }
+
+  try {
+    const esClient = createElasticsearchClientFromEnv();
+
+    esSyncServiceInstance = createSyncService({
+      esClient,
+      getCouchDb: () => couch,
+      logger: logger.child({ component: 'es-sync' }),
+    });
+
+    await esSyncServiceInstance.initialize();
+    logger.info('Elasticsearch sync service started');
+  } catch (error) {
+    logger.error({ error }, 'Failed to initialize Elasticsearch sync service');
+    // Don't fail startup - ES sync is optional
+  }
 }
 
 /** Initialize sync schedulers */
@@ -219,11 +263,14 @@ function initializeSyncSchedulers(couch: ReturnType<typeof nano>) {
 }
 
 // Initialize database before starting server
-initializeDatabase().then(() => {
+initializeDatabase().then(async () => {
   const env = createEnv();
   const couch = nano(env.COUCHDB_URL);
 
   initializeSyncSchedulers(couch);
+
+  // Initialize Elasticsearch sync (async, non-blocking)
+  await initializeElasticsearchSync(couch);
 
   // Start server with graceful shutdown
   const server = serve({
@@ -253,6 +300,12 @@ initializeDatabase().then(() => {
     if (emailSchedulerInstance) {
       emailSchedulerInstance.stop();
       logger.info('Email sync scheduler stopped');
+    }
+
+    // Stop Elasticsearch sync service
+    if (esSyncServiceInstance) {
+      esSyncServiceInstance.shutdown();
+      logger.info('Elasticsearch sync service stopped');
     }
 
     // Close the server

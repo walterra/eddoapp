@@ -939,6 +939,15 @@ OTEL_SDK_DISABLED=true pnpm dev:telegram-bot
 | `telegram_message_handle` | Incoming message processing | telegram.chat.id, user.id                      |
 | `scheduler_send_briefing` | Daily briefing delivery     | user.id, username, telegram.chat.id            |
 
+### Instrumented Operations (web-api / Elasticsearch Sync)
+
+| Span Name                | Description                     | Attributes                                         |
+| ------------------------ | ------------------------------- | -------------------------------------------------- |
+| `es_sync_initialize`     | Sync service initialization     | es.index, es.batch_size, es.databases_watched      |
+| `es_sync_initial_sync`   | Initial doc sync for a database | couchdb.database, user.id, es.initial_sync.indexed |
+| `es_sync_bulk_index`     | Bulk indexing operation         | es.index, es.bulk.total, es.bulk.took_ms           |
+| `es_sync_process_change` | Processing a single change      | couchdb.database, couchdb.doc_id, es.action        |
+
 ### Instrumented Operations (web-client)
 
 | Span Name                  | Description             | Attributes                         |

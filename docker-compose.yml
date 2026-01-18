@@ -1,9 +1,11 @@
-version: '3.8'
+# Project name for grouping in Docker Desktop
+name: eddo
 
 services:
   # CouchDB service
   couchdb:
-    image: couchdb:3.3
+    image: couchdb:3
+    container_name: eddo-couchdb
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=password
@@ -11,6 +13,8 @@ services:
       - "5984:5984"
     volumes:
       - couchdb_data:/opt/couchdb/data
+    networks:
+      - eddo-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
       interval: 30s
@@ -21,20 +25,26 @@ services:
   # Eddo App service
   app:
     build: .
+    container_name: eddo-app
     environment:
       - NODE_ENV=production
       - PORT=3000
       - CORS_ORIGIN=http://localhost:3000
       - JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long-change-this-in-production
-      - COUCHDB_URL=http://couchdb:5984
+      - COUCHDB_URL=http://eddo-couchdb:5984
       - COUCHDB_ADMIN_USERNAME=admin
       - COUCHDB_ADMIN_PASSWORD=password
       - COUCHDB_DB_NAME=todos-prod
       - API_URL=http://localhost:3000/api
+      - ELASTICSEARCH_URL=http://eddo-elasticsearch:9200
     ports:
       - "3000:3000"
+    networks:
+      - eddo-network
     depends_on:
       couchdb:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
@@ -43,5 +53,40 @@ services:
       retries: 3
       start_period: 40s
 
+  # Elasticsearch service for full-text search
+  # Uses port 9222 to avoid conflicts with other ES instances on the host
+  elasticsearch:
+    image: elasticsearch:9.2.4
+    container_name: eddo-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - http.port=9200
+    ports:
+      - "9222:9200"
+      - "9322:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - eddo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
 volumes:
   couchdb_data:
+    external: true
+    name: eddo_couchdb_data
+  elasticsearch_data:
+    external: true
+    name: eddo_elasticsearch_data
+
+networks:
+  eddo-network:
+    name: eddo-network
+    driver: bridge
