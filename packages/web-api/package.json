@@ -9,11 +9,12 @@
     "./email": "./src/email/index.ts"
   },
   "scripts": {
-    "dev": "OTEL_SERVICE_NAME=eddo-web-api OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development NODE_ENV=development node --import @elastic/opentelemetry-node --import tsx src/index.ts",
+    "dev": "NODE_ENV=development tsx src/index.ts",
+    "dev:otel": "OTEL_SERVICE_NAME=eddo-web-api OTEL_RESOURCE_ATTRIBUTES=deployment.environment=development NODE_ENV=development node --import @elastic/opentelemetry-node --import tsx src/index.ts",
     "dev:watch": "NODE_ENV=development tsx watch src/index.ts",
-    "dev:no-otel": "OTEL_SDK_DISABLED=true NODE_ENV=development tsx watch src/index.ts",
     "build": "tsc",
-    "start": "OTEL_SERVICE_NAME=eddo-web-api OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production node --import @elastic/opentelemetry-node dist/index.js"
+    "start": "NODE_ENV=production node dist/index.js",
+    "start:otel": "OTEL_SERVICE_NAME=eddo-web-api OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production node --import @elastic/opentelemetry-node dist/index.js"
   },
   "dependencies": {
     "@eddo/core-instrumentation": "workspace:*",
