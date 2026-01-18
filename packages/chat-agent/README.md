@@ -13,8 +13,13 @@ packages/chat-agent/
 │   │   ├── eddo-worktree.js
 │   │   ├── eddo.js
 │   │   └── package.json
-│   └── eddo-work/          # Structured work phases
-│       └── SKILL.md
+│   ├── eddo-work/          # Structured work phases
+│   │   └── SKILL.md
+│   └── searxng-search/     # Web search via SearXNG
+│       ├── SKILL.md
+│       ├── search.js       # Search command
+│       ├── content.js      # Content extraction
+│       └── package.json
 └── extensions/
     ├── graphviz-chart.ts   # Graphviz DOT rendering
     └── vega-chart.ts       # Vega-Lite chart rendering
@@ -42,6 +47,16 @@ Structured implementation workflow with phases:
 3. **REVIEW** - Self-assessment and validation
 4. **COMPLETE** - Finalize and stop tracking
 5. **GITHUB_PR** - Create pull request
+
+### searxng-search
+
+Web search and content extraction via SearXNG metasearch engine:
+
+- No API keys required
+- No rate limits
+- Privacy-preserving (local instance)
+- Aggregates results from multiple search engines
+- Content extraction with Readability
 
 ## Extensions
 
@@ -77,12 +92,38 @@ Inside the container, the agent can access them via:
 EDDO="${PI_CODING_AGENT_DIR}/skills/eddo-todo/eddo-todo.js"
 ```
 
-## MCP Server Access
+## Service Access
 
-The eddo-todo skill connects to the Eddo MCP server. Inside Docker containers, this is configured via:
+### MCP Server
+
+The eddo-todo skill connects to the Eddo MCP server via:
 
 ```bash
 export EDDO_MCP_URL=http://host.docker.internal:3001/mcp
 ```
 
-This allows the containerized agent to reach the MCP server running on the host.
+### SearXNG (Web Search)
+
+The searxng-search skill connects to SearXNG running on the `eddo-chat` Docker network:
+
+```bash
+export SEARXNG_URL=http://searxng:8080
+```
+
+**Setup SearXNG:**
+
+```bash
+# From project root
+./docker/searxng/docker.sh setup
+```
+
+This starts SearXNG on the `eddo-chat` network, making it accessible to agent containers at `http://searxng:8080` and to the host at `http://localhost:8080`.
+
+**Managing SearXNG:**
+
+```bash
+./docker/searxng/docker.sh status   # Check status
+./docker/searxng/docker.sh start    # Start container
+./docker/searxng/docker.sh stop     # Stop container
+./docker/searxng/docker.sh logs     # View logs
+```

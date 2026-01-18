@@ -3,7 +3,7 @@
  */
 
 import type { ChatSession } from '@eddo/core-shared';
-import { type FC, useState } from 'react';
+import { type FC, useCallback, useEffect, useState } from 'react';
 import { HiOutlinePlus } from 'react-icons/hi';
 
 import { BTN_PRIMARY_SM } from '../../styles/interactive';
@@ -11,6 +11,30 @@ import { ChatThread } from './chat_thread';
 import { DeleteSessionDialog } from './delete_session_dialog';
 import { NewSessionDialog } from './new_session_dialog';
 import { SessionList } from './session_list';
+
+const LAST_SESSION_KEY = 'eddo.chat.lastSessionId';
+
+/** Get last selected session ID from localStorage */
+function getLastSessionId(): string | null {
+  try {
+    return localStorage.getItem(LAST_SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Save last selected session ID to localStorage */
+function saveLastSessionId(sessionId: string | null): void {
+  try {
+    if (sessionId) {
+      localStorage.setItem(LAST_SESSION_KEY, sessionId);
+    } else {
+      localStorage.removeItem(LAST_SESSION_KEY);
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
 
 /** Props for ChatPageHeader */
 interface ChatPageHeaderProps {
@@ -56,7 +80,8 @@ const SessionSidebar: FC<{
   onSelectSession: (id: string) => void;
   onDeleteSession: (session: ChatSession) => void;
   onNewSession: () => void;
-}> = ({ selectedSessionId, onSelectSession, onDeleteSession, onNewSession }) => (
+  onSessionsLoaded?: (selectedExists: boolean) => void;
+}> = ({ selectedSessionId, onSelectSession, onDeleteSession, onNewSession, onSessionsLoaded }) => (
   <aside className="flex w-80 flex-shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900">
     <ChatPageHeader onNewSession={onNewSession} />
     <div className="flex-1 overflow-y-auto p-4">
@@ -64,6 +89,7 @@ const SessionSidebar: FC<{
         onDeleteSession={onDeleteSession}
         onNewSession={onNewSession}
         onSelectSession={onSelectSession}
+        onSessionsLoaded={onSessionsLoaded}
         selectedSessionId={selectedSessionId}
       />
     </div>
@@ -93,10 +119,19 @@ export interface ChatPageProps {
 /** Main chat page component */
 export const ChatPage: FC<ChatPageProps> = ({ initialSessionId }) => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
-    initialSessionId ?? null,
+    initialSessionId ?? getLastSessionId(),
   );
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
+
+  // Persist selected session to localStorage
+  useEffect(() => {
+    saveLastSessionId(selectedSessionId);
+  }, [selectedSessionId]);
+
+  const handleSelectSession = useCallback((sessionId: string) => {
+    setSelectedSessionId(sessionId);
+  }, []);
 
   const handleSessionCreated = (sessionId: string) => {
     setShowNewDialog(false);
@@ -110,12 +145,23 @@ export const ChatPage: FC<ChatPageProps> = ({ initialSessionId }) => {
     setSessionToDelete(null);
   };
 
+  // Clear selection if the saved session no longer exists
+  const handleSessionsLoaded = useCallback(
+    (selectedExists: boolean) => {
+      if (selectedSessionId && !selectedExists) {
+        setSelectedSessionId(null);
+      }
+    },
+    [selectedSessionId],
+  );
+
   return (
     <div className="flex h-full">
       <SessionSidebar
         onDeleteSession={setSessionToDelete}
         onNewSession={() => setShowNewDialog(true)}
-        onSelectSession={setSelectedSessionId}
+        onSelectSession={handleSelectSession}
+        onSessionsLoaded={handleSessionsLoaded}
         selectedSessionId={selectedSessionId}
       />
       <ChatArea onNewSession={() => setShowNewDialog(true)} selectedSessionId={selectedSessionId} />

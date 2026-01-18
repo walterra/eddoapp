@@ -76,6 +76,14 @@ export function buildImapConfig(preferences: UserPreferences): ImapConnectionCon
   };
 }
 
+/** Error thrown when OAuth token is invalid and user must re-authenticate */
+export class OAuthInvalidGrantError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OAuthInvalidGrantError';
+  }
+}
+
 /**
  * Gets OAuth access token for Gmail
  */
@@ -104,9 +112,15 @@ export async function getGmailAccessToken(
     });
     return tokens.accessToken;
   } catch (error) {
-    logger.error('Failed to refresh access token', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Failed to refresh access token', { error: errorMessage });
+
+    // Check for invalid_grant error - means user must re-authenticate
+    if (errorMessage.includes('invalid_grant')) {
+      throw new OAuthInvalidGrantError(
+        'Gmail refresh token expired or revoked. Please re-authenticate via /email auth',
+      );
+    }
     throw error;
   }
 }
@@ -327,6 +341,39 @@ export async function updateLastSyncTime(userId: string, logger: EmailLogger): P
     }
   } catch (error) {
     logger.error('Failed to update last sync time', { userId, error });
+  }
+}
+
+/**
+ * Disables email sync for a user and stores an error message
+ * Used when OAuth token becomes invalid and user must re-authenticate
+ */
+export async function disableEmailSyncWithError(
+  userId: string,
+  errorMessage: string,
+  logger: EmailLogger,
+): Promise<void> {
+  logger.info('Disabling email sync with error', { userId, errorMessage });
+  try {
+    const env = createEnv();
+    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+    const users = await userRegistry.list();
+    const user = users.find((u) => u._id === userId);
+
+    if (user) {
+      await userRegistry.update(userId, {
+        preferences: {
+          ...user.preferences,
+          emailSync: false,
+          emailSyncError: errorMessage,
+        },
+      });
+      logger.info('Disabled email sync for user', { userId, errorMessage });
+    } else {
+      logger.warn('User not found for disabling email sync', { userId });
+    }
+  } catch (error) {
+    logger.error('Failed to disable email sync', { userId, error });
   }
 }
 

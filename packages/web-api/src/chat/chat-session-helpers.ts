@@ -6,6 +6,7 @@ import { createChatDatabase, getAttachmentsDatabaseName, type Env } from '@eddo/
 import type {
   ChatAttachmentDoc,
   ChatSession,
+  ContainerState,
   ContentBlock,
   CreateChatSessionRequest,
   SessionEntry,
@@ -13,6 +14,7 @@ import type {
 } from '@eddo/core-shared';
 import nano from 'nano';
 
+import type { ContainerManager } from '../docker';
 import type { RepoManager } from '../git';
 import { logger } from '../utils/logger';
 import { migrateContentImages, processContentImages } from './chat-image-service';
@@ -22,6 +24,11 @@ export interface ChatHelperContext {
   env: Env;
   couchUrl: string;
   repoManager: RepoManager;
+}
+
+/** Extended context with container manager for reconciliation */
+export interface ChatHelperContextWithContainers extends ChatHelperContext {
+  containerManager: ContainerManager;
 }
 
 /** Get chat database for a user */
@@ -40,6 +47,78 @@ function getAttachmentsDb(
   const couchConnection = nano(ctx.couchUrl);
   const dbName = getAttachmentsDatabaseName(ctx.env, username);
   return couchConnection.db.use<ChatAttachmentDoc>(dbName);
+}
+
+/**
+ * Reconcile session container state with actual Docker container status.
+ * Updates the database if the container is no longer running.
+ * @param session Session to reconcile
+ * @param containerManager Container manager to check actual status
+ * @param chatDb Chat database for updates
+ * @returns Reconciled session (state may be updated)
+ */
+async function reconcileContainerState(
+  session: ChatSession,
+  containerManager: ContainerManager,
+  chatDb: ReturnType<typeof createChatDatabase>,
+): Promise<ChatSession> {
+  // Only reconcile sessions that claim to be running
+  if (session.containerState !== 'running') {
+    return session;
+  }
+
+  try {
+    const containerInfo = await containerManager.getContainerInfo(session._id, session.username);
+
+    // Map container info state to actual state, default to stopped if container gone
+    let actualState: ContainerState = 'stopped';
+    if (containerInfo) {
+      actualState = containerInfo.state;
+    }
+
+    // If state mismatch, update database and return corrected session
+    if (actualState !== session.containerState) {
+      logger.info(
+        { sessionId: session._id, expected: session.containerState, actual: actualState },
+        'Reconciling container state mismatch',
+      );
+      const updated = await chatDb.update(session._id, { containerState: actualState });
+      return updated;
+    }
+  } catch (error) {
+    // If we can't check container status, assume it's stopped
+    logger.warn(
+      { sessionId: session._id, error },
+      'Failed to check container status, marking as stopped',
+    );
+    const updated = await chatDb.update(session._id, { containerState: 'stopped' });
+    return updated;
+  }
+
+  return session;
+}
+
+/**
+ * Reconcile all sessions' container states.
+ * @param sessions Sessions to reconcile
+ * @param ctx Context with container manager
+ * @param username User who owns the sessions
+ * @returns Reconciled sessions
+ */
+async function reconcileAllContainerStates(
+  sessions: ChatSession[],
+  ctx: ChatHelperContextWithContainers,
+  username: string,
+): Promise<ChatSession[]> {
+  const chatDb = getChatDb(ctx, username);
+  const reconciled: ChatSession[] = [];
+
+  for (const session of sessions) {
+    const reconciledSession = await reconcileContainerState(session, ctx.containerManager, chatDb);
+    reconciled.push(reconciledSession);
+  }
+
+  return reconciled;
 }
 
 /** Create a new chat session */
@@ -67,24 +146,40 @@ export async function createSession(
   return session;
 }
 
-/** Get a session by ID */
+/** Get a session by ID (with optional container state reconciliation) */
 export async function getSession(
-  ctx: ChatHelperContext,
+  ctx: ChatHelperContext | ChatHelperContextWithContainers,
   username: string,
   sessionId: string,
 ): Promise<ChatSession | null> {
   const chatDb = getChatDb(ctx, username);
-  return chatDb.get(sessionId);
+  const session = await chatDb.get(sessionId);
+
+  if (!session) return null;
+
+  // Reconcile container state if container manager is available
+  if ('containerManager' in ctx) {
+    return reconcileContainerState(session, ctx.containerManager, chatDb);
+  }
+
+  return session;
 }
 
-/** List all sessions for a user */
+/** List all sessions for a user (with optional container state reconciliation) */
 export async function listSessions(
-  ctx: ChatHelperContext,
+  ctx: ChatHelperContext | ChatHelperContextWithContainers,
   username: string,
 ): Promise<ChatSession[]> {
   const chatDb = getChatDb(ctx, username);
   try {
-    return await chatDb.list();
+    const sessions = await chatDb.list();
+
+    // Reconcile container states if container manager is available
+    if ('containerManager' in ctx) {
+      return reconcileAllContainerStates(sessions, ctx, username);
+    }
+
+    return sessions;
   } catch {
     return [];
   }

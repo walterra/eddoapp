@@ -48,6 +48,7 @@ export function createRepoManager(config?: Partial<RepoManagerConfig>) {
     listWorktrees: (slug: string) => listWorktrees(ctx, slug),
     getWorktreeStatus: (path: string) => getWorktreeStatus(path),
     fetchRepo: (slug: string) => fetchRepo(ctx, slug),
+    getMainGitDir: (slug: string) => getMainGitDir(ctx, slug),
     getConfig: () => ctx.config,
   };
 }
@@ -72,6 +73,11 @@ function getWorktreesPath(ctx: RepoManagerContext, slug: string): string {
 /** Get path to a specific worktree */
 function getWorktreePath(ctx: RepoManagerContext, slug: string, sessionId: string): string {
   return join(getWorktreesPath(ctx, slug), sessionId);
+}
+
+/** Get path to main repo's .git directory (for worktree support in containers) */
+function getMainGitDir(ctx: RepoManagerContext, slug: string): string {
+  return join(getMainPath(ctx, slug), '.git');
 }
 
 /** Ensure a repository is cloned */
