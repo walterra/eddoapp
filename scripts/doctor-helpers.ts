@@ -283,6 +283,6 @@ export function displaySummary(results: DiagnosticResult[]): void {
     console.log(chalk.yellow('⚠️  Some warnings detected. Review the issues above.\n'));
   } else {
     console.log(chalk.green('✅ All checks passed! Your environment is ready.\n'));
-    console.log(chalk.gray('Start the development server with: pnpm dev\n'));
+    console.log(chalk.gray('Start development with: pnpm dev\n'));
   }
 }

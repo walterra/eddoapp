@@ -43,7 +43,7 @@ cd eddoapp
 pnpm install
 
 # Interactive setup (checks prereqs, starts Docker, generates .env)
-pnpm setup
+pnpm dev:setup
 
 # Start development server
 pnpm dev
@@ -51,7 +51,7 @@ pnpm dev
 # Open http://localhost:3000 in your browser
 ```
 
-**Troubleshooting?** Run `pnpm doctor` to diagnose environment issues.
+**Troubleshooting?** Run `pnpm dev:doctor` to diagnose environment issues.
 
 **Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0, Docker
 

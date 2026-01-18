@@ -53,7 +53,7 @@ cd eddoapp
 pnpm install
 
 # Interactive setup wizard (recommended for first-time setup)
-pnpm setup
+pnpm dev:setup
 
 # Or manually:
 # 1. Copy .env.example to .env
@@ -62,7 +62,7 @@ pnpm setup
 
 ### Troubleshooting
 
-Run `pnpm doctor` to diagnose environment issues. It checks:
+Run `pnpm dev:doctor` to diagnose environment issues. It checks:
 
 - Node.js/pnpm versions
 - Docker daemon status

@@ -285,6 +285,6 @@ export function displaySummary(dockerStarted: boolean): void {
     console.log('');
   }
 
-  console.log(chalk.gray('Troubleshooting? Run: pnpm doctor'));
+  console.log(chalk.gray('Troubleshooting? Run: pnpm dev:doctor'));
   console.log('');
 }
