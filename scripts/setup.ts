@@ -11,6 +11,7 @@ import path from 'path';
 import prompts from 'prompts';
 
 import {
+  buildPiCodingAgentImage,
   buildWorkspacePackages,
   checkDefaultUserExists,
   checkVersionedPrerequisite,
@@ -23,6 +24,7 @@ import {
   isCouchDBHealthy,
   isDockerRunning,
   isElasticsearchHealthy,
+  isPiCodingAgentImageExists,
   type PrerequisiteResult,
   type SetupConfig,
   startDockerServices,
@@ -78,10 +80,15 @@ function checkPrerequisites(): PrerequisiteResult[] {
 /**
  * Display Docker services status
  */
-function displayDockerStatus(): { couchdb: boolean; elasticsearch: boolean } {
+function displayDockerStatus(): {
+  couchdb: boolean;
+  elasticsearch: boolean;
+  agentImage: boolean;
+} {
   const services = {
     couchdb: isContainerRunning('eddo-couchdb'),
     elasticsearch: isContainerRunning('eddo-elasticsearch'),
+    agentImage: isPiCodingAgentImageExists(),
   };
 
   console.log(chalk.bold('📦 Docker Services Status:\n'));
@@ -90,6 +97,9 @@ function displayDockerStatus(): { couchdb: boolean; elasticsearch: boolean } {
   );
   console.log(
     `  ${services.elasticsearch ? chalk.green('✓') : chalk.yellow('○')} Elasticsearch: ${services.elasticsearch ? 'running' : 'not running'}`,
+  );
+  console.log(
+    `  ${services.agentImage ? chalk.green('✓') : chalk.yellow('○')} pi-coding-agent image: ${services.agentImage ? 'built' : 'not built'} ${chalk.gray('(for Chat feature)')}`,
   );
   console.log('');
 
@@ -178,12 +188,31 @@ async function promptUserCreation(
   return { create: true, password: userPassword || undefined };
 }
 
+/** Prompt for pi-coding-agent Docker image build */
+async function promptAgentImageBuild(imageExists: boolean): Promise<boolean> {
+  if (imageExists) return false;
+
+  console.log(
+    chalk.gray('  ℹ️  The pi-coding-agent Docker image is required for the Chat feature.'),
+  );
+  console.log(chalk.gray('     This builds a container for running AI coding agents.\n'));
+
+  const { buildImage } = await prompts({
+    type: 'confirm',
+    name: 'buildImage',
+    message: 'Build pi-coding-agent Docker image? (required for Chat)',
+    initial: true,
+  });
+  return buildImage;
+}
+
 /**
  * Prompt user for setup options
  */
 async function promptForOptions(
   servicesRunning: boolean,
   envExists: boolean,
+  agentImageExists: boolean,
 ): Promise<SetupConfig> {
   const startDocker = await promptDockerServices(servicesRunning);
   const envConfig = await promptEnvFile(envExists);
@@ -194,33 +223,40 @@ async function promptForOptions(
     userConfig = await promptUserCreation(userExists);
   }
 
+  // Only prompt for agent image if Docker is available
+  let buildAgentImage = false;
+  if ((servicesRunning || startDocker) && isDockerRunning()) {
+    buildAgentImage = await promptAgentImageBuild(agentImageExists);
+  }
+
   return {
     startDocker,
     generateEnv: envConfig.generate,
     envOverwrite: envConfig.overwrite,
     createUser: userConfig.create,
     userPassword: userConfig.password,
+    buildAgentImage,
   };
+}
+
+/** Start Docker services and wait for them to be healthy */
+async function startAndWaitForDocker(rootDir: string): Promise<boolean> {
+  const started = await startDockerServices(rootDir);
+  if (!started) return false;
+  await waitForService('CouchDB', isCouchDBHealthy);
+  await waitForService('Elasticsearch', isElasticsearchHealthy);
+  return true;
 }
 
 /**
  * Execute setup based on config
  */
 async function executeSetup(config: SetupConfig, servicesRunning: boolean): Promise<boolean> {
-  let dockerStarted = servicesRunning;
+  const dockerStarted = config.startDocker
+    ? await startAndWaitForDocker(ROOT_DIR)
+    : servicesRunning;
 
-  if (config.startDocker) {
-    const started = await startDockerServices(ROOT_DIR);
-    if (started) {
-      await waitForService('CouchDB', isCouchDBHealthy);
-      await waitForService('Elasticsearch', isElasticsearchHealthy);
-      dockerStarted = true;
-    }
-  }
-
-  if (config.generateEnv) {
-    generateEnvFile(ROOT_DIR, config.envOverwrite);
-  }
+  if (config.generateEnv) generateEnvFile(ROOT_DIR, config.envOverwrite);
 
   // Ensure logs directory exists (needed by pnpm dev)
   ensureLogsDirectory(ROOT_DIR);
@@ -229,12 +265,13 @@ async function executeSetup(config: SetupConfig, servicesRunning: boolean): Prom
   buildWorkspacePackages(ROOT_DIR);
 
   // Create default user (eddo_pi_agent) for MCP access
-  let userCreated = true;
-  if (dockerStarted && config.createUser) {
-    userCreated = createDefaultUser(ROOT_DIR, config.userPassword);
-  }
+  const userCreated =
+    dockerStarted && config.createUser ? createDefaultUser(ROOT_DIR, config.userPassword) : true;
 
-  return dockerStarted && (!config.createUser || userCreated);
+  // Build pi-coding-agent Docker image for Chat feature
+  const imageBuilt = config.buildAgentImage ? buildPiCodingAgentImage(ROOT_DIR) : true;
+
+  return dockerStarted && userCreated && imageBuilt;
 }
 
 /**
@@ -270,7 +307,7 @@ async function main(): Promise<void> {
   const envExists = displayConfigStatus();
 
   // Get user options
-  const config = await promptForOptions(servicesRunning, envExists);
+  const config = await promptForOptions(servicesRunning, envExists, services.agentImage);
   console.log('');
 
   // Execute setup

@@ -21,6 +21,7 @@ export interface SetupConfig {
   envOverwrite: boolean;
   createUser: boolean;
   userPassword?: string;
+  buildAgentImage: boolean;
 }
 
 /**
@@ -341,6 +342,53 @@ VITE_OTEL_ENABLED=false
   fs.writeFileSync(envPath, minimalEnv);
   console.log(chalk.green('  ✓ Generated .env file with development defaults'));
   return true;
+}
+
+/**
+ * Check if pi-coding-agent Docker image exists
+ */
+export function isPiCodingAgentImageExists(): boolean {
+  try {
+    const result = execSync('docker images -q pi-coding-agent:latest', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return result.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Build pi-coding-agent Docker image for chat feature
+ */
+export function buildPiCodingAgentImage(rootDir: string): boolean {
+  console.log(chalk.blue('\n📦 Building pi-coding-agent Docker image...\n'));
+  console.log(chalk.gray('  This may take a few minutes on first build.\n'));
+
+  const spinner = ora('Building Docker image...').start();
+
+  const result = spawnSync(
+    'docker',
+    ['build', '-t', 'pi-coding-agent:latest', '-f', 'docker/pi-coding-agent/Dockerfile', '.'],
+    {
+      cwd: rootDir,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: 'utf-8',
+    },
+  );
+
+  if (result.status === 0) {
+    spinner.succeed('Docker image pi-coding-agent:latest built successfully');
+    return true;
+  } else {
+    spinner.fail('Failed to build Docker image');
+    if (result.stderr) {
+      console.log(chalk.red('\n  Error output:'));
+      console.log(chalk.gray('  ' + result.stderr.split('\n').slice(-10).join('\n  ')));
+    }
+    return false;
+  }
 }
 
 /**
