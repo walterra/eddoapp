@@ -29,7 +29,6 @@ import type {
   ContainerInfo,
   ContainerManagerConfig,
   ContainerOperationResult,
-  ContainerState,
   RpcCommand,
   RpcEventCallback,
   RpcResponse,
