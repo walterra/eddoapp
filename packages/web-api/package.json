@@ -28,7 +28,7 @@
     "google-auth-library": "^10.5.0",
     "hono": "^4.11.3",
     "imapflow": "^1.2.4",
-    "jsonwebtoken": "^9.0.2",
+    "jsonwebtoken": "^9.0.3",
     "nano": "^11.0.3",
     "pino": "^10.1.0",
     "undici": "^7.16.0",
