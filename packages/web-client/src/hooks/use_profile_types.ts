@@ -48,6 +48,13 @@ export interface FilterPreset {
   createdAt: string;
 }
 
+/** AI provider API keys for chat agent */
+export interface AiProviderKeys {
+  anthropicApiKey?: string;
+  openaiApiKey?: string;
+  geminiApiKey?: string;
+}
+
 export interface UserPreferences {
   dailyBriefing: boolean;
   briefingTime?: string;
@@ -93,6 +100,7 @@ export interface UserPreferences {
   emailSyncTags?: string[];
   emailLastSync?: string;
   filterPresets?: FilterPreset[];
+  aiProviderKeys?: AiProviderKeys;
 }
 
 export interface UserProfile {
