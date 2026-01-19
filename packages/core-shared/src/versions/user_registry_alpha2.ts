@@ -96,6 +96,8 @@ export interface UserPreferences {
   viewMode?: ViewMode; // Todo view preference, defaults to kanban
   tableColumns?: string[]; // Selected columns for table view
   activitySidebarOpen?: boolean; // Activity sidebar visibility state
+  chatSidebarOpen?: boolean; // Chat sidebar visibility state (docked mode)
+  chatSidebarSessionId?: string; // Selected session ID for chat sidebar
   selectedTags?: string[]; // Filter: selected tags
   selectedContexts?: string[]; // Filter: selected contexts
   selectedStatus?: 'all' | 'completed' | 'incomplete'; // Filter: completion status
@@ -158,6 +160,8 @@ export function createDefaultUserPreferences(): UserPreferences {
     viewMode: 'kanban',
     tableColumns: ['title', 'due', 'tags', 'timeTracked', 'status'],
     activitySidebarOpen: false,
+    chatSidebarOpen: false,
+    chatSidebarSessionId: undefined,
     selectedTags: [],
     selectedContexts: [],
     selectedStatus: 'all',

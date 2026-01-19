@@ -10,7 +10,14 @@ const API_BASE = '/api/chat';
 
 /** Get auth token from localStorage */
 function getAuthToken(): string | null {
-  return localStorage.getItem('token');
+  const stored = localStorage.getItem('authToken');
+  if (!stored) return null;
+  try {
+    const parsed = JSON.parse(stored);
+    return parsed.token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Fetch with auth header */
@@ -57,7 +64,7 @@ export function useChatSessions() {
 }
 
 /** Use single chat session with entries */
-export function useChatSession(sessionId: string | null) {
+export function useChatSession(sessionId: string | null, options?: { refetchInterval?: number }) {
   return useQuery({
     queryKey: ['chat', 'session', sessionId],
     queryFn: async (): Promise<GetSessionResponse | null> => {
@@ -67,6 +74,7 @@ export function useChatSession(sessionId: string | null) {
       return response.json();
     },
     enabled: !!sessionId,
+    refetchInterval: options?.refetchInterval,
   });
 }
 
@@ -107,6 +115,17 @@ export function useDeleteSession() {
   });
 }
 
+/** Start session error with details */
+export class StartSessionError extends Error {
+  constructor(
+    message: string,
+    public readonly details?: string,
+  ) {
+    super(message);
+    this.name = 'StartSessionError';
+  }
+}
+
 /** Start session mutation */
 export function useStartSession() {
   const queryClient = useQueryClient();
@@ -116,10 +135,15 @@ export function useStartSession() {
       const response = await fetchWithAuth(`${API_BASE}/sessions/${sessionId}/start`, {
         method: 'POST',
       });
-      if (!response.ok) throw new Error('Failed to start session');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new StartSessionError(data.error ?? 'Failed to start session', data.error);
+      }
     },
-    onSuccess: (_, sessionId) => {
+    onSettled: (_, __, sessionId) => {
+      // Always refresh session and sessions list to get latest state
       queryClient.invalidateQueries({ queryKey: ['chat', 'session', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['chat', 'sessions'] });
     },
   });
 }
@@ -137,6 +161,7 @@ export function useStopSession() {
     },
     onSuccess: (_, sessionId) => {
       queryClient.invalidateQueries({ queryKey: ['chat', 'session', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['chat', 'sessions'] });
     },
   });
 }

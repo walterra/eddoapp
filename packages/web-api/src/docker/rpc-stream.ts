@@ -30,7 +30,9 @@ export function setupRpcStream(
 
   // Handle incoming data
   stream.on('data', (chunk: Buffer) => {
-    containerStream.buffer += chunk.toString();
+    const data = chunk.toString();
+    console.log('[RPC] Received data:', data.substring(0, 200));
+    containerStream.buffer += data;
     processBuffer(containerStream, onEvent);
   });
 
@@ -84,7 +86,9 @@ export function sendRpcCommand(
     containerStream.emitter.on('event', onEvent);
 
     // Send command
-    containerStream.writable.write(JSON.stringify(fullCommand) + '\n');
+    const commandStr = JSON.stringify(fullCommand) + '\n';
+    console.log('[RPC] Sending command:', commandStr);
+    containerStream.writable.write(commandStr);
 
     // Timeout
     setTimeout(() => {

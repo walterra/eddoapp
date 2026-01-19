@@ -58,21 +58,29 @@ async function ensureBaseDir(ctx: RepoManagerContext): Promise<void> {
   await mkdir(ctx.config.baseDir, { recursive: true });
 }
 
+/** Sanitize slug for filesystem paths (replace all slashes with underscores) */
+function sanitizeSlug(slug: string): string {
+  return slug.replace(/\//g, '_');
+}
+
+/** Sanitize session ID for git branch names (no colons allowed) */
+function sanitizeForBranchName(sessionId: string): string {
+  return sessionId.replace(/:/g, '-');
+}
+
 /** Get path to main clone for a repo */
 function getMainPath(ctx: RepoManagerContext, slug: string): string {
-  const safeSlug = slug.replace('/', '_');
-  return join(ctx.config.baseDir, safeSlug, 'main');
+  return join(ctx.config.baseDir, sanitizeSlug(slug), 'main');
 }
 
 /** Get path to worktrees directory for a repo */
 function getWorktreesPath(ctx: RepoManagerContext, slug: string): string {
-  const safeSlug = slug.replace('/', '_');
-  return join(ctx.config.baseDir, safeSlug, 'worktrees');
+  return join(ctx.config.baseDir, sanitizeSlug(slug), 'worktrees');
 }
 
 /** Get path to a specific worktree */
 function getWorktreePath(ctx: RepoManagerContext, slug: string, sessionId: string): string {
-  return join(getWorktreesPath(ctx, slug), sessionId);
+  return join(getWorktreesPath(ctx, slug), sanitizeForBranchName(sessionId));
 }
 
 /** Get path to main repo's .git directory (for worktree support in containers) */
@@ -103,21 +111,11 @@ async function ensureRepoCloned(
   const parentDir = join(mainPath, '..');
   await mkdir(parentDir, { recursive: true });
 
-  // Clone the repository
-  const result = await execGit(parentDir, ['clone', '--bare', gitUrl, 'main.git']);
+  // Clone the repository (regular clone, not bare)
+  // This gives us origin/* refs which are needed for worktree creation
+  const result = await execGit(parentDir, ['clone', gitUrl, 'main']);
   if (result.exitCode !== 0) {
     return { success: false, message: 'Clone failed', error: result.stderr };
-  }
-
-  // Create a working directory from the bare clone
-  const bareDir = join(parentDir, 'main.git');
-  const worktreeResult = await execGit(bareDir, ['worktree', 'add', mainPath, 'HEAD']);
-  if (worktreeResult.exitCode !== 0) {
-    return {
-      success: false,
-      message: 'Failed to create main worktree',
-      error: worktreeResult.stderr,
-    };
   }
 
   return { success: true, message: `Cloned ${slug} to ${mainPath}` };
@@ -174,7 +172,7 @@ async function createWorktree(
 
   // Determine base ref
   const baseBranch = opts.baseBranch ?? repoInfo.defaultBranch;
-  const branchName = `session-${opts.sessionId}`;
+  const branchName = `session-${sanitizeForBranchName(opts.sessionId)}`;
 
   // Create worktree with a new branch
   const result = await execGit(mainPath, [
@@ -201,7 +199,7 @@ async function removeWorktree(
 ): Promise<GitOperationResult> {
   const mainPath = getMainPath(ctx, slug);
   const worktreePath = getWorktreePath(ctx, slug, sessionId);
-  const branchName = `session-${sessionId}`;
+  const branchName = `session-${sanitizeForBranchName(sessionId)}`;
 
   // Check if worktree exists
   try {

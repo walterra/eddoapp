@@ -98,4 +98,11 @@ export const updatePreferencesSchema = z.object({
       }),
     )
     .optional(),
+  aiProviderKeys: z
+    .object({
+      anthropicApiKey: z.string().optional(),
+      openaiApiKey: z.string().optional(),
+      geminiApiKey: z.string().optional(),
+    })
+    .optional(),
 });

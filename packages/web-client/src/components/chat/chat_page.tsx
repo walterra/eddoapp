@@ -101,7 +101,7 @@ const ChatArea: FC<{
   selectedSessionId: string | null;
   onNewSession: () => void;
 }> = ({ selectedSessionId, onNewSession }) => (
-  <main className="flex flex-1 flex-col bg-white dark:bg-neutral-800">
+  <main className="flex flex-1 flex-col bg-neutral-50 dark:bg-neutral-800">
     {selectedSessionId ? (
       <ChatThread sessionId={selectedSessionId} />
     ) : (

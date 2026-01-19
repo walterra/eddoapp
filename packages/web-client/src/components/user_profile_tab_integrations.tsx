@@ -4,6 +4,7 @@
 import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
 
+import { AiKeysSection } from './user_profile_ai_keys_section';
 import { EmailSection } from './user_profile_email_section';
 import { GithubSection } from './user_profile_github_section';
 import { RssSection } from './user_profile_rss_section';
@@ -42,49 +43,64 @@ const EmailSectionWrapper: FC<IntegrationsTabProps> = (props) => (
   />
 );
 
-export function IntegrationsTab(props: IntegrationsTabProps) {
-  const { profile, isLoading, isResyncing, telegramId, githubState, rssState } = props;
+const GithubSectionWrapper: FC<IntegrationsTabProps> = (props) => (
+  <GithubSection
+    githubState={props.githubState}
+    isLoading={props.isLoading}
+    isResyncing={props.isResyncing}
+    lastSync={props.profile.preferences?.githubLastSync}
+    onForceResync={props.onForceResync}
+    onGithubIntervalChange={props.onGithubIntervalChange}
+    onGithubSyncChange={props.onGithubSyncChange}
+    onGithubTagsChange={props.onGithubTagsChange}
+    onGithubTokenChange={props.onGithubTokenChange}
+    onSaveGithub={props.onSaveGithub}
+  />
+);
 
+const RssSectionWrapper: FC<IntegrationsTabProps> = (props) => (
+  <RssSection
+    feeds={props.profile.preferences?.rssFeeds || []}
+    isLoading={props.isLoading}
+    isResyncing={props.isRssResyncing}
+    lastSync={props.profile.preferences?.rssLastSync}
+    onAddFeed={props.onAddRssFeed}
+    onForceResync={props.onForceRssResync}
+    onRemoveFeed={props.onRemoveRssFeed}
+    onRssIntervalChange={props.onRssIntervalChange}
+    onRssSyncChange={props.onRssSyncChange}
+    onRssTagsChange={props.onRssTagsChange}
+    onSaveRss={props.onSaveRss}
+    rssState={props.rssState}
+  />
+);
+
+const AiKeysSectionWrapper: FC<IntegrationsTabProps> = (props) => (
+  <AiKeysSection
+    aiKeys={props.profile.preferences?.aiProviderKeys}
+    isLoading={props.isLoading}
+    onSaveAiKeys={props.onSaveAiKeys}
+  />
+);
+
+export function IntegrationsTab(props: IntegrationsTabProps) {
   return (
     <Card>
       <div className="space-y-6">
         <IntegrationsHeader />
         <div className="space-y-4">
           <TelegramSection
-            isLoading={isLoading}
+            isLoading={props.isLoading}
             onLinkTelegram={props.onLinkTelegram}
             onTelegramIdChange={props.onTelegramIdChange}
             onUnlinkTelegram={props.onUnlinkTelegram}
-            profile={profile}
-            telegramId={telegramId}
+            profile={props.profile}
+            telegramId={props.telegramId}
           />
-          <GithubSection
-            githubState={githubState}
-            isLoading={isLoading}
-            isResyncing={isResyncing}
-            lastSync={profile.preferences?.githubLastSync}
-            onForceResync={props.onForceResync}
-            onGithubIntervalChange={props.onGithubIntervalChange}
-            onGithubSyncChange={props.onGithubSyncChange}
-            onGithubTagsChange={props.onGithubTagsChange}
-            onGithubTokenChange={props.onGithubTokenChange}
-            onSaveGithub={props.onSaveGithub}
-          />
-          <RssSection
-            feeds={profile.preferences?.rssFeeds || []}
-            isLoading={isLoading}
-            isResyncing={props.isRssResyncing}
-            lastSync={profile.preferences?.rssLastSync}
-            onAddFeed={props.onAddRssFeed}
-            onForceResync={props.onForceRssResync}
-            onRemoveFeed={props.onRemoveRssFeed}
-            onRssIntervalChange={props.onRssIntervalChange}
-            onRssSyncChange={props.onRssSyncChange}
-            onRssTagsChange={props.onRssTagsChange}
-            onSaveRss={props.onSaveRss}
-            rssState={rssState}
-          />
+          <GithubSectionWrapper {...props} />
+          <RssSectionWrapper {...props} />
           <EmailSectionWrapper {...props} />
+          <AiKeysSectionWrapper {...props} />
         </div>
       </div>
     </Card>

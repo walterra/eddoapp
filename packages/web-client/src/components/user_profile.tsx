@@ -127,6 +127,7 @@ const IntegrationsTabContent: FC<
     onForceRssResync={p.actions.handleForceRssResync}
     onLinkTelegram={p.actions.handleLinkTelegram}
     onRemoveRssFeed={p.actions.handleRemoveRssFeed}
+    onSaveAiKeys={p.actions.handleSaveAiKeys}
     onSaveEmail={p.actions.handleUpdateEmailPreferences}
     onSaveGithub={p.actions.handleUpdateGithubPreferences}
     onSaveRss={p.actions.handleUpdateRssPreferences}
