@@ -209,11 +209,13 @@ export async function stopMcpServer(): Promise<void> {
 }
 
 /**
- * Starts the MCP server on the specified port
+ * Starts the MCP server on the specified port and host
  */
 export async function startMcpServer(port: number = 3001): Promise<void> {
+  const host = process.env.MCP_HOST || 'localhost';
+
   try {
-    logger.info({ port }, 'Initializing MCP server');
+    logger.info({ port, host }, 'Initializing MCP server');
 
     // Verify CouchDB server connection
     const serverInfo = await couch.info();
@@ -221,7 +223,7 @@ export async function startMcpServer(port: number = 3001): Promise<void> {
 
     await server.start({
       transportType: 'httpStream',
-      httpStream: { port },
+      httpStream: { port, host },
     });
 
     const tools = [
