@@ -68,7 +68,7 @@ async function reconcileContainerState(
   }
 
   try {
-    const containerInfo = await containerManager.getContainerInfo(session._id);
+    const containerInfo = await containerManager.getContainerInfo(session._id, session.username);
 
     // Map container info state to actual state, default to stopped if container gone
     let actualState: ContainerState = 'stopped';

@@ -5,7 +5,13 @@
 import type { Env } from '@eddo/core-server';
 import type { ChatSession, CreateChatSessionRequest, SessionEntry } from '@eddo/core-shared';
 
-import { createContainerManager, type ContainerManager, type RpcEventCallback } from '../docker';
+import {
+  createContainerManager,
+  createSearxngManager,
+  type ContainerManager,
+  type RpcEventCallback,
+  type SearxngManager,
+} from '../docker';
 import { createRepoManager, type RepoManager } from '../git';
 import {
   appendEntry as appendEntryHelper,
@@ -16,6 +22,8 @@ import {
   getSession as getSessionHelper,
   listSessions as listSessionsHelper,
 } from './chat-session-helpers';
+import { prepareAndSpawnContainer, type ContainerContext } from './container-operations';
+import { clearSetupLogs, logStepCompleted, logStepFailed, logStepStarted } from './setup-logging';
 
 /** Chat service configuration */
 export interface ChatServiceConfig {
@@ -24,11 +32,12 @@ export interface ChatServiceConfig {
 }
 
 /** Chat service context */
-interface ChatServiceContext {
+interface ChatServiceContext extends ContainerContext {
   env: Env;
   couchUrl: string;
   repoManager: RepoManager;
   containerManager: ContainerManager;
+  searxngManager: SearxngManager;
 }
 
 /** Create a chat service instance */
@@ -38,6 +47,7 @@ export function createChatService(config: ChatServiceConfig) {
     couchUrl: config.couchUrl,
     repoManager: createRepoManager(),
     containerManager: createContainerManager(),
+    searxngManager: createSearxngManager(),
   };
 
   return {
@@ -49,7 +59,7 @@ export function createChatService(config: ChatServiceConfig) {
       deleteSessionHelper(
         {
           ...ctx,
-          removeContainer: (sid) => ctx.containerManager.removeContainer(sid),
+          removeContainer: (sid, uname) => ctx.containerManager.removeContainer(sid, uname),
           removeWorktree: (slug, sid) => ctx.repoManager.removeWorktree(slug, sid),
         },
         username,
@@ -91,6 +101,7 @@ async function ensureWorktree(
     return { success: true };
   }
 
+  await logStepStarted(chatDb, sessionId, 'worktree', `Creating worktree...`);
   await chatDb.update(sessionId, { worktreeState: 'creating' });
 
   const worktreeResult = await ctx.repoManager.createWorktree(session.repository.slug, {
@@ -99,12 +110,60 @@ async function ensureWorktree(
   });
 
   if (!worktreeResult.success) {
+    const errorMsg = worktreeResult.error ?? 'Unknown error creating worktree';
+    await logStepFailed({
+      chatDb,
+      sessionId,
+      step: 'worktree',
+      message: 'Failed to create worktree',
+      error: errorMsg,
+    });
     await chatDb.update(sessionId, { worktreeState: 'error' });
-    return { success: false, error: worktreeResult.error };
+    return { success: false, error: errorMsg };
   }
 
   const worktreeInfo = await ctx.repoManager.getWorktreeInfo(session.repository.slug, sessionId);
   await chatDb.update(sessionId, { worktreeState: 'ready', worktreePath: worktreeInfo?.path });
+  await logStepCompleted(chatDb, sessionId, 'worktree', `Worktree created`);
+
+  return { success: true };
+}
+
+/** Ensure repository is cloned and up-to-date */
+async function ensureRepoReady(
+  ctx: ChatServiceContext,
+  chatDb: ReturnType<typeof getChatDb>,
+  session: ChatSession,
+  sessionId: string,
+): Promise<{ success: boolean; error?: string }> {
+  if (!session.repository) return { success: true };
+
+  const { slug, gitUrl } = session.repository;
+  const repoInfo = await ctx.repoManager.getRepoInfo(slug);
+
+  if (!repoInfo) {
+    await logStepStarted(chatDb, sessionId, 'clone', `Cloning ${slug}...`);
+    const cloneResult = await ctx.repoManager.ensureRepoCloned(slug, gitUrl);
+    if (!cloneResult.success) {
+      const errorMsg = cloneResult.error ?? 'Unknown error cloning repository';
+      await logStepFailed({
+        chatDb,
+        sessionId,
+        step: 'clone',
+        message: 'Failed to clone repository',
+        error: errorMsg,
+      });
+      return { success: false, error: errorMsg };
+    }
+    await logStepCompleted(chatDb, sessionId, 'clone', 'Repository cloned successfully');
+  }
+
+  await logStepStarted(chatDb, sessionId, 'fetch', 'Fetching latest changes...');
+  const fetchResult = await ctx.repoManager.fetchRepo(slug);
+  const fetchMsg = fetchResult.success
+    ? 'Fetched latest changes'
+    : 'Fetch skipped (may be offline)';
+  await logStepCompleted(chatDb, sessionId, 'fetch', fetchMsg);
 
   return { success: true };
 }
@@ -122,43 +181,41 @@ async function startSession(
   if (!session) return { success: false, error: 'Session not found' };
   if (session.containerState === 'running') return { success: true };
 
-  // Create worktree if needed
+  await clearSetupLogs(chatDb, sessionId);
+
+  const dockerAvailable = await ctx.containerManager.isDockerAvailable();
+  if (!dockerAvailable) {
+    const errorMsg = 'Docker is not available. Please ensure Docker is running.';
+    await logStepFailed({
+      chatDb,
+      sessionId,
+      step: 'container',
+      message: 'Docker check failed',
+      error: errorMsg,
+    });
+    return { success: false, error: errorMsg };
+  }
+
+  const repoResult = await ensureRepoReady(ctx, chatDb, session, sessionId);
+  if (!repoResult.success) return repoResult;
+
   const worktreeResult = await ensureWorktree(ctx, chatDb, session, sessionId);
   if (!worktreeResult.success) return worktreeResult;
 
-  // Get updated session
   const updatedSession = await chatDb.get(sessionId);
   if (!updatedSession) return { success: false, error: 'Session disappeared' };
 
-  // Spawn container
-  await chatDb.update(sessionId, { containerState: 'creating' });
-  const workspacePath = updatedSession.worktreePath ?? '/tmp/eddo-workspace';
-  const sessionDir = `/tmp/eddo-sessions/${sessionId}`;
-
-  const spawnResult = await ctx.containerManager.spawnContainer({
+  return prepareAndSpawnContainer({
+    ctx,
+    chatDb,
+    session: updatedSession,
     sessionId,
-    config: {
-      image: 'pi-coding-agent:latest',
-      workspacePath,
-      sessionDir,
-    },
+    username,
     onEvent,
   });
-
-  if (!spawnResult.success) {
-    await chatDb.update(sessionId, { containerState: 'error' });
-    return { success: false, error: spawnResult.error };
-  }
-
-  await chatDb.update(sessionId, {
-    containerState: 'running',
-    containerId: spawnResult.containerId,
-  });
-
-  return { success: true };
 }
 
-/** Stop a session (stop container) */
+/** Stop a session (stop and remove container) */
 async function stopSession(
   ctx: ChatServiceContext,
   username: string,
@@ -168,7 +225,8 @@ async function stopSession(
   const session = await chatDb.get(sessionId);
   if (!session) return { success: false, error: 'Session not found' };
 
-  const result = await ctx.containerManager.stopContainer(sessionId);
+  // Remove container (this also stops it if running)
+  const result = await ctx.containerManager.removeContainer(sessionId, username);
   if (result.success) await chatDb.update(sessionId, { containerState: 'stopped' });
   return result;
 }
