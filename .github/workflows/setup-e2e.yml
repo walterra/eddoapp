@@ -9,6 +9,7 @@ on:
       - 'scripts/doctor.ts'
       - 'scripts/doctor-helpers.ts'
       - 'scripts/create-default-user.ts'
+      - 'scripts/purge.ts'
       - '.github/workflows/setup-e2e.yml'
   pull_request:
     branches:
@@ -18,6 +19,7 @@ on:
       - 'scripts/doctor.ts'
       - 'scripts/doctor-helpers.ts'
       - 'scripts/create-default-user.ts'
+      - 'scripts/purge.ts'
       - '.github/workflows/setup-e2e.yml'
 
 permissions:
@@ -72,3 +74,46 @@ jobs:
         run: pnpm vitest:run scripts/__tests__/e2e/setup.e2e.test.ts
         env:
           CI: true
+
+      - name: Cleanup environment
+        if: always()
+        run: pnpm dev:purge --force
+        env:
+          CI: true
+
+      - name: Verify cleanup
+        if: always()
+        run: |
+          echo "Verifying Docker cleanup..."
+          # Check no eddo containers running
+          if docker ps -a --format '{{.Names}}' | grep -q '^eddo-'; then
+            echo "❌ Found remaining eddo containers:"
+            docker ps -a --format '{{.Names}}' | grep '^eddo-'
+            exit 1
+          fi
+          echo "✓ No eddo containers"
+          
+          # Check no eddo volumes
+          if docker volume ls --format '{{.Name}}' | grep -q '^eddo_'; then
+            echo "❌ Found remaining eddo volumes:"
+            docker volume ls --format '{{.Name}}' | grep '^eddo_'
+            exit 1
+          fi
+          echo "✓ No eddo volumes"
+          
+          # Check .env removed
+          if [ -f .env ]; then
+            echo "❌ .env file still exists"
+            exit 1
+          fi
+          echo "✓ .env removed"
+          
+          # Check dist directories removed
+          if find packages -name "dist" -type d 2>/dev/null | grep -q .; then
+            echo "❌ Found remaining dist directories:"
+            find packages -name "dist" -type d
+            exit 1
+          fi
+          echo "✓ No dist directories"
+          
+          echo "✅ Cleanup verified successfully"
