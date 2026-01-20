@@ -1,15 +1,27 @@
 /**
  * Page wrapper component - manages app views and sidebar state.
  */
-import { type FC, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type FC } from 'react';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { useProfile } from '../hooks/use_profile';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { usePouchDb } from '../pouch_db';
-import { ChatView } from './chat_view';
 import { TodosView } from './todos_view';
 import { UserProfile } from './user_profile';
+
+// Lazy load chat - it's heavy due to @assistant-ui dependencies
+const ChatView = lazy(() => import('./chat_view').then((m) => ({ default: m.ChatView })));
+
+/** Loading fallback for lazy views */
+const ViewLoadingFallback = () => (
+  <div className="flex h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+    <div className="text-center">
+      <div className="mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400" />
+      <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+    </div>
+  </div>
+);
 
 /** Hook for activity sidebar state with optimistic updates and persistence */
 function useActivitySidebar() {
@@ -150,12 +162,14 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
 
   if (currentView === 'chat') {
     return (
-      <ChatView
-        onBack={() => setCurrentView('todos')}
-        onDock={chatNav.handleDockChat}
-        onLogout={logout}
-        onProfile={() => setCurrentView('profile')}
-      />
+      <Suspense fallback={<ViewLoadingFallback />}>
+        <ChatView
+          onBack={() => setCurrentView('todos')}
+          onDock={chatNav.handleDockChat}
+          onLogout={logout}
+          onProfile={() => setCurrentView('profile')}
+        />
+      </Suspense>
     );
   }
 

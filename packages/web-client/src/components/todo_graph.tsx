@@ -26,7 +26,7 @@ import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
 import { calculateDateRange, filterTodosForGraph } from './todo_board_helpers';
 import { useDbInitialization, useOutdatedTodos, useTodoBoardData } from './todo_board_state';
-import { GraphThemeProvider, useCurrentTheme } from './todo_graph/themes/context';
+import { GraphThemeProvider, useGraphTheme } from './todo_graph/themes/context';
 import { createAllEdges, createAllNodes } from './todo_graph_helpers';
 import { GraphRenderer } from './todo_graph_renderer';
 
@@ -219,6 +219,16 @@ const IsometricLayoutContent: FC<{
   );
 };
 
+/** Theme loading spinner */
+const ThemeLoadingSpinner: FC = () => (
+  <div className="flex h-full items-center justify-center">
+    <div className="text-center">
+      <Spinner aria-label="Loading theme" size="lg" />
+      <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Loading theme...</p>
+    </div>
+  </div>
+);
+
 /** Graph content with theme-aware layout */
 const TodoGraphContent: FC<TodoGraphContentProps> = ({
   nodes: initialNodes,
@@ -227,8 +237,8 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const theme = useCurrentTheme();
-  const layoutAlgorithm = theme.layout ?? 'force';
+  const { theme, isLoading: isThemeLoading } = useGraphTheme();
+  const layoutAlgorithm = theme?.layout ?? 'force';
 
   // Measure container dimensions
   useEffect(() => {
@@ -254,7 +264,9 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
 
   return (
     <div className="h-[calc(100vh-200px)] w-full" ref={containerRef}>
-      {dimensions ? (
+      {isThemeLoading || !theme ? (
+        <ThemeLoadingSpinner />
+      ) : dimensions ? (
         <LayoutContent
           edges={initialEdges}
           highlightedTodoId={highlightedTodoId}

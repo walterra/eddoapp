@@ -1,10 +1,24 @@
 /**
  * Theme context provider for graph view.
- * Manages current theme selection and persistence.
+ * Manages current theme selection, async loading, and persistence.
  */
-import { createContext, type FC, type ReactNode, useCallback, useContext, useState } from 'react';
+import {
+  createContext,
+  type FC,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
-import { DEFAULT_THEME_ID, getTheme, type GraphTheme } from './index';
+import {
+  DEFAULT_THEME_ID,
+  getCachedTheme,
+  type GraphTheme,
+  loadTheme,
+  preloadTheme,
+} from './index';
 
 /** Local storage key for theme preference */
 const THEME_STORAGE_KEY = 'eddo-graph-theme';
@@ -24,12 +38,11 @@ const saveThemePreference = (themeId: string): void => {
 
 /** Theme context value */
 interface GraphThemeContextValue {
-  /** Current theme */
-  theme: GraphTheme;
-  /** Current theme ID */
+  theme: GraphTheme | null;
   themeId: string;
-  /** Set theme by ID */
+  isLoading: boolean;
   setThemeId: (id: string) => void;
+  preloadTheme: (id: string) => void;
 }
 
 const GraphThemeContext = createContext<GraphThemeContextValue | null>(null);
@@ -37,9 +50,49 @@ const GraphThemeContext = createContext<GraphThemeContextValue | null>(null);
 /** Provider props */
 interface GraphThemeProviderProps {
   children: ReactNode;
-  /** Override initial theme (for testing) */
   initialThemeId?: string;
 }
+
+/** Hook for async theme loading */
+const useThemeLoader = (themeId: string) => {
+  const [theme, setTheme] = useState<GraphTheme | null>(() => getCachedTheme(themeId) ?? null);
+  const [isLoading, setIsLoading] = useState(!getCachedTheme(themeId));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      const cached = getCachedTheme(themeId);
+      if (cached) {
+        setTheme(cached);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const loadedTheme = await loadTheme(themeId);
+        if (!cancelled) {
+          setTheme(loadedTheme);
+          setIsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          const fallback = await loadTheme(DEFAULT_THEME_ID);
+          setTheme(fallback);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [themeId]);
+
+  return { theme, isLoading };
+};
 
 /** Theme context provider */
 export const GraphThemeProvider: FC<GraphThemeProviderProps> = ({
@@ -47,16 +100,21 @@ export const GraphThemeProvider: FC<GraphThemeProviderProps> = ({
   initialThemeId = loadThemePreference(),
 }) => {
   const [themeId, setThemeIdState] = useState(initialThemeId);
+  const { theme, isLoading } = useThemeLoader(themeId);
 
   const setThemeId = useCallback((id: string) => {
     setThemeIdState(id);
     saveThemePreference(id);
   }, []);
 
-  const theme = getTheme(themeId);
+  const handlePreload = useCallback((id: string) => {
+    preloadTheme(id);
+  }, []);
 
   return (
-    <GraphThemeContext.Provider value={{ theme, themeId, setThemeId }}>
+    <GraphThemeContext.Provider
+      value={{ theme, themeId, isLoading, setThemeId, preloadTheme: handlePreload }}
+    >
       {children}
     </GraphThemeContext.Provider>
   );
@@ -71,5 +129,14 @@ export const useGraphTheme = (): GraphThemeContextValue => {
   return context;
 };
 
-/** Hook to get current theme only */
-export const useCurrentTheme = (): GraphTheme => useGraphTheme().theme;
+/** Hook to get current theme only (throws if not loaded) */
+export const useCurrentTheme = (): GraphTheme => {
+  const { theme } = useGraphTheme();
+  if (!theme) {
+    throw new Error('Theme not loaded yet. Check isLoading state first.');
+  }
+  return theme;
+};
+
+/** Hook to safely get current theme (returns null if loading) */
+export const useCurrentThemeSafe = (): GraphTheme | null => useGraphTheme().theme;
