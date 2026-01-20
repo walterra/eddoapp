@@ -19,28 +19,47 @@ export function ensureLogsDirectory(rootDir: string): void {
   }
 }
 
+/** Packages to build in order */
+const BUILD_PACKAGES = [
+  '@eddo/core-shared',
+  '@eddo/core-server',
+  '@eddo/core-client',
+  '@eddo/core-instrumentation',
+  '@eddo/setup',
+];
+
 /**
- * Build workspace packages (core-shared, core-server, core-client)
+ * Build workspace packages with progress indication
  */
 export function buildWorkspacePackages(rootDir: string): boolean {
   const spinner = ora('Building workspace packages...').start();
+  let currentIndex = 0;
 
-  const result = spawnSync('pnpm', ['build'], {
-    cwd: rootDir,
-    stdio: ['pipe', 'pipe', 'pipe'],
-    encoding: 'utf-8',
-  });
+  const updateSpinner = (pkg: string): void => {
+    currentIndex++;
+    spinner.text = `Building packages (${currentIndex}/${BUILD_PACKAGES.length}): ${pkg}`;
+  };
 
-  if (result.status === 0) {
-    spinner.succeed(chalk.green('Workspace packages built successfully'));
-    return true;
-  } else {
-    spinner.fail(chalk.red('Failed to build workspace packages'));
-    if (result.stderr) {
-      console.error(chalk.red(result.stderr.toString().slice(0, 500)));
+  for (const pkg of BUILD_PACKAGES) {
+    updateSpinner(pkg);
+
+    const result = spawnSync('pnpm', ['--filter', pkg, 'build'], {
+      cwd: rootDir,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: 'utf-8',
+    });
+
+    if (result.status !== 0) {
+      spinner.fail(chalk.red(`Failed to build ${pkg}`));
+      if (result.stderr) {
+        console.error(chalk.red(result.stderr.toString().slice(0, 500)));
+      }
+      return false;
     }
-    return false;
   }
+
+  spinner.succeed(chalk.green(`Built ${BUILD_PACKAGES.length} packages successfully`));
+  return true;
 }
 
 /**
