@@ -77,21 +77,39 @@ async function promptUserCreation(
 }
 
 /** Prompt for pi-coding-agent Docker image build */
-async function promptAgentImageBuild(imageExists: boolean): Promise<boolean> {
-  if (imageExists) return false;
+async function promptAgentImageBuild(
+  imageExists: boolean,
+  imageOutdated: boolean,
+): Promise<boolean> {
+  if (!imageExists) {
+    console.log(
+      chalk.gray('  ℹ️  The pi-coding-agent Docker image is required for the Chat feature.'),
+    );
+    console.log(chalk.gray('     This builds a container for running AI coding agents.\n'));
 
-  console.log(
-    chalk.gray('  ℹ️  The pi-coding-agent Docker image is required for the Chat feature.'),
-  );
-  console.log(chalk.gray('     This builds a container for running AI coding agents.\n'));
+    const { buildImage } = await prompts({
+      type: 'confirm',
+      name: 'buildImage',
+      message: 'Build pi-coding-agent Docker image? (required for Chat)',
+      initial: true,
+    });
+    return buildImage;
+  }
 
-  const { buildImage } = await prompts({
-    type: 'confirm',
-    name: 'buildImage',
-    message: 'Build pi-coding-agent Docker image? (required for Chat)',
-    initial: true,
-  });
-  return buildImage;
+  if (imageOutdated) {
+    console.log(chalk.yellow('  ⚠️  The Dockerfile has been updated since the image was built.'));
+    console.log(chalk.gray('     Rebuilding will include the latest changes.\n'));
+
+    const { rebuildImage } = await prompts({
+      type: 'confirm',
+      name: 'rebuildImage',
+      message: 'Rebuild pi-coding-agent Docker image with latest Dockerfile?',
+      initial: true,
+    });
+    return rebuildImage;
+  }
+
+  return false;
 }
 
 /** Prompt for installing eddo skills/extensions to pi-coding-agent */
@@ -140,6 +158,7 @@ export interface PromptOptions {
   servicesRunning: boolean;
   envExists: boolean;
   agentImageExists: boolean;
+  agentImageOutdated: boolean;
   piStatus: { installed: boolean; skillsStatus: EddoSkillsStatus };
   isDockerRunning: boolean;
 }
@@ -148,7 +167,8 @@ export interface PromptOptions {
  * Prompt user for all setup options (interactive mode)
  */
 export async function promptForOptions(options: PromptOptions): Promise<SetupConfig> {
-  const { servicesRunning, envExists, agentImageExists, piStatus, isDockerRunning } = options;
+  const { servicesRunning, envExists, agentImageExists, agentImageOutdated, piStatus } = options;
+  const { isDockerRunning } = options;
   const startDocker = await promptDockerServices(servicesRunning);
   const envConfig = await promptEnvFile(envExists);
 
@@ -164,7 +184,7 @@ export async function promptForOptions(options: PromptOptions): Promise<SetupCon
 
   let buildAgentImage = false;
   if ((servicesRunning || startDocker) && isDockerRunning) {
-    buildAgentImage = await promptAgentImageBuild(agentImageExists);
+    buildAgentImage = await promptAgentImageBuild(agentImageExists, agentImageOutdated);
   }
 
   const installPiSkills = await promptPiSkillsInstall(piStatus.installed, piStatus.skillsStatus);

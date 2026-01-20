@@ -4,6 +4,7 @@
 
 import chalk from 'chalk';
 import { execSync, spawn, spawnSync } from 'child_process';
+import { statSync } from 'fs';
 import ora from 'ora';
 
 /**
@@ -66,6 +67,40 @@ export function isPiCodingAgentImageExists(): boolean {
     return result.trim().length > 0;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Get the creation timestamp of the pi-coding-agent Docker image.
+ * Returns null if image doesn't exist.
+ */
+export function getPiCodingAgentImageCreatedAt(): Date | null {
+  try {
+    const result = execSync(
+      'docker inspect --format="{{.Created}}" pi-coding-agent:latest 2>/dev/null',
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
+    );
+    const timestamp = result.trim();
+    return timestamp ? new Date(timestamp) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if Dockerfile is newer than the existing image.
+ * Returns true if image should be rebuilt.
+ */
+export function isPiCodingAgentImageOutdated(rootDir: string): boolean {
+  const imageCreatedAt = getPiCodingAgentImageCreatedAt();
+  if (!imageCreatedAt) return false; // Image doesn't exist
+
+  const dockerfilePath = `${rootDir}/docker/pi-coding-agent/Dockerfile`;
+  try {
+    const stats = statSync(dockerfilePath);
+    return stats.mtime > imageCreatedAt;
+  } catch {
+    return false; // Dockerfile doesn't exist
   }
 }
 

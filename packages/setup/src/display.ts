@@ -6,7 +6,11 @@ import chalk from 'chalk';
 import fs from 'fs';
 import path from 'path';
 
-import { isContainerRunning, isPiCodingAgentImageExists } from './docker.js';
+import {
+  isContainerRunning,
+  isPiCodingAgentImageExists,
+  isPiCodingAgentImageOutdated,
+} from './docker.js';
 import {
   checkEddoSkillsInstalled,
   isPiCodingAgentInstalled,
@@ -17,15 +21,20 @@ import {
 /**
  * Display Docker services status
  */
-export function displayDockerStatus(): {
+export function displayDockerStatus(rootDir: string): {
   couchdb: boolean;
   elasticsearch: boolean;
   agentImage: boolean;
+  agentImageOutdated: boolean;
 } {
+  const agentImageExists = isPiCodingAgentImageExists();
+  const agentImageOutdated = agentImageExists && isPiCodingAgentImageOutdated(rootDir);
+
   const services = {
     couchdb: isContainerRunning('eddo-couchdb'),
     elasticsearch: isContainerRunning('eddo-elasticsearch'),
-    agentImage: isPiCodingAgentImageExists(),
+    agentImage: agentImageExists,
+    agentImageOutdated,
   };
 
   console.log(chalk.bold('📦 Docker Services Status:\n'));
@@ -35,8 +44,15 @@ export function displayDockerStatus(): {
   console.log(
     `  ${services.elasticsearch ? chalk.green('✓') : chalk.yellow('○')} Elasticsearch: ${services.elasticsearch ? 'running' : 'not running'}`,
   );
+
+  let agentImageStatus = services.agentImage ? 'built' : 'not built';
+  let agentImageIcon = services.agentImage ? chalk.green('✓') : chalk.yellow('○');
+  if (agentImageOutdated) {
+    agentImageStatus = 'outdated (Dockerfile changed)';
+    agentImageIcon = chalk.yellow('⚠');
+  }
   console.log(
-    `  ${services.agentImage ? chalk.green('✓') : chalk.yellow('○')} pi-coding-agent image: ${services.agentImage ? 'built' : 'not built'} ${chalk.gray('(for Chat feature)')}`,
+    `  ${agentImageIcon} pi-coding-agent image: ${agentImageStatus} ${chalk.gray('(for Chat feature)')}`,
   );
   console.log('');
 

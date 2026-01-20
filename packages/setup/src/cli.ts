@@ -106,7 +106,7 @@ async function main(): Promise<void> {
   }
 
   // Check current status
-  const services = displayDockerStatus();
+  const services = displayDockerStatus(ROOT_DIR);
   const servicesRunning = services.couchdb && services.elasticsearch;
   const envExists = displayConfigStatus(ROOT_DIR);
   const piStatus = displayPiCodingAgentStatus(ROOT_DIR);
@@ -118,6 +118,7 @@ async function main(): Promise<void> {
         servicesRunning,
         envExists,
         agentImageExists: services.agentImage,
+        agentImageOutdated: services.agentImageOutdated,
         piStatus,
         isDockerRunning: isDockerRunning(),
       });

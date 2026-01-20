@@ -9,6 +9,7 @@ export {
   isCouchDBHealthy,
   isElasticsearchHealthy,
   isPiCodingAgentImageExists,
+  isPiCodingAgentImageOutdated,
   startDockerServices,
   waitForService,
 } from './docker.js';
