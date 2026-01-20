@@ -2,4 +2,4 @@
 "eddo-app": minor
 ---
 
-Add `pnpm setup` wizard and `pnpm doctor` diagnostic tool for improved onboarding experience
+Add `pnpm dev:setup` wizard, `pnpm dev:doctor` diagnostic tool, and `pnpm dev:purge` cleanup command for improved developer experience

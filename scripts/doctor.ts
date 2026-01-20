@@ -120,7 +120,7 @@ function checkConfiguration(): DiagnosticResult[] {
       name: '.env Configuration',
       status: 'fail',
       message: '.env file not found',
-      fix: 'Run: pnpm setup (or copy .env.example to .env)',
+      fix: 'Run: pnpm dev:setup (or copy .env.example to .env)',
     });
   }
 

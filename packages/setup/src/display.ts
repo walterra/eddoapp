@@ -133,7 +133,7 @@ export function displayPiCodingAgentStatus(rootDir: string): {
 export function displaySummary(success: boolean, piInstalled: boolean = false): void {
   if (!success) {
     console.log('\n' + chalk.bold.red('❌ Setup incomplete - some steps failed.\n'));
-    console.log(chalk.gray('Troubleshooting? Run: pnpm doctor'));
+    console.log(chalk.gray('Troubleshooting? Run: pnpm dev:doctor'));
     console.log('');
     return;
   }
@@ -156,10 +156,10 @@ export function displaySummary(success: boolean, piInstalled: boolean = false): 
     console.log(chalk.cyan('     npm install -g @mariozechner/pi-coding-agent'));
     console.log('');
     console.log('  Then re-run setup to install Eddo skills:');
-    console.log(chalk.cyan('     pnpm setup'));
+    console.log(chalk.cyan('     pnpm dev:setup'));
     console.log('');
   }
 
-  console.log(chalk.gray('Troubleshooting? Run: pnpm doctor'));
+  console.log(chalk.gray('Troubleshooting? Run: pnpm dev:doctor'));
   console.log('');
 }

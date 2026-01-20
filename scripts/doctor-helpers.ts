@@ -141,7 +141,7 @@ export function checkContainerStatus(containerName: string, displayName: string)
     name: displayName,
     status: 'fail',
     message: `${containerName} container not found`,
-    fix: 'Run: pnpm setup (or docker compose up -d)',
+    fix: 'Run: pnpm dev:setup (or docker compose up -d)',
   };
 }
 
