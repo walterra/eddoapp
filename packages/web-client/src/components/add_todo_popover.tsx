@@ -268,8 +268,10 @@ const AddTodoTrigger: FC<AddTodoTriggerProps> = ({ onClick, setReferenceRef }) =
 );
 
 /** Hook for keyboard shortcut to open popover */
-const useKeyboardShortcut = (key: string, onTrigger: () => void): void => {
+const useKeyboardShortcut = (key: string, onTrigger: () => void, enabled: boolean = true): void => {
   useEffect(() => {
+    if (!enabled) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore if user is typing in an input, textarea, or contenteditable
       const target = event.target as HTMLElement;
@@ -289,17 +291,22 @@ const useKeyboardShortcut = (key: string, onTrigger: () => void): void => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [key, onTrigger]);
+  }, [key, onTrigger, enabled]);
 };
 
-export const AddTodoPopover: FC = () => {
+export interface AddTodoPopoverProps {
+  /** Whether to enable keyboard shortcut (default: true). Set to false for duplicate instances. */
+  enableKeyboardShortcut?: boolean;
+}
+
+export const AddTodoPopover: FC<AddTodoPopoverProps> = ({ enableKeyboardShortcut = true }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { refs, floatingStyles } = useFloatingPosition({
     placement: 'bottom-end',
     open: isOpen,
   });
 
-  useKeyboardShortcut('n', () => setIsOpen(true));
+  useKeyboardShortcut('n', () => setIsOpen(true), enableKeyboardShortcut);
 
   return (
     <>

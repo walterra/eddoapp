@@ -14,8 +14,9 @@ import type { FilterRowProps } from './todo_filters_types';
 export const FilterRow: FC<FilterRowProps> = (props) => (
   <>
     {/* AddTodoPopover shown here only on xl screens, otherwise in top bar */}
+    {/* Keyboard shortcut disabled here - handled by the TopBar instance */}
     <div className="hidden xl:block">
-      <AddTodoPopover />
+      <AddTodoPopover enableKeyboardShortcut={false} />
     </div>
     <PresetFilterDropdown
       currentFilters={{
