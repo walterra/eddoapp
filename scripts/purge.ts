@@ -274,8 +274,10 @@ function displayWarning(includeModules: boolean): void {
 
   printLines([
     chalk.yellow('  ⚠ Browser data (PouchDB/IndexedDB) is NOT cleared by this script.'),
-    chalk.gray('    To fully reset, also clear browser site data for localhost:3000'),
-    chalk.gray('    (DevTools → Application → Storage → Clear site data)'),
+    chalk.gray('    To fully reset, open localhost:3000 and run in DevTools Console:'),
+    chalk.white(
+      '    indexedDB.databases().then(r=>r.forEach(d=>indexedDB.deleteDatabase(d.name)))',
+    ),
     '',
   ]);
 }
@@ -341,8 +343,11 @@ async function main(): Promise<void> {
     console.log(chalk.cyan('  pnpm dev:setup'));
     console.log('');
     console.log(chalk.yellow('⚠ Note: Browser data (PouchDB) was not cleared.'));
+    console.log(chalk.gray('  To fully reset, open localhost:3000 and run in DevTools Console:'));
     console.log(
-      chalk.gray('  To fully reset, clear site data in your browser for localhost:3000\n'),
+      chalk.white(
+        '  indexedDB.databases().then(r=>r.forEach(d=>indexedDB.deleteDatabase(d.name)))\n',
+      ),
     );
   }
 }
