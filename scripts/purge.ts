@@ -148,9 +148,9 @@ function purgeDocker(dryRun: boolean): void {
     dryRun,
   );
 
-  // Remove chat session containers (chat-eddo-*)
+  // Remove chat session containers (eddo-chat-*)
   exec(
-    'docker ps -aq --filter "name=chat-eddo-" | xargs -r docker rm -f 2>/dev/null || true',
+    'docker ps -aq --filter "name=eddo-chat-" | xargs -r docker rm -f 2>/dev/null || true',
     'Removing chat session containers',
     dryRun,
   );
@@ -231,7 +231,7 @@ function displayWarning(includeModules: boolean): void {
   console.log(chalk.yellow('This will permanently delete:\n'));
   console.log(chalk.white('  🐳 Docker:'));
   console.log(chalk.gray('     - All eddo containers (couchdb, elasticsearch, app)'));
-  console.log(chalk.gray('     - Chat session containers (chat-eddo-*)'));
+  console.log(chalk.gray('     - Chat session containers (eddo-chat-*)'));
   console.log(chalk.gray('     - SearXNG container (from skill)'));
   console.log(chalk.gray('     - All eddo volumes (YOUR DATA WILL BE LOST!)'));
   console.log(chalk.gray('     - Docker images (pi-coding-agent, searxng)'));
