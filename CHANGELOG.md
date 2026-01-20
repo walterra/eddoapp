@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.7.0
+
+### Minor Changes
+
+- [#490](https://github.com/walterra/eddoapp/pull/490) [`2805ffb`](https://github.com/walterra/eddoapp/commit/2805ffbc9a44e27fee7d08fea4f4f3d3732acaf4) - Add bundle splitting and enhanced CI bundle size reporting with per-chunk breakdown
+
+- [#473](https://github.com/walterra/eddoapp/pull/473) [`2fe343d`](https://github.com/walterra/eddoapp/commit/2fe343d435faa3a602fddcee93a9ba62fd05a3c3) - Add chat-agent package with skills and extensions for pi coding agent integration
+
+- [#472](https://github.com/walterra/eddoapp/pull/472) [`12d151b`](https://github.com/walterra/eddoapp/commit/12d151b7646a0ef2cfa527eebdf29179244f7a51) - Add chat API routes for AI agent sessions
+
+- [#467](https://github.com/walterra/eddoapp/pull/467) [`9af4c89`](https://github.com/walterra/eddoapp/commit/9af4c89acd36917a15df5adfdb55364c7292089c) - Add chat database types and API for message storage
+
+- [#474](https://github.com/walterra/eddoapp/pull/474) [`06cd960`](https://github.com/walterra/eddoapp/commit/06cd9607be6a0dd366a65aacd462dd203fec673f) - Add chat UI components with assistant-ui library integration for AI agent sessions
+
+- [#470](https://github.com/walterra/eddoapp/pull/470) [`7d0b85e`](https://github.com/walterra/eddoapp/commit/7d0b85ef98f283e78cd28c4f8ef81e5423c9942b) - Add docker container and git repo management modules
+
+- [#471](https://github.com/walterra/eddoapp/pull/471) [`dec90cf`](https://github.com/walterra/eddoapp/commit/dec90cf158d835fd6d0f1b224c3751e805de8815) - Add Elasticsearch-based full-text search for todos
+
+- [#477](https://github.com/walterra/eddoapp/pull/477) [`0c14529`](https://github.com/walterra/eddoapp/commit/0c14529afded4a19e88a52ab62fa69ef49961b9b) - Add `pnpm dev:setup` wizard, `pnpm dev:doctor` diagnostic tool, and `pnpm dev:purge` cleanup command for improved developer experience
+
+- [#464](https://github.com/walterra/eddoapp/pull/464) [`112e60e`](https://github.com/walterra/eddoapp/commit/112e60e4892c57e80975b7bb6a5d4d9db02570d2) - Add image upload support for todos with CouchDB native attachments
+
+- [#475](https://github.com/walterra/eddoapp/pull/475) [`a44f14d`](https://github.com/walterra/eddoapp/commit/a44f14d3f30f69d03c4e17d29f713adf4078d671) - Add SearXNG search skill and Docker management for chat agent
+
+- [#469](https://github.com/walterra/eddoapp/pull/469) [`c392301`](https://github.com/walterra/eddoapp/commit/c392301af84c8719b35ef44e44d1cc57c5a35b20) - Add theming system and RPG2 theme for todo graph visualization
+
+### Patch Changes
+
+- [#468](https://github.com/walterra/eddoapp/pull/468) [`de7d0ba`](https://github.com/walterra/eddoapp/commit/de7d0babd08bbc6be808f653fa1719d04ea84251) - Add emailSyncError field to UserPreferences for tracking email sync failures
+
+- [#465](https://github.com/walterra/eddoapp/pull/465) [`0237953`](https://github.com/walterra/eddoapp/commit/0237953642973702f5ceb391885fc974392581cf) - Fix complete button in table-view and improve table layout on narrow screens
+
+- [#460](https://github.com/walterra/eddoapp/pull/460) [`60766c3`](https://github.com/walterra/eddoapp/commit/60766c3e2098ca73aa1acfb2736464994204d975) - Add MapReduce views for O(1) tag/context aggregation and batch subtask counts
+
+- [#462](https://github.com/walterra/eddoapp/pull/462) [`3e0fb46`](https://github.com/walterra/eddoapp/commit/3e0fb4678b3b242d43347edf9254386557f41462) - Migrate table view to TanStack Table with virtualization support for improved performance
+
 ## 0.6.0
 
 ### Minor Changes
