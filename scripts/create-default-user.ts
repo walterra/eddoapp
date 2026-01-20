@@ -5,8 +5,9 @@
  * This user is used by the eddo-todo skill for MCP access via X-User-ID header
  *
  * Usage:
- *   pnpm dev:create-user                    # Uses default password
- *   pnpm dev:create-user --password mypass  # Uses custom password
+ *   pnpm dev:create-user                              # Uses default password
+ *   EDDO_USER_PASSWORD=mypass pnpm dev:create-user   # Uses custom password (preferred)
+ *   pnpm dev:create-user --password mypass           # Uses custom password (exposes in ps)
  */
 
 // Load .env file before importing modules that need env vars
@@ -33,6 +34,12 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 function parseArgs(): { password: string } {
+  // Prefer env var (doesn't expose password in process list)
+  if (process.env.EDDO_USER_PASSWORD) {
+    return { password: process.env.EDDO_USER_PASSWORD };
+  }
+
+  // Fall back to CLI arg for manual usage (still supported but not recommended)
   const args = process.argv.slice(2);
   let password = DEFAULT_PASSWORD;
 
@@ -178,9 +185,7 @@ async function createDefaultUser(password: string): Promise<boolean> {
     console.log(chalk.green('\n✅ Default user setup complete!\n'));
     console.log(chalk.gray(`  Username: ${DEFAULT_USERNAME}`));
     console.log(
-      chalk.gray(
-        `  Password: ${password === DEFAULT_PASSWORD ? DEFAULT_PASSWORD + ' (default)' : '(custom)'}`,
-      ),
+      chalk.gray(`  Password: ${password === DEFAULT_PASSWORD ? '(default)' : '(custom)'}`),
     );
     console.log(chalk.gray(`  Used by: eddo-todo skill (X-User-ID header)\n`));
 

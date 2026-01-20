@@ -60,17 +60,19 @@ export function checkDefaultUserExists(): boolean {
 
 /**
  * Create default development user directly in CouchDB
+ * Password is passed via EDDO_USER_PASSWORD env var to avoid exposing in process list
  */
 export function createDefaultUser(rootDir: string, password?: string): boolean {
-  const args = ['dev:create-user'];
+  const env = { ...process.env };
   if (password) {
-    args.push('--', '--password', password);
+    env.EDDO_USER_PASSWORD = password;
   }
 
-  const result = spawnSync('pnpm', args, {
+  const result = spawnSync('pnpm', ['dev:create-user'], {
     cwd: rootDir,
     stdio: 'inherit',
     encoding: 'utf-8',
+    env,
   });
 
   return result.status === 0;
