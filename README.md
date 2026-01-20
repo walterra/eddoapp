@@ -1,158 +1,217 @@
 # Eddo
 
-_Loosely GTD inspired todo & time tracking app_
+_GTD-inspired todo & time tracking with AI integration_
 
-A monorepo containing a React frontend, MCP server, and Telegram bot with AI agent capabilities. Built with offline-first architecture using PouchDB for data persistence.
+[![Watch Demo](https://img.youtube.com/vi/jiWS9pP_cX0/maxresdefault.jpg)](https://www.youtube.com/watch?v=jiWS9pP_cX0)
 
-**⚠️ Alpha State**: This is a proof of concept. While we encourage you to try it and provide feedback, don't expect 100% data integrity across updates.
+📺 [Watch the sneak peek intro on YouTube](https://www.youtube.com/watch?v=jiWS9pP_cX0)
 
-The app is inspired by an offline/notebook based approach that has been refined over 10+ years.
+**⚠️ Alpha Software**: This is under active development. While we encourage you to try it and provide feedback, expect breaking changes and don't rely on 100% data integrity across updates.
 
-|                          Notebook                           |                                 Eddo                                  |
+## Overview
+
+Eddo combines classic GTD (Getting Things Done) methodology with modern AI capabilities. Manage todos through a web interface, Telegram bot with Claude AI, or programmatically via MCP. Includes [pi-coding-agent](https://buildwithpi.ai) integration with custom skills and extensions for AI-assisted development workflows.
+
+|                         Inspiration                         |                                 Eddo                                  |
 | :---------------------------------------------------------: | :-------------------------------------------------------------------: |
 | <img src="./img/notebook.jpg" alt="notebook" width="60%" /> | <img src="./img/screenshot.png" alt="Eddo screenshot" width="100%" /> |
 
-## Key Features
+### Key Features
 
-- **GTD-Style Contexts**: Organize todos by context (e.g., work, home) in Kanban-style columns
-- **Calendar Week Navigation**: View and navigate todos by calendar week
-- **Time Tracking**: Start/pause timers for individual todos with daily summaries
-- **Offline-First**: PouchDB provides local storage with real-time sync capabilities
-- **AI Integration**: Telegram bot with Claude AI for natural language todo management
-- **GitHub Issue Sync**: Automatic one-way sync of GitHub issues assigned to you to todos with deduplication
-- **MCP Server**: Programmatic access via Model Context Protocol
-- **Data Migration**: Automatic schema versioning and migration system
-
-## Architecture
-
-A **monorepo** with four main packages:
-
-- **Web Client**: React/TypeScript frontend with offline-first PouchDB storage
-- **MCP Server**: Model Context Protocol server for external integrations
-- **Core**: Shared types and utilities across packages
-- **Telegram Bot**: AI-powered bot using Anthropic Claude
-
-Key patterns: database-centric design, offline-first architecture, and automatic data migration.
+- **GTD Contexts** — Organize todos by context (work, home, projects) in Kanban columns
+- **Calendar Week View** — Navigate todos by week with date-range queries
+- **Time Tracking** — Start/pause timers with daily summaries
+- **Offline-First** — PouchDB local storage with real-time sync
+- **AI Agent** — Telegram bot with Claude for natural language todo management
+- **GitHub Sync** — Auto-import issues assigned to you
+- **RSS Feeds** — Subscribe to feeds, create todos from items
+- **Email Sync** — Gmail OAuth integration for email-to-todo
+- **MCP Server** — Programmatic access via Model Context Protocol
+- **pi-coding-agent Skills** — AI coding assistant integration
 
 ## Quick Start
 
+**Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0, Docker
+
 ```bash
-# Clone and install
+# Clone repository
 git clone https://github.com/walterra/eddoapp.git
 cd eddoapp
+
+# Optional: Use latest stable release instead of main branch
+git checkout $(git describe --tags --abbrev=0)
+
+# Install dependencies
 pnpm install
 
-# Interactive setup wizard
+# Run interactive setup wizard
 pnpm dev:setup
 
 # Start development server
 pnpm dev
 
-# Open http://localhost:3000 in your browser
+# Open http://localhost:3000
 ```
 
-**Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0, Docker
+### What Setup Does
 
-### What `pnpm dev:setup` Does
+The `pnpm dev:setup` wizard:
 
-The setup wizard guides you through:
-
-1. **Checks prerequisites** - Node.js, pnpm, Docker, Git versions
-2. **Starts Docker services** - CouchDB and Elasticsearch containers
-3. **Generates `.env` file** - Development defaults
-4. **Builds workspace packages** - Core libraries needed by the app
-5. **Creates default user** - `eddo_pi_agent` for MCP/agentic access
-
-> **Note**: The `eddo_pi_agent` user is currently the only user capable of AI agent integration via MCP. You'll be prompted to set a password during setup.
+1. **Checks prerequisites** — Node.js, pnpm, Docker, Git
+2. **Starts Docker services** — CouchDB and Elasticsearch
+3. **Generates `.env`** — Development defaults
+4. **Builds packages** — Core libraries and setup tools
+5. **Creates user** — `eddo_pi_agent` for MCP/agent access
+6. **Links pi-coding-agent skills** — If pi is installed globally
 
 ### Troubleshooting
 
-Run `pnpm dev:doctor` to diagnose environment issues. It checks:
-
-- Prerequisite versions
-- Docker daemon and container status
-- Service health (CouchDB, Elasticsearch)
-- Port availability
-- Configuration files
-
-### Additional Commands
-
 ```bash
-# Start telegram bot (requires TELEGRAM_BOT_TOKEN and ANTHROPIC_API_KEY)
-pnpm dev:telegram-bot
-
-# Run tests
-pnpm test
-
-# Build for production
-pnpm build
-
-# Create default user manually (if skipped during setup)
-pnpm dev:create-user
+pnpm dev:doctor
 ```
 
-## Components
+Diagnoses: prerequisites, Docker status, service health, port availability, configuration.
 
-### Web Client
+## Architecture
 
-React frontend with GTD-style contexts, calendar week navigation, and time tracking. Runs offline-first with PouchDB.
+Monorepo with these packages:
+
+| Package        | Description                                     |
+| -------------- | ----------------------------------------------- |
+| `web-client`   | React frontend with PouchDB offline storage     |
+| `web-api`      | Hono API server, CouchDB proxy, sync schedulers |
+| `core-shared`  | Shared types, utilities, data models            |
+| `core-server`  | Server-side database and config                 |
+| `core-client`  | Client-side config                              |
+| `mcp-server`   | Model Context Protocol server                   |
+| `telegram-bot` | AI bot with Claude integration                  |
+| `setup`        | Setup wizard and doctor tools                   |
+| `chat-agent`   | Skills and extensions for pi-coding-agent       |
+
+### Data Flow
+
+```
+Browser (PouchDB) ←→ Web API ←→ CouchDB
+                         ↓
+                  Elasticsearch (search)
+
+Telegram Bot → MCP Server → CouchDB
+```
+
+## Integrations
 
 ### Telegram Bot
 
-AI-powered bot with **agentic loop architecture** that understands complex, multi-step instructions. Features:
+AI-powered assistant for natural language todo management:
 
-- **Natural language processing**: "Add a work todo for tomorrow's meeting and set a reminder"
-- **Autonomous task execution**: Can break down complex requests into multiple actions
-- **Dynamic tool selection**: Chooses appropriate MCP tools based on user intent
-- **Daily briefings**: Scheduled todo summaries at your preferred time
-- **GitHub integration**: Configure GitHub issue sync via bot commands
+```
+"Add a work todo for tomorrow's meeting"
+"What's overdue?"
+"Start tracking time on the API refactor"
+```
 
-Set `TELEGRAM_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables to get started.
+**Setup**: Set `TELEGRAM_BOT_TOKEN` and `ANTHROPIC_API_KEY` in `.env`
 
-#### GitHub Issue Sync
+```bash
+pnpm dev:telegram-bot
+```
 
-Automatically sync GitHub issues **assigned to you** to Eddo todos:
+Features:
 
-1. **Create a GitHub Personal Access Token** at https://github.com/settings/tokens
-   - Select scope: `repo` (for private repos) or `public_repo`
-2. **Configure via Telegram bot**: `/github token ghp_your_token`
-3. **Enable sync**: `/github on`
-4. **Check status**: `/github status`
+- Multi-step instruction handling
+- Daily briefings at scheduled times
+- GitHub/RSS/Email sync configuration via bot commands
 
-Issues sync periodically (default: hourly) with:
+### GitHub Issue Sync
 
-- **Initial sync**: Only open issues (avoids old closed issues)
-- **Ongoing syncs**: Issues updated since sync enabled (max lookback prevents syncing ancient history)
-- **Context assignment**: Each repository becomes its own context (e.g., `elastic/kibana`, `walterra/d3-milestones`)
-- Deduplication via external ID tracking
-- Automatic completion when issues are closed
-- Update detection for title and description changes
-- Customizable tag assignment
+Sync issues assigned to you into Eddo todos:
+
+1. Create PAT at https://github.com/settings/tokens (scope: `repo` or `public_repo`)
+2. Configure: `/github token ghp_your_token`
+3. Enable: `/github on`
+4. Check: `/github status`
+
+Each repository becomes its own context. Issues auto-complete when closed on GitHub.
+
+### RSS Feed Sync
+
+Subscribe to RSS/Atom feeds:
+
+1. Add feed: `/rss add https://example.com/feed.xml`
+2. Enable: `/rss on`
+3. List feeds: `/rss list`
+
+Supports autodiscovery — add a website URL and Eddo finds the feed.
+
+### Email Sync (Gmail)
+
+Sync emails from a designated folder to todos:
+
+1. Start OAuth: `/email auth`
+2. Authorize in browser
+3. Enable: `/email on`
+4. Set folder: `/email folder Eddo`
+
+Requires Google Cloud project setup. See [Gmail OAuth Setup](docs/gmail-oauth-setup.md).
 
 ### MCP Server
 
-Provides programmatic access to todos via Model Context Protocol. Test with `pnpm test:mcp`.
+Programmatic todo access via Model Context Protocol:
 
-> **⚠️ Security Note**: The MCP server currently has no proper authentication. It uses a simple `X-User-ID` header for user identification without verification. Do not expose the MCP server to untrusted networks.
+```bash
+pnpm dev:mcp-server
+pnpm test:mcp-server  # Interactive testing
+```
 
-## Backup & Disaster Recovery
+> **Security**: MCP server uses simple `X-User-ID` header without verification. Don't expose to untrusted networks.
 
-Eddo includes automated backup and restore capabilities:
+### pi-coding-agent Integration
+
+If you use [pi-coding-agent](https://github.com/mariozechner/pi-coding-agent), Eddo provides skills and extensions:
+
+**Skills:**
+
+- `eddo-todo` — Task management commands
+- `eddo-work` — Structured implementation workflow
+- `eddo-spawn` — Multi-agent git worktree orchestration
+- `elasticsearch-esql` — ES|QL query generation
+- `searxng-search` — Web search integration
+
+**Extensions:**
+
+- `graphviz-chart` — Diagram rendering
+- `vega-chart` — Data visualization
+
+The setup wizard auto-links these if pi is installed globally (`npm i -g @mariozechner/pi-coding-agent`).
+
+## Backup & Recovery
 
 ```bash
 # Interactive backup/restore
 pnpm backup:interactive
 pnpm restore:interactive
 
-# Automated daily backups
+# Automated backups
 pnpm backup:auto --pattern "eddo_user_*"
 
-# Apply retention policy
+# Retention policy
 pnpm backup:retention
 ```
 
-See [Disaster Recovery Guide](docs/07_disaster-recovery.md) for complete procedures, recovery objectives, and troubleshooting.
+See [Disaster Recovery Guide](docs/07_disaster-recovery.md).
 
 ## Development
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup, architecture, testing, and contribution guidelines.
+```bash
+pnpm dev              # Start all services
+pnpm test             # Run tests
+pnpm lint             # Check code style
+pnpm build            # Production build
+pnpm dev:create-user  # Create user manually
+```
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for architecture details, testing, and contribution guidelines.
+
+## License
+
+MIT
