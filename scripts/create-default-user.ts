@@ -150,6 +150,10 @@ async function createDefaultUser(password: string): Promise<boolean> {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
+    // Ensure user registry database exists (creates it if needed)
+    await userRegistry.ensureDatabase();
+    console.log(chalk.green('  ✓ User registry database ready'));
+
     // Check if user already exists - delete and recreate to ensure clean state
     const existingUser = await userRegistry.findByUsername(DEFAULT_USERNAME);
     if (existingUser) {
