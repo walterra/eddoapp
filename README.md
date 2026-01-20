@@ -6,17 +6,19 @@ _GTD-inspired todo & time tracking with AI integration_
 
 📺 [Watch the sneak peek intro on YouTube](https://www.youtube.com/watch?v=jiWS9pP_cX0)
 
-**⚠️ Alpha Software**: This is under active development. While we encourage you to try it and provide feedback, expect breaking changes and don't rely on 100% data integrity across updates.
+**⚠️ Alpha Software**: This is a solo side project under active development. Feel free to try it and provide feedback, but expect rough edges, breaking changes, and don't rely on data integrity across updates.
 
 ## Overview
 
-Eddo combines classic GTD (Getting Things Done) methodology with modern AI capabilities. Manage todos through a web interface, Telegram bot with Claude AI, or programmatically via MCP. Includes [pi-coding-agent](https://buildwithpi.ai) integration with custom skills and extensions for AI-assisted development workflows.
+Eddo is a personal project that combines classic GTD (Getting Things Done) methodology with modern AI capabilities. Born from a notebook-based system refined over 10+ years, it's my attempt to digitize that workflow while exploring what's possible with AI assistants.
 
-|                         Inspiration                         |                                 Eddo                                  |
+Manage todos through a web interface, Telegram bot with Claude AI, or programmatically via MCP. Includes [pi-coding-agent](https://buildwithpi.ai) integration with custom skills and extensions for AI-assisted development workflows.
+
+|                         Inspiration                         |                     Eddo (initial 2022 verrsion)                      |
 | :---------------------------------------------------------: | :-------------------------------------------------------------------: |
 | <img src="./img/notebook.jpg" alt="notebook" width="60%" /> | <img src="./img/screenshot.png" alt="Eddo screenshot" width="100%" /> |
 
-### Key Features
+### Features
 
 - **GTD Contexts** — Organize todos by context (work, home, projects) in Kanban columns
 - **Calendar Week View** — Navigate todos by week with date-range queries
@@ -163,7 +165,7 @@ pnpm dev:mcp-server
 pnpm test:mcp-server  # Interactive testing
 ```
 
-> **Security**: MCP server uses simple `X-User-ID` header without verification. Don't expose to untrusted networks.
+> **Note**: The MCP server uses a simple `X-User-ID` header without verification. Don't expose to untrusted networks.
 
 ### pi-coding-agent Integration
 
