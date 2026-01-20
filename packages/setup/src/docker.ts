@@ -7,15 +7,24 @@ import { execSync, spawn, spawnSync } from 'child_process';
 import ora from 'ora';
 
 /**
- * Check if a Docker container is running
+ * Check if a Docker container is running.
+ * Uses spawnSync with args array to prevent shell injection.
  */
 export function isContainerRunning(containerName: string): boolean {
   try {
-    const output = execSync(`docker ps --filter "name=${containerName}" --format "{{.Names}}"`, {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    return output.trim().includes(containerName);
+    // Validate container name to prevent injection (alphanumeric, dash, underscore only)
+    if (!/^[a-zA-Z0-9_-]+$/.test(containerName)) {
+      return false;
+    }
+    const result = spawnSync(
+      'docker',
+      ['ps', '--filter', `name=${containerName}`, '--format', '{{.Names}}'],
+      {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    );
+    return result.stdout?.trim().includes(containerName) ?? false;
   } catch {
     return false;
   }

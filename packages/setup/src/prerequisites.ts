@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 
 export interface PrerequisiteResult {
   name: string;
@@ -13,27 +13,32 @@ export interface PrerequisiteResult {
 }
 
 /**
- * Execute a command and return stdout or null on error
+ * Execute a command and return stdout or null on error.
+ * Uses spawnSync with args array to prevent shell injection.
  */
 export function execCommand(command: string, args: string = ''): string | null {
   try {
-    const fullCommand = args ? `${command} ${args}` : command;
-    const output = execSync(fullCommand, {
+    const argList = args ? args.split(/\s+/).filter(Boolean) : [];
+    const result = spawnSync(command, argList, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    return output.trim().split('\n')[0];
+    if (result.status !== 0) return null;
+    return result.stdout?.trim().split('\n')[0] ?? null;
   } catch {
     return null;
   }
 }
 
 /**
- * Extract version number from version string
+ * Extract version number from version string.
+ * Uses explicit digit pattern to prevent ReDoS.
  */
 export function extractVersion(versionString: string): string {
-  const match = versionString.match(/v?(\d+\.\d+\.\d+)/);
-  return match ? match[1] : versionString;
+  // Limit input length and use non-backtracking pattern
+  const input = versionString.slice(0, 200);
+  const match = input.match(/v?([0-9]+)\.([0-9]+)\.([0-9]+)/);
+  return match ? `${match[1]}.${match[2]}.${match[3]}` : versionString;
 }
 
 /**
