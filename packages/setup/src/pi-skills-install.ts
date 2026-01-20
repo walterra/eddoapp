@@ -14,15 +14,15 @@ import {
 } from './pi-skills-detection.js';
 
 /**
- * Display conflicts to user before installation
- * @returns true if there are conflicts
+ * Display conflicts to user as warnings (not errors)
+ * @returns number of conflicts (for informational purposes only)
  */
-export function displayConflicts(conflicts: readonly ConflictInfo[]): boolean {
+export function displayConflicts(conflicts: readonly ConflictInfo[]): number {
   if (conflicts.length === 0) {
-    return false;
+    return 0;
   }
 
-  console.log(chalk.yellow('\n⚠️  Conflicts detected:\n'));
+  console.log(chalk.yellow('\n⚠️  Some skills already exist (will be skipped):\n'));
 
   for (const conflict of conflicts) {
     const icon = conflict.type === 'name_clash' ? '🔀' : '⚠️';
@@ -31,10 +31,10 @@ export function displayConflicts(conflicts: readonly ConflictInfo[]): boolean {
     console.log(chalk.gray(`     Target: ${conflict.targetPath}\n`));
   }
 
-  console.log(chalk.yellow('  These items will be skipped to avoid duplicates.'));
-  console.log(chalk.gray('  To reinstall, manually remove the existing items first.\n'));
+  console.log(chalk.gray('  These are already installed - no action needed.'));
+  console.log(chalk.gray('  To reinstall from Eddo, manually remove them first.\n'));
 
-  return true;
+  return conflicts.length;
 }
 
 /**
@@ -174,9 +174,11 @@ function processInstallList(
 export function installEddoSkillsAndExtensions(rootDir: string, force = false): boolean {
   const { skills, extensions, conflicts } = checkEddoSkillsInstalled(rootDir);
 
-  // In non-force mode, display conflicts (they will be skipped)
-  // In force mode, conflicts are handled by replacement, so don't penalize the result
-  const hasConflicts = !force && displayConflicts(conflicts);
+  // Display conflicts as warnings (not errors) - they're informational only
+  // In force mode, skip the warning since we'll replace them anyway
+  if (!force) {
+    displayConflicts(conflicts);
+  }
   const conflictNames = new Set(conflicts.map((c) => c.skillName));
 
   ensureDirectory(getPiSkillsDir());
@@ -190,5 +192,6 @@ export function installEddoSkillsAndExtensions(rootDir: string, force = false): 
 
   displayInstallSummary(totalInstalled, totalSkipped);
 
-  return skillResult.allSuccess && extResult.allSuccess && !hasConflicts;
+  // Conflicts are warnings, not failures - return true if all operations succeeded
+  return skillResult.allSuccess && extResult.allSuccess;
 }

@@ -23,15 +23,15 @@ describe('pi-skills-install', () => {
   });
 
   describe('displayConflicts', () => {
-    it('returns false when no conflicts', () => {
+    it('returns 0 when no conflicts', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const result = displayConflicts([]);
-      expect(result).toBe(false);
+      expect(result).toBe(0);
       expect(consoleSpy).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
 
-    it('returns true and displays conflicts when present', () => {
+    it('returns count and displays conflicts as warnings when present', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const conflicts: ConflictInfo[] = [
         {
@@ -43,11 +43,11 @@ describe('pi-skills-install', () => {
       ];
 
       const result = displayConflicts(conflicts);
-      expect(result).toBe(true);
+      expect(result).toBe(1);
       expect(consoleSpy).toHaveBeenCalled();
 
       const allOutput = consoleSpy.mock.calls.map((c) => c[0]).join('\n');
-      expect(allOutput).toContain('Conflicts detected');
+      expect(allOutput).toContain('already exist');
       expect(allOutput).toContain('test-skill');
 
       consoleSpy.mockRestore();
@@ -117,7 +117,7 @@ describe('pi-skills-install', () => {
       consoleSpy.mockRestore();
     });
 
-    it('skips conflicting skills and returns false', () => {
+    it('skips conflicting skills but returns true (conflicts are warnings)', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       // Create eddo skill source
@@ -130,7 +130,8 @@ describe('pi-skills-install', () => {
 
       const result = installEddoSkillsAndExtensions(tempDir);
 
-      expect(result).toBe(false); // Has conflicts
+      // Conflicts are warnings, not errors - setup should succeed
+      expect(result).toBe(true);
 
       const allOutput = consoleSpy.mock.calls.map((c) => c[0]).join('\n');
       expect(allOutput).toContain('Skipped');
