@@ -59,7 +59,7 @@ describe('TodoFilters Component', () => {
     setSelectedStatus: vi.fn(),
     selectedTimeRange: { type: 'current-week' as const },
     setSelectedTimeRange: vi.fn(),
-    viewMode: 'kanban' as const,
+    viewMode: 'table' as const,
     onViewModeChange: vi.fn(),
     tableColumns: ['title', 'due', 'tags', 'timeTracked', 'status'],
     onTableColumnsChange: vi.fn(),
