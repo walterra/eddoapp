@@ -95,10 +95,12 @@ export function generateWhereConditions(
 ): string[] {
   const conditions: string[] = [];
 
-  // Full-text search on title and description
+  // Full-text search on title, description, and notes content
   if (parsed.searchText.length > 0) {
     const escaped = escapeString(parsed.searchText);
-    conditions.push(`(MATCH(title, "${escaped}") OR MATCH(description, "${escaped}"))`);
+    conditions.push(
+      `(MATCH(title, "${escaped}") OR MATCH(description, "${escaped}") OR MATCH(notesContent, "${escaped}"))`,
+    );
   }
 
   // Tag filters (OR logic - match any tag)

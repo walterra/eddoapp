@@ -153,6 +153,12 @@ export const TODO_INDEX_MAPPING = {
       },
     },
 
+    // Denormalized notes content for full-text search (ES|QL doesn't support nested MATCH)
+    notesContent: {
+      type: 'text',
+      analyzer: 'todo_content',
+    },
+
     // Extensible metadata with namespaced keys (agent:, github:, rss:)
     // Flattened type handles dynamic keys without mapping explosion
     metadata: {
@@ -232,6 +238,8 @@ export interface IndexedTodo {
     updatedAt?: string;
     attachments?: string[];
   }>;
+  /** Denormalized notes content for full-text search */
+  notesContent?: string | null;
   metadata?: Record<string, string | string[]>;
   // Sync-specific fields
   userId: string;

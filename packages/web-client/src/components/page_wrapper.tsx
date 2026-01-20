@@ -5,6 +5,7 @@ import { type FC, useCallback, useEffect, useState } from 'react';
 
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { useProfile } from '../hooks/use_profile';
+import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { usePouchDb } from '../pouch_db';
 import { ChatView } from './chat_view';
 import { TodosView } from './todos_view';
@@ -132,8 +133,16 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   const [currentView, setCurrentView] = useState<AppView>('todos');
   const activitySidebar = useActivitySidebar();
   const chatSidebar = useChatSidebar();
+  const { openTodoById } = useTodoFlyoutContext();
   const databaseName = rawDb.name;
   const chatNav = useChatNavigation(chatSidebar, setCurrentView);
+
+  const handleSelectTodo = useCallback(
+    (todoId: string) => {
+      void openTodoById(todoId);
+    },
+    [openTodoById],
+  );
 
   if (currentView === 'profile') {
     return <UserProfile onClose={() => setCurrentView('todos')} />;
@@ -159,6 +168,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
       isAuthenticated={isAuthenticated}
       logout={logout}
       onExpandChat={chatNav.handleExpandChat}
+      onSelectTodo={handleSelectTodo}
       onShowChat={chatNav.handleChatClick}
       onShowProfile={() => setCurrentView('profile')}
     >

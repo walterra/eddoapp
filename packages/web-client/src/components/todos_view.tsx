@@ -13,6 +13,7 @@ import type { useDatabaseHealth } from '../hooks/use_database_health';
 import { AuditSidebar } from './audit_sidebar';
 import { ChatSidebar } from './chat';
 import { HealthIndicatorPopover } from './health_indicator_popover';
+import { SearchPopover } from './search_popover';
 
 /** Activity sidebar state interface */
 export interface ActivitySidebarState {
@@ -71,6 +72,7 @@ interface HeaderProps {
   showAuditSidebar: boolean;
   onToggleAuditSidebar: () => void;
   showChatSidebar: boolean;
+  onSelectTodo: (todoId: string) => void;
 }
 
 const Header: FC<HeaderProps> = ({
@@ -83,6 +85,7 @@ const Header: FC<HeaderProps> = ({
   showAuditSidebar,
   onToggleAuditSidebar,
   showChatSidebar,
+  onSelectTodo,
 }) => (
   <div className="mb-2 flex items-center justify-between">
     <div>
@@ -92,6 +95,7 @@ const Header: FC<HeaderProps> = ({
     <div className="flex items-center space-x-1">
       {isAuthenticated && (
         <>
+          <SearchPopover onSelectTodo={onSelectTodo} />
           <HealthIndicatorPopover databaseName={databaseName} healthCheck={healthCheck} />
           <IconButton
             isActive={showChatSidebar}
@@ -133,6 +137,7 @@ export interface TodosViewProps {
   onExpandChat: () => void;
   databaseName: string;
   healthCheck: ReturnType<typeof useDatabaseHealth>['healthCheck'];
+  onSelectTodo: (todoId: string) => void;
 }
 
 /** Todos view wrapper */
@@ -147,6 +152,7 @@ export const TodosView: FC<TodosViewProps> = ({
   onExpandChat,
   databaseName,
   healthCheck,
+  onSelectTodo,
 }) => (
   <div className="flex h-screen w-full flex-col overflow-hidden">
     <div className="flex min-h-0 flex-1">
@@ -156,6 +162,7 @@ export const TodosView: FC<TodosViewProps> = ({
           healthCheck={healthCheck}
           isAuthenticated={isAuthenticated}
           onLogout={logout}
+          onSelectTodo={onSelectTodo}
           onShowChat={onShowChat}
           onShowProfile={onShowProfile}
           onToggleAuditSidebar={activitySidebar.toggle}

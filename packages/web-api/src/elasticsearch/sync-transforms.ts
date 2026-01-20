@@ -31,6 +31,15 @@ export function extractUserId(dbName: string): string {
 }
 
 /**
+ * Extracts all note content as a single string for full-text search.
+ * ES|QL doesn't support nested field MATCH, so we denormalize.
+ */
+function extractNotesContent(notes?: TodoAlpha3['notes']): string | null {
+  if (!notes || notes.length === 0) return null;
+  return notes.map((note) => note.content).join('\n');
+}
+
+/**
  * Converts a TodoAlpha3 document to an IndexedTodo for Elasticsearch.
  */
 export function toIndexedTodo(
@@ -56,6 +65,7 @@ export function toIndexedTodo(
     auditLog: doc.auditLog,
     version: doc.version,
     notes: doc.notes,
+    notesContent: extractNotesContent(doc.notes),
     metadata: doc.metadata,
     userId,
     database,
