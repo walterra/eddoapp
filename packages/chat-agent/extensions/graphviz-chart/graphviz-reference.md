@@ -2,6 +2,24 @@
 
 Graphviz is a powerful tool for creating diagrams and visual representations of graphs using the DOT language. This reference covers the essential syntax, attributes, and patterns for creating effective diagrams.
 
+## Prerequisites
+
+Graphviz is **auto-installed** when first using this extension:
+
+- **macOS**: via Homebrew (`brew install graphviz`)
+- **Linux**: via apt or dnf (`sudo apt install -y graphviz` / `sudo dnf install -y graphviz`)
+
+If auto-install fails (e.g., missing package manager, permissions), manual installation is required:
+
+- **macOS**: `brew install graphviz`
+- **Ubuntu/Debian**: `sudo apt install graphviz`
+- **Fedora/RHEL**: `sudo dnf install graphviz`
+- **Windows**: Download from https://graphviz.org/download/
+
+Verify installation: `dot -V`
+
+If Graphviz cannot be installed, the tool returns an error with instructions. Do NOT fall back to ASCII art.
+
 ## Basic Structure
 
 ### Graph Types

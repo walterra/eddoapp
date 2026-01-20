@@ -130,7 +130,7 @@ async function promptPiSkillsInstall(
   const { installSkills } = await prompts({
     type: 'confirm',
     name: 'installSkills',
-    message: 'Link Eddo skills/extensions to pi-coding-agent?',
+    message: 'Link Eddo skills/extensions to your local pi-coding-agent?',
     initial: true,
   });
   return installSkills;

@@ -33,6 +33,9 @@ export default function (pi: ExtensionAPI) {
     label: 'Graphviz Chart',
     description: `Render a Graphviz DOT specification as a PNG image.
 
+Graphviz will be auto-installed if not present (via brew on macOS, apt/dnf on Linux).
+If auto-install fails, the tool returns installation instructions - do NOT fall back to ASCII art.
+
 IMPORTANT: Before using this tool, read the complete reference documentation at:
 ${GRAPHVIZ_REFERENCE_PATH}
 
@@ -137,20 +140,66 @@ Reference: https://graphviz.org/doc/info/lang.html`,
       const outputFormat = isSvgOutput ? 'svg' : 'png';
 
       try {
-        // Check if graphviz is installed
+        // Check if graphviz is installed, auto-install if not
         try {
           execSync('which dot', { encoding: 'utf-8' });
         } catch {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Graphviz not found. Install with: brew install graphviz (macOS) or apt install graphviz (Linux)',
-              },
-            ],
-            details: { error: 'Graphviz not installed' },
-            isError: true,
-          };
+          // Try to auto-install graphviz
+          const platform = process.platform;
+          let installCmd: string | null = null;
+
+          if (platform === 'darwin') {
+            // macOS - check if brew is available
+            try {
+              execSync('which brew', { encoding: 'utf-8' });
+              installCmd = 'brew install graphviz';
+            } catch {
+              // brew not available
+            }
+          } else if (platform === 'linux') {
+            // Linux - try apt first, then dnf
+            try {
+              execSync('which apt', { encoding: 'utf-8' });
+              installCmd = 'sudo apt install -y graphviz';
+            } catch {
+              try {
+                execSync('which dnf', { encoding: 'utf-8' });
+                installCmd = 'sudo dnf install -y graphviz';
+              } catch {
+                // no supported package manager
+              }
+            }
+          }
+
+          if (installCmd) {
+            try {
+              execSync(installCmd, { encoding: 'utf-8', stdio: 'inherit' });
+              // Verify installation succeeded
+              execSync('which dot', { encoding: 'utf-8' });
+            } catch {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: `Failed to auto-install Graphviz. Please install manually:\n- macOS: brew install graphviz\n- Ubuntu/Debian: sudo apt install graphviz\n- Fedora/RHEL: sudo dnf install graphviz`,
+                  },
+                ],
+                details: { error: 'Graphviz installation failed' },
+                isError: true,
+              };
+            }
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Graphviz not found and auto-install not supported on this platform. Please install manually:\n- macOS: brew install graphviz\n- Ubuntu/Debian: sudo apt install graphviz\n- Fedora/RHEL: sudo dnf install graphviz\n- Windows: https://graphviz.org/download/`,
+                },
+              ],
+              details: { error: 'Graphviz not installed' },
+              isError: true,
+            };
+          }
         }
 
         const tmpDot = join(tmpdir(), `graphviz-${Date.now()}.dot`);
