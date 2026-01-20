@@ -88,7 +88,7 @@ export async function handleTodoSearch(c: HonoContext, esClient: Client): Promis
       addApiParamConditions(conditions, params, parsed);
 
       const esqlQuery = buildTodoQuery(indexName, conditions, parsed, params.limit);
-      logger.debug({ esqlQuery, parsed, username }, 'Executing todo search');
+      logger.info({ esqlQuery, parsed, username }, 'Executing todo search');
 
       const response = await esClient.esql.query({ format: 'json', query: esqlQuery });
       const results = transformEsqlResponse(

@@ -5,6 +5,7 @@
 
 import { withSpan } from '../utils/logger';
 import { createIndexManager } from './index-manager';
+import { createIndexMigration, type IndexMigration } from './index-migration';
 import { createBatchProcessor, type BatchProcessor } from './sync-batch';
 import type { DatabaseSyncState, SyncServiceConfig, SyncStatus } from './sync-types';
 import { createDatabaseWatcher, type DatabaseWatcher } from './sync-watcher';
@@ -16,6 +17,7 @@ interface ServiceState {
   batchProcessor: BatchProcessor;
   watcher: DatabaseWatcher;
   indexManager: ReturnType<typeof createIndexManager>;
+  indexMigration: IndexMigration;
   config: Pick<SyncServiceConfig, 'logger' | 'batchSize' | 'batchTimeoutMs'>;
 }
 
@@ -25,12 +27,20 @@ export function createSyncService(config: SyncServiceConfig) {
 
   const syncStates = new Map<string, DatabaseSyncState>();
   const batchProcessor = createBatchProcessor({ batchSize, batchTimeoutMs, esClient, logger });
-  const watcher = createDatabaseWatcher({ batchProcessor, getCouchDb, logger, syncStates });
+  const indexMigration = createIndexMigration({ esClient, logger });
+  const watcher = createDatabaseWatcher({
+    batchProcessor,
+    getCouchDb,
+    indexMigration,
+    logger,
+    syncStates,
+  });
 
   const state: ServiceState = {
     batchProcessor,
     config: { batchSize, batchTimeoutMs, logger },
     indexManager: createIndexManager(esClient),
+    indexMigration,
     isInitialized: false,
     syncStates,
     watcher,

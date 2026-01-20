@@ -143,7 +143,7 @@ function useSearchHandlers(config: HandlerConfig) {
 export function useSearchPopover(onSelectTodo: (todoId: string) => void): SearchPopoverState {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [includeCompleted, setIncludeCompleted] = useState(true);
+  const [includeCompleted, setIncludeCompleted] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { clearResults, error, isSearching, results, searchTodos } = useSearch();
 

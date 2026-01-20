@@ -4,6 +4,16 @@
  */
 
 /**
+ * Mapping version for todo indices.
+ * Increment when adding/modifying fields that require reindexing.
+ *
+ * Version history:
+ * - v1: Initial mapping (title, description, context, tags, etc.)
+ * - v2: Added notesContent denormalized field for full-text search
+ */
+export const TODO_MAPPING_VERSION = 2;
+
+/**
  * Index settings for todo indices.
  * Single shard for simplicity in development; increase for production scale.
  */
