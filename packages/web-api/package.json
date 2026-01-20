@@ -45,7 +45,7 @@
     "@types/turndown": "^5.0.6",
     "dotenv": "^17.2.3",
     "html-to-text": "^9.0.5",
-    "tsx": "^4.20.6",
+    "tsx": "^4.21.0",
     "turndown": "^7.2.2",
     "turndown-plugin-gfm": "^1.0.2",
     "typescript": "~5.9.3",
