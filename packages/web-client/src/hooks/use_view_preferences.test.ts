@@ -76,7 +76,7 @@ describe('useViewPreferences Hook', () => {
 
     const { result } = renderHook(() => useViewPreferences());
 
-    expect(result.current.viewMode).toBe('kanban');
+    expect(result.current.viewMode).toBe('table');
     expect(result.current.tableColumns).toEqual([
       'status',
       'title',
