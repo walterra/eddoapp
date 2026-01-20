@@ -1,0 +1,74 @@
+name: Setup E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/setup/**'
+      - 'scripts/doctor.ts'
+      - 'scripts/doctor-helpers.ts'
+      - 'scripts/create-default-user.ts'
+      - '.github/workflows/setup-e2e.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'packages/setup/**'
+      - 'scripts/doctor.ts'
+      - 'scripts/doctor-helpers.ts'
+      - 'scripts/create-default-user.ts'
+      - '.github/workflows/setup-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  setup-e2e:
+    name: Setup E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+
+      - uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 10.27.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run setup in CI mode
+        run: pnpm dev:setup --ci
+        env:
+          CI: true
+
+      - name: Run doctor to verify environment
+        run: pnpm dev:doctor
+
+      - name: Run setup E2E tests
+        run: pnpm vitest:run scripts/__tests__/e2e/setup.e2e.test.ts
+        env:
+          CI: true
