@@ -86,12 +86,12 @@ jobs:
         run: |
           echo "Verifying Docker cleanup..."
           # Check no eddo containers running
-          if docker ps -a --format '{{.Names}}' | grep -q '^eddo-'; then
-            echo "❌ Found remaining eddo containers:"
-            docker ps -a --format '{{.Names}}' | grep '^eddo-'
+          if docker ps -a --format '{{.Names}}' | grep -qE '^eddo-|^chat-eddo-|^searxng$'; then
+            echo "❌ Found remaining containers:"
+            docker ps -a --format '{{.Names}}' | grep -E '^eddo-|^chat-eddo-|^searxng$'
             exit 1
           fi
-          echo "✓ No eddo containers"
+          echo "✓ No eddo/chat/searxng containers"
           
           # Check no eddo volumes
           if docker volume ls --format '{{.Name}}' | grep -q '^eddo_'; then

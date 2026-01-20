@@ -134,33 +134,44 @@ function removeGlob(pattern: string, description: string, dryRun: boolean): numb
 function purgeDocker(dryRun: boolean): void {
   console.log(chalk.blue('\n🐳 Stopping Docker services...\n'));
 
-  // Stop containers
+  // Stop docker-compose services
   exec(
     'docker compose down --volumes --remove-orphans',
-    'Stopping containers and removing volumes',
+    'Stopping docker-compose services',
     dryRun,
   );
 
   // Remove eddo-specific containers (in case they're orphaned)
   exec(
     'docker rm -f eddo-couchdb eddo-elasticsearch eddo-app 2>/dev/null || true',
-    'Removing orphaned containers',
+    'Removing eddo containers',
     dryRun,
   );
+
+  // Remove chat session containers (chat-eddo-*)
+  exec(
+    'docker ps -aq --filter "name=chat-eddo-" | xargs -r docker rm -f 2>/dev/null || true',
+    'Removing chat session containers',
+    dryRun,
+  );
+
+  // Remove SearXNG container from skill
+  exec('docker rm -f searxng 2>/dev/null || true', 'Removing SearXNG container', dryRun);
 
   // Remove eddo volumes
   exec(
     'docker volume rm eddo_couchdb_data eddo_elasticsearch_data 2>/dev/null || true',
-    'Removing named volumes',
+    'Removing eddo volumes',
     dryRun,
   );
 
-  // Remove pi-coding-agent image
+  // Remove Docker images
   exec(
     'docker rmi pi-coding-agent:latest 2>/dev/null || true',
     'Removing pi-coding-agent image',
     dryRun,
   );
+  exec('docker rmi searxng/searxng:latest 2>/dev/null || true', 'Removing SearXNG image', dryRun);
 }
 
 /** Remove node_modules and build artifacts */
@@ -220,8 +231,13 @@ function displayWarning(includeModules: boolean): void {
   console.log(chalk.yellow('This will permanently delete:\n'));
   console.log(chalk.white('  🐳 Docker:'));
   console.log(chalk.gray('     - All eddo containers (couchdb, elasticsearch, app)'));
+  console.log(chalk.gray('     - Chat session containers (chat-eddo-*)'));
+  console.log(chalk.gray('     - SearXNG container (from skill)'));
   console.log(chalk.gray('     - All eddo volumes (YOUR DATA WILL BE LOST!)'));
-  console.log(chalk.gray('     - pi-coding-agent Docker image'));
+  console.log(chalk.gray('     - Docker images (pi-coding-agent, searxng)'));
+  console.log(
+    chalk.yellow('     ⚠ Uses wildcard patterns - may affect similarly named containers'),
+  );
   console.log('');
   console.log(chalk.white('  📦 Node.js:'));
   if (includeModules) {
