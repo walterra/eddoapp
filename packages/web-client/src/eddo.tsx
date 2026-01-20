@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 
 import { GlobalTodoFlyout } from './components/global_todo_flyout';
 import { Login } from './components/login';
@@ -8,10 +8,7 @@ import { PageWrapper } from './components/page_wrapper';
 import { Register } from './components/register';
 import type { CompletionStatus } from './components/status_filter';
 import type { TimeRange } from './components/time_range_filter';
-import { TodoBoard } from './components/todo_board';
 import { TodoFilters } from './components/todo_filters';
-import { TodoGraph } from './components/todo_graph';
-import { TodoTable } from './components/todo_table';
 import { createQueryClient } from './config/query_client';
 import { AuthProvider, useAuth } from './hooks/use_auth';
 import { useCouchDbSync } from './hooks/use_couchdb_sync';
@@ -25,6 +22,17 @@ import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
 import { useViewPreferences } from './hooks/use_view_preferences';
 import { createUserPouchDbContext } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
+
+// Lazy load view components - loaded only when user navigates to that view
+const TodoBoard = lazy(() =>
+  import('./components/todo_board').then((m) => ({ default: m.TodoBoard })),
+);
+const TodoTable = lazy(() =>
+  import('./components/todo_table').then((m) => ({ default: m.TodoTable })),
+);
+const TodoGraph = lazy(() =>
+  import('./components/todo_graph').then((m) => ({ default: m.TodoGraph })),
+);
 
 function CouchdbSyncProvider() {
   useCouchDbSync();
@@ -114,6 +122,18 @@ function TodoFiltersSection({
   );
 }
 
+/** Loading fallback for lazy-loaded views */
+function ViewLoadingFallback() {
+  return (
+    <div className="flex h-96 items-center justify-center">
+      <div className="text-center">
+        <div className="mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading view...</p>
+      </div>
+    </div>
+  );
+}
+
 /** Todo content view (board or table) */
 function TodoContentView({
   prefs,
@@ -132,16 +152,20 @@ function TodoContentView({
     selectedTimeRange: prefs.selectedTimeRange,
   };
 
-  switch (viewMode) {
-    case 'kanban':
-      return <TodoBoard {...common} />;
-    case 'table':
-      return <TodoTable {...common} selectedColumns={tableColumns} />;
-    case 'graph':
-      return <TodoGraph {...common} />;
-    default:
-      return <TodoBoard {...common} />;
-  }
+  const renderView = () => {
+    switch (viewMode) {
+      case 'kanban':
+        return <TodoBoard {...common} />;
+      case 'table':
+        return <TodoTable {...common} selectedColumns={tableColumns} />;
+      case 'graph':
+        return <TodoGraph {...common} />;
+      default:
+        return <TodoBoard {...common} />;
+    }
+  };
+
+  return <Suspense fallback={<ViewLoadingFallback />}>{renderView()}</Suspense>;
 }
 
 /** Authenticated todo app content */

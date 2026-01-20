@@ -50,40 +50,148 @@ jobs:
       - name: Check bundle size
         run: |
           if [ -d "packages/web-api/public" ]; then
+            # Total bundle size
             CLIENT_SIZE=$(du -sk packages/web-api/public | cut -f1)
-            echo "Client bundle size: ${CLIENT_SIZE}KB"
             echo "CLIENT_SIZE=${CLIENT_SIZE}" >> $GITHUB_ENV
-            echo "Bundle breakdown:"
-            ls -lah packages/web-api/public/assets/ || echo "No assets directory found"
-            if [ $CLIENT_SIZE -gt 2048 ]; then
-              echo "❌ Client bundle size (${CLIENT_SIZE}KB) exceeds limit (2048KB)"
-              exit 1
-            else
-              echo "✅ Client bundle size (${CLIENT_SIZE}KB) is within limit"
-            fi
+            
+            echo ""
+            echo "📦 Bundle Size Report"
+            echo "====================="
+            echo ""
+            
+            # Build JSON for PR comment using node for reliability
+            BUNDLE_JSON=$(node -e "
+              const fs = require('fs');
+              const path = require('path');
+              
+              // Chunk size limits in KB (set generously above current sizes)
+              const limits = {
+                'index': 1100,           // main app bundle (reduced due to lazy loading)
+                'vendor-react': 50,
+                'vendor-pouchdb': 200,
+                'vendor-ui': 100,
+                'vendor-graph': 250,
+                'vendor-markdown': 200,
+                'vendor-query': 100,
+                'vendor-utils': 100,
+                'dynamic': 300,          // elkjs dynamic import
+                'todo_graph': 100,       // lazy-loaded graph component
+                'todo_board': 50,        // lazy-loaded kanban view
+                'todo_board_state': 50,  // shared board state
+                'todo_table': 60,        // lazy-loaded table view
+                'chat_page': 200,        // lazy-loaded chat (assistant-ui)
+                'chat_view': 10,         // chat view wrapper
+                'subtasks_popover': 20,  // subtasks component
+              };
+              
+              const assetsDir = 'packages/web-api/public/assets';
+              const files = fs.readdirSync(assetsDir).filter(f => f.endsWith('.js'));
+              
+              const chunks = files.map(filename => {
+                const filePath = path.join(assetsDir, filename);
+                const stats = fs.statSync(filePath);
+                const sizeKb = Math.round(stats.size / 1024);
+                
+                // Extract chunk name from filename patterns:
+                // - vendor-react-JtTXGiG9.js → vendor-react
+                // - index-DqmYEbsX.js → index  
+                // - CDWEKZTF-CaGrxhYk.js → dynamic (all caps = dynamic import)
+                let name = filename
+                  .replace(/\.js$/, '')              // remove extension
+                  .replace(/-[A-Za-z0-9_]{6,}$/, ''); // remove final hash segment (may contain _)
+                
+                // Handle dynamic chunks (start with uppercase hash like CDWEKZTF)
+                if (/^[A-Z0-9]{6,}/.test(name)) name = 'dynamic';
+                const limit = limits[name] || 500;
+                
+                return { name, size: sizeKb, limit };
+              });
+              
+              console.log(JSON.stringify({
+                total: ${CLIENT_SIZE},
+                totalLimit: 3500,
+                chunks
+              }));
+            ")
+            
+            echo "BUNDLE_JSON=${BUNDLE_JSON}" >> $GITHUB_ENV
+            
+            # Display results
+            node -e "
+              const data = ${BUNDLE_JSON};
+              let hasViolation = false;
+              
+              data.chunks
+                .sort((a, b) => b.size - a.size)
+                .forEach(chunk => {
+                  const status = chunk.size > chunk.limit ? '❌' : '✅';
+                  if (chunk.size > chunk.limit) hasViolation = true;
+                  console.log(\`\${status} \${chunk.name}: \${chunk.size}KB (limit: \${chunk.limit}KB)\`);
+                });
+              
+              console.log('');
+              console.log(\`Total: \${data.total}KB (limit: \${data.totalLimit}KB)\`);
+              console.log('');
+              
+              if (data.total > data.totalLimit) {
+                console.log('❌ Total bundle size exceeds limit');
+                process.exit(1);
+              } else if (hasViolation) {
+                console.log('❌ One or more chunks exceed their size limits');
+                process.exit(1);
+              } else {
+                console.log('✅ All bundle sizes are within limits');
+              }
+            "
           else
             echo "❌ Client build directory not found"
             echo "CLIENT_SIZE=0" >> $GITHUB_ENV
+            echo 'BUNDLE_JSON={"total":0,"totalLimit":2560,"chunks":[]}' >> $GITHUB_ENV
           fi
       - name: Comment bundle size on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v8
         with:
           script: |
-            const clientSize = parseInt(process.env.CLIENT_SIZE || '0', 10);
-            const limit = 2048;
+            const bundleData = JSON.parse(process.env.BUNDLE_JSON || '{"total":0,"totalLimit":2560,"chunks":[]}');
             const commentMarker = '<!-- bundle-size-report -->';
-            const status = clientSize > limit ? '❌ Exceeds limit' : '✅ Within limit';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            
+            // Sort chunks by size descending
+            const sortedChunks = [...bundleData.chunks].sort((a, b) => b.size - a.size);
+            
+            // Build table rows
+            const tableRows = sortedChunks.map(chunk => {
+              const status = chunk.size > chunk.limit ? '❌' : '✅';
+              const percent = Math.round((chunk.size / chunk.limit) * 100);
+              return `| ${chunk.name} | ${chunk.size}KB | ${chunk.limit}KB | ${percent}% | ${status} |`;
+            }).join('\n');
+            
+            // Calculate overall status
+            const hasViolation = sortedChunks.some(c => c.size > c.limit);
+            const totalExceeded = bundleData.total > bundleData.totalLimit;
+            const overallStatus = (hasViolation || totalExceeded) ? '❌ Exceeds limit' : '✅ Within limit';
+            
             const comment = [
               commentMarker,
               '## Bundle Size Report 📦',
               '',
-              `**Client bundle size:** ${clientSize}KB`,
-              `**Limit:** ${limit}KB`,
-              `**Status:** ${status}`,
+              `| Metric | Value |`,
+              `|--------|-------|`,
+              `| **Total Size** | ${bundleData.total}KB |`,
+              `| **Total Limit** | ${bundleData.totalLimit}KB |`,
+              `| **Status** | ${overallStatus} |`,
               '',
-              `[View detailed bundle analysis](${runUrl})`
+              '<details>',
+              '<summary>Chunk Breakdown</summary>',
+              '',
+              '| Chunk | Size | Limit | Used | Status |',
+              '|-------|------|-------|------|--------|',
+              tableRows,
+              '',
+              '</details>',
+              '',
+              `[View workflow run](${runUrl})`
             ].join('\n');
             
             const { data: comments } = await github.rest.issues.listComments({

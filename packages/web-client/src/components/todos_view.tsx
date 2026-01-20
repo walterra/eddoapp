@@ -1,7 +1,7 @@
 /**
  * Todos view wrapper component with header and sidebars.
  */
-import type { FC, ReactNode } from 'react';
+import { lazy, Suspense, type FC, type ReactNode } from 'react';
 import {
   HiOutlineChat,
   HiOutlineClipboardList,
@@ -11,9 +11,11 @@ import {
 
 import type { useDatabaseHealth } from '../hooks/use_database_health';
 import { AuditSidebar } from './audit_sidebar';
-import { ChatSidebar } from './chat';
 import { HealthIndicatorPopover } from './health_indicator_popover';
 import { SearchPopover } from './search_popover';
+
+// Lazy load ChatSidebar - it's heavy due to @assistant-ui dependencies
+const ChatSidebar = lazy(() => import('./chat').then((m) => ({ default: m.ChatSidebar })));
 
 /** Activity sidebar state interface */
 export interface ActivitySidebarState {
@@ -75,6 +77,7 @@ interface HeaderProps {
   onSelectTodo: (todoId: string) => void;
 }
 
+/** Header with navigation buttons */
 const Header: FC<HeaderProps> = ({
   isAuthenticated,
   databaseName,
@@ -140,54 +143,70 @@ export interface TodosViewProps {
   onSelectTodo: (todoId: string) => void;
 }
 
-/** Todos view wrapper */
-export const TodosView: FC<TodosViewProps> = ({
-  children,
-  isAuthenticated,
-  logout,
-  onShowChat,
-  onShowProfile,
-  activitySidebar,
-  chatSidebar,
-  onExpandChat,
-  databaseName,
-  healthCheck,
-  onSelectTodo,
-}) => (
-  <div className="flex h-screen w-full flex-col overflow-hidden">
-    <div className="flex min-h-0 flex-1">
-      <main className="min-w-0 flex-1 overflow-auto px-4 pt-4 pb-3" role="main">
-        <Header
-          databaseName={databaseName}
-          healthCheck={healthCheck}
-          isAuthenticated={isAuthenticated}
-          onLogout={logout}
-          onSelectTodo={onSelectTodo}
-          onShowChat={onShowChat}
-          onShowProfile={onShowProfile}
-          onToggleAuditSidebar={activitySidebar.toggle}
-          showAuditSidebar={activitySidebar.isOpen}
-          showChatSidebar={chatSidebar.isOpen}
-        />
-        {children}
-        <footer className="mt-8 pb-3">
-          <a href="https://eddoapp.com" rel="noreferrer" target="_BLANK">
-            eddoapp.com
-          </a>
-        </footer>
-      </main>
-      {isAuthenticated && activitySidebar.isOpen && (
-        <AuditSidebar isOpen={activitySidebar.isOpen} onToggle={activitySidebar.setOpen} />
-      )}
-      {isAuthenticated && (
-        <ChatSidebar
-          isOpen={chatSidebar.isOpen}
-          onClose={chatSidebar.close}
-          onExpand={onExpandChat}
-          onSelectSession={chatSidebar.setSession}
-          selectedSessionId={chatSidebar.selectedSessionId}
-        />
-      )}
-    </div>
-  </div>
+/** Main content area with header and children */
+const MainContent: FC<{
+  children: ReactNode;
+  headerProps: HeaderProps;
+}> = ({ children, headerProps }) => (
+  <main className="min-w-0 flex-1 overflow-auto px-4 pt-4 pb-3" role="main">
+    <Header {...headerProps} />
+    {children}
+    <footer className="mt-8 pb-3">
+      <a href="https://eddoapp.com" rel="noreferrer" target="_BLANK">
+        eddoapp.com
+      </a>
+    </footer>
+  </main>
 );
+
+/** Todos view wrapper */
+export const TodosView: FC<TodosViewProps> = (props) => {
+  const {
+    children,
+    isAuthenticated,
+    logout,
+    onShowChat,
+    onShowProfile,
+    activitySidebar,
+    chatSidebar,
+    onExpandChat,
+    databaseName,
+    healthCheck,
+    onSelectTodo,
+  } = props;
+
+  const headerProps: HeaderProps = {
+    isAuthenticated,
+    databaseName,
+    healthCheck,
+    onShowChat,
+    onShowProfile,
+    onLogout: logout,
+    showAuditSidebar: activitySidebar.isOpen,
+    onToggleAuditSidebar: activitySidebar.toggle,
+    showChatSidebar: chatSidebar.isOpen,
+    onSelectTodo,
+  };
+
+  return (
+    <div className="flex h-screen w-full flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1">
+        <MainContent headerProps={headerProps}>{children}</MainContent>
+        {isAuthenticated && activitySidebar.isOpen && (
+          <AuditSidebar isOpen={activitySidebar.isOpen} onToggle={activitySidebar.setOpen} />
+        )}
+        {isAuthenticated && (
+          <Suspense fallback={null}>
+            <ChatSidebar
+              isOpen={chatSidebar.isOpen}
+              onClose={chatSidebar.close}
+              onExpand={onExpandChat}
+              onSelectSession={chatSidebar.setSession}
+              selectedSessionId={chatSidebar.selectedSessionId}
+            />
+          </Suspense>
+        )}
+      </div>
+    </div>
+  );
+};
