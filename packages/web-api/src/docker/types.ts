@@ -15,9 +15,9 @@ export interface ContainerConfig {
   sessionDir: string;
   /** Git directory (bare clone) to mount */
   gitDir?: string;
-  /** Main git directory for reference (optional) */
+  /** Main repo .git directory for worktree support */
   mainGitDir?: string;
-  /** Pi agent config directory path */
+  /** Pi coding agent config directory (contains auth.json) */
   piConfigDir?: string;
   /** Environment variables */
   env?: Record<string, string>;
@@ -43,6 +43,8 @@ export interface ContainerInfo {
   startedAt?: string;
   /** Associated session ID */
   sessionId: string;
+  /** Username who owns this container */
+  username?: string;
   /** Port mappings */
   ports?: Record<string, number>;
 }
@@ -91,7 +93,7 @@ export type RpcEventCallback = (event: RpcEvent) => void;
 export interface SpawnContainerOptions {
   /** Session ID */
   sessionId: string;
-  /** Username for container context */
+  /** Username who owns this session (for container namespacing) */
   username?: string;
   /** Container configuration */
   config: ContainerConfig;

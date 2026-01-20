@@ -1,9 +1,6 @@
 # Project name for grouping in Docker Desktop
 name: eddo
 
-# Project name for grouping in Docker Desktop
-name: eddo
-
 services:
   # CouchDB service
   couchdb:
@@ -83,10 +80,8 @@ services:
 
 volumes:
   couchdb_data:
-    external: true
     name: eddo_couchdb_data
   elasticsearch_data:
-    external: true
     name: eddo_elasticsearch_data
 
 networks:

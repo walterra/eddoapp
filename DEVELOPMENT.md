@@ -43,15 +43,32 @@ Detailed documentation is available in the `docs/` directory:
 
 - Node.js ≥18.11.0
 - pnpm ≥7.1.0
-- Docker (required for integration and e2e tests - testcontainers auto-manages CouchDB)
+- Docker (required for CouchDB, Elasticsearch, and tests)
 
 ### Installation
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/walterra/eddoapp.git
 cd eddoapp
 pnpm install
+
+# Interactive setup wizard (recommended for first-time setup)
+pnpm dev:setup
+
+# Or manually:
+# 1. Copy .env.example to .env
+# 2. Start Docker services: docker compose up -d
 ```
+
+### Troubleshooting
+
+Run `pnpm dev:doctor` to diagnose environment issues. It checks:
+
+- Node.js/pnpm versions
+- Docker daemon status
+- CouchDB/Elasticsearch containers
+- Port availability
+- Configuration files
 
 ### Development Commands
 

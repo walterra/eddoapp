@@ -224,9 +224,9 @@ const NotesView: FC<NotesViewProps> = ({ todoId, notes }) => {
     return null;
   }
 
-  // Sort notes by createdAt descending (newest first)
+  // Sort notes by createdAt ascending (oldest first - chronological order)
   const sortedNotes = [...notes].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 
   return (

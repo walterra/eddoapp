@@ -116,12 +116,27 @@ export function filterTodos(
 }
 
 /**
+ * Sort todos by due date ascending, then title ascending
+ */
+function sortTodos(todos: Todo[]): Todo[] {
+  return [...todos].sort((a, b) => {
+    // Primary: due date ascending
+    const dueCmp = a.due.localeCompare(b.due);
+    if (dueCmp !== 0) return dueCmp;
+    // Secondary: title ascending
+    return a.title.localeCompare(b.title);
+  });
+}
+
+/**
  * Group todos by context
  */
 export function groupTodosByContext(todos: Todo[]): Array<[string, Todo[]]> {
   const grouped = Array.from(group(todos, (d) => d.context ?? CONTEXT_DEFAULT));
+  // Sort context groups alphabetically
   grouped.sort((a, b) => ('' + a[0]).localeCompare(b[0]));
-  return grouped;
+  // Sort todos within each group by due date, then title
+  return grouped.map(([context, contextTodos]) => [context, sortTodos(contextTodos)]);
 }
 
 /**

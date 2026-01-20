@@ -4,8 +4,9 @@
 
 import type { ChatSession } from '@eddo/core-shared';
 import { type FC, useCallback, useEffect, useState } from 'react';
-import { HiOutlinePlus } from 'react-icons/hi';
+import { HiExclamation, HiOutlinePlus } from 'react-icons/hi';
 
+import { useProfile } from '../../hooks/use_profile';
 import { BTN_PRIMARY_SM } from '../../styles/interactive';
 import { ChatThread } from './chat_thread';
 import { DeleteSessionDialog } from './delete_session_dialog';
@@ -54,6 +55,29 @@ const ChatPageHeader: FC<ChatPageHeaderProps> = ({ onNewSession }) => (
     >
       <HiOutlinePlus className="h-4 w-4" />
     </button>
+  </div>
+);
+
+/** Warning banner when no API key is configured */
+const ApiKeyWarning: FC<{ onNavigateToProfile: () => void }> = ({ onNavigateToProfile }) => (
+  <div className="border-b border-yellow-200 bg-yellow-50 px-4 py-3 dark:border-yellow-800 dark:bg-yellow-900/30">
+    <div className="flex items-center gap-3">
+      <HiExclamation className="h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />
+      <div className="flex-1">
+        <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">API Key Required</p>
+        <p className="text-xs text-yellow-700 dark:text-yellow-300">
+          Configure an Anthropic API key in{' '}
+          <button
+            className="underline hover:no-underline"
+            onClick={onNavigateToProfile}
+            type="button"
+          >
+            Profile → Integrations
+          </button>{' '}
+          to use the chat feature.
+        </p>
+      </div>
+    </div>
   </div>
 );
 
@@ -151,37 +175,53 @@ function useChatPageState(initialSessionId?: string) {
   };
 }
 
+/** Check if any API key is configured */
+function hasApiKeyConfigured(profile: ReturnType<typeof useProfile>['profile']): boolean {
+  const keys = profile?.preferences?.aiProviderKeys;
+  if (!keys) return false;
+  return Boolean(keys.anthropicApiKey || keys.openaiApiKey || keys.geminiApiKey);
+}
+
 /** Props for ChatPage */
 export interface ChatPageProps {
   initialSessionId?: string;
+  onNavigateToProfile?: () => void;
 }
 
 /** Main chat page component */
-export const ChatPage: FC<ChatPageProps> = ({ initialSessionId }) => {
+export const ChatPage: FC<ChatPageProps> = ({ initialSessionId, onNavigateToProfile }) => {
   const s = useChatPageState(initialSessionId);
+  const { profile, isLoading: isProfileLoading } = useProfile();
+  const showApiKeyWarning = !isProfileLoading && !hasApiKeyConfigured(profile);
+
   return (
-    <div className="flex h-full">
-      <SessionSidebar
-        onDeleteSession={s.setSessionToDelete}
-        onNewSession={() => s.setShowNewDialog(true)}
-        onSelectSession={s.handleSelectSession}
-        onSessionsLoaded={s.handleSessionsLoaded}
-        selectedSessionId={s.selectedSessionId}
-      />
-      <ChatArea
-        onNewSession={() => s.setShowNewDialog(true)}
-        selectedSessionId={s.selectedSessionId}
-      />
-      <NewSessionDialog
-        isOpen={s.showNewDialog}
-        onClose={() => s.setShowNewDialog(false)}
-        onCreated={s.handleSessionCreated}
-      />
-      <DeleteSessionDialog
-        onClose={() => s.setSessionToDelete(null)}
-        onDeleted={s.handleSessionDeleted}
-        session={s.sessionToDelete}
-      />
+    <div className="flex h-full flex-col">
+      {showApiKeyWarning && onNavigateToProfile && (
+        <ApiKeyWarning onNavigateToProfile={onNavigateToProfile} />
+      )}
+      <div className="flex min-h-0 flex-1">
+        <SessionSidebar
+          onDeleteSession={s.setSessionToDelete}
+          onNewSession={() => s.setShowNewDialog(true)}
+          onSelectSession={s.handleSelectSession}
+          onSessionsLoaded={s.handleSessionsLoaded}
+          selectedSessionId={s.selectedSessionId}
+        />
+        <ChatArea
+          onNewSession={() => s.setShowNewDialog(true)}
+          selectedSessionId={s.selectedSessionId}
+        />
+        <NewSessionDialog
+          isOpen={s.showNewDialog}
+          onClose={() => s.setShowNewDialog(false)}
+          onCreated={s.handleSessionCreated}
+        />
+        <DeleteSessionDialog
+          onClose={() => s.setSessionToDelete(null)}
+          onDeleted={s.handleSessionDeleted}
+          session={s.sessionToDelete}
+        />
+      </div>
     </div>
   );
 };

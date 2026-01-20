@@ -27,6 +27,11 @@ export default function (pi: ExtensionAPI) {
     label: 'Vega-Lite Chart',
     description: `Render a Vega-Lite specification as a PNG image.
 
+Dependencies are auto-installed via uv (Python package manager):
+- uv itself is auto-installed if missing
+- Python 3, altair, pandas, vl-convert-python are managed by uv
+If setup fails, the tool returns installation instructions - do NOT fall back to ASCII charts.
+
 IMPORTANT: Before using this tool, read the complete reference documentation at:
 ${VEGA_REFERENCE_PATH}
 
@@ -98,6 +103,79 @@ Reference: https://vega.github.io/vega-lite/docs/`,
       }
 
       try {
+        // Check Python and dependencies, auto-install if needed using uv
+        const ensureDependencies = (): { success: boolean; error?: string } => {
+          // Check if uv is available
+          let hasUv = false;
+          try {
+            execSync('which uv', { encoding: 'utf-8' });
+            hasUv = true;
+          } catch {
+            // uv not available, try to install it
+            const platform = process.platform;
+            try {
+              if (platform === 'win32') {
+                execSync('powershell -c "irm https://astral.sh/uv/install.ps1 | iex"', {
+                  encoding: 'utf-8',
+                  stdio: 'inherit',
+                });
+              } else {
+                execSync('curl -LsSf https://astral.sh/uv/install.sh | sh', {
+                  encoding: 'utf-8',
+                  stdio: 'inherit',
+                });
+              }
+              // Source the updated PATH or check common install locations
+              const uvPaths = [
+                `${process.env.HOME}/.local/bin/uv`,
+                `${process.env.HOME}/.cargo/bin/uv`,
+                '/usr/local/bin/uv',
+              ];
+              hasUv = uvPaths.some((p) => {
+                try {
+                  execSync(`${p} --version`, { encoding: 'utf-8' });
+                  return true;
+                } catch {
+                  return false;
+                }
+              });
+            } catch {
+              // uv install failed
+            }
+          }
+
+          if (!hasUv) {
+            return {
+              success: false,
+              error:
+                'uv (Python package manager) not found and auto-install failed.\nPlease install uv: curl -LsSf https://astral.sh/uv/install.sh | sh',
+            };
+          }
+
+          // Use uv to run Python with the required packages
+          // uv will auto-install Python and packages as needed
+          const checkCmd =
+            'uv run --with altair --with pandas --with vl-convert-python python3 -c "import altair; import pandas; import vl_convert"';
+          try {
+            execSync(checkCmd, { encoding: 'utf-8', stdio: 'pipe' });
+            return { success: true };
+          } catch (err: any) {
+            return {
+              success: false,
+              error: `Failed to setup Python environment with uv.\nPlease run manually: uv run --with altair --with pandas --with vl-convert-python python3\n\nError: ${err.message}`,
+            };
+          }
+        };
+
+        const deps = ensureDependencies();
+        if (!deps.success) {
+          return {
+            content: [{ type: 'text', text: deps.error! }],
+            details: { error: 'Dependencies not installed' },
+            isError: true,
+          };
+        }
+
         // Parse and validate the spec
         let vegaSpec: any;
         try {
@@ -156,10 +234,10 @@ print('OK')
 `;
 
         const result = execSync(
-          `python3 -c "${pythonScript.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`,
+          `uv run --with altair --with pandas --with vl-convert-python python3 -c "${pythonScript.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`,
           {
             encoding: 'utf-8',
-            timeout: 30000,
+            timeout: 60000, // Longer timeout for first run when uv downloads packages
             maxBuffer: 10 * 1024 * 1024,
           },
         );

@@ -1,10 +1,10 @@
 /**
  * Search popover component with autocomplete and results.
  */
-import { Popover } from 'flowbite-react';
 import type { FC } from 'react';
 import { HiOutlineSearch } from 'react-icons/hi';
 
+import { useFloatingPosition } from '../hooks/use_floating_position';
 import type { SearchResult } from '../hooks/use_search';
 import { useSearchPopover } from '../hooks/use_search_popover';
 import { FOCUS_RING, TRANSITION } from '../styles/interactive';
@@ -78,29 +78,36 @@ const SearchButton: FC<{ onClick: () => void }> = ({ onClick }) => (
 /** Search popover with input and results */
 export const SearchPopover: FC<SearchPopoverProps> = ({ onSelectTodo }) => {
   const state = useSearchPopover(onSelectTodo);
+  const { refs, floatingStyles } = useFloatingPosition({
+    placement: 'bottom-start',
+    open: state.isOpen,
+  });
 
   return (
-    <Popover
-      arrow={false}
-      content={
-        <PopoverContent
-          error={state.error}
-          includeCompleted={state.includeCompleted}
-          inputRef={state.inputRef}
-          isSearching={state.isSearching}
-          onClear={state.handleClear}
-          onIncludeCompletedChange={state.handleIncludeCompletedChange}
-          onQueryChange={state.handleQueryChange}
-          onSelect={state.handleSelect}
-          query={state.query}
-          results={state.results}
-        />
-      }
-      onOpenChange={state.setIsOpen}
-      open={state.isOpen}
-      placement="bottom-start"
-    >
-      <SearchButton onClick={() => state.setIsOpen(true)} />
-    </Popover>
+    <>
+      <div ref={refs.setReference}>
+        <SearchButton onClick={() => state.setIsOpen(true)} />
+      </div>
+      {state.isOpen && (
+        <div
+          className="z-50 rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+          ref={refs.setFloating}
+          style={floatingStyles as React.CSSProperties}
+        >
+          <PopoverContent
+            error={state.error}
+            includeCompleted={state.includeCompleted}
+            inputRef={state.inputRef}
+            isSearching={state.isSearching}
+            onClear={state.handleClear}
+            onIncludeCompletedChange={state.handleIncludeCompletedChange}
+            onQueryChange={state.handleQueryChange}
+            onSelect={state.handleSelect}
+            query={state.query}
+            results={state.results}
+          />
+        </div>
+      )}
+    </>
   );
 };

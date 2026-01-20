@@ -2,6 +2,25 @@
 
 A comprehensive reference for creating data visualizations using Vega-Lite specifications. This guide follows best practices from the [UW Interactive Data Lab Visualization Curriculum](https://idl.uw.edu/visualization-curriculum/intro.html) and established visualization research.
 
+## Prerequisites
+
+Dependencies are **auto-installed** via `uv` (Python package manager) when first using this extension:
+
+- `uv` is auto-installed if not present
+- Python 3, `altair`, `pandas`, `vl-convert-python` are managed by uv automatically
+
+If auto-install fails, manual installation:
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Run with dependencies (uv handles Python + packages)
+uv run --with altair --with pandas --with vl-convert-python python3 your_script.py
+```
+
+If dependencies cannot be installed, the tool returns an error with instructions. Do NOT fall back to ASCII charts.
+
 ## Philosophy
 
 > "A visualization is a mapping from data to visual properties. The key insight is that this mapping should be **declarative** rather than imperative."

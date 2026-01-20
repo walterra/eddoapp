@@ -79,7 +79,7 @@ export const useViewPreferences = (): UseViewPreferencesReturn => {
   const { profile, isLoading, error, updatePreferences } = useProfile();
 
   const viewMode = useMemo<ViewMode>(
-    () => profile?.preferences?.viewMode || 'kanban',
+    () => profile?.preferences?.viewMode || 'table',
     [profile?.preferences?.viewMode],
   );
 

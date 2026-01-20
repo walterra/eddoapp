@@ -232,8 +232,9 @@ interface NotesListProps {
 }
 
 const NotesList: FC<NotesListProps> = ({ todoId, notes, onUpdate, onDelete }) => {
+  // Sort by createdAt ascending (oldest first, newest at bottom - chronological order)
   const sortedNotes = [...notes].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 
   return (
