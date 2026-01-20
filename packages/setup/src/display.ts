@@ -11,6 +11,7 @@ import {
   checkEddoSkillsInstalled,
   isPiCodingAgentInstalled,
   type EddoSkillsStatus,
+  type SkillInfo,
 } from './pi-skills.js';
 
 /**
@@ -57,6 +58,49 @@ export function displayConfigStatus(rootDir: string): boolean {
   return envExists;
 }
 
+/** Check if item has a conflict status */
+function hasConflict(item: SkillInfo): boolean {
+  return item.status === 'linked_different' || item.status === 'exists_directory';
+}
+
+/** Display skills/extensions status lines */
+function displaySkillsExtensionsStatus(skillsStatus: EddoSkillsStatus): void {
+  const linkedSkills = skillsStatus.skills.filter((s) => s.status === 'linked_correct');
+  const availableSkills = skillsStatus.skills.filter((s) => s.status === 'not_installed');
+  const conflictSkills = skillsStatus.skills.filter(hasConflict);
+
+  const linkedExts = skillsStatus.extensions.filter((e) => e.status === 'linked_correct');
+  const availableExts = skillsStatus.extensions.filter((e) => e.status === 'not_installed');
+  const conflictExts = skillsStatus.extensions.filter(hasConflict);
+
+  if (linkedSkills.length > 0) {
+    console.log(chalk.green(`  ✓ Skills linked: ${linkedSkills.map((s) => s.name).join(', ')}`));
+  }
+  if (availableSkills.length > 0) {
+    console.log(
+      chalk.yellow(`  ○ Skills available: ${availableSkills.map((s) => s.name).join(', ')}`),
+    );
+  }
+  if (conflictSkills.length > 0) {
+    console.log(
+      chalk.red(`  ⚠ Skills with conflicts: ${conflictSkills.map((s) => s.name).join(', ')}`),
+    );
+  }
+  if (linkedExts.length > 0) {
+    console.log(chalk.green(`  ✓ Extensions linked: ${linkedExts.map((e) => e.name).join(', ')}`));
+  }
+  if (availableExts.length > 0) {
+    console.log(
+      chalk.yellow(`  ○ Extensions available: ${availableExts.map((e) => e.name).join(', ')}`),
+    );
+  }
+  if (conflictExts.length > 0) {
+    console.log(
+      chalk.red(`  ⚠ Extensions with conflicts: ${conflictExts.map((e) => e.name).join(', ')}`),
+    );
+  }
+}
+
 /**
  * Display pi-coding-agent status
  */
@@ -72,32 +116,7 @@ export function displayPiCodingAgentStatus(rootDir: string): {
 
   if (piStatus.installed) {
     console.log(chalk.green(`  ✓ pi-coding-agent ${piStatus.version} installed globally`));
-
-    const installedSkills = skillsStatus.skills.filter((s) => s.installed);
-    const notInstalledSkills = skillsStatus.skills.filter((s) => !s.installed);
-    const installedExts = skillsStatus.extensions.filter((e) => e.installed);
-    const notInstalledExts = skillsStatus.extensions.filter((e) => !e.installed);
-
-    if (installedSkills.length > 0) {
-      console.log(
-        chalk.green(`  ✓ Skills linked: ${installedSkills.map((s) => s.name).join(', ')}`),
-      );
-    }
-    if (notInstalledSkills.length > 0) {
-      console.log(
-        chalk.yellow(`  ○ Skills available: ${notInstalledSkills.map((s) => s.name).join(', ')}`),
-      );
-    }
-    if (installedExts.length > 0) {
-      console.log(
-        chalk.green(`  ✓ Extensions linked: ${installedExts.map((e) => e.name).join(', ')}`),
-      );
-    }
-    if (notInstalledExts.length > 0) {
-      console.log(
-        chalk.yellow(`  ○ Extensions available: ${notInstalledExts.map((e) => e.name).join(', ')}`),
-      );
-    }
+    displaySkillsExtensionsStatus(skillsStatus);
   } else {
     console.log(chalk.yellow('  ○ pi-coding-agent not installed'));
     console.log(chalk.gray('    Install with: npm install -g @mariozechner/pi-coding-agent'));

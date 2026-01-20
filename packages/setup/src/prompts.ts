@@ -101,19 +101,27 @@ async function promptPiSkillsInstall(
 ): Promise<boolean> {
   if (!piInstalled) return false;
 
-  const notInstalledSkills = skillsStatus.skills.filter((s) => !s.installed);
-  const notInstalledExts = skillsStatus.extensions.filter((e) => !e.installed);
+  const availableSkills = skillsStatus.skills.filter((s) => s.status === 'not_installed');
+  const availableExts = skillsStatus.extensions.filter((e) => e.status === 'not_installed');
+  const hasConflicts = skillsStatus.conflicts.length > 0;
 
-  if (notInstalledSkills.length === 0 && notInstalledExts.length === 0) {
+  if (availableSkills.length === 0 && availableExts.length === 0 && !hasConflicts) {
     return false;
   }
 
   console.log(chalk.gray('  ℹ️  Eddo provides skills and extensions for pi-coding-agent:'));
-  if (notInstalledSkills.length > 0) {
-    console.log(chalk.gray(`     Skills: ${notInstalledSkills.map((s) => s.name).join(', ')}`));
+  if (availableSkills.length > 0) {
+    console.log(chalk.gray(`     Skills: ${availableSkills.map((s) => s.name).join(', ')}`));
   }
-  if (notInstalledExts.length > 0) {
-    console.log(chalk.gray(`     Extensions: ${notInstalledExts.map((e) => e.name).join(', ')}`));
+  if (availableExts.length > 0) {
+    console.log(chalk.gray(`     Extensions: ${availableExts.map((e) => e.name).join(', ')}`));
+  }
+  if (hasConflicts) {
+    console.log(
+      chalk.yellow(
+        `     ⚠ ${skillsStatus.conflicts.length} conflict(s) detected - will be skipped`,
+      ),
+    );
   }
   console.log(chalk.gray('     These enable AI-assisted todo management and visualizations.\n'));
 

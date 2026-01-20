@@ -27,13 +27,23 @@ export { envFileExists, generateEnvFile } from './env.js';
 // pi-coding-agent integration
 export {
   checkEddoSkillsInstalled,
+  displayConflicts,
+  getInstallStatus,
+  getInstalledSkillNames,
   getPiExtensionsDir,
   getPiSkillsDir,
   installEddoSkillsAndExtensions,
   isPiCodingAgentInstalled,
+  parseSkillName,
+  type ConflictInfo,
   type EddoSkillsStatus,
+  type InstallStatus,
   type SkillInfo,
 } from './pi-skills.js';
+
+// Direct re-exports from split modules (for internal use)
+export type {} from './pi-skills-detection.js';
+export type {} from './pi-skills-install.js';
 
 // Prerequisites checking
 export {
