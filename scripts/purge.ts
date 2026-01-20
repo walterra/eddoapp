@@ -225,42 +225,59 @@ function purgeGeneratedFiles(dryRun: boolean): void {
   remove('.vitest', 'Removing Vitest cache', dryRun);
 }
 
+/** Print lines with consistent formatting */
+function printLines(lines: string[]): void {
+  lines.forEach((line) => console.log(line));
+}
+
 /** Display what will be removed */
 function displayWarning(includeModules: boolean): void {
   console.log(chalk.red.bold('\n⚠️  WARNING: DESTRUCTIVE OPERATION ⚠️\n'));
   console.log(chalk.yellow('This will permanently delete:\n'));
-  console.log(chalk.white('  🐳 Docker:'));
-  console.log(chalk.gray('     - All eddo containers (couchdb, elasticsearch, app)'));
-  console.log(chalk.gray('     - Chat session containers (eddo-chat-*)'));
-  console.log(chalk.gray('     - SearXNG container (from skill)'));
-  console.log(chalk.gray('     - All eddo volumes (YOUR DATA WILL BE LOST!)'));
-  console.log(chalk.gray('     - Docker images (pi-coding-agent, searxng)'));
-  console.log(
+
+  printLines([
+    chalk.white('  🐳 Docker:'),
+    chalk.gray('     - All eddo containers (couchdb, elasticsearch, app)'),
+    chalk.gray('     - Chat session containers (eddo-chat-*)'),
+    chalk.gray('     - SearXNG container (from skill)'),
+    chalk.gray('     - All eddo volumes (YOUR DATA WILL BE LOST!)'),
+    chalk.gray('     - Docker images (pi-coding-agent, searxng)'),
     chalk.yellow('     ⚠ Uses wildcard patterns - may affect similarly named containers'),
-  );
-  console.log('');
-  console.log(chalk.white('  📦 Node.js:'));
-  if (includeModules) {
-    console.log(chalk.gray('     - All node_modules directories'));
-    console.log(chalk.gray('     - All dist/ build outputs'));
-    console.log(chalk.gray('     - TypeScript build cache (*.tsbuildinfo)'));
-  } else {
-    console.log(chalk.gray('     - All dist/ build outputs'));
-    console.log(chalk.gray('     - TypeScript build cache (*.tsbuildinfo)'));
-    console.log(chalk.green('     - (keeping node_modules)'));
-  }
-  console.log('');
-  console.log(chalk.white('  🗑️  Generated files:'));
-  console.log(chalk.gray('     - .env configuration'));
-  console.log(chalk.gray('     - logs/ directory'));
-  console.log(chalk.gray('     - Various caches (.eslintcache, .vitest, etc.)'));
-  console.log('');
-  console.log(chalk.cyan('After purge, you will need to run:'));
-  if (includeModules) {
-    console.log(chalk.white('  pnpm install'));
-  }
-  console.log(chalk.white('  pnpm dev:setup'));
-  console.log('');
+    '',
+  ]);
+
+  const nodeLines = includeModules
+    ? [
+        chalk.gray('     - All node_modules directories'),
+        chalk.gray('     - All dist/ build outputs'),
+        chalk.gray('     - TypeScript build cache (*.tsbuildinfo)'),
+      ]
+    : [
+        chalk.gray('     - All dist/ build outputs'),
+        chalk.gray('     - TypeScript build cache (*.tsbuildinfo)'),
+        chalk.green('     - (keeping node_modules)'),
+      ];
+  printLines([chalk.white('  📦 Node.js:'), ...nodeLines, '']);
+
+  printLines([
+    chalk.white('  🗑️  Generated files:'),
+    chalk.gray('     - .env configuration'),
+    chalk.gray('     - logs/ directory'),
+    chalk.gray('     - Various caches (.eslintcache, .vitest, etc.)'),
+    '',
+  ]);
+
+  const restoreLines = includeModules
+    ? [chalk.white('  pnpm install'), chalk.white('  pnpm dev:setup')]
+    : [chalk.white('  pnpm dev:setup')];
+  printLines([chalk.cyan('After purge, you will need to run:'), ...restoreLines, '']);
+
+  printLines([
+    chalk.yellow('  ⚠ Browser data (PouchDB/IndexedDB) is NOT cleared by this script.'),
+    chalk.gray('    To fully reset, also clear browser site data for localhost:3000'),
+    chalk.gray('    (DevTools → Application → Storage → Clear site data)'),
+    '',
+  ]);
 }
 
 async function confirmPurge(): Promise<boolean> {
@@ -323,6 +340,10 @@ async function main(): Promise<void> {
     }
     console.log(chalk.cyan('  pnpm dev:setup'));
     console.log('');
+    console.log(chalk.yellow('⚠ Note: Browser data (PouchDB) was not cleared.'));
+    console.log(
+      chalk.gray('  To fully reset, clear site data in your browser for localhost:3000\n'),
+    );
   }
 }
 

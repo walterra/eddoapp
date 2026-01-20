@@ -109,7 +109,9 @@ async function promptPiSkillsInstall(
     return false;
   }
 
-  console.log(chalk.gray('  ℹ️  Eddo provides skills and extensions for pi-coding-agent:'));
+  console.log(
+    chalk.gray('  ℹ️  Eddo provides skills and extensions for your local pi-coding-agent:'),
+  );
   if (availableSkills.length > 0) {
     console.log(chalk.gray(`     Skills: ${availableSkills.map((s) => s.name).join(', ')}`));
   }
@@ -119,7 +121,7 @@ async function promptPiSkillsInstall(
   if (hasConflicts) {
     console.log(
       chalk.yellow(
-        `     ⚠ ${skillsStatus.conflicts.length} conflict(s) detected - will be skipped`,
+        `     ⚠ ${skillsStatus.conflicts.length} conflict(s) with your local pi - will be skipped`,
       ),
     );
   }
