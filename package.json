@@ -101,7 +101,7 @@
     "build:web-client": "pnpm --filter @eddo/web-client build",
     "build:web-api": "pnpm --filter @eddo/web-api build",
     "build:printer": "pnpm --filter @eddo/printer-service build",
-    "dev:setup": "tsx scripts/setup.ts",
+    "dev:setup": "node packages/setup/dist/cli.js",
     "dev:doctor": "tsx scripts/doctor.ts",
     "dev:create-user": "tsx scripts/create-default-user.ts",
     "dev:check": "tsx scripts/check-setup.ts",

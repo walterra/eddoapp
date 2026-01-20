@@ -24,6 +24,7 @@
     { "path": "./packages/core-server" },
     { "path": "./packages/mcp_server" },
     { "path": "./packages/printer_service" },
+    { "path": "./packages/setup" },
     { "path": "./packages/telegram_bot" },
     { "path": "./packages/web-api" },
     { "path": "./packages/web-client" }
