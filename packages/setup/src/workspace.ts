@@ -5,7 +5,6 @@
 import chalk from 'chalk';
 import { execSync, spawnSync } from 'child_process';
 import fs from 'fs';
-import ora from 'ora';
 import path from 'path';
 
 /**
@@ -32,16 +31,12 @@ const BUILD_PACKAGES = [
  * Build workspace packages with progress indication
  */
 export function buildWorkspacePackages(rootDir: string): boolean {
-  const spinner = ora('Building workspace packages...').start();
-  let currentIndex = 0;
+  console.log(chalk.blue('📦 Building workspace packages...\n'));
 
-  const updateSpinner = (pkg: string): void => {
-    currentIndex++;
-    spinner.text = `Building packages (${currentIndex}/${BUILD_PACKAGES.length}): ${pkg}`;
-  };
-
-  for (const pkg of BUILD_PACKAGES) {
-    updateSpinner(pkg);
+  for (let i = 0; i < BUILD_PACKAGES.length; i++) {
+    const pkg = BUILD_PACKAGES[i];
+    const progress = `[${i + 1}/${BUILD_PACKAGES.length}]`;
+    process.stdout.write(chalk.gray(`  ${progress} Building ${pkg}...`));
 
     const result = spawnSync('pnpm', ['--filter', pkg, 'build'], {
       cwd: rootDir,
@@ -50,15 +45,18 @@ export function buildWorkspacePackages(rootDir: string): boolean {
     });
 
     if (result.status !== 0) {
-      spinner.fail(chalk.red(`Failed to build ${pkg}`));
+      console.log(chalk.red(' ✗'));
+      console.error(chalk.red(`\nFailed to build ${pkg}`));
       if (result.stderr) {
         console.error(chalk.red(result.stderr.toString().slice(0, 500)));
       }
       return false;
     }
+
+    console.log(chalk.green(' ✓'));
   }
 
-  spinner.succeed(chalk.green(`Built ${BUILD_PACKAGES.length} packages successfully`));
+  console.log(chalk.green(`\n  ✓ Built ${BUILD_PACKAGES.length} packages successfully\n`));
   return true;
 }
 
