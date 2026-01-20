@@ -225,6 +225,54 @@ function purgeGeneratedFiles(dryRun: boolean): void {
   remove('.vitest', 'Removing Vitest cache', dryRun);
 }
 
+/** Check if a symlink points to the current repo */
+function isRepoSymlink(symlinkPath: string, repoPath: string): boolean {
+  try {
+    const target = fs.readlinkSync(symlinkPath);
+    return target.startsWith(repoPath);
+  } catch {
+    return false;
+  }
+}
+
+/** Remove a single symlink with logging */
+function removeSymlink(fullPath: string, name: string, type: string, dryRun: boolean): void {
+  if (dryRun) {
+    console.log(chalk.yellow(`  [dry-run] Would remove ${type} symlink: ${name}`));
+  } else {
+    fs.unlinkSync(fullPath);
+    console.log(chalk.green(`  ✓ Removed ${type} symlink: ${name}`));
+  }
+}
+
+/** Remove Eddo symlinks from local pi-coding-agent */
+function purgePiAgentSymlinks(dryRun: boolean): void {
+  console.log(chalk.blue('\n🔗 Removing Eddo symlinks from local pi-coding-agent...\n'));
+
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+  const piSkillsDir = path.join(homeDir, '.pi', 'agent', 'skills');
+  const piExtensionsDir = path.join(homeDir, '.pi', 'agent', 'extensions');
+  const repoPath = process.cwd();
+
+  // Find and remove symlinks pointing to this repo
+  const removeSymlinksInDir = (dir: string, type: string): void => {
+    if (!fs.existsSync(dir)) return;
+
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const symlinks = entries.filter((e) => e.isSymbolicLink());
+
+    for (const entry of symlinks) {
+      const fullPath = path.join(dir, entry.name);
+      if (isRepoSymlink(fullPath, repoPath)) {
+        removeSymlink(fullPath, entry.name, type, dryRun);
+      }
+    }
+  };
+
+  removeSymlinksInDir(piSkillsDir, 'skill');
+  removeSymlinksInDir(piExtensionsDir, 'extension');
+}
+
 /** Print lines with consistent formatting */
 function printLines(lines: string[]): void {
   lines.forEach((line) => console.log(line));
@@ -264,6 +312,12 @@ function displayWarning(includeModules: boolean): void {
     chalk.gray('     - .env configuration'),
     chalk.gray('     - logs/ directory'),
     chalk.gray('     - Various caches (.eslintcache, .vitest, etc.)'),
+    '',
+  ]);
+
+  printLines([
+    chalk.white('  🔗 pi-coding-agent:'),
+    chalk.gray('     - Eddo skill/extension symlinks from ~/.pi/agent/'),
     '',
   ]);
 
@@ -329,6 +383,7 @@ async function main(): Promise<void> {
   purgeDocker(options.dryRun);
   purgeNodeArtifacts(options.dryRun, options.includeModules);
   purgeGeneratedFiles(options.dryRun);
+  purgePiAgentSymlinks(options.dryRun);
 
   // Summary
   if (options.dryRun) {
