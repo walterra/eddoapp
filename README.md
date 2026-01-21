@@ -3,7 +3,7 @@
 _GTD-inspired todo & time tracking with AI integration_
 
 <p align="center">
-  <img src="https://eddoapp.com/img/eddo-table.webp" alt="Eddo GTD-style todo table with subtasks, GTD tags, due dates, and time tracking" width="55%" />
+  <img src="https://eddoapp.com/img/eddo-table.webp" alt="Eddo GTD-style todo table with subtasks, GTD tags, due dates, and time tracking" width="54.5%" />
   <img src="https://eddoapp.com/img/eddo-graph.webp" alt="Eddo real-time graph visualization of todos, agents, and relationships" width="41%" />
 </p>
 
