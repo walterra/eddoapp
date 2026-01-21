@@ -2,9 +2,13 @@
 
 _GTD-inspired todo & time tracking with AI integration_
 
-[![Watch Demo](https://img.youtube.com/vi/jiWS9pP_cX0/maxresdefault.jpg)](https://www.youtube.com/watch?v=jiWS9pP_cX0)
+<p align="center">
+  <img src="https://eddoapp.com/img/eddo-table.webp" alt="Eddo GTD-style todo table with subtasks, GTD tags, due dates, and time tracking" width="55%" />
+  <img src="https://eddoapp.com/img/eddo-graph.webp" alt="Eddo real-time graph visualization of todos, agents, and relationships" width="41%" />
+</p>
 
-📺 [Watch the sneak peek intro on YouTube](https://www.youtube.com/watch?v=jiWS9pP_cX0)
+📺 [Watch the sneak peek intro on YouTube](https://www.youtube.com/watch?v=jiWS9pP_cX0)<br>
+📺 [Setup walkthrough & pi-coding-agent demo](https://www.youtube.com/watch?v=jQH693-T5NQ)
 
 **⚠️ Alpha Software**: This is a solo side project under active development. Feel free to try it and provide feedback, but expect rough edges, breaking changes, and don't rely on data integrity across updates.
 
