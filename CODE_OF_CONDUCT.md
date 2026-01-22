@@ -35,4 +35,4 @@ There's a human on the other side of every interaction. Let's make this a place 
 
 ---
 
-_Questions? Open an issue or reach out directly._
+_Questions? Head over to [Discussions](https://github.com/walterra/eddoapp/discussions)._
