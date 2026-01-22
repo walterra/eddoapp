@@ -4,9 +4,11 @@
 
 Be kind. Be inclusive. Assume good intent.
 
-## Our Commitment
+## My Commitment
 
 This project welcomes everyone - regardless of experience level, background, gender identity, sexual orientation, disability, appearance, race, ethnicity, age, religion, or nationality.
+
+We do not welcome those who don't share this commitment. If you think of "woke" as an insult, dismiss inclusion efforts, or hold views rooted in hatred or supremacy - this isn't the place for you.
 
 ## Expected Behavior
 
