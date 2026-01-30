@@ -18,7 +18,7 @@
     "date-fns": "^4.1.0",
     "dotenv-mono": "^1.5.1",
     "events": "^3.3.0",
-    "fastmcp": "^3.25.4",
+    "fastmcp": "^3.26.8",
     "flowbite": "^4.0.1",
     "flowbite-react": "^0.12.16",
     "lodash-es": "^4.17.22",
