@@ -134,6 +134,7 @@ const ViewModeActions: FC<ViewModeActionsProps> = ({ onDelete, isDeleting, todo 
     <AddTodoPopover
       enableKeyboardShortcut={false}
       parentTodo={todo}
+      triggerClassName={`flex items-center gap-2 ${BTN_PRIMARY}`}
       triggerLabel="Create subtask"
       triggerTitle="Create subtask"
     />

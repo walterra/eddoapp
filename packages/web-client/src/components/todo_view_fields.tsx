@@ -11,6 +11,7 @@ import { type FC, useState } from 'react';
 import { BiCheckCircle, BiCircle, BiNote, BiSubdirectoryRight } from 'react-icons/bi';
 
 import { useChildTodos, useParentTodo } from '../hooks/use_parent_child';
+import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { TEXT_LINK } from '../styles/interactive';
 import { AttachmentMarkdown, MARKDOWN_PROSE_CLASSES } from './attachment_markdown';
 import { CopyIdButton } from './copy_id_button';
@@ -246,6 +247,7 @@ const NotesView: FC<NotesViewProps> = ({ todoId, notes }) => {
 
 const SubtasksView: FC<{ todoId: string }> = ({ todoId }) => {
   const { data: children, isLoading } = useChildTodos(todoId);
+  const { openTodo } = useTodoFlyoutContext();
 
   if (isLoading) {
     return (
@@ -269,9 +271,11 @@ const SubtasksView: FC<{ todoId: string }> = ({ todoId }) => {
       </div>
       <div className="mt-2 space-y-1">
         {children.map((child) => (
-          <div
-            className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/50"
+          <button
+            className="flex w-full items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/50 dark:hover:bg-neutral-800"
             key={child._id}
+            onClick={() => openTodo(child)}
+            type="button"
           >
             {child.completed ? (
               <BiCheckCircle className="text-green-500" size="1.2em" />
@@ -283,7 +287,7 @@ const SubtasksView: FC<{ todoId: string }> = ({ todoId }) => {
             >
               {child.title}
             </span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
