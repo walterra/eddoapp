@@ -190,6 +190,7 @@ const TimeTrackingView: FC<TimeTrackingViewProps> = ({ active }) => {
 
 const ParentView: FC<{ parentId: string | null | undefined }> = ({ parentId }) => {
   const { data: parentTodo, isLoading } = useParentTodo(parentId);
+  const { openTodo } = useTodoFlyoutContext();
 
   if (!parentId) {
     return null;
@@ -198,7 +199,12 @@ const ParentView: FC<{ parentId: string | null | undefined }> = ({ parentId }) =
   return (
     <div>
       <div className={LABEL_CLASS}>Parent Todo</div>
-      <div className="mt-2 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/50">
+      <button
+        className="mt-2 flex w-full cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/50 dark:hover:bg-neutral-800"
+        disabled={!parentTodo}
+        onClick={() => parentTodo && openTodo(parentTodo)}
+        type="button"
+      >
         <BiSubdirectoryRight
           className="rotate-180 text-neutral-400 dark:text-neutral-500"
           size="1.2em"
@@ -210,7 +216,7 @@ const ParentView: FC<{ parentId: string | null | undefined }> = ({ parentId }) =
         ) : (
           <span className="text-sm text-amber-600 dark:text-amber-400">Parent not found</span>
         )}
-      </div>
+      </button>
     </div>
   );
 };
@@ -272,7 +278,7 @@ const SubtasksView: FC<{ todoId: string }> = ({ todoId }) => {
       <div className="mt-2 space-y-1">
         {children.map((child) => (
           <button
-            className="flex w-full items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/50 dark:hover:bg-neutral-800"
+            className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/50 dark:hover:bg-neutral-800"
             key={child._id}
             onClick={() => openTodo(child)}
             type="button"
