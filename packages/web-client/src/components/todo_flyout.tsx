@@ -10,6 +10,7 @@ import { BiEdit, BiShow } from 'react-icons/bi';
 import { useTags } from '../hooks/use_tags';
 import { useTodoFlyoutState } from '../hooks/use_todo_flyout_state';
 import { BTN_GHOST, BTN_PRIMARY, TRANSITION } from '../styles/interactive';
+import { AddTodoPopover } from './add_todo_popover';
 import { BlockedByField } from './todo_blocked_by_field';
 import { ErrorDisplay } from './todo_edit_error';
 import {
@@ -125,10 +126,17 @@ const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, o
 interface ViewModeActionsProps {
   onDelete: (e: React.FormEvent<HTMLButtonElement>) => void;
   isDeleting: boolean;
+  todo: Todo;
 }
 
-const ViewModeActions: FC<ViewModeActionsProps> = ({ onDelete, isDeleting }) => (
-  <div className="-mx-4 -mb-4 flex w-[calc(100%+2rem)] justify-end border-t border-neutral-200 bg-neutral-50 px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900">
+const ViewModeActions: FC<ViewModeActionsProps> = ({ onDelete, isDeleting, todo }) => (
+  <div className="-mx-4 -mb-4 flex w-[calc(100%+2rem)] items-center justify-between border-t border-neutral-200 bg-neutral-50 px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900">
+    <AddTodoPopover
+      enableKeyboardShortcut={false}
+      parentTodo={todo}
+      triggerLabel="Create subtask"
+      triggerTitle="Create subtask"
+    />
     <Button color="red" disabled={isDeleting} onClick={onDelete}>
       {isDeleting ? 'Deleting...' : 'Delete'}
     </Button>
@@ -185,7 +193,11 @@ const FlyoutContent: FC<FlyoutContentProps> = ({ state, allTags, activeArray }) 
         )}
       </div>
       {state.mode === 'view' ? (
-        <ViewModeActions isDeleting={state.isDeleting} onDelete={state.handleDelete} />
+        <ViewModeActions
+          isDeleting={state.isDeleting}
+          onDelete={state.handleDelete}
+          todo={displayTodo}
+        />
       ) : (
         <EditModeActions
           isActiveValid={validateTimeTracking(activeArray)}

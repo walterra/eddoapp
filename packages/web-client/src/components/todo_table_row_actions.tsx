@@ -5,6 +5,8 @@ import { type DatabaseError, type Todo } from '@eddo/core-client';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
+import { AddTodoPopover } from './add_todo_popover';
+
 import { useActiveTimer } from '../hooks/use_active_timer';
 import {
   useAuditedToggleCompletionMutation,
@@ -70,7 +72,7 @@ export const RowActions: FC<RowActionsProps> = ({ todo, todoDuration, timeTracki
   const { openTodo } = useTodoFlyoutContext();
 
   return (
-    <td className="w-24 px-2 py-1">
+    <td className="w-28 px-2 py-1">
       <div className="flex items-center justify-end gap-0.5">
         {(!timeTrackingActive || state.thisButtonActive) && (
           <button
@@ -87,6 +89,13 @@ export const RowActions: FC<RowActionsProps> = ({ todo, todoDuration, timeTracki
             )}
           </button>
         )}
+        <AddTodoPopover
+          enableKeyboardShortcut={false}
+          parentTodo={todo}
+          triggerClassName={ICON_BUTTON}
+          triggerTitle="Create subtask"
+          triggerVariant="icon"
+        />
         <button
           className={ICON_BUTTON}
           onClick={() => openTodo(todo)}

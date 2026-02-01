@@ -1,18 +1,18 @@
 /**
  * AddTodoPopover - Plus icon button that opens a popover with the add todo form
  */
-import { type DatabaseError, DatabaseErrorType, type NewTodo } from '@eddo/core-client';
+import { type DatabaseError, DatabaseErrorType, type NewTodo, type Todo } from '@eddo/core-client';
 import { format } from 'date-fns';
 import { Button, TextInput } from 'flowbite-react';
 import { type FC, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { HiPlus } from 'react-icons/hi';
 
 import { CONTEXT_DEFAULT } from '../constants';
 import { useAuditedCreateTodoMutation } from '../hooks/use_audited_todo_mutations';
 import { useFloatingPosition } from '../hooks/use_floating_position';
 import { useTags } from '../hooks/use_tags';
 import { TRANSITION_FAST } from '../styles/interactive';
+import { AddTodoTrigger, type AddTodoTriggerVariant } from './add_todo_trigger';
 import { DatabaseErrorMessage } from './database_error_message';
 import { TagInput } from './tag_input';
 
@@ -24,8 +24,12 @@ interface AddTodoFormState {
   tags: string[];
 }
 
-const createInitialState = (): AddTodoFormState => ({
-  context: CONTEXT_DEFAULT,
+interface AddTodoCreateContext {
+  parentTodo?: Todo;
+}
+
+const createInitialState = (parentTodo?: Todo): AddTodoFormState => ({
+  context: parentTodo?.context ?? CONTEXT_DEFAULT,
   due: new Date().toISOString().split('T')[0],
   link: '',
   title: '',
@@ -47,7 +51,10 @@ const validateDueDate = (dueDate: string): DatabaseError | null => {
   }
 };
 
-const createTodoFromState = (state: AddTodoFormState): NewTodo => ({
+const createTodoFromState = (
+  state: AddTodoFormState,
+  createContext: AddTodoCreateContext,
+): NewTodo => ({
   _id: new Date().toISOString(),
   active: {},
   completed: null,
@@ -55,6 +62,7 @@ const createTodoFromState = (state: AddTodoFormState): NewTodo => ({
   description: '',
   due: `${state.due}T23:59:59.999Z`,
   link: state.link !== '' ? state.link : null,
+  parentId: createContext.parentTodo?._id ?? null,
   repeat: null,
   tags: state.tags,
   title: state.title,
@@ -165,12 +173,15 @@ interface PopoverFormProps {
   setFloatingRef: (node: HTMLDivElement | null) => void;
   onClose: () => void;
   onSuccess: () => void;
+  parentTodo?: Todo;
 }
 
 /** Hook for form submission logic */
-function useAddTodoForm(onSuccess: () => void) {
+function useAddTodoForm(onSuccess: () => void, createContext: AddTodoCreateContext) {
   const createTodoMutation = useAuditedCreateTodoMutation();
-  const [state, setState] = useState<AddTodoFormState>(createInitialState);
+  const [state, setState] = useState<AddTodoFormState>(
+    createInitialState(createContext.parentTodo),
+  );
   const [validationError, setValidationError] = useState<DatabaseError | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -185,8 +196,8 @@ function useAddTodoForm(onSuccess: () => void) {
     setValidationError(null);
 
     try {
-      await createTodoMutation.mutateAsync(createTodoFromState(state));
-      setState(createInitialState());
+      await createTodoMutation.mutateAsync(createTodoFromState(state, createContext));
+      setState(createInitialState(createContext.parentTodo));
       onSuccess();
     } catch (err) {
       console.error('Failed to create todo:', err);
@@ -213,10 +224,14 @@ const PopoverForm: FC<PopoverFormProps> = ({
   setFloatingRef,
   onClose,
   onSuccess,
+  parentTodo,
 }) => {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { allTags } = useTags();
-  const { state, setState, error, isPending, handleSubmit, clearError } = useAddTodoForm(onSuccess);
+  const { state, setState, error, isPending, handleSubmit, clearError } = useAddTodoForm(
+    onSuccess,
+    { parentTodo },
+  );
 
   const setRefs = (node: HTMLDivElement | null) => {
     menuRef.current = node;
@@ -248,25 +263,6 @@ const PopoverForm: FC<PopoverFormProps> = ({
   );
 };
 
-interface AddTodoTriggerProps {
-  onClick: () => void;
-  setReferenceRef: (node: HTMLButtonElement | null) => void;
-}
-
-const AddTodoTrigger: FC<AddTodoTriggerProps> = ({ onClick, setReferenceRef }) => (
-  <button
-    aria-label="Add todo (n)"
-    className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 flex h-8 items-center gap-1.5 rounded-lg px-2 text-white md:px-3"
-    onClick={onClick}
-    ref={setReferenceRef}
-    title="Add todo (n)"
-    type="button"
-  >
-    <HiPlus className="h-4 w-4" />
-    <span className="hidden text-sm font-medium md:inline">Add todo</span>
-  </button>
-);
-
 /** Hook for keyboard shortcut to open popover */
 const useKeyboardShortcut = (key: string, onTrigger: () => void, enabled: boolean = true): void => {
   useEffect(() => {
@@ -297,9 +293,21 @@ const useKeyboardShortcut = (key: string, onTrigger: () => void, enabled: boolea
 export interface AddTodoPopoverProps {
   /** Whether to enable keyboard shortcut (default: true). Set to false for duplicate instances. */
   enableKeyboardShortcut?: boolean;
+  parentTodo?: Todo;
+  triggerClassName?: string;
+  triggerLabel?: string;
+  triggerTitle?: string;
+  triggerVariant?: AddTodoTriggerVariant;
 }
 
-export const AddTodoPopover: FC<AddTodoPopoverProps> = ({ enableKeyboardShortcut = true }) => {
+export const AddTodoPopover: FC<AddTodoPopoverProps> = ({
+  enableKeyboardShortcut = true,
+  parentTodo,
+  triggerClassName,
+  triggerLabel,
+  triggerTitle,
+  triggerVariant = 'button',
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const { refs, floatingStyles } = useFloatingPosition({
     placement: 'bottom-end',
@@ -310,12 +318,20 @@ export const AddTodoPopover: FC<AddTodoPopoverProps> = ({ enableKeyboardShortcut
 
   return (
     <>
-      <AddTodoTrigger onClick={() => setIsOpen(true)} setReferenceRef={refs.setReference} />
+      <AddTodoTrigger
+        className={triggerClassName}
+        label={triggerLabel}
+        onClick={() => setIsOpen(true)}
+        setReferenceRef={refs.setReference}
+        title={triggerTitle}
+        variant={triggerVariant}
+      />
       {isOpen && (
         <PopoverForm
           floatingStyles={floatingStyles}
           onClose={() => setIsOpen(false)}
           onSuccess={() => setIsOpen(false)}
+          parentTodo={parentTodo}
           setFloatingRef={refs.setFloating}
         />
       )}
