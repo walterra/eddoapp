@@ -37,6 +37,7 @@ interface TodoFlyoutProps {
   onClose: () => void;
   show: boolean;
   todo: Todo;
+  initialMode?: 'view' | 'edit';
 }
 
 interface UnsavedChangesDialogProps {
@@ -235,9 +236,9 @@ const drawerTheme = {
 };
 
 /** Inner component that uses hooks - only rendered when flyout is open */
-const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
+const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo, initialMode }) => {
   const { allTags } = useTags();
-  const state = useTodoFlyoutState(todo, show, onClose);
+  const state = useTodoFlyoutState(todo, show, onClose, initialMode);
   const activeArray = Object.entries(state.editedTodo.active);
 
   return createPortal(
@@ -277,10 +278,10 @@ const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
  * Flyout panel for viewing and editing todo items.
  * Only mounts hooks when actually shown to avoid creating mutations for every row.
  */
-export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
+export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo, initialMode }) => {
   if (!show) {
     return null;
   }
 
-  return <TodoFlyoutInner onClose={onClose} show={show} todo={todo} />;
+  return <TodoFlyoutInner initialMode={initialMode} onClose={onClose} show={show} todo={todo} />;
 };

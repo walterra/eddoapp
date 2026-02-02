@@ -78,7 +78,7 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
 
 interface RowActionsMenuProps {
   todo: Todo;
-  onOpenDetails: () => void;
+  onOpenEdit: () => void;
   onToggleTimeTracking: () => void;
   timeTrackingLabel: string;
 }
@@ -103,7 +103,7 @@ const RowActionsMenuButton: FC<RowActionsMenuButtonProps> = ({ onToggleMenu, set
 
 interface RowActionsMenuContentProps {
   todo: Todo;
-  onOpenDetails: () => void;
+  onOpenEdit: () => void;
   onToggleTimeTracking: () => void;
   timeTrackingLabel: string;
   copied: boolean;
@@ -114,7 +114,7 @@ interface RowActionsMenuContentProps {
 
 const RowActionsMenuContent: FC<RowActionsMenuContentProps> = ({
   todo,
-  onOpenDetails,
+  onOpenEdit,
   onToggleTimeTracking,
   timeTrackingLabel,
   copied,
@@ -123,8 +123,8 @@ const RowActionsMenuContent: FC<RowActionsMenuContentProps> = ({
   floatingStyles,
 }) => (
   <div className={`${DROPDOWN_CONTAINER} min-w-40 p-1`} ref={setRefs} style={floatingStyles}>
-    <button className={DROPDOWN_ITEM} onClick={onOpenDetails} type="button">
-      Open details
+    <button className={DROPDOWN_ITEM} onClick={onOpenEdit} type="button">
+      Edit todo
     </button>
     <button className={DROPDOWN_ITEM} onClick={onToggleTimeTracking} type="button">
       {timeTrackingLabel}
@@ -132,7 +132,7 @@ const RowActionsMenuContent: FC<RowActionsMenuContentProps> = ({
     <AddTodoPopover
       enableKeyboardShortcut={false}
       parentTodo={todo}
-      triggerClassName={DROPDOWN_ITEM}
+      triggerClassName={`${DROPDOWN_ITEM} flex items-center gap-2`}
       triggerLabel="Create subtask"
       triggerTitle="Create subtask"
       triggerVariant="text"
@@ -147,6 +147,7 @@ interface RowActionsMenuState {
   copied: boolean;
   floatingStyles: CSSProperties;
   handleCopyId: () => void;
+  handleOpenEdit: () => void;
   handleToggleTimeTracking: () => void;
   isOpen: boolean;
   setReference: (node: HTMLButtonElement | null) => void;
@@ -157,6 +158,7 @@ interface RowActionsMenuState {
 const useRowActionsMenuState = (
   todoId: string,
   onToggleTimeTracking: () => void,
+  onOpenEdit: () => void,
 ): RowActionsMenuState => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -191,12 +193,18 @@ const useRowActionsMenuState = (
     closeMenu();
   }, [closeMenu, onToggleTimeTracking]);
 
+  const handleOpenEdit = useCallback(() => {
+    onOpenEdit();
+    closeMenu();
+  }, [closeMenu, onOpenEdit]);
+
   usePopoverDismiss(menuRef, closeMenu);
 
   return {
     copied,
     floatingStyles: floatingStyles as CSSProperties,
     handleCopyId,
+    handleOpenEdit,
     handleToggleTimeTracking,
     isOpen,
     setReference: refs.setReference,
@@ -207,11 +215,11 @@ const useRowActionsMenuState = (
 
 const RowActionsMenu: FC<RowActionsMenuProps> = ({
   todo,
-  onOpenDetails,
+  onOpenEdit,
   onToggleTimeTracking,
   timeTrackingLabel,
 }) => {
-  const menuState = useRowActionsMenuState(todo._id, onToggleTimeTracking);
+  const menuState = useRowActionsMenuState(todo._id, onToggleTimeTracking, onOpenEdit);
 
   return (
     <>
@@ -225,7 +233,7 @@ const RowActionsMenu: FC<RowActionsMenuProps> = ({
             copied={menuState.copied}
             floatingStyles={menuState.floatingStyles}
             onCopyId={menuState.handleCopyId}
-            onOpenDetails={onOpenDetails}
+            onOpenEdit={menuState.handleOpenEdit}
             onToggleTimeTracking={menuState.handleToggleTimeTracking}
             setRefs={menuState.setRefs}
             timeTrackingLabel={timeTrackingLabel}
@@ -295,7 +303,7 @@ export const RowActions: FC<RowActionsProps> = ({
   timeTrackingActive: _timeTrackingActive,
 }) => {
   const state = useRowState(todo, todoDuration);
-  const { openTodo } = useTodoFlyoutContext();
+  const { openTodoInEdit } = useTodoFlyoutContext();
 
   return (
     <td className="w-28 px-2 py-1">
@@ -317,7 +325,7 @@ export const RowActions: FC<RowActionsProps> = ({
           </span>
         )}
         <RowActionsMenu
-          onOpenDetails={() => openTodo(todo)}
+          onOpenEdit={() => openTodoInEdit(todo)}
           onToggleTimeTracking={state.handleToggleTimeTracking}
           timeTrackingLabel={state.thisButtonActive ? 'Stop time tracking' : 'Start time tracking'}
           todo={todo}

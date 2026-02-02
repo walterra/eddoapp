@@ -14,11 +14,13 @@ import { TodoFlyout } from './todo_flyout';
  * (e.g., audit sidebar, search results, notifications).
  */
 export const GlobalTodoFlyout: FC = () => {
-  const { currentTodo, openTodoId, closeFlyout } = useTodoFlyoutContext();
+  const { currentTodo, openTodoId, closeFlyout, flyoutMode } = useTodoFlyoutContext();
 
   if (!currentTodo || !openTodoId) {
     return null;
   }
 
-  return <TodoFlyout onClose={closeFlyout} show={true} todo={currentTodo} />;
+  return (
+    <TodoFlyout initialMode={flyoutMode} onClose={closeFlyout} show={true} todo={currentTodo} />
+  );
 };

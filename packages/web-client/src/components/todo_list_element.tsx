@@ -14,7 +14,7 @@ import {
   useAuditedToggleCompletionMutation,
   useAuditedToggleTimeTrackingMutation,
 } from '../hooks/use_audited_todo_mutations';
-import { useTodoFlyout } from '../hooks/use_todo_flyout';
+import { useTodoFlyout, useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { CARD_INTERACTIVE, FOCUS_RING, ICON_BUTTON, TRANSITION } from '../styles/interactive';
 import { FormattedMessage } from './formatted_message';
 import { SubtaskIndicator } from './subtask_indicator';
@@ -254,6 +254,7 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
   todo,
 }) => {
   const state = useTodoListState(todo, active, activeDate);
+  const { flyoutMode } = useTodoFlyoutContext();
   const activeClass = active ? 'ring-2 ring-sky-600 ' : '';
   const cardClass = `${activeClass}mb-1 flex max-w-md transform flex-col px-3 py-2 ${CARD_INTERACTIVE}`;
 
@@ -278,7 +279,12 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
           todo={todo}
         />
       </div>
-      <TodoFlyout onClose={state.closeFlyout} show={state.showFlyout} todo={todo} />
+      <TodoFlyout
+        initialMode={flyoutMode}
+        onClose={state.closeFlyout}
+        show={state.showFlyout}
+        todo={todo}
+      />
     </div>
   );
 };
