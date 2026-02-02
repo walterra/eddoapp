@@ -78,6 +78,24 @@ pnpm dev:doctor
 
 Diagnoses: prerequisites, Docker status, service health, port availability, configuration.
 
+### Self-hosting (Docker)
+
+Use the self-host bundle for end-user installs. See `self-host/README.md`.
+
+```bash
+pnpm deploy:local
+```
+
+Manual alternative:
+
+```bash
+cp self-host/.env.example self-host/.env
+# edit self-host/.env
+
+docker compose -f self-host/docker-compose.yml up -d
+open http://localhost:3000
+```
+
 ## Architecture
 
 Monorepo with these packages:

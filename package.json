@@ -102,6 +102,7 @@
     "build:web-api": "pnpm --filter @eddo/web-api build",
     "build:printer": "pnpm --filter @eddo/printer-service build",
     "dev:setup": "pnpm --filter @eddo/setup build && node packages/setup/dist/cli.js",
+    "deploy:local": "pnpm --filter @eddo/setup build && node packages/setup/dist/deploy-local.js",
     "dev:doctor": "tsx scripts/doctor.ts",
     "dev:purge": "tsx scripts/purge.ts",
     "dev:create-user": "tsx scripts/create-default-user.ts",

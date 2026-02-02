@@ -8,7 +8,8 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 COPY packages/core-shared/package.json ./packages/core-shared/
 COPY packages/core-server/package.json ./packages/core-server/
 COPY packages/core-client/package.json ./packages/core-client/
@@ -22,7 +23,11 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the application
-RUN pnpm run build:production
+RUN pnpm build:core-shared \
+  && pnpm build:core-server \
+  && pnpm build:core-client \
+  && pnpm build:web-client \
+  && pnpm build:web-api
 
 # Production stage
 FROM node:22-alpine AS production
@@ -34,7 +39,8 @@ RUN npm install -g pnpm
 WORKDIR /app
 
 # Copy package files for production dependencies
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 COPY packages/core-shared/package.json ./packages/core-shared/
 COPY packages/core-server/package.json ./packages/core-server/
 COPY packages/core-client/package.json ./packages/core-client/
@@ -42,10 +48,11 @@ COPY packages/web-client/package.json ./packages/web-client/
 COPY packages/web-api/package.json ./packages/web-api/
 
 # Install production dependencies only
+ENV HUSKY=0
+ENV NPM_CONFIG_IGNORE_SCRIPTS=1
 RUN pnpm install --frozen-lockfile --prod
 
 # Copy built application
-COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/packages/web-api/dist ./packages/web-api/dist
 
 # Create non-root user

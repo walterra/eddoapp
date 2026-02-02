@@ -1,0 +1,126 @@
+name: eddo
+
+services:
+  couchdb:
+    image: couchdb:3
+    container_name: eddo-couchdb
+    environment:
+      COUCHDB_USER: ${COUCHDB_ADMIN_USERNAME}
+      COUCHDB_PASSWORD: ${COUCHDB_ADMIN_PASSWORD}
+    ports:
+      - '5984:5984'
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+    networks:
+      - eddo-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5984/_up']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  elasticsearch:
+    image: elasticsearch:9.2.4
+    container_name: eddo-elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      xpack.security.enrollment.enabled: 'false'
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      http.port: 9200
+    ports:
+      - '9222:9200'
+      - '9322:9300'
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - eddo-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9200/_cluster/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  eddo-web-api:
+    image: walterra/eddo-web-api:${EDDO_VERSION:-latest}
+    container_name: eddo-web-api
+    env_file: .env
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      COUCHDB_URL: ${COUCHDB_URL}
+      COUCHDB_DB_NAME: ${COUCHDB_DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL}
+      MCP_SERVER_URL: ${MCP_SERVER_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_API_KEY: ${OTEL_API_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+    ports:
+      - '3000:3000'
+    networks:
+      - eddo-network
+    depends_on:
+      couchdb:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+
+  eddo-mcp-server:
+    image: walterra/eddo-mcp-server:${EDDO_VERSION:-latest}
+    container_name: eddo-mcp-server
+    env_file: .env
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      COUCHDB_URL: ${COUCHDB_URL}
+      COUCHDB_DB_NAME: ${COUCHDB_DB_NAME}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL}
+      MCP_SERVER_PORT: ${MCP_SERVER_PORT}
+      MCP_HOST: ${MCP_HOST}
+      LOG_LEVEL: ${LOG_LEVEL}
+    ports:
+      - '3001:3001'
+    networks:
+      - eddo-network
+    depends_on:
+      couchdb:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+
+  eddo-telegram-bot:
+    image: walterra/eddo-telegram-bot:${EDDO_VERSION:-latest}
+    container_name: eddo-telegram-bot
+    env_file: .env
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      COUCHDB_URL: ${COUCHDB_URL}
+      COUCHDB_DB_NAME: ${COUCHDB_DB_NAME}
+      MCP_SERVER_URL: ${MCP_SERVER_URL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      BOT_PERSONA_ID: ${BOT_PERSONA_ID}
+      LLM_MODEL: ${LLM_MODEL}
+      LOG_LEVEL: ${LOG_LEVEL}
+    networks:
+      - eddo-network
+    depends_on:
+      eddo-mcp-server:
+        condition: service_started
+
+volumes:
+  couchdb_data:
+    name: eddo_couchdb_data
+  elasticsearch_data:
+    name: eddo_elasticsearch_data
+
+networks:
+  eddo-network:
+    name: eddo-network
+    driver: bridge
