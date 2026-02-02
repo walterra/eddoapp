@@ -1,12 +1,13 @@
 /**
  * TanStack Table column definitions for TodoTable
  */
-import { getFormattedDuration, type Todo } from '@eddo/core-client';
+import { getActiveDuration, getFormattedDuration, type Todo } from '@eddo/core-client';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { useCallback, type FC, type ReactNode } from 'react';
 import { BiCheckbox, BiCheckboxChecked } from 'react-icons/bi';
 
+import { useActiveTimer } from '../hooks/use_active_timer';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 
 import { CONTEXT_DEFAULT } from '../constants';
@@ -83,6 +84,24 @@ const TitleCell: FC<{ row: TodoRowData }> = ({ row }) => {
   );
 };
 
+const TimeTrackedCell: FC<{ row: TodoRowData }> = ({ row }) => {
+  const isTracking = Object.values(row.todo.active).some((d) => d === null);
+  const { counter } = useActiveTimer(isTracking);
+  void counter;
+
+  const duration = isTracking ? getActiveDuration(row.todo.active) : row.duration;
+  const formatted = duration > 0 ? getFormattedDuration(duration) : '0m';
+
+  return (
+    <span className="flex items-center gap-1.5 text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300">
+      {formatted}
+      {isTracking && (
+        <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-green-500" />
+      )}
+    </span>
+  );
+};
+
 /** All column definitions */
 export const allColumns: Record<string, TodoColumnDef> = {
   status: columnHelper.display({
@@ -147,14 +166,7 @@ export const allColumns: Record<string, TodoColumnDef> = {
   timeTracked: columnHelper.accessor((row) => row.duration, {
     id: 'timeTracked',
     header: 'Time Tracked',
-    cell: ({ getValue }) => {
-      const duration = getValue();
-      return (
-        <span className="text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300">
-          {duration > 0 ? getFormattedDuration(duration) : '-'}
-        </span>
-      );
-    },
+    cell: ({ row }) => <TimeTrackedCell row={row.original} />,
     size: 112,
   }),
 
