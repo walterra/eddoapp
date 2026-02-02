@@ -7,7 +7,7 @@ import {
 } from '@eddo/core-client';
 import { Checkbox } from 'flowbite-react';
 import { type FC, memo, useMemo, useState } from 'react';
-import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
+import { BiLinkExternal, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { useActiveTimer } from '../hooks/use_active_timer';
 import {
@@ -15,13 +15,7 @@ import {
   useAuditedToggleTimeTrackingMutation,
 } from '../hooks/use_audited_todo_mutations';
 import { useTodoFlyout } from '../hooks/use_todo_flyout';
-import {
-  CARD_INTERACTIVE,
-  FOCUS_RING,
-  ICON_BUTTON,
-  TEXT_LINK,
-  TRANSITION,
-} from '../styles/interactive';
+import { CARD_INTERACTIVE, FOCUS_RING, ICON_BUTTON, TRANSITION } from '../styles/interactive';
 import { FormattedMessage } from './formatted_message';
 import { SubtaskIndicator } from './subtask_indicator';
 import { TagDisplay } from './tag_display';
@@ -56,9 +50,10 @@ const ErrorDisplay: FC<ErrorDisplayProps> = ({ error, onDismiss }) =>
 interface TitleDisplayProps {
   todo: Todo;
   activityOnly: boolean;
+  onClick: () => void;
 }
 
-const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
+const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly, onClick }) => {
   const className = [
     'text-xs',
     todo.completed || activityOnly ? 'text-neutral-400' : '',
@@ -68,20 +63,13 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly }) => {
     .join(' ');
 
   return (
-    <span className={className}>
-      {todo.link !== null && !activityOnly ? (
-        <a
-          className={`rounded-lg font-medium ${TEXT_LINK}`}
-          href={todo.link}
-          rel="noreferrer"
-          target="_BLANK"
-        >
-          <FormattedMessage message={todo.title} />
-        </a>
-      ) : (
-        <FormattedMessage message={todo.title} />
-      )}
-    </span>
+    <button
+      className={`cursor-pointer text-left font-medium hover:underline ${className}`}
+      onClick={onClick}
+      type="button"
+    >
+      <FormattedMessage message={todo.title} />
+    </button>
   );
 };
 
@@ -114,7 +102,6 @@ interface ActionButtonsProps {
   activityOnly: boolean;
   timeTrackingActive: boolean;
   onTimeTrackingClick: (e: React.FormEvent<HTMLButtonElement>) => void;
-  onEditClick: (e: React.FormEvent<HTMLButtonElement>) => void;
   activeDuration: number;
   activeCounter: number;
 }
@@ -126,7 +113,6 @@ const ActionButtons: FC<ActionButtonsProps> = (props) => {
     activityOnly,
     timeTrackingActive,
     onTimeTrackingClick,
-    onEditClick,
     activeDuration,
     activeCounter,
   } = props;
@@ -149,14 +135,18 @@ const ActionButtons: FC<ActionButtonsProps> = (props) => {
               onClick={onTimeTrackingClick}
             />
           )}
-          <button
-            className={`${ICON_BUTTON_BASE} ${ICON_BUTTON_REVEAL_CLASS}`}
-            data-testid="view-button"
-            onClick={onEditClick}
-            type="button"
-          >
-            <BiInfoCircle size="1.3em" />
-          </button>
+          {todo.link && (
+            <a
+              aria-label="Open link"
+              className={`${ICON_BUTTON_BASE} ${ICON_BUTTON_REVEAL_CLASS}`}
+              href={todo.link}
+              rel="noreferrer"
+              target="_blank"
+              title="Open link"
+            >
+              <BiLinkExternal size="1.3em" />
+            </a>
+          )}
         </>
       )}
     </div>
@@ -217,9 +207,16 @@ interface TodoContentProps {
   activityOnly: boolean;
   isUpdating: boolean;
   onToggle: () => void;
+  onTitleClick: () => void;
 }
 
-const TodoContent: FC<TodoContentProps> = ({ todo, activityOnly, isUpdating, onToggle }) => (
+const TodoContent: FC<TodoContentProps> = ({
+  todo,
+  activityOnly,
+  isUpdating,
+  onToggle,
+  onTitleClick,
+}) => (
   <div className="text-xs text-neutral-900 dark:text-white">
     <div className="flex space-x-1">
       <div className="mr-0.5 -ml-1">
@@ -236,7 +233,7 @@ const TodoContent: FC<TodoContentProps> = ({ todo, activityOnly, isUpdating, onT
       </div>
       <div>
         <div className="flex items-center gap-2">
-          <TitleDisplay activityOnly={activityOnly} todo={todo} />
+          <TitleDisplay activityOnly={activityOnly} onClick={onTitleClick} todo={todo} />
           {!activityOnly && <SubtaskIndicator todoId={todo._id} />}
         </div>
         {todo.tags.length > 0 && (
@@ -267,6 +264,7 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
         <TodoContent
           activityOnly={activityOnly}
           isUpdating={state.isUpdating}
+          onTitleClick={state.openFlyout}
           onToggle={state.handleToggleCheckbox}
           todo={todo}
         />
@@ -275,10 +273,6 @@ const TodoListElementInner: FC<TodoListElementProps> = ({
           activeDuration={state.activeDuration}
           activityOnly={activityOnly}
           isUpdating={state.isUpdating}
-          onEditClick={(e) => {
-            e.preventDefault();
-            state.openFlyout();
-          }}
           onTimeTrackingClick={state.handleTimeTrackingClick}
           timeTrackingActive={timeTrackingActive}
           todo={todo}

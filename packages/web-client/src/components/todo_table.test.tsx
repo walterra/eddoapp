@@ -260,8 +260,8 @@ describe('TodoTable', () => {
         expect(screen.getByText('Test todo')).toBeInTheDocument();
       });
 
-      const viewButton = screen.getByTitle('View details');
-      await user.click(viewButton);
+      const titleButton = screen.getByRole('button', { name: 'Test todo' });
+      await user.click(titleButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('todo-flyout')).toBeInTheDocument();

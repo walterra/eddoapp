@@ -3,7 +3,7 @@
  */
 import { type DatabaseError, type Todo } from '@eddo/core-client';
 import { type FC, useCallback, useMemo, useState } from 'react';
-import { BiInfoCircle, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
+import { BiLinkExternal, BiPauseCircle, BiPlayCircle } from 'react-icons/bi';
 
 import { AddTodoPopover } from './add_todo_popover';
 
@@ -12,7 +12,6 @@ import {
   useAuditedToggleCompletionMutation,
   useAuditedToggleTimeTrackingMutation,
 } from '../hooks/use_audited_todo_mutations';
-import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { ICON_BUTTON } from '../styles/interactive';
 
 /** Hook for managing row state (completion, time tracking) */
@@ -69,7 +68,6 @@ export interface RowActionsProps {
 /** Row action buttons (time tracking, details) */
 export const RowActions: FC<RowActionsProps> = ({ todo, todoDuration, timeTrackingActive }) => {
   const state = useRowState(todo, todoDuration);
-  const { openTodo } = useTodoFlyoutContext();
 
   return (
     <td className="w-28 px-2 py-1">
@@ -96,14 +94,22 @@ export const RowActions: FC<RowActionsProps> = ({ todo, todoDuration, timeTracki
           triggerTitle="Create subtask"
           triggerVariant="icon"
         />
-        <button
-          className={ICON_BUTTON}
-          onClick={() => openTodo(todo)}
-          title="View details"
-          type="button"
-        >
-          <BiInfoCircle size="1.1em" />
-        </button>
+        {todo.link ? (
+          <a
+            aria-label="Open link"
+            className={ICON_BUTTON}
+            href={todo.link}
+            rel="noreferrer"
+            target="_blank"
+            title="Open link"
+          >
+            <BiLinkExternal size="1.1em" />
+          </a>
+        ) : (
+          <span aria-hidden="true" className={`${ICON_BUTTON} opacity-0`}>
+            <BiLinkExternal size="1.1em" />
+          </span>
+        )}
       </div>
     </td>
   );

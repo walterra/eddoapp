@@ -7,6 +7,8 @@ import { format } from 'date-fns';
 import { useCallback, type FC, type ReactNode } from 'react';
 import { BiCheckbox, BiCheckboxChecked } from 'react-icons/bi';
 
+import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
+
 import { CONTEXT_DEFAULT } from '../constants';
 import { useAuditedToggleCompletionMutation } from '../hooks/use_audited_todo_mutations';
 import { type SubtaskCount } from '../hooks/use_parent_child';
@@ -60,29 +62,23 @@ const StatusCell: FC<{
   );
 };
 
-/** Title cell with link support */
+/** Title cell that opens the flyout */
 const TitleCell: FC<{ row: TodoRowData }> = ({ row }) => {
   const { todo } = row;
+  const { openTodo } = useTodoFlyoutContext();
+  const titleClassName = todo.completed
+    ? 'text-neutral-400 line-through'
+    : 'text-neutral-900 dark:text-white';
+
   return (
     <div className="text-xs">
-      <span
-        className={
-          todo.completed ? 'text-neutral-400 line-through' : 'text-neutral-900 dark:text-white'
-        }
+      <button
+        className={`cursor-pointer text-left font-medium hover:underline ${titleClassName}`}
+        onClick={() => openTodo(todo)}
+        type="button"
       >
-        {todo.link !== null ? (
-          <a
-            className="text-primary-600 dark:text-primary-500 font-medium hover:underline"
-            href={todo.link}
-            rel="noreferrer"
-            target="_BLANK"
-          >
-            <FormattedMessage message={todo.title} />
-          </a>
-        ) : (
-          <FormattedMessage message={todo.title} />
-        )}
-      </span>
+        <FormattedMessage message={todo.title} />
+      </button>
     </div>
   );
 };

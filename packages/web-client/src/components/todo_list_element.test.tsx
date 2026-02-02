@@ -1,6 +1,6 @@
 import type { TodoAlpha3 } from '@eddo/core-client';
 import '@testing-library/jest-dom';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -77,15 +77,15 @@ describe('TodoListElement', () => {
       expect(screen.getByText('Active Todo')).toBeInTheDocument();
     });
 
-    it('renders with link when todo has link', () => {
+    it('renders link icon when todo has link', () => {
       renderWithPouchDb(
         <TodoListElement {...defaultProps} todo={testTodos.withLink as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
-      const link = screen.getByRole('link', { name: /todo with link/i });
+      const link = screen.getByRole('link', { name: 'Open link' });
       expect(link).toHaveAttribute('href', 'https://example.com');
-      expect(link).toHaveAttribute('target', '_BLANK');
+      expect(link).toHaveAttribute('target', '_blank');
     });
 
     it('renders tags when todo has tags', () => {
@@ -311,7 +311,6 @@ describe('TodoListElement', () => {
       // Should not have any buttons in activity-only mode
       expect(screen.queryByTestId('play-button')).not.toBeInTheDocument();
       expect(screen.queryByTestId('pause-button')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('view-button')).not.toBeInTheDocument();
     });
 
     it('hides time tracking button when another todo is actively tracking', () => {
@@ -438,16 +437,23 @@ describe('TodoListElement', () => {
   });
 
   describe('View Flyout', () => {
-    it('shows view button', () => {
+    it('opens view flyout when title is clicked', async () => {
+      const user = userEvent.setup();
+
       renderWithPouchDb(
         <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
         { testDb: testDb.contextValue },
       );
 
-      expect(screen.getByTestId('view-button')).toBeInTheDocument();
+      const titleButton = screen.getByRole('button', { name: 'Active Todo' });
+      await user.click(titleButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('todo-flyout')).toBeInTheDocument();
+      });
     });
 
-    it('does not show view button in activity-only mode', () => {
+    it('keeps action buttons hidden in activity-only mode', () => {
       renderWithPouchDb(
         <TodoListElement
           {...defaultProps}
@@ -457,46 +463,8 @@ describe('TodoListElement', () => {
         { testDb: testDb.contextValue },
       );
 
-      // Should not have any buttons in activity-only mode
-      const buttons = screen.queryAllByRole('button');
-      expect(buttons).toHaveLength(0);
-    });
-
-    it('opens view flyout when view button is clicked', async () => {
-      const user = userEvent.setup();
-
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
-        { testDb: testDb.contextValue },
-      );
-
-      // Find and click the view button
-      const viewButton = screen.getByTestId('view-button');
-      await user.click(viewButton);
-
-      // Verify the flyout is shown
-      await waitFor(() => {
-        expect(screen.getByTestId('todo-flyout')).toBeInTheDocument();
-      });
-    });
-
-    it('prevents default behavior on view button click', () => {
-      renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
-        { testDb: testDb.contextValue },
-      );
-
-      // Find the view button
-      const viewButton = screen.getByTestId('view-button');
-
-      const mockPreventDefault = vi.fn();
-
-      fireEvent.click(viewButton, {
-        preventDefault: mockPreventDefault,
-      });
-
-      // The component calls preventDefault internally
-      expect(viewButton).toBeInTheDocument();
+      expect(screen.queryByTestId('pause-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('play-button')).not.toBeInTheDocument();
     });
   });
 
