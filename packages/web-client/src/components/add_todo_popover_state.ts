@@ -21,9 +21,7 @@ interface PopoverState {
 interface OpenHandlerOptions {
   isControlled: boolean;
   onOpenChange?: (open: boolean) => void;
-  referenceElement?: HTMLElement | null;
   setIsOpenInternal: (open: boolean) => void;
-  triggerRef: React.RefObject<HTMLButtonElement | null>;
 }
 
 interface CloseHandlerOptions {
@@ -60,17 +58,9 @@ const useKeyboardShortcut = (key: string, onTrigger: () => void, enabled: boolea
 const createOpenHandler = ({
   isControlled,
   onOpenChange,
-  referenceElement,
   setIsOpenInternal,
-  triggerRef,
 }: OpenHandlerOptions): (() => void) => {
   return () => {
-    if (referenceElement && referenceElement.offsetParent === null) {
-      return;
-    }
-    if (triggerRef.current && triggerRef.current.offsetParent === null && !referenceElement) {
-      return;
-    }
     if (isControlled) {
       onOpenChange?.(true);
       return;
@@ -120,11 +110,9 @@ export const useAddTodoPopoverState = (options: PopoverStateOptions): PopoverSta
     createOpenHandler({
       isControlled,
       onOpenChange,
-      referenceElement,
       setIsOpenInternal,
-      triggerRef,
     }),
-    [isControlled, onOpenChange, referenceElement],
+    [isControlled, onOpenChange],
   );
   const closePopover = useCallback(
     createCloseHandler({ isControlled, onOpenChange, setIsOpenInternal }),
