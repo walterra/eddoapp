@@ -7,27 +7,18 @@ import { format } from 'date-fns';
 import { useCallback, type FC, type ReactNode } from 'react';
 import { BiCheckbox, BiCheckboxChecked } from 'react-icons/bi';
 
-import { useActiveTimer } from '../hooks/use_active_timer';
-import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
-
 import { CONTEXT_DEFAULT } from '../constants';
+import { useActiveTimer } from '../hooks/use_active_timer';
 import { useAuditedToggleCompletionMutation } from '../hooks/use_audited_todo_mutations';
-import { type SubtaskCount } from '../hooks/use_parent_child';
 import { CopyIdButton } from './copy_id_button';
-import { DueDatePopover } from './due_date_popover';
 import { FormattedMessage } from './formatted_message';
 import { SubtasksPopover } from './subtasks_popover';
 import { TagsPopover } from './tags_popover';
+import { DueDateCell, TitleCell } from './todo_table_editable_cells';
+import { type TodoRowData } from './todo_table_types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Table columns have mixed value types
 export type TodoColumnDef = ColumnDef<TodoRowData, any>;
-
-/** Row data passed to table - todo plus computed values */
-export interface TodoRowData {
-  todo: Todo;
-  duration: number;
-  subtaskCount?: SubtaskCount;
-}
 
 const columnHelper = createColumnHelper<TodoRowData>();
 
@@ -59,27 +50,6 @@ const StatusCell: FC<{
         {isCompleted ? <BiCheckboxChecked size="1.4em" /> : <BiCheckbox size="1.4em" />}
       </button>
       <CopyIdButton todoId={row.todo._id} />
-    </div>
-  );
-};
-
-/** Title cell that opens the flyout */
-const TitleCell: FC<{ row: TodoRowData }> = ({ row }) => {
-  const { todo } = row;
-  const { openTodo } = useTodoFlyoutContext();
-  const titleClassName = todo.completed
-    ? 'text-neutral-400 line-through'
-    : 'text-neutral-900 dark:text-white';
-
-  return (
-    <div className="text-xs">
-      <button
-        className={`cursor-pointer text-left font-medium hover:underline ${titleClassName}`}
-        onClick={() => openTodo(todo)}
-        type="button"
-      >
-        <FormattedMessage message={todo.title} />
-      </button>
     </div>
   );
 };
@@ -146,13 +116,7 @@ export const allColumns: Record<string, TodoColumnDef> = {
   due: columnHelper.accessor((row) => row.todo.due, {
     id: 'due',
     header: 'Due Date',
-    cell: ({ row }) => (
-      <span className="text-xs whitespace-nowrap text-neutral-700 dark:text-neutral-300">
-        <DueDatePopover todo={row.original.todo}>
-          {row.original.todo.due.split('T')[0]}
-        </DueDatePopover>
-      </span>
-    ),
+    cell: ({ row }) => <DueDateCell row={row.original} />,
     size: 128,
   }),
 
