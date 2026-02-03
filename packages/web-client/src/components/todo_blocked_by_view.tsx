@@ -5,6 +5,7 @@ import { type FC } from 'react';
 import { BiCheckCircle, BiCircle } from 'react-icons/bi';
 
 import { useTodoById } from '../hooks/use_parent_child';
+import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 
 /** Label styling for field headers */
 const LABEL_CLASS =
@@ -13,9 +14,15 @@ const LABEL_CLASS =
 /** Single blocker item in the view */
 const BlockerViewItem: FC<{ blockerId: string }> = ({ blockerId }) => {
   const { data: blockerTodo, isLoading } = useTodoById(blockerId);
+  const { openTodo } = useTodoFlyoutContext();
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/50">
+    <button
+      className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-left transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/50 dark:hover:bg-neutral-800"
+      disabled={!blockerTodo}
+      onClick={() => blockerTodo && openTodo(blockerTodo)}
+      type="button"
+    >
       {blockerTodo?.completed ? (
         <BiCheckCircle className="flex-shrink-0 text-green-500" size="1.2em" />
       ) : (
@@ -34,7 +41,7 @@ const BlockerViewItem: FC<{ blockerId: string }> = ({ blockerId }) => {
           <span className="text-sm text-amber-600 dark:text-amber-400">Todo not found</span>
         )}
       </div>
-    </div>
+    </button>
   );
 };
 

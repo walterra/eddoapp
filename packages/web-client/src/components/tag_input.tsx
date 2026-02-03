@@ -13,6 +13,7 @@ interface TagInputProps {
   onChange: (tags: string[]) => void;
   placeholder?: string;
   suggestions?: string[];
+  size?: 'sm' | 'md';
 }
 
 interface TagBadgeProps {
@@ -105,13 +106,20 @@ const TagListDisplay: FC<TagListDisplayProps> = ({ tags, removeTag }) => (
 
 interface TagInputContainerProps {
   children: React.ReactNode;
+  size: 'sm' | 'md';
 }
 
-const TagInputContainer: FC<TagInputContainerProps> = ({ children }) => (
-  <div className="focus-within:border-primary-500 focus-within:ring-primary-500 flex flex-wrap items-center gap-1 rounded-lg border border-neutral-300 bg-neutral-50 p-2.5 focus-within:ring-1 dark:border-neutral-600 dark:bg-neutral-700">
-    {children}
-  </div>
-);
+const TagInputContainer: FC<TagInputContainerProps> = ({ children, size }) => {
+  const paddingClass = size === 'sm' ? 'p-2' : 'p-2.5';
+
+  return (
+    <div
+      className={`focus-within:border-primary-500 focus-within:ring-primary-500 flex flex-wrap items-center gap-1 rounded-lg border border-neutral-300 bg-neutral-50 ${paddingClass} focus-within:ring-1 dark:border-neutral-600 dark:bg-neutral-700`}
+    >
+      {children}
+    </div>
+  );
+};
 
 interface InputFieldProps {
   value: string;
@@ -219,6 +227,7 @@ export const TagInput: FC<TagInputProps> = ({
   onChange,
   placeholder = 'Add tags...',
   suggestions = [],
+  size = 'md',
 }) => {
   const state = useTagInputState();
   const filteredSuggestions = filterSuggestions(suggestions, state.inputValue, tags);
@@ -236,7 +245,7 @@ export const TagInput: FC<TagInputProps> = ({
 
   return (
     <div className="relative">
-      <TagInputContainer>
+      <TagInputContainer size={size}>
         <TagListDisplay removeTag={removeTag} tags={tags} />
         <InputField
           inputRef={state.inputRef}

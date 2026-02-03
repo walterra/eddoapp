@@ -1,6 +1,7 @@
 /**
  * Search popover content component.
  */
+import { format } from 'date-fns';
 import { Spinner, TextInput } from 'flowbite-react';
 import type { FC, RefObject } from 'react';
 import { HiOutlineSearch, HiOutlineX } from 'react-icons/hi';
@@ -14,9 +15,16 @@ interface SearchResultItemProps {
   onSelect: (todoId: string) => void;
 }
 
+const formatDueDate = (due: string | null): string | null => {
+  if (!due) return null;
+  return format(new Date(due), 'dd.MM.yyyy');
+};
+
 /** Individual search result item */
 const SearchResultItem: FC<SearchResultItemProps> = ({ onSelect, result }) => {
   const isCompleted = result.completed !== null;
+
+  const dueDate = formatDueDate(result.due);
 
   return (
     <button
@@ -35,8 +43,11 @@ const SearchResultItem: FC<SearchResultItemProps> = ({ onSelect, result }) => {
           >
             {result.title}
           </div>
-          <div className="mt-0.5 flex items-center gap-2">
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
             <span className="text-xs text-neutral-500 dark:text-neutral-400">{result.context}</span>
+            {dueDate && (
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">Due {dueDate}</span>
+            )}
             {result.tags && Array.isArray(result.tags) && result.tags.length > 0 && (
               <span className="text-primary-600 dark:text-primary-400 text-xs">
                 {result.tags.slice(0, 2).join(', ')}

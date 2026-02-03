@@ -4,8 +4,10 @@
  */
 import { type Todo } from '@eddo/core-client';
 import {
+  type Dispatch,
   type FC,
   type ReactNode,
+  type SetStateAction,
   createContext,
   useCallback,
   useContext,
@@ -18,10 +20,12 @@ import { usePouchDb } from '../pouch_db';
 interface TodoFlyoutContextValue {
   openTodoId: string | null;
   openTodo: (todo: Todo) => void;
+  openTodoInEdit: (todo: Todo) => void;
   openTodoById: (todoId: string) => Promise<void>;
   closeFlyout: () => void;
   updateTodo: (todo: Todo) => void;
   currentTodo: Todo | null;
+  flyoutMode: 'view' | 'edit';
 }
 
 const TodoFlyoutContext = createContext<TodoFlyoutContextValue | null>(null);
@@ -30,32 +34,60 @@ interface TodoFlyoutProviderProps {
   children: ReactNode;
 }
 
-export const TodoFlyoutProvider: FC<TodoFlyoutProviderProps> = ({ children }) => {
-  const [openTodoId, setOpenTodoId] = useState<string | null>(null);
-  const [currentTodo, setCurrentTodo] = useState<Todo | null>(null);
-  const { rawDb } = usePouchDb();
+type FlyoutMode = 'view' | 'edit';
 
-  const openTodo = useCallback((todo: Todo) => {
-    setOpenTodoId(todo._id);
-    setCurrentTodo(todo);
-  }, []);
+type RawDb = ReturnType<typeof usePouchDb>['rawDb'];
 
-  const openTodoById = useCallback(
+type SetState<T> = Dispatch<SetStateAction<T>>;
+
+interface FlyoutSetters {
+  setCurrentTodo: SetState<Todo | null>;
+  setFlyoutMode: SetState<FlyoutMode>;
+  setOpenTodoId: SetState<string | null>;
+}
+
+const useOpenTodoById = (rawDb: RawDb, setters: FlyoutSetters) =>
+  useCallback(
     async (todoId: string) => {
       try {
         const todo = await rawDb.get(todoId);
-        setOpenTodoId(todo._id);
-        setCurrentTodo(todo as Todo);
+        setters.setFlyoutMode('view');
+        setters.setOpenTodoId(todo._id);
+        setters.setCurrentTodo(todo as Todo);
       } catch (error) {
         console.error('Failed to open todo by ID:', error);
       }
     },
-    [rawDb],
+    [rawDb, setters],
   );
+
+const useTodoFlyoutProviderState = (rawDb: RawDb): TodoFlyoutContextValue => {
+  const [openTodoId, setOpenTodoId] = useState<string | null>(null);
+  const [currentTodo, setCurrentTodo] = useState<Todo | null>(null);
+  const [flyoutMode, setFlyoutMode] = useState<FlyoutMode>('view');
+
+  const openTodo = useCallback((todo: Todo) => {
+    setFlyoutMode('view');
+    setOpenTodoId(todo._id);
+    setCurrentTodo(todo);
+  }, []);
+
+  const openTodoInEdit = useCallback((todo: Todo) => {
+    setFlyoutMode('edit');
+    setOpenTodoId(todo._id);
+    setCurrentTodo(todo);
+  }, []);
+
+  const openTodoById = useOpenTodoById(rawDb, {
+    setCurrentTodo,
+    setFlyoutMode,
+    setOpenTodoId,
+  });
 
   const closeFlyout = useCallback(() => {
     setOpenTodoId(null);
     setCurrentTodo(null);
+    setFlyoutMode('view');
   }, []);
 
   const updateTodo = useCallback(
@@ -67,7 +99,21 @@ export const TodoFlyoutProvider: FC<TodoFlyoutProviderProps> = ({ children }) =>
     [openTodoId],
   );
 
-  const value = { openTodoId, openTodo, openTodoById, closeFlyout, updateTodo, currentTodo };
+  return {
+    openTodoId,
+    openTodo,
+    openTodoInEdit,
+    openTodoById,
+    closeFlyout,
+    updateTodo,
+    currentTodo,
+    flyoutMode,
+  };
+};
+
+export const TodoFlyoutProvider: FC<TodoFlyoutProviderProps> = ({ children }) => {
+  const { rawDb } = usePouchDb();
+  const value = useTodoFlyoutProviderState(rawDb);
 
   return <TodoFlyoutContext.Provider value={value}>{children}</TodoFlyoutContext.Provider>;
 };
@@ -86,7 +132,7 @@ export const useTodoFlyoutContext = (): TodoFlyoutContextValue => {
  * @param todo - The todo this component represents
  */
 export const useTodoFlyout = (todo: Todo) => {
-  const { openTodoId, openTodo, closeFlyout, updateTodo } = useTodoFlyoutContext();
+  const { openTodoId, openTodo, closeFlyout, updateTodo, flyoutMode } = useTodoFlyoutContext();
 
   // Keep flyout's todo in sync when this todo updates
   useEffect(() => {
@@ -98,5 +144,5 @@ export const useTodoFlyout = (todo: Todo) => {
   const isOpen = openTodoId === todo._id;
   const open = useCallback(() => openTodo(todo), [openTodo, todo]);
 
-  return { isOpen, open, close: closeFlyout };
+  return { isOpen, open, close: closeFlyout, mode: flyoutMode };
 };

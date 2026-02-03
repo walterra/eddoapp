@@ -207,7 +207,7 @@ describe('AddTodoPopover', () => {
   });
 
   describe('form fields', () => {
-    it('should render all form fields', async () => {
+    it('should render base form fields', async () => {
       renderWithPouchDb(<AddTodoPopover />, { testDb: testDb.contextValue });
 
       fireEvent.click(screen.getByRole('button', { name: /add todo/i }));
@@ -215,9 +215,27 @@ describe('AddTodoPopover', () => {
       await waitFor(() => {
         expect(screen.getByPlaceholderText('What needs to be done?')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('context')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('url (optional)')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('tags')).toBeInTheDocument();
       });
+
+      expect(screen.getByPlaceholderText('tags')).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('description (optional)')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /more options/i })).toBeInTheDocument();
+    });
+
+    it('should render optional fields when expanded', async () => {
+      renderWithPouchDb(<AddTodoPopover />, { testDb: testDb.contextValue });
+
+      fireEvent.click(screen.getByRole('button', { name: /add todo/i }));
+      const toggle = await screen.findByRole('button', { name: /more options/i });
+      fireEvent.click(toggle);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('description (optional)')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('parent id (optional)')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('url (optional)')).toBeInTheDocument();
+      });
+
+      expect(screen.getByPlaceholderText('tags')).toBeInTheDocument();
     });
 
     it('should have default context value', async () => {

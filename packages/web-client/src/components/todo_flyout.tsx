@@ -10,6 +10,7 @@ import { BiEdit, BiShow } from 'react-icons/bi';
 import { useTags } from '../hooks/use_tags';
 import { useTodoFlyoutState } from '../hooks/use_todo_flyout_state';
 import { BTN_GHOST, BTN_PRIMARY, TRANSITION } from '../styles/interactive';
+import { AddTodoPopover } from './add_todo_popover';
 import { BlockedByField } from './todo_blocked_by_field';
 import { ErrorDisplay } from './todo_edit_error';
 import {
@@ -36,6 +37,7 @@ interface TodoFlyoutProps {
   onClose: () => void;
   show: boolean;
   todo: Todo;
+  initialMode?: 'view' | 'edit';
 }
 
 interface UnsavedChangesDialogProps {
@@ -125,10 +127,18 @@ const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, o
 interface ViewModeActionsProps {
   onDelete: (e: React.FormEvent<HTMLButtonElement>) => void;
   isDeleting: boolean;
+  todo: Todo;
 }
 
-const ViewModeActions: FC<ViewModeActionsProps> = ({ onDelete, isDeleting }) => (
-  <div className="-mx-4 -mb-4 flex w-[calc(100%+2rem)] justify-end border-t border-neutral-200 bg-neutral-50 px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900">
+const ViewModeActions: FC<ViewModeActionsProps> = ({ onDelete, isDeleting, todo }) => (
+  <div className="-mx-4 -mb-4 flex w-[calc(100%+2rem)] items-center justify-between border-t border-neutral-200 bg-neutral-50 px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900">
+    <AddTodoPopover
+      enableKeyboardShortcut={false}
+      parentTodo={todo}
+      triggerClassName={`flex items-center gap-2 ${BTN_PRIMARY}`}
+      triggerLabel="Create subtask"
+      triggerTitle="Create subtask"
+    />
     <Button color="red" disabled={isDeleting} onClick={onDelete}>
       {isDeleting ? 'Deleting...' : 'Delete'}
     </Button>
@@ -185,7 +195,11 @@ const FlyoutContent: FC<FlyoutContentProps> = ({ state, allTags, activeArray }) 
         )}
       </div>
       {state.mode === 'view' ? (
-        <ViewModeActions isDeleting={state.isDeleting} onDelete={state.handleDelete} />
+        <ViewModeActions
+          isDeleting={state.isDeleting}
+          onDelete={state.handleDelete}
+          todo={displayTodo}
+        />
       ) : (
         <EditModeActions
           isActiveValid={validateTimeTracking(activeArray)}
@@ -222,9 +236,9 @@ const drawerTheme = {
 };
 
 /** Inner component that uses hooks - only rendered when flyout is open */
-const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
+const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo, initialMode }) => {
   const { allTags } = useTags();
-  const state = useTodoFlyoutState(todo, show, onClose);
+  const state = useTodoFlyoutState(todo, show, onClose, initialMode);
   const activeArray = Object.entries(state.editedTodo.active);
 
   return createPortal(
@@ -264,10 +278,10 @@ const TodoFlyoutInner: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
  * Flyout panel for viewing and editing todo items.
  * Only mounts hooks when actually shown to avoid creating mutations for every row.
  */
-export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo }) => {
+export const TodoFlyout: FC<TodoFlyoutProps> = ({ onClose, show, todo, initialMode }) => {
   if (!show) {
     return null;
   }
 
-  return <TodoFlyoutInner onClose={onClose} show={show} todo={todo} />;
+  return <TodoFlyoutInner initialMode={initialMode} onClose={onClose} show={show} todo={todo} />;
 };

@@ -153,8 +153,8 @@ const useDialogHandlers = (deps: DialogHandlerDeps) => {
 };
 
 /** Hook for flyout state initialization */
-const useFlyoutStateInit = (todo: Todo, show: boolean) => {
-  const [mode, setMode] = useState<FlyoutMode>('view');
+const useFlyoutStateInit = (todo: Todo, show: boolean, initialMode: FlyoutMode) => {
+  const [mode, setMode] = useState<FlyoutMode>(initialMode);
   const [editedTodo, setEditedTodo] = useState(todo);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<'view' | 'close' | null>(null);
@@ -162,10 +162,10 @@ const useFlyoutStateInit = (todo: Todo, show: boolean) => {
   useEffect(() => {
     if (!show) return;
     setEditedTodo(todo);
-    setMode('view');
+    setMode(initialMode);
     setShowUnsavedDialog(false);
     setPendingAction(null);
-  }, [show, todo._id, todo._rev]);
+  }, [show, todo._id, todo._rev, initialMode]);
 
   return {
     mode,
@@ -190,10 +190,11 @@ export const useTodoFlyoutState = (
   todo: Todo,
   show: boolean,
   onClose: () => void,
+  initialMode: FlyoutMode = 'view',
 ): TodoFlyoutState => {
   const saveTodoMutation = useAuditedSaveTodoMutation();
   const deleteTodoMutation = useAuditedDeleteTodoMutation();
-  const state = useFlyoutStateInit(todo, show);
+  const state = useFlyoutStateInit(todo, show, initialMode);
 
   const mutationHandlers = useMutationHandlers({
     saveTodoMutation,
