@@ -43,8 +43,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       fastmcp:
-        specifier: ^3.26.8
-        version: 3.26.8(hono@4.11.4)
+        specifier: ^3.27.0
+        version: 3.27.0(hono@4.11.4)
       flowbite:
         specifier: ^4.0.1
         version: 4.0.1(rollup@4.56.0)
@@ -377,8 +377,8 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
       fastmcp:
-        specifier: ^3.26.8
-        version: 3.26.8(hono@4.11.4)
+        specifier: ^3.27.0
+        version: 3.27.0(hono@4.11.4)
       nano:
         specifier: ^11.0.3
         version: 11.0.3
@@ -506,8 +506,8 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
       fastmcp:
-        specifier: ^3.26.8
-        version: 3.26.8(hono@4.11.4)
+        specifier: ^3.27.0
+        version: 3.27.0(hono@4.11.4)
       grammy:
         specifier: ^1.38.4
         version: 1.39.2
@@ -5200,8 +5200,8 @@ packages:
     resolution: {integrity: sha512-2O3dkPAAC6JavuMm8+4+pgTk+5hoAs+CjZ+sWcQLkX9+/tHRuTkQh/Oaifr8qDmZ8iEHb771Ea6G8CdwkrgvYA==}
     hasBin: true
 
-  fastmcp@3.26.8:
-    resolution: {integrity: sha512-DQgvEdSoQpISqPDgLZe5K2RU8ICCz3/5QcEhHmz4KiNcNSdFOo7o817mGwWxPffOLe36vypCulq22cvEwqBi/A==}
+  fastmcp@3.27.0:
+    resolution: {integrity: sha512-jbGc5eFuqWjl4OMNdEmdGBeUddZjXwF7nyxZxWZ7X9xAahHC/PavqAy9opJm4vjEKteuao282WVfmbr54uUW+Q==}
     hasBin: true
     peerDependencies:
       jose: ^5.0.0
@@ -7882,6 +7882,10 @@ packages:
     resolution: {integrity: sha512-Kxl3KJGb/gxkaUMOjRsQ8IrXiGW75O4E3RPjFIINOVH8AMl2SQ/yWdTzWwF3FevIX9LcMAjJW+GRwAlAbTSXdg==}
     engines: {node: '>=20'}
 
+  string-width@8.1.1:
+    resolution: {integrity: sha512-KpqHIdDL9KwYk22wEOg/VIqYbrnLeSApsKT/bSj6Ez7pn3CftUiLAv2Lccpq1ALcpLV9UX1Ppn92npZWu2w/aw==}
+    engines: {node: '>=20'}
+
   string.prototype.matchall@4.0.12:
     resolution: {integrity: sha512-6CC9uyBL+/48dYizRf7H7VAYCMCNTBeM78x/VTUe9bFEaxBepPJDa1Ow99LqI/1yF7kuy7Q3cQsYMrcjGUcskA==}
     engines: {node: '>= 0.4'}
@@ -8299,8 +8303,8 @@ packages:
     resolution: {integrity: sha512-QEg3HPMll0o3t2ourKwOeUAZ159Kn9mx5pnzHRQO8+Wixmh88YdZRiIwat0iNzNNXn0yoEtXJqFpyW7eM8BV7g==}
     engines: {node: '>=20.18.1'}
 
-  undici@7.19.1:
-    resolution: {integrity: sha512-Gpq0iNm5M6cQWlyHQv9MV+uOj1jWk7LpkoE5vSp/7zjb4zMdAcUD+VL5y0nH4p9EbUklq00eVIIX/XcDHzu5xg==}
+  undici@7.20.0:
+    resolution: {integrity: sha512-MJZrkjyd7DeC+uPZh+5/YaMDxFiiEEaDgbUSVMXayofAkDWF1088CDo+2RPg7B1BuS1qf1vgNE7xqwPxE0DuSQ==}
     engines: {node: '>=20.18.1'}
 
   unicorn-magic@0.1.0:
@@ -12850,7 +12854,7 @@ snapshots:
   cli-truncate@5.1.1:
     dependencies:
       slice-ansi: 7.1.2
-      string-width: 8.1.0
+      string-width: 8.1.1
 
   cli-width@3.0.0: {}
 
@@ -13852,7 +13856,7 @@ snapshots:
     dependencies:
       strnum: 2.1.2
 
-  fastmcp@3.26.8(hono@4.11.4):
+  fastmcp@3.27.0(hono@4.11.4):
     dependencies:
       '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.4)(zod@4.3.6)
       '@standard-schema/spec': 1.1.0
@@ -13861,7 +13865,7 @@ snapshots:
       fuse.js: 7.1.0
       mcp-proxy: 5.12.5
       strict-event-emitter-types: 2.0.0
-      undici: 7.19.1
+      undici: 7.20.0
       uri-templates: 0.2.0
       xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.1(zod@4.3.6))(zod@4.3.6)
       yargs: 18.0.0
@@ -17017,6 +17021,11 @@ snapshots:
       get-east-asian-width: 1.4.0
       strip-ansi: 7.1.2
 
+  string-width@8.1.1:
+    dependencies:
+      get-east-asian-width: 1.4.0
+      strip-ansi: 7.1.2
+
   string.prototype.matchall@4.0.12:
     dependencies:
       call-bind: 1.0.8
@@ -17256,7 +17265,7 @@ snapshots:
       ssh-remote-port-forward: 1.0.4
       tar-fs: 3.1.1
       tmp: 0.2.5
-      undici: 7.19.1
+      undici: 7.20.0
     transitivePeerDependencies:
       - bare-abort-controller
       - bare-buffer
@@ -17508,7 +17517,7 @@ snapshots:
 
   undici@7.16.0: {}
 
-  undici@7.19.1: {}
+  undici@7.20.0: {}
 
   unicorn-magic@0.1.0: {}
 
