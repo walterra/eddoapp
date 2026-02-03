@@ -649,11 +649,11 @@ importers:
   packages/web-client:
     dependencies:
       '@assistant-ui/react':
-        specifier: ^0.11.56
-        version: 0.11.56(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
+        specifier: ^0.11.58
+        version: 0.11.58(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
       '@assistant-ui/react-markdown':
         specifier: ^0.11.9
-        version: 0.11.9(@assistant-ui/react@0.11.56(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.11.9(@assistant-ui/react@0.11.58(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@eddo/core-client':
         specifier: workspace:*
         version: link:../core-client
@@ -877,8 +877,8 @@ packages:
       '@types/react':
         optional: true
 
-  '@assistant-ui/react@0.11.56':
-    resolution: {integrity: sha512-ksSTSXX+Sjr8c/M0M4toauchVvOb48DnKacITytB1B+ikvnPylWK3afCtfkKkaGeNxCS/aQ7ZvSGVhrs9wtoPA==}
+  '@assistant-ui/react@0.11.58':
+    resolution: {integrity: sha512-5VbparS71X36Q7g+mHwXZvo4eaJohKkQzMP8jBZD9V/Bl26I8s/s3q9WjRqYWMRWaiyYaoEgnQhESM9yyBtW2g==}
     peerDependencies:
       '@types/react': '*'
       '@types/react-dom': '*'
@@ -1474,11 +1474,23 @@ packages:
   '@floating-ui/core@1.7.3':
     resolution: {integrity: sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w==}
 
+  '@floating-ui/core@1.7.4':
+    resolution: {integrity: sha512-C3HlIdsBxszvm5McXlB8PeOEWfBhcGBTZGkGlWc2U0KFY5IwG5OQEuQ8rq52DZmcHDlPLd+YFBK+cZcytwIFWg==}
+
   '@floating-ui/dom@1.7.4':
     resolution: {integrity: sha512-OOchDgh4F2CchOX94cRVqhvy7b3AFb+/rQXyswmzmGakRfkMgoWVjfnLWkRirfLEfuD4ysVW16eXzwt3jHIzKA==}
 
+  '@floating-ui/dom@1.7.5':
+    resolution: {integrity: sha512-N0bD2kIPInNHUHehXhMke1rBGs1dwqvC9O9KYMyyjK7iXt7GAhnro7UlcuYcGdS/yYOlq0MAVgrow8IbWJwyqg==}
+
   '@floating-ui/react-dom@2.1.6':
     resolution: {integrity: sha512-4JX6rEatQEvlmgU80wZyq9RT96HZJa88q8hp0pBd+LrczeDI4o6uA2M+uvxngVHo4Ihr8uibXxH6+70zhAFrVw==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@floating-ui/react-dom@2.1.7':
+    resolution: {integrity: sha512-0tLRojf/1Go2JgEVm+3Frg9A3IW8bJgKgdO0BN5RkF//ufuz2joZM63Npau2ff3J6lUVYgDSNzNkR+aH3IVfjg==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -4084,11 +4096,14 @@ packages:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
     engines: {node: '>=12'}
 
-  assistant-cloud@0.1.13:
-    resolution: {integrity: sha512-wCMX6yL2YyO/LJ3UO9j/IhiEjLPOBn6RttCxHytu8Q7s6mYjBKv7mYB3hq7Q1TGVd6EoTLLnOJZ8flYrIGCayQ==}
+  assistant-cloud@0.1.15:
+    resolution: {integrity: sha512-LK+HrE6p1/jefzH3IosGUfpZvsM8wLPCsd955TLPEfJ9rMknl9KeE2QxRMHl3Ob17m33NqmJi/t/oWWKdgP6Nw==}
 
   assistant-stream@0.2.47:
     resolution: {integrity: sha512-0f+yVwoh7GVwYqaWh6vT+P/zflvEyqysJJzGhjqOPxUYjbNOjcifBw+fVwQPtxysyzye2TZCQtmOWjP0ggvnqw==}
+
+  assistant-stream@0.3.0:
+    resolution: {integrity: sha512-gp5wXZiH7fiPdCByusRZ6ZQrmifAjiuDTenR0HSeviiRLXmirePxePvTgHPT1ZahohCLroge7fjtC9vAc+Hqsg==}
 
   ast-types@0.16.1:
     resolution: {integrity: sha512-6t10qk83GOG8p0vKmaCr8eiilZwO171AvbROMtvvNiwrTly62t+7XkA8RdIIVbpMhCASAsxgAzdRSwh6nw/5Dg==}
@@ -8877,8 +8892,8 @@ packages:
       react:
         optional: true
 
-  zustand@5.0.10:
-    resolution: {integrity: sha512-U1AiltS1O9hSy3rul+Ub82ut2fqIAefiSuwECWt6jlMVUGejvf+5omLcRBSzqbRagSM3hQZbtzdeRc6QVScXTg==}
+  zustand@5.0.11:
+    resolution: {integrity: sha512-fdZY+dk7zn/vbWNCYmzZULHRrss0jx5pPFiOuMZ/5HJN6Yv3u+1Wswy/4MpZEkEGhtNH+pwxZB8OKgUBPzYAGg==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       '@types/react': '>=18.0.0'
@@ -8935,9 +8950,9 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@assistant-ui/react-markdown@0.11.9(@assistant-ui/react@0.11.56(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@assistant-ui/react-markdown@0.11.9(@assistant-ui/react@0.11.58(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@assistant-ui/react': 0.11.56(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
+      '@assistant-ui/react': 0.11.58(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
       '@radix-ui/react-primitive': 2.1.4(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-use-callback-ref': 1.1.1(@types/react@19.2.8)(react@19.2.3)
       classnames: 2.5.1
@@ -8950,7 +8965,7 @@ snapshots:
       - react-dom
       - supports-color
 
-  '@assistant-ui/react@0.11.56(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))':
+  '@assistant-ui/react@0.11.58(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))':
     dependencies:
       '@assistant-ui/tap': 0.3.6(@types/react@19.2.8)(react@19.2.3)
       '@radix-ui/primitive': 1.1.3
@@ -8962,14 +8977,14 @@ snapshots:
       '@radix-ui/react-slot': 1.2.4(@types/react@19.2.8)(react@19.2.3)
       '@radix-ui/react-use-callback-ref': 1.1.1(@types/react@19.2.8)(react@19.2.3)
       '@radix-ui/react-use-escape-keydown': 1.1.1(@types/react@19.2.8)(react@19.2.3)
-      assistant-cloud: 0.1.13
+      assistant-cloud: 0.1.15
       assistant-stream: 0.2.47
       nanoid: 5.1.6
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
       react-textarea-autosize: 8.5.9(@types/react@19.2.8)(react@19.2.3)
       zod: 4.3.6
-      zustand: 5.0.10(@types/react@19.2.8)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
+      zustand: 5.0.11(@types/react@19.2.8)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     optionalDependencies:
       '@types/react': 19.2.8
       '@types/react-dom': 19.1.9(@types/react@19.2.8)
@@ -9770,14 +9785,29 @@ snapshots:
     dependencies:
       '@floating-ui/utils': 0.2.10
 
+  '@floating-ui/core@1.7.4':
+    dependencies:
+      '@floating-ui/utils': 0.2.10
+
   '@floating-ui/dom@1.7.4':
     dependencies:
       '@floating-ui/core': 1.7.3
       '@floating-ui/utils': 0.2.10
 
+  '@floating-ui/dom@1.7.5':
+    dependencies:
+      '@floating-ui/core': 1.7.4
+      '@floating-ui/utils': 0.2.10
+
   '@floating-ui/react-dom@2.1.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@floating-ui/dom': 1.7.4
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@floating-ui/react-dom@2.1.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@floating-ui/dom': 1.7.5
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
@@ -11117,7 +11147,7 @@ snapshots:
 
   '@radix-ui/react-popper@1.2.8(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@floating-ui/react-dom': 2.1.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@floating-ui/react-dom': 2.1.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-arrow': 1.1.7(@types/react-dom@19.1.9(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.8)(react@19.2.3)
       '@radix-ui/react-context': 1.1.2(@types/react@19.2.8)(react@19.2.3)
@@ -12632,11 +12662,17 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  assistant-cloud@0.1.13:
+  assistant-cloud@0.1.15:
     dependencies:
-      assistant-stream: 0.2.47
+      assistant-stream: 0.3.0
 
   assistant-stream@0.2.47:
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      nanoid: 5.1.6
+      secure-json-parse: 4.1.0
+
+  assistant-stream@0.3.0:
     dependencies:
       '@standard-schema/spec': 1.1.0
       nanoid: 5.1.6
@@ -18197,7 +18233,7 @@ snapshots:
       '@types/react': 19.2.8
       react: 19.2.3
 
-  zustand@5.0.10(@types/react@19.2.8)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)):
+  zustand@5.0.11(@types/react@19.2.8)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)):
     optionalDependencies:
       '@types/react': 19.2.8
       react: 19.2.3
