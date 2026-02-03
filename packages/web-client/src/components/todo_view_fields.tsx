@@ -1,12 +1,7 @@
 /**
  * Read-only view components for todo display
  */
-import {
-  type Todo,
-  type TodoNote,
-  getActiveDuration,
-  getFormattedDuration,
-} from '@eddo/core-client';
+import { type Todo, type TodoNote } from '@eddo/core-client';
 import { type FC, useState } from 'react';
 import { BiCheckCircle, BiCircle, BiNote, BiSubdirectoryRight } from 'react-icons/bi';
 
@@ -18,6 +13,7 @@ import { CopyIdButton } from './copy_id_button';
 import { ImageLightbox } from './image_lightbox';
 import { NoteViewItem } from './note_view_item';
 import { TagDisplay } from './tag_display';
+import { TimeTrackingView } from './time_tracking_view';
 import { BlockedByView } from './todo_blocked_by_view';
 import { MetadataView } from './todo_metadata_view';
 
@@ -154,40 +150,6 @@ const CompletedView: FC<{ completed: string | null }> = ({ completed }) => (
   </FieldRow>
 );
 
-interface TimeTrackingViewProps {
-  active: Record<string, string | null>;
-}
-
-const TimeTrackingView: FC<TimeTrackingViewProps> = ({ active }) => {
-  const entries = Object.entries(active);
-  const totalDuration = getActiveDuration(active);
-  const hasActiveSession = entries.some(([, to]) => to === null);
-
-  if (entries.length === 0) {
-    return <FieldRow label="Time Tracking">{EMPTY_VALUE}</FieldRow>;
-  }
-
-  return (
-    <div>
-      <div className={LABEL_CLASS}>Time Tracking</div>
-      <div className="mt-2 space-y-2">
-        <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-900/50">
-          <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Total</span>
-          <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-            {getFormattedDuration(totalDuration) || '0m'}
-            {hasActiveSession && (
-              <span className="ml-2 inline-flex h-2 w-2 animate-pulse rounded-full bg-green-500" />
-            )}
-          </span>
-        </div>
-        <div className="text-xs text-neutral-500 dark:text-neutral-400">
-          {entries.length} session{entries.length !== 1 ? 's' : ''}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const ParentView: FC<{ parentId: string | null | undefined }> = ({ parentId }) => {
   const { data: parentTodo, isLoading } = useParentTodo(parentId);
   const { openTodo } = useTodoFlyoutContext();
@@ -318,7 +280,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
     <LinkView link={todo.link} />
     <ExternalIdView externalId={todo.externalId ?? null} />
     <MetadataView metadata={todo.metadata} />
-    <TimeTrackingView active={todo.active} />
+    <TimeTrackingView active={todo.active} emptyValue={EMPTY_VALUE} labelClass={LABEL_CLASS} />
 
     <div className="border-t border-neutral-200 pt-4 dark:border-neutral-700">
       <CompletedView completed={todo.completed} />

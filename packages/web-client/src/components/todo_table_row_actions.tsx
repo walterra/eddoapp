@@ -2,79 +2,18 @@
  * Row action buttons for TodoTable
  */
 import { type DatabaseError, type Todo } from '@eddo/core-client';
-import {
-  type CSSProperties,
-  type FC,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type CSSProperties, type FC, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BiDotsVerticalRounded, BiLinkExternal } from 'react-icons/bi';
-
-import { AddTodoPopover } from './add_todo_popover';
-
 import { useActiveTimer } from '../hooks/use_active_timer';
 import {
   useAuditedToggleCompletionMutation,
   useAuditedToggleTimeTrackingMutation,
 } from '../hooks/use_audited_todo_mutations';
-import { useFloatingPosition } from '../hooks/use_floating_position';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 import { DROPDOWN_CONTAINER, DROPDOWN_ITEM, ICON_BUTTON } from '../styles/interactive';
-
-/** Hook for popover dismiss behavior (click outside, escape key) */
-const usePopoverDismiss = (
-  menuRef: React.RefObject<HTMLDivElement | null>,
-  onClose: () => void,
-): void => {
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [menuRef, onClose]);
-};
-
-/** Copies text to clipboard with fallback for older browsers. */
-const copyToClipboard = async (text: string): Promise<boolean> => {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // Fall through to legacy method
-    }
-  }
-
-  try {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.left = '-9999px';
-    textarea.style.top = '-9999px';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    const success = document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return success;
-  } catch {
-    return false;
-  }
-};
+import { AddTodoPopover } from './add_todo_popover';
+import { useRowActionsMenuState } from './todo_table_row_actions_helpers';
 
 interface RowActionsMenuProps {
   todo: Todo;
@@ -102,9 +41,9 @@ const RowActionsMenuButton: FC<RowActionsMenuButtonProps> = ({ onToggleMenu, set
 );
 
 interface RowActionsMenuContentProps {
-  todo: Todo;
   onOpenEdit: () => void;
   onToggleTimeTracking: () => void;
+  onCreateSubtask: () => void;
   timeTrackingLabel: string;
   copied: boolean;
   onCopyId: () => void;
@@ -113,9 +52,9 @@ interface RowActionsMenuContentProps {
 }
 
 const RowActionsMenuContent: FC<RowActionsMenuContentProps> = ({
-  todo,
   onOpenEdit,
   onToggleTimeTracking,
+  onCreateSubtask,
   timeTrackingLabel,
   copied,
   onCopyId,
@@ -129,89 +68,14 @@ const RowActionsMenuContent: FC<RowActionsMenuContentProps> = ({
     <button className={DROPDOWN_ITEM} onClick={onToggleTimeTracking} type="button">
       {timeTrackingLabel}
     </button>
-    <AddTodoPopover
-      enableKeyboardShortcut={false}
-      parentTodo={todo}
-      triggerClassName={`${DROPDOWN_ITEM} flex items-center gap-2`}
-      triggerLabel="Create subtask"
-      triggerTitle="Create subtask"
-      triggerVariant="text"
-    />
+    <button className={DROPDOWN_ITEM} onClick={onCreateSubtask} type="button">
+      Create subtask
+    </button>
     <button className={DROPDOWN_ITEM} onClick={onCopyId} type="button">
       {copied ? 'Copied ID' : 'Copy ID'}
     </button>
   </div>
 );
-
-interface RowActionsMenuState {
-  copied: boolean;
-  floatingStyles: CSSProperties;
-  handleCopyId: () => void;
-  handleOpenEdit: () => void;
-  handleToggleTimeTracking: () => void;
-  isOpen: boolean;
-  setReference: (node: HTMLButtonElement | null) => void;
-  setRefs: (node: HTMLDivElement | null) => void;
-  toggleMenu: () => void;
-}
-
-const useRowActionsMenuState = (
-  todoId: string,
-  onToggleTimeTracking: () => void,
-  onOpenEdit: () => void,
-): RowActionsMenuState => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const { refs, floatingStyles } = useFloatingPosition({
-    placement: 'bottom-end',
-    open: isOpen,
-  });
-
-  const setRefs = useCallback(
-    (node: HTMLDivElement | null) => {
-      menuRef.current = node;
-      refs.setFloating(node);
-    },
-    [refs],
-  );
-
-  const closeMenu = useCallback(() => setIsOpen(false), []);
-  const toggleMenu = useCallback(() => setIsOpen((prev) => !prev), []);
-
-  const handleCopyId = useCallback(async () => {
-    const success = await copyToClipboard(todoId);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }
-    closeMenu();
-  }, [closeMenu, todoId]);
-
-  const handleToggleTimeTracking = useCallback(() => {
-    onToggleTimeTracking();
-    closeMenu();
-  }, [closeMenu, onToggleTimeTracking]);
-
-  const handleOpenEdit = useCallback(() => {
-    onOpenEdit();
-    closeMenu();
-  }, [closeMenu, onOpenEdit]);
-
-  usePopoverDismiss(menuRef, closeMenu);
-
-  return {
-    copied,
-    floatingStyles: floatingStyles as CSSProperties,
-    handleCopyId,
-    handleOpenEdit,
-    handleToggleTimeTracking,
-    isOpen,
-    setReference: refs.setReference,
-    setRefs,
-    toggleMenu,
-  };
-};
 
 const RowActionsMenu: FC<RowActionsMenuProps> = ({
   todo,
@@ -220,6 +84,7 @@ const RowActionsMenu: FC<RowActionsMenuProps> = ({
   timeTrackingLabel,
 }) => {
   const menuState = useRowActionsMenuState(todo._id, onToggleTimeTracking, onOpenEdit);
+  const [showSubtaskPopover, setShowSubtaskPopover] = useState(false);
 
   return (
     <>
@@ -227,17 +92,30 @@ const RowActionsMenu: FC<RowActionsMenuProps> = ({
         onToggleMenu={menuState.toggleMenu}
         setReference={menuState.setReference}
       />
+      {showSubtaskPopover && (
+        <AddTodoPopover
+          enableKeyboardShortcut={false}
+          hideTrigger={true}
+          onOpenChange={setShowSubtaskPopover}
+          open={showSubtaskPopover}
+          parentTodo={todo}
+          referenceElement={menuState.menuButtonRef.current}
+        />
+      )}
       {menuState.isOpen &&
         createPortal(
           <RowActionsMenuContent
             copied={menuState.copied}
             floatingStyles={menuState.floatingStyles}
             onCopyId={menuState.handleCopyId}
+            onCreateSubtask={() => {
+              setShowSubtaskPopover(true);
+              menuState.toggleMenu();
+            }}
             onOpenEdit={menuState.handleOpenEdit}
             onToggleTimeTracking={menuState.handleToggleTimeTracking}
             setRefs={menuState.setRefs}
             timeTrackingLabel={timeTrackingLabel}
-            todo={todo}
           />,
           document.body,
         )}
