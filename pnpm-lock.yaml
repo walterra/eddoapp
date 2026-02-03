@@ -564,8 +564,8 @@ importers:
         specifier: ^1.7.0
         version: 1.7.0(@opentelemetry/api@1.9.0)
       '@hono/node-server':
-        specifier: ^1.19.7
-        version: 1.19.7(hono@4.11.4)
+        specifier: ^1.19.9
+        version: 1.19.9(hono@4.11.4)
       '@octokit/rest':
         specifier: ^22.0.1
         version: 22.0.1
@@ -1526,6 +1526,12 @@ packages:
 
   '@hono/node-server@1.19.7':
     resolution: {integrity: sha512-vUcD0uauS7EU2caukW8z5lJKtoGMokxNbJtBiwHgpqxEXokaHCBkQUmCHhjFB1VUTWdqj25QoMkMKzgjq+uhrw==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
+
+  '@hono/node-server@1.19.9':
+    resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
@@ -9845,6 +9851,10 @@ snapshots:
       yargs: 17.7.2
 
   '@hono/node-server@1.19.7(hono@4.11.4)':
+    dependencies:
+      hono: 4.11.4
+
+  '@hono/node-server@1.19.9(hono@4.11.4)':
     dependencies:
       hono: 4.11.4
 
