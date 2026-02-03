@@ -3,10 +3,11 @@
  */
 import { type Todo } from '@eddo/core-client';
 import { Label, TextInput } from 'flowbite-react';
-import { type FC, useState } from 'react';
-import { BiPlus, BiX } from 'react-icons/bi';
+import { type FC, useRef, useState } from 'react';
+import { BiPlus, BiSearch, BiX } from 'react-icons/bi';
 
 import { useTodoById } from '../hooks/use_parent_child';
+import { TodoPickerPopover } from './todo_picker_popover';
 
 interface BlockedByFieldProps {
   todo: Todo;
@@ -18,7 +19,25 @@ interface BlockerItemProps {
   onRemove: () => void;
 }
 
-/** Displays a single blocker with its title and remove button */
+interface BlockedByActionsProps {
+  newBlockerId: string;
+  onAdd: () => void;
+  onChange: (value: string) => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onOpenSearch: () => void;
+  searchButtonRef: React.RefObject<HTMLButtonElement | null>;
+}
+
+interface BlockedByListProps {
+  blockedBy: string[];
+  onRemove: (blockerId: string) => void;
+}
+
+interface BlockedByHelpProps {
+  isEmpty: boolean;
+}
+
+/** Displays a single blocker with its title and remove button. */
 const BlockerItem: FC<BlockerItemProps> = ({ blockerId, onRemove }) => {
   const { data: blockerTodo, isLoading } = useTodoById(blockerId);
 
@@ -53,7 +72,69 @@ const BlockerItem: FC<BlockerItemProps> = ({ blockerId, onRemove }) => {
   );
 };
 
-/** Hook for blockedBy field state management */
+const BlockedByList: FC<BlockedByListProps> = ({ blockedBy, onRemove }) => {
+  if (blockedBy.length === 0) return null;
+
+  return (
+    <div className="mb-2 space-y-2">
+      {blockedBy.map((blockerId) => (
+        <BlockerItem blockerId={blockerId} key={blockerId} onRemove={() => onRemove(blockerId)} />
+      ))}
+    </div>
+  );
+};
+
+const BlockedByActions: FC<BlockedByActionsProps> = ({
+  newBlockerId,
+  onAdd,
+  onChange,
+  onKeyDown,
+  onOpenSearch,
+  searchButtonRef,
+}) => (
+  <div className="flex items-center gap-2">
+    <TextInput
+      aria-label="Add blocker ID"
+      className="flex-1"
+      id="eddoTodoBlockedBy"
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={onKeyDown}
+      placeholder="Paste todo ID that blocks this task"
+      type="text"
+      value={newBlockerId}
+    />
+    <button
+      aria-label="Search blockers"
+      className="rounded-lg bg-neutral-100 p-2 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600 dark:hover:text-neutral-200"
+      onClick={onOpenSearch}
+      ref={searchButtonRef}
+      type="button"
+    >
+      <BiSearch size="1.2em" />
+    </button>
+    <button
+      aria-label="Add blocker"
+      className="rounded-lg bg-neutral-100 p-2 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600 dark:hover:text-neutral-200"
+      disabled={!newBlockerId.trim()}
+      onClick={onAdd}
+      type="button"
+    >
+      <BiPlus size="1.2em" />
+    </button>
+  </div>
+);
+
+const BlockedByHelp: FC<BlockedByHelpProps> = ({ isEmpty }) => {
+  if (!isEmpty) return null;
+
+  return (
+    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+      Add todo IDs that must complete before this task becomes actionable.
+    </p>
+  );
+};
+
+/** Hook for blockedBy field state management. */
 function useBlockedByState(todo: Todo, onChange: (updater: (todo: Todo) => Todo) => void) {
   const [newBlockerId, setNewBlockerId] = useState('');
   const blockedBy = todo.blockedBy ?? [];
@@ -63,6 +144,12 @@ function useBlockedByState(todo: Todo, onChange: (updater: (todo: Todo) => Todo)
     if (!trimmed || blockedBy.includes(trimmed)) return;
     onChange((t) => ({ ...t, blockedBy: [...(t.blockedBy ?? []), trimmed] }));
     setNewBlockerId('');
+  };
+
+  const handleAddById = (blockerId: string) => {
+    const trimmed = blockerId.trim();
+    if (!trimmed || blockedBy.includes(trimmed)) return;
+    onChange((t) => ({ ...t, blockedBy: [...(t.blockedBy ?? []), trimmed] }));
   };
 
   const handleRemove = (blockerId: string) => {
@@ -79,7 +166,15 @@ function useBlockedByState(todo: Todo, onChange: (updater: (todo: Todo) => Todo)
     }
   };
 
-  return { newBlockerId, setNewBlockerId, blockedBy, handleAdd, handleRemove, handleKeyDown };
+  return {
+    newBlockerId,
+    setNewBlockerId,
+    blockedBy,
+    handleAdd,
+    handleAddById,
+    handleRemove,
+    handleKeyDown,
+  };
 }
 
 /**
@@ -88,6 +183,8 @@ function useBlockedByState(todo: Todo, onChange: (updater: (todo: Todo) => Todo)
  */
 export const BlockedByField: FC<BlockedByFieldProps> = ({ todo, onChange }) => {
   const state = useBlockedByState(todo, onChange);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchButtonRef = useRef<HTMLButtonElement | null>(null);
 
   return (
     <div>
@@ -95,45 +192,26 @@ export const BlockedByField: FC<BlockedByFieldProps> = ({ todo, onChange }) => {
         <Label htmlFor="eddoTodoBlockedBy">Blocked By</Label>
       </div>
 
-      {state.blockedBy.length > 0 && (
-        <div className="mb-2 space-y-2">
-          {state.blockedBy.map((blockerId) => (
-            <BlockerItem
-              blockerId={blockerId}
-              key={blockerId}
-              onRemove={() => state.handleRemove(blockerId)}
-            />
-          ))}
-        </div>
-      )}
+      <BlockedByList blockedBy={state.blockedBy} onRemove={state.handleRemove} />
 
-      <div className="flex items-center gap-2">
-        <TextInput
-          aria-label="Add blocker ID"
-          className="flex-1"
-          id="eddoTodoBlockedBy"
-          onChange={(e) => state.setNewBlockerId(e.target.value)}
-          onKeyDown={state.handleKeyDown}
-          placeholder="Paste todo ID that blocks this task"
-          type="text"
-          value={state.newBlockerId}
-        />
-        <button
-          aria-label="Add blocker"
-          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600 dark:hover:text-neutral-200"
-          disabled={!state.newBlockerId.trim()}
-          onClick={state.handleAdd}
-          type="button"
-        >
-          <BiPlus size="1.2em" />
-        </button>
-      </div>
+      <BlockedByActions
+        newBlockerId={state.newBlockerId}
+        onAdd={state.handleAdd}
+        onChange={state.setNewBlockerId}
+        onKeyDown={state.handleKeyDown}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        searchButtonRef={searchButtonRef}
+      />
 
-      {state.blockedBy.length === 0 && (
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          Add todo IDs that must complete before this task becomes actionable.
-        </p>
-      )}
+      <BlockedByHelp isEmpty={state.blockedBy.length === 0} />
+
+      <TodoPickerPopover
+        anchorRef={searchButtonRef}
+        excludeIds={[todo._id, ...state.blockedBy]}
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelect={state.handleAddById}
+      />
     </div>
   );
 };
