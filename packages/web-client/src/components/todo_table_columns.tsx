@@ -17,6 +17,8 @@ import { TagsPopover } from './tags_popover';
 import { DueDateCell, TitleCell } from './todo_table_editable_cells';
 import { type TodoRowData } from './todo_table_types';
 
+export type { TodoRowData } from './todo_table_types';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Table columns have mixed value types
 export type TodoColumnDef = ColumnDef<TodoRowData, any>;
 

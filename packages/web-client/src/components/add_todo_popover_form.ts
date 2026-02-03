@@ -1,4 +1,4 @@
-import { type DatabaseError, type NewTodo } from '@eddo/core-client';
+import { type DatabaseError, type NewTodo, type TodoAlpha3 } from '@eddo/core-client';
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
 import { useAuditedCreateTodoMutation } from '../hooks/use_audited_todo_mutations';
@@ -12,7 +12,7 @@ import {
 
 interface SubmitHandlerOptions {
   createContext: AddTodoCreateContext;
-  createTodo: (todo: NewTodo) => Promise<void>;
+  createTodo: (todo: NewTodo) => Promise<TodoAlpha3>;
   onSuccess: () => void;
   resetState: () => void;
   setValidationError: Dispatch<SetStateAction<DatabaseError | null>>;

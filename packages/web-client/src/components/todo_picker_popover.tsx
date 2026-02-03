@@ -6,7 +6,7 @@ import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useFloatingPosition } from '../hooks/use_floating_position';
-import { useSearch } from '../hooks/use_search';
+import { type SearchResult, useSearch } from '../hooks/use_search';
 import { TRANSITION_FAST } from '../styles/interactive';
 import { SearchResults } from './search_popover_content';
 
@@ -116,10 +116,7 @@ const useQueryReset = (isOpen: boolean, resetQuery: () => void, clearResults: ()
   }, [clearResults, isOpen, resetQuery]);
 };
 
-const getFilteredResults = (
-  results: { todoId: string }[],
-  excludeIds?: string[],
-): { todoId: string }[] => {
+const getFilteredResults = (results: SearchResult[], excludeIds?: string[]): SearchResult[] => {
   if (!excludeIds || excludeIds.length === 0) return results;
   return results.filter((result) => !excludeIds.includes(result.todoId));
 };
@@ -132,7 +129,7 @@ interface TodoPickerContentProps {
   onClose: () => void;
   onSelect: (todoId: string) => void;
   query: string;
-  results: { todoId: string }[];
+  results: SearchResult[];
   setFloatingRef: (node: HTMLDivElement | null) => void;
   setQuery: (value: string) => void;
 }
