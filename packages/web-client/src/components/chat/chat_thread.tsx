@@ -16,6 +16,7 @@ import { BashToolUI, EditToolUI, GenericToolUI, ReadToolUI, WriteToolUI } from '
 /** Props for ChatThread */
 export interface ChatThreadProps {
   sessionId: string;
+  showReasoning: boolean;
 }
 
 /** Get status icon for setup log entry */
@@ -200,9 +201,11 @@ function entriesToPiMessages(entries: Array<{ type: string; message?: unknown }>
 function ActiveChatThread({
   initialMessages,
   sessionId,
+  showReasoning,
 }: {
   initialMessages: PiMessage[];
   sessionId: string;
+  showReasoning: boolean;
 }) {
   const { sendPrompt, abort } = useSendPrompt(sessionId);
 
@@ -228,8 +231,8 @@ function ActiveChatThread({
       <WriteToolUI />
       <EditToolUI />
       <GenericToolUI />
-      <div className="flex h-full flex-col">
-        <Thread />
+      <div className="flex h-full min-h-0 flex-col">
+        <Thread showReasoning={showReasoning} />
       </div>
     </ChatRuntimeProvider>
   );
@@ -254,7 +257,7 @@ function ErrorState() {
 }
 
 /** Chat thread component */
-export function ChatThread({ sessionId }: ChatThreadProps) {
+export function ChatThread({ sessionId, showReasoning }: ChatThreadProps) {
   const startSession = useStartSession();
   const isStarting = startSession.isPending;
   const {
@@ -296,6 +299,11 @@ export function ChatThread({ sessionId }: ChatThreadProps) {
   }
 
   return (
-    <ActiveChatThread initialMessages={initialMessages} key={sessionId} sessionId={sessionId} />
+    <ActiveChatThread
+      initialMessages={initialMessages}
+      key={sessionId}
+      sessionId={sessionId}
+      showReasoning={showReasoning}
+    />
   );
 }
