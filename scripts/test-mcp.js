@@ -19,10 +19,15 @@ const MCP_USER_ID = process.env.EDDO_MCP_USER_ID || 'eddo_pi_agent';
 const MCP_DATABASE_NAME = process.env.EDDO_MCP_DATABASE_NAME || '';
 const MCP_TELEGRAM_ID = process.env.EDDO_MCP_TELEGRAM_ID || '';
 
-function maskKey(key) {
-  if (!key) return 'missing';
-  if (key.length <= 8) return `${key.slice(0, 2)}…${key.slice(-2)}`;
-  return `${key.slice(0, 4)}…${key.slice(-4)}`;
+function formatServerUrl(value) {
+  if (!value) return 'missing';
+  try {
+    const url = new URL(value);
+    const port = url.port ? `:${url.port}` : '';
+    return `${url.protocol}//${url.hostname}${port}`;
+  } catch {
+    return 'invalid';
+  }
 }
 
 function buildHeaders() {
@@ -42,9 +47,9 @@ async function testMcpTool(toolName, args = {}) {
   }
 
   console.log(`🚀 Testing MCP tool: ${toolName}`);
-  console.log(`📡 Server URL: ${MCP_URL}`);
-  console.log(`👤 User ID: ${MCP_USER_ID}`);
-  console.log(`🔑 API Key: ${maskKey(MCP_API_KEY)}`);
+  console.log(`📡 Server URL: ${formatServerUrl(MCP_URL)}`);
+  console.log('👤 User ID: [redacted]');
+  console.log('🔑 API Key: [redacted]');
   console.log(`📋 Arguments:`, JSON.stringify(args, null, 2));
   console.log('');
 
