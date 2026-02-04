@@ -82,7 +82,7 @@ function getEsClient(): Client | null {
 /**
  * Server instructions for LLM consumption
  */
-const SERVER_INSTRUCTIONS = `Eddo Todo MCP Server with user registry authentication and GTD tag awareness. Pass X-User-ID, X-Database-Name, and X-Telegram-ID headers for user-specific database access. Each user gets an isolated database.
+const SERVER_INSTRUCTIONS = `Eddo Todo MCP Server with user registry authentication and GTD tag awareness. Pass X-User-ID, X-Database-Name, X-Telegram-ID, and X-API-Key headers for user-specific database access. Each user gets an isolated database.
 
 GTD SYSTEM:
 - TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)
@@ -115,10 +115,11 @@ const server = new FastMCP<UserSession>({
       request.headers as Record<string, string | undefined>,
     );
 
-    const username = request.headers['x-user-id'] || request.headers['X-User-ID'];
+    const authHeader = request.headers['authorization'] || request.headers['Authorization'];
+    const apiKeyHeader = request.headers['x-api-key'] || request.headers['X-API-Key'];
 
-    if (!username) {
-      logger.debug('MCP connection without user headers (connection handshake)');
+    if (!authHeader && !apiKeyHeader) {
+      logger.debug('MCP connection without auth headers (connection handshake)');
       const session = {
         userId: 'anonymous',
         dbName: 'default',
@@ -159,7 +160,7 @@ function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
 
   if (context.session.userId === 'anonymous') {
     throw new Error(
-      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID)',
+      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID, X-API-Key)',
     );
   }
 
@@ -176,7 +177,7 @@ function getAttachmentsDb(context: ToolContext): nano.DocumentScope<AttachmentDo
 
   if (context.session.userId === 'anonymous') {
     throw new Error(
-      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID)',
+      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID, X-API-Key)',
     );
   }
 

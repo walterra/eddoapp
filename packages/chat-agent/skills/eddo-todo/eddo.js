@@ -7,10 +7,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const MCP_URL = process.env.EDDO_MCP_URL || 'http://localhost:3001/mcp';
+const MCP_API_KEY = process.env.EDDO_MCP_API_KEY;
 
 // User credentials for eddo_pi_agent (from CLAUDE.md)
 const USER_HEADERS = {
-  'X-User-ID': 'eddo_pi_agent',
+  ...(MCP_API_KEY ? { Authorization: `Bearer ${MCP_API_KEY}` } : {}),
 };
 
 /**

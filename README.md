@@ -169,7 +169,7 @@ pnpm dev:mcp-server
 pnpm test:mcp-server  # Interactive testing
 ```
 
-> **Note**: The MCP server uses a simple `X-User-ID` header without verification. Don't expose to untrusted networks.
+> **Note**: MCP requests require `X-User-ID` and `X-API-Key` headers. Generate the API key in User Profile → Security or from `pnpm dev:create-user` output. Don't expose the MCP server to untrusted networks.
 
 ### pi-coding-agent Integration
 

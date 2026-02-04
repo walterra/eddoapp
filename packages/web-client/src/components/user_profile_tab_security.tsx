@@ -76,39 +76,110 @@ const NewPasswordFields: FC<NewPasswordFieldsProps> = ({
   </div>
 );
 
+type PasswordFormState = SecurityTabProps['formState'];
+
+interface ChangePasswordCardProps {
+  formState: PasswordFormState;
+  isLoading: boolean;
+  onChangePassword: () => Promise<void>;
+  onConfirmPasswordChange: (value: string) => void;
+  onCurrentPasswordChange: (value: string) => void;
+  onNewPasswordChange: (value: string) => void;
+}
+
+const ChangePasswordCard: FC<ChangePasswordCardProps> = ({
+  formState,
+  isLoading,
+  onChangePassword,
+  onConfirmPasswordChange,
+  onCurrentPasswordChange,
+  onNewPasswordChange,
+}) => (
+  <Card>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Change Password</h2>
+      <div className="space-y-4">
+        <PasswordField
+          id="secCurrentPassword"
+          isLoading={isLoading}
+          label="Current Password"
+          onChange={onCurrentPasswordChange}
+          placeholder="Enter your current password"
+          value={formState.currentPassword}
+        />
+        <NewPasswordFields
+          confirmPassword={formState.confirmPassword}
+          isLoading={isLoading}
+          newPassword={formState.newPassword}
+          onConfirmPasswordChange={onConfirmPasswordChange}
+          onNewPasswordChange={onNewPasswordChange}
+        />
+        <Button color="blue" disabled={isLoading} onClick={onChangePassword}>
+          {isLoading ? 'Changing Password...' : 'Change Password'}
+        </Button>
+      </div>
+    </div>
+  </Card>
+);
+
+interface McpApiKeyCardProps {
+  isLoading: boolean;
+  mcpApiKey?: string | null;
+  onGenerateMcpApiKey: () => Promise<void>;
+}
+
+const McpApiKeyCard: FC<McpApiKeyCardProps> = ({ isLoading, mcpApiKey, onGenerateMcpApiKey }) => (
+  <Card>
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">MCP API Key</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Use this key in MCP clients to authenticate requests.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="mcpApiKey">API Key</Label>
+        <TextInput
+          id="mcpApiKey"
+          placeholder="No API key generated"
+          readOnly
+          type="text"
+          value={mcpApiKey || ''}
+        />
+        <p className="text-xs text-neutral-500">
+          Store this key securely. Generating a new key invalidates the old one.
+        </p>
+      </div>
+      <Button color="blue" disabled={isLoading} onClick={onGenerateMcpApiKey}>
+        {mcpApiKey ? 'Rotate API Key' : 'Generate API Key'}
+      </Button>
+    </div>
+  </Card>
+);
+
 export const SecurityTab: FC<SecurityTabProps> = ({
   isLoading,
   formState,
+  mcpApiKey,
   onCurrentPasswordChange,
   onNewPasswordChange,
   onConfirmPasswordChange,
   onChangePassword,
+  onGenerateMcpApiKey,
 }) => (
   <div className="space-y-6">
-    <Card>
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Change Password</h2>
-        <div className="space-y-4">
-          <PasswordField
-            id="secCurrentPassword"
-            isLoading={isLoading}
-            label="Current Password"
-            onChange={onCurrentPasswordChange}
-            placeholder="Enter your current password"
-            value={formState.currentPassword}
-          />
-          <NewPasswordFields
-            confirmPassword={formState.confirmPassword}
-            isLoading={isLoading}
-            newPassword={formState.newPassword}
-            onConfirmPasswordChange={onConfirmPasswordChange}
-            onNewPasswordChange={onNewPasswordChange}
-          />
-          <Button color="blue" disabled={isLoading} onClick={onChangePassword}>
-            {isLoading ? 'Changing Password...' : 'Change Password'}
-          </Button>
-        </div>
-      </div>
-    </Card>
+    <ChangePasswordCard
+      formState={formState}
+      isLoading={isLoading}
+      onChangePassword={onChangePassword}
+      onConfirmPasswordChange={onConfirmPasswordChange}
+      onCurrentPasswordChange={onCurrentPasswordChange}
+      onNewPasswordChange={onNewPasswordChange}
+    />
+    <McpApiKeyCard
+      isLoading={isLoading}
+      mcpApiKey={mcpApiKey}
+      onGenerateMcpApiKey={onGenerateMcpApiKey}
+    />
   </div>
 );

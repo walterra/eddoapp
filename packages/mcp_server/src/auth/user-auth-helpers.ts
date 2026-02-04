@@ -36,8 +36,12 @@ export interface ValidationCacheEntry {
 /**
  * Create a cache key from username and telegram ID
  */
-export function createCacheKey(username: string, telegramId: string | undefined): string {
-  return `${username}:${telegramId || 'no_telegram'}`;
+export function createCacheKey(
+  username: string,
+  telegramId: string | undefined,
+  apiKey: string | undefined,
+): string {
+  return `${username}:${telegramId || 'no_telegram'}:${apiKey || 'no_api_key'}`;
 }
 
 /**

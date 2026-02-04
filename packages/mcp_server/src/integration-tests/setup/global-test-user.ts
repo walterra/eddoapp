@@ -2,12 +2,14 @@
  * Global test user singleton for MCP integration tests
  * This module ensures the test user is created once and shared across all tests
  */
+import { getRandomHex } from '@eddo/core-shared';
 
 interface GlobalTestUser {
   userId: string;
   username: string;
   dbName: string;
   telegramId: string;
+  mcpApiKey: string;
 }
 
 // Global test user singleton
@@ -36,6 +38,7 @@ function createTestUserObject(timestamp: number): GlobalTestUser {
     username: `testuser_${timestamp}`,
     dbName: `eddo_test_user_testuser_${timestamp}`,
     telegramId: '123456789',
+    mcpApiKey: `test-${getRandomHex(16)}`,
   };
 }
 
@@ -57,6 +60,7 @@ function createUserData(user: GlobalTestUser) {
       briefingTime: '07:00',
       dailyRecap: false,
       recapTime: '18:00',
+      mcpApiKey: user.mcpApiKey,
     },
   };
 }

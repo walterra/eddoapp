@@ -81,34 +81,63 @@ function validateHeaderConsistency(
   }
 }
 
+/** Validate API key against stored preference */
+function validateApiKey(
+  preferences: UserAuthRecord['preferences'],
+  apiKey: string | undefined,
+): void {
+  if (!preferences?.mcpApiKey) {
+    throw createAuthError(403, 'MCP API key not configured for user');
+  }
+
+  if (!apiKey) {
+    throw createAuthError(401, 'API key required (X-API-Key header)');
+  }
+
+  if (apiKey !== preferences.mcpApiKey) {
+    throw createAuthError(401, 'Invalid API key');
+  }
+}
+
 /** Extract and validate headers, throw if username missing */
 function extractAuthHeaders(headers: Record<string, string | string[] | undefined>): {
   username: string;
   databaseName: string | undefined;
   telegramId: string | undefined;
+  apiKey: string | undefined;
 } {
   const username = extractHeader(headers, 'x-user-id');
   const databaseName = extractHeader(headers, 'x-database-name');
   const telegramId = extractHeader(headers, 'x-telegram-id');
+  const apiKey = extractHeader(headers, 'x-api-key');
 
   console.log('MCP Authentication attempt', {
     username,
     databaseName,
     hasTelegramId: !!telegramId,
+    hasApiKey: !!apiKey,
   });
 
   if (!username) {
     throw createAuthError(401, 'Username required (X-User-ID header)');
   }
 
-  return { username, databaseName, telegramId };
+  return { username, databaseName, telegramId, apiKey };
+}
+
+/** User record fields needed for MCP auth */
+interface UserAuthRecord {
+  _id: string;
+  database_name: string;
+  username: string;
+  telegram_id?: number;
+  preferences?: {
+    mcpApiKey?: string | null;
+  };
 }
 
 /** Lookup user and validate status */
-async function lookupAndValidateUser(
-  username: string,
-  cacheKey: string,
-): Promise<{ _id: string; database_name: string; username: string; telegram_id?: number }> {
+async function lookupAndValidateUser(username: string, cacheKey: string): Promise<UserAuthRecord> {
   const env = createEnv();
   const userRegistry = await getUserRegistry(env);
   const user = await userRegistry.findByUsername(username);
@@ -134,15 +163,16 @@ async function lookupAndValidateUser(
 export async function validateUserContext(
   headers: Record<string, string | string[] | undefined>,
 ): Promise<MCPAuthResult> {
-  const { username, databaseName, telegramId } = extractAuthHeaders(headers);
+  const { username, databaseName, telegramId, apiKey } = extractAuthHeaders(headers);
 
-  const cacheKey = createCacheKey(username, telegramId);
+  const cacheKey = createCacheKey(username, telegramId, apiKey);
   const cacheResult = checkCache(cacheKey);
   if (cacheResult.hit) return cacheResult.result!;
 
   try {
     const user = await lookupAndValidateUser(username, cacheKey);
     validateHeaderConsistency(user, databaseName, telegramId);
+    validateApiKey(user.preferences, apiKey);
 
     const authResult: MCPAuthResult = {
       userId: user._id,

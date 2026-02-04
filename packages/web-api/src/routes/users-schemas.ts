@@ -105,4 +105,5 @@ export const updatePreferencesSchema = z.object({
       geminiApiKey: z.string().optional(),
     })
     .optional(),
+  mcpApiKey: z.string().nullable().optional(),
 });

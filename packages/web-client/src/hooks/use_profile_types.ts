@@ -101,6 +101,7 @@ export interface UserPreferences {
   emailLastSync?: string;
   filterPresets?: FilterPreset[];
   aiProviderKeys?: AiProviderKeys;
+  mcpApiKey?: string | null;
 }
 
 export interface UserProfile {
@@ -167,6 +168,7 @@ export interface UpdatePreferencesData {
   emailSyncInterval?: number;
   emailSyncTags?: string[];
   filterPresets?: FilterPreset[];
+  mcpApiKey?: string | null;
 }
 
 export interface GithubResyncResponse {

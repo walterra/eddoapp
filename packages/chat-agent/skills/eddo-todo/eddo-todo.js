@@ -9,10 +9,12 @@ import { readFileSync, writeFileSync } from 'fs';
 import { basename } from 'path';
 
 const MCP_URL = process.env.EDDO_MCP_URL || 'http://localhost:3001/mcp';
+const MCP_API_KEY = process.env.EDDO_MCP_API_KEY;
 
 // User credentials for eddo_pi_agent (from CLAUDE.md)
 const USER_HEADERS = {
   'X-User-ID': 'eddo_pi_agent',
+  ...(MCP_API_KEY ? { 'X-API-Key': MCP_API_KEY } : {}),
 };
 
 /**

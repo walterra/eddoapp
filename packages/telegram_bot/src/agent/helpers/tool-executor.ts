@@ -43,7 +43,6 @@ export async function executeTool(
         toolName: tool.name,
         parameters: toolCall.parameters,
         username: userContext?.username,
-        databaseName: userContext?.databaseName,
       });
 
       return mcpClient.invoke(tool.name, toolCall.parameters, userContext || undefined);

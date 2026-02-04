@@ -83,12 +83,14 @@ const ProfileTabContent: FC<
 );
 
 const SecurityTabContent: FC<
-  Pick<TabContentProps, 'formState' | 'isLoading' | 'actions' | 'formFieldHandlers'>
+  Pick<TabContentProps, 'formState' | 'isLoading' | 'actions' | 'formFieldHandlers' | 'profile'>
 > = (p) => (
   <SecurityTab
     formState={p.formState}
     isLoading={p.isLoading}
+    mcpApiKey={p.profile.preferences?.mcpApiKey}
     onChangePassword={p.actions.handleChangePassword}
+    onGenerateMcpApiKey={p.actions.handleGenerateMcpApiKey}
     {...p.formFieldHandlers}
   />
 );

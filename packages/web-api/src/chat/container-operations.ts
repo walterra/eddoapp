@@ -36,6 +36,7 @@ export interface SpawnOptions {
 interface ContainerUserPrefs {
   aiProviderKeys?: AiProviderKeys;
   githubToken?: string | null;
+  mcpApiKey?: string | null;
 }
 
 /** Build auth.json content for pi-coding-agent */
@@ -61,6 +62,7 @@ export async function getUserPrefsForContainer(
     return {
       aiProviderKeys: user?.preferences?.aiProviderKeys,
       githubToken: user?.preferences?.githubToken,
+      mcpApiKey: user?.preferences?.mcpApiKey,
     };
   } catch {
     return {};
@@ -81,12 +83,16 @@ export async function createAuthJson(sessionDir: string, userKeys?: AiProviderKe
 }
 
 /** Build environment variables for container */
-function buildContainerEnv(githubToken?: string | null): Record<string, string> {
+function buildContainerEnv(
+  githubToken?: string | null,
+  mcpApiKey?: string | null,
+): Record<string, string> {
   const env: Record<string, string> = {
     EDDO_MCP_URL: 'http://host.docker.internal:3001/mcp',
     SEARXNG_URL: 'http://searxng:8080',
   };
   if (githubToken) env.GH_TOKEN = githubToken;
+  if (mcpApiKey) env.EDDO_MCP_API_KEY = mcpApiKey;
   return env;
 }
 
@@ -117,7 +123,7 @@ export async function prepareAndSpawnContainer(
   const userPrefs = await getUserPrefsForContainer(ctx, username);
   await createAuthJson(sessionDir, userPrefs.aiProviderKeys);
 
-  const containerEnv = buildContainerEnv(userPrefs.githubToken);
+  const containerEnv = buildContainerEnv(userPrefs.githubToken, userPrefs.mcpApiKey);
   const mainGitDir = session.repository
     ? ctx.repoManager.getMainGitDir(session.repository.slug)
     : undefined;

@@ -18,6 +18,7 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences).toHaveProperty('githubSyncTags');
       expect(preferences).toHaveProperty('githubLastSync');
       expect(preferences).toHaveProperty('githubSyncStartedAt');
+      expect(preferences).toHaveProperty('mcpApiKey');
     });
 
     it('should have correct default values for GitHub sync', () => {
@@ -29,6 +30,7 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences.githubSyncTags).toEqual(['github', 'gtd:next']);
       expect(preferences.githubLastSync).toBeUndefined();
       expect(preferences.githubSyncStartedAt).toBeUndefined();
+      expect(preferences.mcpApiKey).toBeNull();
     });
 
     it('should allow GitHub sync configuration', () => {
