@@ -113,7 +113,6 @@ export class MCPConnectionManager {
       toolName,
       params,
       username: userContext!.username,
-      databaseName: userContext!.databaseName,
     });
 
     try {

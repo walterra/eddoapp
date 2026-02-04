@@ -14,12 +14,18 @@ import {
 } from 'react-icons/hi';
 
 import { useChatSessions } from '../../hooks/use_chat_api';
+import type { ReasoningPreferenceSetter } from './chat_reasoning_preference';
+import { useReasoningPreference } from './chat_reasoning_preference';
+import { ChatSettingsPopover } from './chat_settings_popover';
 import { ChatThread } from './chat_thread';
 import { DeleteSessionDialog } from './delete_session_dialog';
 import { NewSessionDialog } from './new_session_dialog';
 
 /** Width of the chat sidebar when expanded */
 const SIDEBAR_WIDTH = 480;
+
+const HEADER_ICON_BUTTON_CLASSNAME =
+  'rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200';
 
 /** Props for ChatSidebar */
 export interface ChatSidebarProps {
@@ -36,12 +42,7 @@ const HeaderButton: FC<{
   title: string;
   children: React.ReactNode;
 }> = ({ onClick, title, children }) => (
-  <button
-    className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-    onClick={onClick}
-    title={title}
-    type="button"
-  >
+  <button className={HEADER_ICON_BUTTON_CLASSNAME} onClick={onClick} title={title} type="button">
     {children}
   </button>
 );
@@ -54,7 +55,18 @@ const SidebarHeader: FC<{
   onNewSession: () => void;
   showSessionList: boolean;
   onToggleSessionList: () => void;
-}> = ({ sessionName, onClose, onExpand, onNewSession, showSessionList, onToggleSessionList }) => (
+  showReasoning: boolean;
+  onToggleReasoning: ReasoningPreferenceSetter;
+}> = ({
+  sessionName,
+  onClose,
+  onExpand,
+  onNewSession,
+  showSessionList,
+  onToggleSessionList,
+  showReasoning,
+  onToggleReasoning,
+}) => (
   <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2 dark:border-neutral-700">
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <HeaderButton
@@ -75,6 +87,11 @@ const SidebarHeader: FC<{
       <HeaderButton onClick={onNewSession} title="New session">
         <HiOutlinePlus className="h-4 w-4" />
       </HeaderButton>
+      <ChatSettingsPopover
+        buttonClassName={HEADER_ICON_BUTTON_CLASSNAME}
+        onToggleReasoning={onToggleReasoning}
+        showReasoning={showReasoning}
+      />
       <HeaderButton onClick={onExpand} title="Expand to fullscreen">
         <HiOutlineExternalLink className="h-4 w-4" />
       </HeaderButton>
@@ -164,7 +181,15 @@ const SidebarContent: FC<{
   selectedSessionId: string | null;
   onSelectSession: (id: string | null) => void;
   onNewSession: () => void;
-}> = ({ showSessionList, sessions, selectedSessionId, onSelectSession, onNewSession }) => (
+  showReasoning: boolean;
+}> = ({
+  showSessionList,
+  sessions,
+  selectedSessionId,
+  onSelectSession,
+  onNewSession,
+  showReasoning,
+}) => (
   <div className="flex min-h-0 flex-1">
     {showSessionList && (
       <div className="w-48 flex-shrink-0 overflow-y-auto border-r border-neutral-200 dark:border-neutral-700">
@@ -177,7 +202,7 @@ const SidebarContent: FC<{
     )}
     <div className="min-w-0 flex-1">
       {selectedSessionId ? (
-        <ChatThread sessionId={selectedSessionId} />
+        <ChatThread sessionId={selectedSessionId} showReasoning={showReasoning} />
       ) : (
         <NoSessionSelected onNewSession={onNewSession} />
       )}
@@ -219,6 +244,7 @@ function useSidebarDialogs(
 export const ChatSidebar: FC<ChatSidebarProps> = (props) => {
   const { isOpen, selectedSessionId, onClose, onExpand, onSelectSession } = props;
   const { data: sessions } = useChatSessions();
+  const { showReasoning, setShowReasoning } = useReasoningPreference();
   const [showSessionList, setShowSessionList] = useState(false);
   const dialogs = useSidebarDialogs(selectedSessionId, onSelectSession);
 
@@ -237,8 +263,10 @@ export const ChatSidebar: FC<ChatSidebarProps> = (props) => {
           onClose={onClose}
           onExpand={onExpand}
           onNewSession={() => dialogs.setShowNewDialog(true)}
+          onToggleReasoning={setShowReasoning}
           onToggleSessionList={() => setShowSessionList(!showSessionList)}
           sessionName={sessionName}
+          showReasoning={showReasoning}
           showSessionList={showSessionList}
         />
         <SidebarContent
@@ -246,6 +274,7 @@ export const ChatSidebar: FC<ChatSidebarProps> = (props) => {
           onSelectSession={onSelectSession}
           selectedSessionId={selectedSessionId}
           sessions={sessions ?? []}
+          showReasoning={showReasoning}
           showSessionList={showSessionList}
         />
       </aside>

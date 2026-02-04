@@ -8,6 +8,9 @@ import { HiExclamation, HiOutlinePlus } from 'react-icons/hi';
 
 import { useProfile } from '../../hooks/use_profile';
 import { BTN_PRIMARY_SM } from '../../styles/interactive';
+import type { ReasoningPreferenceSetter } from './chat_reasoning_preference';
+import { useReasoningPreference } from './chat_reasoning_preference';
+import { ChatSettingsPopover } from './chat_settings_popover';
 import { ChatThread } from './chat_thread';
 import { DeleteSessionDialog } from './delete_session_dialog';
 import { NewSessionDialog } from './new_session_dialog';
@@ -40,21 +43,34 @@ function saveLastSessionId(sessionId: string | null): void {
 /** Props for ChatPageHeader */
 interface ChatPageHeaderProps {
   onNewSession: () => void;
+  showReasoning: boolean;
+  onToggleReasoning: ReasoningPreferenceSetter;
 }
 
 /** Header for the chat page sidebar */
-const ChatPageHeader: FC<ChatPageHeaderProps> = ({ onNewSession }) => (
+const ChatPageHeader: FC<ChatPageHeaderProps> = ({
+  onNewSession,
+  showReasoning,
+  onToggleReasoning,
+}) => (
   <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
     <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Chat Sessions</h2>
-    <button
-      aria-label="New session"
-      className={BTN_PRIMARY_SM}
-      onClick={onNewSession}
-      title="New session"
-      type="button"
-    >
-      <HiOutlinePlus className="h-4 w-4" />
-    </button>
+    <div className="flex items-center gap-2">
+      <ChatSettingsPopover
+        buttonClassName="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+        onToggleReasoning={onToggleReasoning}
+        showReasoning={showReasoning}
+      />
+      <button
+        aria-label="New session"
+        className={BTN_PRIMARY_SM}
+        onClick={onNewSession}
+        title="New session"
+        type="button"
+      >
+        <HiOutlinePlus className="h-4 w-4" />
+      </button>
+    </div>
   </div>
 );
 
@@ -105,9 +121,23 @@ const SessionSidebar: FC<{
   onDeleteSession: (session: ChatSession) => void;
   onNewSession: () => void;
   onSessionsLoaded?: (selectedExists: boolean) => void;
-}> = ({ selectedSessionId, onSelectSession, onDeleteSession, onNewSession, onSessionsLoaded }) => (
+  showReasoning: boolean;
+  onToggleReasoning: ReasoningPreferenceSetter;
+}> = ({
+  selectedSessionId,
+  onSelectSession,
+  onDeleteSession,
+  onNewSession,
+  onSessionsLoaded,
+  showReasoning,
+  onToggleReasoning,
+}) => (
   <aside className="flex w-80 flex-shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900">
-    <ChatPageHeader onNewSession={onNewSession} />
+    <ChatPageHeader
+      onNewSession={onNewSession}
+      onToggleReasoning={onToggleReasoning}
+      showReasoning={showReasoning}
+    />
     <div className="flex-1 overflow-y-auto p-4">
       <SessionList
         onDeleteSession={onDeleteSession}
@@ -124,10 +154,11 @@ const SessionSidebar: FC<{
 const ChatArea: FC<{
   selectedSessionId: string | null;
   onNewSession: () => void;
-}> = ({ selectedSessionId, onNewSession }) => (
+  showReasoning: boolean;
+}> = ({ selectedSessionId, onNewSession, showReasoning }) => (
   <main className="flex flex-1 flex-col bg-neutral-50 dark:bg-neutral-800">
     {selectedSessionId ? (
-      <ChatThread sessionId={selectedSessionId} />
+      <ChatThread sessionId={selectedSessionId} showReasoning={showReasoning} />
     ) : (
       <NoSessionSelected onNewSession={onNewSession} />
     )}
@@ -191,6 +222,7 @@ export interface ChatPageProps {
 /** Main chat page component */
 export const ChatPage: FC<ChatPageProps> = ({ initialSessionId, onNavigateToProfile }) => {
   const s = useChatPageState(initialSessionId);
+  const { showReasoning, setShowReasoning } = useReasoningPreference();
   const { profile, isLoading: isProfileLoading } = useProfile();
   const showApiKeyWarning = !isProfileLoading && !hasApiKeyConfigured(profile);
 
@@ -205,11 +237,14 @@ export const ChatPage: FC<ChatPageProps> = ({ initialSessionId, onNavigateToProf
           onNewSession={() => s.setShowNewDialog(true)}
           onSelectSession={s.handleSelectSession}
           onSessionsLoaded={s.handleSessionsLoaded}
+          onToggleReasoning={setShowReasoning}
           selectedSessionId={s.selectedSessionId}
+          showReasoning={showReasoning}
         />
         <ChatArea
           onNewSession={() => s.setShowNewDialog(true)}
           selectedSessionId={s.selectedSessionId}
+          showReasoning={showReasoning}
         />
         <NewSessionDialog
           isOpen={s.showNewDialog}

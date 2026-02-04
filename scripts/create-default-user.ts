@@ -2,7 +2,7 @@
 
 /**
  * Create default development user (eddo_pi_agent) directly in CouchDB
- * This user is used by the eddo-todo skill for MCP access via X-User-ID header
+ * This user is used by the eddo-todo skill for MCP access via API key
  *
  * Usage:
  *   pnpm dev:create-user                              # Uses default password
@@ -18,6 +18,7 @@ import {
   createDefaultUserPreferences,
   DESIGN_DOCS,
   type DesignDocument,
+  getRandomHex,
   REQUIRED_INDEXES,
 } from '@eddo/core-shared';
 import bcrypt from 'bcryptjs';
@@ -31,6 +32,10 @@ const DEFAULT_PASSWORD = 'eddo_pi_agent';
 
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+function generateMcpApiKey(): string {
+  return `mcp_${getRandomHex(32)}`;
 }
 
 function parseArgs(): { password: string } {
@@ -143,56 +148,77 @@ async function setupUserDatabase(
   console.log(chalk.green('  ✓ Chat database ready'));
 }
 
+type Env = ReturnType<typeof createEnv>;
+
+type UserRegistry = ReturnType<typeof createUserRegistry>;
+
+type UserRecord = Awaited<ReturnType<UserRegistry['create']>>;
+
+async function ensureUserRegistry(env: Env): Promise<UserRegistry> {
+  const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+  await userRegistry.ensureDatabase();
+  console.log(chalk.green('  ✓ User registry database ready'));
+  return userRegistry;
+}
+
+async function recreateExistingUser(userRegistry: UserRegistry): Promise<void> {
+  const existingUser = await userRegistry.findByUsername(DEFAULT_USERNAME);
+  if (!existingUser) return;
+  console.log(chalk.yellow(`  User "${DEFAULT_USERNAME}" exists, recreating...`));
+  await userRegistry.delete(existingUser._id);
+  console.log(chalk.green('  ✓ Removed existing user'));
+}
+
+async function createRegistryUser(
+  userRegistry: UserRegistry,
+  passwordHash: string,
+  mcpApiKey: string,
+  mcpApiKeySetAt: string,
+): Promise<UserRecord> {
+  return userRegistry.create({
+    username: DEFAULT_USERNAME,
+    email: DEFAULT_EMAIL,
+    password_hash: passwordHash,
+    telegram_id: undefined,
+    database_name: '',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    permissions: ['read', 'write'],
+    status: 'active',
+    version: 'alpha2',
+    preferences: { ...createDefaultUserPreferences(), mcpApiKey, mcpApiKeySetAt },
+  });
+}
+
+function logSuccess(password: string, mcpApiKey: string): void {
+  console.log(chalk.green('\n✅ Default user setup complete!\n'));
+  console.log(chalk.gray(`  Username: ${DEFAULT_USERNAME}`));
+  console.log(
+    chalk.gray(`  Password: ${password === DEFAULT_PASSWORD ? '(default)' : '(custom)'}`),
+  );
+  console.log(chalk.gray(`  MCP API Key: ${mcpApiKey}`));
+  console.log(chalk.gray(`  Used by: eddo-todo skill (Authorization: Bearer header)\n`));
+}
+
 async function createDefaultUser(password: string): Promise<boolean> {
   console.log(chalk.blue('\n📝 Creating default development user...\n'));
 
   try {
     const env = createEnv();
-    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+    const userRegistry = await ensureUserRegistry(env);
+    await recreateExistingUser(userRegistry);
 
-    // Ensure user registry database exists (creates it if needed)
-    await userRegistry.ensureDatabase();
-    console.log(chalk.green('  ✓ User registry database ready'));
-
-    // Check if user already exists - delete and recreate to ensure clean state
-    const existingUser = await userRegistry.findByUsername(DEFAULT_USERNAME);
-    if (existingUser) {
-      console.log(chalk.yellow(`  User "${DEFAULT_USERNAME}" exists, recreating...`));
-      await userRegistry.delete(existingUser._id);
-      console.log(chalk.green(`  ✓ Removed existing user`));
-    }
-
-    // Hash password
     const passwordHash = await hashPassword(password);
+    const mcpApiKey = generateMcpApiKey();
+    const mcpApiKeySetAt = new Date().toISOString();
 
-    // Create user in registry
-    const user = await userRegistry.create({
-      username: DEFAULT_USERNAME,
-      email: DEFAULT_EMAIL,
-      password_hash: passwordHash,
-      telegram_id: undefined,
-      database_name: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      permissions: ['read', 'write'],
-      status: 'active',
-      version: 'alpha2',
-      preferences: createDefaultUserPreferences(),
-    });
-
+    const user = await createRegistryUser(userRegistry, passwordHash, mcpApiKey, mcpApiKeySetAt);
     console.log(chalk.green(`✓ User "${DEFAULT_USERNAME}" created (ID: ${user._id})`));
 
-    // Setup user database with design docs and indexes
     console.log(chalk.blue('  Setting up user database...'));
     await setupUserDatabase(userRegistry, DEFAULT_USERNAME, env, env.COUCHDB_URL);
 
-    console.log(chalk.green('\n✅ Default user setup complete!\n'));
-    console.log(chalk.gray(`  Username: ${DEFAULT_USERNAME}`));
-    console.log(
-      chalk.gray(`  Password: ${password === DEFAULT_PASSWORD ? '(default)' : '(custom)'}`),
-    );
-    console.log(chalk.gray(`  Used by: eddo-todo skill (X-User-ID header)\n`));
-
+    logSuccess(password, mcpApiKey);
     return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

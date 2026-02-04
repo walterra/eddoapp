@@ -2,7 +2,6 @@
  * MCP Test Server Harness
  * Provides a reusable test environment for integration testing
  */
-import { getRandomHex } from '@eddo/core-shared';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -20,12 +19,12 @@ export class MCPTestServer {
   private transport: StreamableHTTPClientTransport | null = null;
   private config: Required<MCPTestServerConfig>;
   private testLock: TestLock;
-  private testApiKey: string;
   private testUser: {
     userId: string;
     username: string;
     dbName: string;
     telegramId: string;
+    mcpApiKey: string;
   } | null = null;
 
   constructor(config: MCPTestServerConfig = {}) {
@@ -40,9 +39,6 @@ export class MCPTestServer {
     };
 
     this.testLock = new TestLock();
-
-    // Generate unique test API key for complete isolation
-    this.testApiKey = `test-${Date.now()}-${getRandomHex(9)}`;
   }
 
   private async ensureTestUser(): Promise<void> {
@@ -64,9 +60,7 @@ export class MCPTestServer {
     this.transport = new StreamableHTTPClientTransport(new URL(this.config.serverUrl), {
       requestInit: {
         headers: {
-          'X-User-ID': this.testUser!.username,
-          'X-Database-Name': this.testUser!.dbName,
-          'X-Telegram-ID': this.testUser!.telegramId,
+          Authorization: `Bearer ${this.testUser!.mcpApiKey}`,
         },
       },
     });
@@ -217,7 +211,7 @@ export class MCPTestServer {
   }
 
   async resetTestData(): Promise<void> {
-    // With per-API-key databases via X-API-Key header, each test gets complete isolation
+    // With per-API-key databases, each test gets complete isolation
     console.log('🔄 Test using isolated database with unique API key');
 
     // Clear all existing documents first

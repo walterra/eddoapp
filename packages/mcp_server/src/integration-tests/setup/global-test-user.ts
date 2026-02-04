@@ -2,12 +2,31 @@
  * Global test user singleton for MCP integration tests
  * This module ensures the test user is created once and shared across all tests
  */
+import {
+  createDefaultUserPreferences,
+  getRandomHex,
+  type UserPreferences,
+  type UserRegistryEntryAlpha2,
+} from '@eddo/core-shared';
 
 interface GlobalTestUser {
   userId: string;
   username: string;
   dbName: string;
   telegramId: string;
+  mcpApiKey: string;
+}
+
+interface TestUserUpdateDependencies {
+  update: (
+    id: string,
+    updates: Partial<UserRegistryEntryAlpha2>,
+  ) => Promise<UserRegistryEntryAlpha2>;
+}
+
+interface RegistryUserRecord {
+  _id: string;
+  preferences?: UserPreferences;
 }
 
 // Global test user singleton
@@ -36,11 +55,14 @@ function createTestUserObject(timestamp: number): GlobalTestUser {
     username: `testuser_${timestamp}`,
     dbName: `eddo_test_user_testuser_${timestamp}`,
     telegramId: '123456789',
+    mcpApiKey: `test-${getRandomHex(16)}`,
   };
 }
 
 /** Create user data for registry */
 function createUserData(user: GlobalTestUser) {
+  const basePreferences = createDefaultUserPreferences();
+
   return {
     username: user.username,
     email: 'test@example.com',
@@ -53,12 +75,37 @@ function createUserData(user: GlobalTestUser) {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     preferences: {
-      dailyBriefing: false,
-      briefingTime: '07:00',
-      dailyRecap: false,
-      recapTime: '18:00',
+      ...basePreferences,
+      mcpApiKey: user.mcpApiKey,
     },
   };
+}
+
+function shouldUpdateApiKey(
+  existingUser: RegistryUserRecord | null,
+  expectedApiKey: string,
+): boolean {
+  if (!existingUser?.preferences?.mcpApiKey) return true;
+  return existingUser.preferences.mcpApiKey !== expectedApiKey;
+}
+
+async function ensureTestUserApiKey(
+  userRegistry: TestUserUpdateDependencies,
+  user: GlobalTestUser,
+  existingUser: RegistryUserRecord | null,
+): Promise<void> {
+  const needsUpdate = shouldUpdateApiKey(existingUser, user.mcpApiKey);
+  if (!needsUpdate) return;
+
+  const userId = existingUser?._id ?? `user_${user.username}`;
+  const basePreferences = existingUser?.preferences ?? createDefaultUserPreferences();
+  await userRegistry.update(userId, {
+    preferences: {
+      ...basePreferences,
+      mcpApiKey: user.mcpApiKey,
+    },
+  });
+  console.log(`✅ Global test user API key set: ${user.username}`);
 }
 
 /**
@@ -94,6 +141,8 @@ async function initializeGlobalTestUser(): Promise<void> {
     } else {
       console.log(`✅ Global test user already exists: ${globalTestUser.username}`);
     }
+
+    await ensureTestUserApiKey(userRegistry, globalTestUser, existingUser);
 
     console.log('✅ Global test user initialization complete');
   } catch (error) {

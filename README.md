@@ -78,6 +78,14 @@ pnpm dev:doctor
 
 Diagnoses: prerequisites, Docker status, service health, port availability, configuration.
 
+### Code Quality
+
+```bash
+pnpm check:commit
+```
+
+Runs TypeScript build checks, ESLint, and Prettier verification.
+
 ## Architecture
 
 Monorepo with these packages:
@@ -169,7 +177,7 @@ pnpm dev:mcp-server
 pnpm test:mcp-server  # Interactive testing
 ```
 
-> **Note**: The MCP server uses a simple `X-User-ID` header without verification. Don't expose to untrusted networks.
+> **Note**: MCP requests require an API key via `Authorization: Bearer <key>` or `X-API-Key`. Generate the API key in User Profile → Security or from `pnpm dev:create-user` output. Don't expose the MCP server to untrusted networks.
 
 ### pi-coding-agent Integration
 

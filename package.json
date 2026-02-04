@@ -116,6 +116,7 @@
     "format": "prettier --write ./packages",
     "lint:format": "prettier --cache --check ./packages",
     "lint": "eslint --cache ./packages ./scripts --ignore-pattern '**/dist/**'",
+    "check:commit": "npm-run-all --parallel tsc:check lint lint:format",
     "test": "pnpm test:unit",
     "test:unit": "vitest run packages/web-client/src packages/web-api/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",
     "test:coverage": "vitest run --coverage packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup-interactive.test.ts",

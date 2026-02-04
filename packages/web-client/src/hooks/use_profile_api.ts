@@ -6,6 +6,7 @@ import type {
   GithubResyncError,
   GithubResyncResponse,
   UpdatePreferencesData,
+  UpdatePreferencesResponse,
   UpdateProfileData,
   UserProfile,
 } from './use_profile_types';
@@ -106,7 +107,7 @@ export async function unlinkTelegramApi(headers: HeadersInit): Promise<void> {
 export async function updatePreferencesApi(
   headers: HeadersInit,
   data: UpdatePreferencesData,
-): Promise<void> {
+): Promise<UpdatePreferencesResponse> {
   const response = await fetch('/api/users/preferences', {
     method: 'PUT',
     headers,

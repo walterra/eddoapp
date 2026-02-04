@@ -34,6 +34,22 @@ export async function extractUserFromToken(
   }
 }
 
+export type SafeUserPreferences = Omit<UserRegistryEntry['preferences'], 'mcpApiKey'> & {
+  mcpApiKey?: undefined;
+  mcpApiKeySetAt?: string;
+};
+
+/** Build safe preferences payload */
+export function createSafePreferences(user: UserRegistryEntry): SafeUserPreferences {
+  return {
+    ...user.preferences,
+    mcpApiKey: undefined,
+    mcpApiKeySetAt:
+      user.preferences?.mcpApiKeySetAt ||
+      (user.preferences?.mcpApiKey ? user.updated_at : undefined),
+  };
+}
+
 /**
  * Create safe profile response (without sensitive data)
  */
@@ -46,7 +62,7 @@ export function createSafeProfile(user: UserRegistryEntry): {
   updatedAt: string;
   permissions: string[];
   status: string;
-  preferences: UserRegistryEntry['preferences'];
+  preferences: SafeUserPreferences;
 } {
   return {
     userId: user._id,
@@ -57,7 +73,7 @@ export function createSafeProfile(user: UserRegistryEntry): {
     updatedAt: user.updated_at,
     permissions: user.permissions,
     status: user.status,
-    preferences: user.preferences,
+    preferences: createSafePreferences(user),
   };
 }
 

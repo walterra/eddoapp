@@ -36,8 +36,12 @@ export interface ValidationCacheEntry {
 /**
  * Create a cache key from username and telegram ID
  */
-export function createCacheKey(username: string, telegramId: string | undefined): string {
-  return `${username}:${telegramId || 'no_telegram'}`;
+export function createCacheKey(
+  apiKey: string,
+  telegramId: string | undefined,
+  databaseName: string | undefined,
+): string {
+  return `${apiKey}:${telegramId || 'no_telegram'}:${databaseName || 'no_database'}`;
 }
 
 /**
@@ -76,8 +80,8 @@ export function logAuthSuccess(user: MCPAuthResult): void {
 /**
  * Log authentication failure for user not found
  */
-export function logUserNotFound(username: string): void {
-  console.warn('User not found for username', { username });
+export function logUserNotFound(identifier: string, identifierType: 'username' | 'apiKey'): void {
+  console.warn('User not found for identifier', { identifierType, identifier });
 }
 
 /**
@@ -101,9 +105,14 @@ export function logHeaderMismatch(
 /**
  * Log authentication error
  */
-export function logAuthError(error: unknown, username: string): void {
+export function logAuthError(
+  error: unknown,
+  identifier: string,
+  identifierType: 'username' | 'apiKey',
+): void {
   console.error('Error during user authentication', {
     error: error instanceof Error ? error.message : String(error),
-    username,
+    identifier,
+    identifierType,
   });
 }

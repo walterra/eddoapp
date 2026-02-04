@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-import { createTestUserRegistry, validateEnv } from '@eddo/core-server';
+import { createTestUserRegistry, getUserDatabaseName, validateEnv } from '@eddo/core-server';
 import type { Context } from 'grammy';
 import { vi } from 'vitest';
 
@@ -25,7 +25,9 @@ import {
 } from '../vcr/index.js';
 import {
   buildMockContext,
+  buildTestUserPreferences,
   buildUserRegistryEntry,
+  ensureRegistryApiKey,
   generateTestApiKey,
   generateTestUserData,
   setupUserDatabase,
@@ -184,13 +186,16 @@ export class TestAgentServer {
       await userRegistry.setupDatabase();
     }
 
-    this.testUser = generateTestUserData();
+    const apiKeySetAt = new Date().toISOString();
+    const preferences = buildTestUserPreferences(undefined, this.testApiKey, apiKeySetAt);
+    this.testUser = generateTestUserData(preferences);
+    this.testUser.database_name = getUserDatabaseName(env, this.testUser.username);
 
     const existingUser = await userRegistry.findByUsername(this.testUser.username);
-    if (!existingUser) {
-      await userRegistry.create(buildUserRegistryEntry(this.testUser));
-    }
+    const registryUser =
+      existingUser ?? (await userRegistry.create(buildUserRegistryEntry(this.testUser)));
 
+    await ensureRegistryApiKey(userRegistry, registryUser, this.testApiKey, apiKeySetAt);
     await setupUserDatabase(couchDbUrl, this.testUser.database_name);
   }
 

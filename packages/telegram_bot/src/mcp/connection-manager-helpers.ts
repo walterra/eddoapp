@@ -28,9 +28,7 @@ function injectTraceContext(headers: Record<string, string>): Record<string, str
 export function createUserHeaders(userContext: MCPUserContext): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    'X-User-ID': userContext.username,
-    'X-Database-Name': userContext.databaseName,
-    'X-Telegram-ID': userContext.telegramId.toString(),
+    Authorization: `Bearer ${userContext.mcpApiKey}`,
   };
 }
 

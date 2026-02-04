@@ -81,42 +81,75 @@ function validateHeaderConsistency(
   }
 }
 
-/** Extract and validate headers, throw if username missing */
+/** Validate API key against stored preference */
+function validateApiKey(preferences: UserAuthRecord['preferences'], apiKey: string): void {
+  if (!preferences?.mcpApiKey) {
+    throw createAuthError(403, 'MCP API key not configured for user');
+  }
+
+  if (apiKey !== preferences.mcpApiKey) {
+    throw createAuthError(401, 'Invalid API key');
+  }
+}
+
+/** Extract and validate headers, throw if API key missing */
 function extractAuthHeaders(headers: Record<string, string | string[] | undefined>): {
-  username: string;
+  apiKey: string;
   databaseName: string | undefined;
   telegramId: string | undefined;
 } {
-  const username = extractHeader(headers, 'x-user-id');
-  const databaseName = extractHeader(headers, 'x-database-name');
-  const telegramId = extractHeader(headers, 'x-telegram-id');
+  const databaseName = extractHeader(headers, 'X-Database-Name');
+  const telegramId = extractHeader(headers, 'X-Telegram-ID');
+  const apiKeyHeader = extractHeader(headers, 'X-API-Key');
+  const authHeader = extractHeader(headers, 'Authorization');
+  const bearerToken = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const apiKey = apiKeyHeader || bearerToken;
 
   console.log('MCP Authentication attempt', {
-    username,
     databaseName,
     hasTelegramId: !!telegramId,
+    hasApiKey: !!apiKey,
   });
 
-  if (!username) {
-    throw createAuthError(401, 'Username required (X-User-ID header)');
+  if (!apiKey) {
+    throw createAuthError(401, 'API key required (Authorization or X-API-Key header)');
   }
 
-  return { username, databaseName, telegramId };
+  return { apiKey, databaseName, telegramId };
+}
+
+/** User record fields needed for MCP auth */
+interface UserAuthRecord {
+  _id: string;
+  database_name: string;
+  username: string;
+  telegram_id?: number;
+  preferences?: {
+    mcpApiKey?: string | null;
+  };
+}
+
+/** Mask API key for logs */
+function maskApiKey(apiKey: string): string {
+  if (apiKey.length <= 8) {
+    return '***';
+  }
+  return `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`;
 }
 
 /** Lookup user and validate status */
-async function lookupAndValidateUser(
-  username: string,
+async function lookupAndValidateUserByApiKey(
+  apiKey: string,
   cacheKey: string,
-): Promise<{ _id: string; database_name: string; username: string; telegram_id?: number }> {
+): Promise<UserAuthRecord> {
   const env = createEnv();
   const userRegistry = await getUserRegistry(env);
-  const user = await userRegistry.findByUsername(username);
+  const user = await userRegistry.findByMcpApiKey(apiKey);
 
   if (!user) {
-    logUserNotFound(username);
+    logUserNotFound(maskApiKey(apiKey), 'apiKey');
     userValidationCache.set(cacheKey, createNegativeCacheEntry());
-    throw createAuthError(401, 'Invalid username');
+    throw createAuthError(401, 'Invalid API key');
   }
 
   if (user.status !== 'active') {
@@ -134,15 +167,16 @@ async function lookupAndValidateUser(
 export async function validateUserContext(
   headers: Record<string, string | string[] | undefined>,
 ): Promise<MCPAuthResult> {
-  const { username, databaseName, telegramId } = extractAuthHeaders(headers);
+  const { apiKey, databaseName, telegramId } = extractAuthHeaders(headers);
 
-  const cacheKey = createCacheKey(username, telegramId);
+  const cacheKey = createCacheKey(apiKey, telegramId, databaseName);
   const cacheResult = checkCache(cacheKey);
   if (cacheResult.hit) return cacheResult.result!;
 
   try {
-    const user = await lookupAndValidateUser(username, cacheKey);
+    const user = await lookupAndValidateUserByApiKey(apiKey, cacheKey);
     validateHeaderConsistency(user, databaseName, telegramId);
+    validateApiKey(user.preferences, apiKey);
 
     const authResult: MCPAuthResult = {
       userId: user._id,
@@ -155,7 +189,7 @@ export async function validateUserContext(
     return authResult;
   } catch (error) {
     if (error instanceof Response) throw error;
-    logAuthError(error, username);
+    logAuthError(error, maskApiKey(apiKey), 'apiKey');
     throw createAuthError(500, 'Authentication service error');
   }
 }

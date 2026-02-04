@@ -77,7 +77,7 @@ export async function isTelegramUserAuthorized(telegramId: number): Promise<bool
  */
 export async function getUserContextForMCP(telegramId: number): Promise<{
   username: string;
-  databaseName: string;
+  mcpApiKey: string | null | undefined;
 } | null> {
   const user = await lookupUserByTelegramId(telegramId);
 
@@ -87,6 +87,6 @@ export async function getUserContextForMCP(telegramId: number): Promise<{
 
   return {
     username: user.username,
-    databaseName: user.database_name,
+    mcpApiKey: user.preferences?.mcpApiKey,
   };
 }

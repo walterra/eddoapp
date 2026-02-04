@@ -8,17 +8,15 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 /**
  * Create MCP client with transport
  * @param {string} serverUrl - MCP server URL
- * @param {string} apiKey - API key for authentication
+ * @param {Record<string, string>} headers - Authentication headers
  * @returns {Promise<{client: Client, transport: StreamableHTTPClientTransport}>}
  */
-export async function createMcpClient(serverUrl, apiKey) {
+export async function createMcpClient(serverUrl, headers) {
   console.log('🔧 Creating MCP client...');
 
   const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
     requestInit: {
-      headers: {
-        'X-API-Key': apiKey,
-      },
+      headers,
     },
   });
 
@@ -161,6 +159,13 @@ TIME TRACKING:
 
 OTHER:
   pnpm test:mcp getServerInfo '{"section": "all"}'
+
+Environment variables:
+  MCP_URL (default: http://localhost:3002/mcp)
+  EDDO_MCP_API_KEY (required)
+  EDDO_MCP_USER_ID (default: eddo_pi_agent)
+  EDDO_MCP_DATABASE_NAME (optional)
+  EDDO_MCP_TELEGRAM_ID (optional)
 
 Examples from dev/MCP-CRUD.md are directly supported.
 `);

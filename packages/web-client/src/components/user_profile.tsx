@@ -1,7 +1,7 @@
 /**
  * User profile settings page component
  */
-import { type FC, useState } from 'react';
+import { type FC, useEffect, useState } from 'react';
 
 import { useProfile } from '../hooks/use_profile';
 import { useEmailFieldHandlers } from './user_profile_email_hooks';
@@ -49,6 +49,8 @@ interface TabContentProps {
   githubState: GithubFormState;
   rssState: RssFormState;
   emailState: EmailFormState;
+  generatedMcpApiKey: string | null;
+  generatedMcpApiKeySetAt: string | null;
   isResyncing: boolean;
   isRssResyncing: boolean;
   isEmailResyncing: boolean;
@@ -83,12 +85,24 @@ const ProfileTabContent: FC<
 );
 
 const SecurityTabContent: FC<
-  Pick<TabContentProps, 'formState' | 'isLoading' | 'actions' | 'formFieldHandlers'>
+  Pick<
+    TabContentProps,
+    | 'formState'
+    | 'isLoading'
+    | 'actions'
+    | 'formFieldHandlers'
+    | 'generatedMcpApiKey'
+    | 'generatedMcpApiKeySetAt'
+    | 'profile'
+  >
 > = (p) => (
   <SecurityTab
     formState={p.formState}
     isLoading={p.isLoading}
+    mcpApiKey={p.generatedMcpApiKey}
+    mcpApiKeySetAt={p.generatedMcpApiKeySetAt || p.profile.preferences?.mcpApiKeySetAt}
     onChangePassword={p.actions.handleChangePassword}
+    onGenerateMcpApiKey={p.actions.handleGenerateMcpApiKey}
     {...p.formFieldHandlers}
   />
 );
@@ -165,6 +179,8 @@ interface ActionsConfigParams {
   setEditMode: (v: boolean) => void;
   setFormError: (v: string) => void;
   setSuccess: (v: string | null) => void;
+  setGeneratedMcpApiKey: (key: string | null) => void;
+  setGeneratedMcpApiKeySetAt: (value: string | null) => void;
 }
 
 /** Build actions config from hooks */
@@ -181,6 +197,8 @@ const buildActionsConfig = (p: ActionsConfigParams) => ({
   setEditMode: p.setEditMode,
   setFormError: p.setFormError,
   setSuccess: p.setSuccess,
+  setGeneratedMcpApiKey: p.setGeneratedMcpApiKey,
+  setGeneratedMcpApiKeySetAt: p.setGeneratedMcpApiKeySetAt,
   clearError: p.profileHook.clearError,
   actions: {
     updateProfile: p.profileHook.updateProfile,
@@ -216,6 +234,8 @@ function buildTabProps(p: TabPropsParams): TabContentProps {
     githubState: p.forms.githubState,
     rssState: p.forms.rssState,
     emailState: p.forms.emailState,
+    generatedMcpApiKey: p.forms.generatedMcpApiKey,
+    generatedMcpApiKeySetAt: p.forms.generatedMcpApiKeySetAt,
     isResyncing: p.mutations.githubResync.isPending,
     isRssResyncing: p.mutations.rssResync.isPending,
     isEmailResyncing: p.mutations.emailResync?.isPending || false,
@@ -228,6 +248,30 @@ function buildTabProps(p: TabPropsParams): TabContentProps {
   };
 }
 
+function useClearGeneratedMcpApiKey(
+  activeTab: TabType,
+  forms: ReturnType<typeof useProfileFormStates>,
+): void {
+  useEffect(() => {
+    if (activeTab !== 'security' && forms.generatedMcpApiKey) {
+      forms.setGeneratedMcpApiKey(null);
+      forms.setGeneratedMcpApiKeySetAt(null);
+    }
+  }, [
+    activeTab,
+    forms.generatedMcpApiKey,
+    forms.setGeneratedMcpApiKey,
+    forms.setGeneratedMcpApiKeySetAt,
+  ]);
+}
+
+function useUserProfileActions(
+  params: ActionsConfigParams,
+): ReturnType<typeof useProfileActionHandlers> {
+  const actionsConfig = buildActionsConfig(params);
+  return useProfileActionHandlers(actionsConfig);
+}
+
 export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
   const profileHook = useProfile();
   const { profile, isLoading, error, mutations } = profileHook;
@@ -236,7 +280,10 @@ export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
   const [success, setSuccess] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
   const forms = useProfileFormStates(profile);
-  const actionsConfig = buildActionsConfig({
+
+  useClearGeneratedMcpApiKey(activeTab, forms);
+
+  const actions = useUserProfileActions({
     profileHook,
     forms,
     profile,
@@ -244,8 +291,9 @@ export const UserProfile: FC<UserProfileProps> = ({ onClose }) => {
     setEditMode,
     setFormError,
     setSuccess,
+    setGeneratedMcpApiKey: forms.setGeneratedMcpApiKey,
+    setGeneratedMcpApiKeySetAt: forms.setGeneratedMcpApiKeySetAt,
   });
-  const actions = useProfileActionHandlers(actionsConfig);
 
   if (isLoading && !profile) return <LoadingState />;
   if (!profile) return <NotFoundState onClose={onClose} />;

@@ -94,6 +94,8 @@ export interface ProfileData {
     emailSyncTags?: string[];
     emailLastSync?: string;
     aiProviderKeys?: AiProviderKeysUI;
+    mcpApiKey?: string | null;
+    mcpApiKeySetAt?: string;
   };
 }
 
@@ -113,10 +115,13 @@ export interface ProfileTabProps {
 export interface SecurityTabProps {
   isLoading: boolean;
   formState: Pick<ProfileFormState, 'currentPassword' | 'newPassword' | 'confirmPassword'>;
+  mcpApiKey?: string | null;
+  mcpApiKeySetAt?: string;
   onCurrentPasswordChange: (password: string) => void;
   onNewPasswordChange: (password: string) => void;
   onConfirmPasswordChange: (password: string) => void;
   onChangePassword: () => Promise<void>;
+  onGenerateMcpApiKey: () => Promise<void>;
 }
 
 export interface IntegrationsTabProps {

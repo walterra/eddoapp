@@ -119,7 +119,7 @@ function validateSearchContext(
       error: createErrorResponse({
         error: new Error('No user session'),
         operation: 'search',
-        recoverySuggestions: ['Ensure X-User-ID header is provided'],
+        recoverySuggestions: ['Ensure API key header is provided'],
         summary: 'Authentication required',
       }),
     };

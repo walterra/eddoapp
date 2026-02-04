@@ -79,7 +79,12 @@ function useProfileMutations(getAuthHeaders: () => HeadersInit, queryClient: Que
     }),
     preferences: useMutation({
       mutationFn: (data: UpdatePreferencesData) => updatePreferencesApi(getAuthHeaders(), data),
-      onSuccess: invalidateProfile,
+      onSuccess: (result) => {
+        queryClient.setQueryData<UserProfile | null>(['profile'], (prev) =>
+          prev ? { ...prev, preferences: result.preferences } : prev,
+        );
+        invalidateProfile();
+      },
     }),
     githubResync: useMutation<GithubResyncResponse, Error>({
       mutationFn: () => githubResyncApi(getAuthHeaders()),

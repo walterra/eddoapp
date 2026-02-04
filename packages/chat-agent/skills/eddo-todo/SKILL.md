@@ -56,6 +56,9 @@ EDDO="/home/agent/.pi/agent/skills/eddo-todo/eddo-todo.js"
 # The MCP URL should be set via environment variable by the container orchestrator
 # Default: http://host.docker.internal:3001/mcp (to reach host's MCP server)
 export EDDO_MCP_URL=${EDDO_MCP_URL:-http://host.docker.internal:3001/mcp}
+
+# MCP API key (stored in user preferences)
+export EDDO_MCP_API_KEY=${EDDO_MCP_API_KEY:-""}
 ```
 
 ## Short Flags

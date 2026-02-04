@@ -7,36 +7,30 @@ import { getUserContextForMCP } from '../utils/user-lookup.js';
  */
 export interface MCPUserContext {
   username: string;
-  databaseName: string;
   telegramId: number;
+  mcpApiKey: string;
 }
 
-/**
- * Extract user context from bot session for MCP operations
- */
-export async function extractUserContextForMCP(ctx: BotContext): Promise<MCPUserContext | null> {
-  const telegramId = ctx.from?.id;
-
-  if (!telegramId) {
-    logger.warn('No Telegram ID available for MCP context extraction');
+/** Extract user context from cached session */
+function extractFromSession(ctx: BotContext, telegramId: number): MCPUserContext | null {
+  if (!ctx.session?.user) {
     return null;
   }
 
-  // Try to get user context from session first (already loaded during auth)
-  if (ctx.session?.user) {
-    logger.debug('Using cached user context from session', {
-      telegramId,
-      username: ctx.session.user.username,
-    });
+  logger.debug('Using cached user context from session', {
+    telegramId,
+    username: ctx.session.user.username,
+  });
 
-    return {
-      username: ctx.session.user.username,
-      databaseName: ctx.session.user.database_name,
-      telegramId: ctx.session.user.telegram_id,
-    };
-  }
+  return {
+    username: ctx.session.user.username,
+    telegramId: ctx.session.user.telegram_id,
+    mcpApiKey: ctx.session.user.preferences?.mcpApiKey || '',
+  };
+}
 
-  // Fallback to lookup if not in session
+/** Extract user context from registry lookup */
+async function extractFromRegistry(telegramId: number): Promise<MCPUserContext | null> {
   logger.debug('User not in session, performing lookup for MCP context', {
     telegramId,
   });
@@ -51,8 +45,8 @@ export async function extractUserContextForMCP(ctx: BotContext): Promise<MCPUser
 
     return {
       username: userContext.username,
-      databaseName: userContext.databaseName,
       telegramId,
+      mcpApiKey: userContext.mcpApiKey || '',
     };
   } catch (error) {
     logger.error('Error extracting user context for MCP', {
@@ -64,14 +58,26 @@ export async function extractUserContextForMCP(ctx: BotContext): Promise<MCPUser
 }
 
 /**
+ * Extract user context from bot session for MCP operations
+ */
+export async function extractUserContextForMCP(ctx: BotContext): Promise<MCPUserContext | null> {
+  const telegramId = ctx.from?.id;
+
+  if (!telegramId) {
+    logger.warn('No Telegram ID available for MCP context extraction');
+    return null;
+  }
+
+  return extractFromSession(ctx, telegramId) || (await extractFromRegistry(telegramId));
+}
+
+/**
  * Create MCP headers with user authentication
  */
 export function createMCPHeaders(userContext: MCPUserContext): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    'X-User-ID': userContext.username,
-    'X-Database-Name': userContext.databaseName,
-    'X-Telegram-ID': userContext.telegramId.toString(),
+    Authorization: `Bearer ${userContext.mcpApiKey}`,
   };
 }
 
@@ -103,7 +109,7 @@ export function validateUserContextForMCP(
     return false;
   }
 
-  const required = ['username', 'databaseName', 'telegramId'];
+  const required = ['username', 'telegramId', 'mcpApiKey'];
   for (const field of required) {
     if (!userContext[field as keyof MCPUserContext]) {
       logger.warn('Incomplete user context for MCP operations', {
@@ -127,7 +133,6 @@ export function logMCPOperation(
 ): void {
   logger.info(`MCP operation: ${operation}`, {
     username: userContext.username,
-    databaseName: userContext.databaseName,
     telegramId: userContext.telegramId,
     ...additionalData,
   });
@@ -143,7 +148,6 @@ export function handleMCPError(
 ): void {
   logger.error(`MCP operation failed: ${operation}`, {
     username: userContext.username,
-    databaseName: userContext.databaseName,
     telegramId: userContext.telegramId,
     error: error instanceof Error ? error.message : String(error),
   });

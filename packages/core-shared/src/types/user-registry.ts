@@ -13,6 +13,7 @@ export interface UserRegistryOperations {
   findByUsername(username: string): Promise<UserRegistryEntry | null>;
   findByTelegramId(telegramId: number): Promise<UserRegistryEntry | null>;
   findByEmail(email: string): Promise<UserRegistryEntry | null>;
+  findByMcpApiKey(apiKey: string): Promise<UserRegistryEntry | null>;
   create(entry: CreateUserRegistryEntry): Promise<UserRegistryEntry>;
   update(id: string, updates: UpdateUserRegistryEntry): Promise<UserRegistryEntry>;
   list(): Promise<UserRegistryEntry[]>;

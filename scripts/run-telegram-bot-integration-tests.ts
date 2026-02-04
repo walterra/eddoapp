@@ -61,6 +61,7 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
       COUCHDB_URL: containerSetup.url,
       MCP_SERVER_URL: serverProcess.url,
       MCP_SERVER_PORT: serverProcess.port.toString(),
+      NODE_ENV: 'test',
     });
   } finally {
     if (serverProcess) {

@@ -131,6 +131,9 @@ export interface UserPreferences {
   filterPresets?: FilterPreset[]; // Saved filter preset configurations
   // AI Provider Keys
   aiProviderKeys?: AiProviderKeys; // API keys for chat agent (Anthropic, OpenAI, Gemini)
+  // MCP API Key
+  mcpApiKey?: string | null; // API key for MCP access
+  mcpApiKeySetAt?: string; // ISO timestamp when key was set
 }
 
 export interface UserRegistryEntryAlpha2 extends Omit<UserRegistryEntryAlpha1, 'version'> {
@@ -184,5 +187,7 @@ export function createDefaultUserPreferences(): UserPreferences {
     emailSyncInterval: 15,
     emailSyncTags: ['source:email', 'gtd:next'],
     emailLastSync: undefined,
+    mcpApiKey: null,
+    mcpApiKeySetAt: undefined,
   };
 }

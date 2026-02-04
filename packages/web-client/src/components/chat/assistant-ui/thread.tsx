@@ -12,32 +12,53 @@ import {
 } from '@assistant-ui/react';
 import { ArrowUpIcon, Square } from 'lucide-react';
 import type { FC } from 'react';
+import { createContext, useContext } from 'react';
 
 import { ImageLightboxProvider, useImageLightbox } from './image-lightbox-context';
 import { MarkdownText } from './markdown-text';
 
+/** Reasoning visibility context */
+interface ReasoningVisibilityContextValue {
+  showReasoning: boolean;
+}
+
+const ReasoningVisibilityContext = createContext<ReasoningVisibilityContextValue>({
+  showReasoning: true,
+});
+
+function useReasoningVisibility(): ReasoningVisibilityContextValue {
+  return useContext(ReasoningVisibilityContext);
+}
+
+/** Props for Thread */
+export interface ThreadProps {
+  showReasoning: boolean;
+}
+
 /** Main Thread component */
-export const Thread: FC = () => {
+export const Thread: FC<ThreadProps> = ({ showReasoning }) => {
   return (
     <ImageLightboxProvider>
-      <ThreadPrimitive.Root className="flex h-full flex-col bg-neutral-50 dark:bg-neutral-800">
-        <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto">
-          <ThreadPrimitive.Empty>
-            <ThreadWelcome />
-          </ThreadPrimitive.Empty>
+      <ReasoningVisibilityContext.Provider value={{ showReasoning }}>
+        <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col bg-neutral-50 dark:bg-neutral-800">
+          <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto">
+            <ThreadPrimitive.Empty>
+              <ThreadWelcome />
+            </ThreadPrimitive.Empty>
 
-          <ThreadPrimitive.Messages
-            components={{
-              UserMessage,
-              AssistantMessage,
-            }}
-          />
-        </ThreadPrimitive.Viewport>
+            <ThreadPrimitive.Messages
+              components={{
+                UserMessage,
+                AssistantMessage,
+              }}
+            />
+          </ThreadPrimitive.Viewport>
 
-        <div className="border-t border-neutral-200 p-3 dark:border-neutral-700">
-          <Composer />
-        </div>
-      </ThreadPrimitive.Root>
+          <div className="border-t border-neutral-200 p-3 dark:border-neutral-700">
+            <Composer />
+          </div>
+        </ThreadPrimitive.Root>
+      </ReasoningVisibilityContext.Provider>
     </ImageLightboxProvider>
   );
 };
@@ -141,10 +162,13 @@ const AssistantMessage: FC = () => {
 
 /** Reasoning/thinking block */
 const ReasoningBlock: FC = () => {
+  const { showReasoning } = useReasoningVisibility();
+  if (!showReasoning) return null;
+
   return (
     <div className="my-2 rounded border-l-4 border-purple-500 bg-purple-50 p-3 text-sm dark:bg-purple-900/20">
       <div className="mb-1 font-medium text-purple-700 dark:text-purple-300">Thinking...</div>
-      <MessagePrimitive.Content />
+      <MarkdownText />
     </div>
   );
 };

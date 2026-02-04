@@ -88,8 +88,8 @@ export function buildMounts(config: ContainerConfig): string[] {
   if (config.mainGitDir) {
     mounts.push(`${config.mainGitDir}:/main-git:ro`);
   }
-  if (config.piConfigDir) {
-    mounts.push(`${config.piConfigDir}:/root/.pi:ro`);
+  if (config.piAuthFile) {
+    mounts.push(`${config.piAuthFile}:/home/agent/.pi/agent/auth.json:ro`);
   }
 
   return mounts;

@@ -24,6 +24,15 @@ export interface TestUser {
   preferences: UserPreferences;
 }
 
+export interface TestUserRegistryUpdater {
+  update: (id: string, updates: { preferences: UserPreferences }) => Promise<unknown>;
+}
+
+export interface RegistryUserRecord {
+  _id: string;
+  preferences?: UserPreferences;
+}
+
 /** Default test user preferences */
 const DEFAULT_TEST_PREFERENCES: UserPreferences = {
   dailyBriefing: false,
@@ -32,15 +41,29 @@ const DEFAULT_TEST_PREFERENCES: UserPreferences = {
   recapTime: '18:00',
 };
 
+export function buildTestUserPreferences(
+  basePreferences: UserPreferences | undefined,
+  apiKey: string,
+  setAt: string,
+): UserPreferences {
+  const base = basePreferences ?? DEFAULT_TEST_PREFERENCES;
+  return {
+    ...base,
+    mcpApiKey: apiKey,
+    mcpApiKeySetAt: setAt,
+  };
+}
+
 /**
  * Generate unique test user data
  */
-export function generateTestUserData(): TestUser {
+export function generateTestUserData(preferences?: UserPreferences): TestUser {
   const timestamp = Date.now();
   const telegramId = 12345 + getRandomInt(10000);
   const username = `testuser_${timestamp}`;
   const databaseName = `eddo_test_user_${username}`;
   const now = new Date().toISOString();
+  const userPreferences = preferences ?? { ...DEFAULT_TEST_PREFERENCES };
 
   return {
     _id: username,
@@ -52,7 +75,7 @@ export function generateTestUserData(): TestUser {
     permissions: ['read', 'write'],
     created_at: now,
     updated_at: now,
-    preferences: { ...DEFAULT_TEST_PREFERENCES },
+    preferences: userPreferences,
   };
 }
 
@@ -106,8 +129,25 @@ export function buildUserRegistryEntry(testUser: TestUser) {
     database_name: testUser.database_name,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    preferences: { ...DEFAULT_TEST_PREFERENCES },
+    preferences: testUser.preferences,
   };
+}
+
+function shouldUpdateApiKey(existingUser: RegistryUserRecord, apiKey: string): boolean {
+  if (!existingUser.preferences?.mcpApiKey) return true;
+  return existingUser.preferences.mcpApiKey !== apiKey;
+}
+
+export async function ensureRegistryApiKey(
+  userRegistry: TestUserRegistryUpdater,
+  registryUser: RegistryUserRecord,
+  apiKey: string,
+  setAt: string,
+): Promise<void> {
+  if (!shouldUpdateApiKey(registryUser, apiKey)) return;
+
+  const preferences = buildTestUserPreferences(registryUser.preferences, apiKey, setAt);
+  await userRegistry.update(registryUser._id, { preferences });
 }
 
 /**

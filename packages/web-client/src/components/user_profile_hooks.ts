@@ -15,6 +15,7 @@ import {
   validateProfileForm,
   validateTelegramId,
 } from './user_profile_handlers';
+import { useMcpApiKeyHandler } from './user_profile_mcp_hooks';
 import { useRssActionHandlers } from './user_profile_rss_hooks';
 import type {
   AiProviderKeysUI,
@@ -56,6 +57,7 @@ interface PreferencesUpdateData extends Partial<PreferencesFormState> {
   rssSyncInterval?: number;
   rssSyncTags?: string[];
   aiProviderKeys?: AiProviderKeysUI;
+  mcpApiKey?: string | null;
 }
 
 interface FormActions {
@@ -85,6 +87,8 @@ interface FormHandlersConfig {
   setEditMode: (mode: boolean) => void;
   setFormError: (error: string) => void;
   setSuccess: (success: string | null) => void;
+  setGeneratedMcpApiKey: (key: string | null) => void;
+  setGeneratedMcpApiKeySetAt: (value: string | null) => void;
   clearError: () => void;
   actions: FormActions;
 }
@@ -306,12 +310,20 @@ export function useProfileActionHandlers(config: FormHandlersConfig) {
     emailResyncMutate: config.actions.emailResyncMutate,
   });
   const handleSaveAiKeys = useAiKeysHandler(config);
+  const handleGenerateMcpApiKey = useMcpApiKeyHandler({
+    setFormError: config.setFormError,
+    setSuccess: config.setSuccess,
+    setGeneratedMcpApiKey: config.setGeneratedMcpApiKey,
+    setGeneratedMcpApiKeySetAt: config.setGeneratedMcpApiKeySetAt,
+    updatePreferences: config.actions.updatePreferences,
+  });
 
   return {
     handleEditToggle,
     handleSaveProfile,
     handleChangePassword,
     handleSaveAiKeys,
+    handleGenerateMcpApiKey,
     ...telegramHandlers,
     ...preferencesHandlers,
     ...rssHandlers,

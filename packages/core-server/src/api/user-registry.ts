@@ -64,6 +64,7 @@ export function createUserRegistry(
     findByUsername: (username: string) => findByUsername(context, username),
     findByTelegramId: (telegramId: number) => findByTelegramId(context, telegramId),
     findByEmail: (email: string) => findByEmail(context, email),
+    findByMcpApiKey: (apiKey: string) => findByMcpApiKey(context, apiKey),
     create: (entry: Omit<UserRegistryEntry, '_id' | '_rev'>) => create(context, entry),
     update: (id: string, updates: Partial<UserRegistryEntry>) => update(context, id, updates),
     list: () => list(context),
@@ -142,6 +143,30 @@ async function findByEmail(
   try {
     const result = await context.db.view('queries', 'by_email', {
       key: email,
+      include_docs: true,
+    });
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const doc = result.rows[0].doc;
+    return doc ? migrateIfNeeded(context, doc as UserRegistryEntry) : null;
+  } catch (error: unknown) {
+    if (isNotFoundError(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function findByMcpApiKey(
+  context: UserRegistryContext,
+  apiKey: string,
+): Promise<UserRegistryEntry | null> {
+  try {
+    const result = await context.db.view('queries', 'by_mcp_api_key', {
+      key: apiKey,
       include_docs: true,
     });
 
@@ -306,6 +331,7 @@ export async function createTestUserRegistry(
     findByUsername,
     findByTelegramId,
     findByEmail,
+    findByMcpApiKey,
     update,
     list,
     delete: deleteEntry,
