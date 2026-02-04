@@ -78,6 +78,14 @@ pnpm dev:doctor
 
 Diagnoses: prerequisites, Docker status, service health, port availability, configuration.
 
+### Code Quality
+
+```bash
+pnpm check:commit
+```
+
+Runs TypeScript build checks, ESLint, and Prettier verification.
+
 ## Architecture
 
 Monorepo with these packages:

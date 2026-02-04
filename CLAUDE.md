@@ -18,12 +18,14 @@ Never run these commands yourself or kill related processes. The user is respons
 
 Use these commands for investigating, testing and linting.
 DO NOT cd into packages. you MUST stay in root and run commands like `pnpm test|build` from the repo root.
+CRITICAL: Run `pnpm check:commit` to verify code before requesting a commit.
 
 - IMPORTANT: Use `pnpm logs:tail` to investigate unified logs produced by `pnpm dev`
 - Build all packages: `pnpm build` (always run from the repo root, not from individual package dirs)
 - Build for production: `pnpm build:production`
 - Lint: `pnpm lint`
 - Format check: `pnpm lint:format`
+- Commit check (required before commit): `pnpm check:commit`
 - Format fix: `pnpm format`
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`
