@@ -13,6 +13,7 @@ setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 })
 import {
   type AttachmentDoc,
   type TodoAlpha3,
+  createUserRegistry,
   getCouchDbConfig,
   validateEnv,
 } from '@eddo/core-server';
@@ -49,6 +50,13 @@ dotenvLoad();
 // Validate environment
 const env = validateEnv(process.env);
 
+async function ensureUserRegistrySetup(): Promise<void> {
+  const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+  await userRegistry.ensureDatabase();
+  await userRegistry.setupDesignDocuments();
+  logger.info('User registry design documents ensured');
+}
+
 // Initialize nano connection
 const couchDbConfig = getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
@@ -82,7 +90,7 @@ function getEsClient(): Client | null {
 /**
  * Server instructions for LLM consumption
  */
-const SERVER_INSTRUCTIONS = `Eddo Todo MCP Server with user registry authentication and GTD tag awareness. Pass X-User-ID, X-Database-Name, X-Telegram-ID, and X-API-Key headers for user-specific database access. Each user gets an isolated database.
+const SERVER_INSTRUCTIONS = `Eddo Todo MCP Server with user registry authentication and GTD tag awareness. Pass Authorization: Bearer <api-key> or X-API-Key header for user-specific database access. Each user gets an isolated database.
 
 GTD SYSTEM:
 - TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)
@@ -160,7 +168,7 @@ function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
 
   if (context.session.userId === 'anonymous') {
     throw new Error(
-      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID, X-API-Key)',
+      'Tool calls require API key authentication (Authorization: Bearer <key> or X-API-Key)',
     );
   }
 
@@ -177,7 +185,7 @@ function getAttachmentsDb(context: ToolContext): nano.DocumentScope<AttachmentDo
 
   if (context.session.userId === 'anonymous') {
     throw new Error(
-      'Tool calls require user authentication headers (X-User-ID, X-Database-Name, X-Telegram-ID, X-API-Key)',
+      'Tool calls require API key authentication (Authorization: Bearer <key> or X-API-Key)',
     );
   }
 
@@ -221,6 +229,8 @@ export async function startMcpServer(port: number = 3001): Promise<void> {
     // Verify CouchDB server connection
     const serverInfo = await couch.info();
     logger.info({ couchdbVersion: serverInfo.version }, 'Connected to CouchDB');
+
+    await ensureUserRegistrySetup();
 
     await server.start({
       transportType: 'httpStream',

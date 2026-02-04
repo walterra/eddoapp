@@ -60,10 +60,7 @@ export class MCPTestServer {
     this.transport = new StreamableHTTPClientTransport(new URL(this.config.serverUrl), {
       requestInit: {
         headers: {
-          'X-User-ID': this.testUser!.username,
-          'X-Database-Name': this.testUser!.dbName,
-          'X-Telegram-ID': this.testUser!.telegramId,
-          'X-API-Key': this.testUser!.mcpApiKey,
+          Authorization: `Bearer ${this.testUser!.mcpApiKey}`,
         },
       },
     });
@@ -214,7 +211,7 @@ export class MCPTestServer {
   }
 
   async resetTestData(): Promise<void> {
-    // With per-API-key databases via X-API-Key header, each test gets complete isolation
+    // With per-API-key databases, each test gets complete isolation
     console.log('🔄 Test using isolated database with unique API key');
 
     // Clear all existing documents first

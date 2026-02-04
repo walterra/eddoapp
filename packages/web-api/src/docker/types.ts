@@ -17,8 +17,8 @@ export interface ContainerConfig {
   gitDir?: string;
   /** Main repo .git directory for worktree support */
   mainGitDir?: string;
-  /** Pi coding agent config directory (contains auth.json) */
-  piConfigDir?: string;
+  /** Pi coding agent auth.json file path */
+  piAuthFile?: string;
   /** Environment variables */
   env?: Record<string, string>;
   /** Memory limit in MB */

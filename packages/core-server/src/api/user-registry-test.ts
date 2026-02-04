@@ -37,6 +37,10 @@ export interface TestUserRegistryFunctions {
     context: TestUserRegistryContext,
     email: string,
   ) => Promise<UserRegistryEntry | null>;
+  findByMcpApiKey: (
+    context: TestUserRegistryContext,
+    apiKey: string,
+  ) => Promise<UserRegistryEntry | null>;
   update: (
     context: TestUserRegistryContext,
     id: string,
@@ -109,6 +113,7 @@ function buildOperations(
     findByUsername: (username: string) => fns.findByUsername(context, username),
     findByTelegramId: (telegramId: number) => fns.findByTelegramId(context, telegramId),
     findByEmail: (email: string) => fns.findByEmail(context, email),
+    findByMcpApiKey: (apiKey: string) => fns.findByMcpApiKey(context, apiKey),
     update: (id: string, updates: UpdateUserRegistryEntry) => fns.update(context, id, updates),
     list: () => fns.list(context),
     delete: (id: string) => fns.delete(context, id),

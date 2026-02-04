@@ -177,7 +177,7 @@ pnpm dev:mcp-server
 pnpm test:mcp-server  # Interactive testing
 ```
 
-> **Note**: MCP requests require `X-User-ID` and `X-API-Key` headers. Generate the API key in User Profile → Security or from `pnpm dev:create-user` output. Don't expose the MCP server to untrusted networks.
+> **Note**: MCP requests require an API key via `Authorization: Bearer <key>` or `X-API-Key`. Generate the API key in User Profile → Security or from `pnpm dev:create-user` output. Don't expose the MCP server to untrusted networks.
 
 ### pi-coding-agent Integration
 

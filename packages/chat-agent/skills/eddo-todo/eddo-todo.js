@@ -11,10 +11,9 @@ import { basename } from 'path';
 const MCP_URL = process.env.EDDO_MCP_URL || 'http://localhost:3001/mcp';
 const MCP_API_KEY = process.env.EDDO_MCP_API_KEY;
 
-// User credentials for eddo_pi_agent (from CLAUDE.md)
+// API-key authentication (no user headers)
 const USER_HEADERS = {
-  'X-User-ID': 'eddo_pi_agent',
-  ...(MCP_API_KEY ? { 'X-API-Key': MCP_API_KEY } : {}),
+  ...(MCP_API_KEY ? { Authorization: `Bearer ${MCP_API_KEY}` } : {}),
 };
 
 /**
@@ -829,7 +828,13 @@ async function cmdNext(client, args) {
   if (args.context) params.context = args.context;
 
   const response = await callTool(client, 'listTodos', params);
-  const data = JSON.parse(response);
+  let data;
+  try {
+    data = JSON.parse(response);
+  } catch {
+    console.log(response);
+    return;
+  }
   const todos = data.data || data.todos || [];
 
   if (todos.length === 0) {

@@ -39,6 +39,13 @@ export const USER_REGISTRY_DESIGN_DOC = {
         }
       }`,
     },
+    by_mcp_api_key: {
+      map: `function(doc) {
+        if (doc.preferences && doc.preferences.mcpApiKey) {
+          emit(doc.preferences.mcpApiKey, null);
+        }
+      }`,
+    },
     active_users: {
       map: `function(doc) {
         if (doc.status === 'active') {

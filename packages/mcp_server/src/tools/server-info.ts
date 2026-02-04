@@ -92,7 +92,7 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
 - **Database**: CouchDB with per-user databases
 - **Data Model**: TodoAlpha3 schema
 - **Features**: Todo CRUD, time tracking, repeating tasks, GTD contexts
-- **Authentication**: Per-request authentication via X-User-ID, X-Database-Name, X-Telegram-ID, X-API-Key headers
+- **Authentication**: Per-request authentication via Authorization: Bearer <api-key> or X-API-Key header
 - **Current User**: ${userId}
 - **Database**: ${dbName}`;
 }
@@ -126,11 +126,13 @@ function getExamplesSection(): string {
   return `# Usage Examples
 
 ## Authentication
-Pass user headers and API key to authenticate:
+Pass API key to authenticate:
 curl \
-  -H "X-User-ID: your-username" \
-  -H "X-Database-Name: your-db-name" \
-  -H "X-Telegram-ID: your-telegram-id" \
+  -H "Authorization: Bearer your-api-key-here" \
+  http://localhost:3001/mcp
+
+# Or use X-API-Key
+curl \
   -H "X-API-Key: your-api-key-here" \
   http://localhost:3001/mcp
 

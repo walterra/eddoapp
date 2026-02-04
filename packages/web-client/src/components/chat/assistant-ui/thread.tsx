@@ -144,7 +144,7 @@ const ReasoningBlock: FC = () => {
   return (
     <div className="my-2 rounded border-l-4 border-purple-500 bg-purple-50 p-3 text-sm dark:bg-purple-900/20">
       <div className="mb-1 font-medium text-purple-700 dark:text-purple-300">Thinking...</div>
-      <MessagePrimitive.Content />
+      <MarkdownText />
     </div>
   );
 };

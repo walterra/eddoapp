@@ -122,6 +122,7 @@ export async function prepareAndSpawnContainer(
   const { workspacePath, sessionDir } = await prepareDirectories(session, sessionId);
   const userPrefs = await getUserPrefsForContainer(ctx, username);
   await createAuthJson(sessionDir, userPrefs.aiProviderKeys);
+  const piAuthFile = join(sessionDir, '.pi', 'agent', 'auth.json');
 
   const containerEnv = buildContainerEnv(userPrefs.githubToken, userPrefs.mcpApiKey);
   const mainGitDir = session.repository
@@ -136,7 +137,7 @@ export async function prepareAndSpawnContainer(
       workspacePath,
       sessionDir,
       mainGitDir,
-      piConfigDir: join(sessionDir, '.pi', 'agent'),
+      piAuthFile,
       env: containerEnv,
     },
     onEvent,
