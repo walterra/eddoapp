@@ -31,6 +31,7 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences.githubLastSync).toBeUndefined();
       expect(preferences.githubSyncStartedAt).toBeUndefined();
       expect(preferences.mcpApiKey).toBeNull();
+      expect(preferences.mcpApiKeySetAt).toBeUndefined();
     });
 
     it('should allow GitHub sync configuration', () => {

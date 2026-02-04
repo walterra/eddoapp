@@ -173,6 +173,7 @@ async function createRegistryUser(
   userRegistry: UserRegistry,
   passwordHash: string,
   mcpApiKey: string,
+  mcpApiKeySetAt: string,
 ): Promise<UserRecord> {
   return userRegistry.create({
     username: DEFAULT_USERNAME,
@@ -185,7 +186,7 @@ async function createRegistryUser(
     permissions: ['read', 'write'],
     status: 'active',
     version: 'alpha2',
-    preferences: { ...createDefaultUserPreferences(), mcpApiKey },
+    preferences: { ...createDefaultUserPreferences(), mcpApiKey, mcpApiKeySetAt },
   });
 }
 
@@ -196,7 +197,7 @@ function logSuccess(password: string, mcpApiKey: string): void {
     chalk.gray(`  Password: ${password === DEFAULT_PASSWORD ? '(default)' : '(custom)'}`),
   );
   console.log(chalk.gray(`  MCP API Key: ${mcpApiKey}`));
-  console.log(chalk.gray(`  Used by: eddo-todo skill (X-User-ID + X-API-Key headers)\n`));
+  console.log(chalk.gray(`  Used by: eddo-todo skill (Authorization: Bearer header)\n`));
 }
 
 async function createDefaultUser(password: string): Promise<boolean> {
@@ -209,8 +210,9 @@ async function createDefaultUser(password: string): Promise<boolean> {
 
     const passwordHash = await hashPassword(password);
     const mcpApiKey = generateMcpApiKey();
+    const mcpApiKeySetAt = new Date().toISOString();
 
-    const user = await createRegistryUser(userRegistry, passwordHash, mcpApiKey);
+    const user = await createRegistryUser(userRegistry, passwordHash, mcpApiKey, mcpApiKeySetAt);
     console.log(chalk.green(`✓ User "${DEFAULT_USERNAME}" created (ID: ${user._id})`));
 
     console.log(chalk.blue('  Setting up user database...'));

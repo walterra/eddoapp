@@ -106,4 +106,5 @@ export const updatePreferencesSchema = z.object({
     })
     .optional(),
   mcpApiKey: z.string().nullable().optional(),
+  mcpApiKeySetAt: z.string().optional(),
 });

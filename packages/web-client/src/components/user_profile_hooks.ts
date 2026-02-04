@@ -87,6 +87,8 @@ interface FormHandlersConfig {
   setEditMode: (mode: boolean) => void;
   setFormError: (error: string) => void;
   setSuccess: (success: string | null) => void;
+  setGeneratedMcpApiKey: (key: string | null) => void;
+  setGeneratedMcpApiKeySetAt: (value: string | null) => void;
   clearError: () => void;
   actions: FormActions;
 }
@@ -311,6 +313,8 @@ export function useProfileActionHandlers(config: FormHandlersConfig) {
   const handleGenerateMcpApiKey = useMcpApiKeyHandler({
     setFormError: config.setFormError,
     setSuccess: config.setSuccess,
+    setGeneratedMcpApiKey: config.setGeneratedMcpApiKey,
+    setGeneratedMcpApiKeySetAt: config.setGeneratedMcpApiKeySetAt,
     updatePreferences: config.actions.updatePreferences,
   });
 

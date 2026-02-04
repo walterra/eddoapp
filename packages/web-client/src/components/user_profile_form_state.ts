@@ -65,6 +65,8 @@ export function useProfileFormStates(profile: ProfileData | null) {
   const [githubState, setGithubState] = useState<GithubFormState>(INITIAL_GITHUB_STATE);
   const [rssState, setRssState] = useState<RssFormState>(INITIAL_RSS_STATE);
   const [emailState, setEmailState] = useState<EmailFormState>(INITIAL_EMAIL_STATE);
+  const [generatedMcpApiKey, setGeneratedMcpApiKey] = useState<string | null>(null);
+  const [generatedMcpApiKeySetAt, setGeneratedMcpApiKeySetAt] = useState<string | null>(null);
 
   useFormInitialization(profile, {
     setFormState,
@@ -91,6 +93,10 @@ export function useProfileFormStates(profile: ProfileData | null) {
     setRssState,
     emailState,
     setEmailState,
+    generatedMcpApiKey,
+    setGeneratedMcpApiKey,
+    generatedMcpApiKeySetAt,
+    setGeneratedMcpApiKeySetAt,
     handlers: {
       form: useFormFieldHandlers(setFormState),
       prefs: usePreferencesFieldHandlers(setPreferencesState),

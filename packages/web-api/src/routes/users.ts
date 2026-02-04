@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { getEmailScheduler, getGithubScheduler, getRssScheduler } from '../index';
 import { logger, withSpan } from '../utils/logger';
 import {
+  createSafePreferences,
   createSafeProfile,
   extractUserFromToken,
   validateEmailUpdate,
@@ -228,7 +229,7 @@ usersApp.put('/preferences', async (c) => {
       updated_at: new Date().toISOString(),
     });
 
-    return c.json({ success: true, preferences: updatedUser.preferences });
+    return c.json({ success: true, preferences: createSafePreferences(updatedUser) });
   } catch (error) {
     logger.error({ error }, 'Preferences update error');
     if (error instanceof z.ZodError) return c.json({ error: 'Invalid preferences format' }, 400);
