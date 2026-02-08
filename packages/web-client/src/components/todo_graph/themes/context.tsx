@@ -51,6 +51,7 @@ const GraphThemeContext = createContext<GraphThemeContextValue | null>(null);
 interface GraphThemeProviderProps {
   children: ReactNode;
   initialThemeId?: string;
+  forcedThemeId?: string;
 }
 
 /** Hook for async theme loading */
@@ -98,14 +99,31 @@ const useThemeLoader = (themeId: string) => {
 export const GraphThemeProvider: FC<GraphThemeProviderProps> = ({
   children,
   initialThemeId = loadThemePreference(),
+  forcedThemeId,
 }) => {
-  const [themeId, setThemeIdState] = useState(initialThemeId);
-  const { theme, isLoading } = useThemeLoader(themeId);
+  const [themeId, setThemeIdState] = useState(forcedThemeId ?? initialThemeId);
+  const activeThemeId = forcedThemeId ?? themeId;
+  const { theme, isLoading } = useThemeLoader(activeThemeId);
 
-  const setThemeId = useCallback((id: string) => {
-    setThemeIdState(id);
-    saveThemePreference(id);
-  }, []);
+  useEffect(() => {
+    if (!forcedThemeId) {
+      return;
+    }
+
+    setThemeIdState(forcedThemeId);
+  }, [forcedThemeId]);
+
+  const setThemeId = useCallback(
+    (id: string) => {
+      if (forcedThemeId) {
+        return;
+      }
+
+      setThemeIdState(id);
+      saveThemePreference(id);
+    },
+    [forcedThemeId],
+  );
 
   const handlePreload = useCallback((id: string) => {
     preloadTheme(id);
@@ -113,7 +131,13 @@ export const GraphThemeProvider: FC<GraphThemeProviderProps> = ({
 
   return (
     <GraphThemeContext.Provider
-      value={{ theme, themeId, isLoading, setThemeId, preloadTheme: handlePreload }}
+      value={{
+        theme,
+        themeId: activeThemeId,
+        isLoading,
+        setThemeId,
+        preloadTheme: handlePreload,
+      }}
     >
       {children}
     </GraphThemeContext.Provider>

@@ -9,6 +9,7 @@ import { Spinner } from 'flowbite-react';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import './todo_graph.css';
 
+import { useElkLayout } from '../hooks/use_elk_layout';
 import { useForceLayout } from '../hooks/use_force_layout';
 import { useHighlightedTodoId } from '../hooks/use_highlight_context';
 import { useIsometricLayout } from '../hooks/use_isometric_layout';
@@ -37,6 +38,7 @@ interface TodoGraphContentProps {
   nodes: Node[];
   edges: Edge[];
   highlightedTodoId: string | null;
+  isDependencyMode: boolean;
 }
 
 interface LayoutOptions {
@@ -92,7 +94,8 @@ const ForceLayoutContent: FC<{
   edges: Edge[];
   options: LayoutOptions;
   highlightedTodoId: string | null;
-}> = ({ nodes, edges, options, highlightedTodoId }) => {
+  showThemeSelector: boolean;
+}> = ({ nodes, edges, options, highlightedTodoId, showThemeSelector }) => {
   const result = useForceLayout(nodes, edges, options);
 
   return (
@@ -101,6 +104,7 @@ const ForceLayoutContent: FC<{
       highlightedTodoId={highlightedTodoId}
       isLayouting={result.isLayouting}
       nodes={result.nodes}
+      showThemeSelector={showThemeSelector}
     />
   );
 };
@@ -111,7 +115,8 @@ const IsometricLayoutContent: FC<{
   edges: Edge[];
   options: LayoutOptions;
   highlightedTodoId: string | null;
-}> = ({ nodes, edges, options, highlightedTodoId }) => {
+  showThemeSelector: boolean;
+}> = ({ nodes, edges, options, highlightedTodoId, showThemeSelector }) => {
   const result = useIsometricLayout(nodes, edges, options);
 
   return (
@@ -122,6 +127,28 @@ const IsometricLayoutContent: FC<{
       nodes={result.nodes}
       originalNodes={nodes}
       roadNetwork={result.roadNetwork}
+      showThemeSelector={showThemeSelector}
+    />
+  );
+};
+
+/** Hierarchical ELK layout content */
+const ElkLayoutContent: FC<{
+  nodes: Node[];
+  edges: Edge[];
+  options: LayoutOptions;
+  highlightedTodoId: string | null;
+  showThemeSelector: boolean;
+}> = ({ nodes, edges, options, highlightedTodoId, showThemeSelector }) => {
+  const result = useElkLayout(nodes, edges, options);
+
+  return (
+    <GraphRenderer
+      edges={result.edges}
+      highlightedTodoId={highlightedTodoId}
+      isLayouting={result.isLayouting}
+      nodes={result.nodes}
+      showThemeSelector={showThemeSelector}
     />
   );
 };
@@ -131,6 +158,7 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
   nodes: initialNodes,
   edges: initialEdges,
   highlightedTodoId,
+  isDependencyMode,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
@@ -154,7 +182,12 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
   }, []);
 
   const layoutOptions = useMemo(() => dimensions ?? { width: 1600, height: 800 }, [dimensions]);
-  const LayoutContent = theme?.layout === 'isometric' ? IsometricLayoutContent : ForceLayoutContent;
+  const LayoutContent =
+    theme?.layout === 'isometric'
+      ? IsometricLayoutContent
+      : theme?.layout === 'elk'
+        ? ElkLayoutContent
+        : ForceLayoutContent;
 
   return (
     <div className="h-[calc(100vh-200px)] w-full" ref={containerRef}>
@@ -166,6 +199,7 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
           highlightedTodoId={highlightedTodoId}
           nodes={initialNodes}
           options={layoutOptions}
+          showThemeSelector={!isDependencyMode}
         />
       ) : (
         <div className="flex h-full items-center justify-center">
@@ -224,6 +258,7 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
   }
 
   const emptyDescription = getEmptyDescription(props.dependencyRootTodoId, data.hasActiveFilters);
+  const forcedThemeId = props.dependencyRootTodoId ? 'dependency_canvas' : undefined;
 
   return (
     <div className="bg-neutral-50 dark:bg-neutral-800">
@@ -236,11 +271,12 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
       {data.hasNoTodos ? (
         <EmptyState description={emptyDescription} title="No todos found" />
       ) : (
-        <GraphThemeProvider>
+        <GraphThemeProvider forcedThemeId={forcedThemeId}>
           <ReactFlowProvider>
             <TodoGraphContent
               edges={data.edges}
               highlightedTodoId={highlightedTodoId}
+              isDependencyMode={Boolean(props.dependencyRootTodoId)}
               nodes={data.nodes}
             />
           </ReactFlowProvider>

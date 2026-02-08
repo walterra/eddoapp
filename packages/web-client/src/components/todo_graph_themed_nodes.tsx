@@ -32,6 +32,24 @@ const CenteredHandles: FC = () => (
   </>
 );
 
+/** Side handles for dependency canvas edges */
+const SideHandles: FC = () => (
+  <>
+    <Handle
+      className="!top-1/2 !right-0 !h-1 !min-h-0 !w-1 !min-w-0 !translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+      id="center"
+      position={Position.Right}
+      type="source"
+    />
+    <Handle
+      className="!top-1/2 !left-0 !h-1 !min-h-0 !w-1 !min-w-0 !-translate-x-1/2 !-translate-y-1/2 !border-0 !bg-transparent"
+      id="center"
+      position={Position.Left}
+      type="target"
+    />
+  </>
+);
+
 /** Props from React Flow */
 interface ReactFlowNodeProps<T> {
   data: T;
@@ -64,12 +82,13 @@ export const ThemedTodoNode: FC<ReactFlowNodeProps<TodoNodeData>> = ({ data }) =
   const theme = useCurrentTheme();
   const { openTodo } = useTodoFlyoutContext();
   const handleClick = useCallback(() => openTodo(data.todo), [openTodo, data.todo]);
+  const Handles = theme.id === 'dependency_canvas' ? SideHandles : CenteredHandles;
 
   return (
     <div className="group relative">
       <theme.nodes.TodoNode data={data} onClick={handleClick} />
       {data.showActions ? <ActionableTodoMenu todo={data.todo} /> : null}
-      <CenteredHandles />
+      <Handles />
     </div>
   );
 };

@@ -13,6 +13,8 @@ import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
 export interface TodoNodeData {
   todo: Todo;
   size: number;
+  childCount?: number;
+  blockedByCount?: number;
   isHighlighted?: boolean;
   showActions?: boolean;
 }

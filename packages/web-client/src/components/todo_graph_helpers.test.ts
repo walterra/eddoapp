@@ -75,6 +75,29 @@ describe('createAllNodes', () => {
       expect(longSize).toBeGreaterThan(shortSize);
     });
 
+    it('includes dependency summary counts in todo node data', () => {
+      const todos = [
+        createMockTodo({ _id: 'parent', title: 'Parent' }),
+        createMockTodo({ _id: 'child', parentId: 'parent', blockedBy: ['parent'] }),
+      ];
+
+      const nodes = createAllNodes(todos, []);
+
+      const parentNode = nodes.find((n) => n.id === 'parent');
+      const childNode = nodes.find((n) => n.id === 'child');
+      const parentData = parentNode?.data as
+        | { childCount?: number; blockedByCount?: number }
+        | undefined;
+      const childData = childNode?.data as
+        | { childCount?: number; blockedByCount?: number }
+        | undefined;
+
+      expect(parentData?.childCount).toBe(1);
+      expect(parentData?.blockedByCount).toBe(0);
+      expect(childData?.childCount).toBe(0);
+      expect(childData?.blockedByCount).toBe(1);
+    });
+
     it('assigns larger size to todos with more children', () => {
       // Parent and standalone have same content length, but parent has children
       const todos = [

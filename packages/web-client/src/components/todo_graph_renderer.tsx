@@ -68,6 +68,8 @@ export interface GraphRendererProps {
   roadNetwork?: RoadNetworkData | null;
   /** Original nodes with fresh data (for walking character messages) */
   originalNodes?: Node[];
+  /** Whether to display theme selector dropdown */
+  showThemeSelector?: boolean;
 }
 
 /** Custom hook for managing node state and highlighting */
@@ -86,15 +88,15 @@ const useNodeState = (layoutedNodes: Node[], highlightedTodoId: string | null) =
 };
 
 /** Custom hook for auto-fitting view after layout */
-const useFitViewEffect = (layoutedNodes: Node[], isLayouting: boolean) => {
+const useFitViewEffect = (layoutedNodes: Node[], isLayouting: boolean, padding: number) => {
   const { fitView } = useReactFlow();
 
   useEffect(() => {
     if (!isLayouting && layoutedNodes.length > 0) {
-      const timer = setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 50);
+      const timer = setTimeout(() => fitView({ padding, duration: 500 }), 50);
       return () => clearTimeout(timer);
     }
-  }, [layoutedNodes, isLayouting, fitView]);
+  }, [layoutedNodes, isLayouting, fitView, padding]);
 };
 
 /** Inner component that can access useReactFlow and theme */
@@ -105,11 +107,13 @@ export const GraphRenderer: FC<GraphRendererProps> = ({
   highlightedTodoId,
   roadNetwork,
   originalNodes,
+  showThemeSelector = true,
 }) => {
   const theme = useCurrentTheme();
   const { nodes, onNodesChange } = useNodeState(layoutedNodes, highlightedTodoId);
+  const fitPadding = theme.id === 'dependency_canvas' ? 0.04 : 0.1;
 
-  useFitViewEffect(layoutedNodes, isLayouting);
+  useFitViewEffect(layoutedNodes, isLayouting, fitPadding);
 
   // Memoize background component to avoid re-renders
   const BackgroundComponent = useMemo(() => theme.Background, [theme]);
@@ -144,7 +148,7 @@ export const GraphRenderer: FC<GraphRendererProps> = ({
       )}
       <Controls className={theme.controlsClassName} />
       <ThemedGraphLegend />
-      <ThemeSelector />
+      {showThemeSelector ? <ThemeSelector /> : null}
     </ReactFlow>
   );
 };

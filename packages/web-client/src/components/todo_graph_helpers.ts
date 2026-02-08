@@ -84,7 +84,12 @@ export function todosToNodes(todos: Todo[]): Node[] {
       id: todo._id,
       type: 'todoNode',
       position: { x: (index % 5) * 280, y: Math.floor(index / 5) * 120 },
-      data: { todo, size },
+      data: {
+        todo,
+        size,
+        childCount: children,
+        blockedByCount: todo.blockedBy?.length ?? 0,
+      },
     };
   });
 }

@@ -2,6 +2,7 @@
  * Type definitions for the graph theming system.
  * Themes affect visual appearance only, not data or layout.
  */
+import { type Position } from '@xyflow/react';
 import { type CSSProperties, type FC, type ReactNode } from 'react';
 
 import type { FileNodeData } from '../../todo_graph_file_node';
@@ -40,10 +41,14 @@ export interface ThemedUserNodeProps {
 /** Props for themed edge component */
 export interface ThemedEdgeProps {
   id: string;
+  source?: string;
+  target?: string;
   sourceX: number;
   sourceY: number;
   targetX: number;
   targetY: number;
+  sourcePosition?: Position;
+  targetPosition?: Position;
   style?: CSSProperties;
   markerEnd?: string;
 }
@@ -70,7 +75,7 @@ export interface LegendEdgeItem {
 }
 
 /** Layout algorithm type */
-export type LayoutAlgorithm = 'force' | 'isometric';
+export type LayoutAlgorithm = 'force' | 'isometric' | 'elk';
 
 /** Whether nodes can be dragged */
 export type DraggableMode = boolean;
