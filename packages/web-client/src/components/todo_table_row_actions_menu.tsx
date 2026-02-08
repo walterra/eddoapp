@@ -14,6 +14,7 @@ interface RowActionsMenuProps {
   onOpenEdit: () => void;
   onToggleTimeTracking: () => void;
   onDelete: () => void;
+  onShowDependencies?: () => void;
   timeTrackingLabel: string;
 }
 
@@ -73,6 +74,7 @@ interface RowActionsMenuContentProps {
   onToggleTimeTracking: () => void;
   onCreateSubtask: () => void;
   onDelete: () => void;
+  onShowDependencies?: () => void;
   timeTrackingLabel: string;
   copied: boolean;
   onCopyId: () => void;
@@ -85,6 +87,7 @@ const RowActionsMenuContent: FC<RowActionsMenuContentProps> = ({
   onToggleTimeTracking,
   onCreateSubtask,
   onDelete,
+  onShowDependencies,
   timeTrackingLabel,
   copied,
   onCopyId,
@@ -101,6 +104,11 @@ const RowActionsMenuContent: FC<RowActionsMenuContentProps> = ({
     <button className={DROPDOWN_ITEM} onClick={onCreateSubtask} type="button">
       Create subtask
     </button>
+    {onShowDependencies && (
+      <button className={DROPDOWN_ITEM} onClick={onShowDependencies} type="button">
+        Show dependencies
+      </button>
+    )}
     <button className={DROPDOWN_ITEM} onClick={onCopyId} type="button">
       {copied ? 'Copied ID' : 'Copy ID'}
     </button>
@@ -125,8 +133,62 @@ interface RowActionsMenuOverlayProps {
   onCancelDelete: () => void;
   onConfirmDelete: () => void;
   onDeleteRequest: () => void;
+  onShowDependencies?: () => void;
   timeTrackingLabel: string;
 }
+
+const createSubtaskHandler = (
+  onShowSubtaskPopover: (value: boolean) => void,
+  toggleMenu: () => void,
+): (() => void) => {
+  return () => {
+    onShowSubtaskPopover(true);
+    toggleMenu();
+  };
+};
+
+const createShowDependenciesHandler = (
+  onShowDependencies: (() => void) | undefined,
+  toggleMenu: () => void,
+): (() => void) | undefined => {
+  if (!onShowDependencies) {
+    return undefined;
+  }
+
+  return () => {
+    onShowDependencies();
+    toggleMenu();
+  };
+};
+
+const FloatingMenuPortal: FC<{
+  menuState: RowActionsMenuState;
+  onDeleteRequest: () => void;
+  onShowSubtaskPopover: (value: boolean) => void;
+  onShowDependencies?: () => void;
+  timeTrackingLabel: string;
+}> = ({
+  menuState,
+  onDeleteRequest,
+  onShowSubtaskPopover,
+  onShowDependencies,
+  timeTrackingLabel,
+}) =>
+  createPortal(
+    <RowActionsMenuContent
+      copied={menuState.copied}
+      floatingStyles={menuState.floatingStyles}
+      onCopyId={menuState.handleCopyId}
+      onCreateSubtask={createSubtaskHandler(onShowSubtaskPopover, menuState.toggleMenu)}
+      onDelete={onDeleteRequest}
+      onOpenEdit={menuState.handleOpenEdit}
+      onShowDependencies={createShowDependenciesHandler(onShowDependencies, menuState.toggleMenu)}
+      onToggleTimeTracking={menuState.handleToggleTimeTracking}
+      setRefs={menuState.setRefs}
+      timeTrackingLabel={timeTrackingLabel}
+    />,
+    document.body,
+  );
 
 const RowActionsMenuOverlay: FC<RowActionsMenuOverlayProps> = ({
   todo,
@@ -137,10 +199,11 @@ const RowActionsMenuOverlay: FC<RowActionsMenuOverlayProps> = ({
   onCancelDelete,
   onConfirmDelete,
   onDeleteRequest,
+  onShowDependencies,
   timeTrackingLabel,
 }) => (
   <>
-    {showSubtaskPopover && (
+    {showSubtaskPopover ? (
       <AddTodoPopover
         enableKeyboardShortcut={false}
         hideTrigger={true}
@@ -149,32 +212,23 @@ const RowActionsMenuOverlay: FC<RowActionsMenuOverlayProps> = ({
         parentTodo={todo}
         referenceElement={menuState.menuButtonRef.current}
       />
-    )}
-    {showDeleteConfirm && (
+    ) : null}
+    {showDeleteConfirm ? (
       <DeleteConfirmDialog
         onCancel={onCancelDelete}
         onConfirm={onConfirmDelete}
         todoTitle={todo.title}
       />
-    )}
-    {menuState.isOpen &&
-      createPortal(
-        <RowActionsMenuContent
-          copied={menuState.copied}
-          floatingStyles={menuState.floatingStyles}
-          onCopyId={menuState.handleCopyId}
-          onCreateSubtask={() => {
-            onShowSubtaskPopover(true);
-            menuState.toggleMenu();
-          }}
-          onDelete={onDeleteRequest}
-          onOpenEdit={menuState.handleOpenEdit}
-          onToggleTimeTracking={menuState.handleToggleTimeTracking}
-          setRefs={menuState.setRefs}
-          timeTrackingLabel={timeTrackingLabel}
-        />,
-        document.body,
-      )}
+    ) : null}
+    {menuState.isOpen ? (
+      <FloatingMenuPortal
+        menuState={menuState}
+        onDeleteRequest={onDeleteRequest}
+        onShowDependencies={onShowDependencies}
+        onShowSubtaskPopover={onShowSubtaskPopover}
+        timeTrackingLabel={timeTrackingLabel}
+      />
+    ) : null}
   </>
 );
 
@@ -183,6 +237,7 @@ export const RowActionsMenu: FC<RowActionsMenuProps> = ({
   onOpenEdit,
   onToggleTimeTracking,
   onDelete,
+  onShowDependencies,
   timeTrackingLabel,
 }) => {
   const menuState = useRowActionsMenuState(todo._id, onToggleTimeTracking, onOpenEdit);
@@ -212,6 +267,7 @@ export const RowActionsMenu: FC<RowActionsMenuProps> = ({
         onCancelDelete={handleCancelDelete}
         onConfirmDelete={handleConfirmDelete}
         onDeleteRequest={handleDelete}
+        onShowDependencies={onShowDependencies}
         onShowSubtaskPopover={setShowSubtaskPopover}
         showDeleteConfirm={showDeleteConfirm}
         showSubtaskPopover={showSubtaskPopover}

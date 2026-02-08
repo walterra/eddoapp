@@ -11,6 +11,8 @@ import type { FileNodeData } from './todo_graph_file_node';
 import type { MetadataNodeData } from './todo_graph_metadata_node';
 import type { TodoNodeData } from './todo_graph_node';
 import type { UserNodeData } from './todo_graph_user_node';
+import { useRowState } from './todo_table_row_actions';
+import { RowActionsMenu } from './todo_table_row_actions_menu';
 
 /** Centered handles for node connections */
 const CenteredHandles: FC = () => (
@@ -35,6 +37,28 @@ interface ReactFlowNodeProps<T> {
   data: T;
 }
 
+interface ActionableTodoMenuProps {
+  todo: TodoNodeData['todo'];
+}
+
+/** Action menu shown on focused dependency graph nodes */
+const ActionableTodoMenu: FC<ActionableTodoMenuProps> = ({ todo }) => {
+  const { openTodoInEdit } = useTodoFlyoutContext();
+  const rowState = useRowState(todo, 0);
+
+  return (
+    <div className="nodrag nopan pointer-events-auto absolute -top-2 -right-2 opacity-0 transition-opacity group-hover:opacity-100">
+      <RowActionsMenu
+        onDelete={rowState.handleDelete}
+        onOpenEdit={() => openTodoInEdit(todo)}
+        onToggleTimeTracking={rowState.handleToggleTimeTracking}
+        timeTrackingLabel={rowState.thisButtonActive ? 'Stop time tracking' : 'Start time tracking'}
+        todo={todo}
+      />
+    </div>
+  );
+};
+
 /** Themed todo node - wraps theme's TodoNode and adds React Flow handles */
 export const ThemedTodoNode: FC<ReactFlowNodeProps<TodoNodeData>> = ({ data }) => {
   const theme = useCurrentTheme();
@@ -42,8 +66,9 @@ export const ThemedTodoNode: FC<ReactFlowNodeProps<TodoNodeData>> = ({ data }) =
   const handleClick = useCallback(() => openTodo(data.todo), [openTodo, data.todo]);
 
   return (
-    <div className="relative">
+    <div className="group relative">
       <theme.nodes.TodoNode data={data} onClick={handleClick} />
+      {data.showActions ? <ActionableTodoMenu todo={data.todo} /> : null}
       <CenteredHandles />
     </div>
   );

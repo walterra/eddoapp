@@ -14,6 +14,7 @@ export interface TodoNodeData {
   todo: Todo;
   size: number;
   isHighlighted?: boolean;
+  showActions?: boolean;
 }
 
 /** Build tooltip text with full details */

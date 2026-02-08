@@ -76,6 +76,7 @@ export interface RowActionsProps {
   todo: Todo;
   todoDuration: number;
   timeTrackingActive: boolean;
+  onShowDependencies?: (todoId: string) => void;
 }
 
 /** Row action buttons (time tracking, details) */
@@ -83,6 +84,7 @@ export const RowActions: FC<RowActionsProps> = ({
   todo,
   todoDuration,
   timeTrackingActive: _timeTrackingActive,
+  onShowDependencies,
 }) => {
   const state = useRowState(todo, todoDuration);
   const { openTodoInEdit } = useTodoFlyoutContext();
@@ -109,6 +111,7 @@ export const RowActions: FC<RowActionsProps> = ({
         <RowActionsMenu
           onDelete={state.handleDelete}
           onOpenEdit={() => openTodoInEdit(todo)}
+          onShowDependencies={onShowDependencies ? () => onShowDependencies(todo._id) : undefined}
           onToggleTimeTracking={state.handleToggleTimeTracking}
           timeTrackingLabel={state.thisButtonActive ? 'Stop time tracking' : 'Start time tracking'}
           todo={todo}

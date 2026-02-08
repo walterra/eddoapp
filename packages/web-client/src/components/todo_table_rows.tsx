@@ -23,6 +23,7 @@ export interface ExpandableRowsProps {
   columns: TodoColumnDef[];
   containerRef: React.RefObject<HTMLDivElement>;
   useVirtualization: boolean;
+  onShowDependencies?: (todoId: string) => void;
 }
 
 /** Expandable rows with nested children support */
@@ -35,6 +36,7 @@ export const ExpandableRows: FC<ExpandableRowsProps> = ({
   toggleExpanded,
   childrenByParent,
   columns,
+  onShowDependencies,
 }) => (
   <tbody className="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
     {rows.map((row) => (
@@ -44,6 +46,7 @@ export const ExpandableRows: FC<ExpandableRowsProps> = ({
         depth={0}
         expandedIds={expandedIds}
         key={row.id}
+        onShowDependencies={onShowDependencies}
         row={row}
         subtaskCounts={subtaskCounts}
         timeTrackingActive={timeTrackingActive}
@@ -64,6 +67,7 @@ interface ExpandableRowProps {
   childrenByParent: Map<string, Todo[]>;
   columns: TodoColumnDef[];
   depth: number;
+  onShowDependencies?: (todoId: string) => void;
 }
 
 /** Single expandable row with its children */
@@ -77,6 +81,7 @@ const ExpandableRow: FC<ExpandableRowProps> = ({
   childrenByParent,
   columns,
   depth,
+  onShowDependencies,
 }) => {
   const todo = row.original.todo;
   const duration = todoDurations.get(todo._id) ?? 0;
@@ -92,6 +97,7 @@ const ExpandableRow: FC<ExpandableRowProps> = ({
         duration={duration}
         hasChildren={!!hasChildren}
         isExpanded={isExpanded}
+        onShowDependencies={onShowDependencies}
         row={row}
         timeTrackingActive={timeTrackingActive}
         todo={todo}
@@ -105,6 +111,7 @@ const ExpandableRow: FC<ExpandableRowProps> = ({
             depth={depth + 1}
             expandedIds={expandedIds}
             key={child._id}
+            onShowDependencies={onShowDependencies}
             subtaskCounts={subtaskCounts}
             timeTrackingActive={timeTrackingActive}
             todo={child}
@@ -125,6 +132,7 @@ interface ParentRowCellsProps {
   timeTrackingActive: boolean;
   toggleExpanded: (todoId: string) => void;
   depth: number;
+  onShowDependencies?: (todoId: string) => void;
 }
 
 /** Render cells for a parent row */
@@ -137,6 +145,7 @@ const ParentRowCells: FC<ParentRowCellsProps> = ({
   timeTrackingActive,
   toggleExpanded,
   depth,
+  onShowDependencies,
 }) => (
   <tr
     className={`border-b border-neutral-200 dark:border-neutral-700 ${
@@ -167,7 +176,12 @@ const ParentRowCells: FC<ParentRowCellsProps> = ({
         )}
       </td>
     ))}
-    <RowActions timeTrackingActive={timeTrackingActive} todo={todo} todoDuration={duration} />
+    <RowActions
+      onShowDependencies={onShowDependencies}
+      timeTrackingActive={timeTrackingActive}
+      todo={todo}
+      todoDuration={duration}
+    />
   </tr>
 );
 

@@ -395,12 +395,18 @@ export function createAllNodes(todos: Todo[], auditEntries: AuditLogAlpha1[] = [
   return [...metadataNodes, ...fileNodes, ...userNodes, ...todoNodes];
 }
 
-/** Combine all edges (parent/child + blockedBy + metadata + files + user) */
-export function createAllEdges(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Edge[] {
+/** Combine dependency edges only (parent/child + blockedBy) */
+export function createDependencyEdges(todos: Todo[]): Edge[] {
   const parentChildEdges = createParentChildEdges(todos);
   const blockedByEdges = createBlockedByEdges(todos);
+  return [...parentChildEdges, ...blockedByEdges];
+}
+
+/** Combine all edges (parent/child + blockedBy + metadata + files + user) */
+export function createAllEdges(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Edge[] {
+  const dependencyEdges = createDependencyEdges(todos);
   const metadataEdges = createMetadataEdges(todos);
   const fileEdges = createFileEdges(todos);
   const userEdges = createUserEdges(todos, auditEntries);
-  return [...parentChildEdges, ...blockedByEdges, ...metadataEdges, ...fileEdges, ...userEdges];
+  return [...dependencyEdges, ...metadataEdges, ...fileEdges, ...userEdges];
 }
