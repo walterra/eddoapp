@@ -386,8 +386,8 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0
       undici:
-        specifier: ^7.16.0
-        version: 7.16.0
+        specifier: ^7.19.2
+        version: 7.21.0
       zod:
         specifier: ^3.25.67
         version: 3.25.76
@@ -515,8 +515,8 @@ importers:
         specifier: ^17.0.1
         version: 17.0.1
       undici:
-        specifier: ^7.16.0
-        version: 7.16.0
+        specifier: ^7.19.2
+        version: 7.21.0
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
@@ -600,8 +600,8 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0
       undici:
-        specifier: ^7.16.0
-        version: 7.16.0
+        specifier: ^7.19.2
+        version: 7.21.0
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -8423,16 +8423,12 @@ packages:
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
-  undici@6.22.0:
-    resolution: {integrity: sha512-hU/10obOIu62MGYjdskASR3CUAiYaFTtC9Pa6vHyf//mAipSvSQg6od2CnJswq7fvzNS3zJhxoRkgNVaHurWKw==}
+  undici@6.23.0:
+    resolution: {integrity: sha512-VfQPToRA5FZs/qJxLIinmU59u0r7LXqoJkCzinq3ckNJp3vKEh7jTWN589YQ5+aoAC/TGRLyJLCPKcLQbM8r9g==}
     engines: {node: '>=18.17'}
 
-  undici@7.16.0:
-    resolution: {integrity: sha512-QEg3HPMll0o3t2ourKwOeUAZ159Kn9mx5pnzHRQO8+Wixmh88YdZRiIwat0iNzNNXn0yoEtXJqFpyW7eM8BV7g==}
-    engines: {node: '>=20.18.1'}
-
-  undici@7.20.0:
-    resolution: {integrity: sha512-MJZrkjyd7DeC+uPZh+5/YaMDxFiiEEaDgbUSVMXayofAkDWF1088CDo+2RPg7B1BuS1qf1vgNE7xqwPxE0DuSQ==}
+  undici@7.21.0:
+    resolution: {integrity: sha512-Hn2tCQpoDt1wv23a68Ctc8Cr/BHpUSfaPYrkajTXOS9IKpxVRx/X5m1K2YkbK2ipgZgxXSgsUinl3x+2YdSSfg==}
     engines: {node: '>=20.18.1'}
 
   undici@7.21.0:
@@ -9604,7 +9600,7 @@ snapshots:
   '@elastic/opamp-client-node@0.4.0':
     dependencies:
       '@bufbuild/protobuf': 2.10.2
-      undici: 6.22.0
+      undici: 6.23.0
       uuid: 11.1.0
 
   '@elastic/opentelemetry-node@1.7.0(@opentelemetry/api@1.9.0)':
@@ -14079,7 +14075,7 @@ snapshots:
       fuse.js: 7.1.0
       mcp-proxy: 5.12.5
       strict-event-emitter-types: 2.0.0
-      undici: 7.20.0
+      undici: 7.21.0
       uri-templates: 0.2.0
       xsschema: 0.4.0-beta.5(zod-to-json-schema@3.25.1(zod@3.25.76))(zod@4.3.6)
       yargs: 18.0.0
@@ -17459,7 +17455,7 @@ snapshots:
       ssh-remote-port-forward: 1.0.4
       tar-fs: 3.1.1
       tmp: 0.2.5
-      undici: 7.16.0
+      undici: 7.21.0
     transitivePeerDependencies:
       - bare-abort-controller
       - bare-buffer
@@ -17482,7 +17478,7 @@ snapshots:
       ssh-remote-port-forward: 1.0.4
       tar-fs: 3.1.1
       tmp: 0.2.5
-      undici: 7.20.0
+      undici: 7.21.0
     transitivePeerDependencies:
       - bare-abort-controller
       - bare-buffer
@@ -17728,11 +17724,9 @@ snapshots:
 
   undici-types@7.16.0: {}
 
-  undici@6.22.0: {}
+  undici@6.23.0: {}
 
-  undici@7.16.0: {}
-
-  undici@7.20.0: {}
+  undici@7.21.0: {}
 
   undici@7.21.0: {}
 
