@@ -31,6 +31,7 @@ import { auditLogRoutes } from './routes/audit-log';
 import { authRoutes } from './routes/auth';
 import { dbProxyRoutes } from './routes/db-proxy';
 import { emailRoutes } from './routes/email';
+import { graphvizLayoutRoutes } from './routes/graphviz-layout';
 import { rssRoutes } from './routes/rss';
 import { searchRoutes } from './routes/search';
 import { telemetryRoutes } from './routes/telemetry';
@@ -89,6 +90,7 @@ app.route('/api/users', userRoutes);
 app.route('/api/rss', rssRoutes);
 app.route('/api/audit-log', auditLogRoutes);
 app.route('/api/search', searchRoutes);
+app.route('/api/graphviz', graphvizLayoutRoutes);
 
 // Chat service and routes
 const env = createEnv();

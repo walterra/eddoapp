@@ -9,7 +9,10 @@ import { defineConfig, loadEnv } from 'vite';
 const manualChunks = {
   'vendor-react': ['react', 'react-dom'],
   'vendor-pouchdb': ['pouchdb-browser', 'pouchdb-find'],
-  'vendor-ui': ['flowbite', 'flowbite-react', '@floating-ui/react', 'lucide-react'],
+  'vendor-ui': ['flowbite-react'],
+  'vendor-flowbite': ['flowbite'],
+  'vendor-floating': ['@floating-ui/react'],
+  'vendor-icons': ['lucide-react'],
   'vendor-graph': ['@xyflow/react', 'd3-force', 'd3-array'],
   'vendor-markdown': ['react-markdown', 'remark-gfm'],
   'vendor-query': ['@tanstack/react-query', '@tanstack/react-table', '@tanstack/react-virtual'],

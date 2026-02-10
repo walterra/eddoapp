@@ -1,8 +1,7 @@
 /**
- * Hook for Graphviz (viz-js) layouts.
- * Uses DOT constraints to spread dependency levels by blocked-by relationships.
+ * Hook for Graphviz layouts.
+ * Sends DOT to web-api for server-side Graphviz rendering and maps returned positions.
  */
-import type { Viz } from '@viz-js/viz';
 import type { Edge, Node } from '@xyflow/react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -15,8 +14,7 @@ import { applyGraphvizColumnStaggering } from './graphviz_stagger';
 
 const DEFAULT_WIDTH = 1600;
 const DEFAULT_HEIGHT = 800;
-
-let vizInstancePromise: Promise<Viz> | null = null;
+const GRAPHVIZ_LAYOUT_API_URL = '/api/graphviz/layout';
 
 interface GraphvizLayoutOptions {
   width?: number;
@@ -38,13 +36,48 @@ interface ExecuteLayoutParams {
   rootNodeId: string | null;
 }
 
-/** Load and cache viz-js instance. */
-const getVizInstance = async (): Promise<Viz> => {
-  if (!vizInstancePromise) {
-    vizInstancePromise = import('@viz-js/viz').then((module) => module.instance());
+interface GraphvizLayoutApiResponse {
+  layout: GraphvizLayoutResult;
+}
+
+/** Read auth token from localStorage. */
+const getAuthToken = (): string | null => {
+  const stored = localStorage.getItem('authToken');
+  if (!stored) {
+    return null;
   }
 
-  return vizInstancePromise;
+  try {
+    const parsed = JSON.parse(stored) as { token?: string };
+    return parsed.token ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/** Request Graphviz layout from web-api. */
+const executeGraphvizLayoutRequest = async (dot: string): Promise<GraphvizLayoutResult> => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(GRAPHVIZ_LAYOUT_API_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ dot }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}) as { error?: string });
+    throw new Error(errorData.error ?? `Graphviz layout failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as GraphvizLayoutApiResponse;
+  return data.layout;
 };
 
 /** Execute Graphviz layout and map output to React Flow node positions. */
@@ -56,11 +89,7 @@ const executeGraphvizLayout = async (params: ExecuteLayoutParams): Promise<Node[
     width: params.width,
     height: params.height,
   });
-  const viz = await getVizInstance();
-  const layout = viz.renderJSON(dotGraph, {
-    engine: 'dot',
-    yInvert: true,
-  }) as GraphvizLayoutResult;
+  const layout = await executeGraphvizLayoutRequest(dotGraph);
 
   const positionedNodes = mapGraphvizPositionsToNodes(params.initialNodes, layout);
   return applyGraphvizColumnStaggering(positionedNodes);

@@ -15,7 +15,6 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.18",
     "@types/d3-force": "^3.0.10",
-    "@viz-js/viz": "^3.24.0",
     "@xyflow/react": "^12.10.0",
     "browser-image-compression": "^2.0.2",
     "d3-array": "^3.0.3",
