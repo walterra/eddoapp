@@ -32,6 +32,7 @@ const getLayeredOptions = (
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.spacing.nodeNodeBetweenLayers': '100',
       'elk.spacing.nodeNode': '80',
+      'org.eclipse.elk.layered.wrapping.strategy': 'MULTI_EDGE',
     };
   }
 
