@@ -101,7 +101,7 @@ interface DisplayTodosParams {
   dependencyRootTodoId?: string | null;
 }
 
-/** Apply dependency focus if dependencyRootTodoId is provided */
+/** Apply dependency focus if dependencyRootTodoId is provided, bypassing status/context/tag filters */
 const useDisplayTodos = (params: DisplayTodosParams): Todo[] => {
   const { todos, selectedContexts, selectedStatus, selectedTags, dependencyRootTodoId } = params;
 
@@ -115,8 +115,8 @@ const useDisplayTodos = (params: DisplayTodosParams): Todo[] => {
       return filteredTodos;
     }
 
-    return selectDependencyTodos(filteredTodos, dependencyRootTodoId);
-  }, [filteredTodos, dependencyRootTodoId]);
+    return selectDependencyTodos(todos, dependencyRootTodoId);
+  }, [filteredTodos, todos, dependencyRootTodoId]);
 };
 
 /** Build graph nodes for full or dependency-focused mode */

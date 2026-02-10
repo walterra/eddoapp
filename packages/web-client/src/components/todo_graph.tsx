@@ -151,7 +151,7 @@ const getEmptyDescription = (
   hasActiveFilters: boolean,
 ): string => {
   if (dependencyRootTodoId) {
-    return 'No dependency graph found for this todo in the current filters.';
+    return 'No dependency graph found for this todo.';
   }
 
   if (hasActiveFilters) {

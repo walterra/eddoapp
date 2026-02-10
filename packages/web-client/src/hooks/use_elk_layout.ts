@@ -6,13 +6,13 @@ import type { Edge, Node } from '@xyflow/react';
 import ELK, { type ElkNode } from 'elkjs/lib/elk.bundled.js';
 import { useCallback, useEffect, useState } from 'react';
 
+import { getElkOptions, getNodeDimensions, type ElkLayoutAlgorithm } from './elk_layout_config';
+import { buildPrioritizedRadialTreeEdges } from './elk_radial_tree';
+
 const elk = new ELK();
 
 const DEFAULT_WIDTH = 1600;
 const DEFAULT_HEIGHT = 800;
-
-type ElkDirection = 'RIGHT' | 'DOWN';
-export type ElkLayoutAlgorithm = 'layered' | 'radial';
 
 interface ElkLayoutOptions {
   width?: number;
@@ -27,182 +27,152 @@ interface UseElkLayoutResult {
   isLayouting: boolean;
 }
 
-interface NodeDimensions {
-  width: number;
-  height: number;
-}
-
-interface TodoLayoutData {
-  showActions?: boolean;
-}
-
-/** Resolve layered direction from viewport aspect ratio */
-const getLayeredDirection = (width: number, height: number): ElkDirection =>
-  width / Math.max(height, 1) >= 1.45 ? 'DOWN' : 'RIGHT';
-
-/** Build ELK layered options */
-const getLayeredOptions = (width: number, height: number): Record<string, string> => {
-  const direction = getLayeredDirection(width, height);
-
-  if (direction === 'DOWN') {
-    return {
-      'elk.algorithm': 'layered',
-      'elk.direction': direction,
-      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
-      'elk.layered.spacing.edgeNodeBetweenLayers': '36',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '120',
-      'elk.spacing.nodeNode': '56',
-    };
+/** Resolve explicit dependency root node id without fallback */
+const resolveDependencyRootNodeId = (
+  nodes: Node[],
+  rootNodeId: string | null | undefined,
+): string | null => {
+  if (!rootNodeId) {
+    return null;
   }
 
-  return {
-    'elk.algorithm': 'layered',
-    'elk.direction': direction,
-    'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
-    'elk.layered.spacing.edgeNodeBetweenLayers': '42',
-    'elk.layered.spacing.nodeNodeBetweenLayers': '136',
-    'elk.spacing.nodeNode': '44',
-  };
+  return nodes.some((node) => node.id === rootNodeId) ? rootNodeId : null;
 };
 
-/** Build ELK radial options */
-const getRadialOptions = (): Record<string, string> => ({
-  'elk.algorithm': 'org.eclipse.elk.radial',
-  'org.eclipse.elk.radial.centerOnRoot': 'true',
-  'org.eclipse.elk.radial.radius': '220',
-  'org.eclipse.elk.radial.compactor': 'RADIAL_COMPACTION',
-});
+const PARENT_EDGE_ID_PREFIX = 'parent:';
 
-/** Build ELK options by algorithm */
-const getElkOptions = (
-  width: number,
-  height: number,
-  algorithm: ElkLayoutAlgorithm,
-): Record<string, string> =>
-  algorithm === 'radial' ? getRadialOptions() : getLayeredOptions(width, height);
+/** Check if edge is a parent-child relationship */
+const isParentEdge = (edge: Edge): boolean => edge.id.startsWith(PARENT_EDGE_ID_PREFIX);
 
-/** Identify dependency-mode todo nodes that render large cards */
-const isDependencyTodoNode = (node: Node): boolean => {
-  if (node.type !== 'todoNode') {
-    return false;
-  }
-
-  const data = node.data as TodoLayoutData | undefined;
-  return Boolean(data?.showActions);
-};
-
-/** Get layout dimensions for each node type */
-const getNodeDimensions = (node: Node): NodeDimensions => {
-  if (isDependencyTodoNode(node)) {
-    return { width: 248, height: 124 };
-  }
-
-  if (node.type === 'todoNode') {
-    return { width: 72, height: 72 };
-  }
-
-  if (node.type === 'metadataNode') {
-    return { width: 120, height: 52 };
-  }
-
-  if (node.type === 'userNode') {
-    return { width: 64, height: 64 };
-  }
-
-  if (node.type === 'fileNode') {
-    return { width: 56, height: 56 };
-  }
-
-  return { width: 80, height: 80 };
-};
-
-/** Resolve radial root node id */
-const resolveRootNodeId = (nodes: Node[], rootNodeId: string | null | undefined): string => {
-  if (rootNodeId && nodes.some((node) => node.id === rootNodeId)) {
-    return rootNodeId;
-  }
-
-  return nodes[0]?.id ?? '';
-};
-
-/** Build undirected adjacency map from edges */
-const buildAdjacencyMap = (edges: Edge[]): Map<string, Set<string>> => {
-  const adjacencyMap = new Map<string, Set<string>>();
+/** Build parent adjacency map */
+const buildParentAdjacencyMap = (edges: readonly Edge[]): Map<string, string[]> => {
+  const adjacencyMap = new Map<string, string[]>();
 
   for (const edge of edges) {
-    const sourceNeighbors = adjacencyMap.get(edge.source) ?? new Set<string>();
-    sourceNeighbors.add(edge.target);
-    adjacencyMap.set(edge.source, sourceNeighbors);
+    if (!isParentEdge(edge)) {
+      continue;
+    }
 
-    const targetNeighbors = adjacencyMap.get(edge.target) ?? new Set<string>();
-    targetNeighbors.add(edge.source);
-    adjacencyMap.set(edge.target, targetNeighbors);
+    const targets = adjacencyMap.get(edge.source) ?? [];
+    targets.push(edge.target);
+    adjacencyMap.set(edge.source, targets);
   }
 
   return adjacencyMap;
 };
 
-/** Build radial tree edges from root using BFS */
-const buildRadialTreeEdges = (nodes: Node[], edges: Edge[], rootNodeId: string): Edge[] => {
-  const adjacencyMap = buildAdjacencyMap(edges);
+/** Count descendants in parent-child hierarchy */
+const countDescendants = (rootNodeId: string, adjacencyMap: Map<string, string[]>): number => {
   const visited = new Set<string>([rootNodeId]);
   const queue = [rootNodeId];
-  const treeEdges: Edge[] = [];
+  let index = 0;
 
-  while (queue.length > 0) {
-    const currentNodeId = queue.shift();
-    if (!currentNodeId) {
-      continue;
-    }
+  while (index < queue.length) {
+    const nodeId = queue[index];
+    index += 1;
 
-    const neighbors = adjacencyMap.get(currentNodeId) ?? new Set<string>();
-    for (const neighborId of neighbors) {
-      if (visited.has(neighborId)) {
+    const children = adjacencyMap.get(nodeId) ?? [];
+    for (const childId of children) {
+      if (visited.has(childId)) {
         continue;
       }
 
-      visited.add(neighborId);
-      queue.push(neighborId);
-      treeEdges.push({
-        id: `layout-tree:${currentNodeId}->${neighborId}`,
-        source: currentNodeId,
-        target: neighborId,
-      });
+      visited.add(childId);
+      queue.push(childId);
     }
   }
 
-  for (const node of nodes) {
-    if (visited.has(node.id) || node.id === rootNodeId) {
+  return Math.max(visited.size - 1, 0);
+};
+
+/** Select best root from candidates by descendant coverage, then id */
+const selectBestRootCandidate = (
+  candidates: string[],
+  adjacencyMap: Map<string, string[]>,
+): string => {
+  const ranked = candidates.map((candidate) => ({
+    candidate,
+    descendants: countDescendants(candidate, adjacencyMap),
+  }));
+
+  ranked.sort((a, b) => {
+    if (b.descendants !== a.descendants) {
+      return b.descendants - a.descendants;
+    }
+
+    return a.candidate.localeCompare(b.candidate);
+  });
+
+  return ranked[0].candidate;
+};
+
+/** Resolve hierarchy root candidate from parent-child edges */
+const resolveHierarchyRootNodeId = (nodes: Node[], edges: Edge[]): string | null => {
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  const incomingParentCount = new Map<string, number>(nodes.map((node) => [node.id, 0]));
+  let hasParentEdge = false;
+
+  for (const edge of edges) {
+    if (!isParentEdge(edge) || !nodeIds.has(edge.target) || !nodeIds.has(edge.source)) {
       continue;
     }
 
-    treeEdges.push({
-      id: `layout-orphan:${rootNodeId}->${node.id}`,
-      source: rootNodeId,
-      target: node.id,
-    });
+    hasParentEdge = true;
+    incomingParentCount.set(edge.target, (incomingParentCount.get(edge.target) ?? 0) + 1);
   }
 
-  return treeEdges;
+  if (!hasParentEdge) {
+    return null;
+  }
+
+  const candidates = nodes
+    .map((node) => node.id)
+    .filter((nodeId) => (incomingParentCount.get(nodeId) ?? 0) === 0);
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  if (candidates.length === 1) {
+    return candidates[0];
+  }
+
+  return selectBestRootCandidate(candidates, buildParentAdjacencyMap(edges));
 };
 
-/** Select edges for chosen ELK algorithm */
-const selectLayoutEdges = (
+/** Resolve layout root node id for tree construction */
+const resolveLayoutRootNodeId = (
   nodes: Node[],
   edges: Edge[],
   algorithm: ElkLayoutAlgorithm,
-  rootNodeId: string | null | undefined,
+  dependencyRootNodeId: string | null,
+): string | null => {
+  if (dependencyRootNodeId && algorithm === 'layered') {
+    return resolveHierarchyRootNodeId(nodes, edges) ?? dependencyRootNodeId;
+  }
+
+  if (dependencyRootNodeId) {
+    return dependencyRootNodeId;
+  }
+
+  if (algorithm === 'radial') {
+    return nodes[0]?.id ?? null;
+  }
+
+  return null;
+};
+
+/** Select layout edges for chosen ELK algorithm */
+const selectLayoutEdges = (
+  nodes: Node[],
+  edges: Edge[],
+  layoutRootNodeId: string | null,
 ): Edge[] => {
-  if (algorithm !== 'radial') {
+  if (!layoutRootNodeId) {
     return edges;
   }
 
-  const resolvedRoot = resolveRootNodeId(nodes, rootNodeId);
-  if (!resolvedRoot) {
-    return edges;
-  }
-
-  return buildRadialTreeEdges(nodes, edges, resolvedRoot);
+  return buildPrioritizedRadialTreeEdges(nodes, edges, layoutRootNodeId);
 };
 
 interface BuildElkGraphParams {
@@ -211,19 +181,46 @@ interface BuildElkGraphParams {
   width: number;
   height: number;
   algorithm: ElkLayoutAlgorithm;
+  isDependencyLayout: boolean;
+  layoutRootNodeId: string | null;
 }
+
+/** Get node-level ELK layout options for dependency layouts */
+const getNodeLayoutOptions = (
+  nodeId: string,
+  params: BuildElkGraphParams,
+): Record<string, string> | undefined => {
+  if (params.algorithm !== 'layered' || !params.isDependencyLayout) {
+    return undefined;
+  }
+
+  if (!params.layoutRootNodeId || nodeId !== params.layoutRootNodeId) {
+    return undefined;
+  }
+
+  return {
+    'org.eclipse.elk.layered.layering.layerConstraint': 'FIRST',
+  };
+};
 
 /** Build ELK graph structure from React Flow nodes and edges */
 const buildElkGraph = (params: BuildElkGraphParams): ElkNode => ({
   id: 'root',
-  layoutOptions: getElkOptions(params.width, params.height, params.algorithm),
+  layoutOptions: getElkOptions(
+    params.width,
+    params.height,
+    params.algorithm,
+    params.isDependencyLayout,
+  ),
   children: params.nodes.map((node) => {
     const dimensions = getNodeDimensions(node);
+    const layoutOptions = getNodeLayoutOptions(node.id, params);
 
     return {
       id: node.id,
       width: dimensions.width,
       height: dimensions.height,
+      layoutOptions,
     };
   }),
   edges: params.edges.map((edge) => ({
@@ -248,6 +245,42 @@ const applyElkPositions = (nodes: Node[], elkGraph: ElkNode): Node[] => {
       },
     };
   });
+};
+
+interface ExecuteElkLayoutParams {
+  initialNodes: Node[];
+  initialEdges: Edge[];
+  width: number;
+  height: number;
+  algorithm: ElkLayoutAlgorithm;
+  rootNodeId: string | null;
+}
+
+/** Execute ELK layout */
+const executeElkLayout = async (params: ExecuteElkLayoutParams): Promise<Node[]> => {
+  const dependencyRootNodeId = resolveDependencyRootNodeId(params.initialNodes, params.rootNodeId);
+  const layoutRootNodeId = resolveLayoutRootNodeId(
+    params.initialNodes,
+    params.initialEdges,
+    params.algorithm,
+    dependencyRootNodeId,
+  );
+
+  if (params.rootNodeId && !dependencyRootNodeId) {
+    console.warn('Dependency root node not found in graph nodes:', params.rootNodeId);
+  }
+  const layoutEdges = selectLayoutEdges(params.initialNodes, params.initialEdges, layoutRootNodeId);
+  const elkGraph = buildElkGraph({
+    nodes: params.initialNodes,
+    edges: layoutEdges,
+    width: params.width,
+    height: params.height,
+    algorithm: params.algorithm,
+    isDependencyLayout: Boolean(params.rootNodeId),
+    layoutRootNodeId,
+  });
+  const layoutedGraph = await elk.layout(elkGraph);
+  return applyElkPositions(params.initialNodes, layoutedGraph);
 };
 
 /** Hook for ELK-based layouts */
@@ -275,16 +308,15 @@ export function useElkLayout(
     setIsLayouting(true);
 
     try {
-      const layoutEdges = selectLayoutEdges(initialNodes, initialEdges, algorithm, rootNodeId);
-      const elkGraph = buildElkGraph({
-        nodes: initialNodes,
-        edges: layoutEdges,
+      const positionedNodes = await executeElkLayout({
+        initialNodes,
+        initialEdges,
         width,
         height,
         algorithm,
+        rootNodeId,
       });
-      const layoutedGraph = await elk.layout(elkGraph);
-      setNodes(applyElkPositions(initialNodes, layoutedGraph));
+      setNodes(positionedNodes);
     } catch (error) {
       console.error('ELK layout failed:', error);
       setNodes(initialNodes);

@@ -127,7 +127,7 @@ export const ThemedLayoutContent: FC<ThemedLayoutContentProps> = ({
   }
 
   if (layout === 'elk') {
-    return <ElkLayoutContent {...baseProps} />;
+    return <ElkLayoutContent {...baseProps} rootNodeId={dependencyRootTodoId} />;
   }
 
   return <ForceLayoutContent {...baseProps} />;
