@@ -15,7 +15,7 @@
     "fastmcp": "^3.27.0",
     "nano": "^11.0.3",
     "pino": "^10.1.0",
-    "undici": "^7.16.0",
+    "undici": "^7.19.2",
     "zod": "^3.25.67"
   },
   "devDependencies": {
