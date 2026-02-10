@@ -28,11 +28,10 @@ const getLayeredOptions = (
   if (isDependencyLayout) {
     return {
       'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
-      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
-      'elk.layered.spacing.edgeNodeBetweenLayers': '52',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '180',
-      'elk.spacing.nodeNode': '88',
+      'elk.direction': 'RIGHT',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '100',
+      'elk.spacing.nodeNode': '80',
     };
   }
 

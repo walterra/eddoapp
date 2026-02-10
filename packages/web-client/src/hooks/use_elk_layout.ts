@@ -27,152 +27,32 @@ interface UseElkLayoutResult {
   isLayouting: boolean;
 }
 
-/** Resolve explicit dependency root node id without fallback */
-const resolveDependencyRootNodeId = (
-  nodes: Node[],
-  rootNodeId: string | null | undefined,
-): string | null => {
-  if (!rootNodeId) {
-    return null;
+/** Resolve root node id for radial tree construction */
+const resolveRootNodeId = (nodes: Node[], rootNodeId: string | null | undefined): string => {
+  if (rootNodeId && nodes.some((node) => node.id === rootNodeId)) {
+    return rootNodeId;
   }
 
-  return nodes.some((node) => node.id === rootNodeId) ? rootNodeId : null;
+  return nodes[0]?.id ?? '';
 };
 
-const PARENT_EDGE_ID_PREFIX = 'parent:';
-
-/** Check if edge is a parent-child relationship */
-const isParentEdge = (edge: Edge): boolean => edge.id.startsWith(PARENT_EDGE_ID_PREFIX);
-
-/** Build parent adjacency map */
-const buildParentAdjacencyMap = (edges: readonly Edge[]): Map<string, string[]> => {
-  const adjacencyMap = new Map<string, string[]>();
-
-  for (const edge of edges) {
-    if (!isParentEdge(edge)) {
-      continue;
-    }
-
-    const targets = adjacencyMap.get(edge.source) ?? [];
-    targets.push(edge.target);
-    adjacencyMap.set(edge.source, targets);
-  }
-
-  return adjacencyMap;
-};
-
-/** Count descendants in parent-child hierarchy */
-const countDescendants = (rootNodeId: string, adjacencyMap: Map<string, string[]>): number => {
-  const visited = new Set<string>([rootNodeId]);
-  const queue = [rootNodeId];
-  let index = 0;
-
-  while (index < queue.length) {
-    const nodeId = queue[index];
-    index += 1;
-
-    const children = adjacencyMap.get(nodeId) ?? [];
-    for (const childId of children) {
-      if (visited.has(childId)) {
-        continue;
-      }
-
-      visited.add(childId);
-      queue.push(childId);
-    }
-  }
-
-  return Math.max(visited.size - 1, 0);
-};
-
-/** Select best root from candidates by descendant coverage, then id */
-const selectBestRootCandidate = (
-  candidates: string[],
-  adjacencyMap: Map<string, string[]>,
-): string => {
-  const ranked = candidates.map((candidate) => ({
-    candidate,
-    descendants: countDescendants(candidate, adjacencyMap),
-  }));
-
-  ranked.sort((a, b) => {
-    if (b.descendants !== a.descendants) {
-      return b.descendants - a.descendants;
-    }
-
-    return a.candidate.localeCompare(b.candidate);
-  });
-
-  return ranked[0].candidate;
-};
-
-/** Resolve hierarchy root candidate from parent-child edges */
-const resolveHierarchyRootNodeId = (nodes: Node[], edges: Edge[]): string | null => {
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  const incomingParentCount = new Map<string, number>(nodes.map((node) => [node.id, 0]));
-  let hasParentEdge = false;
-
-  for (const edge of edges) {
-    if (!isParentEdge(edge) || !nodeIds.has(edge.target) || !nodeIds.has(edge.source)) {
-      continue;
-    }
-
-    hasParentEdge = true;
-    incomingParentCount.set(edge.target, (incomingParentCount.get(edge.target) ?? 0) + 1);
-  }
-
-  if (!hasParentEdge) {
-    return null;
-  }
-
-  const candidates = nodes
-    .map((node) => node.id)
-    .filter((nodeId) => (incomingParentCount.get(nodeId) ?? 0) === 0);
-
-  if (candidates.length === 0) {
-    return null;
-  }
-
-  if (candidates.length === 1) {
-    return candidates[0];
-  }
-
-  return selectBestRootCandidate(candidates, buildParentAdjacencyMap(edges));
-};
-
-/** Resolve layout root node id for tree construction */
-const resolveLayoutRootNodeId = (
-  nodes: Node[],
-  edges: Edge[],
-  algorithm: ElkLayoutAlgorithm,
-  dependencyRootNodeId: string | null,
-): string | null => {
-  if (dependencyRootNodeId && algorithm === 'layered') {
-    return resolveHierarchyRootNodeId(nodes, edges) ?? dependencyRootNodeId;
-  }
-
-  if (dependencyRootNodeId) {
-    return dependencyRootNodeId;
-  }
-
-  if (algorithm === 'radial') {
-    return nodes[0]?.id ?? null;
-  }
-
-  return null;
-};
-
-/** Select layout edges for chosen ELK algorithm */
+/** Select edges used by ELK layout */
 const selectLayoutEdges = (
   nodes: Node[],
   edges: Edge[],
-  layoutRootNodeId: string | null,
+  algorithm: ElkLayoutAlgorithm,
+  rootNodeId: string | null | undefined,
 ): Edge[] => {
-  if (!layoutRootNodeId) {
+  if (algorithm !== 'radial') {
     return edges;
   }
 
-  return buildPrioritizedRadialTreeEdges(nodes, edges, layoutRootNodeId);
+  const resolvedRootNodeId = resolveRootNodeId(nodes, rootNodeId);
+  if (!resolvedRootNodeId) {
+    return edges;
+  }
+
+  return buildPrioritizedRadialTreeEdges(nodes, edges, resolvedRootNodeId);
 };
 
 interface BuildElkGraphParams {
@@ -182,26 +62,7 @@ interface BuildElkGraphParams {
   height: number;
   algorithm: ElkLayoutAlgorithm;
   isDependencyLayout: boolean;
-  layoutRootNodeId: string | null;
 }
-
-/** Get node-level ELK layout options for dependency layouts */
-const getNodeLayoutOptions = (
-  nodeId: string,
-  params: BuildElkGraphParams,
-): Record<string, string> | undefined => {
-  if (params.algorithm !== 'layered' || !params.isDependencyLayout) {
-    return undefined;
-  }
-
-  if (!params.layoutRootNodeId || nodeId !== params.layoutRootNodeId) {
-    return undefined;
-  }
-
-  return {
-    'org.eclipse.elk.layered.layering.layerConstraint': 'FIRST',
-  };
-};
 
 /** Build ELK graph structure from React Flow nodes and edges */
 const buildElkGraph = (params: BuildElkGraphParams): ElkNode => ({
@@ -214,13 +75,11 @@ const buildElkGraph = (params: BuildElkGraphParams): ElkNode => ({
   ),
   children: params.nodes.map((node) => {
     const dimensions = getNodeDimensions(node);
-    const layoutOptions = getNodeLayoutOptions(node.id, params);
 
     return {
       id: node.id,
       width: dimensions.width,
       height: dimensions.height,
-      layoutOptions,
     };
   }),
   edges: params.edges.map((edge) => ({
@@ -256,20 +115,14 @@ interface ExecuteElkLayoutParams {
   rootNodeId: string | null;
 }
 
-/** Execute ELK layout */
+/** Execute ELK layout for current graph */
 const executeElkLayout = async (params: ExecuteElkLayoutParams): Promise<Node[]> => {
-  const dependencyRootNodeId = resolveDependencyRootNodeId(params.initialNodes, params.rootNodeId);
-  const layoutRootNodeId = resolveLayoutRootNodeId(
+  const layoutEdges = selectLayoutEdges(
     params.initialNodes,
     params.initialEdges,
     params.algorithm,
-    dependencyRootNodeId,
+    params.rootNodeId,
   );
-
-  if (params.rootNodeId && !dependencyRootNodeId) {
-    console.warn('Dependency root node not found in graph nodes:', params.rootNodeId);
-  }
-  const layoutEdges = selectLayoutEdges(params.initialNodes, params.initialEdges, layoutRootNodeId);
   const elkGraph = buildElkGraph({
     nodes: params.initialNodes,
     edges: layoutEdges,
@@ -277,7 +130,6 @@ const executeElkLayout = async (params: ExecuteElkLayoutParams): Promise<Node[]>
     height: params.height,
     algorithm: params.algorithm,
     isDependencyLayout: Boolean(params.rootNodeId),
-    layoutRootNodeId,
   });
   const layoutedGraph = await elk.layout(elkGraph);
   return applyElkPositions(params.initialNodes, layoutedGraph);
