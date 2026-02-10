@@ -12,7 +12,7 @@ describe('graph theme registry', () => {
 
     expect(theme.id).toBe('dependency_canvas');
     expect(theme.classPrefix).toBe('theme-dependency-canvas');
-    expect(theme.layout).toBe('elk');
+    expect(theme.layout).toBe('elk_radial');
   });
 
   it('keeps selector metadata focused on user-selectable themes', () => {

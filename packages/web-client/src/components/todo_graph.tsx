@@ -9,10 +9,7 @@ import { Spinner } from 'flowbite-react';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import './todo_graph.css';
 
-import { useElkLayout } from '../hooks/use_elk_layout';
-import { useForceLayout } from '../hooks/use_force_layout';
 import { useHighlightedTodoId } from '../hooks/use_highlight_context';
-import { useIsometricLayout } from '../hooks/use_isometric_layout';
 import { usePouchDb } from '../pouch_db';
 import { DatabaseErrorFallback } from './database_error_fallback';
 import { DatabaseErrorMessage } from './database_error_message';
@@ -22,7 +19,7 @@ import type { TimeRange } from './time_range_filter';
 import { useDbInitialization } from './todo_board_state';
 import { GraphThemeProvider, useGraphTheme } from './todo_graph/themes/context';
 import { type TodoGraphDataProps, useGraphData } from './todo_graph_data';
-import { GraphRenderer } from './todo_graph_renderer';
+import { ThemedLayoutContent } from './todo_graph_layout_content';
 
 interface TodoGraphProps {
   currentDate: Date;
@@ -39,11 +36,7 @@ interface TodoGraphContentProps {
   edges: Edge[];
   highlightedTodoId: string | null;
   isDependencyMode: boolean;
-}
-
-interface LayoutOptions {
-  width: number;
-  height: number;
+  dependencyRootTodoId?: string | null;
 }
 
 /** Loading spinner shown while todos are loading */
@@ -88,77 +81,13 @@ const BackToTableButton: FC<{ onBackToTable: () => void }> = ({ onBackToTable })
   </div>
 );
 
-/** Force layout content */
-const ForceLayoutContent: FC<{
-  nodes: Node[];
-  edges: Edge[];
-  options: LayoutOptions;
-  highlightedTodoId: string | null;
-  showThemeSelector: boolean;
-}> = ({ nodes, edges, options, highlightedTodoId, showThemeSelector }) => {
-  const result = useForceLayout(nodes, edges, options);
-
-  return (
-    <GraphRenderer
-      edges={result.edges}
-      highlightedTodoId={highlightedTodoId}
-      isLayouting={result.isLayouting}
-      nodes={result.nodes}
-      showThemeSelector={showThemeSelector}
-    />
-  );
-};
-
-/** Isometric layout content */
-const IsometricLayoutContent: FC<{
-  nodes: Node[];
-  edges: Edge[];
-  options: LayoutOptions;
-  highlightedTodoId: string | null;
-  showThemeSelector: boolean;
-}> = ({ nodes, edges, options, highlightedTodoId, showThemeSelector }) => {
-  const result = useIsometricLayout(nodes, edges, options);
-
-  return (
-    <GraphRenderer
-      edges={result.edges}
-      highlightedTodoId={highlightedTodoId}
-      isLayouting={result.isLayouting}
-      nodes={result.nodes}
-      originalNodes={nodes}
-      roadNetwork={result.roadNetwork}
-      showThemeSelector={showThemeSelector}
-    />
-  );
-};
-
-/** Hierarchical ELK layout content */
-const ElkLayoutContent: FC<{
-  nodes: Node[];
-  edges: Edge[];
-  options: LayoutOptions;
-  highlightedTodoId: string | null;
-  showThemeSelector: boolean;
-}> = ({ nodes, edges, options, highlightedTodoId, showThemeSelector }) => {
-  const result = useElkLayout(nodes, edges, options);
-
-  return (
-    <GraphRenderer
-      edges={result.edges}
-      highlightedTodoId={highlightedTodoId}
-      isLayouting={result.isLayouting}
-      nodes={result.nodes}
-      showThemeSelector={showThemeSelector}
-    />
-  );
-};
-
 /** Graph content with theme-aware layout */
 const TodoGraphContent: FC<TodoGraphContentProps> = ({
   nodes: initialNodes,
   edges: initialEdges,
   highlightedTodoId,
   isDependencyMode,
+  dependencyRootTodoId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
@@ -182,21 +111,17 @@ const TodoGraphContent: FC<TodoGraphContentProps> = ({
   }, []);
 
   const layoutOptions = useMemo(() => dimensions ?? { width: 1600, height: 800 }, [dimensions]);
-  const LayoutContent =
-    theme?.layout === 'isometric'
-      ? IsometricLayoutContent
-      : theme?.layout === 'elk'
-        ? ElkLayoutContent
-        : ForceLayoutContent;
 
   return (
     <div className="h-[calc(100vh-200px)] w-full" ref={containerRef}>
       {isThemeLoading || !theme ? (
         <ThemeLoadingSpinner />
       ) : dimensions ? (
-        <LayoutContent
+        <ThemedLayoutContent
+          dependencyRootTodoId={dependencyRootTodoId}
           edges={initialEdges}
           highlightedTodoId={highlightedTodoId}
+          layout={theme.layout}
           nodes={initialNodes}
           options={layoutOptions}
           showThemeSelector={!isDependencyMode}
@@ -226,7 +151,7 @@ const getEmptyDescription = (
   hasActiveFilters: boolean,
 ): string => {
   if (dependencyRootTodoId) {
-    return 'No dependency graph found for this todo in the current filters and date range.';
+    return 'No dependency graph found for this todo in the current filters.';
   }
 
   if (hasActiveFilters) {
@@ -274,6 +199,7 @@ export const TodoGraph: FC<TodoGraphProps> = (props) => {
         <GraphThemeProvider forcedThemeId={forcedThemeId}>
           <ReactFlowProvider>
             <TodoGraphContent
+              dependencyRootTodoId={props.dependencyRootTodoId}
               edges={data.edges}
               highlightedTodoId={highlightedTodoId}
               isDependencyMode={Boolean(props.dependencyRootTodoId)}

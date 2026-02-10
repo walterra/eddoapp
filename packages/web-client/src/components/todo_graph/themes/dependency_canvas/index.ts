@@ -44,5 +44,5 @@ export const dependencyCanvasTheme: GraphTheme = {
 
   controlsClassName: CONTROLS_CLASS,
   classPrefix: 'theme-dependency-canvas',
-  layout: 'elk',
+  layout: 'elk_radial',
 };

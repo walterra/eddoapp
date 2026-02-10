@@ -14,7 +14,7 @@ import {
 } from '../hooks/use_audit_log_stream';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
-import { calculateDateRange, filterTodosForGraph } from './todo_board_helpers';
+import { calculateDateRange, type DateRange, filterTodosForGraph } from './todo_board_helpers';
 import { useOutdatedTodos, useTodoBoardData } from './todo_board_state';
 import { selectDependencyTodos } from './todo_dependency_graph_helpers';
 import {
@@ -166,6 +166,19 @@ interface GraphScope {
   selectedStatus: CompletionStatus;
 }
 
+/** Build date range for graph data queries */
+export const resolveGraphDateRange = (
+  currentDate: Date,
+  selectedTimeRange: TimeRange,
+  dependencyRootTodoId?: string | null,
+): DateRange => {
+  if (dependencyRootTodoId) {
+    return { startDate: '2000-01-01', endDate: '2099-12-31' };
+  }
+
+  return calculateDateRange(currentDate, selectedTimeRange);
+};
+
 /** Build graph scope from filters and board data */
 const useGraphScope = (props: TodoGraphDataProps, isInitialized: boolean): GraphScope => {
   const {
@@ -178,8 +191,8 @@ const useGraphScope = (props: TodoGraphDataProps, isInitialized: boolean): Graph
   } = props;
 
   const dateRange = useMemo(
-    () => calculateDateRange(currentDate, selectedTimeRange),
-    [currentDate, selectedTimeRange],
+    () => resolveGraphDateRange(currentDate, selectedTimeRange, dependencyRootTodoId),
+    [currentDate, selectedTimeRange, dependencyRootTodoId],
   );
 
   const boardData = useTodoBoardData({
