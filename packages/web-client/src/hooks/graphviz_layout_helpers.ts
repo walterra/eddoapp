@@ -12,7 +12,9 @@ const HORIZONTAL_LAYOUT_ASPECT_RATIO_THRESHOLD = 1.45;
 const BLOCKED_EDGE_LAYOUT_WEIGHT = 3;
 const BLOCKED_EDGE_LAYOUT_MINLEN = 3;
 const SIBLING_FANOUT_COLUMN_SIZE = 6;
-const SIBLING_FANOUT_MIN_CHILDREN = 10;
+const SIBLING_FANOUT_MIN_CHILDREN = 5;
+const RANK_SEPARATION_LR = 1.28;
+const RANK_SEPARATION_TB = 0.95;
 
 interface BuildDotParams {
   nodes: Node[];
@@ -100,6 +102,22 @@ const collectTopLevelIds = (edges: Edge[], rootNodeId: string | null): string[] 
   return [...ids];
 };
 
+/** Collect node IDs that participate in blocked-by edges. */
+const collectBlockedParticipantIds = (edges: Edge[]): Set<string> => {
+  const ids = new Set<string>();
+
+  for (const edge of edges) {
+    if (!edge.id.startsWith(BLOCKED_EDGE_ID_PREFIX)) {
+      continue;
+    }
+
+    ids.add(edge.source);
+    ids.add(edge.target);
+  }
+
+  return ids;
+};
+
 /** Collect parent-child mapping from parent edges. */
 const collectChildrenByParent = (edges: Edge[]): Map<string, string[]> => {
   const map = new Map<string, string[]>();
@@ -124,6 +142,12 @@ const collectChildrenByParent = (edges: Edge[]): Map<string, string[]> => {
   return map;
 };
 
+/** Resolve sibling fanout stride for a child column size. */
+const getSiblingFanoutStride = (childCount: number): number => {
+  const halfColumn = Math.floor(childCount / 2);
+  return Math.max(2, Math.min(SIBLING_FANOUT_COLUMN_SIZE, halfColumn));
+};
+
 /** Add invisible sibling fanout edges to spread dense child columns. */
 const appendSiblingFanoutEdges = (
   lines: string[],
@@ -139,14 +163,12 @@ const appendSiblingFanoutEdges = (
       continue;
     }
 
-    for (let start = 0; start < SIBLING_FANOUT_COLUMN_SIZE; start += 1) {
-      for (
-        let index = start;
-        index + SIBLING_FANOUT_COLUMN_SIZE < children.length;
-        index += SIBLING_FANOUT_COLUMN_SIZE
-      ) {
+    const stride = getSiblingFanoutStride(children.length);
+
+    for (let start = 0; start < stride; start += 1) {
+      for (let index = start; index + stride < children.length; index += stride) {
         const source = children[index];
-        const target = children[index + SIBLING_FANOUT_COLUMN_SIZE];
+        const target = children[index + stride];
         lines.push(
           `  ${quoteId(source)} -> ${quoteId(target)} [style=invis constraint=true weight=1 minlen=1];`,
         );
@@ -160,6 +182,8 @@ export const buildGraphvizDotLayoutGraph = (params: BuildDotParams): string => {
   const direction = getRankDirection(params.width, params.height);
   const resolvedRootNodeId = resolveRootNodeId(params.nodes, params.rootNodeId);
   const topLevelIds = collectTopLevelIds(params.edges, resolvedRootNodeId);
+  const blockedParticipantIds = collectBlockedParticipantIds(params.edges);
+  const unconstrainedTopLevelIds = topLevelIds.filter((id) => !blockedParticipantIds.has(id));
   const childrenByParent = collectChildrenByParent(params.edges);
   const lines: string[] = [];
 
@@ -169,7 +193,7 @@ export const buildGraphvizDotLayoutGraph = (params: BuildDotParams): string => {
   lines.push('  overlap=false;');
   lines.push('  newrank=true;');
   lines.push('  nodesep=0.1;');
-  lines.push('  ranksep=0.95;');
+  lines.push(`  ranksep=${direction === 'LR' ? RANK_SEPARATION_LR : RANK_SEPARATION_TB};`);
   lines.push(
     '  node [shape=box label="" fixedsize=true margin=0 style="rounded,filled" penwidth=0 color="#00000000" fillcolor="#00000000"];',
   );
@@ -185,8 +209,8 @@ export const buildGraphvizDotLayoutGraph = (params: BuildDotParams): string => {
     lines.push(`  { rank=same; ${quoteId(resolvedRootNodeId)}; }`);
   }
 
-  if (topLevelIds.length > 0) {
-    lines.push(`  { rank=same; ${topLevelIds.map(quoteId).join('; ')}; }`);
+  if (unconstrainedTopLevelIds.length > 0) {
+    lines.push(`  { rank=same; ${unconstrainedTopLevelIds.map(quoteId).join('; ')}; }`);
   }
 
   appendSiblingFanoutEdges(lines, childrenByParent, direction);

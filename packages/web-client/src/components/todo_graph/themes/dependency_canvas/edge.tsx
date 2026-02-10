@@ -1,8 +1,8 @@
 /**
  * Dependency canvas theme edge component.
- * Uses floating-edge intersection points for cleaner start/end anchors.
+ * Uses side-aware border anchors to avoid underflow in dense vertical stacks.
  */
-import { getBezierPath, Position, useInternalNode } from '@xyflow/react';
+import { getSmoothStepPath, Position, useInternalNode } from '@xyflow/react';
 import { type CSSProperties, type FC } from 'react';
 
 import type { ThemedEdgeProps } from '../types';
@@ -12,10 +12,8 @@ type DependencyEdgeKind = 'parent' | 'blocked' | 'unblocked' | 'other';
 interface EdgeStyleConfig {
   stroke: string;
   strokeWidth: number;
-  strokeDasharray: string;
+  strokeDasharray?: string;
   opacity: number;
-  label?: string;
-  labelBackground?: string;
 }
 
 interface Point {
@@ -47,12 +45,15 @@ interface EdgeParams {
 
 interface EdgePathData {
   path: string;
-  labelX: number;
-  labelY: number;
 }
 
-const DASH_PARENT = '1 7';
-const DASH_SIGNAL = '1 6';
+type DominantAxis = 'horizontal' | 'vertical';
+
+const DASH_BLOCKED = '4 6';
+const HORIZONTAL_BIAS_DEFAULT = 0.55;
+const HORIZONTAL_BIAS_BLOCKED = 0.35;
+const EDGE_STEP_BORDER_RADIUS = 14;
+const EDGE_STEP_OFFSET = 18;
 
 /** Get measured node width with fallback */
 const getNodeWidth = (node: InternalNodeWithBounds): number => node.measured?.width ?? 248;
@@ -64,80 +65,89 @@ const getNodeHeight = (node: InternalNodeWithBounds): number => node.measured?.h
 const getNodePosition = (node: InternalNodeWithBounds): Point =>
   node.internals?.positionAbsolute ?? { x: 0, y: 0 };
 
-/** Find intersection point between source-target center line and source node bounds */
-const getNodeIntersection = (
-  intersectionNode: InternalNodeWithBounds,
-  targetNode: InternalNodeWithBounds,
-): Point => {
-  const width = getNodeWidth(intersectionNode);
-  const height = getNodeHeight(intersectionNode);
-  const sourcePosition = getNodePosition(intersectionNode);
-  const targetPosition = getNodePosition(targetNode);
-
-  const w = width / 2;
-  const h = height / 2;
-  const x2 = sourcePosition.x + w;
-  const y2 = sourcePosition.y + h;
-  const x1 = targetPosition.x + getNodeWidth(targetNode) / 2;
-  const y1 = targetPosition.y + getNodeHeight(targetNode) / 2;
-
-  const xx1 = (x1 - x2) / (2 * w) - (y1 - y2) / (2 * h);
-  const yy1 = (x1 - x2) / (2 * w) + (y1 - y2) / (2 * h);
-  const a = 1 / (Math.abs(xx1) + Math.abs(yy1));
-  const xx3 = a * xx1;
-  const yy3 = a * yy1;
+/** Get center point for a node from measured bounds. */
+const getNodeCenter = (node: InternalNodeWithBounds): Point => {
+  const position = getNodePosition(node);
 
   return {
-    x: w * (xx3 + yy3) + x2,
-    y: h * (-xx3 + yy3) + y2,
+    x: position.x + getNodeWidth(node) / 2,
+    y: position.y + getNodeHeight(node) / 2,
   };
 };
 
-/** Resolve edge side from node bounds and intersection point */
-const getEdgePosition = (node: InternalNodeWithBounds, point: Point): Position => {
+/** Resolve whether the edge should anchor primarily horizontally or vertically. */
+const getDominantAxis = (
+  sourceCenter: Point,
+  targetCenter: Point,
+  kind: DependencyEdgeKind,
+): DominantAxis => {
+  const horizontalDistance = Math.abs(targetCenter.x - sourceCenter.x);
+  const verticalDistance = Math.abs(targetCenter.y - sourceCenter.y);
+  const horizontalBias =
+    kind === 'blocked' || kind === 'unblocked' ? HORIZONTAL_BIAS_BLOCKED : HORIZONTAL_BIAS_DEFAULT;
+
+  return horizontalDistance >= verticalDistance * horizontalBias ? 'horizontal' : 'vertical';
+};
+
+/** Resolve source and target edge sides from dominant axis. */
+const getPreferredEdgeSides = (
+  sourceCenter: Point,
+  targetCenter: Point,
+  axis: DominantAxis,
+): { sourcePos: Position; targetPos: Position } => {
+  if (axis === 'horizontal') {
+    return sourceCenter.x <= targetCenter.x
+      ? { sourcePos: Position.Right, targetPos: Position.Left }
+      : { sourcePos: Position.Left, targetPos: Position.Right };
+  }
+
+  return sourceCenter.y <= targetCenter.y
+    ? { sourcePos: Position.Bottom, targetPos: Position.Top }
+    : { sourcePos: Position.Top, targetPos: Position.Bottom };
+};
+
+/** Resolve edge anchor point at the center of a specific node side. */
+const getNodeSideAnchor = (node: InternalNodeWithBounds, side: Position): Point => {
+  const center = getNodeCenter(node);
   const position = getNodePosition(node);
   const width = getNodeWidth(node);
   const height = getNodeHeight(node);
 
-  const nx = Math.round(position.x);
-  const ny = Math.round(position.y);
-  const px = Math.round(point.x);
-  const py = Math.round(point.y);
-
-  if (px <= nx + 1) {
-    return Position.Left;
+  if (side === Position.Left) {
+    return { x: position.x, y: center.y };
   }
 
-  if (px >= nx + width - 1) {
-    return Position.Right;
+  if (side === Position.Right) {
+    return { x: position.x + width, y: center.y };
   }
 
-  if (py <= ny + 1) {
-    return Position.Top;
+  if (side === Position.Top) {
+    return { x: center.x, y: position.y };
   }
 
-  if (py >= ny + height - 1) {
-    return Position.Bottom;
-  }
-
-  return Position.Right;
+  return { x: center.x, y: position.y + height };
 };
 
-/** Build floating-edge coordinates and side positions for a source-target pair */
+/** Build side-aware edge coordinates and side positions for a source-target pair. */
 const getEdgeParams = (
   sourceNode: InternalNodeWithBounds,
   targetNode: InternalNodeWithBounds,
+  kind: DependencyEdgeKind,
 ): EdgeParams => {
-  const sourcePoint = getNodeIntersection(sourceNode, targetNode);
-  const targetPoint = getNodeIntersection(targetNode, sourceNode);
+  const sourceCenter = getNodeCenter(sourceNode);
+  const targetCenter = getNodeCenter(targetNode);
+  const axis = getDominantAxis(sourceCenter, targetCenter, kind);
+  const edgeSides = getPreferredEdgeSides(sourceCenter, targetCenter, axis);
+  const sourcePoint = getNodeSideAnchor(sourceNode, edgeSides.sourcePos);
+  const targetPoint = getNodeSideAnchor(targetNode, edgeSides.targetPos);
 
   return {
     sx: sourcePoint.x,
     sy: sourcePoint.y,
     tx: targetPoint.x,
     ty: targetPoint.y,
-    sourcePos: getEdgePosition(sourceNode, sourcePoint),
-    targetPos: getEdgePosition(targetNode, targetPoint),
+    sourcePos: edgeSides.sourcePos,
+    targetPos: edgeSides.targetPos,
   };
 };
 
@@ -158,13 +168,12 @@ const getEdgeKind = (id: string, style?: CSSProperties): DependencyEdgeKind => {
   return 'unblocked';
 };
 
-/** Resolve visual style from semantic edge kind */
+/** Resolve visual style from semantic edge kind. */
 const getEdgeStyle = (kind: DependencyEdgeKind): EdgeStyleConfig => {
   if (kind === 'parent') {
     return {
       stroke: '#9ca3af',
-      strokeWidth: 2.1,
-      strokeDasharray: DASH_PARENT,
+      strokeWidth: 1.8,
       opacity: 0.9,
     };
   }
@@ -172,138 +181,86 @@ const getEdgeStyle = (kind: DependencyEdgeKind): EdgeStyleConfig => {
   if (kind === 'blocked') {
     return {
       stroke: '#ef4444',
-      strokeWidth: 2.4,
-      strokeDasharray: DASH_SIGNAL,
+      strokeWidth: 2,
+      strokeDasharray: DASH_BLOCKED,
       opacity: 0.95,
-      label: '- block',
-      labelBackground: '#dc2626',
     };
   }
 
   if (kind === 'unblocked') {
     return {
       stroke: '#22c55e',
-      strokeWidth: 2.4,
-      strokeDasharray: DASH_SIGNAL,
+      strokeWidth: 2,
+      strokeDasharray: DASH_BLOCKED,
       opacity: 0.95,
-      label: '+ ready',
-      labelBackground: '#16a34a',
     };
   }
 
   return {
     stroke: '#9ca3af',
-    strokeWidth: 2,
-    strokeDasharray: DASH_PARENT,
-    opacity: 0.85,
+    strokeWidth: 1.6,
+    opacity: 0.82,
   };
 };
 
-/** Build stable svg marker id for a per-edge arrowhead */
-const buildMarkerId = (id: string, kind: DependencyEdgeKind): string =>
-  `dep-arrow-${kind}-${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+/** Build fallback edge params when node internals are unavailable. */
+const getFallbackEdgeParams = (props: ThemedEdgeProps, kind: DependencyEdgeKind): EdgeParams => {
+  const sourceCenter = { x: props.sourceX, y: props.sourceY };
+  const targetCenter = { x: props.targetX, y: props.targetY };
+  const axis = getDominantAxis(sourceCenter, targetCenter, kind);
+  const edgeSides = getPreferredEdgeSides(sourceCenter, targetCenter, axis);
 
-/** Build fallback edge params when node internals are unavailable */
-const getFallbackEdgeParams = (props: ThemedEdgeProps): EdgeParams => ({
-  sx: props.sourceX,
-  sy: props.sourceY,
-  tx: props.targetX,
-  ty: props.targetY,
-  sourcePos: props.sourcePosition ?? Position.Right,
-  targetPos: props.targetPosition ?? Position.Left,
-});
+  return {
+    sx: props.sourceX,
+    sy: props.sourceY,
+    tx: props.targetX,
+    ty: props.targetY,
+    sourcePos: edgeSides.sourcePos,
+    targetPos: edgeSides.targetPos,
+  };
+};
 
-/** Resolve edge params from internal nodes or fallback geometry */
+/** Resolve edge params from internal nodes or fallback geometry. */
 const resolveEdgeParams = (
   props: ThemedEdgeProps,
   sourceNode: InternalNodeWithBounds | null,
   targetNode: InternalNodeWithBounds | null,
+  kind: DependencyEdgeKind,
 ): EdgeParams => {
   if (sourceNode && targetNode) {
-    return getEdgeParams(sourceNode, targetNode);
+    return getEdgeParams(sourceNode, targetNode, kind);
   }
 
-  return getFallbackEdgeParams(props);
+  return getFallbackEdgeParams(props, kind);
 };
 
-/** Build bezier path and label anchor from edge params */
+/** Build smooth-step path from side-aware edge params. */
 const getEdgePathData = (params: EdgeParams): EdgePathData => {
-  const [path, labelX, labelY] = getBezierPath({
+  const [path] = getSmoothStepPath({
     sourceX: params.sx,
     sourceY: params.sy,
     targetX: params.tx,
     targetY: params.ty,
     sourcePosition: params.sourcePos,
     targetPosition: params.targetPos,
-    curvature: 0.32,
+    borderRadius: EDGE_STEP_BORDER_RADIUS,
+    offset: EDGE_STEP_OFFSET,
   });
 
-  return { path, labelX, labelY };
+  return { path };
 };
 
-/** Render semantic edge badge near path midpoint */
-const EdgeBadge: FC<{ x: number; y: number; label: string; background: string }> = ({
-  x,
-  y,
-  label,
-  background,
-}) => {
-  const width = Math.max(56, label.length * 7 + 10);
-  const height = 20;
-
-  return (
-    <g transform={`translate(${x - width / 2}, ${y - height / 2})`}>
-      <rect fill={background} height={height} opacity={0.96} rx={10} width={width} x={0} y={0} />
-      <text
-        dominantBaseline="middle"
-        fill="#ffffff"
-        fontSize="10"
-        fontWeight="700"
-        textAnchor="middle"
-        x={width / 2}
-        y={height / 2 + 0.5}
-      >
-        {label}
-      </text>
-    </g>
-  );
-};
-
-/** Arrow marker definition for dependency edges */
-const ArrowMarker: FC<{ markerId: string; color: string; opacity: number }> = ({
-  markerId,
-  color,
-  opacity,
-}) => (
-  <defs>
-    <marker
-      id={markerId}
-      markerHeight="8"
-      markerUnits="strokeWidth"
-      markerWidth="8"
-      orient="auto-start-reverse"
-      refX="7"
-      refY="4"
-      viewBox="0 0 8 8"
-    >
-      <path d="M 0 0 L 8 4 L 0 8 z" fill={color} opacity={opacity} />
-    </marker>
-  </defs>
-);
-
-/** Path renderer for dependency edges */
+/** Path renderer for dependency edges. */
 const DependencyEdgePath: FC<{
   edgeId: string;
   path: string;
-  markerId: string;
   edgeStyle: EdgeStyleConfig;
-}> = ({ edgeId, path, markerId, edgeStyle }) => (
+}> = ({ edgeId, path, edgeStyle }) => (
   <path
     className="react-flow__edge-path"
     d={path}
     fill="none"
     id={edgeId}
-    markerEnd={`url(#${markerId})`}
     style={{
       stroke: edgeStyle.stroke,
       strokeWidth: edgeStyle.strokeWidth,
@@ -315,37 +272,30 @@ const DependencyEdgePath: FC<{
   />
 );
 
-/** Dependency canvas edge with floating anchors and reference-style curves */
+/** Render endpoint cap to mimic socket-style side attachment. */
+const EdgeEndpointCap: FC<{ x: number; y: number }> = ({ x, y }) => (
+  <circle cx={x} cy={y} fill="#f8fafc" r={4.5} stroke="#a3a3a3" strokeWidth={1.4} />
+);
+
+/** Dependency canvas edge with center-side attachment and orthogonal routing. */
 export const DependencyCanvasEdge: FC<ThemedEdgeProps> = (props) => {
   const sourceNode = useInternalNode(props.source ?? '');
   const targetNode = useInternalNode(props.target ?? '');
   const kind = getEdgeKind(props.id, props.style);
   const edgeStyle = getEdgeStyle(kind);
-  const markerId = buildMarkerId(props.id, kind);
   const params = resolveEdgeParams(
     props,
     sourceNode as InternalNodeWithBounds | null,
     targetNode as InternalNodeWithBounds | null,
+    kind,
   );
   const edgePath = getEdgePathData(params);
 
   return (
     <g>
-      <ArrowMarker color={edgeStyle.stroke} markerId={markerId} opacity={edgeStyle.opacity} />
-      <DependencyEdgePath
-        edgeId={props.id}
-        edgeStyle={edgeStyle}
-        markerId={markerId}
-        path={edgePath.path}
-      />
-      {edgeStyle.label && edgeStyle.labelBackground ? (
-        <EdgeBadge
-          background={edgeStyle.labelBackground}
-          label={edgeStyle.label}
-          x={edgePath.labelX}
-          y={edgePath.labelY}
-        />
-      ) : null}
+      <DependencyEdgePath edgeId={props.id} edgeStyle={edgeStyle} path={edgePath.path} />
+      <EdgeEndpointCap x={params.sx} y={params.sy} />
+      <EdgeEndpointCap x={params.tx} y={params.ty} />
     </g>
   );
 };

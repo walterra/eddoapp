@@ -40,6 +40,24 @@ describe('buildGraphvizDotLayoutGraph', () => {
     expect(dot).toContain('"child" -> "blocked" [weight=3 minlen=3 constraint=true style=dashed];');
   });
 
+  it('keeps blocked top-level nodes out of forced same-rank grouping', () => {
+    const dot = buildGraphvizDotLayoutGraph({
+      nodes: [createNode('root'), createNode('a'), createNode('b'), createNode('c')],
+      edges: [
+        createEdge('parent:root-a', 'root', 'a'),
+        createEdge('parent:root-b', 'root', 'b'),
+        createEdge('parent:root-c', 'root', 'c'),
+        createEdge('blocked:a-b', 'a', 'b'),
+      ],
+      rootNodeId: 'root',
+      width: 1600,
+      height: 800,
+    });
+
+    expect(dot).toContain('{ rank=same; "c"; }');
+    expect(dot).not.toContain('{ rank=same; "a"; "b"; "c"; }');
+  });
+
   it('adds invisible fanout edges for dense child lists in horizontal layout', () => {
     const childIds = Array.from({ length: 12 }, (_, index) => `c${String(index).padStart(2, '0')}`);
     const nodes = [createNode('root'), createNode('parent'), ...childIds.map(createNode)];
@@ -58,6 +76,25 @@ describe('buildGraphvizDotLayoutGraph', () => {
 
     expect(dot).toContain('"c00" -> "c06" [style=invis constraint=true weight=1 minlen=1];');
     expect(dot).toContain('"c05" -> "c11" [style=invis constraint=true weight=1 minlen=1];');
+  });
+
+  it('enables sibling fanout for parent nodes with five children', () => {
+    const childIds = Array.from({ length: 5 }, (_, index) => `c${String(index).padStart(2, '0')}`);
+    const nodes = [createNode('root'), createNode('parent'), ...childIds.map(createNode)];
+    const edges = [
+      createEdge('parent:root-parent', 'root', 'parent'),
+      ...childIds.map((childId) => createEdge(`parent:parent-${childId}`, 'parent', childId)),
+    ];
+
+    const dot = buildGraphvizDotLayoutGraph({
+      nodes,
+      edges,
+      rootNodeId: 'root',
+      width: 1600,
+      height: 800,
+    });
+
+    expect(dot).toContain('"c00" -> "c02" [style=invis constraint=true weight=1 minlen=1];');
   });
 
   it('falls back to top-bottom rank direction for tall viewports', () => {

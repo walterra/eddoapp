@@ -11,6 +11,7 @@ import {
   mapGraphvizPositionsToNodes,
   type GraphvizLayoutResult,
 } from './graphviz_layout_helpers';
+import { applyGraphvizColumnStaggering } from './graphviz_stagger';
 
 const DEFAULT_WIDTH = 1600;
 const DEFAULT_HEIGHT = 800;
@@ -61,7 +62,8 @@ const executeGraphvizLayout = async (params: ExecuteLayoutParams): Promise<Node[
     yInvert: true,
   }) as GraphvizLayoutResult;
 
-  return mapGraphvizPositionsToNodes(params.initialNodes, layout);
+  const positionedNodes = mapGraphvizPositionsToNodes(params.initialNodes, layout);
+  return applyGraphvizColumnStaggering(positionedNodes);
 };
 
 /** Hook for Graphviz-based layouts. */
