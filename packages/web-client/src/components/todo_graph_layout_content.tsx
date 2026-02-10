@@ -4,7 +4,6 @@
 import { type Edge, type Node } from '@xyflow/react';
 import { type FC } from 'react';
 
-import { useElkLayout } from '../hooks/use_elk_layout';
 import { useForceLayout } from '../hooks/use_force_layout';
 import { useGraphvizLayout } from '../hooks/use_graphviz_layout';
 import { useIsometricLayout } from '../hooks/use_isometric_layout';
@@ -16,7 +15,7 @@ export interface LayoutOptions {
   height: number;
 }
 
-type ThemeLayout = 'force' | 'isometric' | 'elk' | 'elk_radial' | 'graphviz' | undefined;
+type ThemeLayout = 'force' | 'isometric' | 'graphviz' | undefined;
 
 interface BaseLayoutProps {
   nodes: Node[];
@@ -26,9 +25,8 @@ interface BaseLayoutProps {
   showThemeSelector: boolean;
 }
 
-interface ElkLayoutContentProps extends BaseLayoutProps {
+interface GraphvizLayoutContentProps extends BaseLayoutProps {
   rootNodeId?: string | null;
-  algorithm?: 'layered' | 'radial';
 }
 
 interface ThemedLayoutContentProps extends BaseLayoutProps {
@@ -80,35 +78,8 @@ const IsometricLayoutContent: FC<BaseLayoutProps> = ({
   );
 };
 
-/** ELK layout content */
-const ElkLayoutContent: FC<ElkLayoutContentProps> = ({
-  nodes,
-  edges,
-  options,
-  highlightedTodoId,
-  showThemeSelector,
-  rootNodeId,
-  algorithm = 'layered',
-}) => {
-  const result = useElkLayout(nodes, edges, {
-    ...options,
-    algorithm,
-    rootNodeId,
-  });
-
-  return (
-    <GraphRenderer
-      edges={result.edges}
-      highlightedTodoId={highlightedTodoId}
-      isLayouting={result.isLayouting}
-      nodes={result.nodes}
-      showThemeSelector={showThemeSelector}
-    />
-  );
-};
-
 /** Graphviz layout content */
-const GraphvizLayoutContent: FC<ElkLayoutContentProps> = ({
+const GraphvizLayoutContent: FC<GraphvizLayoutContentProps> = ({
   nodes,
   edges,
   options,
@@ -146,14 +117,6 @@ export const ThemedLayoutContent: FC<ThemedLayoutContentProps> = ({
 
   if (layout === 'isometric') {
     return <IsometricLayoutContent {...baseProps} />;
-  }
-
-  if (layout === 'elk_radial') {
-    return <ElkLayoutContent {...baseProps} algorithm="radial" rootNodeId={dependencyRootTodoId} />;
-  }
-
-  if (layout === 'elk') {
-    return <ElkLayoutContent {...baseProps} rootNodeId={dependencyRootTodoId} />;
   }
 
   if (layout === 'graphviz') {

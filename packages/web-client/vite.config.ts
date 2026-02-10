@@ -10,7 +10,7 @@ const manualChunks = {
   'vendor-react': ['react', 'react-dom'],
   'vendor-pouchdb': ['pouchdb-browser', 'pouchdb-find'],
   'vendor-ui': ['flowbite', 'flowbite-react', '@floating-ui/react', 'lucide-react'],
-  'vendor-graph': ['@xyflow/react', 'elkjs', 'd3-force', 'd3-array'],
+  'vendor-graph': ['@xyflow/react', 'd3-force', 'd3-array'],
   'vendor-markdown': ['react-markdown', 'remark-gfm'],
   'vendor-query': ['@tanstack/react-query', '@tanstack/react-table', '@tanstack/react-virtual'],
   'vendor-utils': ['date-fns', 'zod', 'lodash-es'],

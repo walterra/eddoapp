@@ -75,7 +75,7 @@ export interface LegendEdgeItem {
 }
 
 /** Layout algorithm type */
-export type LayoutAlgorithm = 'force' | 'isometric' | 'elk' | 'elk_radial' | 'graphviz';
+export type LayoutAlgorithm = 'force' | 'isometric' | 'graphviz';
 
 /** Whether nodes can be dragged */
 export type DraggableMode = boolean;
