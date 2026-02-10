@@ -84,7 +84,12 @@ export function todosToNodes(todos: Todo[]): Node[] {
       id: todo._id,
       type: 'todoNode',
       position: { x: (index % 5) * 280, y: Math.floor(index / 5) * 120 },
-      data: { todo, size },
+      data: {
+        todo,
+        size,
+        childCount: children,
+        blockedByCount: todo.blockedBy?.length ?? 0,
+      },
     };
   });
 }
@@ -395,12 +400,18 @@ export function createAllNodes(todos: Todo[], auditEntries: AuditLogAlpha1[] = [
   return [...metadataNodes, ...fileNodes, ...userNodes, ...todoNodes];
 }
 
-/** Combine all edges (parent/child + blockedBy + metadata + files + user) */
-export function createAllEdges(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Edge[] {
+/** Combine dependency edges only (parent/child + blockedBy) */
+export function createDependencyEdges(todos: Todo[]): Edge[] {
   const parentChildEdges = createParentChildEdges(todos);
   const blockedByEdges = createBlockedByEdges(todos);
+  return [...parentChildEdges, ...blockedByEdges];
+}
+
+/** Combine all edges (parent/child + blockedBy + metadata + files + user) */
+export function createAllEdges(todos: Todo[], auditEntries: AuditLogAlpha1[] = []): Edge[] {
+  const dependencyEdges = createDependencyEdges(todos);
   const metadataEdges = createMetadataEdges(todos);
   const fileEdges = createFileEdges(todos);
   const userEdges = createUserEdges(todos, auditEntries);
-  return [...parentChildEdges, ...blockedByEdges, ...metadataEdges, ...fileEdges, ...userEdges];
+  return [...dependencyEdges, ...metadataEdges, ...fileEdges, ...userEdges];
 }

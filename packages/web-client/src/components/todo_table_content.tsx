@@ -27,6 +27,7 @@ export interface TodoTableContentProps {
   subtaskCounts: Map<string, SubtaskCount>;
   selectedColumns: string[];
   timeTrackingActive: string[];
+  onShowDependencies?: (todoId: string) => void;
 }
 
 export const TodoTableContent: FC<TodoTableContentProps> = ({
@@ -36,6 +37,7 @@ export const TodoTableContent: FC<TodoTableContentProps> = ({
   subtaskCounts,
   selectedColumns,
   timeTrackingActive,
+  onShowDependencies,
 }) => (
   <div className="overflow-x-auto py-2">
     {groupedByContext.map(([context, contextTodos]) => (
@@ -44,6 +46,7 @@ export const TodoTableContent: FC<TodoTableContentProps> = ({
         contextTodos={contextTodos}
         durationByContext={durationByContext}
         key={context}
+        onShowDependencies={onShowDependencies}
         selectedColumns={selectedColumns}
         subtaskCounts={subtaskCounts}
         timeTrackingActive={timeTrackingActive}

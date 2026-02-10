@@ -24,6 +24,7 @@ export interface ContextGroupProps {
   subtaskCounts: Map<string, SubtaskCount>;
   selectedColumns: string[];
   timeTrackingActive: string[];
+  onShowDependencies?: (todoId: string) => void;
 }
 
 /** Build row data from todos with computed values */
@@ -64,7 +65,7 @@ const useExpansion = () => {
 
 export const ContextGroup: FC<ContextGroupProps> = (props) => {
   const { context, contextTodos, durationByContext, todoDurations, subtaskCounts } = props;
-  const { selectedColumns, timeTrackingActive } = props;
+  const { selectedColumns, timeTrackingActive, onShowDependencies } = props;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const { expandedIds, childrenByParent, childSubtaskCounts, toggleExpanded } = useExpansion();
@@ -98,6 +99,7 @@ export const ContextGroup: FC<ContextGroupProps> = (props) => {
             columns={columns}
             containerRef={containerRef as React.RefObject<HTMLDivElement>}
             expandedIds={expandedIds}
+            onShowDependencies={onShowDependencies}
             rows={rows}
             subtaskCounts={allSubtaskCounts}
             timeTrackingActive={timeTrackingActive.length > 0}

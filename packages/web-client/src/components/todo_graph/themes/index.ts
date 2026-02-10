@@ -31,6 +31,7 @@ export interface ThemeMeta {
 const themeLoaders: Record<string, () => Promise<{ default: GraphTheme } | GraphTheme>> = {
   default: () => import('./default').then((m) => m.defaultTheme),
   rpg2: () => import('./rpg2').then((m) => m.rpg2Theme),
+  dependency_canvas: () => import('./dependency_canvas').then((m) => m.dependencyCanvasTheme),
 };
 
 /** Theme metadata (available synchronously for theme selector UI) */

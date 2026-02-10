@@ -42,6 +42,12 @@ vi.mock('./database_error_message', () => ({
   DatabaseErrorMessage: () => <div data-testid="error-message">Error</div>,
 }));
 
+vi.mock('./todo_graph', () => ({
+  TodoGraph: ({ dependencyRootTodoId }: { dependencyRootTodoId?: string }) => (
+    <div data-testid="dependency-graph">Dependency graph: {dependencyRootTodoId}</div>
+  ),
+}));
+
 vi.mock('../database_setup', () => ({
   ensureDesignDocuments: vi.fn().mockResolvedValue(undefined),
 }));
@@ -296,6 +302,39 @@ describe('TodoTable', () => {
       const toggleButton = screen.getByTitle('Mark complete');
       expect(toggleButton).toBeInTheDocument();
       expect(toggleButton.tagName).toBe('BUTTON');
+    });
+
+    it('should replace table with dependency graph from row actions', async () => {
+      const user = userEvent.setup();
+      const todos = [
+        createTestTodo({
+          _id: 'todo-1',
+          title: 'Dependency root todo',
+          context: 'work',
+          due: '2025-01-13T10:00:00.000Z',
+        }),
+      ];
+
+      vi.mocked(useTodosByDateRange).mockReturnValue({
+        data: todos,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
+
+      renderWithPouchDb(<TodoTable {...defaultProps} />, { testDb: testDb.contextValue });
+
+      await waitFor(() => {
+        expect(screen.getByText('Dependency root todo')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByLabelText('Row actions'));
+      await user.click(await screen.findByRole('button', { name: 'Show dependencies' }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('dependency-graph')).toBeInTheDocument();
+        expect(screen.getByText('Dependency graph: todo-1')).toBeInTheDocument();
+      });
     });
   });
 

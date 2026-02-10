@@ -21,6 +21,7 @@ export interface ChildRowProps {
   childrenByParent: Map<string, Todo[]>;
   columns: TodoColumnDef[];
   depth: number;
+  onShowDependencies?: (todoId: string) => void;
 }
 
 /** Build row data for child todo */
@@ -60,6 +61,7 @@ export const ChildRow: FC<ChildRowProps> = (props) => {
         duration={duration}
         hasChildren={!!hasChildren}
         isExpanded={isExpanded}
+        onShowDependencies={props.onShowDependencies}
         rowData={rowData}
         timeTrackingActive={timeTrackingActive}
         todo={todo}
@@ -101,12 +103,13 @@ interface ChildRowCellsProps {
   toggleExpanded: (todoId: string) => void;
   columns: TodoColumnDef[];
   depth: number;
+  onShowDependencies?: (todoId: string) => void;
 }
 
 /** Render cells for a child row */
 const ChildRowCells: FC<ChildRowCellsProps> = (props) => {
   const { rowData, todo, duration, hasChildren, isExpanded, timeTrackingActive } = props;
-  const { toggleExpanded, columns, depth } = props;
+  const { toggleExpanded, columns, depth, onShowDependencies } = props;
 
   return (
     <tr className={getDepthClasses(depth)}>
@@ -129,7 +132,12 @@ const ChildRowCells: FC<ChildRowCellsProps> = (props) => {
           ) : null}
         </td>
       ))}
-      <RowActions timeTrackingActive={timeTrackingActive} todo={todo} todoDuration={duration} />
+      <RowActions
+        onShowDependencies={onShowDependencies}
+        timeTrackingActive={timeTrackingActive}
+        todo={todo}
+        todoDuration={duration}
+      />
     </tr>
   );
 };
