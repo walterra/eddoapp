@@ -15,7 +15,7 @@
   "dependencies": {
     "date-fns": "^4.1.0",
     "lodash-es": "^4.17.22",
-    "zod": "^3.25.67"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.6",
