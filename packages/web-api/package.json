@@ -37,7 +37,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@elastic/elasticsearch": "^9.2.0",
+    "@elastic/elasticsearch": "^9.2.1",
     "@types/bcryptjs": "^3.0.0",
     "@types/dockerode": "^4.0.1",
     "@types/html-to-text": "^9.0.4",
