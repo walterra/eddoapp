@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- [`ca85244`](https://github.com/walterra/eddoapp/commit/ca852443313f58636cb4f58556d4bd4cdc7dc84f) - Add Graphviz-based dependency graph layout with server-side rendering and reduced web bundle size.
+
+- [#513](https://github.com/walterra/eddoapp/pull/513) [`36cb455`](https://github.com/walterra/eddoapp/commit/36cb45519cebfbe57d608ce6bc522f19bc382e85) - Require MCP API keys and add a chat reasoning visibility toggle.
+
+- [#510](https://github.com/walterra/eddoapp/pull/510) [`52d3df3`](https://github.com/walterra/eddoapp/commit/52d3df3367bb33317e7f00e8a97bf0607034f458) - Add UI actions for todo relationships, inline editing, and search results.
+
 ## 0.7.0
 
 ### Minor Changes

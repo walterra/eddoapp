@@ -1,5 +1,12 @@
 # @eddo/core-server
 
+## 0.8.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @eddo/core-shared@0.8.0
+
 ## 0.7.0
 
 ### Patch Changes
