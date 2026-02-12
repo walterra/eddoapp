@@ -3,12 +3,14 @@
  */
 import type { CompletionStatus } from '../components/status_filter';
 import type { TimeRange } from '../components/time_range_filter';
+import type { TimeTrackingStatus } from '../components/time_tracking_filter';
 import type { FilterPreferences } from './use_filter_preferences';
 
 interface ProfilePreferences {
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: CompletionStatus;
+  selectedTimeTracking?: TimeTrackingStatus;
   selectedTimeRange?: TimeRange;
   currentDate?: string;
 }
@@ -26,6 +28,13 @@ export function extractSelectedContexts(preferences?: ProfilePreferences | null)
 /** Extract selected status from profile */
 export function extractSelectedStatus(preferences?: ProfilePreferences | null): CompletionStatus {
   return preferences?.selectedStatus || 'all';
+}
+
+/** Extract selected time-tracking state from profile */
+export function extractSelectedTimeTracking(
+  preferences?: ProfilePreferences | null,
+): TimeTrackingStatus {
+  return preferences?.selectedTimeTracking || 'all';
 }
 
 /** Extract selected time range from profile */
@@ -50,6 +59,7 @@ export function getDefaultFilterPreferences(): FilterPreferences {
     selectedTags: [],
     selectedContexts: [],
     selectedStatus: 'all',
+    selectedTimeTracking: 'all',
     selectedTimeRange: { type: 'current-week' },
     currentDate: new Date(),
   };

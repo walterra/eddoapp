@@ -39,6 +39,7 @@ export const updatePreferencesSchema = z.object({
   selectedTags: z.array(z.string()).optional(),
   selectedContexts: z.array(z.string()).optional(),
   selectedStatus: z.enum(['all', 'completed', 'incomplete']).optional(),
+  selectedTimeTracking: z.enum(['all', 'tracking', 'not-tracking']).optional(),
   selectedTimeRange: z
     .object({
       type: z.enum([
@@ -80,6 +81,7 @@ export const updatePreferencesSchema = z.object({
         selectedTags: z.array(z.string()),
         selectedContexts: z.array(z.string()),
         selectedStatus: z.enum(['all', 'completed', 'incomplete']),
+        selectedTimeTracking: z.enum(['all', 'tracking', 'not-tracking']).optional(),
         selectedTimeRange: z.object({
           type: z.enum([
             'current-day',

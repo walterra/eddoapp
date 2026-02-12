@@ -16,6 +16,7 @@ import { DatabaseErrorMessage } from './database_error_message';
 import { EmptyState } from './empty_state';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
+import type { TimeTrackingStatus } from './time_tracking_filter';
 import { useDbInitialization } from './todo_board_state';
 import { GraphThemeProvider, useGraphTheme } from './todo_graph/themes/context';
 import { type TodoGraphDataProps, useGraphData } from './todo_graph_data';
@@ -26,6 +27,7 @@ interface TodoGraphProps {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
   selectedTimeRange: TimeRange;
   dependencyRootTodoId?: string | null;
   onBackToTable?: () => void;
@@ -142,6 +144,7 @@ const getGraphDataProps = (props: TodoGraphProps): TodoGraphDataProps => ({
   selectedContexts: props.selectedContexts,
   selectedStatus: props.selectedStatus,
   selectedTags: props.selectedTags,
+  selectedTimeTracking: props.selectedTimeTracking,
   selectedTimeRange: props.selectedTimeRange,
 });
 

@@ -2,12 +2,14 @@ import { useMemo } from 'react';
 
 import type { CompletionStatus } from '../components/status_filter';
 import type { TimeRange } from '../components/time_range_filter';
+import type { TimeTrackingStatus } from '../components/time_tracking_filter';
 import {
   extractCurrentDate,
   extractSelectedContexts,
   extractSelectedStatus,
   extractSelectedTags,
   extractSelectedTimeRange,
+  extractSelectedTimeTracking,
 } from './use_filter_preferences_helpers';
 import { useProfile } from './use_profile';
 
@@ -15,6 +17,7 @@ export interface FilterPreferences {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
   selectedTimeRange: TimeRange;
   currentDate: Date;
 }
@@ -24,6 +27,7 @@ export interface BatchFilterUpdate {
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: CompletionStatus;
+  selectedTimeTracking?: TimeTrackingStatus;
   selectedTimeRange?: TimeRange;
   currentDate?: Date;
 }
@@ -32,6 +36,7 @@ export interface UseFilterPreferencesReturn {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
   selectedTimeRange: TimeRange;
   currentDate: Date;
   isLoading: boolean;
@@ -39,6 +44,9 @@ export interface UseFilterPreferencesReturn {
   setSelectedTags: (tags: string[]) => Promise<{ success: boolean; error?: string }>;
   setSelectedContexts: (contexts: string[]) => Promise<{ success: boolean; error?: string }>;
   setSelectedStatus: (status: CompletionStatus) => Promise<{ success: boolean; error?: string }>;
+  setSelectedTimeTracking: (
+    status: TimeTrackingStatus,
+  ) => Promise<{ success: boolean; error?: string }>;
   setSelectedTimeRange: (timeRange: TimeRange) => Promise<{ success: boolean; error?: string }>;
   setCurrentDate: (date: Date) => Promise<{ success: boolean; error?: string }>;
   batchUpdate: (updates: BatchFilterUpdate) => Promise<{ success: boolean; error?: string }>;
@@ -54,6 +62,8 @@ function createPreferenceSetters(
       updatePreferences({ selectedContexts: contexts }),
     setSelectedStatus: async (status: CompletionStatus) =>
       updatePreferences({ selectedStatus: status }),
+    setSelectedTimeTracking: async (status: TimeTrackingStatus) =>
+      updatePreferences({ selectedTimeTracking: status }),
     setSelectedTimeRange: async (timeRange: TimeRange) =>
       updatePreferences({ selectedTimeRange: timeRange }),
     setCurrentDate: async (date: Date) => updatePreferences({ currentDate: date.toISOString() }),
@@ -63,6 +73,8 @@ function createPreferenceSetters(
       if (updates.selectedContexts !== undefined)
         payload.selectedContexts = updates.selectedContexts;
       if (updates.selectedStatus !== undefined) payload.selectedStatus = updates.selectedStatus;
+      if (updates.selectedTimeTracking !== undefined)
+        payload.selectedTimeTracking = updates.selectedTimeTracking;
       if (updates.selectedTimeRange !== undefined)
         payload.selectedTimeRange = updates.selectedTimeRange;
       if (updates.currentDate !== undefined)
@@ -80,6 +92,7 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
   const selectedTags = useMemo(() => extractSelectedTags(prefs), [prefs]);
   const selectedContexts = useMemo(() => extractSelectedContexts(prefs), [prefs]);
   const selectedStatus = useMemo(() => extractSelectedStatus(prefs), [prefs]);
+  const selectedTimeTracking = useMemo(() => extractSelectedTimeTracking(prefs), [prefs]);
   const selectedTimeRange = useMemo(() => extractSelectedTimeRange(prefs), [prefs]);
   const currentDate = useMemo(() => extractCurrentDate(prefs), [prefs]);
 
@@ -89,6 +102,7 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
     selectedTags,
     selectedContexts,
     selectedStatus,
+    selectedTimeTracking,
     selectedTimeRange,
     currentDate,
     isLoading,

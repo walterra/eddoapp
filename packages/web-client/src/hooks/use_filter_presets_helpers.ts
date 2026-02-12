@@ -3,6 +3,7 @@
  */
 import type { CompletionStatus } from '../components/status_filter';
 import type { TimeRange } from '../components/time_range_filter';
+import type { TimeTrackingStatus } from '../components/time_tracking_filter';
 
 import type { FilterPreset } from './use_profile_types';
 
@@ -11,6 +12,7 @@ export interface CurrentFilterState {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
   selectedTimeRange: TimeRange;
   currentDate: Date;
 }
@@ -41,6 +43,7 @@ export function createFilterPreset(data: CreatePresetData): FilterPreset {
     selectedTags: [...data.filters.selectedTags],
     selectedContexts: [...data.filters.selectedContexts],
     selectedStatus: data.filters.selectedStatus,
+    selectedTimeTracking: data.filters.selectedTimeTracking,
     selectedTimeRange: { ...data.filters.selectedTimeRange },
     dateMode: data.useRelativeDate ? 'relative' : 'fixed',
     savedDate: data.useRelativeDate ? undefined : data.filters.currentDate.toISOString(),
@@ -57,6 +60,7 @@ export function presetToFilterState(preset: FilterPreset): CurrentFilterState {
     selectedTags: [...preset.selectedTags],
     selectedContexts: [...preset.selectedContexts],
     selectedStatus: preset.selectedStatus,
+    selectedTimeTracking: preset.selectedTimeTracking ?? 'all',
     selectedTimeRange: { ...preset.selectedTimeRange },
     currentDate,
   };

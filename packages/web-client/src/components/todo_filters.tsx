@@ -19,6 +19,7 @@ import { ViewSettingsPopover } from './view_settings_popover';
 
 export type { CompletionStatus } from './status_filter';
 export type { TimeRange } from './time_range_filter';
+export type { TimeTrackingStatus } from './time_tracking_filter';
 export type { TodoFiltersProps } from './todo_filters_types';
 
 /** Build preset apply handler - uses batch update if available */
@@ -30,6 +31,7 @@ function useApplyPresetHandler(props: TodoFiltersProps) {
           selectedTags: filters.selectedTags,
           selectedContexts: filters.selectedContexts,
           selectedStatus: filters.selectedStatus,
+          selectedTimeTracking: filters.selectedTimeTracking,
           selectedTimeRange: filters.selectedTimeRange,
           currentDate: filters.currentDate,
         });
@@ -37,6 +39,7 @@ function useApplyPresetHandler(props: TodoFiltersProps) {
         props.setSelectedTags(filters.selectedTags);
         props.setSelectedContexts(filters.selectedContexts);
         props.setSelectedStatus(filters.selectedStatus);
+        props.setSelectedTimeTracking(filters.selectedTimeTracking);
         props.setSelectedTimeRange(filters.selectedTimeRange);
         props.setCurrentDate(filters.currentDate);
       }
@@ -46,6 +49,7 @@ function useApplyPresetHandler(props: TodoFiltersProps) {
       props.setSelectedTags,
       props.setSelectedContexts,
       props.setSelectedStatus,
+      props.setSelectedTimeTracking,
       props.setSelectedTimeRange,
       props.setCurrentDate,
     ],
@@ -127,10 +131,12 @@ export const TodoFilters: FC<TodoFiltersProps> = (props) => {
           selectedStatus={props.selectedStatus}
           selectedTags={props.selectedTags}
           selectedTimeRange={props.selectedTimeRange}
+          selectedTimeTracking={props.selectedTimeTracking}
           setSelectedContexts={props.setSelectedContexts}
           setSelectedStatus={props.setSelectedStatus}
           setSelectedTags={props.setSelectedTags}
           setSelectedTimeRange={props.setSelectedTimeRange}
+          setSelectedTimeTracking={props.setSelectedTimeTracking}
           tableColumns={props.tableColumns}
           viewMode={props.viewMode}
         />

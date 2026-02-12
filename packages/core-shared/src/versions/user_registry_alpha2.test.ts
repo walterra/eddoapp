@@ -30,6 +30,7 @@ describe('UserRegistryAlpha2', () => {
       expect(preferences.githubSyncTags).toEqual(['github', 'gtd:next']);
       expect(preferences.githubLastSync).toBeUndefined();
       expect(preferences.githubSyncStartedAt).toBeUndefined();
+      expect(preferences.selectedTimeTracking).toBe('all');
       expect(preferences.mcpApiKey).toBeNull();
       expect(preferences.mcpApiKeySetAt).toBeUndefined();
     });

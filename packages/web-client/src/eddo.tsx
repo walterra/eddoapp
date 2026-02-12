@@ -8,6 +8,7 @@ import { PageWrapper } from './components/page_wrapper';
 import { Register } from './components/register';
 import type { CompletionStatus } from './components/status_filter';
 import type { TimeRange } from './components/time_range_filter';
+import type { TimeTrackingStatus } from './components/time_tracking_filter';
 import { TodoFilters } from './components/todo_filters';
 import { createQueryClient } from './config/query_client';
 import { AuthProvider, useAuth } from './hooks/use_auth';
@@ -66,8 +67,17 @@ interface AuthenticatedAppProps {
 /** Hook for filter preference handlers */
 function useFilterHandlers() {
   const prefs = useFilterPreferences();
+  const [selectedTimeTracking, setSelectedTimeTracking] = useState<TimeTrackingStatus>(
+    prefs.selectedTimeTracking,
+  );
+
+  useEffect(() => {
+    setSelectedTimeTracking(prefs.selectedTimeTracking);
+  }, [prefs.selectedTimeTracking]);
+
   return {
     prefs,
+    selectedTimeTracking,
     handleCurrentDateChange: (date: Date) => {
       prefs.setCurrentDate(date);
     },
@@ -79,6 +89,10 @@ function useFilterHandlers() {
     },
     handleSelectedStatusChange: (status: CompletionStatus) => {
       prefs.setSelectedStatus(status);
+    },
+    handleSelectedTimeTrackingChange: (status: TimeTrackingStatus) => {
+      setSelectedTimeTracking(status);
+      prefs.setSelectedTimeTracking(status);
     },
     handleSelectedTimeRangeChange: (timeRange: TimeRange) => {
       prefs.setSelectedTimeRange(timeRange);
@@ -94,7 +108,7 @@ function TodoFiltersSection({
   handlers: ReturnType<typeof useFilterHandlers>;
   viewPrefs: ReturnType<typeof useViewPreferences>;
 }) {
-  const { prefs, ...rest } = handlers;
+  const { prefs, selectedTimeTracking, ...rest } = handlers;
   const { viewMode, tableColumns, isLoading, setViewMode, setTableColumns } = viewPrefs;
   return (
     <TodoFilters
@@ -111,11 +125,13 @@ function TodoFiltersSection({
       selectedStatus={prefs.selectedStatus}
       selectedTags={prefs.selectedTags}
       selectedTimeRange={prefs.selectedTimeRange}
+      selectedTimeTracking={selectedTimeTracking}
       setCurrentDate={rest.handleCurrentDateChange}
       setSelectedContexts={rest.handleSelectedContextsChange}
       setSelectedStatus={rest.handleSelectedStatusChange}
       setSelectedTags={rest.handleSelectedTagsChange}
       setSelectedTimeRange={rest.handleSelectedTimeRangeChange}
+      setSelectedTimeTracking={rest.handleSelectedTimeTrackingChange}
       tableColumns={tableColumns}
       viewMode={viewMode}
     />
@@ -137,10 +153,12 @@ function ViewLoadingFallback() {
 /** Todo content view (board or table) */
 function TodoContentView({
   prefs,
+  selectedTimeTracking,
   viewMode,
   tableColumns,
 }: {
   prefs: ReturnType<typeof useFilterPreferences>;
+  selectedTimeTracking: TimeTrackingStatus;
   viewMode: string;
   tableColumns: string[];
 }) {
@@ -150,6 +168,7 @@ function TodoContentView({
     selectedStatus: prefs.selectedStatus,
     selectedTags: prefs.selectedTags,
     selectedTimeRange: prefs.selectedTimeRange,
+    selectedTimeTracking,
   };
 
   const renderView = () => {
@@ -177,6 +196,7 @@ function TodoApp({ logout }: { logout: () => void }) {
       <TodoFiltersSection handlers={handlers} viewPrefs={viewPrefs} />
       <TodoContentView
         prefs={handlers.prefs}
+        selectedTimeTracking={handlers.selectedTimeTracking}
         tableColumns={viewPrefs.tableColumns}
         viewMode={viewPrefs.viewMode}
       />
