@@ -100,6 +100,7 @@ describe('TodoBoard', () => {
     selectedTags: [],
     selectedContexts: [],
     selectedStatus: 'all' as const,
+    selectedTimeTracking: 'all' as const,
     selectedTimeRange: { type: 'current-week' as const },
   };
 

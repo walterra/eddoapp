@@ -40,6 +40,7 @@ describe('useFilterPresets helpers', () => {
         selectedTags: ['tag1', 'tag2'],
         selectedContexts: ['work'],
         selectedStatus: 'incomplete',
+        selectedTimeTracking: 'all',
         selectedTimeRange: { type: 'current-week' },
         currentDate: new Date('2026-01-06T12:00:00.000Z'),
       },
@@ -53,6 +54,7 @@ describe('useFilterPresets helpers', () => {
       expect(preset.selectedTags).toEqual(['tag1', 'tag2']);
       expect(preset.selectedContexts).toEqual(['work']);
       expect(preset.selectedStatus).toBe('incomplete');
+      expect(preset.selectedTimeTracking).toBe('all');
       expect(preset.selectedTimeRange).toEqual({ type: 'current-week' });
       expect(preset.dateMode).toBe('relative');
       expect(preset.savedDate).toBeUndefined();
@@ -103,6 +105,7 @@ describe('useFilterPresets helpers', () => {
         selectedTags: ['tag1'],
         selectedContexts: ['work'],
         selectedStatus: 'completed',
+        selectedTimeTracking: 'tracking',
         selectedTimeRange: { type: 'current-day' },
         dateMode: 'relative',
         createdAt: '2026-01-01T00:00:00.000Z',
@@ -115,6 +118,7 @@ describe('useFilterPresets helpers', () => {
       expect(state.selectedTags).toEqual(['tag1']);
       expect(state.selectedContexts).toEqual(['work']);
       expect(state.selectedStatus).toBe('completed');
+      expect(state.selectedTimeTracking).toBe('tracking');
       expect(state.selectedTimeRange).toEqual({ type: 'current-day' });
 
       // Current date should be close to now
@@ -129,6 +133,7 @@ describe('useFilterPresets helpers', () => {
         selectedTags: [],
         selectedContexts: [],
         selectedStatus: 'all',
+        selectedTimeTracking: 'not-tracking',
         selectedTimeRange: { type: 'custom', startDate: '2025-10-01', endDate: '2025-12-31' },
         dateMode: 'fixed',
         savedDate: '2025-10-15T00:00:00.000Z',
@@ -138,6 +143,7 @@ describe('useFilterPresets helpers', () => {
       const state = presetToFilterState(preset);
 
       expect(state.currentDate.toISOString()).toBe('2025-10-15T00:00:00.000Z');
+      expect(state.selectedTimeTracking).toBe('not-tracking');
       expect(state.selectedTimeRange).toEqual({
         type: 'custom',
         startDate: '2025-10-01',
@@ -152,6 +158,7 @@ describe('useFilterPresets helpers', () => {
         selectedTags: ['tag1'],
         selectedContexts: ['work'],
         selectedStatus: 'all',
+        selectedTimeTracking: 'all',
         selectedTimeRange: { type: 'current-week' },
         dateMode: 'relative',
         createdAt: '2026-01-01T00:00:00.000Z',

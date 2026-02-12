@@ -66,6 +66,7 @@ export {
   type CompletionStatus,
   type ThemePreference,
   type TimeRangeType,
+  type TimeTrackingStatus,
   type ViewMode,
 } from './types/ui-preferences';
 export {

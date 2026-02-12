@@ -57,6 +57,8 @@ describe('TodoFilters Component', () => {
     setSelectedContexts: vi.fn(),
     selectedStatus: 'all' as const,
     setSelectedStatus: vi.fn(),
+    selectedTimeTracking: 'all' as const,
+    setSelectedTimeTracking: vi.fn(),
     selectedTimeRange: { type: 'current-week' as const },
     setSelectedTimeRange: vi.fn(),
     viewMode: 'table' as const,
@@ -82,6 +84,12 @@ describe('TodoFilters Component', () => {
       renderWithPouchDb(<TodoFilters {...defaultProps} />, { testDb: testDb.contextValue });
 
       expect(screen.getByText('CW28')).toBeInTheDocument();
+    });
+
+    it('should render time-tracking filter control', () => {
+      renderWithPouchDb(<TodoFilters {...defaultProps} />, { testDb: testDb.contextValue });
+
+      expect(screen.getByRole('button', { name: /Tracking: all/i })).toBeInTheDocument();
     });
 
     it('should display navigation buttons for current-week time range', () => {
@@ -157,6 +165,21 @@ describe('TodoFilters Component', () => {
       expect(calledDate).toBeInstanceOf(Date);
       // Verify it's a recent date (within 1 second of now)
       expect(Math.abs(calledDate.getTime() - Date.now())).toBeLessThan(1000);
+    });
+  });
+
+  describe('Time-tracking filter', () => {
+    it('calls setSelectedTimeTracking when selecting tracking state', async () => {
+      const user = userEvent.setup();
+      const setSelectedTimeTracking = vi.fn();
+      const props = { ...defaultProps, setSelectedTimeTracking };
+
+      renderWithPouchDb(<TodoFilters {...props} />, { testDb: testDb.contextValue });
+
+      await user.click(screen.getByRole('button', { name: /Tracking: all/i }));
+      await user.click(screen.getByRole('button', { name: 'Tracking: active' }));
+
+      expect(setSelectedTimeTracking).toHaveBeenCalledWith('tracking');
     });
   });
 });

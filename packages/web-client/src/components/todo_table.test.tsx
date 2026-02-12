@@ -84,6 +84,7 @@ describe('TodoTable', () => {
     selectedTags: [] as string[],
     selectedContexts: [] as string[],
     selectedStatus: 'all' as const,
+    selectedTimeTracking: 'all' as const,
     selectedTimeRange: { type: 'current-week' as const },
     selectedColumns: ['title', 'due', 'tags', 'timeTracked', 'status'],
   };

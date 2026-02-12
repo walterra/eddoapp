@@ -10,6 +10,7 @@ import { PresetFilterDropdown } from './preset_filter_dropdown';
 import { StatusFilter } from './status_filter';
 import { TagFilter } from './tag_filter';
 import { TimeRangeFilter } from './time_range_filter';
+import { TimeTrackingFilter } from './time_tracking_filter';
 import type { FilterRowProps } from './todo_filters_types';
 
 export const FilterRow: FC<FilterRowProps> = (props) => {
@@ -26,6 +27,7 @@ export const FilterRow: FC<FilterRowProps> = (props) => {
           selectedTags: props.selectedTags,
           selectedContexts: props.selectedContexts,
           selectedStatus: props.selectedStatus,
+          selectedTimeTracking: props.selectedTimeTracking,
           selectedTimeRange: props.selectedTimeRange,
           currentDate: props.currentDate,
         }}
@@ -38,6 +40,10 @@ export const FilterRow: FC<FilterRowProps> = (props) => {
       <StatusFilter
         onStatusChange={props.setSelectedStatus}
         selectedStatus={props.selectedStatus}
+      />
+      <TimeTrackingFilter
+        onTimeTrackingChange={props.setSelectedTimeTracking}
+        selectedTimeTracking={props.selectedTimeTracking}
       />
       <EddoContextFilter
         availableContexts={props.allContexts}

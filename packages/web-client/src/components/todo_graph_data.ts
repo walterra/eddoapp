@@ -14,7 +14,13 @@ import {
 } from '../hooks/use_audit_log_stream';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
-import { calculateDateRange, type DateRange, filterTodosForGraph } from './todo_board_helpers';
+import type { TimeTrackingStatus } from './time_tracking_filter';
+import {
+  calculateDateRange,
+  type DateRange,
+  filterTodosForGraph,
+  type TodoFilterCriteria,
+} from './todo_board_helpers';
 import { useOutdatedTodos, useTodoBoardData } from './todo_board_state';
 import { selectDependencyTodos } from './todo_dependency_graph_helpers';
 import {
@@ -29,6 +35,7 @@ export interface TodoGraphDataProps {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
   selectedTimeRange: TimeRange;
   dependencyRootTodoId?: string | null;
 }
@@ -78,6 +85,7 @@ interface GraphStatusParams {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
 }
 
 /** Compute derived state for empty/filter status */
@@ -90,7 +98,8 @@ const computeGraphStatus = (params: GraphStatusParams) => ({
   hasActiveFilters:
     params.selectedTags.length > 0 ||
     params.selectedContexts.length > 0 ||
-    params.selectedStatus !== 'all',
+    params.selectedStatus !== 'all' ||
+    params.selectedTimeTracking !== 'all',
 });
 
 interface DisplayTodosParams {
@@ -98,17 +107,35 @@ interface DisplayTodosParams {
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
   selectedTags: string[];
+  selectedTimeTracking: TimeTrackingStatus;
+  timeTrackingActive: readonly string[];
   dependencyRootTodoId?: string | null;
 }
 
 /** Apply dependency focus if dependencyRootTodoId is provided, bypassing status/context/tag filters */
 const useDisplayTodos = (params: DisplayTodosParams): Todo[] => {
-  const { todos, selectedContexts, selectedStatus, selectedTags, dependencyRootTodoId } = params;
+  const {
+    todos,
+    selectedContexts,
+    selectedStatus,
+    selectedTags,
+    selectedTimeTracking,
+    timeTrackingActive,
+    dependencyRootTodoId,
+  } = params;
 
-  const filteredTodos = useMemo(
-    () => filterTodosForGraph(todos, selectedContexts, selectedStatus, selectedTags),
-    [todos, selectedTags, selectedContexts, selectedStatus],
+  const criteria = useMemo<TodoFilterCriteria>(
+    () => ({
+      selectedContexts,
+      selectedStatus,
+      selectedTags,
+      selectedTimeTracking,
+      timeTrackingActive,
+    }),
+    [selectedContexts, selectedStatus, selectedTags, selectedTimeTracking, timeTrackingActive],
   );
+
+  const filteredTodos = useMemo(() => filterTodosForGraph(todos, criteria), [todos, criteria]);
 
   return useMemo(() => {
     if (!dependencyRootTodoId) {
@@ -164,6 +191,7 @@ interface GraphScope {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
 }
 
 /** Build date range for graph data queries */
@@ -186,6 +214,7 @@ const useGraphScope = (props: TodoGraphDataProps, isInitialized: boolean): Graph
     selectedTags,
     selectedContexts,
     selectedStatus,
+    selectedTimeTracking,
     selectedTimeRange,
     dependencyRootTodoId,
   } = props;
@@ -207,6 +236,8 @@ const useGraphScope = (props: TodoGraphDataProps, isInitialized: boolean): Graph
     selectedContexts,
     selectedStatus,
     selectedTags,
+    selectedTimeTracking,
+    timeTrackingActive: boardData.timeTrackingActive,
     dependencyRootTodoId,
   });
 
@@ -217,6 +248,7 @@ const useGraphScope = (props: TodoGraphDataProps, isInitialized: boolean): Graph
     selectedTags,
     selectedContexts,
     selectedStatus,
+    selectedTimeTracking,
   };
 };
 
@@ -246,6 +278,7 @@ export const useGraphData = (
     selectedTags: scope.selectedTags,
     selectedContexts: scope.selectedContexts,
     selectedStatus: scope.selectedStatus,
+    selectedTimeTracking: scope.selectedTimeTracking,
   });
 
   return {

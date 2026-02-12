@@ -79,6 +79,7 @@ describe('useFilterPreferences Hook', () => {
     expect(result.current.selectedTags).toEqual([]);
     expect(result.current.selectedContexts).toEqual([]);
     expect(result.current.selectedStatus).toBe('all');
+    expect(result.current.selectedTimeTracking).toBe('all');
     expect(result.current.selectedTimeRange).toEqual({ type: 'current-week' });
     expect(result.current.currentDate).toBeInstanceOf(Date);
     expect(result.current.isLoading).toBe(false);
@@ -103,6 +104,7 @@ describe('useFilterPreferences Hook', () => {
           selectedTags: ['work', 'urgent'],
           selectedContexts: ['office'],
           selectedStatus: 'incomplete',
+          selectedTimeTracking: 'tracking',
           selectedTimeRange: { type: 'current-month' },
           currentDate: testDate,
         },
@@ -124,6 +126,7 @@ describe('useFilterPreferences Hook', () => {
     expect(result.current.selectedTags).toEqual(['work', 'urgent']);
     expect(result.current.selectedContexts).toEqual(['office']);
     expect(result.current.selectedStatus).toBe('incomplete');
+    expect(result.current.selectedTimeTracking).toBe('tracking');
     expect(result.current.selectedTimeRange).toEqual({ type: 'current-month' });
     expect(result.current.currentDate).toEqual(new Date(testDate));
   });
@@ -208,6 +211,33 @@ describe('useFilterPreferences Hook', () => {
 
     await waitFor(() => {
       expect(updatePreferences).toHaveBeenCalledWith({ selectedStatus: 'completed' });
+    });
+  });
+
+  it('calls updatePreferences when setting selected time tracking', async () => {
+    const updatePreferences = vi.fn().mockResolvedValue({ success: true });
+
+    vi.mocked(useProfile).mockReturnValue({
+      profile: null,
+      authToken: null,
+      isLoading: false,
+      error: null,
+      fetchProfile: vi.fn(),
+      updateProfile: vi.fn(),
+      changePassword: vi.fn(),
+      linkTelegram: vi.fn(),
+      unlinkTelegram: vi.fn(),
+      updatePreferences,
+      clearError: vi.fn(),
+      mutations: createMockMutations(),
+    });
+
+    const { result } = renderHook(() => useFilterPreferences());
+
+    await result.current.setSelectedTimeTracking('tracking');
+
+    await waitFor(() => {
+      expect(updatePreferences).toHaveBeenCalledWith({ selectedTimeTracking: 'tracking' });
     });
   });
 

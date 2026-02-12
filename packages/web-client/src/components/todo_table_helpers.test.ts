@@ -33,7 +33,13 @@ describe('filterTodos', () => {
         createMockTodo({ _id: 'standalone', title: 'Standalone Todo' }),
       ];
 
-      const result = filterTodos(todos, [], 'all', []);
+      const result = filterTodos(todos, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(2);
       expect(result.map((t) => t._id)).toEqual(['parent-1', 'standalone']);
@@ -46,7 +52,13 @@ describe('filterTodos', () => {
         createMockTodo({ _id: 'todo-3' }), // No parentId field
       ];
 
-      const result = filterTodos(todos, [], 'all', []);
+      const result = filterTodos(todos, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(3);
     });
@@ -58,7 +70,13 @@ describe('filterTodos', () => {
       ];
 
       // Even though child matches all filters, it should be excluded
-      const result = filterTodos(todos, ['work'], 'all', ['important']);
+      const result = filterTodos(todos, {
+        selectedContexts: ['work'],
+        selectedStatus: 'all',
+        selectedTags: ['important'],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0]._id).toBe('parent');
@@ -73,7 +91,13 @@ describe('filterTodos', () => {
         createMockTodo({ _id: '3', context: 'work' }),
       ];
 
-      const result = filterTodos(todos, ['work'], 'all', []);
+      const result = filterTodos(todos, {
+        selectedContexts: ['work'],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(2);
       expect(result.every((t) => t.context === 'work')).toBe(true);
@@ -87,7 +111,13 @@ describe('filterTodos', () => {
         createMockTodo({ _id: '2', completed: null }),
       ];
 
-      const result = filterTodos(todos, [], 'completed', []);
+      const result = filterTodos(todos, {
+        selectedContexts: [],
+        selectedStatus: 'completed',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0]._id).toBe('1');
@@ -99,7 +129,13 @@ describe('filterTodos', () => {
         createMockTodo({ _id: '2', completed: null }),
       ];
 
-      const result = filterTodos(todos, [], 'incomplete', []);
+      const result = filterTodos(todos, {
+        selectedContexts: [],
+        selectedStatus: 'incomplete',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0]._id).toBe('2');
@@ -114,10 +150,49 @@ describe('filterTodos', () => {
         createMockTodo({ _id: '3', tags: ['urgent'] }),
       ];
 
-      const result = filterTodos(todos, [], 'all', ['urgent']);
+      const result = filterTodos(todos, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: ['urgent'],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(2);
       expect(result.map((t) => t._id)).toEqual(['1', '3']);
+    });
+  });
+
+  describe('time tracking filtering', () => {
+    const todos = [
+      createMockTodo({ _id: 'tracking-1', title: 'Tracking Todo' }),
+      createMockTodo({ _id: 'idle-1', title: 'Idle Todo' }),
+    ];
+
+    it('filters to currently tracking todos', () => {
+      const result = filterTodos(todos, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'tracking',
+        timeTrackingActive: ['tracking-1'],
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]._id).toBe('tracking-1');
+    });
+
+    it('filters to currently not-tracking todos', () => {
+      const result = filterTodos(todos, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'not-tracking',
+        timeTrackingActive: ['tracking-1'],
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]._id).toBe('idle-1');
     });
   });
 });
@@ -153,7 +228,13 @@ describe('filterActivities', () => {
         createMockActivity({ todoOverrides: { _id: 'standalone', title: 'Standalone Todo' } }),
       ];
 
-      const result = filterActivities(activities, [], 'all', []);
+      const result = filterActivities(activities, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       // All activities included - child time counts toward context total
       expect(result).toHaveLength(3);
@@ -169,7 +250,13 @@ describe('filterActivities', () => {
         createMockActivity({ todoOverrides: { _id: '3', context: 'work' } }),
       ];
 
-      const result = filterActivities(activities, ['work'], 'all', []);
+      const result = filterActivities(activities, {
+        selectedContexts: ['work'],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(2);
       expect(result.every((a) => a.doc.context === 'work')).toBe(true);
@@ -185,7 +272,13 @@ describe('filterActivities', () => {
         createMockActivity({ todoOverrides: { _id: '2', completed: null } }),
       ];
 
-      const result = filterActivities(activities, [], 'completed', []);
+      const result = filterActivities(activities, {
+        selectedContexts: [],
+        selectedStatus: 'completed',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('1');
@@ -199,7 +292,13 @@ describe('filterActivities', () => {
         createMockActivity({ todoOverrides: { _id: '2', completed: null } }),
       ];
 
-      const result = filterActivities(activities, [], 'incomplete', []);
+      const result = filterActivities(activities, {
+        selectedContexts: [],
+        selectedStatus: 'incomplete',
+        selectedTags: [],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('2');
@@ -214,10 +313,54 @@ describe('filterActivities', () => {
         createMockActivity({ todoOverrides: { _id: '3', tags: ['urgent'] } }),
       ];
 
-      const result = filterActivities(activities, [], 'all', ['urgent']);
+      const result = filterActivities(activities, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: ['urgent'],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       expect(result).toHaveLength(2);
       expect(result.map((a) => a.id)).toEqual(['1', '3']);
+    });
+  });
+
+  describe('time tracking filtering', () => {
+    it('filters activities by currently tracking todos', () => {
+      const activities = [
+        createMockActivity({ todoOverrides: { _id: 'tracking-1' } }),
+        createMockActivity({ todoOverrides: { _id: 'idle-1' } }),
+      ];
+
+      const result = filterActivities(activities, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'tracking',
+        timeTrackingActive: ['tracking-1'],
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('tracking-1');
+    });
+
+    it('filters activities by currently not-tracking todos', () => {
+      const activities = [
+        createMockActivity({ todoOverrides: { _id: 'tracking-1' } }),
+        createMockActivity({ todoOverrides: { _id: 'idle-1' } }),
+      ];
+
+      const result = filterActivities(activities, {
+        selectedContexts: [],
+        selectedStatus: 'all',
+        selectedTags: [],
+        selectedTimeTracking: 'not-tracking',
+        timeTrackingActive: ['tracking-1'],
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('idle-1');
     });
   });
 
@@ -252,7 +395,13 @@ describe('filterActivities', () => {
         }),
       ];
 
-      const result = filterActivities(activities, ['work'], 'incomplete', ['urgent']);
+      const result = filterActivities(activities, {
+        selectedContexts: ['work'],
+        selectedStatus: 'incomplete',
+        selectedTags: ['urgent'],
+        selectedTimeTracking: 'all',
+        timeTrackingActive: [],
+      });
 
       // Activities 1 and 5 match: work context, incomplete, has urgent tag
       // Activity 5 is a child but is included (child time counts toward context total)

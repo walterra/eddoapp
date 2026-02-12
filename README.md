@@ -27,7 +27,7 @@ Manage todos through a web interface, Telegram bot with Claude AI, or programmat
 - **GTD Contexts** — Organize todos by context (work, home, projects) in Kanban columns
 - **Calendar Week View** — Navigate todos by week with date-range queries
 - **Dependency Graph** — Open focused parent/child + blockedBy graph from table row actions with Graphviz leveling
-- **Time Tracking** — Start/pause timers with daily summaries
+- **Time Tracking** — Start/pause timers with daily summaries and filter views by active tracking state
 - **Offline-First** — PouchDB local storage with real-time sync
 - **AI Agent** — Telegram bot with Claude for natural language todo management
 - **GitHub Sync** — Auto-import issues assigned to you

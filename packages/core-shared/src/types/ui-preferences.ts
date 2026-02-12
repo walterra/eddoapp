@@ -11,6 +11,9 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 /** Completion status filter options */
 export type CompletionStatus = 'all' | 'completed' | 'incomplete';
 
+/** Time tracking filter options */
+export type TimeTrackingStatus = 'all' | 'tracking' | 'not-tracking';
+
 /** Time range filter type */
 export type TimeRangeType =
   | 'current-day'

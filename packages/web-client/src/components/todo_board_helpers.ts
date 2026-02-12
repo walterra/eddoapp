@@ -21,6 +21,7 @@ import {
 import { CONTEXT_DEFAULT } from '../constants';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
+import type { TimeTrackingStatus } from './time_tracking_filter';
 
 /** Date range for filtering using date-only strings (YYYY-MM-DD) */
 export interface DateRange {
@@ -121,6 +122,23 @@ function filterByTags(todos: Todo[], selectedTags: string[]): Todo[] {
 }
 
 /**
+ * Filter todos by active time-tracking state
+ */
+function filterByTimeTracking(
+  todos: Todo[],
+  selectedTimeTracking: TimeTrackingStatus,
+  activeTrackingIds: ReadonlySet<string>,
+): Todo[] {
+  if (selectedTimeTracking === 'all') return todos;
+
+  return todos.filter((todo) => {
+    const isTracking = activeTrackingIds.has(todo._id);
+    if (selectedTimeTracking === 'tracking') return isTracking;
+    return !isTracking;
+  });
+}
+
+/**
  * Filter out child todos (those with a parentId set)
  * Child todos are displayed nested under their parent, not in the main view
  */
@@ -128,37 +146,39 @@ function filterOutChildTodos(todos: Todo[]): Todo[] {
   return todos.filter((todo) => !todo.parentId);
 }
 
+export interface TodoFilterCriteria {
+  selectedContexts: string[];
+  selectedStatus: CompletionStatus;
+  selectedTags: string[];
+  selectedTimeTracking: TimeTrackingStatus;
+  timeTrackingActive: readonly string[];
+}
+
 /**
  * Apply all filters to todos
  */
-export function filterTodos(
-  todos: Todo[],
-  selectedContexts: string[],
-  selectedStatus: CompletionStatus,
-  selectedTags: string[],
-): Todo[] {
+export function filterTodos(todos: Todo[], criteria: TodoFilterCriteria): Todo[] {
   let filtered = todos;
+  const activeTrackingIds = new Set(criteria.timeTrackingActive);
   filtered = filterOutChildTodos(filtered);
-  filtered = filterByContext(filtered, selectedContexts);
-  filtered = filterByStatus(filtered, selectedStatus);
-  filtered = filterByTags(filtered, selectedTags);
+  filtered = filterByContext(filtered, criteria.selectedContexts);
+  filtered = filterByStatus(filtered, criteria.selectedStatus);
+  filtered = filterByTags(filtered, criteria.selectedTags);
+  filtered = filterByTimeTracking(filtered, criteria.selectedTimeTracking, activeTrackingIds);
   return filtered;
 }
 
 /**
  * Apply filters to todos for graph view (includes children for relationship visualization)
  */
-export function filterTodosForGraph(
-  todos: Todo[],
-  selectedContexts: string[],
-  selectedStatus: CompletionStatus,
-  selectedTags: string[],
-): Todo[] {
+export function filterTodosForGraph(todos: Todo[], criteria: TodoFilterCriteria): Todo[] {
   let filtered = todos;
+  const activeTrackingIds = new Set(criteria.timeTrackingActive);
   // Note: We don't filter out children in graph view to show parent/child relationships
-  filtered = filterByContext(filtered, selectedContexts);
-  filtered = filterByStatus(filtered, selectedStatus);
-  filtered = filterByTags(filtered, selectedTags);
+  filtered = filterByContext(filtered, criteria.selectedContexts);
+  filtered = filterByStatus(filtered, criteria.selectedStatus);
+  filtered = filterByTags(filtered, criteria.selectedTags);
+  filtered = filterByTimeTracking(filtered, criteria.selectedTimeTracking, activeTrackingIds);
   return filtered;
 }
 
@@ -189,20 +209,36 @@ function activityPassesTagFilter(todo: Todo, selectedTags: string[]): boolean {
 }
 
 /**
+ * Check if activity passes time-tracking filter
+ */
+function activityPassesTimeTrackingFilter(
+  todo: Todo,
+  selectedTimeTracking: TimeTrackingStatus,
+  activeTrackingIds: ReadonlySet<string>,
+): boolean {
+  if (selectedTimeTracking === 'all') return true;
+
+  const isTracking = activeTrackingIds.has(todo._id);
+  if (selectedTimeTracking === 'tracking') return isTracking;
+  return !isTracking;
+}
+
+/**
  * Filter activities based on their associated todo
  */
 export function filterActivities(
   activities: ActivityItem[],
-  selectedContexts: string[],
-  selectedStatus: CompletionStatus,
-  selectedTags: string[],
+  criteria: TodoFilterCriteria,
 ): ActivityItem[] {
+  const activeTrackingIds = new Set(criteria.timeTrackingActive);
+
   return activities.filter((activity) => {
     const todo = activity.doc;
     return (
-      activityPassesContextFilter(todo, selectedContexts) &&
-      activityPassesStatusFilter(todo, selectedStatus) &&
-      activityPassesTagFilter(todo, selectedTags)
+      activityPassesContextFilter(todo, criteria.selectedContexts) &&
+      activityPassesStatusFilter(todo, criteria.selectedStatus) &&
+      activityPassesTagFilter(todo, criteria.selectedTags) &&
+      activityPassesTimeTrackingFilter(todo, criteria.selectedTimeTracking, activeTrackingIds)
     );
   });
 }

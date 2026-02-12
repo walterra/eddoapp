@@ -11,9 +11,11 @@ import { DatabaseErrorMessage } from './database_error_message';
 import { EmptyState } from './empty_state';
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
+import type { TimeTrackingStatus } from './time_tracking_filter';
 import { ContextColumn } from './todo_board_columns';
 import {
   type ActivityItem,
+  type TodoFilterCriteria,
   calculateDateRange,
   calculateDurationByContext,
   calculateDurationByContextAndDate,
@@ -33,6 +35,7 @@ interface TodoBoardProps {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: CompletionStatus;
+  selectedTimeTracking: TimeTrackingStatus;
   selectedTimeRange: TimeRange;
 }
 
@@ -47,21 +50,23 @@ interface BoardDataResult {
   hasActiveFilters: boolean;
 }
 
+interface FilteredDataParams {
+  boardData: ReturnType<typeof useTodoBoardData>;
+  criteria: TodoFilterCriteria;
+}
+
 /** Compute filtered and grouped data from board state */
-const useFilteredData = (
-  boardData: ReturnType<typeof useTodoBoardData>,
-  selectedContexts: string[],
-  selectedStatus: CompletionStatus,
-  selectedTags: string[],
-) => {
+const useFilteredData = ({ boardData, criteria }: FilteredDataParams) => {
   const filteredTodos = useMemo(
-    () => filterTodos(boardData.todos, selectedContexts, selectedStatus, selectedTags),
-    [boardData.todos, selectedTags, selectedContexts, selectedStatus],
+    () => filterTodos(boardData.todos, criteria),
+    [boardData.todos, criteria],
   );
+
   const filteredActivities = useMemo(
-    () => filterActivities(boardData.activities, selectedContexts, selectedStatus, selectedTags),
-    [boardData.activities, selectedContexts, selectedStatus, selectedTags],
+    () => filterActivities(boardData.activities, criteria),
+    [boardData.activities, criteria],
   );
+
   return { filteredTodos, filteredActivities };
 };
 
@@ -74,12 +79,109 @@ const useDurationData = (activities: ActivityItem[]) => ({
   ),
 });
 
+interface BoardFlagsParams {
+  groupedByContextByDate: Array<[string, Map<string, Array<Todo | ActivityItem>>]>;
+  boardData: ReturnType<typeof useTodoBoardData>;
+  isInitialized: boolean;
+  criteria: TodoFilterCriteria;
+}
+
+/** Compute empty-state and active-filter flags for board view */
+const getBoardFlags = ({
+  groupedByContextByDate,
+  boardData,
+  isInitialized,
+  criteria,
+}: BoardFlagsParams) => ({
+  hasNoTodos:
+    groupedByContextByDate.length === 0 &&
+    !boardData.isLoading &&
+    isInitialized &&
+    boardData.todosQuery.isFetched,
+  hasActiveFilters:
+    criteria.selectedTags.length > 0 ||
+    criteria.selectedContexts.length > 0 ||
+    criteria.selectedStatus !== 'all' ||
+    criteria.selectedTimeTracking !== 'all',
+});
+
+interface BoardDerivedData {
+  groupedByContextByDate: Array<[string, Map<string, Array<Todo | ActivityItem>>]>;
+  durationByContext: Record<string, string>;
+  durationByContextByDate: Array<[string, Map<string, ActivityItem[]>]>;
+  hasNoTodos: boolean;
+  hasActiveFilters: boolean;
+}
+
+interface UseBoardDerivedDataParams {
+  boardData: ReturnType<typeof useTodoBoardData>;
+  selectedContexts: string[];
+  selectedStatus: CompletionStatus;
+  selectedTags: string[];
+  selectedTimeTracking: TimeTrackingStatus;
+  isInitialized: boolean;
+}
+
+const useBoardDerivedData = ({
+  boardData,
+  selectedContexts,
+  selectedStatus,
+  selectedTags,
+  selectedTimeTracking,
+  isInitialized,
+}: UseBoardDerivedDataParams): BoardDerivedData => {
+  const criteria = useMemo<TodoFilterCriteria>(
+    () => ({
+      selectedContexts,
+      selectedStatus,
+      selectedTags,
+      selectedTimeTracking,
+      timeTrackingActive: boardData.timeTrackingActive,
+    }),
+    [
+      selectedContexts,
+      selectedStatus,
+      selectedTags,
+      selectedTimeTracking,
+      boardData.timeTrackingActive,
+    ],
+  );
+
+  const { filteredTodos, filteredActivities } = useFilteredData({ boardData, criteria });
+  const groupedByContextByDate = useMemo(
+    () => groupByContextAndDate(filteredTodos, filteredActivities),
+    [filteredTodos, filteredActivities],
+  );
+  const { durationByContext, durationByContextByDate } = useDurationData(boardData.activities);
+  const { hasNoTodos, hasActiveFilters } = getBoardFlags({
+    groupedByContextByDate,
+    boardData,
+    isInitialized,
+    criteria,
+  });
+
+  return {
+    groupedByContextByDate,
+    durationByContext,
+    durationByContextByDate,
+    hasNoTodos,
+    hasActiveFilters,
+  };
+};
+
 const useBoardData = (
   props: TodoBoardProps,
   isInitialized: boolean,
   error: DatabaseError | null,
 ): BoardDataResult & ReturnType<typeof useTodoBoardData> => {
-  const { currentDate, selectedTags, selectedContexts, selectedStatus, selectedTimeRange } = props;
+  const {
+    currentDate,
+    selectedTags,
+    selectedContexts,
+    selectedStatus,
+    selectedTimeTracking,
+    selectedTimeRange,
+  } = props;
   const dateRange = useMemo(
     () => calculateDateRange(currentDate, selectedTimeRange),
     [currentDate, selectedTimeRange],
@@ -91,25 +193,20 @@ const useBoardData = (
   });
   useOutdatedTodos(boardData.outdatedTodosMemo);
 
-  const { filteredTodos, filteredActivities } = useFilteredData(
+  const {
+    groupedByContextByDate,
+    durationByContext,
+    durationByContextByDate,
+    hasNoTodos,
+    hasActiveFilters,
+  } = useBoardDerivedData({
     boardData,
     selectedContexts,
     selectedStatus,
     selectedTags,
-  );
-  const groupedByContextByDate = useMemo(
-    () => groupByContextAndDate(filteredTodos, filteredActivities),
-    [filteredTodos, filteredActivities],
-  );
-  const { durationByContext, durationByContextByDate } = useDurationData(boardData.activities);
-
-  const hasNoTodos =
-    groupedByContextByDate.length === 0 &&
-    !boardData.isLoading &&
-    isInitialized &&
-    boardData.todosQuery.isFetched;
-  const hasActiveFilters =
-    selectedTags.length > 0 || selectedContexts.length > 0 || selectedStatus !== 'all';
+    selectedTimeTracking,
+    isInitialized,
+  });
 
   return {
     ...boardData,

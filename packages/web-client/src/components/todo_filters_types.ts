@@ -7,6 +7,7 @@ import type { ViewMode } from '../hooks/use_view_preferences';
 
 import type { CompletionStatus } from './status_filter';
 import type { TimeRange } from './time_range_filter';
+import type { TimeTrackingStatus } from './time_tracking_filter';
 
 export interface TodoFiltersProps {
   currentDate: Date;
@@ -17,6 +18,8 @@ export interface TodoFiltersProps {
   setSelectedContexts: (contexts: string[]) => void;
   selectedStatus: CompletionStatus;
   setSelectedStatus: (status: CompletionStatus) => void;
+  selectedTimeTracking: TimeTrackingStatus;
+  setSelectedTimeTracking: (status: TimeTrackingStatus) => void;
   selectedTimeRange: TimeRange;
   setSelectedTimeRange: (timeRange: TimeRange) => void;
   viewMode: ViewMode;
@@ -39,6 +42,8 @@ export interface FilterRowProps {
   setSelectedTimeRange: (timeRange: TimeRange) => void;
   selectedStatus: CompletionStatus;
   setSelectedStatus: (status: CompletionStatus) => void;
+  selectedTimeTracking: TimeTrackingStatus;
+  setSelectedTimeTracking: (status: TimeTrackingStatus) => void;
   allContexts: string[];
   selectedContexts: string[];
   setSelectedContexts: (contexts: string[]) => void;

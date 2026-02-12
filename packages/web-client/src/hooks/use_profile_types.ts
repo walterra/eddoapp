@@ -35,6 +35,9 @@ export interface FilterPresetTimeRange {
 /** Completion status for filter presets */
 export type FilterPresetStatus = 'all' | 'completed' | 'incomplete';
 
+/** Time tracking state for filter presets */
+export type FilterPresetTimeTrackingStatus = 'all' | 'tracking' | 'not-tracking';
+
 /** Saved filter preset configuration */
 export interface FilterPreset {
   id: string;
@@ -42,6 +45,7 @@ export interface FilterPreset {
   selectedTags: string[];
   selectedContexts: string[];
   selectedStatus: FilterPresetStatus;
+  selectedTimeTracking?: FilterPresetTimeTrackingStatus;
   selectedTimeRange: FilterPresetTimeRange;
   dateMode: FilterPresetDateMode;
   savedDate?: string;
@@ -72,6 +76,7 @@ export interface UserPreferences {
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: 'all' | 'completed' | 'incomplete';
+  selectedTimeTracking?: 'all' | 'tracking' | 'not-tracking';
   selectedTimeRange?: {
     type: 'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';
     startDate?: string;
@@ -145,6 +150,7 @@ export interface UpdatePreferencesData {
   selectedTags?: string[];
   selectedContexts?: string[];
   selectedStatus?: 'all' | 'completed' | 'incomplete';
+  selectedTimeTracking?: 'all' | 'tracking' | 'not-tracking';
   selectedTimeRange?: {
     type: 'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';
     startDate?: string;
