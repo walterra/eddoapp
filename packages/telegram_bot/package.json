@@ -39,7 +39,7 @@
     "@types/node": "^25.0.3",
     "@types/uuid": "^11.0.0",
     "eslint": "^9.39.2",
-    "nano": "^11.0.3",
+    "nano": "^11.0.4",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^6.0.2",
