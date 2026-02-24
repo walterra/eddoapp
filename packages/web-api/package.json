@@ -29,7 +29,7 @@
     "feedsmith": "^2.8.0",
     "google-auth-library": "^10.5.0",
     "hono": "^4.11.9",
-    "imapflow": "^1.2.4",
+    "imapflow": "^1.2.9",
     "jsonwebtoken": "^9.0.3",
     "nano": "^11.0.4",
     "pino": "^10.1.0",
