@@ -55,8 +55,8 @@ importers:
         specifier: ^4.17.22
         version: 4.17.22
       nano:
-        specifier: ^11.0.3
-        version: 11.0.3
+        specifier: ^11.0.4
+        version: 11.0.4
       react:
         specifier: ^19.2.3
         version: 19.2.3
@@ -312,8 +312,8 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
       nano:
-        specifier: ^11.0.3
-        version: 11.0.3
+        specifier: ^11.0.4
+        version: 11.0.4
       pouchdb-adapter-memory:
         specifier: ^9.0.0
         version: 9.0.0
@@ -380,8 +380,8 @@ importers:
         specifier: ^3.27.0
         version: 3.27.0(hono@4.11.4)
       nano:
-        specifier: ^11.0.3
-        version: 11.0.3
+        specifier: ^11.0.4
+        version: 11.0.4
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -534,8 +534,8 @@ importers:
         specifier: ^9.39.2
         version: 9.39.2(jiti@2.6.1)
       nano:
-        specifier: ^11.0.3
-        version: 11.0.3
+        specifier: ^11.0.4
+        version: 11.0.4
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -594,8 +594,8 @@ importers:
         specifier: ^9.0.3
         version: 9.0.3
       nano:
-        specifier: ^11.0.3
-        version: 11.0.3
+        specifier: ^11.0.4
+        version: 11.0.4
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -6794,8 +6794,8 @@ packages:
     resolution: {integrity: sha512-tacvGzUY5o2D8CBh2rrwxyNojUsZNU2zjNTzKQrkgGJQTbGAfArVWXSKMBokBeeg6C7OLRGUEyoFlYbfeWQIqw==}
     engines: {node: '>=20.17'}
 
-  nano@11.0.3:
-    resolution: {integrity: sha512-bOiBWTW5sA92Rp2Tuu5LmujUe0rre5AAKuiXuhjD4tBAVRZRrKWK0AJyEYWFm9PN8TRktsbUfUdDb//c5Cr3Dg==}
+  nano@11.0.4:
+    resolution: {integrity: sha512-VbJ89lLD0QW7yIZ59luUhKJuwv4hNwC0NQ0UmeGOHE34TPGiaVd2bhiWRymIAS/1a/fDEBuaYURAI8HtRR+VAw==}
     engines: {node: '>=20.0'}
 
   nanoid@3.3.11:
@@ -15828,7 +15828,7 @@ snapshots:
 
   nano-spawn@2.0.0: {}
 
-  nano@11.0.3: {}
+  nano@11.0.4: {}
 
   nanoid@3.3.11: {}
 
