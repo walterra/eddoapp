@@ -42,7 +42,7 @@
     "nano": "^11.0.4",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vite-tsconfig-paths": "^6.0.2",
+    "vite-tsconfig-paths": "^6.1.0",
     "vitest": "^3.2.4"
   },
   "keywords": [
