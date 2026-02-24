@@ -29,7 +29,7 @@ importers:
         version: 0.27.16(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.4)(zod@3.25.76)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.9)(zod@3.25.76)
       d3-array:
         specifier: ^3.0.3
         version: 3.2.4
@@ -44,7 +44,7 @@ importers:
         version: 3.3.0
       fastmcp:
         specifier: ^3.27.0
-        version: 3.27.0(hono@4.11.4)
+        version: 3.27.0(hono@4.11.9)
       flowbite:
         specifier: ^4.0.1
         version: 4.0.1(rollup@4.56.0)
@@ -378,7 +378,7 @@ importers:
         version: 1.5.1
       fastmcp:
         specifier: ^3.27.0
-        version: 3.27.0(hono@4.11.4)
+        version: 3.27.0(hono@4.11.9)
       nano:
         specifier: ^11.0.4
         version: 11.0.4
@@ -394,7 +394,7 @@ importers:
     devDependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.4)(zod@3.25.76)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.9)(zod@3.25.76)
       '@types/node':
         specifier: ^25.0.3
         version: 25.0.3
@@ -498,7 +498,7 @@ importers:
         version: 1.7.0(@opentelemetry/api@1.9.0)
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.4)(zod@3.25.76)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.9)(zod@3.25.76)
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
@@ -507,7 +507,7 @@ importers:
         version: 1.5.1
       fastmcp:
         specifier: ^3.27.0
-        version: 3.27.0(hono@4.11.4)
+        version: 3.27.0(hono@4.11.9)
       grammy:
         specifier: ^1.38.4
         version: 1.39.2
@@ -565,7 +565,7 @@ importers:
         version: 1.7.0(@opentelemetry/api@1.9.0)
       '@hono/node-server':
         specifier: ^1.19.9
-        version: 1.19.9(hono@4.11.4)
+        version: 1.19.9(hono@4.11.9)
       '@octokit/rest':
         specifier: ^22.0.1
         version: 22.0.1
@@ -585,8 +585,8 @@ importers:
         specifier: ^10.5.0
         version: 10.5.0
       hono:
-        specifier: ^4.11.3
-        version: 4.11.4
+        specifier: ^4.11.9
+        version: 4.11.9
       imapflow:
         specifier: ^1.2.4
         version: 1.2.4
@@ -5688,8 +5688,8 @@ packages:
     resolution: {integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==}
     engines: {node: '>=0.10.0'}
 
-  hono@4.11.4:
-    resolution: {integrity: sha512-U7tt8JsyrxSRKspfhtLET79pU8K+tInj5QZXs1jSugO1Vq5dFj3kmZsRldo29mTBfcjDRVRXrEZ6LS63Cog9ZA==}
+  hono@4.11.9:
+    resolution: {integrity: sha512-Eaw2YTGM6WOxA6CXbckaEvslr2Ne4NFsKrvc0v97JD5awbmeBLO5w9Ho9L9kmKonrwF9RJlW6BxT1PVv/agBHQ==}
     engines: {node: '>=16.9.0'}
 
   hosted-git-info@2.8.9:
@@ -9847,13 +9847,13 @@ snapshots:
       protobufjs: 7.5.4
       yargs: 17.7.2
 
-  '@hono/node-server@1.19.7(hono@4.11.4)':
+  '@hono/node-server@1.19.7(hono@4.11.9)':
     dependencies:
-      hono: 4.11.4
+      hono: 4.11.9
 
-  '@hono/node-server@1.19.9(hono@4.11.4)':
+  '@hono/node-server@1.19.9(hono@4.11.9)':
     dependencies:
-      hono: 4.11.4
+      hono: 4.11.9
 
   '@humanfs/core@0.19.1': {}
 
@@ -9942,9 +9942,9 @@ snapshots:
 
   '@mixmark-io/domino@2.2.0': {}
 
-  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.4)(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.9)(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.11.4)
+      '@hono/node-server': 1.19.7(hono@4.11.9)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -9964,9 +9964,9 @@ snapshots:
       - hono
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.4)(zod@4.3.6)':
+  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.9)(zod@4.3.6)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.11.4)
+      '@hono/node-server': 1.19.7(hono@4.11.9)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -14002,9 +14002,9 @@ snapshots:
     dependencies:
       strnum: 2.1.2
 
-  fastmcp@3.27.0(hono@4.11.4):
+  fastmcp@3.27.0(hono@4.11.9):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.4)(zod@4.3.6)
+      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.11.9)(zod@4.3.6)
       '@standard-schema/spec': 1.1.0
       execa: 9.6.1
       file-type: 21.3.0
@@ -14520,7 +14520,7 @@ snapshots:
     dependencies:
       parse-passwd: 1.0.0
 
-  hono@4.11.4: {}
+  hono@4.11.9: {}
 
   hosted-git-info@2.8.9: {}
 
