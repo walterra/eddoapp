@@ -21,7 +21,7 @@
     "fastmcp": "^3.27.0",
     "flowbite": "^4.0.1",
     "flowbite-react": "^0.12.16",
-    "lodash-es": "^4.17.22",
+    "lodash-es": "^4.17.23",
     "nano": "^11.0.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
