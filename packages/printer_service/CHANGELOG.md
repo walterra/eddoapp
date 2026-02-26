@@ -1,5 +1,13 @@
 # @eddo/printer-service
 
+## 0.9.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @eddo/core-server@0.9.0
+  - @eddo/core-shared@0.9.0
+
 ## 0.8.0
 
 ### Patch Changes

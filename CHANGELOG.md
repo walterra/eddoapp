@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0
+
+### Minor Changes
+
+- [#525](https://github.com/walterra/eddoapp/pull/525) [`6bfaba6`](https://github.com/walterra/eddoapp/commit/6bfaba62f92131d366daf0834c29b70c185d7d84) - Add a persisted time-tracking filter across board, table, and graph views.
+
 ## 0.8.0
 
 ### Minor Changes
