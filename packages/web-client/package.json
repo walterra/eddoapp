@@ -22,7 +22,7 @@
     "date-fns": "^4.1.0",
     "events": "^3.3.0",
     "flowbite": "^4.0.1",
-    "flowbite-react": "^0.12.16",
+    "flowbite-react": "^0.12.17",
     "lodash-es": "^4.17.23",
     "lucide-react": "^0.562.0",
     "pouchdb-browser": "^9.0.0",
