@@ -20,7 +20,7 @@
     "@eddo/core-instrumentation": "workspace:*",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
-    "@elastic/opentelemetry-node": "^1.7.0",
+    "@elastic/opentelemetry-node": "^1.8.0",
     "@hono/node-server": "^1.19.9",
     "@octokit/rest": "^22.0.1",
     "@viz-js/viz": "^3.24.0",
