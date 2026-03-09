@@ -24,7 +24,7 @@
     "flowbite": "^4.0.1",
     "flowbite-react": "^0.12.17",
     "lodash-es": "^4.17.23",
-    "lucide-react": "^0.562.0",
+    "lucide-react": "^0.575.0",
     "pouchdb-browser": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "react": "^19.2.3",
