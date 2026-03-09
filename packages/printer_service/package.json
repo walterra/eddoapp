@@ -16,7 +16,7 @@
     "@eddo/core-shared": "workspace:*",
     "commander": "^14.0.3",
     "dotenv-mono": "^1.5.1",
-    "node-thermal-printer": "^4.4.3",
+    "node-thermal-printer": "^4.6.0",
     "winston": "^3.19.0",
     "zod": "^3.22.4"
   },
