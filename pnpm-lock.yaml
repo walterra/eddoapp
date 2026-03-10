@@ -423,8 +423,8 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
       node-thermal-printer:
-        specifier: ^4.4.3
-        version: 4.5.0
+        specifier: ^4.6.0
+        version: 4.6.0
       winston:
         specifier: ^3.19.0
         version: 3.19.0
@@ -7091,8 +7091,8 @@ packages:
   node-releases@2.0.36:
     resolution: {integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==}
 
-  node-thermal-printer@4.5.0:
-    resolution: {integrity: sha512-HJVyfq9Lr5+t1rDXlz9AgeNEqK1xsRzK5bP3DGmx60QVe5pmihrD18tyuM9xx4Eq5HqmQKyEqAK09Z4+9gyAcg==}
+  node-thermal-printer@4.6.0:
+    resolution: {integrity: sha512-nl/beSbygyBf4qv6zDZimiD78S2VrMrpffULZWUgKxNjMUfzV2S0MO4/Qposrn2QZosVrQSGYq49VN1HIecw+A==}
 
   nodemailer@8.0.0:
     resolution: {integrity: sha512-xvVJf/f0bzmNpnRIbhCp/IKxaHgJ6QynvUbLXzzMRPG3LDQr5oXkYuw4uDFyFYs8cge8agwwrJAXZsd4hhMquw==}
@@ -16296,7 +16296,7 @@ snapshots:
 
   node-releases@2.0.36: {}
 
-  node-thermal-printer@4.5.0:
+  node-thermal-printer@4.6.0:
     dependencies:
       iconv-lite: 0.6.3
       pngjs: 7.0.0
