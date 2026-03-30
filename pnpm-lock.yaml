@@ -543,8 +543,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       vite-tsconfig-paths:
-        specifier: ^6.1.0
-        version: 6.1.0(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2))
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2))
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@25.0.3)(jiti@2.6.1)(jsdom@28.1.0)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2)
@@ -8813,8 +8813,8 @@ packages:
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
 
-  vite-tsconfig-paths@6.1.0:
-    resolution: {integrity: sha512-kpd3sY9glHIDaq4V/Tlc1Y8WaKtutoc3B525GHxEVKWX42FKfQsXvjFOemu1I8VIN8pNbrMLWVTbW79JaRUxKg==}
+  vite-tsconfig-paths@6.1.1:
+    resolution: {integrity: sha512-2cihq7zliibCCZ8P9cKJrQBkfgdvcFkOOc3Y02o3GWUDLgqjWsZudaoiuOwO/gzTzy17cS5F7ZPo4bsnS4DGkg==}
     peerDependencies:
       vite: '>=7.1.11'
 
@@ -18319,7 +18319,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite-tsconfig-paths@6.1.0(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2)):
+  vite-tsconfig-paths@6.1.1(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       debug: 4.4.3
       globrex: 0.1.2
