@@ -114,7 +114,7 @@ jobs:
           fi
 
       - name: Upload security artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: security-reports
