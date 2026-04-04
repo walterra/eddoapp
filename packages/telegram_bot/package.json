@@ -1,6 +1,6 @@
 {
   "name": "@eddo/telegram-bot",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Telegram bot with MCP server integration for Eddo app",
   "private": true,
   "type": "module",
