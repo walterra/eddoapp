@@ -1,9 +1,15 @@
 /**
  * Cached Claude Service for VCR-style Testing
  *
- * Wraps the real Claude service to enable recording/replaying LLM responses.
+ * Wraps the LLM service to enable recording/replaying responses.
  */
-import { Anthropic } from '@anthropic-ai/sdk';
+import {
+  completeSimple,
+  getModels,
+  type Context,
+  type Message,
+  type Model,
+} from '@mariozechner/pi-ai';
 
 import type { AgentState } from '../../agent/simple-agent.js';
 import type { ClaudeService } from '../../ai/claude.js';
@@ -17,45 +23,128 @@ export interface CachedClaudeServiceConfig {
   model?: string;
 }
 
-/** Creates lazy-initialized Anthropic client factory */
-function createAnthropicFactory(): () => Anthropic {
-  let client: Anthropic | null = null;
-  return () => {
-    if (!client) {
-      if (!appConfig.ANTHROPIC_API_KEY) {
-        throw new Error(
-          'ANTHROPIC_API_KEY required for recording. Set VCR_MODE=playback to use cached responses.',
-        );
-      }
-      client = new Anthropic({ apiKey: appConfig.ANTHROPIC_API_KEY });
-    }
-    return client;
+interface PiAiMessageRole {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/** Resolve Anthropic model from registry with safe fallback. */
+function resolveAnthropicModel(modelId: string): Model<'anthropic-messages'> {
+  const configuredModel = getModels('anthropic').find((model) => model.id === modelId);
+  if (configuredModel) {
+    return configuredModel;
+  }
+
+  return {
+    id: modelId,
+    name: modelId,
+    api: 'anthropic-messages',
+    provider: 'anthropic',
+    baseUrl: 'https://api.anthropic.com',
+    reasoning: true,
+    input: ['text', 'image'],
+    cost: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+    },
+    contextWindow: 200_000,
+    maxTokens: 1000,
   };
 }
 
-/** Make real Claude API call */
-async function makeClaudeApiCall(
-  getClient: () => Anthropic,
-  model: string,
-  systemPrompt: string,
-  messages: Array<{ role: string; content: string }>,
-): Promise<string> {
-  logger.debug('Making real Claude API call', { model, messagesCount: messages.length });
-  const response = await getClient().messages.create({
-    model,
-    max_tokens: 1000,
-    system: systemPrompt,
-    messages: messages as Anthropic.MessageParam[],
+/** Creates user message for pi-ai context. */
+function createUserMessage(content: string, timestamp: number): Message {
+  return {
+    role: 'user',
+    content,
+    timestamp,
+  };
+}
+
+/** Creates synthetic assistant message for prior conversation history. */
+function createAssistantHistoryMessage(content: string, timestamp: number): Message {
+  return {
+    role: 'assistant',
+    content: [{ type: 'text', text: content }],
+    api: 'anthropic-messages',
+    provider: 'anthropic',
+    model: 'history',
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+    stopReason: 'stop',
+    timestamp,
+  };
+}
+
+/** Maps string-only conversation history to pi-ai messages. */
+function toPiAiMessages(messages: PiAiMessageRole[]): Message[] {
+  return messages.map((message, index) => {
+    const timestamp = Date.now() + index;
+    return message.role === 'user'
+      ? createUserMessage(message.content, timestamp)
+      : createAssistantHistoryMessage(message.content, timestamp);
   });
-  const content = response.content[0];
-  if (content.type !== 'text') throw new Error('Unexpected response type from Claude');
-  return content.text;
+}
+
+/** Extract plain text content from assistant response blocks. */
+function extractAssistantText(message: {
+  content: Array<{ type: string; text?: string }>;
+}): string {
+  return message.content
+    .filter((block) => block.type === 'text')
+    .map((block) => block.text || '')
+    .join('')
+    .trim();
+}
+
+/** Make real model API call through pi-ai. */
+async function makeModelApiCall(
+  modelId: string,
+  systemPrompt: string,
+  messages: PiAiMessageRole[],
+): Promise<string> {
+  if (!appConfig.ANTHROPIC_API_KEY) {
+    throw new Error(
+      'ANTHROPIC_API_KEY required for recording. Set VCR_MODE=playback to use cached responses.',
+    );
+  }
+
+  logger.debug('Making real model API call', { model: modelId, messagesCount: messages.length });
+
+  const model = resolveAnthropicModel(modelId);
+  const context: Context = {
+    systemPrompt,
+    messages: toPiAiMessages(messages),
+  };
+
+  const response = await completeSimple(model, context, {
+    apiKey: appConfig.ANTHROPIC_API_KEY,
+    maxTokens: 1000,
+  });
+
+  if (response.stopReason === 'error' || response.stopReason === 'aborted') {
+    throw new Error(response.errorMessage || `LLM request failed: ${response.stopReason}`);
+  }
+
+  const text = extractAssistantText(response);
+  if (!text) {
+    throw new Error('Unexpected response type from model');
+  }
+
+  return text;
 }
 
 /** Creates a Claude service that records/replays responses via cassette manager */
 export function createCachedClaudeService(config: CachedClaudeServiceConfig): ClaudeService {
   const { cassetteManager, model = 'claude-3-5-haiku-20241022' } = config;
-  const getClient = createAnthropicFactory();
 
   async function generateResponse(
     conversationHistory: AgentState['history'],
@@ -63,7 +152,7 @@ export function createCachedClaudeService(config: CachedClaudeServiceConfig): Cl
   ): Promise<string> {
     const messages = conversationHistory.map((msg) => ({ role: msg.role, content: msg.content }));
     return cassetteManager.handleInteraction(model, systemPrompt, messages, () =>
-      makeClaudeApiCall(getClient, model, systemPrompt, messages),
+      makeModelApiCall(model, systemPrompt, messages),
     );
   }
 
