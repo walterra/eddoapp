@@ -17,7 +17,7 @@ import { SimpleAgent } from '../../agent/simple-agent.js';
 import type { MCPClient } from '../../mcp/client.js';
 import { setupMCPIntegration } from '../../mcp/client.js';
 import {
-  createCachedClaudeService,
+  createCachedLlmService,
   createCassetteManager,
   type CassetteManager,
   type RecordMode,
@@ -161,13 +161,13 @@ export class TestAgentServer {
     // Initialize MCP integration
     this.mcpClient = await setupMCPIntegration();
 
-    // Initialize agent with cached Claude service
-    const cachedClaudeService = createCachedClaudeService({
+    // Initialize agent with cached LLM service
+    const cachedLlmService = createCachedLlmService({
       cassetteManager: this.cassetteManager!,
       model: this.config.llmModel,
     });
 
-    this.agent = new SimpleAgent({ claudeService: cachedClaudeService });
+    this.agent = new SimpleAgent({ llmService: cachedLlmService });
   }
 
   /**

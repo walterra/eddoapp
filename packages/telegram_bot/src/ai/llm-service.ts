@@ -19,7 +19,7 @@ interface SpanWriter {
   setAttribute: (key: string, value: string | number) => void;
 }
 
-interface ClaudeRequestParams {
+interface LlmRequestParams {
   requestId: string;
   modelId: string;
   conversationHistory: AgentState['history'];
@@ -32,7 +32,7 @@ interface UsageSummary {
   output: number;
 }
 
-export interface ClaudeService {
+export interface LlmService {
   generateResponse: (
     conversationHistory: AgentState['history'],
     systemPrompt: string,
@@ -130,8 +130,8 @@ function extractUsage(message: AssistantMessage): UsageSummary {
   };
 }
 
-/** Creates Claude service implementation backed by pi-ai streaming API. */
-function createClaudeService(): ClaudeService {
+/** Creates LLM service implementation backed by pi-ai streaming API. */
+function createLlmService(): LlmService {
   return {
     generateResponse: async (
       conversationHistory: AgentState['history'],
@@ -162,7 +162,7 @@ function createClaudeService(): ClaudeService {
 }
 
 /** Logs request metadata for the model call. */
-function logLlmRequest(params: ClaudeRequestParams): void {
+function logLlmRequest(params: LlmRequestParams): void {
   const { requestId, modelId, conversationHistory, systemPrompt } = params;
   logger.info('🤖 LLM Request', {
     requestId,
@@ -219,7 +219,7 @@ function setUsageSpanAttributes(span: SpanWriter, responseText: string, usage: U
 }
 
 /** Executes one model request and returns assistant text response. */
-async function executeRequest(params: ClaudeRequestParams): Promise<string> {
+async function executeRequest(params: LlmRequestParams): Promise<string> {
   const { requestId, modelId, conversationHistory, systemPrompt, span } = params;
 
   try {
@@ -243,18 +243,18 @@ async function executeRequest(params: ClaudeRequestParams): Promise<string> {
 
     return responseText;
   } catch (error) {
-    logger.error('Failed to generate Claude response', { error });
-    throw new Error(`Claude API error: ${error instanceof Error ? error.message : String(error)}`);
+    logger.error('Failed to generate LLM response', { error });
+    throw new Error(`LLM API error: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
-let serviceInstance: ClaudeService | null = null;
+let serviceInstance: LlmService | null = null;
 
-export const claudeService: ClaudeService = {
+export const llmService: LlmService = {
   generateResponse: async (conversationHistory, systemPrompt) => {
     if (!serviceInstance) {
-      serviceInstance = createClaudeService();
-      logger.info('Simple Claude service initialized');
+      serviceInstance = createLlmService();
+      logger.info('Simple LLM service initialized');
     }
     return serviceInstance.generateResponse(conversationHistory, systemPrompt);
   },

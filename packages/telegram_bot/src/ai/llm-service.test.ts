@@ -28,7 +28,7 @@ function createMockStream(events: MockStreamEvent[], result: MockAssistantMessag
   };
 }
 
-describe('claudeService', () => {
+describe('llmService', () => {
   const mockSpan: MockSpan = {
     setAttribute: vi.fn(),
   };
@@ -78,9 +78,9 @@ describe('claudeService', () => {
       }),
     );
 
-    const { claudeService } = await import('./claude.js');
+    const { llmService } = await import('./llm-service.js');
 
-    const response = await claudeService.generateResponse(
+    const response = await llmService.generateResponse(
       [{ role: 'user', content: 'Hi', timestamp: Date.now() }],
       'You are helpful',
     );
@@ -102,13 +102,13 @@ describe('claudeService', () => {
       }),
     );
 
-    const { claudeService } = await import('./claude.js');
+    const { llmService } = await import('./llm-service.js');
 
     await expect(
-      claudeService.generateResponse(
+      llmService.generateResponse(
         [{ role: 'user', content: 'Hi', timestamp: Date.now() }],
         'You are helpful',
       ),
-    ).rejects.toThrow('Claude API error: provider failure');
+    ).rejects.toThrow('LLM API error: provider failure');
   });
 });

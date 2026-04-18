@@ -1,5 +1,5 @@
-import type { ClaudeService } from '../ai/claude.js';
-import { claudeService as defaultClaudeService } from '../ai/claude.js';
+import type { LlmService } from '../ai/llm-service.js';
+import { llmService as defaultLlmService } from '../ai/llm-service.js';
 import type { BotContext } from '../bot/bot.js';
 import type { MCPClient } from '../mcp/client.js';
 import { getMCPClient } from '../mcp/client.js';
@@ -20,8 +20,8 @@ import { buildSystemPrompt } from './system-prompt.js';
 export type { AgentState } from './helpers/index.js';
 
 export interface SimpleAgentConfig {
-  /** Optional Claude service for dependency injection (used in testing) */
-  claudeService?: ClaudeService;
+  /** Optional LLM service for dependency injection (used in testing) */
+  llmService?: LlmService;
 }
 
 /**
@@ -34,10 +34,10 @@ interface IterationContext {
 }
 
 export class SimpleAgent {
-  private claudeService: ClaudeService;
+  private llmService: LlmService;
 
   constructor(config: SimpleAgentConfig = {}) {
-    this.claudeService = config.claudeService ?? defaultClaudeService;
+    this.llmService = config.llmService ?? defaultLlmService;
   }
 
   private getMCPClientOrThrow(): MCPClient {
@@ -217,7 +217,7 @@ export class SimpleAgent {
         this.logIterationStart(state, iteration, iterationId, context);
         await this.showTyping(telegramContext);
 
-        const llmResponse = await this.claudeService.generateResponse(state.history, systemPrompt);
+        const llmResponse = await this.llmService.generateResponse(state.history, systemPrompt);
         state.history.push({ role: 'assistant', content: llmResponse, timestamp: Date.now() });
 
         const toolCall = parseToolCall(llmResponse);

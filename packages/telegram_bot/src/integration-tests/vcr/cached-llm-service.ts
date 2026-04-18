@@ -1,5 +1,5 @@
 /**
- * Cached Claude Service for VCR-style Testing
+ * Cached LLM Service for VCR-style Testing
  *
  * Wraps the LLM service to enable recording/replaying responses.
  */
@@ -12,12 +12,12 @@ import {
 } from '@mariozechner/pi-ai';
 
 import type { AgentState } from '../../agent/simple-agent.js';
-import type { ClaudeService } from '../../ai/claude.js';
+import type { LlmService } from '../../ai/llm-service.js';
 import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import type { CassetteManager } from './cassette-manager.js';
 
-export interface CachedClaudeServiceConfig {
+export interface CachedLlmServiceConfig {
   cassetteManager: CassetteManager;
   /** Model to use for real API calls */
   model?: string;
@@ -142,8 +142,8 @@ async function makeModelApiCall(
   return text;
 }
 
-/** Creates a Claude service that records/replays responses via cassette manager */
-export function createCachedClaudeService(config: CachedClaudeServiceConfig): ClaudeService {
+/** Creates an LLM service that records/replays responses via cassette manager */
+export function createCachedLlmService(config: CachedLlmServiceConfig): LlmService {
   const { cassetteManager, model = 'claude-3-5-haiku-20241022' } = config;
 
   async function generateResponse(
