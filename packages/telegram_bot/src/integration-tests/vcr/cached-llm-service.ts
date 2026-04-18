@@ -5,6 +5,7 @@
  */
 import {
   completeSimple,
+  getEnvApiKey,
   getModels,
   type Context,
   type Message,
@@ -13,7 +14,6 @@ import {
 
 import type { AgentState } from '../../agent/simple-agent.js';
 import type { LlmService } from '../../ai/llm-service.js';
-import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
 import type { CassetteManager } from './cassette-manager.js';
 
@@ -28,8 +28,8 @@ interface PiAiMessageRole {
   content: string;
 }
 
-/** Resolve Anthropic model from registry with safe fallback. */
-function resolveAnthropicModel(modelId: string): Model<'anthropic-messages'> {
+/** Resolves model from registry with safe fallback. */
+function resolveModel(modelId: string): Model<'anthropic-messages'> {
   const configuredModel = getModels('anthropic').find((model) => model.id === modelId);
   if (configuredModel) {
     return configuredModel;
@@ -111,22 +111,23 @@ async function makeModelApiCall(
   systemPrompt: string,
   messages: PiAiMessageRole[],
 ): Promise<string> {
-  if (!appConfig.ANTHROPIC_API_KEY) {
+  logger.debug('Making real model API call', { model: modelId, messagesCount: messages.length });
+
+  const model = resolveModel(modelId);
+  const apiKey = getEnvApiKey(model.provider);
+  if (!apiKey) {
     throw new Error(
-      'ANTHROPIC_API_KEY required for recording. Set VCR_MODE=playback to use cached responses.',
+      'LLM credentials required for recording. Set ANTHROPIC_OAUTH_TOKEN or ANTHROPIC_API_KEY. Set VCR_MODE=playback to use cached responses.',
     );
   }
 
-  logger.debug('Making real model API call', { model: modelId, messagesCount: messages.length });
-
-  const model = resolveAnthropicModel(modelId);
   const context: Context = {
     systemPrompt,
     messages: toPiAiMessages(messages),
   };
 
   const response = await completeSimple(model, context, {
-    apiKey: appConfig.ANTHROPIC_API_KEY,
+    apiKey,
     maxTokens: 1000,
   });
 

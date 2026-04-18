@@ -12,9 +12,11 @@ These integration tests verify the complete agent loop workflow with real MCP se
 
 2. **CouchDB** must be accessible and configured
 
-3. **Valid Anthropic API key** is required (tests make real API calls)
+3. **Valid Anthropic credentials** are required (tests make real API calls)
    ```bash
    export ANTHROPIC_API_KEY="your-api-key"
+   # or
+   export ANTHROPIC_OAUTH_TOKEN="your-oauth-token"
    ```
 
 ## Running Tests
@@ -41,7 +43,8 @@ MCP_TEST_PORT=3005 pnpm test:integration:agent-loop
 
 ## Environment Variables
 
-- `ANTHROPIC_API_KEY`: Required for real Claude API calls
+- `ANTHROPIC_API_KEY`: Anthropic API key (pi-ai convention)
+- `ANTHROPIC_OAUTH_TOKEN`: Anthropic OAuth token (preferred when available)
 - `MCP_SERVER_URL`: MCP server URL (default: `http://localhost:3001/mcp`)
 - `MCP_TEST_URL`: Override MCP URL for tests
 - `MCP_TEST_PORT`: Port for test server (default: 3003)
@@ -62,7 +65,7 @@ MCP_TEST_PORT=3005 pnpm test:integration:agent-loop
 
 ## CI Considerations
 
-Due to the requirement for a valid Anthropic API key, these tests are excluded from the default `test:ci` command. To run all tests including telegram-bot integration tests in CI:
+Due to the requirement for valid Anthropic credentials, these tests are excluded from the default `test:ci` command. To run all tests including telegram-bot integration tests in CI:
 
-1. Set `ANTHROPIC_API_KEY` environment variable
+1. Set `ANTHROPIC_API_KEY` or `ANTHROPIC_OAUTH_TOKEN`
 2. Use `pnpm test:ci:all` instead of `pnpm test:ci`

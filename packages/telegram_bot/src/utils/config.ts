@@ -1,4 +1,5 @@
 import { type Env, validateEnv } from '@eddo/core-server';
+import { getEnvApiKey } from '@mariozechner/pi-ai';
 import { dotenvLoad } from 'dotenv-mono';
 import { z } from 'zod';
 
@@ -14,9 +15,6 @@ const TelegramConfigSchema = z.object({
   TELEGRAM_BOT_TOKEN: isVcrPlayback
     ? z.string().optional().default('vcr-playback-token')
     : z.string().min(1, 'Telegram bot token is required'),
-  ANTHROPIC_API_KEY: isVcrPlayback
-    ? z.string().optional().default('')
-    : z.string().min(1, 'Anthropic API key is required'),
   WEB_API_BASE_URL: z
     .string()
     .url('Web API base URL must be a valid URL')
@@ -42,6 +40,12 @@ try {
 
   // Validate telegram-specific required fields
   const telegramFields = TelegramConfigSchema.parse(process.env);
+
+  if (!isVcrPlayback && !getEnvApiKey('anthropic')) {
+    throw new Error(
+      'LLM credentials are required. Set ANTHROPIC_OAUTH_TOKEN or ANTHROPIC_API_KEY.',
+    );
+  }
 
   // Combine configurations
   appConfig = { ...sharedEnv, ...telegramFields };

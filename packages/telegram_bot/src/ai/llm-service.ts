@@ -1,5 +1,6 @@
 import { getRandomHex } from '@eddo/core-shared';
 import {
+  getEnvApiKey,
   getModels,
   streamSimple,
   type AssistantMessage,
@@ -39,8 +40,8 @@ export interface LlmService {
   ) => Promise<string>;
 }
 
-/** Resolves Anthropic model metadata from pi-ai registry with safe fallback. */
-function createAnthropicModel(modelId: string): Model<'anthropic-messages'> {
+/** Resolves model metadata from pi-ai registry with safe fallback. */
+function resolveModel(modelId: string): Model<'anthropic-messages'> {
   const configuredModel = getModels('anthropic').find((model) => model.id === modelId);
   if (configuredModel) {
     return configuredModel;
@@ -181,7 +182,7 @@ async function streamAndGetFinalMessage(
   context: Context,
 ): Promise<AssistantMessage> {
   const responseStream = streamSimple(model, context, {
-    apiKey: appConfig.ANTHROPIC_API_KEY,
+    apiKey: getEnvApiKey(model.provider),
     maxTokens: MAX_TOKENS,
   });
 
@@ -225,7 +226,7 @@ async function executeRequest(params: LlmRequestParams): Promise<string> {
   try {
     logLlmRequest(params);
 
-    const model = createAnthropicModel(modelId);
+    const model = resolveModel(modelId);
     const context = createContext(conversationHistory, systemPrompt);
     const finalMessage = await streamAndGetFinalMessage(requestId, model, context);
     const responseText = getResponseTextFromFinalMessage(finalMessage);

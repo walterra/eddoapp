@@ -49,7 +49,6 @@ describe('llmService', () => {
 
     vi.doMock('../utils/config.js', () => ({
       appConfig: {
-        ANTHROPIC_API_KEY: 'test-key',
         LLM_MODEL: 'claude-3-5-haiku-20241022',
       },
     }));
@@ -64,6 +63,7 @@ describe('llmService', () => {
     }));
 
     vi.doMock('@mariozechner/pi-ai', () => ({
+      getEnvApiKey: vi.fn(() => 'test-key'),
       getModels: vi.fn(() => []),
       streamSimple: mockStreamSimple,
     }));

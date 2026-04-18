@@ -16,6 +16,10 @@ vi.mock('dotenv-mono', () => ({
   dotenvLoad: vi.fn(),
 }));
 
+vi.mock('@mariozechner/pi-ai', () => ({
+  getEnvApiKey: vi.fn(() => 'mock-key'),
+}));
+
 describe('Config Module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -35,7 +39,6 @@ describe('Config Module', () => {
       const { appConfig } = await import('./config');
 
       expect(appConfig.TELEGRAM_BOT_TOKEN).toBe('mock-token');
-      expect(appConfig.ANTHROPIC_API_KEY).toBe('mock-key');
     });
 
     it('should set default values for optional environment variables', async () => {
