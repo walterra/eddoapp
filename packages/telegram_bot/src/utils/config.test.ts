@@ -16,6 +16,25 @@ vi.mock('dotenv-mono', () => ({
   dotenvLoad: vi.fn(),
 }));
 
+vi.mock('@mariozechner/pi-ai', () => ({
+  getEnvApiKey: vi.fn(() => 'mock-key'),
+  getProviders: vi.fn(() => ['anthropic']),
+  getModels: vi.fn(() => [
+    {
+      id: 'claude-haiku-4-5-20251001',
+      name: 'Claude Haiku',
+      api: 'anthropic-messages',
+      provider: 'anthropic',
+      baseUrl: 'https://api.anthropic.com',
+      reasoning: true,
+      input: ['text'],
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 200000,
+      maxTokens: 1000,
+    },
+  ]),
+}));
+
 describe('Config Module', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -35,7 +54,6 @@ describe('Config Module', () => {
       const { appConfig } = await import('./config');
 
       expect(appConfig.TELEGRAM_BOT_TOKEN).toBe('mock-token');
-      expect(appConfig.ANTHROPIC_API_KEY).toBe('mock-key');
     });
 
     it('should set default values for optional environment variables', async () => {

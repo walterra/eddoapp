@@ -29,6 +29,7 @@ export type RecordMode = 'record' | 'playback' | 'auto';
 export interface CassetteManagerConfig {
   cassettesDir: string;
   mode: RecordMode;
+  namespace: string;
 }
 
 /** Callback to freeze/unfreeze time */
@@ -40,6 +41,7 @@ export interface TimeController {
 /** Internal state for cassette manager */
 export interface CassetteState {
   cassette: Cassette | null;
+  namespace: string;
   path: string | null;
   index: number;
   modified: boolean;

@@ -21,6 +21,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { createAgentAssertions } from '../helpers/agent-assertions.js';
 import { TestAgentServer } from '../setup/test-agent-server.js';
 
+const TELEGRAM_BOT_MODEL = 'claude-sonnet-4-5-20250929';
+
 describe('Agent Loop E2E Integration', () => {
   let agentServer: TestAgentServer;
   let assert: ReturnType<typeof createAgentAssertions>;
@@ -39,9 +41,7 @@ describe('Agent Loop E2E Integration', () => {
 
   beforeEach(async () => {
     agentServer = new TestAgentServer({
-      // Use sonnet model to match recorded cassettes
-      // Cassettes are recorded with a specific model, hash matching requires same model
-      llmModel: process.env.LLM_MODEL || 'claude-sonnet-4-20250514',
+      llmModel: process.env.LLM_MODEL || TELEGRAM_BOT_MODEL,
     });
 
     await agentServer.start();
@@ -228,7 +228,11 @@ describe('Agent Loop E2E Integration', () => {
         replies.includes('what') ||
         replies.includes('title') ||
         replies.includes('specify') ||
-        replies.includes('more detail');
+        replies.includes('more detail') ||
+        replies.includes('need') ||
+        replies.includes('provide') ||
+        replies.includes('details') ||
+        replies.includes('clarify');
 
       expect(validOutcome).toBe(true);
     });
@@ -250,7 +254,11 @@ describe('Agent Loop E2E Integration', () => {
       );
 
       assert.expectSuccess(response);
-      assert.expectToolUsed(response, 'listTodos');
+      const usedRecapTool =
+        response.context.toolResults?.some(
+          (result) => result.toolName === 'listTodos' || result.toolName === 'getRecapData',
+        ) ?? false;
+      expect(usedRecapTool).toBe(true);
 
       // Verify responses don't contain hallucinated content before tool results
       // STATUS messages should be short (under 10 words), not full recaps

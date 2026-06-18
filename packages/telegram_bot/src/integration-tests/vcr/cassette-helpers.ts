@@ -7,6 +7,12 @@ import { dirname, join } from 'path';
 
 import type { Cassette, LLMInteraction } from './cassette-manager.js';
 
+interface CassettePathInput {
+  cassettesDir: string;
+  testName: string;
+  namespace: string;
+}
+
 /**
  * Normalize system prompt by removing dynamic content
  */
@@ -72,12 +78,16 @@ export function hashRequest(
   return hash;
 }
 
-/**
- * Get cassette file path from test name
- */
-export function getCassettePath(cassettesDir: string, testName: string): string {
-  const safeName = testName.replace(/[^a-zA-Z0-9-_]/g, '_');
-  return join(cassettesDir, `${safeName}.json`);
+/** Returns filesystem-safe cassette path segment. */
+function sanitizePathSegment(value: string): string {
+  return value.replace(/[^a-zA-Z0-9-_]/g, '_');
+}
+
+/** Gets model-namespaced cassette file path from test name. */
+export function getCassettePath(input: CassettePathInput): string {
+  const { cassettesDir, testName, namespace } = input;
+  const safeName = sanitizePathSegment(testName);
+  return join(cassettesDir, sanitizePathSegment(namespace), `${safeName}.json`);
 }
 
 /**

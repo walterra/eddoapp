@@ -76,8 +76,11 @@ cp packages/telegram_bot/.env.example packages/telegram_bot/.env
 # From BotFather (Step 1)
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 
-# From Anthropic Console (Step 2)
+# LLM provider credentials (pi-ai env conventions)
+# Anthropic
 ANTHROPIC_API_KEY=sk-ant-api03-...
+# or OpenAI
+OPENAI_API_KEY=sk-...
 
 # MCP Server (should be running on port 3001)
 MCP_SERVER_URL=http://localhost:3001/mcp
@@ -245,13 +248,16 @@ This architecture replaces complex workflow frameworks (like LangGraph) with a m
 
 ### Environment Variables
 
-| Variable             | Description               | Default                 |
-| -------------------- | ------------------------- | ----------------------- |
-| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather | Required                |
-| `ANTHROPIC_API_KEY`  | Claude API key            | Required                |
-| `MCP_SERVER_URL`     | MCP server endpoint       | `http://localhost:3001` |
-| `NODE_ENV`           | Environment               | `development`           |
-| `LOG_LEVEL`          | Logging level             | `info`                  |
+| Variable                | Description                                                          | Default                      |
+| ----------------------- | -------------------------------------------------------------------- | ---------------------------- |
+| `TELEGRAM_BOT_TOKEN`    | Bot token from @BotFather                                            | Required                     |
+| `ANTHROPIC_API_KEY`     | Anthropic API key (optional if using OAuth)                          | Optional                     |
+| `ANTHROPIC_OAUTH_TOKEN` | Anthropic OAuth token                                                | Optional                     |
+| `OPENAI_API_KEY`        | OpenAI API key                                                       | Optional                     |
+| `LLM_MODEL`             | Model id (for example `claude-sonnet-4-5-20250929` or `gpt-4o-mini`) | `claude-sonnet-4-5-20250929` |
+| `MCP_SERVER_URL`        | MCP server endpoint                                                  | `http://localhost:3001`      |
+| `NODE_ENV`              | Environment                                                          | `development`                |
+| `LOG_LEVEL`             | Logging level                                                        | `info`                       |
 
 ### MCP Server Connection
 
@@ -333,15 +339,15 @@ docker run -d --env-file .env eddo-telegram-bot
 - Verify CouchDB is running (see server package README)
 - Check `MCP_SERVER_URL` in `.env`
 
-#### 3. AI/Claude API Errors
+#### 3. AI API Errors
 
 **Symptoms**: Bot can't understand natural language, gives generic responses
 **Solutions**:
 
-- Verify `ANTHROPIC_API_KEY` is valid (starts with `sk-ant-`)
-- Check API key has sufficient credits
-- Test key independently: visit Anthropic Console
-- Check network connectivity to Anthropic services
+- Verify your provider key is valid (`ANTHROPIC_API_KEY`, `ANTHROPIC_OAUTH_TOKEN`, or `OPENAI_API_KEY`)
+- Check account credits and model access
+- Ensure `LLM_MODEL` matches your configured provider
+- Check network connectivity to provider API endpoints
 
 #### 4. Permission/Network Issues
 
@@ -459,20 +465,23 @@ Create and manage your bot:
 
 ### Environment Variables
 
-| Variable             | Required | Description    | Example                     |
-| -------------------- | -------- | -------------- | --------------------------- |
-| `TELEGRAM_BOT_TOKEN` | ✅       | From BotFather | `123456789:ABC...`          |
-| `ANTHROPIC_API_KEY`  | ✅       | Claude AI key  | `sk-ant-api03-...`          |
-| `MCP_SERVER_URL`     | ✅       | MCP endpoint   | `http://localhost:3001/mcp` |
-| `NODE_ENV`           | ⚪       | Environment    | `development`               |
-| `LOG_LEVEL`          | ⚪       | Logging level  | `info`                      |
+| Variable                | Required | Description                                           | Example                      |
+| ----------------------- | -------- | ----------------------------------------------------- | ---------------------------- |
+| `TELEGRAM_BOT_TOKEN`    | ✅       | From BotFather                                        | `123456789:ABC...`           |
+| `ANTHROPIC_API_KEY`     | ⚪       | Anthropic API key                                     | `sk-ant-api03-...`           |
+| `ANTHROPIC_OAUTH_TOKEN` | ⚪       | Anthropic OAuth token                                 | `...`                        |
+| `OPENAI_API_KEY`        | ⚪       | OpenAI API key                                        | `sk-...`                     |
+| `LLM_MODEL`             | ⚪       | Model id (provider must match configured credentials) | `claude-sonnet-4-5-20250929` |
+| `MCP_SERVER_URL`        | ✅       | MCP endpoint                                          | `http://localhost:3001/mcp`  |
+| `NODE_ENV`              | ⚪       | Environment                                           | `development`                |
+| `LOG_LEVEL`             | ⚪       | Logging level                                         | `info`                       |
 
 ### Service Dependencies
 
 1. **CouchDB** (port 5984) - Database for todos
 2. **MCP Server** (port 3001) - Todo operations API
 3. **Telegram Bot** (your bot) - User interface
-4. **Anthropic API** - AI processing
+4. **LLM Provider API** - AI processing (Anthropic/OpenAI via pi-ai)
 
 ### Common Contexts
 

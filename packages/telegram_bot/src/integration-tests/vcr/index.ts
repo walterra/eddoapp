@@ -9,7 +9,7 @@
  *   VCR_MODE=record   - Always record fresh responses
  *   VCR_MODE=playback - Only replay, fail if cassette missing
  */
-export { createCachedClaudeService } from './cached-claude-service.js';
+export { createCachedLlmService } from './cached-llm-service.js';
 export {
   createCassetteManager,
   type CassetteManager,

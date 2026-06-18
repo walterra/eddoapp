@@ -18,13 +18,13 @@
     "test:integration:watch": "vitest --config vitest.integration.config.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
     "@eddo/core-instrumentation": "workspace:*",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",
     "@eddo/printer-service": "workspace:*",
     "@eddo/web-api": "workspace:*",
     "@elastic/opentelemetry-node": "^1.8.0",
+    "@mariozechner/pi-ai": "^0.65.2",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "@opentelemetry/api": "^1.9.0",
     "dotenv-mono": "^1.5.1",

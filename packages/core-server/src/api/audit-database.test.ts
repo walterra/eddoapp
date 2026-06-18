@@ -15,7 +15,7 @@ const mockEnv = {
   MCP_SERVER_URL: 'http://localhost:3001/mcp',
   MCP_SERVER_PORT: 3001,
   BOT_PERSONA_ID: 'butler',
-  LLM_MODEL: 'claude-sonnet-4-20250514',
+  LLM_MODEL: 'claude-sonnet-4-5-20250929',
   CLAUDE_CODE_WORKING_DIR: './bot_workspace',
   CLAUDE_CODE_SESSION_TIMEOUT: 3600,
   PORT: 3000,

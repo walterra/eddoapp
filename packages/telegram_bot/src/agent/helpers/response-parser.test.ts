@@ -29,6 +29,26 @@ TOOL_CALL: {"name": "second", "parameters": {}}`;
       const result = parseToolCall(response);
       expect(result?.name).toBe('first');
     });
+
+    it('parses fenced multiline tool JSON', () => {
+      const response = `STATUS: Creating it
+TOOL_CALL:
+\`\`\`json
+{
+  "name": "createTodo",
+  "parameters": {
+    "title": "Quarterly report"
+  }
+}
+\`\`\``;
+
+      const result = parseToolCall(response);
+
+      expect(result).toEqual({
+        name: 'createTodo',
+        parameters: { title: 'Quarterly report' },
+      });
+    });
   });
 
   describe('extractStatusMessage', () => {

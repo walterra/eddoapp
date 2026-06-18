@@ -12,9 +12,16 @@ These integration tests verify the complete agent loop workflow with real MCP se
 
 2. **CouchDB** must be accessible and configured
 
-3. **Valid Anthropic API key** is required (tests make real API calls)
+3. **Valid provider credentials** are required (tests make real API calls)
+
    ```bash
+   # Anthropic
    export ANTHROPIC_API_KEY="your-api-key"
+   # or
+   export ANTHROPIC_OAUTH_TOKEN="your-oauth-token"
+
+   # OpenAI
+   export OPENAI_API_KEY="your-api-key"
    ```
 
 ## Running Tests
@@ -41,11 +48,33 @@ MCP_TEST_PORT=3005 pnpm test:integration:agent-loop
 
 ## Environment Variables
 
-- `ANTHROPIC_API_KEY`: Required for real Claude API calls
+- `ANTHROPIC_API_KEY`: Anthropic API key (pi-ai convention)
+- `ANTHROPIC_OAUTH_TOKEN`: Anthropic OAuth token (preferred when available)
 - `MCP_SERVER_URL`: MCP server URL (default: `http://localhost:3001/mcp`)
 - `MCP_TEST_URL`: Override MCP URL for tests
 - `MCP_TEST_PORT`: Port for test server (default: 3003)
-- `LLM_MODEL`: Model to use (default: `claude-3-5-haiku-20241022`)
+- `LLM_MODEL`: Model to use (default: `claude-sonnet-4-5-20250929`, example: `openai/gpt-5.2`)
+- `LLM_MAX_TOKENS`: Maximum output tokens for pi-ai calls (default: 4096)
+- `LLM_REASONING_EFFORT`: Reasoning effort for reasoning models (default: `low`)
+
+## Model-specific VCR recordings
+
+Cassettes are stored under a model-specific directory. `VCR_MODE=record` overwrites only that model's cassette set.
+
+```bash
+OPENAI_API_KEY="sk-..." \
+LLM_MODEL="openai/gpt-5.2" \
+VCR_MODE=record \
+pnpm test:integration:agent-loop
+```
+
+This writes OpenAI recordings under `cassettes/openai_gpt-5_2/`.
+
+Playback discovers all model cassette directories and runs the suite once per recorded model:
+
+```bash
+pnpm test:integration:agent-loop:playback
+```
 
 ## Test Structure
 
@@ -62,7 +91,7 @@ MCP_TEST_PORT=3005 pnpm test:integration:agent-loop
 
 ## CI Considerations
 
-Due to the requirement for a valid Anthropic API key, these tests are excluded from the default `test:ci` command. To run all tests including telegram-bot integration tests in CI:
+Due to the requirement for valid Anthropic credentials, these tests are excluded from the default `test:ci` command. To run all tests including telegram-bot integration tests in CI:
 
-1. Set `ANTHROPIC_API_KEY` environment variable
+1. Set `ANTHROPIC_API_KEY` or `ANTHROPIC_OAUTH_TOKEN`
 2. Use `pnpm test:ci:all` instead of `pnpm test:ci`
