@@ -1,4 +1,4 @@
-import type { Api, Model, SimpleStreamOptions, ThinkingLevel } from '@mariozechner/pi-ai';
+import type { Api, Model, SimpleStreamOptions, ThinkingLevel } from '@earendil-works/pi-ai';
 
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_REASONING: ThinkingLevel = 'low';

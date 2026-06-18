@@ -1,5 +1,5 @@
+import { getEnvApiKey } from '@earendil-works/pi-ai';
 import { type Env, validateEnv } from '@eddo/core-server';
-import { getEnvApiKey } from '@mariozechner/pi-ai';
 import { dotenvLoad } from 'dotenv-mono';
 import { z } from 'zod';
 import { resolveConfiguredModel } from '../ai/llm-model-resolution.js';
