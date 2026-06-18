@@ -113,7 +113,7 @@ export class TestAgentServer {
     this.config = {
       mcpServerUrl:
         config.mcpServerUrl || process.env.MCP_SERVER_URL || `http://localhost:${testPort}/mcp`,
-      llmModel: config.llmModel || 'claude-3-5-haiku-20241022',
+      llmModel: config.llmModel || 'claude-sonnet-4-5-20250929',
       mockTelegramResponses: config.mockTelegramResponses ?? true,
       vcrMode,
     };

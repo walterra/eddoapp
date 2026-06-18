@@ -6,13 +6,13 @@
 import {
   completeSimple,
   getEnvApiKey,
-  getModels,
   type Context,
   type Message,
-  type Model,
+  type Provider,
 } from '@mariozechner/pi-ai';
 
 import type { AgentState } from '../../agent/simple-agent.js';
+import { resolveConfiguredModel } from '../../ai/llm-model-resolution.js';
 import type { LlmService } from '../../ai/llm-service.js';
 import { logger } from '../../utils/logger.js';
 import type { CassetteManager } from './cassette-manager.js';
@@ -28,32 +28,6 @@ interface PiAiMessageRole {
   content: string;
 }
 
-/** Resolves model from registry with safe fallback. */
-function resolveModel(modelId: string): Model<'anthropic-messages'> {
-  const configuredModel = getModels('anthropic').find((model) => model.id === modelId);
-  if (configuredModel) {
-    return configuredModel;
-  }
-
-  return {
-    id: modelId,
-    name: modelId,
-    api: 'anthropic-messages',
-    provider: 'anthropic',
-    baseUrl: 'https://api.anthropic.com',
-    reasoning: true,
-    input: ['text', 'image'],
-    cost: {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-    },
-    contextWindow: 200_000,
-    maxTokens: 1000,
-  };
-}
-
 /** Creates user message for pi-ai context. */
 function createUserMessage(content: string, timestamp: number): Message {
   return {
@@ -64,12 +38,16 @@ function createUserMessage(content: string, timestamp: number): Message {
 }
 
 /** Creates synthetic assistant message for prior conversation history. */
-function createAssistantHistoryMessage(content: string, timestamp: number): Message {
+function createAssistantHistoryMessage(
+  content: string,
+  timestamp: number,
+  targetModel: { api: string; provider: string },
+): Message {
   return {
     role: 'assistant',
     content: [{ type: 'text', text: content }],
-    api: 'anthropic-messages',
-    provider: 'anthropic',
+    api: targetModel.api,
+    provider: targetModel.provider,
     model: 'history',
     usage: {
       input: 0,
@@ -85,12 +63,15 @@ function createAssistantHistoryMessage(content: string, timestamp: number): Mess
 }
 
 /** Maps string-only conversation history to pi-ai messages. */
-function toPiAiMessages(messages: PiAiMessageRole[]): Message[] {
+function toPiAiMessages(
+  messages: PiAiMessageRole[],
+  targetModel: { api: string; provider: string },
+): Message[] {
   return messages.map((message, index) => {
     const timestamp = Date.now() + index;
     return message.role === 'user'
       ? createUserMessage(message.content, timestamp)
-      : createAssistantHistoryMessage(message.content, timestamp);
+      : createAssistantHistoryMessage(message.content, timestamp, targetModel);
   });
 }
 
@@ -113,20 +94,20 @@ async function makeModelApiCall(
 ): Promise<string> {
   logger.debug('Making real model API call', { model: modelId, messagesCount: messages.length });
 
-  const model = resolveModel(modelId);
-  const apiKey = getEnvApiKey(model.provider);
+  const resolved = resolveConfiguredModel(modelId);
+  const apiKey = getEnvApiKey(resolved.provider as Provider);
   if (!apiKey) {
     throw new Error(
-      'LLM credentials required for recording. Set ANTHROPIC_OAUTH_TOKEN or ANTHROPIC_API_KEY. Set VCR_MODE=playback to use cached responses.',
+      `LLM credentials required for recording. Missing API key for provider: ${resolved.provider}. Set VCR_MODE=playback to use cached responses.`,
     );
   }
 
   const context: Context = {
     systemPrompt,
-    messages: toPiAiMessages(messages),
+    messages: toPiAiMessages(messages, resolved.model),
   };
 
-  const response = await completeSimple(model, context, {
+  const response = await completeSimple(resolved.model, context, {
     apiKey,
     maxTokens: 1000,
   });
@@ -145,7 +126,7 @@ async function makeModelApiCall(
 
 /** Creates an LLM service that records/replays responses via cassette manager */
 export function createCachedLlmService(config: CachedLlmServiceConfig): LlmService {
-  const { cassetteManager, model = 'claude-3-5-haiku-20241022' } = config;
+  const { cassetteManager, model = 'claude-sonnet-4-5-20250929' } = config;
 
   async function generateResponse(
     conversationHistory: AgentState['history'],

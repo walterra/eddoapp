@@ -148,18 +148,14 @@ interface TodoAlpha3 {
 
 Configure AI models via the `LLM_MODEL` environment variable:
 
-**Claude 4 Models (May 2025):**
+**Claude 4 Models: (June 2026)**
 
 - `claude-opus-4-20250514` or `claude-opus-4-0` (most capable)
-- `claude-sonnet-4-20250514` or `claude-sonnet-4-0` (balanced performance)
+- `claude-sonnet-4-5-20250929` (balanced performance)
 
-**Claude 3.7 Models:**
+**Claude Haiku Models: (June 2026)**
 
-- `claude-3-7-sonnet-20250219`
-
-**Claude 3.5 Models:**
-
-- `claude-3-5-haiku-20241022` (fastest)
+- `claude-haiku-4-5-20251001` (fastest)
 
 ### Telegram Bot Configuration
 

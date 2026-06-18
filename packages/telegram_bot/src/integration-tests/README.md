@@ -12,11 +12,16 @@ These integration tests verify the complete agent loop workflow with real MCP se
 
 2. **CouchDB** must be accessible and configured
 
-3. **Valid Anthropic credentials** are required (tests make real API calls)
+3. **Valid provider credentials** are required (tests make real API calls)
+
    ```bash
+   # Anthropic
    export ANTHROPIC_API_KEY="your-api-key"
    # or
    export ANTHROPIC_OAUTH_TOKEN="your-oauth-token"
+
+   # OpenAI
+   export OPENAI_API_KEY="your-api-key"
    ```
 
 ## Running Tests
@@ -48,7 +53,7 @@ MCP_TEST_PORT=3005 pnpm test:integration:agent-loop
 - `MCP_SERVER_URL`: MCP server URL (default: `http://localhost:3001/mcp`)
 - `MCP_TEST_URL`: Override MCP URL for tests
 - `MCP_TEST_PORT`: Port for test server (default: 3003)
-- `LLM_MODEL`: Model to use (default: `claude-3-5-haiku-20241022`)
+- `LLM_MODEL`: Model to use (default: `claude-sonnet-4-5-20250929`, example: `gpt-4o-mini`)
 
 ## Test Structure
 

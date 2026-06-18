@@ -1,19 +1,21 @@
 import { getRandomHex } from '@eddo/core-shared';
 import {
   getEnvApiKey,
-  getModels,
   streamSimple,
+  type Api,
   type AssistantMessage,
   type Context,
   type Message,
   type Model,
+  type Provider,
 } from '@mariozechner/pi-ai';
 
 import type { AgentState } from '../agent/simple-agent.js';
 import { appConfig } from '../utils/config.js';
 import { logger, withSpan } from '../utils/logger.js';
+import { resolveConfiguredModel } from './llm-model-resolution.js';
 
-const DEFAULT_MODEL = 'claude-3-5-haiku-20241022';
+const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
 const MAX_TOKENS = 1000;
 
 interface SpanWriter {
@@ -40,32 +42,6 @@ export interface LlmService {
   ) => Promise<string>;
 }
 
-/** Resolves model metadata from pi-ai registry with safe fallback. */
-function resolveModel(modelId: string): Model<'anthropic-messages'> {
-  const configuredModel = getModels('anthropic').find((model) => model.id === modelId);
-  if (configuredModel) {
-    return configuredModel;
-  }
-
-  return {
-    id: modelId,
-    name: modelId,
-    api: 'anthropic-messages',
-    provider: 'anthropic',
-    baseUrl: 'https://api.anthropic.com',
-    reasoning: true,
-    input: ['text', 'image'],
-    cost: {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-    },
-    contextWindow: 200_000,
-    maxTokens: MAX_TOKENS,
-  };
-}
-
 /** Creates a user message for pi-ai context. */
 function createUserMessage(content: string, timestamp: number): Message {
   return {
@@ -76,12 +52,16 @@ function createUserMessage(content: string, timestamp: number): Message {
 }
 
 /** Creates a synthetic assistant message for prior conversation turns. */
-function createAssistantHistoryMessage(content: string, timestamp: number): AssistantMessage {
+function createAssistantHistoryMessage(
+  content: string,
+  timestamp: number,
+  targetModel: Model<Api>,
+): AssistantMessage {
   return {
     role: 'assistant',
     content: [{ type: 'text', text: content }],
-    api: 'anthropic-messages',
-    provider: 'anthropic',
+    api: targetModel.api,
+    provider: targetModel.provider,
     model: 'history',
     usage: {
       input: 0,
@@ -97,20 +77,24 @@ function createAssistantHistoryMessage(content: string, timestamp: number): Assi
 }
 
 /** Maps agent history entries to pi-ai context messages. */
-function mapHistoryToMessages(history: AgentState['history']): Message[] {
+function mapHistoryToMessages(history: AgentState['history'], targetModel: Model<Api>): Message[] {
   return history.map((message, index) => {
     const timestamp = message.timestamp || Date.now() + index;
     return message.role === 'user'
       ? createUserMessage(message.content, timestamp)
-      : createAssistantHistoryMessage(message.content, timestamp);
+      : createAssistantHistoryMessage(message.content, timestamp, targetModel);
   });
 }
 
 /** Builds pi-ai context from agent history and system prompt. */
-function createContext(history: AgentState['history'], systemPrompt: string): Context {
+function createContext(
+  history: AgentState['history'],
+  systemPrompt: string,
+  targetModel: Model<Api>,
+): Context {
   return {
     systemPrompt,
-    messages: mapHistoryToMessages(history),
+    messages: mapHistoryToMessages(history, targetModel),
   };
 }
 
@@ -178,11 +162,16 @@ function logLlmRequest(params: LlmRequestParams): void {
 /** Streams a response and returns the final assistant message. */
 async function streamAndGetFinalMessage(
   requestId: string,
-  model: Model<'anthropic-messages'>,
+  model: Model<Api>,
   context: Context,
 ): Promise<AssistantMessage> {
+  const apiKey = getEnvApiKey(model.provider as Provider);
+  if (!apiKey) {
+    throw new Error(`No API key for provider: ${model.provider}`);
+  }
+
   const responseStream = streamSimple(model, context, {
-    apiKey: getEnvApiKey(model.provider),
+    apiKey,
     maxTokens: MAX_TOKENS,
   });
 
@@ -226,9 +215,9 @@ async function executeRequest(params: LlmRequestParams): Promise<string> {
   try {
     logLlmRequest(params);
 
-    const model = resolveModel(modelId);
-    const context = createContext(conversationHistory, systemPrompt);
-    const finalMessage = await streamAndGetFinalMessage(requestId, model, context);
+    const resolved = resolveConfiguredModel(modelId);
+    const context = createContext(conversationHistory, systemPrompt, resolved.model);
+    const finalMessage = await streamAndGetFinalMessage(requestId, resolved.model, context);
     const responseText = getResponseTextFromFinalMessage(finalMessage);
     const usage = extractUsage(finalMessage);
 
@@ -236,6 +225,7 @@ async function executeRequest(params: LlmRequestParams): Promise<string> {
 
     logger.info('🤖 LLM Response', {
       requestId,
+      provider: resolved.provider,
       response: responseText,
       responseLength: responseText.length,
       usage,

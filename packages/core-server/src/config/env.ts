@@ -31,7 +31,7 @@ export const envSchema = z.object({
 
   // Bot Configuration
   BOT_PERSONA_ID: z.enum(['butler', 'gtd_coach', 'zen_master']).default('butler'),
-  LLM_MODEL: z.string().default('claude-3-5-sonnet-20241022'),
+  LLM_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
 
   // Claude Code SDK Configuration
   CLAUDE_CODE_WORKING_DIR: z.string().default('./bot_workspace'),

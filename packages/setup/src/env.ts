@@ -39,8 +39,8 @@ VITE_OTEL_ENABLED=false
 # Bot Persona: butler, gtd_coach, zen_master
 # BOT_PERSONA_ID=butler
 
-# LLM Model (default: claude-sonnet-4-0)
-# LLM_MODEL=claude-sonnet-4-0
+# LLM Model (default: claude-sonnet-4-5-20250929)
+# LLM_MODEL=claude-sonnet-4-5-20250929
 `;
 }
 

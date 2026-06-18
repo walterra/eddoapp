@@ -2,15 +2,16 @@ import { type Env, validateEnv } from '@eddo/core-server';
 import { getEnvApiKey } from '@mariozechner/pi-ai';
 import { dotenvLoad } from 'dotenv-mono';
 import { z } from 'zod';
+import { resolveConfiguredModel } from '../ai/llm-model-resolution.js';
 
 // Load environment variables
 dotenvLoad();
 
 // Check if we're in VCR playback mode (no real API calls needed)
 const isVcrPlayback = process.env.VCR_MODE === 'playback';
+const DEFAULT_LLM_MODEL = 'claude-sonnet-4-5-20250929';
 
 // Extend the shared environment schema with telegram-specific required fields
-// In VCR playback mode, API keys are optional since we replay cached responses
 const TelegramConfigSchema = z.object({
   TELEGRAM_BOT_TOKEN: isVcrPlayback
     ? z.string().optional().default('vcr-playback-token')
@@ -41,9 +42,13 @@ try {
   // Validate telegram-specific required fields
   const telegramFields = TelegramConfigSchema.parse(process.env);
 
-  if (!isVcrPlayback && !getEnvApiKey('anthropic')) {
+  const configuredModel = process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
+  const provider = resolveConfiguredModel(configuredModel).provider;
+
+  // In VCR playback mode, API keys are optional since we replay cached responses
+  if (!isVcrPlayback && !getEnvApiKey(provider)) {
     throw new Error(
-      'LLM credentials are required. Set ANTHROPIC_OAUTH_TOKEN or ANTHROPIC_API_KEY.',
+      `LLM credentials are required for provider "${provider}". Configure provider API keys via pi-ai env conventions.`,
     );
   }
 

@@ -818,7 +818,7 @@ COUCHDB_ADMIN_PASSWORD=admin-password
 
 ### AI Model Configuration
 
-- `LLM_MODEL`: Set to configure AI model (e.g., `claude-sonnet-4-0`, `claude-opus-4-0`, `claude-3-5-haiku-20241022`)
+- `LLM_MODEL`: Set to configure AI model (e.g., `claude-sonnet-4-5-20250929`, `claude-opus-4-0`, `claude-haiku-4-5-20251001`)
 - MCP server runs on port 3002 by default (via proxy)
 
 ### Additional Environment Variables

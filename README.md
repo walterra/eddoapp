@@ -125,7 +125,7 @@ AI-powered assistant for natural language todo management:
 "Start tracking time on the API refactor"
 ```
 
-**Setup**: Set `TELEGRAM_BOT_TOKEN` and `ANTHROPIC_API_KEY` in `.env`
+**Setup**: Set `TELEGRAM_BOT_TOKEN` and LLM provider key (for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`) in `.env`
 
 ```bash
 pnpm dev:telegram-bot

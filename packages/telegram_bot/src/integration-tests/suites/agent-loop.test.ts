@@ -21,6 +21,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { createAgentAssertions } from '../helpers/agent-assertions.js';
 import { TestAgentServer } from '../setup/test-agent-server.js';
 
+const TELEGRAM_BOT_MODEL = 'claude-sonnet-4-5-20250929';
+
 describe('Agent Loop E2E Integration', () => {
   let agentServer: TestAgentServer;
   let assert: ReturnType<typeof createAgentAssertions>;
@@ -39,9 +41,7 @@ describe('Agent Loop E2E Integration', () => {
 
   beforeEach(async () => {
     agentServer = new TestAgentServer({
-      // Use sonnet model to match recorded cassettes
-      // Cassettes are recorded with a specific model, hash matching requires same model
-      llmModel: process.env.LLM_MODEL || 'claude-sonnet-4-20250514',
+      llmModel: process.env.LLM_MODEL || TELEGRAM_BOT_MODEL,
     });
 
     await agentServer.start();
