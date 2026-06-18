@@ -150,7 +150,7 @@ jobs:
           fi
       - name: Comment bundle size on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const bundleData = JSON.parse(process.env.BUNDLE_JSON || '{"total":0,"totalLimit":2560,"chunks":[]}');
