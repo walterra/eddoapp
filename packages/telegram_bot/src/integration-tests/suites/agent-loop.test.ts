@@ -228,7 +228,11 @@ describe('Agent Loop E2E Integration', () => {
         replies.includes('what') ||
         replies.includes('title') ||
         replies.includes('specify') ||
-        replies.includes('more detail');
+        replies.includes('more detail') ||
+        replies.includes('need') ||
+        replies.includes('provide') ||
+        replies.includes('details') ||
+        replies.includes('clarify');
 
       expect(validOutcome).toBe(true);
     });
@@ -250,7 +254,11 @@ describe('Agent Loop E2E Integration', () => {
       );
 
       assert.expectSuccess(response);
-      assert.expectToolUsed(response, 'listTodos');
+      const usedRecapTool =
+        response.context.toolResults?.some(
+          (result) => result.toolName === 'listTodos' || result.toolName === 'getRecapData',
+        ) ?? false;
+      expect(usedRecapTool).toBe(true);
 
       // Verify responses don't contain hallucinated content before tool results
       // STATUS messages should be short (under 10 words), not full recaps

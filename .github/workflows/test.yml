@@ -156,22 +156,22 @@ jobs:
             const bundleData = JSON.parse(process.env.BUNDLE_JSON || '{"total":0,"totalLimit":2560,"chunks":[]}');
             const commentMarker = '<!-- bundle-size-report -->';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            
+
             // Sort chunks by size descending
             const sortedChunks = [...bundleData.chunks].sort((a, b) => b.size - a.size);
-            
+
             // Build table rows
             const tableRows = sortedChunks.map(chunk => {
               const status = chunk.size > chunk.limit ? '❌' : '✅';
               const percent = Math.round((chunk.size / chunk.limit) * 100);
               return `| ${chunk.name} | ${chunk.size}KB | ${chunk.limit}KB | ${percent}% | ${status} |`;
             }).join('\n');
-            
+
             // Calculate overall status
             const hasViolation = sortedChunks.some(c => c.size > c.limit);
             const totalExceeded = bundleData.total > bundleData.totalLimit;
             const overallStatus = (hasViolation || totalExceeded) ? '❌ Exceeds limit' : '✅ Within limit';
-            
+
             const comment = [
               commentMarker,
               '## Bundle Size Report 📦',
@@ -193,15 +193,15 @@ jobs:
               '',
               `[View workflow run](${runUrl})`
             ].join('\n');
-            
+
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
-            
+
             const existingComment = comments.find(c => c.body && c.body.includes(commentMarker));
-            
+
             if (existingComment) {
               await github.rest.issues.updateComment({
                 comment_id: existingComment.id,
@@ -312,8 +312,7 @@ jobs:
       - name: Run agent loop integration tests (VCR playback)
         env:
           CI: true
-          VCR_MODE: playback
-        run: pnpm test:integration:agent-loop
+        run: pnpm test:integration:agent-loop:playback
 
   e2e-tests:
     name: E2E Tests

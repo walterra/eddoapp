@@ -13,6 +13,7 @@ import {
 
 import type { AgentState } from '../../agent/simple-agent.js';
 import { resolveConfiguredModel } from '../../ai/llm-model-resolution.js';
+import { createLlmOptions } from '../../ai/llm-options.js';
 import type { LlmService } from '../../ai/llm-service.js';
 import { logger } from '../../utils/logger.js';
 import type { CassetteManager } from './cassette-manager.js';
@@ -107,10 +108,11 @@ async function makeModelApiCall(
     messages: toPiAiMessages(messages, resolved.model),
   };
 
-  const response = await completeSimple(resolved.model, context, {
-    apiKey,
-    maxTokens: 1000,
-  });
+  const response = await completeSimple(
+    resolved.model,
+    context,
+    createLlmOptions(resolved.model, apiKey),
+  );
 
   if (response.stopReason === 'error' || response.stopReason === 'aborted') {
     throw new Error(response.errorMessage || `LLM request failed: ${response.stopReason}`);

@@ -53,7 +53,28 @@ MCP_TEST_PORT=3005 pnpm test:integration:agent-loop
 - `MCP_SERVER_URL`: MCP server URL (default: `http://localhost:3001/mcp`)
 - `MCP_TEST_URL`: Override MCP URL for tests
 - `MCP_TEST_PORT`: Port for test server (default: 3003)
-- `LLM_MODEL`: Model to use (default: `claude-sonnet-4-5-20250929`, example: `gpt-4o-mini`)
+- `LLM_MODEL`: Model to use (default: `claude-sonnet-4-5-20250929`, example: `openai/gpt-5.2`)
+- `LLM_MAX_TOKENS`: Maximum output tokens for pi-ai calls (default: 4096)
+- `LLM_REASONING_EFFORT`: Reasoning effort for reasoning models (default: `low`)
+
+## Model-specific VCR recordings
+
+Cassettes are stored under a model-specific directory. `VCR_MODE=record` overwrites only that model's cassette set.
+
+```bash
+OPENAI_API_KEY="sk-..." \
+LLM_MODEL="openai/gpt-5.2" \
+VCR_MODE=record \
+pnpm test:integration:agent-loop
+```
+
+This writes OpenAI recordings under `cassettes/openai_gpt-5_2/`.
+
+Playback discovers all model cassette directories and runs the suite once per recorded model:
+
+```bash
+pnpm test:integration:agent-loop:playback
+```
 
 ## Test Structure
 

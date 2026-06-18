@@ -109,11 +109,12 @@ export class TestAgentServer {
   constructor(config: TestAgentServerConfig = {}) {
     const testPort = process.env.MCP_SERVER_PORT || '3001';
     const vcrMode = (process.env.VCR_MODE as RecordMode) || config.vcrMode || 'auto';
+    const llmModel = config.llmModel || process.env.LLM_MODEL || 'claude-sonnet-4-5-20250929';
 
     this.config = {
       mcpServerUrl:
         config.mcpServerUrl || process.env.MCP_SERVER_URL || `http://localhost:${testPort}/mcp`,
-      llmModel: config.llmModel || 'claude-sonnet-4-5-20250929',
+      llmModel,
       mockTelegramResponses: config.mockTelegramResponses ?? true,
       vcrMode,
     };
@@ -139,6 +140,7 @@ export class TestAgentServer {
       {
         cassettesDir,
         mode: this.config.vcrMode,
+        namespace: this.config.llmModel,
       },
       timeController,
     );
@@ -280,7 +282,7 @@ export class TestAgentServer {
 
       return {
         success: result.success,
-        message: result.finalResponse || 'Agent completed successfully',
+        message: result.finalResponse || result.error?.message || 'Agent completed successfully',
         context: mockContext,
       };
     } catch (error) {

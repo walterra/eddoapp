@@ -14,9 +14,9 @@ import type { AgentState } from '../agent/simple-agent.js';
 import { appConfig } from '../utils/config.js';
 import { logger, withSpan } from '../utils/logger.js';
 import { resolveConfiguredModel } from './llm-model-resolution.js';
+import { createLlmOptions } from './llm-options.js';
 
 const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
-const MAX_TOKENS = 1000;
 
 interface SpanWriter {
   setAttribute: (key: string, value: string | number) => void;
@@ -170,10 +170,7 @@ async function streamAndGetFinalMessage(
     throw new Error(`No API key for provider: ${model.provider}`);
   }
 
-  const responseStream = streamSimple(model, context, {
-    apiKey,
-    maxTokens: MAX_TOKENS,
-  });
+  const responseStream = streamSimple(model, context, createLlmOptions(model, apiKey));
 
   for await (const event of responseStream) {
     if (event.type === 'error') {

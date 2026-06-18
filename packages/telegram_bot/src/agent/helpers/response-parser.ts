@@ -6,19 +6,63 @@ import { hasMarkdownFormatting, validateTelegramMarkdown } from '../../utils/mar
 
 import type { ConversationalPart, ToolCall } from './types.js';
 
-/**
- * Parses a tool call from the LLM response
- */
-export function parseToolCall(response: string): ToolCall | null {
-  const toolCallMatch = response.match(/TOOL_CALL:\s*({.*})/);
-  if (!toolCallMatch) {
-    return null;
+const TOOL_CALL_MARKER = 'TOOL_CALL:';
+
+/** Removes Markdown code fences around tool JSON. */
+function stripJsonCodeFence(value: string): string {
+  return value
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+}
+
+/** Finds the first balanced JSON object in text. */
+function extractJsonObject(value: string): string | null {
+  const start = value.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < value.length; index++) {
+    const char = value[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (char === '"') inString = !inString;
+    if (inString) continue;
+    if (char === '{') depth++;
+    if (char === '}') depth--;
+    if (depth === 0) return value.slice(start, index + 1);
   }
 
+  return null;
+}
+
+/** Extracts raw tool JSON from a model response. */
+function extractToolJson(response: string): string | null {
+  const markerIndex = response.indexOf(TOOL_CALL_MARKER);
+  if (markerIndex === -1) return null;
+
+  const afterMarker = response.slice(markerIndex + TOOL_CALL_MARKER.length).trim();
+  return extractJsonObject(stripJsonCodeFence(afterMarker));
+}
+
+/** Parses a tool call from the LLM response. */
+export function parseToolCall(response: string): ToolCall | null {
+  const toolJson = extractToolJson(response);
+  if (!toolJson) return null;
+
   try {
-    return JSON.parse(toolCallMatch[1]) as ToolCall;
+    return JSON.parse(toolJson) as ToolCall;
   } catch (error) {
-    logger.error('Failed to parse tool call', { response, error });
+    logger.error('Failed to parse tool call', { response, toolJson, error });
     return null;
   }
 }

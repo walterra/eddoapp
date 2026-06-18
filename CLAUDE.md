@@ -211,7 +211,7 @@ Tests the Telegram bot's AI agent loop with VCR-style caching for LLM responses.
 
 - `pnpm test:integration:agent-loop` - Auto mode (hybrid, requires `ANTHROPIC_API_KEY`)
 - `pnpm test:integration:agent-loop:record` - Re-record all cassettes (requires `ANTHROPIC_API_KEY`)
-- `pnpm test:integration:agent-loop:playback` - Playback only, no API key needed (CI default)
+- `pnpm test:integration:agent-loop:playback` - Playback all recorded model cassette sets, no API key needed (CI default)
 
 **API Key Requirements**:
 

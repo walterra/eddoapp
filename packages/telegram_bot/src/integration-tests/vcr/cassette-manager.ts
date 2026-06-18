@@ -89,17 +89,18 @@ interface CassetteContext {
   state: CassetteState;
   mode: RecordMode;
   cassettesDir: string;
+  namespace: string;
   time: TimeHelpers;
   saveCassette: () => void;
 }
 
 /** Load or create cassette for test */
 function doLoadCassette(ctx: CassetteContext, testName: string): void {
-  const { state, mode, cassettesDir, time, saveCassette } = ctx;
+  const { state, mode, cassettesDir, namespace, time, saveCassette } = ctx;
   if (state.cassette && state.modified && state.path) saveCassette();
   time.unfreeze();
 
-  state.path = getCassettePath(cassettesDir, testName);
+  state.path = getCassettePath({ cassettesDir, testName, namespace });
   state.index = 0;
   state.modified = false;
   const safeName = testName.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -163,9 +164,10 @@ export function createCassetteManager(
   config: CassetteManagerConfig,
   timeController?: TimeController,
 ) {
-  const { cassettesDir, mode } = config;
+  const { cassettesDir, mode, namespace } = config;
   const state: CassetteState = {
     cassette: null,
+    namespace,
     path: null,
     index: 0,
     modified: false,
@@ -180,7 +182,7 @@ export function createCassetteManager(
     state.modified = false;
   };
 
-  const ctx: CassetteContext = { state, mode, cassettesDir, time, saveCassette };
+  const ctx: CassetteContext = { state, mode, cassettesDir, namespace, time, saveCassette };
 
   return {
     loadCassette: (testName: string) => doLoadCassette(ctx, testName),

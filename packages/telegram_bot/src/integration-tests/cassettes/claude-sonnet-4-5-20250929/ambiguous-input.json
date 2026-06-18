@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-06-18T06:26:42.926Z",
-  "frozenTime": "2026-06-18T06:26:42.926Z",
+  "createdAt": "2026-06-18T09:16:01.110Z",
+  "frozenTime": "2026-06-18T09:16:01.110Z",
   "interactions": [
     {
       "requestHash": "74283c22b9c9c82e",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "I need more details to create a great todo! What would you like to add? \n\nFor example:\n- \"Buy groceries tomorrow\"\n- \"Call mom this weekend\"\n- \"Review budget report by Friday\"\n\nWhat's your todo?",
+      "response": "What would you like to add to your todo list? Give me a title and any details like due date, context (work/private/etc), or tags you want to include! 🎯",
       "metadata": {
-        "recordedAt": "2026-06-18T06:26:46.252Z",
-        "responseTimeMs": 3288
+        "recordedAt": "2026-06-18T09:16:04.966Z",
+        "responseTimeMs": 3835
       }
     }
   ]
