@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.3.0
         with:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
@@ -227,7 +227,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.3.0
         with:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
@@ -257,7 +257,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.3.0
         with:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
@@ -289,7 +289,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.3.0
         with:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
@@ -321,7 +321,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.3.0
         with:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
