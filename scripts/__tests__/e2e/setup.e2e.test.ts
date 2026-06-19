@@ -9,7 +9,7 @@
  * due to pre-existing state (existing pi-coding-agent skills, etc.)
  */
 
-import { execSync } from 'child_process';
+import { execFile, execSync } from 'child_process';
 import { runner } from 'clet';
 import fs from 'fs';
 import os from 'os';
@@ -17,6 +17,53 @@ import path from 'path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '../../..');
+
+interface CommandOutput {
+  readonly output: string;
+}
+
+interface CommandError extends Error {
+  readonly stdout?: string | Buffer;
+  readonly stderr?: string | Buffer;
+}
+
+/**
+ * Run a command without blocking Vitest worker RPC.
+ *
+ * @param command - Executable name.
+ * @param args - Command arguments.
+ * @return Combined stdout and stderr.
+ */
+function runCommand(command: string, args: readonly string[]): Promise<CommandOutput> {
+  return new Promise((resolve, reject) => {
+    execFile(command, [...args], { cwd: PROJECT_ROOT, encoding: 'utf-8' }, (error, stdout, stderr) => {
+      const output = `${stdout}${stderr}`;
+      if (error) {
+        Object.assign(error, { stdout, stderr });
+        reject(error);
+        return;
+      }
+      resolve({ output });
+    });
+  });
+}
+
+/**
+ * Run a command and return output for any exit code.
+ *
+ * @param command - Executable name.
+ * @param args - Command arguments.
+ * @return Combined stdout and stderr.
+ */
+async function runCommandAllowFailure(command: string, args: readonly string[]): Promise<string> {
+  try {
+    const result = await runCommand(command, args);
+    return result.output;
+  } catch (error) {
+    const commandError = error as CommandError;
+    return `${commandError.stdout ?? ''}${commandError.stderr ?? ''}`;
+  }
+}
 
 /**
  * Check if Docker daemon is running
@@ -88,20 +135,14 @@ describe('Setup Wizard E2E', () => {
       async () => {
         // Ensure services are running
         if (!isServiceHealthy('http://localhost:5984/_up')) {
-          execSync('docker compose up -d couchdb elasticsearch', {
-            cwd: PROJECT_ROOT,
-            stdio: 'pipe',
-          });
+          await runCommand('docker', ['compose', 'up', '-d', 'couchdb', 'elasticsearch']);
           await new Promise((resolve) => setTimeout(resolve, 15000));
         }
 
         // Run doctor and verify it produces diagnostic output
         // Note: In CI, doctor may report warnings/failures for things like
         // port conflicts or missing optional services, so we don't assert exit code
-        const result = execSync('pnpm dev:doctor 2>&1 || true', {
-          cwd: PROJECT_ROOT,
-          encoding: 'utf-8',
-        });
+        const result = await runCommandAllowFailure('pnpm', ['dev:doctor']);
 
         // Verify diagnostic sections are present
         expect(result).toMatch(/Eddo Doctor/);
@@ -123,10 +164,7 @@ describe('Setup Wizard E2E', () => {
         }
 
         // Run setup and capture result - allow any exit code
-        const result = execSync('pnpm dev:setup --ci 2>&1 || true', {
-          cwd: PROJECT_ROOT,
-          encoding: 'utf-8',
-        });
+        const result = await runCommandAllowFailure('pnpm', ['dev:setup', '--ci']);
 
         // Verify output contains env generation message
         expect(result).toContain('Generated .env file');
@@ -148,10 +186,7 @@ describe('Setup Wizard E2E', () => {
         fs.writeFileSync(originalEnvPath, customContent);
 
         // Run setup
-        execSync('pnpm dev:setup --ci 2>&1 || true', {
-          cwd: PROJECT_ROOT,
-          encoding: 'utf-8',
-        });
+        await runCommandAllowFailure('pnpm', ['dev:setup', '--ci']);
 
         // Verify .env was not overwritten
         const envContent = fs.readFileSync(originalEnvPath, 'utf-8');
@@ -167,10 +202,7 @@ describe('Setup Wizard E2E', () => {
         fs.writeFileSync(originalEnvPath, 'CUSTOM_VAR=test123\n');
 
         // Run setup with force
-        const result = execSync('pnpm dev:setup --ci --force 2>&1 || true', {
-          cwd: PROJECT_ROOT,
-          encoding: 'utf-8',
-        });
+        const result = await runCommandAllowFailure('pnpm', ['dev:setup', '--ci', '--force']);
 
         // Verify output shows generation
         expect(result).toContain('Generated .env file');
@@ -188,10 +220,7 @@ describe('Setup Wizard E2E', () => {
     it.skipIf(!isDockerRunning())(
       'detects installed prerequisites',
       async () => {
-        const result = execSync('pnpm dev:setup --ci 2>&1 || true', {
-          cwd: PROJECT_ROOT,
-          encoding: 'utf-8',
-        });
+        const result = await runCommandAllowFailure('pnpm', ['dev:setup', '--ci']);
 
         // Verify prerequisites are detected
         expect(result).toMatch(/Node\.js.*installed/);
