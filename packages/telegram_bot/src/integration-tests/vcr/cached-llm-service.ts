@@ -9,7 +9,7 @@ import {
   type Context,
   type Message,
   type Provider,
-} from '@mariozechner/pi-ai';
+} from '@earendil-works/pi-ai';
 
 import type { AgentState } from '../../agent/simple-agent.js';
 import { resolveConfiguredModel } from '../../ai/llm-model-resolution.js';

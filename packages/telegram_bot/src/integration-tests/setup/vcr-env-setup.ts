@@ -7,3 +7,6 @@
 // Force consistent persona for VCR cassette matching
 // Cassettes were recorded with gtd_coach persona
 process.env.BOT_PERSONA_ID = 'gtd_coach';
+
+// Integration tests use mocked Telegram contexts and never contact Telegram.
+process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'test-token';

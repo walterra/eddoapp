@@ -97,7 +97,7 @@ describe('llmService', () => {
       withSpan: mockWithSpan,
     }));
 
-    vi.doMock('@mariozechner/pi-ai', () => ({
+    vi.doMock('@earendil-works/pi-ai', () => ({
       getEnvApiKey: mockGetEnvApiKey,
       getModels: mockGetModels,
       getProviders: mockGetProviders,

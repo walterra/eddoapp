@@ -16,7 +16,7 @@ vi.mock('dotenv-mono', () => ({
   dotenvLoad: vi.fn(),
 }));
 
-vi.mock('@mariozechner/pi-ai', () => ({
+vi.mock('@earendil-works/pi-ai', () => ({
   getEnvApiKey: vi.fn(() => 'mock-key'),
   getProviders: vi.fn(() => ['anthropic']),
   getModels: vi.fn(() => [

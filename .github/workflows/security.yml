@@ -31,7 +31,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v6
         with:
-          version: 10.27.0
+          version: 11.5.3
           run_install: false
 
       - name: Get pnpm store directory
@@ -62,13 +62,22 @@ jobs:
         run: |
           echo "Running security audit with vulnerability enforcement..."
           
-          # Extract ignored CVEs from package.json and build --ignore flags
+          # Extract ignored GHSAs from pnpm-workspace.yaml and build --ignore flags
           IGNORE_FLAGS=""
-          if [ -f package.json ]; then
-            IGNORED_CVES=$(jq -r '.pnpm.auditConfig.ignoreCves // [] | .[]' package.json 2>/dev/null || true)
-            for CVE in $IGNORED_CVES; do
-              IGNORE_FLAGS="$IGNORE_FLAGS --ignore $CVE"
-              echo "Ignoring patched CVE: $CVE"
+          if [ -f pnpm-workspace.yaml ]; then
+            IGNORED_GHSAS=$(awk '
+              /^auditConfig:/ { in_audit = 1; next }
+              in_audit && /^[^[:space:]]/ { in_audit = 0; in_ignore = 0 }
+              in_audit && /^[[:space:]]+ignoreGhsas:/ { in_ignore = 1; next }
+              in_audit && in_ignore && /^[[:space:]]+-[[:space:]]+/ {
+                sub(/^[[:space:]]+-[[:space:]]+/, "")
+                gsub(/[\047\042]/, "")
+                print
+              }
+            ' pnpm-workspace.yaml)
+            for GHSA in $IGNORED_GHSAS; do
+              IGNORE_FLAGS="$IGNORE_FLAGS --ignore $GHSA"
+              echo "Ignoring patched GHSA: $GHSA"
             done
           fi
           

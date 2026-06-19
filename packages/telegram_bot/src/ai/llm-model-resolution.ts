@@ -4,7 +4,7 @@ import {
   type Api,
   type KnownProvider,
   type Model,
-} from '@mariozechner/pi-ai';
+} from '@earendil-works/pi-ai';
 
 const MODEL_PROVIDER_SEPARATOR = '/';
 const ANTHROPIC_PROVIDER: KnownProvider = 'anthropic';

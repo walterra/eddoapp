@@ -1,4 +1,4 @@
-import type { Api, Model } from '@mariozechner/pi-ai';
+import type { Api, Model } from '@earendil-works/pi-ai';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createLlmOptions, getLlmMaxTokens } from './llm-options.js';

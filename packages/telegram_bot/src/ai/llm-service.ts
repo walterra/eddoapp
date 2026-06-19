@@ -1,4 +1,3 @@
-import { getRandomHex } from '@eddo/core-shared';
 import {
   getEnvApiKey,
   streamSimple,
@@ -8,7 +7,8 @@ import {
   type Message,
   type Model,
   type Provider,
-} from '@mariozechner/pi-ai';
+} from '@earendil-works/pi-ai';
+import { getRandomHex } from '@eddo/core-shared';
 
 import type { AgentState } from '../agent/simple-agent.js';
 import { appConfig } from '../utils/config.js';

@@ -34,6 +34,7 @@ function normalizeSystemPrompt(systemPrompt: string): string {
 function normalizeMessageContent(content: string): string {
   return content
     .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/g, '[ISO_DATE]')
+    .replace(/\d{4}-\d{2}-\d{2}/g, '[DATE]')
     .replace(/"timestamp":"[^"]+"/g, '"timestamp":"[NORMALIZED]"')
     .replace(/"execution_time":"[^"]+"/g, '"execution_time":"[NORMALIZED]"')
     .replace(/"id":"[^"]+"/g, '"id":"[NORMALIZED]"')
