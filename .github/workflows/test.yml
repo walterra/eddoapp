@@ -94,11 +94,13 @@ jobs:
                 
                 // Extract chunk name from filename patterns:
                 // - vendor-react-JtTXGiG9.js → vendor-react
-                // - index-DqmYEbsX.js → index  
+                // - index-CH6b-b0u.js → index
                 // - CDWEKZTF-CaGrxhYk.js → dynamic (all caps = dynamic import)
-                let name = filename
-                  .replace(/\.js$/, '')              // remove extension
-                  .replace(/-[A-Za-z0-9_]{6,}$/, ''); // remove final hash segment (may contain _)
+                const baseName = filename.replace(/\.js$/, '');
+                const knownName = Object.keys(limits)
+                  .sort((a, b) => b.length - a.length)
+                  .find(chunkName => baseName === chunkName || baseName.startsWith(`${chunkName}-`));
+                let name = knownName || baseName;
                 
                 // Handle dynamic chunks (start with uppercase hash like CDWEKZTF)
                 if (/^[A-Z0-9]{6,}/.test(name)) name = 'dynamic';
