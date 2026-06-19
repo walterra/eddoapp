@@ -9,6 +9,7 @@ dotenvLoad();
 
 // Check if we're in VCR playback mode (no real API calls needed)
 const isVcrPlayback = process.env.VCR_MODE === 'playback';
+const isTestEnvironment = process.env.NODE_ENV === 'test';
 const DEFAULT_LLM_MODEL = 'claude-sonnet-4-5-20250929';
 
 // Extend the shared environment schema with telegram-specific required fields
@@ -45,8 +46,8 @@ try {
   const configuredModel = process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
   const provider = resolveConfiguredModel(configuredModel).provider;
 
-  // In VCR playback mode, API keys are optional since we replay cached responses
-  if (!isVcrPlayback && !getEnvApiKey(provider)) {
+  // VCR and integration tests use injected LLM services and validate keys at call time.
+  if (!isVcrPlayback && !isTestEnvironment && !getEnvApiKey(provider)) {
     throw new Error(
       `LLM credentials are required for provider "${provider}". Configure provider API keys via pi-ai env conventions.`,
     );

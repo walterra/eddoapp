@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-06-18T09:12:04.534Z",
-  "frozenTime": "2026-06-18T09:12:04.534Z",
+  "createdAt": "2026-06-19T08:33:08.388Z",
+  "frozenTime": "2026-06-19T08:33:08.388Z",
   "interactions": [
     {
       "requestHash": "6f238cfb928f54e4",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "What’s the todo? Send: **title + due (when?) + context** (work/private/errands). If you just send the title, I’ll set due **today** by default.",
+      "response": "Absolutely—what’s the **title** of the todo (what outcome), and is it **work/private/errands**?  \nAlso: when is it **due** (today/tomorrow/a date)?",
       "metadata": {
-        "recordedAt": "2026-06-18T09:12:06.362Z",
-        "responseTimeMs": 1797
+        "recordedAt": "2026-06-19T08:33:11.244Z",
+        "responseTimeMs": 2810
       }
     }
   ]

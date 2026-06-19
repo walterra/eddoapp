@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-06-18T09:16:01.110Z",
-  "frozenTime": "2026-06-18T09:16:01.110Z",
+  "createdAt": "2026-06-19T07:30:00.369Z",
+  "frozenTime": "2026-06-19T07:30:00.369Z",
   "interactions": [
     {
       "requestHash": "74283c22b9c9c82e",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "What would you like to add to your todo list? Give me a title and any details like due date, context (work/private/etc), or tags you want to include! 🎯",
+      "response": "What would you like to add to your todo list?",
       "metadata": {
-        "recordedAt": "2026-06-18T09:16:04.966Z",
-        "responseTimeMs": 3835
+        "recordedAt": "2026-06-19T07:30:03.396Z",
+        "responseTimeMs": 3003
       }
     }
   ]
