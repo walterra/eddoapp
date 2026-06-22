@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-06-22T14:21:41.797Z",
-  "frozenTime": "2026-06-22T14:21:41.797Z",
+  "createdAt": "2026-06-22T14:45:46.659Z",
+  "frozenTime": "2026-06-22T14:45:46.659Z",
   "interactions": [
     {
       "requestHash": "6f238cfb928f54e4",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "What’s the todo? Send me **title + due** (e.g., “Pay rent tomorrow”), and optionally **context** (work/private/errands) and any notes.",
+      "response": "Awesome—what’s the todo? Send it like: **“Title — due when — context (work/private/errands)”** (example: “Call dentist — tomorrow — private”).",
       "metadata": {
-        "recordedAt": "2026-06-22T14:21:47.333Z",
-        "responseTimeMs": 5479
+        "recordedAt": "2026-06-22T14:45:50.567Z",
+        "responseTimeMs": 3866
       }
     }
   ]

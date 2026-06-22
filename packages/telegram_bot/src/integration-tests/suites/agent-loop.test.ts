@@ -255,7 +255,7 @@ describe('Agent Loop E2E Integration', () => {
       const username = context.session?.user?.username;
       expect(username).toBeTruthy();
 
-      const firstInput = 'remember that my preferred planning context is deep-work';
+      const firstInput = 'My planning keyword for this test is deep-work.';
       const firstResponse = await assert.expectTimely(
         agentServer.executeAgent(firstInput, 'test-user-history', context),
       );
@@ -267,7 +267,7 @@ describe('Agent Loop E2E Integration', () => {
       expect(firstMessages[1].role).toBe('assistant');
 
       const requestCountAfterFirstMessage = agentServer.getLlmRequests().length;
-      const secondInput = 'what planning context did I ask you to remember?';
+      const secondInput = 'What planning keyword did I mention?';
       const secondResponse = await assert.expectTimely(
         agentServer.executeAgent(secondInput, 'test-user-history', context),
       );
