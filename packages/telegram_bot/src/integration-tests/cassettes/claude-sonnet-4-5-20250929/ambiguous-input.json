@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-06-19T07:30:00.369Z",
-  "frozenTime": "2026-06-19T07:30:00.369Z",
+  "createdAt": "2026-06-22T13:53:08.382Z",
+  "frozenTime": "2026-06-22T13:53:08.382Z",
   "interactions": [
     {
       "requestHash": "74283c22b9c9c82e",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "What would you like to add to your todo list?",
+      "response": "Hey there! 🎯 I'd love to help you capture that task! What would you like to add to your todo list? Tell me what needs to get done!",
       "metadata": {
-        "recordedAt": "2026-06-19T07:30:03.396Z",
-        "responseTimeMs": 3003
+        "recordedAt": "2026-06-22T13:53:11.920Z",
+        "responseTimeMs": 3491
       }
     }
   ]

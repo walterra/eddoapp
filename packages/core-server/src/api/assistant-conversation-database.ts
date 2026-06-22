@@ -109,10 +109,9 @@ function applyStatsDelta(
 
 async function updateConversationStats(
   context: AssistantConversationContext,
-  conversationId: string,
+  conversation: AssistantConversation,
   request: AppendAssistantConversationMessageRequest,
 ): Promise<void> {
-  const conversation = (await context.db.get(conversationId)) as AssistantConversation;
   await context.db.insert({
     ...conversation,
     stats: applyStatsDelta(conversation.stats, request),
@@ -126,6 +125,7 @@ async function appendMessage(
   request: AppendAssistantConversationMessageRequest,
 ): Promise<AssistantConversationMessageDoc> {
   const createdAt = new Date().toISOString();
+  const conversation = (await context.db.get(conversationId)) as AssistantConversation;
   const message: AssistantConversationMessageDoc = {
     _id: createMessageDocId(createdAt),
     version: 'assistant_conversation_message_alpha1',
@@ -135,10 +135,11 @@ async function appendMessage(
     channel: request.channel,
     channelMetadata: request.channelMetadata,
     createdAt,
+    sequence: conversation.stats.messageCount + 1,
   };
 
   const result = await context.db.insert(message);
-  await updateConversationStats(context, conversationId, request);
+  await updateConversationStats(context, conversation, request);
   return { ...message, _rev: result.rev };
 }
 
@@ -148,8 +149,8 @@ async function getMessages(
 ): Promise<AssistantConversationMessageDoc[]> {
   try {
     const result = await context.db.view('assistant_conversations', 'messages_by_conversation', {
-      startkey: [conversationId, '', ''],
-      endkey: [conversationId, '\ufff0', '\ufff0'],
+      startkey: [conversationId, 0, '', ''],
+      endkey: [conversationId, {}, '\ufff0', '\ufff0'],
       include_docs: true,
     });
     return result.rows.map((row) => row.doc as AssistantConversationMessageDoc).filter(Boolean);
@@ -172,5 +173,5 @@ async function getMessagesFallback(
         doc.conversationId === conversationId,
       ),
     )
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    .sort((a, b) => a.sequence - b.sequence || a.createdAt.localeCompare(b.createdAt));
 }

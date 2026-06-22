@@ -44,6 +44,7 @@ export interface AssistantConversationMessageDoc {
   channel: AssistantConversationChannel;
   channelMetadata?: AssistantMessageChannelMetadata;
   createdAt: string;
+  sequence: number;
 }
 
 /** Request for appending an assistant conversation message. */

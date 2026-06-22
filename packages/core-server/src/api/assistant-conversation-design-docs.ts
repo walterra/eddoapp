@@ -19,7 +19,7 @@ const assistantConversationDesignDoc: DesignDoc = {
     messages_by_conversation: {
       map: `function(doc) {
         if (doc.version === 'assistant_conversation_message_alpha1' && doc.conversationId) {
-          emit([doc.conversationId, doc.createdAt, doc._id], null);
+          emit([doc.conversationId, doc.sequence || 0, doc.createdAt, doc._id], null);
         }
       }`,
     },

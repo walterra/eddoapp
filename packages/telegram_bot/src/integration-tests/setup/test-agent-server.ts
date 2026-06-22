@@ -14,6 +14,7 @@ import type { Context } from 'grammy';
 import { vi } from 'vitest';
 
 import { SimpleAgent } from '../../agent/simple-agent.js';
+import type { LlmService } from '../../ai/llm-service.js';
 import type { MCPClient } from '../../mcp/client.js';
 import { setupMCPIntegration } from '../../mcp/client.js';
 import {
@@ -40,6 +41,18 @@ export interface TestAgentServerConfig {
   mockTelegramResponses?: boolean;
   /** VCR recording mode: 'auto' (default), 'record', or 'playback' */
   vcrMode?: RecordMode;
+}
+
+interface ResolvedTestAgentServerConfig {
+  mcpServerUrl: string;
+  llmModel: string;
+  mockTelegramResponses: boolean;
+  vcrMode: RecordMode;
+}
+
+export interface LlmRequestSnapshot {
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  sessionId?: string;
 }
 
 // Define session data structure for compatibility
@@ -100,8 +113,9 @@ export interface MockTelegramContext {
 export class TestAgentServer {
   private agent: SimpleAgent | null = null;
   private mcpClient: MCPClient | null = null;
-  private config: Required<TestAgentServerConfig>;
+  private config: ResolvedTestAgentServerConfig;
   private testApiKey: string;
+  private llmRequests: LlmRequestSnapshot[] = [];
   private testUser: TestUser | null = null;
   private cassetteManager: CassetteManager | null = null;
   private currentTestName: string | null = null;
@@ -163,13 +177,30 @@ export class TestAgentServer {
     // Initialize MCP integration
     this.mcpClient = await setupMCPIntegration();
 
-    // Initialize agent with cached LLM service
     const cachedLlmService = createCachedLlmService({
       cassetteManager: this.cassetteManager!,
       model: this.config.llmModel,
     });
 
-    this.agent = new SimpleAgent({ llmService: cachedLlmService });
+    this.agent = new SimpleAgent({
+      llmService: this.createRecordingLlmService(cachedLlmService),
+    });
+  }
+
+  /** Records LLM requests before delegating to the configured service. */
+  private createRecordingLlmService(llmService: LlmService): LlmService {
+    return {
+      generateResponse: async (conversationHistory, systemPrompt, sessionId) => {
+        this.llmRequests.push({
+          messages: conversationHistory.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+          sessionId,
+        });
+        return llmService.generateResponse(conversationHistory, systemPrompt, sessionId);
+      },
+    };
   }
 
   /**
@@ -238,6 +269,10 @@ export class TestAgentServer {
       throw new Error('Test agent not started. Call start() first.');
     }
     return this.agent;
+  }
+
+  getLlmRequests(): LlmRequestSnapshot[] {
+    return this.llmRequests;
   }
 
   getMCPClient(): MCPClient {
