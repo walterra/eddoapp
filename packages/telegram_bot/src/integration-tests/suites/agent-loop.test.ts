@@ -275,7 +275,9 @@ describe('Agent Loop E2E Integration', () => {
       expect(secondResponse.message.toLowerCase()).toContain('deep-work');
 
       const secondRequest = agentServer.getLlmRequests()[requestCountAfterFirstMessage];
-      expect(secondRequest.sessionId).toBe(`assistant:${username}:assistant_conversation_default`);
+      const conversationId = secondRequest.sessionId?.replace(`assistant:${username}:`, '');
+      expect(conversationId).toBeTruthy();
+      expect(secondRequest.sessionId).toBe(`assistant:${username}:${conversationId}`);
       expect(secondRequest.messages.map((message) => message.content)).toEqual([
         firstInput,
         firstMessages[1].content,

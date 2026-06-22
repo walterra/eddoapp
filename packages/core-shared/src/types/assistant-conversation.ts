@@ -22,18 +22,29 @@ export interface AssistantConversationStats {
   assistantMessageCount: number;
 }
 
-/** One default assistant conversation per user. */
+/** Assistant conversation metadata for one user. */
 export interface AssistantConversation {
   _id: string;
   _rev?: string;
   version: 'assistant_conversation_alpha1';
   username: string;
+  active: boolean;
+  title?: string;
   createdAt: string;
   updatedAt: string;
   stats: AssistantConversationStats;
 }
 
-/** Message stored in the default assistant conversation. */
+/** Tracks the currently active assistant conversation. */
+export interface AssistantConversationState {
+  _id: 'assistant_conversation_state';
+  _rev?: string;
+  version: 'assistant_conversation_state_alpha1';
+  activeConversationId: string;
+  updatedAt: string;
+}
+
+/** Message stored in an assistant conversation. */
 export interface AssistantConversationMessageDoc {
   _id: string;
   _rev?: string;
@@ -59,7 +70,8 @@ export interface AppendAssistantConversationMessageRequest {
 export interface AssistantConversationOperations {
   ensureDatabase(): Promise<void>;
   setupDesignDocuments(): Promise<void>;
-  getOrCreateDefault(): Promise<AssistantConversation>;
+  getOrCreateActive(): Promise<AssistantConversation>;
+  startNewConversation(): Promise<AssistantConversation>;
   getMessages(conversationId: string): Promise<AssistantConversationMessageDoc[]>;
   appendMessage(
     conversationId: string,

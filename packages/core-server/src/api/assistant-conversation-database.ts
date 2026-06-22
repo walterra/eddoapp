@@ -5,6 +5,7 @@ import {
   type AssistantConversation,
   type AssistantConversationMessageDoc,
   type AssistantConversationOperations,
+  type AssistantConversationState,
   type AssistantConversationStats,
 } from '@eddo/core-shared';
 import nano from 'nano';
@@ -13,14 +14,20 @@ import type { Env } from '../config/env';
 import { getChatDatabaseName } from '../utils/database-names';
 import { setupAssistantConversationDesignDocuments } from './assistant-conversation-design-docs';
 
+type AssistantConversationDocument =
+  | AssistantConversation
+  | AssistantConversationMessageDoc
+  | AssistantConversationState;
+
 interface AssistantConversationContext {
-  db: nano.DocumentScope<AssistantConversation | AssistantConversationMessageDoc>;
+  db: nano.DocumentScope<AssistantConversationDocument>;
   couchConnection: nano.ServerScope;
   env: Env;
   username: string;
 }
 
 const DEFAULT_CONVERSATION_ID = 'assistant_conversation_default';
+const STATE_DOCUMENT_ID = 'assistant_conversation_state';
 
 function isNotFoundError(error: unknown): boolean {
   return Boolean(
@@ -40,15 +47,14 @@ export function createAssistantConversationDatabase(
 ): AssistantConversationOperations {
   const couchConnection = nano(couchUrl);
   const dbName = getChatDatabaseName(env, username);
-  const db = couchConnection.db.use<AssistantConversation | AssistantConversationMessageDoc>(
-    dbName,
-  );
+  const db = couchConnection.db.use<AssistantConversationDocument>(dbName);
   const context: AssistantConversationContext = { db, couchConnection, env, username };
 
   return {
     ensureDatabase: () => ensureDatabase(context),
     setupDesignDocuments: () => setupDesignDocuments(context),
-    getOrCreateDefault: () => getOrCreateDefaultConversation(context),
+    getOrCreateActive: () => getOrCreateActiveConversation(context),
+    startNewConversation: () => startNewConversation(context),
     getMessages: (conversationId) => getMessages(context, conversationId),
     appendMessage: (conversationId, request) => appendMessage(context, conversationId, request),
   };
@@ -71,29 +77,126 @@ async function setupDesignDocuments(context: AssistantConversationContext): Prom
   );
 }
 
-function createDefaultConversation(username: string): AssistantConversation {
+function createConversation(username: string, active: boolean): AssistantConversation {
   const now = new Date().toISOString();
   return {
-    _id: DEFAULT_CONVERSATION_ID,
+    _id: `assistant_conversation_${now}_${getRandomHex(4)}`,
     version: 'assistant_conversation_alpha1',
     username,
+    active,
     createdAt: now,
     updatedAt: now,
     stats: createDefaultAssistantConversationStats(),
   };
 }
 
-async function getOrCreateDefaultConversation(
+function createDefaultConversation(username: string): AssistantConversation {
+  return {
+    ...createConversation(username, true),
+    _id: DEFAULT_CONVERSATION_ID,
+  };
+}
+
+function createState(activeConversationId: string): AssistantConversationState {
+  return {
+    _id: STATE_DOCUMENT_ID,
+    version: 'assistant_conversation_state_alpha1',
+    activeConversationId,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getConversation(
+  context: AssistantConversationContext,
+  conversationId: string,
+): Promise<AssistantConversation | null> {
+  try {
+    return (await context.db.get(conversationId)) as AssistantConversation;
+  } catch (error: unknown) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
+}
+
+async function getState(
+  context: AssistantConversationContext,
+): Promise<AssistantConversationState | null> {
+  try {
+    return (await context.db.get(STATE_DOCUMENT_ID)) as AssistantConversationState;
+  } catch (error: unknown) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
+}
+
+async function saveState(
+  context: AssistantConversationContext,
+  activeConversationId: string,
+): Promise<void> {
+  const existing = await getState(context);
+  const state = createState(activeConversationId);
+  await context.db.insert(existing ? { ...state, _rev: existing._rev } : state);
+}
+
+async function createActiveConversation(
   context: AssistantConversationContext,
 ): Promise<AssistantConversation> {
-  try {
-    return (await context.db.get(DEFAULT_CONVERSATION_ID)) as AssistantConversation;
-  } catch (error: unknown) {
-    if (!isNotFoundError(error)) throw error;
-    const conversation = createDefaultConversation(context.username);
-    const result = await context.db.insert(conversation);
-    return { ...conversation, _rev: result.rev };
+  const conversation = createConversation(context.username, true);
+  const result = await context.db.insert(conversation);
+  await saveState(context, conversation._id);
+  return { ...conversation, _rev: result.rev };
+}
+
+async function getOrCreateActiveConversation(
+  context: AssistantConversationContext,
+): Promise<AssistantConversation> {
+  const state = await getState(context);
+  if (state) {
+    const activeConversation = await getConversation(context, state.activeConversationId);
+    if (activeConversation) return activeConversation;
   }
+
+  const defaultConversation = await getConversation(context, DEFAULT_CONVERSATION_ID);
+  if (defaultConversation) {
+    await saveState(context, defaultConversation._id);
+    return defaultConversation.active
+      ? defaultConversation
+      : markConversationActive(context, defaultConversation);
+  }
+
+  const conversation = createDefaultConversation(context.username);
+  const result = await context.db.insert(conversation);
+  await saveState(context, conversation._id);
+  return { ...conversation, _rev: result.rev };
+}
+
+async function markConversationActive(
+  context: AssistantConversationContext,
+  conversation: AssistantConversation,
+): Promise<AssistantConversation> {
+  const updated = { ...conversation, active: true, updatedAt: new Date().toISOString() };
+  const result = await context.db.insert(updated);
+  return { ...updated, _rev: result.rev };
+}
+
+async function getExistingActiveConversation(
+  context: AssistantConversationContext,
+): Promise<AssistantConversation | null> {
+  const state = await getState(context);
+  if (state) return getConversation(context, state.activeConversationId);
+
+  return getConversation(context, DEFAULT_CONVERSATION_ID);
+}
+
+async function startNewConversation(
+  context: AssistantConversationContext,
+): Promise<AssistantConversation> {
+  const current = await getExistingActiveConversation(context);
+  if (current) {
+    await context.db.insert({ ...current, active: false, updatedAt: new Date().toISOString() });
+  }
+
+  return createActiveConversation(context);
 }
 
 function applyStatsDelta(

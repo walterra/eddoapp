@@ -12,7 +12,8 @@ vi.mock('@eddo/core-server', () => ({
 interface MockConversationDb {
   ensureDatabase: ReturnType<typeof vi.fn>;
   setupDesignDocuments: ReturnType<typeof vi.fn>;
-  getOrCreateDefault: ReturnType<typeof vi.fn>;
+  getOrCreateActive: ReturnType<typeof vi.fn>;
+  startNewConversation: ReturnType<typeof vi.fn>;
   getMessages: ReturnType<typeof vi.fn>;
   appendMessage: ReturnType<typeof vi.fn>;
 }
@@ -30,7 +31,8 @@ function createMockConversationDb(): MockConversationDb {
   return {
     ensureDatabase: vi.fn().mockResolvedValue(undefined),
     setupDesignDocuments: vi.fn().mockResolvedValue(undefined),
-    getOrCreateDefault: vi.fn().mockResolvedValue({ _id: 'assistant_conversation_default' }),
+    getOrCreateActive: vi.fn().mockResolvedValue({ _id: 'assistant_conversation_default' }),
+    startNewConversation: vi.fn().mockResolvedValue({ _id: 'assistant_conversation_next' }),
     getMessages: vi.fn().mockResolvedValue([]),
     appendMessage: vi.fn().mockResolvedValue({}),
   };
@@ -50,7 +52,7 @@ describe('chat-history-store', () => {
     );
   });
 
-  it('loads default assistant conversation history for the authenticated user', async () => {
+  it('loads active assistant conversation history for the authenticated user', async () => {
     conversationDb.getMessages.mockResolvedValue([
       {
         role: 'user',
@@ -73,6 +75,7 @@ describe('chat-history-store', () => {
     );
     expect(conversationDb.ensureDatabase).toHaveBeenCalledOnce();
     expect(conversationDb.setupDesignDocuments).toHaveBeenCalledOnce();
+    expect(conversationDb.getOrCreateActive).toHaveBeenCalledOnce();
     expect(result).toEqual({
       conversationId: 'assistant_conversation_default',
       cacheSessionId: 'assistant:alice:assistant_conversation_default',
@@ -83,7 +86,21 @@ describe('chat-history-store', () => {
     });
   });
 
-  it('persists Telegram user and assistant messages to the default conversation', async () => {
+  it('starts a new active assistant conversation', async () => {
+    const result =
+      await createAssistantChatHistoryStore().startNewConversation(createMockContext());
+
+    expect(conversationDb.ensureDatabase).toHaveBeenCalledOnce();
+    expect(conversationDb.setupDesignDocuments).toHaveBeenCalledOnce();
+    expect(conversationDb.startNewConversation).toHaveBeenCalledOnce();
+    expect(result).toEqual({
+      conversationId: 'assistant_conversation_next',
+      cacheSessionId: 'assistant:alice:assistant_conversation_next',
+      history: [],
+    });
+  });
+
+  it('persists Telegram user and assistant messages to the active conversation', async () => {
     await createAssistantChatHistoryStore().persistExchange(createMockContext(), {
       conversationId: 'assistant_conversation_default',
       userMessage: 'what next?',

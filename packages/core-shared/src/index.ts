@@ -8,6 +8,7 @@ export {
   type AssistantConversationMessageDoc,
   type AssistantConversationOperations,
   type AssistantConversationRole,
+  type AssistantConversationState,
   type AssistantConversationStats,
   type AssistantMessageChannelMetadata,
   type AssistantTelegramMetadata,

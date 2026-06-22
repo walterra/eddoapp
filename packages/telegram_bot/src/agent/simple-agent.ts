@@ -10,6 +10,7 @@ import {
   createAssistantChatHistoryStore,
   type AssistantChatHistoryStore,
 } from './chat-history-store.js';
+import { warnWhenContextIsLarge } from './context-budget.js';
 import {
   extractConversationalPart,
   extractStatusMessage,
@@ -150,6 +151,7 @@ export class SimpleAgent {
       const state = await initializeAgentState(this.historyStore, userInput, telegramContext);
       const systemPrompt = await this.buildSystemPromptWithMCPInfo(mcpClient, telegramContext);
       state.systemPrompt = systemPrompt;
+      await warnWhenContextIsLarge(telegramContext, state, systemPrompt);
 
       const iterationContext: IterationContext = { mcpClient, telegramContext, systemPrompt };
       const result = await this.runAgentIterations(state, iterationContext);

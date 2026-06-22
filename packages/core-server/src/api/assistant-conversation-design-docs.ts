@@ -16,6 +16,13 @@ const assistantConversationDesignDoc: DesignDoc = {
         }
       }`,
     },
+    active: {
+      map: `function(doc) {
+        if (doc.version === 'assistant_conversation_alpha1' && doc.active === true) {
+          emit(doc.updatedAt, null);
+        }
+      }`,
+    },
     messages_by_conversation: {
       map: `function(doc) {
         if (doc.version === 'assistant_conversation_message_alpha1' && doc.conversationId) {

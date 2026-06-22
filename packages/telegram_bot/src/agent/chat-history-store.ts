@@ -18,6 +18,9 @@ export interface PersistAssistantExchangeParams {
 
 export interface AssistantChatHistoryStore {
   loadConversation: (telegramContext: BotContext) => Promise<AssistantChatHistorySession | null>;
+  startNewConversation: (
+    telegramContext: BotContext,
+  ) => Promise<AssistantChatHistorySession | null>;
   persistExchange: (
     telegramContext: BotContext,
     params: PersistAssistantExchangeParams,
@@ -52,28 +55,52 @@ function getConversationDatabase(
   return createAssistantConversationDatabase(env.COUCHDB_URL, env, username);
 }
 
-/** Loads the user's default assistant conversation. */
-async function loadConversation(
+/** Builds a history session for one assistant conversation. */
+async function buildHistorySession(
   telegramContext: BotContext,
+  conversationId: string,
 ): Promise<AssistantChatHistorySession | null> {
   const username = getUsername(telegramContext);
   const conversationDb = getConversationDatabase(telegramContext);
   if (!username || !conversationDb) return null;
 
-  await conversationDb.ensureDatabase();
-  await conversationDb.setupDesignDocuments();
-
-  const conversation = await conversationDb.getOrCreateDefault();
-  const messages = await conversationDb.getMessages(conversation._id);
-
+  const messages = await conversationDb.getMessages(conversationId);
   return {
-    conversationId: conversation._id,
-    cacheSessionId: buildCacheSessionId(username, conversation._id),
+    conversationId,
+    cacheSessionId: buildCacheSessionId(username, conversationId),
     history: messages.map(toHistoryEntry),
   };
 }
 
-/** Persists a completed Telegram exchange in the user's default assistant conversation. */
+/** Loads the user's active assistant conversation. */
+async function loadConversation(
+  telegramContext: BotContext,
+): Promise<AssistantChatHistorySession | null> {
+  const conversationDb = getConversationDatabase(telegramContext);
+  if (!conversationDb) return null;
+
+  await conversationDb.ensureDatabase();
+  await conversationDb.setupDesignDocuments();
+
+  const conversation = await conversationDb.getOrCreateActive();
+  return buildHistorySession(telegramContext, conversation._id);
+}
+
+/** Starts a new active assistant conversation. */
+async function startNewConversation(
+  telegramContext: BotContext,
+): Promise<AssistantChatHistorySession | null> {
+  const conversationDb = getConversationDatabase(telegramContext);
+  if (!conversationDb) return null;
+
+  await conversationDb.ensureDatabase();
+  await conversationDb.setupDesignDocuments();
+
+  const conversation = await conversationDb.startNewConversation();
+  return buildHistorySession(telegramContext, conversation._id);
+}
+
+/** Persists a completed Telegram exchange in the user's active assistant conversation. */
 async function persistExchange(
   telegramContext: BotContext,
   params: PersistAssistantExchangeParams,
@@ -110,6 +137,7 @@ async function persistExchange(
 export function createAssistantChatHistoryStore(): AssistantChatHistoryStore {
   return {
     loadConversation,
+    startNewConversation,
     persistExchange,
   };
 }
