@@ -10,7 +10,7 @@ A sophisticated digital butler bot for Telegram that integrates with the Eddo to
 - **Time Tracking**: Start and stop timers for your tasks with voice commands
 - **GTD-Style Contexts**: Organize todos by context (work, private, shopping, etc.)
 - **Butler Personality**: Professional, courteous digital assistant experience
-- **Session Management**: Maintains conversation context across interactions
+- **Persistent Chat History**: Maintains conversation context across bot restarts
 - **Error Recovery**: Graceful handling of network issues and server outages
 
 ## Setup

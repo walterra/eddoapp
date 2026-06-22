@@ -1,5 +1,17 @@
 // Types
 export { type Activity } from './types/activity';
+export {
+  createDefaultAssistantConversationStats,
+  type AppendAssistantConversationMessageRequest,
+  type AssistantConversation,
+  type AssistantConversationChannel,
+  type AssistantConversationMessageDoc,
+  type AssistantConversationOperations,
+  type AssistantConversationRole,
+  type AssistantConversationStats,
+  type AssistantMessageChannelMetadata,
+  type AssistantTelegramMetadata,
+} from './types/assistant-conversation';
 export { buildAttachmentDocId, parseAttachmentDocId, type AttachmentDoc } from './types/attachment';
 export {
   createDefaultSessionStats,

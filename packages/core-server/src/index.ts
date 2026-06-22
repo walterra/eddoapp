@@ -7,6 +7,7 @@ export {
   DatabaseOperationError,
   buildAttachmentDocId,
   createAuditLogEntry,
+  createDefaultAssistantConversationStats,
   createDefaultSessionStats,
   createDefaultUserPreferences,
   decodeJwtPayload,
@@ -42,8 +43,17 @@ export {
   parseAttachmentDocId,
   shuffle,
   type Activity,
+  type AppendAssistantConversationMessageRequest,
+  type AssistantConversation,
+  type AssistantConversationChannel,
+  type AssistantConversationMessageDoc,
+  type AssistantConversationOperations,
+  type AssistantConversationRole,
+  type AssistantConversationStats,
   // Chat types
   type AssistantMessage,
+  type AssistantMessageChannelMetadata,
+  type AssistantTelegramMetadata,
   // Attachment types
   type AttachmentDoc,
   // Audit log types
@@ -138,6 +148,8 @@ export {
 } from './config';
 
 // Server-specific API
+export { createAssistantConversationDatabase } from './api/assistant-conversation-database';
+export { setupAssistantConversationDesignDocuments } from './api/assistant-conversation-design-docs';
 export {
   AUDIT_SOURCES,
   createAuditDatabase,

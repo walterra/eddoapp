@@ -28,6 +28,8 @@ describe('llm-options', () => {
     expect(options).toEqual({
       apiKey: 'test-key',
       maxTokens: 4096,
+      cacheRetention: 'long',
+      sessionId: undefined,
       reasoning: 'low',
     });
   });
@@ -48,5 +50,12 @@ describe('llm-options', () => {
     process.env.LLM_REASONING_EFFORT = 'medium';
 
     expect(createLlmOptions(baseModel, 'test-key').reasoning).toBe('medium');
+  });
+
+  it('passes stable session ID for provider caching', () => {
+    const options = createLlmOptions(baseModel, 'test-key', 'assistant_conversation_default');
+
+    expect(options.sessionId).toBe('assistant_conversation_default');
+    expect(options.cacheRetention).toBe('long');
   });
 });

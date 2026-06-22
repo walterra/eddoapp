@@ -5,8 +5,12 @@ import type { MCPClient } from '../mcp/client.js';
 import { getMCPClient } from '../mcp/client.js';
 import { logger, SpanAttributes, withSpan } from '../utils/logger.js';
 
+import { initializeAgentState, persistAgentExchange } from './agent-session-state.js';
 import {
-  type AgentState,
+  createAssistantChatHistoryStore,
+  type AssistantChatHistoryStore,
+} from './chat-history-store.js';
+import {
   extractConversationalPart,
   extractStatusMessage,
   getMCPSystemInfo,
@@ -14,14 +18,18 @@ import {
   handleToolExecution,
   logFinalAgentState,
   parseToolCall,
+  type AgentState,
 } from './helpers/index.js';
 import { buildSystemPrompt } from './system-prompt.js';
+import { showTyping, startPeriodicTyping, stopPeriodicTyping } from './typing-indicator.js';
 
 export type { AgentState } from './helpers/index.js';
 
 export interface SimpleAgentConfig {
   /** Optional LLM service for dependency injection (used in testing) */
   llmService?: LlmService;
+  /** Optional history store for dependency injection (used in testing) */
+  historyStore?: AssistantChatHistoryStore;
 }
 
 /**
@@ -35,9 +43,11 @@ interface IterationContext {
 
 export class SimpleAgent {
   private llmService: LlmService;
+  private historyStore: AssistantChatHistoryStore;
 
   constructor(config: SimpleAgentConfig = {}) {
     this.llmService = config.llmService ?? defaultLlmService;
+    this.historyStore = config.historyStore ?? createAssistantChatHistoryStore();
   }
 
   private getMCPClientOrThrow(): MCPClient {
@@ -134,27 +144,26 @@ export class SimpleAgent {
     toolResults: Array<{ toolName: string; result: unknown; timestamp: number }>;
   }> {
     const mcpClient = this.getMCPClientOrThrow();
-    const typingInterval = this.startPeriodicTyping(telegramContext);
+    const typingInterval = startPeriodicTyping(telegramContext);
 
-    const state = this.initializeState(userInput);
-    const systemPrompt = await this.buildSystemPromptWithMCPInfo(mcpClient, telegramContext);
-    state.systemPrompt = systemPrompt;
+    try {
+      const state = await initializeAgentState(this.historyStore, userInput, telegramContext);
+      const systemPrompt = await this.buildSystemPromptWithMCPInfo(mcpClient, telegramContext);
+      state.systemPrompt = systemPrompt;
 
-    const iterationContext: IterationContext = { mcpClient, telegramContext, systemPrompt };
-    const result = await this.runAgentIterations(state, iterationContext);
-
-    this.stopPeriodicTyping(typingInterval);
-
-    return result;
-  }
-
-  private initializeState(userInput: string): AgentState {
-    return {
-      input: userInput,
-      history: [{ role: 'user', content: userInput, timestamp: Date.now() }],
-      done: false,
-      toolResults: [],
-    };
+      const iterationContext: IterationContext = { mcpClient, telegramContext, systemPrompt };
+      const result = await this.runAgentIterations(state, iterationContext);
+      await persistAgentExchange({
+        historyStore: this.historyStore,
+        telegramContext,
+        state,
+        userInput,
+        assistantResponse: result.response,
+      });
+      return result;
+    } finally {
+      stopPeriodicTyping(typingInterval);
+    }
   }
 
   private async buildSystemPromptWithMCPInfo(
@@ -215,9 +224,13 @@ export class SimpleAgent {
         const iterationId = `iter_${Date.now()}_${iteration}`;
 
         this.logIterationStart(state, iteration, iterationId, context);
-        await this.showTyping(telegramContext);
+        await showTyping(telegramContext);
 
-        const llmResponse = await this.llmService.generateResponse(state.history, systemPrompt);
+        const llmResponse = await this.llmService.generateResponse(
+          state.history,
+          systemPrompt,
+          state.cacheSessionId,
+        );
         state.history.push({ role: 'assistant', content: llmResponse, timestamp: Date.now() });
 
         const toolCall = parseToolCall(llmResponse);
@@ -315,24 +328,6 @@ export class SimpleAgent {
       conversationPreview: conversationHistory.substring(0, 300) + '...',
       availableTools: mcpClient.tools.map((t) => t.name),
     });
-  }
-
-  private async showTyping(telegramContext: BotContext): Promise<void> {
-    try {
-      await telegramContext.replyWithChatAction('typing');
-    } catch (error) {
-      logger.debug('Failed to show typing indicator', { error });
-    }
-  }
-
-  private startPeriodicTyping(telegramContext: BotContext): NodeJS.Timeout {
-    return setInterval(async () => {
-      await this.showTyping(telegramContext);
-    }, 4000);
-  }
-
-  private stopPeriodicTyping(interval: NodeJS.Timeout): void {
-    clearInterval(interval);
   }
 
   async getStatus(): Promise<{ version: string; mcpToolsAvailable: number }> {
