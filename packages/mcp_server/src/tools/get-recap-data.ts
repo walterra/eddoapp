@@ -5,6 +5,7 @@ import type { TodoAlpha3 } from '@eddo/core-server';
 import type { MangoQuery } from 'nano';
 import { z } from 'zod';
 
+import { getUtcDateRange, type DateRange } from './date-range.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -24,13 +25,6 @@ export const getRecapDataParameters = z
   .describe('No parameters required - returns all recap-relevant data for the current date');
 
 export type GetRecapDataArgs = z.infer<typeof getRecapDataParameters>;
-
-/** Date range for queries */
-interface DateRange {
-  todayStart: string;
-  todayEnd: string;
-  todayDate: string;
-}
 
 /** Structure for recap data response */
 interface RecapData {
@@ -54,23 +48,6 @@ interface QueryResults {
   completedToday: TodoAlpha3[];
   activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
   upcomingNextActions: TodoAlpha3[];
-}
-
-/**
- * Gets today's date range in ISO format
- */
-function getDateRange(): DateRange {
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-
-  return {
-    todayStart: start.toISOString(),
-    todayEnd: end.toISOString(),
-    todayDate: now.toISOString().split('T')[0],
-  };
 }
 
 /**
@@ -208,7 +185,7 @@ export async function executeGetRecapData(
 ): Promise<string> {
   const db = getUserDb(context);
   const startTime = Date.now();
-  const dateRange = getDateRange();
+  const dateRange = getUtcDateRange();
 
   context.log.info('Getting recap data for user', { userId: context.session?.userId });
 
