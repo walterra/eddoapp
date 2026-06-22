@@ -72,7 +72,7 @@ export async function handleCreateSession(c: Context, chatService: ChatService) 
       return c.json({ session }, 201);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return c.json({ error: 'Invalid request', details: error.errors }, 400);
+        return c.json({ error: 'Invalid request', details: error.issues }, 400);
       }
       logger.error({ error }, 'Failed to create session');
       return c.json({ error: 'Failed to create session' }, 500);
@@ -176,7 +176,7 @@ export async function handlePrompt(c: Context, chatService: ChatService) {
     body = promptSchema.parse(await c.req.json());
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: 'Invalid request', details: error.errors }, 400);
+      return c.json({ error: 'Invalid request', details: error.issues }, 400);
     }
     return c.json({ error: 'Invalid request body' }, 400);
   }

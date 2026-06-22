@@ -50,9 +50,9 @@ const createAuditEntrySchema = z.object({
     'time_tracking_stop',
   ]),
   entityId: z.string(),
-  before: z.record(z.unknown()).optional(),
-  after: z.record(z.unknown()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  before: z.record(z.string(), z.unknown()).optional(),
+  after: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -207,7 +207,7 @@ auditLogApp.post('/', async (c) => {
       return c.json({ success: true, entry });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return c.json({ error: 'Invalid request body', details: error.errors }, 400);
+        return c.json({ error: 'Invalid request body', details: error.issues }, 400);
       }
 
       logger.error({ error, username }, 'Failed to create audit log entry');

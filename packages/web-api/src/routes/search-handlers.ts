@@ -302,7 +302,7 @@ function handleSearchError(
   span.setAttribute('search.error', true);
 
   if (error instanceof z.ZodError) {
-    return c.json({ details: error.errors, error: 'Invalid search parameters' }, 400);
+    return c.json({ details: error.issues, error: 'Invalid search parameters' }, 400);
   }
 
   return c.json({ error: 'Search failed' }, 500);

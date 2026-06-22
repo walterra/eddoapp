@@ -13,7 +13,7 @@ const printerConfigSchema = z.object({
     .optional()
     .default('false')
     .transform((val) => val.toLowerCase() === 'true'),
-  PRINTER_IP_ADDRESS: z.string().ip().optional(),
+  PRINTER_IP_ADDRESS: z.union([z.ipv4(), z.ipv6()]).optional(),
   PRINTER_PORT: z.coerce.number().default(9100),
   PRINTER_SCHEDULE_TIME: z
     .string()
