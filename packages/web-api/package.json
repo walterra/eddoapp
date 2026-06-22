@@ -23,7 +23,7 @@
     "@elastic/opentelemetry-node": "^1.8.0",
     "@hono/node-server": "^1.19.12",
     "@octokit/rest": "^22.0.1",
-    "@viz-js/viz": "^3.24.0",
+    "@viz-js/viz": "^3.28.0",
     "bcryptjs": "^3.0.3",
     "dockerode": "^4.0.10",
     "feedsmith": "^2.9.0",

@@ -568,8 +568,8 @@ importers:
         specifier: ^22.0.1
         version: 22.0.1
       '@viz-js/viz':
-        specifier: ^3.24.0
-        version: 3.24.0
+        specifier: ^3.28.0
+        version: 3.28.0
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -4889,8 +4889,8 @@ packages:
   '@vitest/utils@3.2.4':
     resolution: {integrity: sha512-fB2V0JFrQSMsCo9HiSq3Ezpdv4iYaXRG1Sx8edX3MwxfyNn83mKiGzOcH+Fkxt4MHxr3y42fQi1oeAInqgX2QA==}
 
-  '@viz-js/viz@3.24.0':
-    resolution: {integrity: sha512-sTRz2cFN6PwICVC7GVlF2aYNAZ/LwF7Y1mp3B+8LXQ7otyHrzQYSzNBwJ4lctL/aS3x97ppw59z6zIW+wPs6bQ==}
+  '@viz-js/viz@3.28.0':
+    resolution: {integrity: sha512-nPt+jbGHGgd7lUQLBT79/4lChIzeW44I+hFrscx18AnpNyX9vdRFVNwVbKz9eq+ACeKSm4bFQns17WhCW11eWQ==}
 
   '@vue/compiler-core@3.5.16':
     resolution: {integrity: sha512-AOQS2eaQOaaZQoL1u+2rCJIKDruNXVBZSiUD3chnUrsoX5ZTQMaCvXlWNIfxBJuU15r1o7+mpo5223KVtIhAgQ==}
@@ -14649,7 +14649,7 @@ snapshots:
       loupe: 3.1.4
       tinyrainbow: 2.0.0
 
-  '@viz-js/viz@3.24.0': {}
+  '@viz-js/viz@3.28.0': {}
 
   '@vue/compiler-core@3.5.16':
     dependencies:
