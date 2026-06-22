@@ -10,6 +10,7 @@ import { handleBriefing, handleBriefingOff, handleBriefingOn } from './bot/comma
 import { handleEmail } from './bot/commands/email.js';
 import { handleGithub } from './bot/commands/github.js';
 import { handleLink, handleUnlink } from './bot/commands/link.js';
+import { handleNewConversation } from './bot/commands/new.js';
 import { handleRss } from './bot/commands/rss.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
@@ -33,6 +34,7 @@ function registerCommandHandlers(bot: Bot<BotContext>): void {
   bot.command('status', handleStatus);
   bot.command('link', handleLink);
   bot.command('unlink', handleUnlink);
+  bot.command('new', handleNewConversation);
 
   // Briefing commands
   bot.command('briefing', handleBriefing);

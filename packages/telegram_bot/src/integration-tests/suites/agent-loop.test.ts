@@ -15,6 +15,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { getChatDatabaseName, validateEnv } from '@eddo/core-server';
 import nano from 'nano';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -22,6 +23,45 @@ import { createAgentAssertions } from '../helpers/agent-assertions.js';
 import { TestAgentServer } from '../setup/test-agent-server.js';
 
 const TELEGRAM_BOT_MODEL = 'claude-sonnet-4-5-20250929';
+
+interface AssistantConversationMessageDoc {
+  version: 'assistant_conversation_message_alpha1';
+  role: 'user' | 'assistant';
+  content: string;
+  conversationId: string;
+  createdAt: string;
+  sequence: number;
+}
+
+function getAssistantConversationDb(username: string): nano.DocumentScope<unknown> {
+  const couch = nano(process.env.COUCHDB_URL!);
+  const env = validateEnv(process.env);
+  return couch.use(getChatDatabaseName(env, username));
+}
+
+async function getAssistantConversationMessages(
+  username: string,
+): Promise<AssistantConversationMessageDoc[]> {
+  const chatDb = getAssistantConversationDb(username);
+  const result = await chatDb.list({ include_docs: true });
+
+  return result.rows
+    .map((row) => row.doc as AssistantConversationMessageDoc | undefined)
+    .filter((doc): doc is AssistantConversationMessageDoc =>
+      Boolean(doc?.version === 'assistant_conversation_message_alpha1'),
+    )
+    .sort((a, b) => a.sequence - b.sequence || a.createdAt.localeCompare(b.createdAt));
+}
+
+async function clearAssistantConversationMessages(username: string): Promise<void> {
+  const chatDb = getAssistantConversationDb(username);
+  const result = await chatDb.list({ include_docs: true });
+  const docs = result.rows
+    .map((row) => row.doc as { _id?: string; _rev?: string; version?: string } | undefined)
+    .filter((doc) => doc?.version?.startsWith('assistant_conversation_'));
+
+  await Promise.all(docs.map((doc) => chatDb.destroy(doc!._id!, doc!._rev!)));
+}
 
 describe('Agent Loop E2E Integration', () => {
   let agentServer: TestAgentServer;
@@ -207,6 +247,53 @@ describe('Agent Loop E2E Integration', () => {
     );
   });
 
+  describe('Persistent Chat History', () => {
+    it('persists assistant conversation history across real messages', async () => {
+      agentServer.loadCassette('persistent-chat-history');
+
+      const context = agentServer.createMockContext();
+      const username = context.session?.user?.username;
+      expect(username).toBeTruthy();
+
+      const firstInput = 'My planning keyword for this test is deep-work.';
+      const firstResponse = await assert.expectTimely(
+        agentServer.executeAgent(firstInput, 'test-user-history', context),
+      );
+      assert.expectSuccess(firstResponse);
+
+      const firstMessages = await getAssistantConversationMessages(username!);
+      expect(firstMessages).toHaveLength(2);
+      expect(firstMessages[0].content).toBe(firstInput);
+      expect(firstMessages[1].role).toBe('assistant');
+
+      const requestCountAfterFirstMessage = agentServer.getLlmRequests().length;
+      const secondInput = 'What planning keyword did I mention?';
+      const secondResponse = await assert.expectTimely(
+        agentServer.executeAgent(secondInput, 'test-user-history', context),
+      );
+      assert.expectSuccess(secondResponse);
+      expect(secondResponse.message.toLowerCase()).toContain('deep-work');
+
+      const secondRequest = agentServer.getLlmRequests()[requestCountAfterFirstMessage];
+      const conversationId = secondRequest.sessionId?.replace(`assistant:${username}:`, '');
+      expect(conversationId).toBeTruthy();
+      expect(secondRequest.sessionId).toBe(`assistant:${username}:${conversationId}`);
+      expect(secondRequest.messages.map((message) => message.content)).toEqual([
+        firstInput,
+        firstMessages[1].content,
+        secondInput,
+      ]);
+
+      const allMessages = await getAssistantConversationMessages(username!);
+      expect(allMessages.map((message) => message.role)).toEqual([
+        'user',
+        'assistant',
+        'user',
+        'assistant',
+      ]);
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle ambiguous input gracefully', async () => {
       agentServer.loadCassette('ambiguous-input');
@@ -244,13 +331,16 @@ describe('Agent Loop E2E Integration', () => {
 
       // First create some todos to have data for the recap
       const setupInput = 'create a work todo called "Test task for recap"';
-      await assert.expectTimely(agentServer.executeAgent(setupInput, 'test-user-6'));
+      const setupContext = agentServer.createMockContext();
+      await assert.expectTimely(agentServer.executeAgent(setupInput, 'test-user-6', setupContext));
+      await clearAssistantConversationMessages(setupContext.session!.user!.username);
 
       // Request a recap which requires multiple tool calls
       const recapInput = 'show me what I completed today';
+      const recapContext = agentServer.createMockContext();
 
       const response = await assert.expectTimely(
-        agentServer.executeAgent(recapInput, 'test-user-6'),
+        agentServer.executeAgent(recapInput, 'test-user-6-recap', recapContext),
       );
 
       assert.expectSuccess(response);

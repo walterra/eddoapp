@@ -27,6 +27,7 @@ interface LlmRequestParams {
   modelId: string;
   conversationHistory: AgentState['history'];
   systemPrompt: string;
+  sessionId?: string;
   span: SpanWriter;
 }
 
@@ -39,6 +40,7 @@ export interface LlmService {
   generateResponse: (
     conversationHistory: AgentState['history'],
     systemPrompt: string,
+    sessionId?: string,
   ) => Promise<string>;
 }
 
@@ -121,6 +123,7 @@ function createLlmService(): LlmService {
     generateResponse: async (
       conversationHistory: AgentState['history'],
       systemPrompt: string,
+      sessionId?: string,
     ): Promise<string> => {
       const modelId = appConfig.LLM_MODEL || DEFAULT_MODEL;
 
@@ -138,6 +141,7 @@ function createLlmService(): LlmService {
             modelId,
             conversationHistory,
             systemPrompt,
+            sessionId,
             span,
           });
         },
@@ -148,7 +152,7 @@ function createLlmService(): LlmService {
 
 /** Logs request metadata for the model call. */
 function logLlmRequest(params: LlmRequestParams): void {
-  const { requestId, modelId, conversationHistory, systemPrompt } = params;
+  const { requestId, modelId, conversationHistory, systemPrompt, sessionId } = params;
   logger.info('🤖 LLM Request', {
     requestId,
     model: modelId,
@@ -156,6 +160,7 @@ function logLlmRequest(params: LlmRequestParams): void {
     conversationHistory,
     historyLength: conversationHistory.length,
     systemPromptLength: systemPrompt.length,
+    sessionId,
   });
 }
 
@@ -164,13 +169,14 @@ async function streamAndGetFinalMessage(
   requestId: string,
   model: Model<Api>,
   context: Context,
+  sessionId?: string,
 ): Promise<AssistantMessage> {
   const apiKey = getEnvApiKey(model.provider as Provider);
   if (!apiKey) {
     throw new Error(`No API key for provider: ${model.provider}`);
   }
 
-  const responseStream = streamSimple(model, context, createLlmOptions(model, apiKey));
+  const responseStream = streamSimple(model, context, createLlmOptions(model, apiKey, sessionId));
 
   for await (const event of responseStream) {
     if (event.type === 'error') {
@@ -207,14 +213,19 @@ function setUsageSpanAttributes(span: SpanWriter, responseText: string, usage: U
 
 /** Executes one model request and returns assistant text response. */
 async function executeRequest(params: LlmRequestParams): Promise<string> {
-  const { requestId, modelId, conversationHistory, systemPrompt, span } = params;
+  const { requestId, modelId, conversationHistory, systemPrompt, sessionId, span } = params;
 
   try {
     logLlmRequest(params);
 
     const resolved = resolveConfiguredModel(modelId);
     const context = createContext(conversationHistory, systemPrompt, resolved.model);
-    const finalMessage = await streamAndGetFinalMessage(requestId, resolved.model, context);
+    const finalMessage = await streamAndGetFinalMessage(
+      requestId,
+      resolved.model,
+      context,
+      sessionId,
+    );
     const responseText = getResponseTextFromFinalMessage(finalMessage);
     const usage = extractUsage(finalMessage);
 
@@ -239,11 +250,11 @@ async function executeRequest(params: LlmRequestParams): Promise<string> {
 let serviceInstance: LlmService | null = null;
 
 export const llmService: LlmService = {
-  generateResponse: async (conversationHistory, systemPrompt) => {
+  generateResponse: async (conversationHistory, systemPrompt, sessionId) => {
     if (!serviceInstance) {
       serviceInstance = createLlmService();
       logger.info('Simple LLM service initialized');
     }
-    return serviceInstance.generateResponse(conversationHistory, systemPrompt);
+    return serviceInstance.generateResponse(conversationHistory, systemPrompt, sessionId);
   },
 };

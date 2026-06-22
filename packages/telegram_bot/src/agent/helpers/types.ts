@@ -13,6 +13,8 @@ export interface AgentState {
   output?: string;
   toolResults: Array<{ toolName: string; result: unknown; timestamp: number }>;
   systemPrompt?: string;
+  conversationId?: string;
+  cacheSessionId?: string;
 }
 
 export interface ToolCall {

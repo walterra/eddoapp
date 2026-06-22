@@ -31,10 +31,16 @@ export function getLlmMaxTokens(model: Model<Api>): number {
 }
 
 /** Builds pi-ai simple call options for chat agent requests. */
-export function createLlmOptions(model: Model<Api>, apiKey: string): SimpleStreamOptions {
+export function createLlmOptions(
+  model: Model<Api>,
+  apiKey: string,
+  sessionId?: string,
+): SimpleStreamOptions {
   const options: SimpleStreamOptions = {
     apiKey,
     maxTokens: getLlmMaxTokens(model),
+    cacheRetention: 'long',
+    sessionId,
   };
 
   if (model.reasoning) {

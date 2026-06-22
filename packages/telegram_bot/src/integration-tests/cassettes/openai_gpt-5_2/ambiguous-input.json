@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-06-19T08:33:08.388Z",
-  "frozenTime": "2026-06-19T08:33:08.388Z",
+  "createdAt": "2026-06-22T14:45:46.659Z",
+  "frozenTime": "2026-06-22T14:45:46.659Z",
   "interactions": [
     {
       "requestHash": "6f238cfb928f54e4",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "Absolutely—what’s the **title** of the todo (what outcome), and is it **work/private/errands**?  \nAlso: when is it **due** (today/tomorrow/a date)?",
+      "response": "Awesome—what’s the todo? Send it like: **“Title — due when — context (work/private/errands)”** (example: “Call dentist — tomorrow — private”).",
       "metadata": {
-        "recordedAt": "2026-06-19T08:33:11.244Z",
-        "responseTimeMs": 2810
+        "recordedAt": "2026-06-22T14:45:50.567Z",
+        "responseTimeMs": 3866
       }
     }
   ]

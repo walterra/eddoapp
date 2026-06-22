@@ -92,6 +92,7 @@ async function makeModelApiCall(
   modelId: string,
   systemPrompt: string,
   messages: PiAiMessageRole[],
+  sessionId?: string,
 ): Promise<string> {
   logger.debug('Making real model API call', { model: modelId, messagesCount: messages.length });
 
@@ -111,7 +112,7 @@ async function makeModelApiCall(
   const response = await completeSimple(
     resolved.model,
     context,
-    createLlmOptions(resolved.model, apiKey),
+    createLlmOptions(resolved.model, apiKey, sessionId),
   );
 
   if (response.stopReason === 'error' || response.stopReason === 'aborted') {
@@ -133,10 +134,11 @@ export function createCachedLlmService(config: CachedLlmServiceConfig): LlmServi
   async function generateResponse(
     conversationHistory: AgentState['history'],
     systemPrompt: string,
+    sessionId?: string,
   ): Promise<string> {
     const messages = conversationHistory.map((msg) => ({ role: msg.role, content: msg.content }));
     return cassetteManager.handleInteraction(model, systemPrompt, messages, () =>
-      makeModelApiCall(model, systemPrompt, messages),
+      makeModelApiCall(model, systemPrompt, messages, sessionId),
     );
   }
 
