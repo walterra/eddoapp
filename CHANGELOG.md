@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.0
+
+### Minor Changes
+
+- [#611](https://github.com/walterra/eddoapp/pull/611) [`11ef951`](https://github.com/walterra/eddoapp/commit/11ef9517fea79cf4105e56cac19894c317f0112c) - Persist Telegram assistant chat history with fresh conversation support.
+
+- [#602](https://github.com/walterra/eddoapp/pull/602) [`36fdc4a`](https://github.com/walterra/eddoapp/commit/36fdc4a29b52c79782006ededf609df4768b047b) - Add pi-ai LLM provider support for the Telegram bot with model-scoped VCR playback.
+
+- [#525](https://github.com/walterra/eddoapp/pull/525) [`6bfaba6`](https://github.com/walterra/eddoapp/commit/6bfaba62f92131d366daf0834c29b70c185d7d84) - Add a persisted time-tracking filter across board, table, and graph views.
+
+### Patch Changes
+
+- [#602](https://github.com/walterra/eddoapp/pull/602) [`36fdc4a`](https://github.com/walterra/eddoapp/commit/36fdc4a29b52c79782006ededf609df4768b047b) - Migrate pi-ai to the Earendil package scope and move pnpm settings to workspace config.
+
 ## 0.8.0
 
 ### Minor Changes
