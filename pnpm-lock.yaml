@@ -45,10 +45,10 @@ importers:
         version: 4.0.1
       flowbite:
         specifier: ^4.0.1
-        version: 4.0.1(rollup@4.60.1)
+        version: 4.0.1(rollup@4.62.2)
       flowbite-react:
         specifier: ^0.12.17
-        version: 0.12.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.18)
+        version: 0.12.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.3.0)
       lodash-es:
         specifier: ^4.17.23
         version: 4.17.23
@@ -106,7 +106,7 @@ importers:
         version: 4.2.1
       '@tailwindcss/typography':
         specifier: ^0.5.19
-        version: 0.5.19(tailwindcss@4.1.18)
+        version: 0.5.19(tailwindcss@4.3.0)
       '@testcontainers/couchdb':
         specifier: ^11.11.0
         version: 11.11.0
@@ -228,8 +228,8 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
       tailwindcss:
-        specifier: ^4.1.18
-        version: 4.1.18
+        specifier: ^4.3.0
+        version: 4.3.0
       testcontainers:
         specifier: ^11.12.0
         version: 11.12.0
@@ -669,7 +669,7 @@ importers:
         version: 5.2.8
       '@tailwindcss/typography':
         specifier: ^0.5.19
-        version: 0.5.19(tailwindcss@4.1.18)
+        version: 0.5.19(tailwindcss@4.3.0)
       '@tanstack/react-query':
         specifier: ^5.90.21
         version: 5.90.21(react@19.2.3)
@@ -705,7 +705,7 @@ importers:
         version: 4.0.1(rollup@4.62.2)
       flowbite-react:
         specifier: ^0.12.17
-        version: 0.12.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.18)
+        version: 0.12.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.3.0)
       lodash-es:
         specifier: ^4.17.23
         version: 4.17.23
@@ -819,8 +819,8 @@ importers:
         specifier: ^9.0.0
         version: 9.0.0
       tailwindcss:
-        specifier: ^4.1.18
-        version: 4.1.18
+        specifier: ^4.3.0
+        version: 4.3.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -9343,11 +9343,11 @@ packages:
   tailwind-merge@3.4.0:
     resolution: {integrity: sha512-uSaO4gnW+b3Y2aWoWfFpX62vn2sR3skfhbjsEnaBI81WD1wBLlHZe5sWf0AqjksNdYTbGBEd0UasQMT3SNV15g==}
 
-  tailwindcss@4.1.18:
-    resolution: {integrity: sha512-4+Z+0yiYyEtUVCScyfHCxOYP06L5Ne+JiHhY2IjR2KWMIWhJOYZKLSGZaP5HkZ8+bY0cxfzwDE5uOmzFXyIwxw==}
-
   tailwindcss@4.2.1:
     resolution: {integrity: sha512-/tBrSQ36vCleJkAOsy9kbNTgaxvGbyOamC30PRePTQe/o1MFwEKHQk4Cn7BNGaPtjp+PuUrByJehM1hgxfq4sw==}
+
+  tailwindcss@4.3.0:
+    resolution: {integrity: sha512-y6nxMGB1nMW9R6k96e5gdIFzcfL/gTJRNaqGes1YvkLnPVXzWgbqFF2yLC0T8G774n24cx3Pe8XrKoniCOAH+Q==}
 
   tapable@2.3.0:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
@@ -13570,16 +13570,6 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.0-rc.3': {}
 
-  '@rollup/plugin-node-resolve@15.3.1(rollup@4.60.1)':
-    dependencies:
-      '@rollup/pluginutils': 5.3.0(rollup@4.60.1)
-      '@types/resolve': 1.20.2
-      deepmerge: 4.3.1
-      is-module: 1.0.0
-      resolve: 1.22.11
-    optionalDependencies:
-      rollup: 4.60.1
-
   '@rollup/plugin-node-resolve@15.3.1(rollup@4.62.2)':
     dependencies:
       '@rollup/pluginutils': 5.3.0(rollup@4.62.2)
@@ -13589,14 +13579,6 @@ snapshots:
       resolve: 1.22.11
     optionalDependencies:
       rollup: 4.62.2
-
-  '@rollup/pluginutils@5.3.0(rollup@4.60.1)':
-    dependencies:
-      '@types/estree': 1.0.8
-      estree-walker: 2.0.2
-      picomatch: 4.0.4
-    optionalDependencies:
-      rollup: 4.60.1
 
   '@rollup/pluginutils@5.3.0(rollup@4.62.2)':
     dependencies:
@@ -13964,10 +13946,10 @@ snapshots:
       postcss: 8.5.8
       tailwindcss: 4.2.1
 
-  '@tailwindcss/typography@0.5.19(tailwindcss@4.1.18)':
+  '@tailwindcss/typography@0.5.19(tailwindcss@4.3.0)':
     dependencies:
       postcss-selector-parser: 6.0.10
-      tailwindcss: 4.1.18
+      tailwindcss: 4.3.0
 
   '@tanstack/query-core@5.90.20': {}
 
@@ -16576,13 +16558,6 @@ snapshots:
 
   flatted@3.3.3: {}
 
-  flowbite-datepicker@2.0.0(rollup@4.60.1):
-    dependencies:
-      '@rollup/plugin-node-resolve': 15.3.1(rollup@4.60.1)
-      '@tailwindcss/postcss': 4.2.1
-    transitivePeerDependencies:
-      - rollup
-
   flowbite-datepicker@2.0.0(rollup@4.62.2):
     dependencies:
       '@rollup/plugin-node-resolve': 15.3.1(rollup@4.62.2)
@@ -16590,7 +16565,7 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  flowbite-react@0.12.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.1.18):
+  flowbite-react@0.12.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.3.0):
     dependencies:
       '@floating-ui/core': 1.7.4
       '@floating-ui/react': 0.27.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -16607,17 +16582,7 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
       tailwind-merge-v2: tailwind-merge@2.6.1
       tailwind-merge-v3: tailwind-merge@3.4.0
-      tailwindcss: 4.1.18
-
-  flowbite@4.0.1(rollup@4.60.1):
-    dependencies:
-      '@popperjs/core': 2.11.8
-      flowbite-datepicker: 2.0.0(rollup@4.60.1)
-      mini-svg-data-uri: 1.4.4
-      postcss: 8.5.8
-      tailwindcss: 4.1.18
-    transitivePeerDependencies:
-      - rollup
+      tailwindcss: 4.3.0
 
   flowbite@4.0.1(rollup@4.62.2):
     dependencies:
@@ -16625,7 +16590,7 @@ snapshots:
       flowbite-datepicker: 2.0.0(rollup@4.62.2)
       mini-svg-data-uri: 1.4.4
       postcss: 8.5.8
-      tailwindcss: 4.1.18
+      tailwindcss: 4.3.0
     transitivePeerDependencies:
       - rollup
 
@@ -20059,9 +20024,9 @@ snapshots:
 
   tailwind-merge@3.4.0: {}
 
-  tailwindcss@4.1.18: {}
-
   tailwindcss@4.2.1: {}
+
+  tailwindcss@4.3.0: {}
 
   tapable@2.3.0: {}
 
