@@ -326,7 +326,7 @@ describe('MCP Analytics Integration', () => {
       await assert.expectToolCallError(
         'getServerInfo',
         { section: 'nonexistent-section' },
-        'Invalid enum value',
+        'Invalid option',
       );
     });
 
