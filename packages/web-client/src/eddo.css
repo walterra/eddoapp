@@ -1,9 +1,9 @@
 @import 'tailwindcss';
 @import './design-tokens.css';
-@plugin "flowbite/plugin";
-@plugin "@tailwindcss/typography";
-@source "../node_modules/flowbite";
-@source "../node_modules/flowbite-react";
+@plugin 'flowbite/plugin';
+@plugin '@tailwindcss/typography';
+@source '../node_modules/flowbite';
+@source '../node_modules/flowbite-react';
 
 /*
  * Override Tailwind v4's default hover behavior.
