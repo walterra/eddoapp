@@ -114,7 +114,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo exists in database with correct properties
       const result = await testDb.find({
         selector: {
-          version: 'alpha3',
+          version: 'alpha4',
         },
       });
 
@@ -145,7 +145,7 @@ describe('Agent Loop E2E Integration', () => {
 
       const result = await testDb.find({
         selector: {
-          version: 'alpha3',
+          version: 'alpha4',
           context: 'work',
         },
       });
@@ -183,7 +183,7 @@ describe('Agent Loop E2E Integration', () => {
       // Verify todo was created
       const result = await testDb.find({
         selector: {
-          version: 'alpha3',
+          version: 'alpha4',
           context: 'work',
         },
       });
@@ -232,7 +232,7 @@ describe('Agent Loop E2E Integration', () => {
         // Verify todo is completed in database
         const result = await testDb.find({
           selector: {
-            version: 'alpha3',
+            version: 'alpha4',
           },
         });
 

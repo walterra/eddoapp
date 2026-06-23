@@ -75,7 +75,7 @@ describe('client', () => {
   });
 
   describe('mapItemToTodo', () => {
-    it('maps RSS item to TodoAlpha3 structure', () => {
+    it('maps RSS item to TodoAlpha4 structure', () => {
       const item: RssItem = {
         title: 'Test Article',
         description: '<p>This is a test description</p>',
@@ -94,7 +94,7 @@ describe('client', () => {
       expect(todo.context).toBe('read-later');
       expect(todo.tags).toEqual(['gtd:someday', 'source:rss']);
       expect(todo.completed).toBeNull();
-      expect(todo.version).toBe('alpha3');
+      expect(todo.version).toBe('alpha4');
       expect(todo.externalId).toMatch(/^rss:/);
     });
 

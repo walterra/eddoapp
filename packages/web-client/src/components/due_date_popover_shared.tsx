@@ -14,10 +14,10 @@ export interface QuickAction {
 }
 
 /**
- * Format a date as ISO due date string (end of day)
+ * Format a date as date-only due string.
  */
 export const formatDueDate = (date: Date): string => {
-  return `${format(date, 'yyyy-MM-dd')}T23:59:59.999Z`;
+  return format(date, 'yyyy-MM-dd');
 };
 
 const POPOVER_MENU_STYLES =

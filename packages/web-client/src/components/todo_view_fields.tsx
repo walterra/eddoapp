@@ -138,6 +138,10 @@ const DueDateView: FC<{ due: string }> = ({ due }) => {
   return <FieldRow label="Due Date">{dateOnly || EMPTY_VALUE}</FieldRow>;
 };
 
+const ScheduledTimeView: FC<{ scheduledTime: string | null | undefined }> = ({ scheduledTime }) => (
+  <FieldRow label="Scheduled Time">{scheduledTime ?? EMPTY_VALUE}</FieldRow>
+);
+
 const RepeatView: FC<{ repeat: number | null }> = ({ repeat }) => (
   <FieldRow label="Repeat">
     {repeat !== null ? `Every ${repeat} day${repeat !== 1 ? 's' : ''}` : EMPTY_VALUE}
@@ -271,6 +275,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
 
     <div className="grid grid-cols-2 gap-4">
       <DueDateView due={todo.due} />
+      <ScheduledTimeView scheduledTime={todo.scheduledTime} />
       <RepeatView repeat={todo.repeat} />
     </div>
 

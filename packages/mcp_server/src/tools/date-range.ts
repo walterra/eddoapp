@@ -1,4 +1,4 @@
-/** Date range for current UTC day queries */
+/** Date range for current date-only day queries */
 export interface DateRange {
   todayStart: string;
   todayEnd: string;
@@ -6,19 +6,17 @@ export interface DateRange {
 }
 
 /**
- * Returns UTC day boundaries for a reference instant.
+ * Returns date-only boundaries for a reference instant.
  *
  * @param now - Reference instant.
- * @return UTC date range metadata.
+ * @return Date-only range metadata.
  */
 export function getUtcDateRange(now: Date = new Date()): DateRange {
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth();
-  const date = now.getUTCDate();
+  const todayDate = now.toISOString().split('T')[0] ?? '1970-01-01';
 
   return {
-    todayStart: new Date(Date.UTC(year, month, date, 0, 0, 0, 0)).toISOString(),
-    todayEnd: new Date(Date.UTC(year, month, date, 23, 59, 59, 999)).toISOString(),
-    todayDate: now.toISOString().split('T')[0] ?? '1970-01-01',
+    todayStart: todayDate,
+    todayEnd: todayDate,
+    todayDate,
   };
 }

@@ -194,7 +194,7 @@ describe('AddTodoPopover', () => {
         expect(safePutSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'New todo item',
-            version: 'alpha3',
+            version: 'alpha4',
           }),
         );
       });

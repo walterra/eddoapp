@@ -83,19 +83,18 @@ export function escapeEsqlString(str: string): string {
 
 /** Generates ES|QL condition for due date filter. */
 export function generateDueCondition(dueFilter: 'today' | 'week' | 'overdue'): string {
-  const now = new Date().toISOString();
-  const today = now.split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
 
   switch (dueFilter) {
     case 'today':
-      return `due >= "${today}T00:00:00.000Z" AND due < "${today}T23:59:59.999Z"`;
+      return `due == "${today}"`;
     case 'week': {
       const weekEnd = new Date();
       weekEnd.setDate(weekEnd.getDate() + 7);
-      return `due >= "${now}" AND due <= "${weekEnd.toISOString()}"`;
+      return `due >= "${today}" AND due <= "${weekEnd.toISOString().split('T')[0]}"`;
     }
     case 'overdue':
-      return `due < "${now}" AND completed IS NULL`;
+      return `due < "${today}" AND completed IS NULL`;
   }
 }
 
@@ -133,8 +132,13 @@ export function generateWhereConditions(parsed: ParsedQuery, includeCompleted: b
 }
 
 /** Builds ES|QL query from parsed search parameters. */
-export function buildEsqlQuery(indexName: string, parsed: ParsedQuery, limit: number): string {
-  const conditions = generateWhereConditions(parsed, true);
+export function buildEsqlQuery(
+  indexName: string,
+  parsed: ParsedQuery,
+  limit: number,
+  includeCompleted = true,
+): string {
+  const conditions = generateWhereConditions(parsed, includeCompleted);
   let query = `FROM ${indexName} METADATA _score`;
 
   if (conditions.length > 0) {

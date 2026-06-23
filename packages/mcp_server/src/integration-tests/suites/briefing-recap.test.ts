@@ -5,18 +5,18 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData, testDates } from '../__fixtures__/todo-factory.js';
-import type { MCPResponse, TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type { MCPResponse, TodoAlpha4 } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 /** Briefing data structure returned by getBriefingData */
 interface BriefingData {
-  todaysTodos: TodoAlpha3[];
-  overdueTodos: TodoAlpha3[];
-  nextActions: TodoAlpha3[];
-  waitingFor: TodoAlpha3[];
-  calendarToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
+  todaysTodos: TodoAlpha4[];
+  overdueTodos: TodoAlpha4[];
+  nextActions: TodoAlpha4[];
+  waitingFor: TodoAlpha4[];
+  calendarToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
   metadata: {
     date: string;
     dateStart: string;
@@ -34,9 +34,9 @@ interface BriefingData {
 
 /** Recap data structure returned by getRecapData */
 interface RecapData {
-  completedToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
-  upcomingNextActions: TodoAlpha3[];
+  completedToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
+  upcomingNextActions: TodoAlpha4[];
   metadata: {
     date: string;
     dateStart: string;

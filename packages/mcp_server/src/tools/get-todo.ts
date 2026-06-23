@@ -1,7 +1,7 @@
 /**
  * Get Todo Tool - Fetch a single todo by ID
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import { z } from 'zod';
 
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
@@ -35,7 +35,7 @@ export async function executeGetTodo(
 
   try {
     const startTime = Date.now();
-    const todo = (await db.get(args.id)) as TodoAlpha3;
+    const todo = (await db.get(args.id)) as TodoAlpha4;
     const executionTime = Date.now() - startTime;
 
     context.log.info('Todo retrieved successfully', { title: todo.title });

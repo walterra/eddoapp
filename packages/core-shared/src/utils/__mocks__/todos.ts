@@ -14,7 +14,7 @@ export const todos: Todo[] = [
     repeat: null,
     tags: [],
     title: 'the todo',
-    version: 'alpha3',
+    version: 'alpha4',
   },
   {
     _id: '2023-04-03T10:12:45.320Z',
@@ -34,6 +34,6 @@ export const todos: Todo[] = [
     repeat: null,
     tags: [],
     title: 'the todo',
-    version: 'alpha3',
+    version: 'alpha4',
   },
 ];

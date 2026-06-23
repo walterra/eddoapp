@@ -7,7 +7,7 @@ import {
   type AuditAction,
   type AuditLogAlpha1,
   type AuditSource,
-  type TodoAlpha3,
+  type TodoAlpha4,
 } from '@eddo/core-shared';
 
 import { type Env } from '../config/env';
@@ -30,9 +30,9 @@ export interface LogActionOptions {
   /** Source system that triggered the action */
   source: AuditSource;
   /** Todo state before the action (for update/delete) */
-  before?: Partial<TodoAlpha3>;
+  before?: Partial<TodoAlpha4>;
   /** Todo state after the action (for create/update) */
-  after?: Partial<TodoAlpha3>;
+  after?: Partial<TodoAlpha4>;
   /** Optional human-readable message describing the action (short, like a git commit message) */
   message?: string;
   /** Optional additional metadata */

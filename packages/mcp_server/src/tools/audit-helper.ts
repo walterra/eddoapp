@@ -8,7 +8,7 @@ import {
   getAuditService,
   type AuditAction,
   type Env,
-  type TodoAlpha3,
+  type TodoAlpha4,
 } from '@eddo/core-server';
 import type { DocumentScope } from 'nano';
 
@@ -27,8 +27,8 @@ function getEnv(): Env {
 export interface McpAuditOptions {
   action: AuditAction;
   entityId: string;
-  before?: Partial<TodoAlpha3>;
-  after?: Partial<TodoAlpha3>;
+  before?: Partial<TodoAlpha4>;
+  after?: Partial<TodoAlpha4>;
   /** Optional human-readable message describing the action (short, like a git commit message) */
   message?: string;
   metadata?: Record<string, unknown>;
@@ -104,7 +104,7 @@ function isConflictError(error: unknown): boolean {
  * Silently fails on error (non-blocking to main operation).
  */
 export async function pushAuditIdToTodo(
-  db: DocumentScope<TodoAlpha3>,
+  db: DocumentScope<TodoAlpha4>,
   todoId: string,
   auditId: string,
   context: ToolContext,

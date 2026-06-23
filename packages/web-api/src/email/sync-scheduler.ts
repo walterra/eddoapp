@@ -2,7 +2,7 @@
  * Email Sync Scheduler
  * Periodically syncs emails from IMAP folders for users with sync enabled
  */
-import { createEnv, createUserRegistry, type TodoAlpha3 } from '@eddo/core-server';
+import { createEnv, createUserRegistry, type TodoAlpha4 } from '@eddo/core-server';
 import type nano from 'nano';
 
 import { withSpan } from '../utils/logger.js';
@@ -20,7 +20,7 @@ import {
 export interface EmailSyncSchedulerConfig {
   checkIntervalMs: number;
   logger: EmailLogger;
-  getUserDb: (dbName: string) => nano.DocumentScope<TodoAlpha3>;
+  getUserDb: (dbName: string) => nano.DocumentScope<TodoAlpha4>;
 }
 
 // Re-export shouldSyncUser for backward compatibility

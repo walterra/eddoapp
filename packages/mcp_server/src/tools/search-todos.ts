@@ -4,7 +4,7 @@
  * Design: ES is a secondary index for search/relevance scoring only.
  * Search returns IDs + scores, then fetches full docs from CouchDB (source of truth).
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type { Client } from '@elastic/elasticsearch';
 import type nano from 'nano';
 import { z } from 'zod';
@@ -36,7 +36,7 @@ interface SearchHit {
 /** Search result with full todo data from CouchDB */
 interface SearchResult {
   _score: number;
-  todo: TodoAlpha3;
+  todo: TodoAlpha4;
 }
 
 /** Transforms ES|QL response to search hits. */
@@ -55,7 +55,7 @@ function transformEsqlResponse(response: {
 
 /** Fetches full todo documents from CouchDB by IDs. */
 async function fetchTodosFromCouchDb(
-  db: nano.DocumentScope<TodoAlpha3>,
+  db: nano.DocumentScope<TodoAlpha4>,
   hits: SearchHit[],
 ): Promise<SearchResult[]> {
   if (hits.length === 0) return [];
@@ -69,7 +69,7 @@ async function fetchTodosFromCouchDb(
     const results: SearchResult[] = [];
     for (const row of response.rows) {
       if ('doc' in row && row.doc && !('error' in row)) {
-        const todo = row.doc as TodoAlpha3;
+        const todo = row.doc as TodoAlpha4;
         results.push({ _score: scoreMap.get(todo._id) ?? 0, todo });
       }
     }
@@ -83,7 +83,7 @@ async function fetchTodosFromCouchDb(
 
 /** Fallback: fetches todos individually if bulk fails. */
 async function fetchTodosIndividually(
-  db: nano.DocumentScope<TodoAlpha3>,
+  db: nano.DocumentScope<TodoAlpha4>,
   hits: SearchHit[],
 ): Promise<SearchResult[]> {
   const results: SearchResult[] = [];
@@ -184,7 +184,7 @@ export async function executeSearchTodos(
   try {
     const startTime = Date.now();
     const parsed = parseSearchQuery(args.query);
-    const esqlQuery = buildEsqlQuery(indexName, parsed, limit);
+    const esqlQuery = buildEsqlQuery(indexName, parsed, limit, args.includeCompleted);
 
     context.log.debug('Executing ES|QL query', { esqlQuery, ...parsed });
 

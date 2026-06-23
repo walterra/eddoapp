@@ -1,6 +1,39 @@
 import { type TodoAlpha1 } from '../versions/todo_alpha1';
 import { type TodoAlpha2 } from '../versions/todo_alpha2';
 import { type TodoAlpha3 } from '../versions/todo_alpha3';
+import { type TodoAlpha4 } from '../versions/todo_alpha4';
+
+/** Default values for TodoAlpha4 test fixtures */
+const ALPHA4_DEFAULTS: Omit<TodoAlpha4, '_id' | '_rev'> = {
+  title: 'Test Todo',
+  description: '',
+  completed: null,
+  due: '2025-01-02',
+  context: 'test',
+  repeat: null,
+  tags: [],
+  active: {},
+  externalId: null,
+  link: null,
+  scheduledTime: null,
+  scheduledTimeZone: null,
+  version: 'alpha4',
+};
+
+/**
+ * Create a TodoAlpha4 for testing without requiring _rev.
+ *
+ * @param overrides Todo fields to override.
+ * @return TodoAlpha4 test fixture.
+ */
+export function createTestTodoAlpha4(
+  overrides: Partial<TodoAlpha4> & { _id: string },
+): Omit<TodoAlpha4, '_rev'> {
+  return {
+    ...ALPHA4_DEFAULTS,
+    ...overrides,
+  };
+}
 
 /** Default values for TodoAlpha3 test fixtures */
 const ALPHA3_DEFAULTS: Omit<TodoAlpha3, '_id' | '_rev'> = {
@@ -18,7 +51,10 @@ const ALPHA3_DEFAULTS: Omit<TodoAlpha3, '_id' | '_rev'> = {
 };
 
 /**
- * Create a TodoAlpha3 for testing without requiring _rev
+ * Create a TodoAlpha3 for testing without requiring _rev.
+ *
+ * @param overrides Todo fields to override.
+ * @return TodoAlpha3 test fixture.
  */
 export function createTestTodoAlpha3(
   overrides: Partial<TodoAlpha3> & { _id: string },
@@ -43,7 +79,10 @@ const ALPHA2_DEFAULTS: Omit<TodoAlpha2, '_id' | '_rev'> = {
 };
 
 /**
- * Create a TodoAlpha2 for testing without requiring _rev
+ * Create a TodoAlpha2 for testing without requiring _rev.
+ *
+ * @param overrides Todo fields to override.
+ * @return TodoAlpha2 test fixture.
  */
 export function createTestTodoAlpha2(
   overrides: Partial<TodoAlpha2> & { _id: string },
@@ -55,7 +94,10 @@ export function createTestTodoAlpha2(
 }
 
 /**
- * Create a TodoAlpha1 for testing without requiring _rev
+ * Create a TodoAlpha1 for testing without requiring _rev.
+ *
+ * @param overrides Todo fields to override.
+ * @return TodoAlpha1 test fixture.
  */
 export function createTestTodoAlpha1(
   overrides: Partial<TodoAlpha1> & { _id: string },

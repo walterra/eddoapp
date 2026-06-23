@@ -21,6 +21,7 @@ import {
   ExternalIdField,
   LinkField,
   RepeatField,
+  ScheduledTimeField,
   TagsField,
   TimeTrackingField,
   TitleField,
@@ -112,6 +113,7 @@ const EditFormFields: FC<EditFormFieldsProps> = ({ todo, allTags, activeArray, o
     <ContextField onChange={onChange} todo={todo} />
     <TagsField allTags={allTags} onChange={onChange} todo={todo} />
     <DueDateField onChange={onChange} todo={todo} />
+    <ScheduledTimeField onChange={onChange} todo={todo} />
     <LinkField onChange={onChange} todo={todo} />
     <ExternalIdField onChange={onChange} todo={todo} />
     <ParentIdField onChange={onChange} todo={todo} />

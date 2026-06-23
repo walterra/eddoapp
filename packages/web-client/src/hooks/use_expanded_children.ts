@@ -66,7 +66,7 @@ export function useExpandedChildren(expandedIds: Set<string>) {
     queryFn: async (): Promise<ExpandedChildrenData> => {
       // Fetch children of expanded parents
       const children = await safeDb.safeFind<Todo>(
-        { version: 'alpha3', parentId: { $in: expandedIdsArray } },
+        { version: 'alpha4', parentId: { $in: expandedIdsArray } },
         { limit: 10000 },
       );
 
@@ -78,7 +78,7 @@ export function useExpandedChildren(expandedIds: Set<string>) {
       }
 
       const grandchildren = await safeDb.safeFind<Todo>(
-        { version: 'alpha3', parentId: { $in: childIds } },
+        { version: 'alpha4', parentId: { $in: childIds } },
         { limit: 10000 },
       );
 

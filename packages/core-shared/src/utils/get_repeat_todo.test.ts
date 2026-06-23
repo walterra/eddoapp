@@ -11,12 +11,12 @@ describe('getRepeatTodo', () => {
     completed: '2025-01-15T14:30:00.000Z',
     context: 'private',
     description: 'Test todo',
-    due: '2025-01-10T23:59:59.999Z',
+    due: '2025-01-10',
     link: null,
     repeat: 7,
     tags: [],
     title: 'Test Todo',
-    version: 'alpha3',
+    version: 'alpha4',
   };
 
   describe('gtd:calendar tag behavior', () => {
@@ -25,14 +25,14 @@ describe('getRepeatTodo', () => {
         ...baseTodo,
         tags: ['gtd:calendar'],
         repeat: 7,
-        due: '2025-01-10T23:59:59.999Z', // Original due date
+        due: '2025-01-10', // Original due date
         completed: '2025-01-15T14:30:00.000Z', // Completed 5 days late
       };
 
       const result = getRepeatTodo(calendarTodo);
 
       // Should be 7 days from Jan 10, not from Jan 15
-      expect(result.due).toBe('2025-01-17T23:59:59.999Z');
+      expect(result.due).toBe('2025-01-17');
       expect(result.completed).toBeNull();
       expect(result.active).toEqual({});
       expect(result.tags).toEqual(['gtd:calendar']);
@@ -44,13 +44,13 @@ describe('getRepeatTodo', () => {
         ...baseTodo,
         tags: ['work', 'gtd:calendar', 'bills'],
         repeat: 30,
-        due: '2025-01-15T23:59:59.999Z',
+        due: '2025-01-15',
       };
 
       const result = getRepeatTodo(calendarTodo);
 
       // Should be 30 days from Jan 15
-      expect(result.due).toBe('2025-02-14T23:59:59.999Z');
+      expect(result.due).toBe('2025-02-14');
     });
 
     it('handles zero repeat days with gtd:calendar tag', () => {
@@ -58,13 +58,13 @@ describe('getRepeatTodo', () => {
         ...baseTodo,
         tags: ['gtd:calendar'],
         repeat: 0,
-        due: '2025-01-10T23:59:59.999Z',
+        due: '2025-01-10',
       };
 
       const result = getRepeatTodo(calendarTodo);
 
       // Should be same as original due date
-      expect(result.due).toBe('2025-01-10T23:59:59.999Z');
+      expect(result.due).toBe('2025-01-10');
     });
   });
 
@@ -74,14 +74,14 @@ describe('getRepeatTodo', () => {
         ...baseTodo,
         tags: ['gtd:habit'],
         repeat: 3,
-        due: '2025-01-10T23:59:59.999Z',
+        due: '2025-01-10',
         completed: '2025-01-15T14:30:00.000Z',
       };
 
       const result = getRepeatTodo(habitTodo);
 
       // Should be 3 days from Jan 15 (completion date)
-      expect(result.due).toBe('2025-01-18T23:59:59.999Z');
+      expect(result.due).toBe('2025-01-18');
       expect(result.tags).toEqual(['gtd:habit']);
     });
 
@@ -96,7 +96,7 @@ describe('getRepeatTodo', () => {
       const result = getRepeatTodo(habitTodo);
 
       // Should be 2 days from completion date (Jan 15)
-      expect(result.due).toBe('2025-01-17T23:59:59.999Z');
+      expect(result.due).toBe('2025-01-17');
     });
   });
 
@@ -106,14 +106,14 @@ describe('getRepeatTodo', () => {
         ...baseTodo,
         tags: [],
         repeat: 5,
-        due: '2025-01-10T23:59:59.999Z',
+        due: '2025-01-10',
         completed: '2025-01-15T14:30:00.000Z',
       };
 
       const result = getRepeatTodo(noTagTodo);
 
       // Should behave like habit - 5 days from completion date
-      expect(result.due).toBe('2025-01-20T23:59:59.999Z');
+      expect(result.due).toBe('2025-01-20');
     });
 
     it('defaults to habit behavior with other tags (not gtd:calendar)', () => {
@@ -121,14 +121,14 @@ describe('getRepeatTodo', () => {
         ...baseTodo,
         tags: ['work', 'gtd:next'],
         repeat: 7,
-        due: '2025-01-10T23:59:59.999Z',
+        due: '2025-01-10',
         completed: '2025-01-15T14:30:00.000Z',
       };
 
       const result = getRepeatTodo(otherTagsTodo);
 
       // Should behave like habit - 7 days from completion date
-      expect(result.due).toBe('2025-01-22T23:59:59.999Z');
+      expect(result.due).toBe('2025-01-22');
     });
   });
 
@@ -175,17 +175,17 @@ describe('getRepeatTodo', () => {
       expect(result._id).not.toBe(baseTodo._id);
     });
 
-    it('always formats due date with end-of-day time', () => {
+    it('always formats due date as date-only', () => {
       const calendarTodo: Todo = {
         ...baseTodo,
         tags: ['gtd:calendar'],
         repeat: 1,
-        due: '2025-01-10T23:59:59.999Z',
+        due: '2025-01-10',
       };
 
       const result = getRepeatTodo(calendarTodo);
 
-      expect(result.due).toMatch(/T23:59:59\.999Z$/);
+      expect(result.due).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 
@@ -195,14 +195,14 @@ describe('getRepeatTodo', () => {
         ...baseTodo,
         tags: ['gtd:calendar', 'gtd:habit'],
         repeat: 7,
-        due: '2025-01-10T23:59:59.999Z',
+        due: '2025-01-10',
         completed: '2025-01-15T14:30:00.000Z',
       };
 
       const result = getRepeatTodo(bothTagsTodo);
 
       // gtd:calendar should take precedence - 7 days from due date (Jan 10)
-      expect(result.due).toBe('2025-01-17T23:59:59.999Z');
+      expect(result.due).toBe('2025-01-17');
     });
   });
 });

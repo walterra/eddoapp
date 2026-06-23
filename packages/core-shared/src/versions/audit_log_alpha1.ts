@@ -1,6 +1,6 @@
 import isNil from 'lodash-es/isNil';
 
-import { type TodoAlpha3 } from './todo_alpha3';
+import { type TodoAlpha4 } from './todo_alpha4';
 
 type UnknownObject = Record<string, unknown> | { [key: string]: unknown };
 
@@ -40,9 +40,9 @@ export interface AuditLogAlpha1 {
   /** ISO timestamp of action (same as _id) */
   timestamp: string;
   /** Entity state before the action (for update/delete) */
-  before?: Partial<TodoAlpha3>;
+  before?: Partial<TodoAlpha4>;
   /** Entity state after the action (for create/update) */
-  after?: Partial<TodoAlpha3>;
+  after?: Partial<TodoAlpha4>;
   /** Source system that triggered the action */
   source: AuditSource;
   /** Optional human-readable message describing the action (short, like a git commit message) */

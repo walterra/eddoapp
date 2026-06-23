@@ -68,6 +68,11 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly, onClick }) =>
       onClick={onClick}
       type="button"
     >
+      {todo.scheduledTime ? (
+        <span className="text-primary-600 dark:text-primary-400 mr-1 font-mono text-[0.7rem]">
+          {todo.scheduledTime}
+        </span>
+      ) : null}
       <FormattedMessage message={todo.title} />
     </button>
   );

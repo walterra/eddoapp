@@ -1,7 +1,7 @@
 /**
  * Toggle Todo Completion Tool - Marks todos as completed or uncompleted
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import { getRepeatTodo } from '@eddo/core-server';
 import { z } from 'zod';
 
@@ -36,7 +36,7 @@ export type ToggleCompletionArgs = z.infer<typeof toggleCompletionParameters>;
  * Handles completing a repeating todo by creating the next occurrence
  */
 async function handleRepeatingTodo(
-  todo: TodoAlpha3,
+  todo: TodoAlpha4,
   db: ReturnType<GetUserDb>,
   context: ToolContext,
 ): Promise<string> {
@@ -45,7 +45,7 @@ async function handleRepeatingTodo(
   const newTodo = getRepeatTodo(todo);
 
   const startTime = Date.now();
-  await db.insert(newTodo as TodoAlpha3);
+  await db.insert(newTodo as TodoAlpha4);
   await db.insert(todo);
   const executionTime = Date.now() - startTime;
 
@@ -76,7 +76,7 @@ async function handleRepeatingTodo(
  * Marks todo as completed and handles repeating logic
  */
 async function markCompleted(
-  todo: TodoAlpha3,
+  todo: TodoAlpha4,
   db: ReturnType<GetUserDb>,
   context: ToolContext,
 ): Promise<string | null> {
@@ -94,8 +94,8 @@ async function markCompleted(
 
 /** Parameters for saveAndRespond */
 interface SaveAndRespondParams {
-  todo: TodoAlpha3;
-  originalTodo: TodoAlpha3;
+  todo: TodoAlpha4;
+  originalTodo: TodoAlpha4;
   db: ReturnType<GetUserDb>;
   context: ToolContext;
   status: string;
@@ -149,7 +149,7 @@ export async function executeToggleCompletion(
   });
 
   try {
-    const todo = (await db.get(args.id)) as TodoAlpha3;
+    const todo = (await db.get(args.id)) as TodoAlpha4;
     const originalTodo = { ...todo }; // Clone for audit
     context.log.debug('Retrieved todo for completion toggle', {
       title: todo.title,

@@ -2,11 +2,13 @@ import {
   createTestTodoAlpha1,
   createTestTodoAlpha2,
   createTestTodoAlpha3,
+  createTestTodoAlpha4,
 } from '@eddo/core-shared/api/test-utils';
 import { isLatestVersion, migrateTodo } from '@eddo/core-shared/versions/migrate';
 import { type TodoAlpha1 } from '@eddo/core-shared/versions/todo_alpha1';
 import { type TodoAlpha2 } from '@eddo/core-shared/versions/todo_alpha2';
 import { type TodoAlpha3 } from '@eddo/core-shared/versions/todo_alpha3';
+import { type TodoAlpha4 } from '@eddo/core-shared/versions/todo_alpha4';
 import memory from 'pouchdb-adapter-memory';
 import PouchDB from 'pouchdb-browser';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -33,7 +35,7 @@ describe('Database Migration Functions', () => {
   });
 
   describe('migrateTodo', () => {
-    it('should migrate from alpha1 to alpha3', () => {
+    it('should migrate from alpha1 to alpha4', () => {
       const alpha1Todo: TodoAlpha1 = {
         ...createTestTodoAlpha1({
           _id: '2025-01-01T00:00:00.000Z',
@@ -46,19 +48,19 @@ describe('Database Migration Functions', () => {
 
       const result = migrateTodo(alpha1Todo);
 
-      expect(result.version).toBe('alpha3');
+      expect(result.version).toBe('alpha4');
       expect(result.title).toBe('Test Todo');
       expect(result.description).toBe(''); // Alpha1 has no description
       expect(result.active).toEqual({});
       expect(result.externalId).toBe(null);
       expect(result.link).toBe(null);
-      expect(result.due).toBe('2025-01-01T23:59:59.999Z'); // Generated from _id
+      expect(result.due).toBe('2025-01-01');
       expect(result.context).toBe('work');
       expect(result.tags).toEqual([]); // Alpha1 has no tags
       expect(result.completed).toBe(null); // false -> null
     });
 
-    it('should migrate from alpha2 to alpha3', () => {
+    it('should migrate from alpha2 to alpha4', () => {
       const alpha2Todo: TodoAlpha2 = {
         ...createTestTodoAlpha2({
           _id: '2025-01-01T00:00:00.000Z',
@@ -72,13 +74,13 @@ describe('Database Migration Functions', () => {
 
       const result = migrateTodo(alpha2Todo);
 
-      expect(result.version).toBe('alpha3');
+      expect(result.version).toBe('alpha4');
       expect(result.active).toEqual({ '2025-01-01': 'start' });
       expect(result.externalId).toBe(null);
       expect(result.link).toBe(null);
     });
 
-    it('should return alpha3 todo unchanged', () => {
+    it('should migrate alpha3 todo to alpha4', () => {
       const alpha3Todo = {
         ...createTestTodoAlpha3({
           _id: '2025-01-01T00:00:00.000Z',
@@ -95,7 +97,63 @@ describe('Database Migration Functions', () => {
 
       const result = migrateTodo(alpha3Todo);
 
-      expect(result).toEqual(alpha3Todo);
+      expect(result).toEqual({
+        ...alpha3Todo,
+        scheduledTime: null,
+        scheduledTimeZone: null,
+        version: 'alpha4',
+      });
+    });
+
+    it('should normalize timestamp due values during alpha3 migration', () => {
+      const alpha3Todo = {
+        ...createTestTodoAlpha3({
+          _id: '2025-01-01T00:00:00.000Z',
+          title: 'Test Todo',
+          due: '2025-01-02T23:59:59.999Z',
+          context: 'work',
+        }),
+        _rev: '1-abc',
+      } as TodoAlpha3;
+
+      const result = migrateTodo(alpha3Todo);
+
+      expect(result.due).toBe('2025-01-02');
+    });
+
+    it('should extract title prefix times during alpha3 migration', () => {
+      const alpha3Todo = {
+        ...createTestTodoAlpha3({
+          _id: '2025-01-01T00:00:00.000Z',
+          title: '9:05 Kaiserwinkl Oldtimertage',
+          due: '2025-01-02T23:59:59.999Z',
+          context: 'work',
+        }),
+        _rev: '1-abc',
+      } as TodoAlpha3;
+
+      const result = migrateTodo(alpha3Todo);
+
+      expect(result.title).toBe('Kaiserwinkl Oldtimertage');
+      expect(result.scheduledTime).toBe('09:05');
+      expect(result.scheduledTimeZone).toBe(null);
+    });
+
+    it('should not extract non-prefix title times during alpha3 migration', () => {
+      const alpha3Todo = {
+        ...createTestTodoAlpha3({
+          _id: '2025-01-01T00:00:00.000Z',
+          title: 'Call Alice about 12:30 train',
+          due: '2025-01-02T23:59:59.999Z',
+          context: 'work',
+        }),
+        _rev: '1-abc',
+      } as TodoAlpha3;
+
+      const result = migrateTodo(alpha3Todo);
+
+      expect(result.title).toBe('Call Alice about 12:30 train');
+      expect(result.scheduledTime).toBe(null);
     });
 
     it('should preserve metadata field when present on alpha3 todo', () => {
@@ -145,8 +203,8 @@ describe('Database Migration Functions', () => {
   });
 
   describe('isLatestVersion', () => {
-    it('should return true for alpha3 todo', () => {
-      const alpha3Todo = createTestTodoAlpha3({
+    it('should return true for alpha4 todo', () => {
+      const alpha4Todo = createTestTodoAlpha4({
         _id: '2025-01-01T00:00:00.000Z',
         title: 'Test Todo',
         description: 'Test description',
@@ -155,7 +213,7 @@ describe('Database Migration Functions', () => {
         tags: ['test'],
       });
 
-      expect(isLatestVersion(alpha3Todo)).toBe(true);
+      expect(isLatestVersion(alpha4Todo)).toBe(true);
     });
 
     it('should return false for alpha2 todo', () => {
@@ -180,7 +238,7 @@ describe('Database Migration Functions', () => {
   });
 
   describe('Database Migration Integration', () => {
-    it('should migrate document in database from alpha2 to alpha3', async () => {
+    it('should migrate document in database from alpha2 to alpha4', async () => {
       const alpha2Doc = createTestTodoAlpha2({
         _id: '2025-01-01T00:00:00.000Z',
         title: 'Migration Test',
@@ -198,8 +256,8 @@ describe('Database Migration Functions', () => {
       const migratedDoc = migrateTodo(doc);
       await db.put({ ...migratedDoc, _rev: doc._rev });
 
-      const updatedDoc = await db.get<TodoAlpha3>(alpha2Doc._id);
-      expect(updatedDoc.version).toBe('alpha3');
+      const updatedDoc = await db.get<TodoAlpha4>(alpha2Doc._id);
+      expect(updatedDoc.version).toBe('alpha4');
       expect(updatedDoc.externalId).toBe(null);
       expect(updatedDoc.link).toBe(null);
       expect(updatedDoc.active).toEqual({
@@ -247,7 +305,7 @@ describe('Database Migration Functions', () => {
           }
           return null;
         })
-        .filter((doc): doc is TodoAlpha3 & { _rev: string } => doc !== null);
+        .filter((doc): doc is TodoAlpha4 & { _rev: string } => doc !== null);
 
       await db.bulkDocs(migratedDocs);
 
@@ -258,7 +316,7 @@ describe('Database Migration Functions', () => {
           const doc = row.doc as PouchDB.Core.ExistingDocument<{
             version: string;
           }>;
-          expect(doc.version).toBe('alpha3');
+          expect(doc.version).toBe('alpha4');
           expect(isLatestVersion(doc)).toBe(true);
         }
       });

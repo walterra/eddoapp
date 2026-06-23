@@ -1,7 +1,7 @@
 /**
  * MCP tool registration with tracing support
  */
-import type { AttachmentDoc, TodoAlpha3 } from '@eddo/core-server';
+import type { AttachmentDoc, TodoAlpha4 } from '@eddo/core-server';
 import type { Client } from '@elastic/elasticsearch';
 import type { FastMCP } from 'fastmcp';
 import type nano from 'nano';
@@ -74,7 +74,7 @@ import {
 import { wrapToolExecution } from './tool-wrapper.js';
 import type { ToolContext, UserSession } from './types.js';
 
-type GetUserDbFn = (context: ToolContext) => nano.DocumentScope<TodoAlpha3>;
+type GetUserDbFn = (context: ToolContext) => nano.DocumentScope<TodoAlpha4>;
 type GetAttachmentsDbFn = (context: ToolContext) => nano.DocumentScope<AttachmentDoc>;
 type GetEsClientFn = () => Client | null;
 

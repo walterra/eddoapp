@@ -5,7 +5,7 @@ import { expect } from 'vitest';
 
 import type { MCPTestServer } from '../setup/test-server.js';
 
-export interface TodoAlpha3 {
+export interface TodoAlpha4 {
   _id: string;
   active: Record<string, string | null>;
   completed: string | null;
@@ -18,7 +18,7 @@ export interface TodoAlpha3 {
   repeat: number | null;
   tags: string[];
   title: string;
-  version: 'alpha3';
+  version: 'alpha4';
 }
 
 export interface MCPResponse {
@@ -139,9 +139,9 @@ export class MCPAssertions {
   }
 
   /**
-   * Assert that a todo has valid Alpha3 structure
+   * Assert that a todo has valid Alpha4 structure
    */
-  expectValidTodo(todo: unknown): asserts todo is TodoAlpha3 {
+  expectValidTodo(todo: unknown): asserts todo is TodoAlpha4 {
     expect(todo).toMatchObject({
       _id: expect.any(String),
       active: expect.any(Object),
@@ -150,7 +150,7 @@ export class MCPAssertions {
       due: expect.any(String),
       tags: expect.any(Array),
       title: expect.any(String),
-      version: 'alpha3',
+      version: 'alpha4',
     });
 
     // Type guard to ensure todo is object-like
@@ -185,7 +185,7 @@ export class MCPAssertions {
   /**
    * Assert that a list of todos are all valid
    */
-  expectValidTodos(todos: unknown[]): asserts todos is TodoAlpha3[] {
+  expectValidTodos(todos: unknown[]): asserts todos is TodoAlpha4[] {
     expect(todos).toBeInstanceOf(Array);
     todos.forEach((todo, index) => {
       try {
@@ -199,12 +199,12 @@ export class MCPAssertions {
   /**
    * Assert that a todo has specific properties
    */
-  expectTodoProperties(todo: TodoAlpha3, expectedProperties: Partial<TodoAlpha3>): void {
+  expectTodoProperties(todo: TodoAlpha4, expectedProperties: Partial<TodoAlpha4>): void {
     for (const [key, value] of Object.entries(expectedProperties)) {
       if (key === 'tags' && Array.isArray(value)) {
         expect(todo.tags).toEqual(expect.arrayContaining(value));
       } else {
-        expect(todo[key as keyof TodoAlpha3]).toBe(value);
+        expect(todo[key as keyof TodoAlpha4]).toBe(value);
       }
     }
   }
@@ -212,7 +212,7 @@ export class MCPAssertions {
   /**
    * Assert that todos are filtered correctly by context
    */
-  expectTodosFilteredByContext(todos: TodoAlpha3[], expectedContext: string): void {
+  expectTodosFilteredByContext(todos: TodoAlpha4[], expectedContext: string): void {
     this.expectValidTodos(todos);
     todos.forEach((todo) => {
       expect(todo.context).toBe(expectedContext);
@@ -222,7 +222,7 @@ export class MCPAssertions {
   /**
    * Assert that todos are filtered correctly by completion status
    */
-  expectTodosFilteredByCompletion(todos: TodoAlpha3[], expectedCompleted: boolean): void {
+  expectTodosFilteredByCompletion(todos: TodoAlpha4[], expectedCompleted: boolean): void {
     this.expectValidTodos(todos);
     todos.forEach((todo) => {
       if (expectedCompleted) {
@@ -236,7 +236,7 @@ export class MCPAssertions {
   /**
    * Assert that todos are within a date range
    */
-  expectTodosInDateRange(todos: TodoAlpha3[], startDate: string, endDate: string): void {
+  expectTodosInDateRange(todos: TodoAlpha4[], startDate: string, endDate: string): void {
     this.expectValidTodos(todos);
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -250,7 +250,7 @@ export class MCPAssertions {
   /**
    * Assert that time tracking is active for a todo
    */
-  expectActiveTimeTracking(todo: TodoAlpha3, categories: string[]): void {
+  expectActiveTimeTracking(todo: TodoAlpha4, categories: string[]): void {
     this.expectValidTodo(todo);
 
     for (const category of categories) {
@@ -265,7 +265,7 @@ export class MCPAssertions {
   /**
    * Assert that time tracking is inactive for a todo
    */
-  expectInactiveTimeTracking(todo: TodoAlpha3, categories: string[]): void {
+  expectInactiveTimeTracking(todo: TodoAlpha4, categories: string[]): void {
     this.expectValidTodo(todo);
 
     for (const category of categories) {
@@ -278,7 +278,7 @@ export class MCPAssertions {
   /**
    * Assert that a todo has active time tracking (timestamp-based)
    */
-  expectHasActiveTimeTracking(todo: TodoAlpha3): void {
+  expectHasActiveTimeTracking(todo: TodoAlpha4): void {
     this.expectValidTodo(todo);
 
     const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
@@ -293,7 +293,7 @@ export class MCPAssertions {
   /**
    * Assert that a todo has no active time tracking
    */
-  expectHasNoActiveTimeTracking(todo: TodoAlpha3): void {
+  expectHasNoActiveTimeTracking(todo: TodoAlpha4): void {
     this.expectValidTodo(todo);
 
     const activeEntries = Object.entries(todo.active).filter(([_, end]) => end === null);
@@ -336,7 +336,7 @@ export class MCPAssertions {
   /**
    * Assert that a todo list has specific length
    */
-  expectTodoCount(todos: TodoAlpha3[], expectedCount: number): void {
+  expectTodoCount(todos: TodoAlpha4[], expectedCount: number): void {
     if (todos.length !== expectedCount) {
       console.error(`❌ Todo count mismatch. Expected: ${expectedCount}, Actual: ${todos.length}`);
       console.error('Found todos:');
@@ -350,7 +350,7 @@ export class MCPAssertions {
   /**
    * Assert that todos are sorted by creation date (newest first)
    */
-  expectTodosSortedByCreation(todos: TodoAlpha3[]): void {
+  expectTodosSortedByCreation(todos: TodoAlpha4[]): void {
     if (todos.length <= 1) return;
 
     for (let i = 1; i < todos.length; i++) {

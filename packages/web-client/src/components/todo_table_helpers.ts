@@ -139,14 +139,17 @@ export function filterTodos(todos: Todo[], criteria: TodoFilterCriteria): Todo[]
 }
 
 /**
- * Sort todos by due date ascending, then title ascending
+ * Sort todos by due date ascending, scheduled time, then title ascending
  */
 function sortTodos(todos: Todo[]): Todo[] {
   return [...todos].sort((a, b) => {
     // Primary: due date ascending
     const dueCmp = a.due.localeCompare(b.due);
     if (dueCmp !== 0) return dueCmp;
-    // Secondary: title ascending
+    // Secondary: scheduled time ascending, untimed last
+    const timeCmp = (a.scheduledTime ?? '99:99').localeCompare(b.scheduledTime ?? '99:99');
+    if (timeCmp !== 0) return timeCmp;
+    // Tertiary: title ascending
     return a.title.localeCompare(b.title);
   });
 }

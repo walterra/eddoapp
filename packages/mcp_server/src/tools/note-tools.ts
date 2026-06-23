@@ -1,7 +1,7 @@
 /**
  * Note Management Tools - Add, update, and delete notes on todos
  */
-import type { TodoAlpha3, TodoNote } from '@eddo/core-server';
+import type { TodoAlpha4, TodoNote } from '@eddo/core-server';
 import { z } from 'zod';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
@@ -47,8 +47,8 @@ function noteNotFoundResponse(noteId: string, todoId: string, operation: string)
 interface AuditAndRespondOptions {
   context: ToolContext;
   db: ReturnType<GetUserDb>;
-  before: TodoAlpha3;
-  after: TodoAlpha3;
+  before: TodoAlpha4;
+  after: TodoAlpha4;
   responseData: Record<string, unknown>;
   operation: string;
   startTime: number;
@@ -108,9 +108,9 @@ export async function executeAddNote(
 
   try {
     const startTime = Date.now();
-    const todo = (await db.get(args.todoId)) as TodoAlpha3;
+    const todo = (await db.get(args.todoId)) as TodoAlpha4;
     const newNote = createNote(args.content);
-    const updatedTodo: TodoAlpha3 = { ...todo, notes: [...(todo.notes ?? []), newNote] };
+    const updatedTodo: TodoAlpha4 = { ...todo, notes: [...(todo.notes ?? []), newNote] };
 
     await db.insert(updatedTodo);
     context.log.info('Note added successfully', { todoId: args.todoId, noteId: newNote.id });
@@ -163,7 +163,7 @@ export async function executeUpdateNote(
 
   try {
     const startTime = Date.now();
-    const todo = (await db.get(args.todoId)) as TodoAlpha3;
+    const todo = (await db.get(args.todoId)) as TodoAlpha4;
     const existingNotes = todo.notes ?? [];
     const noteIndex = findNoteIndex(existingNotes, args.noteId);
 
@@ -178,7 +178,7 @@ export async function executeUpdateNote(
       content: args.content,
       updatedAt: now,
     };
-    const updatedTodo: TodoAlpha3 = { ...todo, notes: updatedNotes };
+    const updatedTodo: TodoAlpha4 = { ...todo, notes: updatedNotes };
 
     await db.insert(updatedTodo);
     context.log.info('Note updated successfully', { todoId: args.todoId, noteId: args.noteId });
@@ -226,7 +226,7 @@ export async function executeDeleteNote(
 
   try {
     const startTime = Date.now();
-    const todo = (await db.get(args.todoId)) as TodoAlpha3;
+    const todo = (await db.get(args.todoId)) as TodoAlpha4;
     const existingNotes = todo.notes ?? [];
     const noteIndex = findNoteIndex(existingNotes, args.noteId);
 
@@ -236,7 +236,7 @@ export async function executeDeleteNote(
 
     const deletedNote = existingNotes[noteIndex];
     const updatedNotes = existingNotes.filter((n) => n.id !== args.noteId);
-    const updatedTodo: TodoAlpha3 = { ...todo, notes: updatedNotes };
+    const updatedTodo: TodoAlpha4 = { ...todo, notes: updatedNotes };
 
     await db.insert(updatedTodo);
     context.log.info('Note deleted successfully', { todoId: args.todoId, noteId: args.noteId });

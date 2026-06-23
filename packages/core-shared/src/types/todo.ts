@@ -1,4 +1,4 @@
-import { type TodoAlpha3 } from '../versions/todo_alpha3';
+import { type TodoAlpha4 } from '../versions/todo_alpha4';
 
-export type NewTodo = Omit<TodoAlpha3, '_rev'>;
-export type Todo = TodoAlpha3;
+export type NewTodo = Omit<TodoAlpha4, '_rev'>;
+export type Todo = TodoAlpha4;

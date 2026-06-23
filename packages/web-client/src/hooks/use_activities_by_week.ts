@@ -72,7 +72,7 @@ export function useActivitiesByWeek({
       // Note: PouchDB defaults to limit=25, so we set a high limit
       const todos = await safeDb.safeFind<Todo>(
         {
-          version: 'alpha3',
+          version: 'alpha4',
           active: { $exists: true, $ne: {} },
         },
         { limit: 10000 },

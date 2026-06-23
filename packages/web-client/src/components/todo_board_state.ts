@@ -2,7 +2,7 @@
  * State management helpers for TodoBoard component
  */
 import { type DatabaseError, type Todo, isLatestVersion } from '@eddo/core-client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { SafeDbOperations } from '../api/safe-db-operations';
 import { ensureDesignDocuments } from '../database_setup';
@@ -12,23 +12,7 @@ import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
 import { useTodosByDateRange } from '../hooks/use_todos_by_date_range';
 import { usePouchDb } from '../pouch_db';
 import type { ActivityItem } from './todo_board_helpers';
-
-/**
- * Check if a due date needs normalization (missing time component)
- */
-function needsDueDateNormalization(due: string | undefined | null): boolean {
-  if (!due) return false;
-  // Valid ISO format should contain 'T' for time component
-  return !due.includes('T');
-}
-
-/**
- * Normalize due date to full ISO format
- */
-function normalizeDueDate(due: string): string {
-  if (due.includes('T')) return due;
-  return `${due}T23:59:59.999Z`;
-}
+import { migrateLocalTodosInBackground, migrateVisibleLegacyTodos } from './todo_migration';
 
 /**
  * Hook for managing database initialization state
@@ -45,6 +29,11 @@ export function useDbInitialization(safeDb: SafeDbOperations, rawDb: PouchDB.Dat
       try {
         await ensureDesignDocuments(safeDb, rawDb);
         setIsInitialized(true);
+        window.setTimeout(() => {
+          migrateLocalTodosInBackground(rawDb).catch((err) => {
+            console.error('Error migrating local todos:', err);
+          });
+        }, 5000);
       } catch (err) {
         console.error('Error initializing design documents:', err);
         setError(err as DatabaseError);
@@ -58,37 +47,42 @@ export function useDbInitialization(safeDb: SafeDbOperations, rawDb: PouchDB.Dat
   return { error, setError, isInitialized };
 }
 
-/**
- * Hook to auto-migrate todos with invalid due dates
- */
-function useDueDateMigration(todos: Todo[]): void {
+/** Runs current-view legacy migration before enabling todo queries. */
+function useVisibleTodoMigration(
+  startDate: string,
+  endDate: string,
+  isInitialized: boolean,
+): boolean {
   const { rawDb } = usePouchDb();
-  const migratedIds = useRef<Set<string>>(new Set());
+  const [isMigrated, setIsMigrated] = useState(false);
 
   useEffect(() => {
-    if (!rawDb || todos.length === 0) return;
+    setIsMigrated(false);
+    if (!rawDb || !isInitialized) return;
 
-    const todosNeedingMigration = todos.filter(
-      (todo) => needsDueDateNormalization(todo.due) && !migratedIds.current.has(todo._id),
-    );
+    let cancelled = false;
 
-    if (todosNeedingMigration.length === 0) return;
-
-    const migrateTodos = async () => {
-      for (const todo of todosNeedingMigration) {
-        try {
-          const normalizedDue = normalizeDueDate(todo.due);
-          await rawDb.put({ ...todo, due: normalizedDue });
-          migratedIds.current.add(todo._id);
-          console.log(`Migrated due date for todo ${todo._id}: ${todo.due} -> ${normalizedDue}`);
-        } catch (err) {
-          console.error(`Failed to migrate due date for todo ${todo._id}:`, err);
+    const migrateVisibleTodos = async () => {
+      try {
+        const migratedCount = await migrateVisibleLegacyTodos(rawDb, startDate, endDate);
+        if (migratedCount > 0) {
+          console.info(`Migrated ${migratedCount} visible todos to latest schema version`);
         }
+      } catch (err) {
+        console.error('Error migrating visible todos:', err);
+      } finally {
+        if (!cancelled) setIsMigrated(true);
       }
     };
 
-    migrateTodos();
-  }, [todos, rawDb]);
+    migrateVisibleTodos();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rawDb, isInitialized, startDate, endDate]);
+
+  return isMigrated;
 }
 
 /**
@@ -105,9 +99,11 @@ export function useTodoBoardData({
   endDate: string;
   isInitialized: boolean;
 }) {
-  const todosQuery = useTodosByDateRange({ startDate, endDate, enabled: isInitialized });
-  const activitiesQuery = useActivitiesByWeek({ startDate, endDate, enabled: isInitialized });
-  const timeTrackingQuery = useTimeTrackingActive({ enabled: isInitialized });
+  const isVisibleMigrationDone = useVisibleTodoMigration(startDate, endDate, isInitialized);
+  const isQueryEnabled = isInitialized && isVisibleMigrationDone;
+  const todosQuery = useTodosByDateRange({ startDate, endDate, enabled: isQueryEnabled });
+  const activitiesQuery = useActivitiesByWeek({ startDate, endDate, enabled: isQueryEnabled });
+  const timeTrackingQuery = useTimeTrackingActive({ enabled: isQueryEnabled });
 
   const activities = useMemo(
     () => (activitiesQuery.data ?? []) as ActivityItem[],
@@ -121,9 +117,6 @@ export function useTodoBoardData({
 
   const allTodos = useMemo(() => (todosQuery.data ?? []) as Todo[], [todosQuery.data]);
 
-  // Auto-migrate todos with invalid due dates
-  useDueDateMigration(allTodos);
-
   const todos = useMemo(() => allTodos.filter((d: Todo) => isLatestVersion(d)), [allTodos]);
 
   const outdatedTodosMemo = useMemo(
@@ -131,7 +124,7 @@ export function useTodoBoardData({
     [allTodos],
   );
 
-  const isLoading = todosQuery.isLoading || activitiesQuery.isLoading;
+  const isLoading = !isVisibleMigrationDone || todosQuery.isLoading || activitiesQuery.isLoading;
   const showLoadingSpinner = useDelayedLoading(isLoading && !todosQuery.data);
   const queryError = todosQuery.error || activitiesQuery.error;
 

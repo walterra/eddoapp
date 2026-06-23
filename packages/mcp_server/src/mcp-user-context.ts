@@ -2,7 +2,7 @@
  * MCP User Context Management
  * Implements per-user database pattern for complete data isolation
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import nano from 'nano';
 
 export class UserContextManager {
@@ -39,9 +39,9 @@ export class UserContextManager {
   /**
    * Get database instance for current user context
    */
-  getUserDatabase(): nano.DocumentScope<TodoAlpha3> {
+  getUserDatabase(): nano.DocumentScope<TodoAlpha4> {
     const dbName = this.getDatabaseName();
-    return this.couchConnection.db.use<TodoAlpha3>(dbName);
+    return this.couchConnection.db.use<TodoAlpha4>(dbName);
   }
 
   /**

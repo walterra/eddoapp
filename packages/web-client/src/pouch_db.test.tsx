@@ -113,7 +113,7 @@ describe('PouchDB Context and Hook', () => {
       // Test get operation
       const getResult = await result.current.safeDb.safeGet<Todo>(testTodo._id);
       expect(getResult?.title).toBe('Integration Test Todo');
-      expect(getResult?.version).toBe('alpha3');
+      expect(getResult?.version).toBe('alpha4');
     });
 
     it('should handle document not found errors', async () => {

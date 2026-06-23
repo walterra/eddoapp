@@ -1,7 +1,7 @@
 /**
  * Shared types for MCP tool handlers
  */
-import type { AttachmentDoc, TodoAlpha3 } from '@eddo/core-server';
+import type { AttachmentDoc, TodoAlpha4 } from '@eddo/core-server';
 import type { Context } from 'fastmcp';
 import type nano from 'nano';
 
@@ -47,7 +47,7 @@ export interface ToolResponse {
 /**
  * Database accessor function type
  */
-export type GetUserDb = (context: ToolContext) => nano.DocumentScope<TodoAlpha3>;
+export type GetUserDb = (context: ToolContext) => nano.DocumentScope<TodoAlpha4>;
 
 /**
  * Attachments database accessor function type

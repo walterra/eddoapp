@@ -1,7 +1,7 @@
 /**
  * GitHub API client for fetching user issues
  */
-import type { TodoAlpha3 } from '@eddo/core-shared';
+import type { TodoAlpha4 } from '@eddo/core-shared';
 import { Octokit } from '@octokit/rest';
 
 import { fetchAllPagesForQuery } from './issue-fetcher.js';
@@ -24,7 +24,7 @@ export interface GithubClientConfig {
 
 export interface GithubClient {
   fetchUserIssues(params?: GithubIssueListParams): Promise<GithubIssue[]>;
-  mapIssueToTodo(issue: GithubIssue, context: string, tags: string[]): Omit<TodoAlpha3, '_rev'>;
+  mapIssueToTodo(issue: GithubIssue, context: string, tags: string[]): Omit<TodoAlpha4, '_rev'>;
   generateExternalId(issue: GithubIssue): string;
 }
 
@@ -36,14 +36,14 @@ export function generateExternalId(issue: GithubIssue): string {
 }
 
 /**
- * Maps GitHub issue/PR to TodoAlpha3 structure
+ * Maps GitHub issue/PR to TodoAlpha4 structure
  * Adds type-specific tags: github:issue, github:pr, github:pr-review
  */
 export function mapIssueToTodo(
   issue: GithubIssue,
   context: string,
   tags: string[],
-): Omit<TodoAlpha3, '_rev'> {
+): Omit<TodoAlpha4, '_rev'> {
   const now = new Date().toISOString();
 
   // Start with configured tags and GitHub labels
@@ -68,13 +68,15 @@ export function mapIssueToTodo(
     completed: issue.state === 'closed' && issue.closed_at ? issue.closed_at : null,
     context,
     description: issue.body || '',
-    due: issue.created_at, // Use GitHub issue creation date as initial due date
+    due: issue.created_at.slice(0, 10), // Use GitHub issue creation date as initial due date
     externalId: generateExternalId(issue),
     link: issue.html_url,
     repeat: null,
+    scheduledTime: null,
+    scheduledTimeZone: null,
     tags: allTags,
     title: issue.title,
-    version: 'alpha3',
+    version: 'alpha4',
   };
 }
 

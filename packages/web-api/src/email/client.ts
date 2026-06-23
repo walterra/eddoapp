@@ -2,7 +2,7 @@
  * Email Client for fetching emails via IMAP
  * Supports both OAuth2 (Gmail) and plain IMAP authentication
  */
-import type { TodoAlpha3 } from '@eddo/core-shared';
+import type { TodoAlpha4 } from '@eddo/core-shared';
 import { createHash } from 'crypto';
 import { ImapFlow } from 'imapflow';
 
@@ -50,7 +50,7 @@ export interface EmailClient {
   /** Ensure destination folder exists, create if not */
   ensureProcessedFolder(config: ImapConnectionConfig, accessToken?: string): Promise<boolean>;
   /** Map email item to todo */
-  mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3, '_rev'>;
+  mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha4, '_rev'>;
   /** Generate external ID for deduplication */
   generateExternalId(item: EmailItem): string;
 }
@@ -89,9 +89,9 @@ function generateGmailLink(gmailMessageId?: string): string | null {
 }
 
 /**
- * Maps email item to TodoAlpha3 structure
+ * Maps email item to TodoAlpha4 structure
  */
-export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3, '_rev'> {
+export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha4, '_rev'> {
   const now = new Date().toISOString();
   const cleanDescription = item.body ? truncate(item.body, 50000) : '';
 
@@ -101,13 +101,15 @@ export function mapEmailToTodo(item: EmailItem, tags: string[]): Omit<TodoAlpha3
     completed: null,
     context: 'email',
     description: cleanDescription,
-    due: item.receivedDate,
+    due: item.receivedDate.slice(0, 10),
     externalId: generateExternalId(item),
     link: generateGmailLink(item.gmailMessageId),
     repeat: null,
+    scheduledTime: null,
+    scheduledTimeZone: null,
     tags,
     title: item.subject || 'No Subject',
-    version: 'alpha3',
+    version: 'alpha4',
   };
 }
 

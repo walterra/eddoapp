@@ -1,7 +1,7 @@
 /**
  * RSS Client for fetching and parsing feeds
  */
-import type { TodoAlpha3 } from '@eddo/core-shared';
+import type { TodoAlpha4 } from '@eddo/core-shared';
 import { createHash } from 'crypto';
 import { parseFeed } from 'feedsmith';
 import { convert } from 'html-to-text';
@@ -24,7 +24,7 @@ export interface SyncLogger {
 
 export interface RssClient {
   fetchFeed(feedConfig: RssFeedConfig): Promise<RssItem[]>;
-  mapItemToTodo(item: RssItem, tags: string[]): Omit<TodoAlpha3, '_rev'>;
+  mapItemToTodo(item: RssItem, tags: string[]): Omit<TodoAlpha4, '_rev'>;
   generateExternalId(item: RssItem): string;
 }
 
@@ -75,24 +75,24 @@ function truncate(text: string, maxLength: number): string {
 }
 
 /**
- * Parses publication date from RSS item, returns ISO string or current time as fallback
+ * Parses publication date from RSS item, returns YYYY-MM-DD or current date as fallback.
  */
 function parsePubDate(pubDate: string | undefined): string {
-  if (!pubDate) return new Date().toISOString();
+  if (!pubDate) return new Date().toISOString().slice(0, 10);
 
   try {
     const parsed = new Date(pubDate);
-    if (isNaN(parsed.getTime())) return new Date().toISOString();
-    return parsed.toISOString();
+    if (isNaN(parsed.getTime())) return new Date().toISOString().slice(0, 10);
+    return parsed.toISOString().slice(0, 10);
   } catch {
-    return new Date().toISOString();
+    return new Date().toISOString().slice(0, 10);
   }
 }
 
 /**
- * Maps RSS item to TodoAlpha3 structure
+ * Maps RSS item to TodoAlpha4 structure
  */
-export function mapItemToTodo(item: RssItem, tags: string[]): Omit<TodoAlpha3, '_rev'> {
+export function mapItemToTodo(item: RssItem, tags: string[]): Omit<TodoAlpha4, '_rev'> {
   const now = new Date().toISOString();
   const cleanDescription = item.description ? truncate(stripHtml(item.description), 2000) : '';
   const dueDate = parsePubDate(item.pubDate);
@@ -107,9 +107,11 @@ export function mapItemToTodo(item: RssItem, tags: string[]): Omit<TodoAlpha3, '
     externalId: generateExternalId(item),
     link: item.link,
     repeat: null,
+    scheduledTime: null,
+    scheduledTimeZone: null,
     tags,
     title: item.title || 'Untitled',
-    version: 'alpha3',
+    version: 'alpha4',
   };
 }
 

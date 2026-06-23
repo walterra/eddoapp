@@ -97,7 +97,7 @@ function buildCompletedSelector(args: ListTodosArgs): unknown {
  * Builds the Mango selector based on filter arguments
  */
 function buildSelector(args: ListTodosArgs): MangoSelector {
-  const selector: MangoSelector = { version: 'alpha3' };
+  const selector: MangoSelector = { version: 'alpha4' };
 
   if (args.context) selector.context = args.context;
 

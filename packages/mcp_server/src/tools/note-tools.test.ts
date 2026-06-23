@@ -36,7 +36,7 @@ function createMockDb(todo: Record<string, unknown> = {}) {
     link: null,
     parentId: null,
     notes: [],
-    version: 'alpha3',
+    version: 'alpha4',
     ...todo,
   };
 

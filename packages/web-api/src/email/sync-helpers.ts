@@ -1,7 +1,7 @@
 /**
  * Helper functions for email sync operations
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type nano from 'nano';
 
 import { logSyncAudit } from '../utils/sync-audit.js';
@@ -9,7 +9,7 @@ import type { EmailClient, EmailLogger } from './client.js';
 import type { EmailItem } from './types.js';
 
 export interface ProcessEmailConfig {
-  db: nano.DocumentScope<TodoAlpha3>;
+  db: nano.DocumentScope<TodoAlpha4>;
   email: EmailItem;
   tags: string[];
   emailClient: EmailClient;
@@ -31,10 +31,10 @@ export interface ProcessEmailResult {
  * Find todo by externalId using CouchDB index
  */
 export async function findTodoByExternalId(
-  db: nano.DocumentScope<TodoAlpha3>,
+  db: nano.DocumentScope<TodoAlpha4>,
   externalId: string,
   logger: EmailLogger,
-): Promise<TodoAlpha3 | null> {
+): Promise<TodoAlpha4 | null> {
   try {
     const result = await db.find({
       selector: {
@@ -54,7 +54,7 @@ export async function findTodoByExternalId(
 /**
  * Check if todo needs to be moved (exists but email:moved is not set)
  */
-function todoNeedsMove(todo: TodoAlpha3): boolean {
+function todoNeedsMove(todo: TodoAlpha4): boolean {
   return todo.metadata?.['email:moved'] !== 'true';
 }
 
@@ -88,7 +88,7 @@ export async function processEmail(config: ProcessEmailConfig): Promise<ProcessE
 
   // Create new todo with email:uid metadata for move tracking
   const newTodo = emailClient.mapEmailToTodo(email, tags);
-  const todoWithMetadata: Omit<TodoAlpha3, '_rev'> = {
+  const todoWithMetadata: Omit<TodoAlpha4, '_rev'> = {
     ...newTodo,
     metadata: {
       ...newTodo.metadata,
@@ -96,7 +96,7 @@ export async function processEmail(config: ProcessEmailConfig): Promise<ProcessE
     },
   };
 
-  await db.insert(todoWithMetadata as TodoAlpha3);
+  await db.insert(todoWithMetadata as TodoAlpha4);
 
   await logSyncAudit({
     username,
@@ -140,13 +140,13 @@ export function createSyncStats(): SyncStats {
  * Mark todo as moved by setting email:moved metadata
  */
 export async function markTodoAsMoved(
-  db: nano.DocumentScope<TodoAlpha3>,
+  db: nano.DocumentScope<TodoAlpha4>,
   todoId: string,
   logger: EmailLogger,
 ): Promise<boolean> {
   try {
     const doc = await db.get(todoId);
-    const updated: TodoAlpha3 = {
+    const updated: TodoAlpha4 = {
       ...doc,
       metadata: {
         ...doc.metadata,

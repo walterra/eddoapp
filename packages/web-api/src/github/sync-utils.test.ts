@@ -1,7 +1,7 @@
 /**
  * Tests for GitHub sync utility functions
  */
-import type { TodoAlpha3 } from '@eddo/core-shared';
+import type { TodoAlpha4 } from '@eddo/core-shared';
 import { describe, expect, it, vi } from 'vitest';
 
 import { findTodoByExternalId, shouldSyncUser } from './sync-utils';
@@ -67,7 +67,7 @@ describe('GitHub Sync Utils', () => {
     };
 
     it('should find existing todo by externalId', async () => {
-      const existingTodo: TodoAlpha3 = {
+      const existingTodo: TodoAlpha4 = {
         _id: '2025-12-21T09:00:00.000Z',
         _rev: '1-abc',
         active: {},
@@ -80,7 +80,7 @@ describe('GitHub Sync Utils', () => {
         repeat: null,
         tags: ['github'],
         title: 'Test Issue',
-        version: 'alpha3',
+        version: 'alpha4',
       };
 
       const mockDb: MockDb = {

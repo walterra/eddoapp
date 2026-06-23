@@ -115,18 +115,17 @@ function generatePhraseCondition(phrase: string, escapeString: (s: string) => st
 
 /** Generate due date filter condition */
 function generateDueDateCondition(dueFilter: 'today' | 'week' | 'overdue'): string {
-  const now = new Date().toISOString();
-  const today = now.split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
 
   if (dueFilter === 'today') {
-    return `due >= "${today}T00:00:00.000Z" AND due < "${today}T23:59:59.999Z"`;
+    return `due == "${today}"`;
   }
   if (dueFilter === 'week') {
     const weekEnd = new Date();
     weekEnd.setDate(weekEnd.getDate() + 7);
-    return `due >= "${now}" AND due <= "${weekEnd.toISOString()}"`;
+    return `due >= "${today}" AND due <= "${weekEnd.toISOString().split('T')[0]}"`;
   }
-  return `due < "${now}" AND completed IS NULL`; // overdue
+  return `due < "${today}" AND completed IS NULL`; // overdue
 }
 
 /**
