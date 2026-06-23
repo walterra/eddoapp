@@ -123,13 +123,14 @@ async function executeAllQueries(
   context: ToolContext,
   dateRange: DateRange,
 ): Promise<QueryResults> {
-  const { todayStart, todayEnd } = dateRange;
+  const completedStart = `${dateRange.todayDate}T00:00:00.000Z`;
+  const completedEnd = `${dateRange.todayDate}T23:59:59.999Z`;
 
   const [completedToday, activeTimeTracking, upcomingNextActions] = await Promise.all([
     executeQuery(
       db,
       {
-        selector: { version: 'alpha4', completed: { $gte: todayStart, $lte: todayEnd } },
+        selector: { version: 'alpha4', completed: { $gte: completedStart, $lte: completedEnd } },
         sort: [{ due: 'asc' }],
         limit: 100,
         use_index: 'version-completed-due-index',

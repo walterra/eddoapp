@@ -60,7 +60,12 @@ const findTitleStartIndex = (title: string, searchStartIndex: number): number =>
   return -1;
 };
 
-const parseTitlePrefixTime = (title: string): string | null => {
+interface ParsedTitlePrefixTime {
+  scheduledTime: string;
+  titleSearchStartIndex: number;
+}
+
+const parseTitlePrefixTime = (title: string): ParsedTitlePrefixTime | null => {
   const colonIndex = title.indexOf(':');
   if (colonIndex !== SINGLE_DIGIT_HOUR_LENGTH && colonIndex !== DOUBLE_DIGIT_HOUR_LENGTH) {
     return null;
@@ -74,7 +79,7 @@ const parseTitlePrefixTime = (title: string): string | null => {
     return null;
   }
 
-  return `${hour}:${minute}`;
+  return { scheduledTime: `${hour}:${minute}`, titleSearchStartIndex: minuteEndIndex };
 };
 
 /**
@@ -85,21 +90,18 @@ const parseTitlePrefixTime = (title: string): string | null => {
  */
 export function extractScheduledTimeFromTitle(title: string): TitleTimeExtractionResult {
   const trimmedTitle = title.trim();
-  const scheduledTime = parseTitlePrefixTime(trimmedTitle);
+  const parsedTime = parseTitlePrefixTime(trimmedTitle);
 
-  if (!scheduledTime) {
+  if (!parsedTime) {
     return { title, scheduledTime: null };
   }
 
-  const titleStartIndex = findTitleStartIndex(
-    trimmedTitle,
-    MINUTE_LENGTH + DOUBLE_DIGIT_HOUR_LENGTH,
-  );
+  const titleStartIndex = findTitleStartIndex(trimmedTitle, parsedTime.titleSearchStartIndex);
   if (titleStartIndex === -1) {
     return { title, scheduledTime: null };
   }
 
-  return { title: trimmedTitle.slice(titleStartIndex), scheduledTime };
+  return { title: trimmedTitle.slice(titleStartIndex), scheduledTime: parsedTime.scheduledTime };
 }
 
 /**

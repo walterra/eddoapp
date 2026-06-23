@@ -66,7 +66,7 @@ export const listTodosParameters = z.object({
 export type ListTodosArgs = z.infer<typeof listTodosParameters>;
 
 /**
- * Builds a date range selector for a field
+ * Builds a date range selector for a field.
  */
 function buildDateRangeSelector(from?: string, to?: string): Record<string, unknown> | undefined {
   if (!from && !to) return undefined;
@@ -74,6 +74,13 @@ function buildDateRangeSelector(from?: string, to?: string): Record<string, unkn
   if (from) range['$gte'] = from;
   if (to) range['$lte'] = to;
   return range;
+}
+
+/**
+ * Returns the date-only prefix from an ISO-like date value.
+ */
+function normalizeDateOnly(value: string | undefined): string | undefined {
+  return value?.slice(0, 10);
 }
 
 /**
@@ -104,7 +111,10 @@ function buildSelector(args: ListTodosArgs): MangoSelector {
   const completedSelector = buildCompletedSelector(args);
   if (completedSelector !== undefined) selector.completed = completedSelector;
 
-  const dueSelector = buildDateRangeSelector(args.dateFrom, args.dateTo);
+  const dueSelector = buildDateRangeSelector(
+    normalizeDateOnly(args.dateFrom),
+    normalizeDateOnly(args.dateTo),
+  );
   if (dueSelector) selector.due = dueSelector;
 
   if (args.tags && args.tags.length > 0) selector.tags = { $in: args.tags };

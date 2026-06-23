@@ -101,7 +101,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       assert.expectTodoProperties(createdTodo!, {
         title: todoData.title,
         context: todoData.context,
-        due: todoData.due,
+        due: todoData.due.slice(0, 10),
       });
 
       // 3. UPDATE: Modify the todo
@@ -306,7 +306,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       assert.expectTodoProperties(createdTodo!, {
         title: todoData.title,
         context: todoData.context,
-        due: todoData.due,
+        due: todoData.due.slice(0, 10),
         description: todoData.description,
         link: todoData.link,
         repeat: todoData.repeat,

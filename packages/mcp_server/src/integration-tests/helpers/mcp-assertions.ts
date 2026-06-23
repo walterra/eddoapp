@@ -238,12 +238,11 @@ export class MCPAssertions {
    */
   expectTodosInDateRange(todos: TodoAlpha4[], startDate: string, endDate: string): void {
     this.expectValidTodos(todos);
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = startDate.slice(0, 10);
+    const end = endDate.slice(0, 10);
 
     todos.forEach((todo) => {
-      const todoDate = new Date(todo.due);
-      expect(todoDate >= start && todoDate <= end).toBe(true);
+      expect(todo.due >= start && todo.due <= end).toBe(true);
     });
   }
 

@@ -187,7 +187,8 @@ describe('Briefing and Recap Data Integration', () => {
       const result = response.data;
 
       expect(result.calendarToday.length).toBe(1);
-      expect(result.calendarToday[0].title).toBe('10:00 Team Meeting');
+      expect(result.calendarToday[0].title).toBe('Team Meeting');
+      expect(result.calendarToday[0].scheduledTime).toBe('10:00');
       expect(result.calendarToday[0].tags).toContain('gtd:calendar');
       expect(result.metadata.counts.calendarToday).toBe(1);
     });
@@ -296,8 +297,8 @@ describe('Briefing and Recap Data Integration', () => {
 
       expect(result.metadata).toBeDefined();
       expect(result.metadata.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 
@@ -391,8 +392,8 @@ describe('Briefing and Recap Data Integration', () => {
 
       expect(result.metadata).toBeDefined();
       expect(result.metadata.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
     it('should not include completed next actions in upcomingNextActions', async () => {
