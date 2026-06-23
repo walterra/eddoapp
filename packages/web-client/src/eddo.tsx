@@ -20,6 +20,7 @@ import { HighlightProvider } from './hooks/use_highlight_context';
 import { usePreferencesStream } from './hooks/use_preferences_stream';
 import { initializeTheme } from './hooks/use_theme';
 import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
+import { UserTimeZoneProvider } from './hooks/use_user_timezone';
 import { useViewPreferences } from './hooks/use_view_preferences';
 import { createUserPouchDbContext } from './pouch_db';
 import { PouchDbContext } from './pouch_db_types';
@@ -191,16 +192,21 @@ function TodoContentView({
 function TodoApp({ logout }: { logout: () => void }) {
   const viewPrefs = useViewPreferences();
   const handlers = useFilterHandlers();
+  const timeZone = handlers.prefs.timeZone;
   return (
-    <PageWrapper isAuthenticated={true} logout={logout}>
-      <TodoFiltersSection handlers={handlers} viewPrefs={viewPrefs} />
-      <TodoContentView
-        prefs={handlers.prefs}
-        selectedTimeTracking={handlers.selectedTimeTracking}
-        tableColumns={viewPrefs.tableColumns}
-        viewMode={viewPrefs.viewMode}
-      />
-    </PageWrapper>
+    <UserTimeZoneProvider timeZone={timeZone}>
+      <PageWrapper isAuthenticated={true} logout={logout}>
+        <TodoFiltersSection handlers={handlers} viewPrefs={viewPrefs} />
+        <TodoContentView
+          key={timeZone}
+          prefs={handlers.prefs}
+          selectedTimeTracking={handlers.selectedTimeTracking}
+          tableColumns={viewPrefs.tableColumns}
+          viewMode={viewPrefs.viewMode}
+        />
+      </PageWrapper>
+      <GlobalTodoFlyout key={timeZone} />
+    </UserTimeZoneProvider>
   );
 }
 
@@ -240,7 +246,6 @@ function AuthenticatedApp({
           <PreferencesStreamProvider />
           <HealthMonitor />
           <TodoApp logout={logout} />
-          <GlobalTodoFlyout />
         </TodoFlyoutProvider>
       </HighlightProvider>
     </DatabaseChangesProvider>

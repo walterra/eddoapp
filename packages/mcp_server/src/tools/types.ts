@@ -14,6 +14,7 @@ export interface UserSession extends Record<string, unknown> {
   dbName: string;
   attachmentsDbName: string;
   username: string;
+  timezone?: string;
 }
 
 /**

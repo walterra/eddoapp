@@ -35,6 +35,7 @@ export const INITIAL_PREFERENCES_STATE: PreferencesFormState = {
   dailyRecap: false,
   recapTime: '18:00',
   printRecap: false,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
 };
 
 export const INITIAL_GITHUB_STATE: GithubFormState = {

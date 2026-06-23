@@ -1,7 +1,13 @@
 /**
  * Create Todo Tool - Creates a new todo item with GTD tag support
  */
-import { extractScheduledTimeFromTitle, type TodoAlpha4 } from '@eddo/core-server';
+import {
+  extractScheduledTimeFromTitle,
+  formatDateInTimeZone,
+  isValidTimeZone,
+  normalizeTimeZone,
+  type TodoAlpha4,
+} from '@eddo/core-server';
 import { z } from 'zod';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
@@ -66,6 +72,7 @@ export const createTodoParameters = z.object({
     .describe('Optional scheduled local time in HH:mm format.'),
   scheduledTimeZone: z
     .string()
+    .refine(isValidTimeZone, 'Invalid IANA timezone')
     .nullable()
     .default(null)
     .describe('Optional IANA timezone for scheduled time interpretation.'),
@@ -152,9 +159,9 @@ async function ensureUserDatabase(
  * @param due Due date input.
  * @return Date-only due value.
  */
-function normalizeDueDate(due: string | undefined): string {
+function normalizeDueDate(due: string | undefined, timeZone?: string): string {
   if (!due) {
-    return new Date().toISOString().split('T')[0];
+    return formatDateInTimeZone(new Date(), normalizeTimeZone(timeZone));
   }
 
   return due.slice(0, 10);
@@ -166,9 +173,9 @@ function normalizeDueDate(due: string | undefined): string {
  * @param args Create todo arguments.
  * @return New todo document.
  */
-function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha4, '_rev'> {
+function buildTodoDocument(args: CreateTodoArgs, timeZone?: string): Omit<TodoAlpha4, '_rev'> {
   const now = new Date().toISOString();
-  const dueDate = normalizeDueDate(args.due);
+  const dueDate = normalizeDueDate(args.due, timeZone);
   const titleTime = extractScheduledTimeFromTitle(args.title);
 
   return {
@@ -185,7 +192,10 @@ function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha4, '_rev'> {
     link: args.link,
     parentId: args.parentId,
     scheduledTime: args.scheduledTime ?? titleTime.scheduledTime,
-    scheduledTimeZone: args.scheduledTimeZone,
+    scheduledTimeZone:
+      args.scheduledTime || titleTime.scheduledTime
+        ? (args.scheduledTimeZone ?? normalizeTimeZone(timeZone))
+        : null,
     blockedBy: args.blockedBy,
     metadata: args.metadata,
     version: 'alpha4',
@@ -210,7 +220,7 @@ export async function executeCreateTodo(
     title: args.title,
   });
 
-  const newTodo = buildTodoDocument(args);
+  const newTodo = buildTodoDocument(args, context.session?.timezone);
 
   try {
     const startTime = Date.now();

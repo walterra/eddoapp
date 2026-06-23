@@ -1,6 +1,7 @@
 /**
  * Zod validation schemas for user routes
  */
+import { isValidTimeZone } from '@eddo/core-shared';
 import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
@@ -31,7 +32,7 @@ export const updatePreferencesSchema = z.object({
     .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
     .optional(),
   printRecap: z.boolean().optional(),
-  timezone: z.string().optional(),
+  timezone: z.string().refine(isValidTimeZone, 'Invalid IANA timezone').optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),
   viewMode: z.enum(['kanban', 'table', 'graph']).optional(),
   tableColumns: z.array(z.string()).optional(),

@@ -2,6 +2,8 @@ import {
   type DatabaseError,
   DatabaseErrorType,
   extractScheduledTimeFromTitle,
+  formatDateInTimeZone,
+  getSystemTimeZone,
   type NewTodo,
   type Todo,
 } from '@eddo/core-client';
@@ -26,10 +28,13 @@ export interface AddTodoCreateContext {
   parentTodo?: Todo;
 }
 
-export const createInitialState = (parentTodo?: Todo): AddTodoFormState => ({
+export const createInitialState = (
+  parentTodo?: Todo,
+  timeZone = getSystemTimeZone(),
+): AddTodoFormState => ({
   context: parentTodo?.context ?? CONTEXT_DEFAULT,
   description: '',
-  due: new Date().toISOString().split('T')[0],
+  due: formatDateInTimeZone(new Date(), timeZone),
   link: '',
   parentId: '',
   title: '',
@@ -53,6 +58,7 @@ export const validateDueDate = (dueDate: string): DatabaseError | null => {
 export const createTodoFromState = (
   state: AddTodoFormState,
   createContext: AddTodoCreateContext,
+  timeZone = getSystemTimeZone(),
 ): NewTodo => {
   const titleTime = extractScheduledTimeFromTitle(state.title);
 
@@ -67,7 +73,7 @@ export const createTodoFromState = (
     parentId: createContext.parentTodo?._id ?? (state.parentId !== '' ? state.parentId : null),
     repeat: null,
     scheduledTime: titleTime.scheduledTime,
-    scheduledTimeZone: null,
+    scheduledTimeZone: titleTime.scheduledTime ? timeZone : null,
     tags: state.tags,
     title: titleTime.title,
     version: 'alpha4',

@@ -123,6 +123,7 @@ export function usePreferencesFieldHandlers(setPreferencesState: PreferencesFiel
       onDailyRecapChange: (v: boolean) => setPreferencesState((p) => ({ ...p, dailyRecap: v })),
       onRecapTimeChange: (v: string) => setPreferencesState((p) => ({ ...p, recapTime: v })),
       onPrintRecapChange: (v: boolean) => setPreferencesState((p) => ({ ...p, printRecap: v })),
+      onTimezoneChange: (v: string) => setPreferencesState((p) => ({ ...p, timezone: v })),
     }),
     [setPreferencesState],
   );

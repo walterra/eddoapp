@@ -5,7 +5,7 @@ import type { TodoAlpha4 } from '@eddo/core-server';
 import type { MangoQuery } from 'nano';
 import { z } from 'zod';
 
-import { getUtcDateRange, type DateRange } from './date-range.js';
+import { getTimezoneDateRange, type DateRange } from './date-range.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -41,6 +41,7 @@ interface BriefingData {
     date: string;
     dateStart: string;
     dateEnd: string;
+    timeZone: string;
     counts: {
       todaysTodos: number;
       overdueTodos: number;
@@ -208,6 +209,7 @@ function buildBriefingData(results: QueryResults, dateRange: DateRange): Briefin
       date: dateRange.todayDate,
       dateStart: dateRange.todayStart,
       dateEnd: dateRange.todayEnd,
+      timeZone: dateRange.timeZone,
       counts: {
         todaysTodos: results.todaysTodos.length,
         overdueTodos: results.overdueTodos.length,
@@ -230,7 +232,7 @@ export async function executeGetBriefingData(
 ): Promise<string> {
   const db = getUserDb(context);
   const startTime = Date.now();
-  const dateRange = getUtcDateRange();
+  const dateRange = getTimezoneDateRange(new Date(), context.session?.timezone);
 
   context.log.info('Getting briefing data for user', { userId: context.session?.userId });
 

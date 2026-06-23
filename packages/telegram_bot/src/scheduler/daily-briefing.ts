@@ -1,4 +1,9 @@
-import { createEnv, createUserRegistry } from '@eddo/core-server';
+import {
+  createEnv,
+  createUserRegistry,
+  formatTimeInTimeZone,
+  normalizeTimeZone,
+} from '@eddo/core-server';
 import type { Bot } from 'grammy';
 
 import type { BotContext } from '../bot/bot.js';
@@ -11,6 +16,11 @@ import {
 import { logger, SpanAttributes, withSpan } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 
+import {
+  createSentKey,
+  isWithinTimeWindow,
+  resetSentTrackersForNewTimeZoneDays,
+} from './daily-briefing-timezone.js';
 import {
   executeAgentForUser,
   logSuccessfulSend,
@@ -30,7 +40,7 @@ export class DailyBriefingScheduler {
   private intervalId: NodeJS.Timeout | null = null;
   private sentBriefingsToday: Set<string> = new Set();
   private sentRecapsToday: Set<string> = new Set();
-  private currentDate: string | null = null;
+  private currentDatesByTimeZone: Map<string, string> = new Map();
   private isRunning = false;
 
   constructor(config: DailyBriefingSchedulerConfig) {
@@ -67,14 +77,14 @@ export class DailyBriefingScheduler {
 
   private async checkAndSendBriefings(): Promise<void> {
     const now = new Date();
-    const todayDate = now.toISOString().split('T')[0];
-
-    if (this.currentDate !== todayDate) {
-      this.sentBriefingsToday.clear();
-      this.sentRecapsToday.clear();
-      this.currentDate = todayDate;
-      logger.info('New day detected, reset sent briefings/recaps tracker', { date: todayDate });
-    }
+    resetSentTrackersForNewTimeZoneDays(
+      {
+        currentDatesByTimeZone: this.currentDatesByTimeZone,
+        sentBriefingsToday: this.sentBriefingsToday,
+        sentRecapsToday: this.sentRecapsToday,
+      },
+      now,
+    );
 
     try {
       await this.checkAndSendUserBriefings(now);
@@ -87,8 +97,6 @@ export class DailyBriefingScheduler {
   private async checkAndSendUserBriefings(now: Date): Promise<void> {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
 
     try {
       const users = await userRegistry.list();
@@ -100,37 +108,36 @@ export class DailyBriefingScheduler {
       logger.debug('Checking briefing times for users', {
         totalUsers: users.length,
         briefingUsers: briefingUsers.length,
-        currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+        currentTime: now.toISOString(),
       });
 
       for (const user of briefingUsers) {
-        await this.checkUserBriefingTime(user as TelegramUser, currentHour, currentMinute);
+        await this.checkUserBriefingTime(user as TelegramUser, now);
       }
     } catch (error) {
       logger.error('Failed to check user briefing times', { error });
     }
   }
 
-  private async checkUserBriefingTime(
-    user: TelegramUser,
-    currentHour: number,
-    currentMinute: number,
-  ): Promise<void> {
-    if (this.sentBriefingsToday.has(user._id)) return;
+  private async checkUserBriefingTime(user: TelegramUser, now: Date): Promise<void> {
+    const timeZone = normalizeTimeZone(user.preferences?.timezone);
+    const sentKey = createSentKey(user._id, now, timeZone);
+    if (this.sentBriefingsToday.has(sentKey)) return;
 
     const briefingTime = user.preferences?.briefingTime || '07:00';
-    if (!this.isWithinTimeWindow(briefingTime, currentHour, currentMinute)) return;
+    if (!isWithinTimeWindow(briefingTime, now, timeZone)) return;
 
     logger.info('Sending briefing to user at their preferred time', {
       userId: user._id,
       username: user.username,
       briefingTime,
-      currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+      currentTime: formatTimeInTimeZone(now, timeZone),
+      timeZone,
     });
 
     try {
       await this.sendBriefingToUser(user);
-      this.sentBriefingsToday.add(user._id);
+      this.sentBriefingsToday.add(sentKey);
       logger.info('Successfully sent briefing to user', {
         userId: user._id,
         username: user.username,
@@ -142,13 +149,6 @@ export class DailyBriefingScheduler {
         error,
       });
     }
-  }
-
-  private isWithinTimeWindow(timeStr: string, currentHour: number, currentMinute: number): boolean {
-    const [userHour, userMinute] = timeStr.split(':').map(Number);
-    const isRightHour = currentHour === userHour;
-    const isWithinWindow = currentMinute >= userMinute && currentMinute < userMinute + 5;
-    return isRightHour && isWithinWindow;
   }
 
   private async sendBriefingToUser(user: TelegramUser): Promise<void> {
@@ -224,8 +224,6 @@ export class DailyBriefingScheduler {
   private async checkAndSendUserRecaps(now: Date): Promise<void> {
     const env = createEnv();
     const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
 
     try {
       const users = await userRegistry.list();
@@ -237,37 +235,36 @@ export class DailyBriefingScheduler {
       logger.debug('Checking recap times for users', {
         totalUsers: users.length,
         recapUsers: recapUsers.length,
-        currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+        currentTime: now.toISOString(),
       });
 
       for (const user of recapUsers) {
-        await this.checkUserRecapTime(user as TelegramUser, currentHour, currentMinute);
+        await this.checkUserRecapTime(user as TelegramUser, now);
       }
     } catch (error) {
       logger.error('Failed to check user recap times', { error });
     }
   }
 
-  private async checkUserRecapTime(
-    user: TelegramUser,
-    currentHour: number,
-    currentMinute: number,
-  ): Promise<void> {
-    if (this.sentRecapsToday.has(user._id)) return;
+  private async checkUserRecapTime(user: TelegramUser, now: Date): Promise<void> {
+    const timeZone = normalizeTimeZone(user.preferences?.timezone);
+    const sentKey = createSentKey(user._id, now, timeZone);
+    if (this.sentRecapsToday.has(sentKey)) return;
 
     const recapTime = user.preferences?.recapTime || '18:00';
-    if (!this.isWithinTimeWindow(recapTime, currentHour, currentMinute)) return;
+    if (!isWithinTimeWindow(recapTime, now, timeZone)) return;
 
     logger.info('Sending recap to user at their preferred time', {
       userId: user._id,
       username: user.username,
       recapTime,
-      currentTime: `${currentHour}:${currentMinute.toString().padStart(2, '0')}`,
+      currentTime: formatTimeInTimeZone(now, timeZone),
+      timeZone,
     });
 
     try {
       await this.sendRecapToUser(user);
-      this.sentRecapsToday.add(user._id);
+      this.sentRecapsToday.add(sentKey);
       logger.info('Successfully sent recap to user', { userId: user._id, username: user.username });
     } catch (error) {
       logger.error('Failed to send recap to user', {
@@ -322,14 +319,14 @@ export class DailyBriefingScheduler {
 
   getStatus(): {
     isRunning: boolean;
-    currentDate: string | null;
+    currentDatesByTimeZone: Record<string, string>;
     sentBriefingsToday: number;
     sentRecapsToday: number;
     checkIntervalMs: number;
   } {
     return {
       isRunning: this.isRunning,
-      currentDate: this.currentDate,
+      currentDatesByTimeZone: Object.fromEntries(this.currentDatesByTimeZone),
       sentBriefingsToday: this.sentBriefingsToday.size,
       sentRecapsToday: this.sentRecapsToday.size,
       checkIntervalMs: this.checkIntervalMs,

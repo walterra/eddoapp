@@ -1,8 +1,10 @@
+import { formatScheduledTimeForTimeZone } from '@eddo/core-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, type FC, type MouseEvent } from 'react';
 
 import { useAuditedTodoMutation } from '../hooks/use_audited_todo_mutations';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
+import { useUserTimeZone } from '../hooks/use_user_timezone';
 import { FormattedMessage } from './formatted_message';
 import {
   useEditableField,
@@ -54,9 +56,20 @@ interface TitleCellUpdates {
   updateTitle: (value: string) => Promise<void>;
 }
 
+const getDisplayedScheduledTime = (todo: TodoTableTodo, timeZone: string): string => {
+  if (!todo.scheduledTime) return '';
+  return formatScheduledTimeForTimeZone(
+    todo.due,
+    todo.scheduledTime,
+    todo.scheduledTimeZone,
+    timeZone,
+  ).time;
+};
+
 const useTitleCellUpdates = (todo: TodoTableTodo): TitleCellUpdates => {
   const updateTodo = useAuditedTodoMutation();
   const queryClient = useQueryClient();
+  const timeZone = useUserTimeZone();
 
   const updateTitle = useCallback(
     async (value: string) => {
@@ -69,12 +82,16 @@ const useTitleCellUpdates = (todo: TodoTableTodo): TitleCellUpdates => {
   const updateScheduledTime = useCallback(
     async (value: string | null) => {
       await updateTodo.mutateAsync({
-        todo: { ...todo, scheduledTime: value },
+        todo: {
+          ...todo,
+          scheduledTime: value,
+          scheduledTimeZone: value ? timeZone : null,
+        },
         originalTodo: todo,
       });
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     },
-    [queryClient, todo, updateTodo],
+    [queryClient, timeZone, todo, updateTodo],
   );
 
   return { updateScheduledTime, updateTitle };
@@ -86,15 +103,17 @@ interface TitleCellEdits {
 }
 
 const useTitleCellEdits = (todo: TodoTableTodo, updates: TitleCellUpdates): TitleCellEdits => {
+  const timeZone = useUserTimeZone();
+  const displayedScheduledTime = getDisplayedScheduledTime(todo, timeZone);
   const saveTitle = useTitleSave({ title: todo.title, updateTitle: updates.updateTitle });
   const saveScheduledTime = useScheduledTimeSave({
-    scheduledTime: todo.scheduledTime,
+    scheduledTime: displayedScheduledTime,
     updateScheduledTime: updates.updateScheduledTime,
   });
 
   return {
     timeEdit: useEditableField({
-      initialValue: todo.scheduledTime ?? '',
+      initialValue: displayedScheduledTime,
       onSave: saveScheduledTime,
     }),
     titleEdit: useEditableField({ initialValue: todo.title, onSave: saveTitle }),
@@ -135,17 +154,26 @@ const TitleInput: FC<TitleInputProps> = ({ titleEdit }) => (
 interface ScheduledTimePrefixProps {
   handleClick: (event: MouseEvent<HTMLSpanElement>) => void;
   handleDoubleClick: (event: MouseEvent<HTMLSpanElement>) => void;
-  scheduledTime?: string | null;
+  todo: TodoTableTodo;
 }
 
 const ScheduledTimePrefix: FC<ScheduledTimePrefixProps> = ({
   handleClick,
   handleDoubleClick,
-  scheduledTime,
+  todo,
 }) => {
-  if (!scheduledTime) {
+  const displayTimeZone = useUserTimeZone();
+  if (!todo.scheduledTime) {
     return null;
   }
+
+  const display = formatScheduledTimeForTimeZone(
+    todo.due,
+    todo.scheduledTime,
+    todo.scheduledTimeZone,
+    displayTimeZone,
+  );
+  const dayOffset = display.dayOffset === 0 ? '' : display.dayOffset > 0 ? ' +1d' : ' -1d';
 
   return (
     <>
@@ -153,8 +181,10 @@ const ScheduledTimePrefix: FC<ScheduledTimePrefixProps> = ({
         className="text-neutral-500 dark:text-neutral-400"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        title={`Scheduled in ${display.timeZone}`}
       >
-        {scheduledTime}
+        {display.time}
+        {dayOffset}
       </span>{' '}
     </>
   );
@@ -187,7 +217,7 @@ const TitleButton: FC<TitleButtonProps> = ({
       <ScheduledTimePrefix
         handleClick={handleScheduledTimeClick}
         handleDoubleClick={handleScheduledTimeDoubleClick}
-        scheduledTime={todo.scheduledTime}
+        todo={todo}
       />
       <FormattedMessage message={todo.title} />
     </button>

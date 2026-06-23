@@ -1,3 +1,4 @@
+import { getSystemTimeZone } from '@eddo/core-client';
 import { useMemo } from 'react';
 
 import type { CompletionStatus } from '../components/status_filter';
@@ -39,6 +40,7 @@ export interface UseFilterPreferencesReturn {
   selectedTimeTracking: TimeTrackingStatus;
   selectedTimeRange: TimeRange;
   currentDate: Date;
+  timeZone: string;
   isLoading: boolean;
   error: string | null;
   setSelectedTags: (tags: string[]) => Promise<{ success: boolean; error?: string }>;
@@ -95,6 +97,7 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
   const selectedTimeTracking = useMemo(() => extractSelectedTimeTracking(prefs), [prefs]);
   const selectedTimeRange = useMemo(() => extractSelectedTimeRange(prefs), [prefs]);
   const currentDate = useMemo(() => extractCurrentDate(prefs), [prefs]);
+  const timeZone = useMemo(() => prefs?.timezone ?? getSystemTimeZone(), [prefs?.timezone]);
 
   const setters = useMemo(() => createPreferenceSetters(updatePreferences), [updatePreferences]);
 
@@ -105,6 +108,7 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
     selectedTimeTracking,
     selectedTimeRange,
     currentDate,
+    timeZone,
     isLoading,
     error: error || null,
     ...setters,

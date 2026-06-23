@@ -133,6 +133,7 @@ const server = new FastMCP<UserSession>({
         dbName: 'default',
         attachmentsDbName: 'default_attachments',
         username: 'anonymous',
+        timezone: 'UTC',
       };
       storeTraceContext(session, extractedContext);
       return session;
@@ -152,6 +153,7 @@ const server = new FastMCP<UserSession>({
       dbName: authResult.dbName,
       attachmentsDbName,
       username: authResult.username,
+      timezone: authResult.timezone,
     };
     storeTraceContext(session, extractedContext);
     return session;

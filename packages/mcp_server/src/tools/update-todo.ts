@@ -1,7 +1,7 @@
 /**
  * Update Todo Tool - Updates an existing todo
  */
-import type { TodoAlpha4 } from '@eddo/core-server';
+import { isValidTimeZone, normalizeTimeZone, type TodoAlpha4 } from '@eddo/core-server';
 import { z } from 'zod';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
@@ -30,6 +30,7 @@ export const updateTodoParameters = z.object({
     .describe('Updated scheduled local time in HH:mm format.'),
   scheduledTimeZone: z
     .string()
+    .refine(isValidTimeZone, 'Invalid IANA timezone')
     .nullable()
     .optional()
     .describe('Updated IANA timezone for scheduled time interpretation.'),
@@ -99,30 +100,41 @@ function normalizeDueDate(due: string | undefined): string | undefined {
 /**
  * Merges update arguments with existing todo
  */
-function mergeUpdates(todo: TodoAlpha4, args: UpdateTodoArgs): TodoAlpha4 {
+function getScheduledTimeZone(
+  todo: TodoAlpha4,
+  args: UpdateTodoArgs,
+  scheduledTime: string | null,
+  timeZone?: string,
+): string | null {
+  if (!scheduledTime) return null;
+  return pickValue(args.scheduledTimeZone, todo.scheduledTimeZone ?? normalizeTimeZone(timeZone));
+}
+
+function getBlockedBy(todo: TodoAlpha4, args: UpdateTodoArgs): string[] | undefined {
+  if (args.blockedBy === null) return undefined;
+  if (args.blockedBy !== undefined) return args.blockedBy;
+  return todo.blockedBy;
+}
+
+function mergeUpdates(todo: TodoAlpha4, args: UpdateTodoArgs, timeZone?: string): TodoAlpha4 {
   const normalizedDue = normalizeDueDate(args.due);
+  const scheduledTime = pickValue(args.scheduledTime, todo.scheduledTime ?? null);
+  const scheduledTimeZone = getScheduledTimeZone(todo, args, scheduledTime, timeZone);
+
   return {
     ...todo,
     title: args.title ?? todo.title,
     description: args.description ?? todo.description,
     context: args.context ?? todo.context,
     due: normalizedDue ?? todo.due,
-    scheduledTime: pickValue(args.scheduledTime, todo.scheduledTime ?? null),
-    scheduledTimeZone: pickValue(args.scheduledTimeZone, todo.scheduledTimeZone ?? null),
+    scheduledTime,
+    scheduledTimeZone,
     tags: args.tags ?? todo.tags,
     repeat: pickValue(args.repeat, todo.repeat),
     link: pickValue(args.link, todo.link),
     externalId: pickValue(args.externalId, todo.externalId),
     parentId: pickValue(args.parentId, todo.parentId),
-    // null means "clear blockers" (convert to undefined for storage)
-    // undefined means "don't change" (keep existing)
-    // array means "set these blockers"
-    blockedBy:
-      args.blockedBy === null
-        ? undefined // Clear: store as undefined (no blockers)
-        : args.blockedBy !== undefined
-          ? args.blockedBy // Set: use provided array
-          : todo.blockedBy, // Keep: preserve existing
+    blockedBy: getBlockedBy(todo, args),
     metadata: pickValue(args.metadata, todo.metadata),
   };
 }
@@ -156,7 +168,7 @@ export async function executeUpdateTodo(
 
   try {
     const todo = (await db.get(args.id)) as TodoAlpha4;
-    const updated = mergeUpdates(todo, args);
+    const updated = mergeUpdates(todo, args, context.session?.timezone);
 
     const startTime = Date.now();
     const result = await db.insert(updated);

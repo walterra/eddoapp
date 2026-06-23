@@ -17,6 +17,7 @@ export interface PreferencesFormState {
   dailyRecap: boolean;
   recapTime: string;
   printRecap: boolean;
+  timezone: string;
 }
 
 export interface GithubFormState {
@@ -77,6 +78,7 @@ export interface ProfileData {
     dailyRecap?: boolean;
     recapTime?: string;
     printRecap?: boolean;
+    timezone?: string;
     githubSync?: boolean;
     githubToken?: string | null;
     githubSyncInterval?: number;
@@ -172,6 +174,7 @@ export interface PreferencesTabProps {
   onDailyRecapChange: (enabled: boolean) => void;
   onRecapTimeChange: (time: string) => void;
   onPrintRecapChange: (enabled: boolean) => void;
+  onTimezoneChange: (timezone: string) => void;
   onSave: () => Promise<void>;
 }
 

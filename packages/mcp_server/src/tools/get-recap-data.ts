@@ -5,7 +5,7 @@ import type { TodoAlpha4 } from '@eddo/core-server';
 import type { MangoQuery } from 'nano';
 import { z } from 'zod';
 
-import { getUtcDateRange, type DateRange } from './date-range.js';
+import { getTimezoneDateRange, type DateRange } from './date-range.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -35,6 +35,7 @@ interface RecapData {
     date: string;
     dateStart: string;
     dateEnd: string;
+    timeZone: string;
     counts: {
       completedToday: number;
       activeTimeTracking: number;
@@ -123,14 +124,14 @@ async function executeAllQueries(
   context: ToolContext,
   dateRange: DateRange,
 ): Promise<QueryResults> {
-  const completedStart = `${dateRange.todayDate}T00:00:00.000Z`;
-  const completedEnd = `${dateRange.todayDate}T23:59:59.999Z`;
-
   const [completedToday, activeTimeTracking, upcomingNextActions] = await Promise.all([
     executeQuery(
       db,
       {
-        selector: { version: 'alpha4', completed: { $gte: completedStart, $lte: completedEnd } },
+        selector: {
+          version: 'alpha4',
+          completed: { $gte: dateRange.completedStart, $lte: dateRange.completedEnd },
+        },
         sort: [{ due: 'asc' }],
         limit: 100,
         use_index: 'version-completed-due-index',
@@ -167,6 +168,7 @@ function buildRecapData(results: QueryResults, dateRange: DateRange): RecapData 
       date: dateRange.todayDate,
       dateStart: dateRange.todayStart,
       dateEnd: dateRange.todayEnd,
+      timeZone: dateRange.timeZone,
       counts: {
         completedToday: results.completedToday.length,
         activeTimeTracking: results.activeTimeTracking.length,
@@ -186,7 +188,7 @@ export async function executeGetRecapData(
 ): Promise<string> {
   const db = getUserDb(context);
   const startTime = Date.now();
-  const dateRange = getUtcDateRange();
+  const dateRange = getTimezoneDateRange(new Date(), context.session?.timezone);
 
   context.log.info('Getting recap data for user', { userId: context.session?.userId });
 

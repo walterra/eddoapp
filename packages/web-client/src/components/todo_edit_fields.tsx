@@ -1,10 +1,17 @@
 /**
  * Form field components for todo editing
  */
-import { type Todo, getActiveDuration, getFormattedDuration } from '@eddo/core-client';
+import {
+  type Todo,
+  formatDateInTimeZone,
+  formatScheduledTimeForTimeZone,
+  getActiveDuration,
+  getFormattedDuration,
+} from '@eddo/core-client';
 import { Button, Checkbox, Label, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
 
+import { useUserTimeZone } from '../hooks/use_user_timezone';
 import { TagInput } from './tag_input';
 // Re-export DescriptionField from dedicated module
 export { DescriptionField } from './todo_description_field';
@@ -100,56 +107,76 @@ export const TagsField: FC<TagsFieldProps> = ({ todo, onChange, allTags }) => (
   </div>
 );
 
-export const ScheduledTimeField: FC<TodoFieldProps> = ({ todo, onChange }) => (
-  <div>
-    <div className="mb-2 block">
-      <Label htmlFor="eddoTodoScheduledTime">Scheduled time</Label>
-    </div>
-    <TextInput
-      aria-label="Scheduled time"
-      id="eddoTodoScheduledTime"
-      onChange={(e) =>
-        onChange((t) => ({ ...t, scheduledTime: e.target.value !== '' ? e.target.value : null }))
-      }
-      placeholder="HH:mm"
-      type="text"
-      value={todo.scheduledTime ?? ''}
-    />
-  </div>
-);
+export const ScheduledTimeField: FC<TodoFieldProps> = ({ todo, onChange }) => {
+  const timeZone = useUserTimeZone();
+  const display = todo.scheduledTime
+    ? formatScheduledTimeForTimeZone(todo.due, todo.scheduledTime, todo.scheduledTimeZone, timeZone)
+    : null;
 
-export const DueDateField: FC<TodoFieldProps> = ({ todo, onChange }) => (
-  <div>
-    <div className="-mx-3 mb-2 flex flex-wrap items-end">
-      <div className="mb-6 grow px-3 md:mb-0">
-        <div className="mb-2 block">
-          <Label htmlFor="eddoTodoDue">Due date</Label>
-        </div>
-        <TextInput
-          aria-label="Due date"
-          id="eddoTodoDue"
-          onChange={(e) => onChange((t) => ({ ...t, due: e.target.value }))}
-          placeholder="todo"
-          type="text"
-          value={todo.due}
-        />
+  return (
+    <div>
+      <div className="mb-2 block">
+        <Label htmlFor="eddoTodoScheduledTime">Scheduled time</Label>
       </div>
-      <div className="mb-6 flex-none px-3 md:mb-0">
-        <Button
-          color="gray"
-          onClick={() =>
-            onChange((t) => ({
-              ...t,
-              due: new Date().toISOString().split('T')[0],
-            }))
-          }
-        >
-          Set to today
-        </Button>
+      <TextInput
+        aria-label="Scheduled time"
+        id="eddoTodoScheduledTime"
+        onChange={(e) =>
+          onChange((t) => ({
+            ...t,
+            scheduledTime: e.target.value !== '' ? e.target.value : null,
+            scheduledTimeZone: e.target.value !== '' ? timeZone : null,
+          }))
+        }
+        placeholder="HH:mm"
+        type="text"
+        value={display?.time ?? ''}
+      />
+      {display ? (
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          Shown in {display.timeZone}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+export const DueDateField: FC<TodoFieldProps> = ({ todo, onChange }) => {
+  const timeZone = useUserTimeZone();
+
+  return (
+    <div>
+      <div className="-mx-3 mb-2 flex flex-wrap items-end">
+        <div className="mb-6 grow px-3 md:mb-0">
+          <div className="mb-2 block">
+            <Label htmlFor="eddoTodoDue">Due date</Label>
+          </div>
+          <TextInput
+            aria-label="Due date"
+            id="eddoTodoDue"
+            onChange={(e) => onChange((t) => ({ ...t, due: e.target.value }))}
+            placeholder="todo"
+            type="text"
+            value={todo.due}
+          />
+        </div>
+        <div className="mb-6 flex-none px-3 md:mb-0">
+          <Button
+            color="gray"
+            onClick={() =>
+              onChange((t) => ({
+                ...t,
+                due: formatDateInTimeZone(new Date(), timeZone),
+              }))
+            }
+          >
+            Set to today
+          </Button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const RepeatField: FC<TodoFieldProps> = ({ todo, onChange }) => (
   <div>

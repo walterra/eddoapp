@@ -21,6 +21,7 @@ export interface MCPAuthResult {
   userId: string;
   dbName: string;
   username: string;
+  timezone?: string;
 }
 
 const userValidationCache = new Map<string, ValidationCacheEntry>();
@@ -126,6 +127,7 @@ interface UserAuthRecord {
   telegram_id?: number;
   preferences?: {
     mcpApiKey?: string | null;
+    timezone?: string;
   };
 }
 
@@ -182,6 +184,7 @@ export async function validateUserContext(
       userId: user._id,
       dbName: user.database_name,
       username: user.username,
+      timezone: user.preferences?.timezone,
     };
 
     logAuthSuccess(authResult);
