@@ -25,7 +25,6 @@ jobs:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
         with:
-          version: 11.5.3
           run_install: false
       - name: Get pnpm store directory
         shell: bash
@@ -133,7 +132,6 @@ jobs:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
         with:
-          version: 11.5.3
           run_install: false
       - name: Get pnpm store directory
         shell: bash
@@ -163,7 +161,6 @@ jobs:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
         with:
-          version: 11.5.3
           run_install: false
       - name: Get pnpm store directory
         shell: bash
@@ -195,7 +192,6 @@ jobs:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
         with:
-          version: 11.5.3
           run_install: false
       - name: Get pnpm store directory
         shell: bash
@@ -227,7 +223,6 @@ jobs:
           node-version: 22.x
       - uses: pnpm/action-setup@v6
         with:
-          version: 11.5.3
           run_install: false
       - name: Get pnpm store directory
         shell: bash
