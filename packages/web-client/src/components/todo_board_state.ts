@@ -2,6 +2,7 @@
  * State management helpers for TodoBoard component
  */
 import { type DatabaseError, type Todo, isLatestVersion } from '@eddo/core-client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { SafeDbOperations } from '../api/safe-db-operations';
@@ -14,6 +15,10 @@ import { usePouchDb } from '../pouch_db';
 import type { ActivityItem } from './todo_board_helpers';
 import { migrateLocalTodosInBackground, migrateVisibleLegacyTodos } from './todo_migration';
 
+function isDatabaseClosedError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('database is closed');
+}
+
 /**
  * Hook for managing database initialization state
  */
@@ -24,17 +29,22 @@ export function useDbInitialization(safeDb: SafeDbOperations, rawDb: PouchDB.Dat
   useEffect(() => {
     if (isInitialized) return;
 
+    let cancelled = false;
+    let migrationTimeoutId: number | null = null;
+
     const initializeDb = async () => {
       setError(null);
       try {
         await ensureDesignDocuments(safeDb, rawDb);
+        if (cancelled) return;
         setIsInitialized(true);
-        window.setTimeout(() => {
+        migrationTimeoutId = window.setTimeout(() => {
           migrateLocalTodosInBackground(rawDb).catch((err) => {
-            console.error('Error migrating local todos:', err);
+            if (!isDatabaseClosedError(err)) console.error('Error migrating local todos:', err);
           });
         }, 5000);
       } catch (err) {
+        if (cancelled) return;
         console.error('Error initializing design documents:', err);
         setError(err as DatabaseError);
         setIsInitialized(true);
@@ -42,6 +52,11 @@ export function useDbInitialization(safeDb: SafeDbOperations, rawDb: PouchDB.Dat
     };
 
     initializeDb();
+
+    return () => {
+      cancelled = true;
+      if (migrationTimeoutId !== null) window.clearTimeout(migrationTimeoutId);
+    };
   }, [isInitialized, safeDb, rawDb]);
 
   return { error, setError, isInitialized };
@@ -54,11 +69,20 @@ function useVisibleTodoMigration(
   isInitialized: boolean,
 ): boolean {
   const { rawDb } = usePouchDb();
-  const [isMigrated, setIsMigrated] = useState(false);
+  const queryClient = useQueryClient();
+  const rangeKey = `${startDate}:${endDate}`;
+  const [migratedRangeKey, setMigratedRangeKey] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsMigrated(false);
-    if (!rawDb || !isInitialized) return;
+    if (migratedRangeKey === rangeKey) return;
+
+    setMigratedRangeKey(null);
+    if (!isInitialized) return;
+
+    if (!rawDb) {
+      setMigratedRangeKey(rangeKey);
+      return;
+    }
 
     let cancelled = false;
 
@@ -66,12 +90,18 @@ function useVisibleTodoMigration(
       try {
         const migratedCount = await migrateVisibleLegacyTodos(rawDb, startDate, endDate);
         if (migratedCount > 0) {
+          queryClient.removeQueries({
+            queryKey: ['todos', 'byDueDate', startDate, endDate],
+            exact: true,
+          });
           console.info(`Migrated ${migratedCount} visible todos to latest schema version`);
         }
       } catch (err) {
-        console.error('Error migrating visible todos:', err);
+        if (!cancelled && !isDatabaseClosedError(err)) {
+          console.error('Error migrating visible todos:', err);
+        }
       } finally {
-        if (!cancelled) setIsMigrated(true);
+        if (!cancelled) setMigratedRangeKey(rangeKey);
       }
     };
 
@@ -80,9 +110,9 @@ function useVisibleTodoMigration(
     return () => {
       cancelled = true;
     };
-  }, [rawDb, isInitialized, startDate, endDate]);
+  }, [rawDb, queryClient, isInitialized, startDate, endDate, rangeKey, migratedRangeKey]);
 
-  return isMigrated;
+  return migratedRangeKey === rangeKey;
 }
 
 /**
