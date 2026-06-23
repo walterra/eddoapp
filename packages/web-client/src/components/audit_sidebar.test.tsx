@@ -218,7 +218,7 @@ describe('AuditSidebar with entries', () => {
       active: {},
       link: null,
       repeat: null,
-      version: 'alpha3',
+      version: 'alpha4',
     };
 
     mockSafeGet.mockResolvedValue(mockTodo);

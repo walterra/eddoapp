@@ -6,7 +6,7 @@ import { Agent, setGlobalDispatcher } from 'undici';
 setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
 
 import { createEnv, createUserRegistry } from '@eddo/core-server';
-import type { TodoAlpha3 } from '@eddo/core-shared';
+import type { TodoAlpha4 } from '@eddo/core-shared';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { existsSync, readFileSync } from 'fs';
@@ -250,7 +250,7 @@ async function initializeElasticsearchSync(couch: ReturnType<typeof nano>) {
 
 /** Initialize sync schedulers */
 function initializeSyncSchedulers(couch: ReturnType<typeof nano>) {
-  const getUserDb = (dbName: string) => couch.db.use<TodoAlpha3>(dbName);
+  const getUserDb = (dbName: string) => couch.db.use<TodoAlpha4>(dbName);
   const checkIntervalMs = 1 * 60 * 1000; // Check every 1 minute
 
   githubSchedulerInstance = createGithubSyncScheduler({

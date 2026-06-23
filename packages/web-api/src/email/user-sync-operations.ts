@@ -1,7 +1,7 @@
 /**
  * User sync operations for email scheduler
  */
-import { createEnv, createUserRegistry, type TodoAlpha3 } from '@eddo/core-server';
+import { createEnv, createUserRegistry, type TodoAlpha4 } from '@eddo/core-server';
 import type { EmailSyncConfig } from '@eddo/core-shared';
 import type nano from 'nano';
 
@@ -126,7 +126,7 @@ export async function getGmailAccessToken(
 }
 
 interface ProcessEmailsConfig {
-  db: nano.DocumentScope<TodoAlpha3>;
+  db: nano.DocumentScope<TodoAlpha4>;
   emails: EmailItem[];
   tags: string[];
   logger: EmailLogger;
@@ -177,7 +177,7 @@ interface MoveProcessedConfig {
   imapConfig: ImapConnectionConfig;
   accessToken: string | undefined;
   toMove: Array<{ uid: number; todoId: string }>;
-  db: nano.DocumentScope<TodoAlpha3>;
+  db: nano.DocumentScope<TodoAlpha4>;
   logger: EmailLogger;
 }
 
@@ -237,7 +237,7 @@ export async function getAccessTokenIfNeeded(
 interface PerformUserSyncConfig {
   user: SyncUser;
   logger: EmailLogger;
-  getUserDb: (dbName: string) => nano.DocumentScope<TodoAlpha3>;
+  getUserDb: (dbName: string) => nano.DocumentScope<TodoAlpha4>;
 }
 
 /**

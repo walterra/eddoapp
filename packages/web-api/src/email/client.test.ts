@@ -69,7 +69,7 @@ describe('email client', () => {
       expect(todo.tags).toEqual(['source:email', 'gtd:next']);
       expect(todo.externalId).toMatch(/^email:[a-f0-9]{8}\/[a-f0-9]{8}$/);
       expect(todo.completed).toBeNull();
-      expect(todo.version).toBe('alpha3');
+      expect(todo.version).toBe('alpha4');
     });
 
     it('uses "No Subject" for empty subject', () => {
@@ -89,10 +89,10 @@ describe('email client', () => {
     });
 
     it('uses receivedDate for todo due date', () => {
-      const email = createTestEmail({ receivedDate: '2026-01-15T14:30:00Z' });
+      const email = createTestEmail({ receivedDate: '2026-01-15' });
       const todo = mapEmailToTodo(email, []);
 
-      expect(todo.due).toBe('2026-01-15T14:30:00Z');
+      expect(todo.due).toBe('2026-01-15');
     });
 
     it('sets context to email', () => {

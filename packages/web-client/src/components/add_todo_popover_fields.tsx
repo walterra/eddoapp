@@ -1,4 +1,10 @@
-import { type DatabaseError, DatabaseErrorType, type NewTodo, type Todo } from '@eddo/core-client';
+import {
+  type DatabaseError,
+  DatabaseErrorType,
+  extractScheduledTimeFromTitle,
+  type NewTodo,
+  type Todo,
+} from '@eddo/core-client';
 import { format } from 'date-fns';
 import { Button, Textarea, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
@@ -31,9 +37,8 @@ export const createInitialState = (parentTodo?: Todo): AddTodoFormState => ({
 });
 
 export const validateDueDate = (dueDate: string): DatabaseError | null => {
-  const due = `${dueDate}T23:59:59.999Z`;
   try {
-    format(new Date(due), 'yyyy-MM-dd');
+    format(new Date(dueDate), 'yyyy-MM-dd');
     return null;
   } catch (_e) {
     return {
@@ -48,20 +53,26 @@ export const validateDueDate = (dueDate: string): DatabaseError | null => {
 export const createTodoFromState = (
   state: AddTodoFormState,
   createContext: AddTodoCreateContext,
-): NewTodo => ({
-  _id: new Date().toISOString(),
-  active: {},
-  completed: null,
-  context: state.context,
-  description: state.description,
-  due: `${state.due}T23:59:59.999Z`,
-  link: state.link !== '' ? state.link : null,
-  parentId: createContext.parentTodo?._id ?? (state.parentId !== '' ? state.parentId : null),
-  repeat: null,
-  tags: state.tags,
-  title: state.title,
-  version: 'alpha3',
-});
+): NewTodo => {
+  const titleTime = extractScheduledTimeFromTitle(state.title);
+
+  return {
+    _id: new Date().toISOString(),
+    active: {},
+    completed: null,
+    context: state.context,
+    description: state.description,
+    due: state.due,
+    link: state.link !== '' ? state.link : null,
+    parentId: createContext.parentTodo?._id ?? (state.parentId !== '' ? state.parentId : null),
+    repeat: null,
+    scheduledTime: titleTime.scheduledTime,
+    scheduledTimeZone: null,
+    tags: state.tags,
+    title: titleTime.title,
+    version: 'alpha4',
+  };
+};
 
 interface AdvancedToggleProps {
   expanded: boolean;

@@ -2,7 +2,7 @@
  * Change processing functions for CouchDB to Elasticsearch sync.
  */
 
-import type { AuditLogAlpha1, TodoAlpha3 } from '@eddo/core-shared';
+import type { AuditLogAlpha1, TodoAlpha4 } from '@eddo/core-shared';
 
 import { withSpan } from '../utils/logger';
 import type { BatchProcessor } from './sync-batch';
@@ -49,10 +49,10 @@ export async function processTodoChange(
         });
         span.setAttribute('es.action', 'delete');
       } else if (change.doc) {
-        const doc = change.doc as TodoAlpha3 & { _id: string; _rev: string };
-        if (doc.version !== 'alpha3') {
+        const doc = change.doc as TodoAlpha4 & { _id: string; _rev: string };
+        if (doc.version !== 'alpha4') {
           span.setAttribute('es.action', 'skip');
-          span.setAttribute('es.skip_reason', 'not_alpha3');
+          span.setAttribute('es.skip_reason', 'not_alpha4');
           return;
         }
 
@@ -117,9 +117,9 @@ export async function indexInitialDoc(
   state: DatabaseSyncState,
   batchProcessor: BatchProcessor,
 ): Promise<boolean> {
-  if (state.dbType === 'user' && doc.version === 'alpha3') {
+  if (state.dbType === 'user' && doc.version === 'alpha4') {
     const indexedDoc = toIndexedTodo(
-      doc as TodoAlpha3 & { _id: string; _rev: string },
+      doc as TodoAlpha4 & { _id: string; _rev: string },
       state.userId,
       state.dbName,
     );

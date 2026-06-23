@@ -1,4 +1,4 @@
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createGithubSyncScheduler, GithubSyncScheduler, hasTodoChanged } from './sync-scheduler';
@@ -121,7 +121,7 @@ describe('GithubSyncScheduler', () => {
   });
 
   describe('hasTodoChanged', () => {
-    const baseTodo: TodoAlpha3 = {
+    const baseTodo: TodoAlpha4 = {
       _id: '2025-01-01T00:00:00.000Z',
       _rev: '1-abc123',
       title: 'Test Issue',
@@ -133,7 +133,7 @@ describe('GithubSyncScheduler', () => {
       completed: null,
       repeat: null,
       link: 'https://github.com/elastic/kibana/issues/123',
-      version: 'alpha3' as const,
+      version: 'alpha4' as const,
       externalId: 'github:123',
     };
 

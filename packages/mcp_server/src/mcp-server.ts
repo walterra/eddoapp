@@ -12,7 +12,7 @@ setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 })
 
 import {
   type AttachmentDoc,
-  type TodoAlpha3,
+  type TodoAlpha4,
   createUserRegistry,
   getCouchDbConfig,
   validateEnv,
@@ -161,7 +161,7 @@ const server = new FastMCP<UserSession>({
 /**
  * Gets the user's todo database from context
  */
-function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
+function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha4> {
   if (!context.session) {
     throw new Error('No user session available');
   }
@@ -172,7 +172,7 @@ function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha3> {
     );
   }
 
-  return couch.db.use<TodoAlpha3>(context.session.dbName);
+  return couch.db.use<TodoAlpha4>(context.session.dbName);
 }
 
 /**

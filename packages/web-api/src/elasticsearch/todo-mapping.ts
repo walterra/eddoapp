@@ -1,5 +1,5 @@
 /**
- * Elasticsearch index mapping for TodoAlpha3 documents.
+ * Elasticsearch index mapping for TodoAlpha4 documents.
  * Optimized for ES|QL queries with full-text search support.
  */
 
@@ -39,7 +39,7 @@ export const TODO_INDEX_SETTINGS = {
 } as const;
 
 /**
- * Index mapping for TodoAlpha3 documents.
+ * Index mapping for TodoAlpha4 documents.
  *
  * Design decisions:
  * - text fields with keyword sub-fields for both MATCH() and exact matching
@@ -205,7 +205,7 @@ export const TODO_INDEX_TEMPLATE = {
   priority: 100,
   _meta: {
     description: 'Index template for Eddo todo documents (per-user indices)',
-    schema_version: 'alpha3',
+    schema_version: 'alpha4',
   },
 } as const;
 
@@ -220,7 +220,7 @@ export const TODO_INDEX_NAME = 'eddo_todos';
 
 /**
  * Type definitions for the indexed document.
- * Extends TodoAlpha3 with sync-specific fields.
+ * Extends TodoAlpha4 with sync-specific fields.
  */
 export interface IndexedTodo {
   /** CouchDB document ID (mapped to todoId field, also used as ES _id) */
@@ -240,7 +240,7 @@ export interface IndexedTodo {
   parentId?: string | null;
   blockedBy?: string[];
   auditLog?: string[];
-  version: 'alpha3';
+  version: 'alpha4';
   notes?: Array<{
     id: string;
     content: string;

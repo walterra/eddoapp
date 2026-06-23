@@ -1,7 +1,7 @@
 /**
  * Delete Todo Tool - Permanently deletes a todo
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import { z } from 'zod';
 
 import { logMcpAudit } from './audit-helper.js';
@@ -42,7 +42,7 @@ export async function executeDeleteTodo(
   });
 
   try {
-    const todo = (await db.get(args.id)) as TodoAlpha3;
+    const todo = (await db.get(args.id)) as TodoAlpha4;
     context.log.debug('Retrieved todo for deletion', { title: todo.title });
 
     const startTime = Date.now();

@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData, invalidTestData } from '../__fixtures__/todo-factory.js';
-import type { MCPResponse, TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type { MCPResponse, TodoAlpha4 } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
@@ -90,7 +90,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       const createdId = createResponse.data!.id!;
 
       // 2. READ: Verify todo exists
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       assert.expectValidTodos(allTodos);
       assert.expectTodoCount(allTodos, 1);
 
@@ -101,7 +101,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       assert.expectTodoProperties(createdTodo!, {
         title: todoData.title,
         context: todoData.context,
-        due: todoData.due,
+        due: todoData.due.slice(0, 10),
       });
 
       // 3. UPDATE: Modify the todo
@@ -120,7 +120,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(updateResponse.data?.id).toBe(createdTodo!._id);
 
       // Verify the update worked by listing todos again
-      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const updatedTodo = todosAfterUpdate.find((t) => t._id === createdId);
       expect(updatedTodo).toBeDefined();
       assert.expectValidTodo(updatedTodo!);
@@ -134,7 +134,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(deleteResponse.data?.id).toBe(createdTodo!._id);
 
       // 5. VERIFY DELETION: Todo should no longer exist
-      const todosAfterDelete = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todosAfterDelete = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       assert.expectTodoCount(todosAfterDelete, 0);
     });
 
@@ -148,7 +148,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       const createdId = createResponse.data!.id!;
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos.find((t) => t._id === createdId);
       expect(createdTodo).toBeDefined();
       expect(createdTodo!.completed).toBeNull();
@@ -163,7 +163,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(completionResponse.data?.status).toBe('completed');
 
       // Verify completion
-      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha4[]>(
         'listTodos',
         {},
       );
@@ -183,7 +183,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(incompleteResponse.data?.status).toBe('uncompleted');
 
       // Verify incompletion
-      const todosAfterIncompletion = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+      const todosAfterIncompletion = await assert.expectToolCallSuccess<TodoAlpha4[]>(
         'listTodos',
         {},
       );
@@ -202,7 +202,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       const createdId = createResponse.data!.id!;
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos.find((t) => t._id === createdId);
       expect(createdTodo).toBeDefined();
       expect(createdTodo!.repeat).toBe(1);
@@ -216,7 +216,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(completionResponse.data?.new_todo_id).toBeDefined();
 
       // Should create a new todo for next occurrence
-      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha4[]>(
         'listTodos',
         {},
       );
@@ -253,7 +253,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       }
 
       // Verify all were created
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       assert.expectTodoCount(allTodos, 5);
 
       // Update multiple todos
@@ -273,7 +273,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       }
 
       // Verify completion status
-      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const completedCount = finalTodos.filter((t) => t.completed !== null).length;
       const activeCount = finalTodos.filter((t) => t.completed === null).length;
 
@@ -298,7 +298,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       const createdId = createResponse.data!.id!;
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos.find((t) => t._id === createdId);
       expect(createdTodo).toBeDefined();
 
@@ -306,7 +306,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       assert.expectTodoProperties(createdTodo!, {
         title: todoData.title,
         context: todoData.context,
-        due: todoData.due,
+        due: todoData.due.slice(0, 10),
         description: todoData.description,
         link: todoData.link,
         repeat: todoData.repeat,
@@ -324,7 +324,7 @@ describe('MCP CRUD Lifecycle Integration', () => {
       expect(updateResponse.summary).toBe('Todo updated successfully');
 
       // Get the updated todo
-      const updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const updatedTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const updatedTodo = updatedTodos.find((t) => t._id === createdId);
       expect(updatedTodo).toBeDefined();
 

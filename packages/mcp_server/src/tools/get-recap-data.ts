@@ -1,7 +1,7 @@
 /**
  * Get Recap Data Tool - Aggregates all data needed for daily recap in one call
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type { MangoQuery } from 'nano';
 import { z } from 'zod';
 
@@ -28,9 +28,9 @@ export type GetRecapDataArgs = z.infer<typeof getRecapDataParameters>;
 
 /** Structure for recap data response */
 interface RecapData {
-  completedToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
-  upcomingNextActions: TodoAlpha3[];
+  completedToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
+  upcomingNextActions: TodoAlpha4[];
   metadata: {
     date: string;
     dateStart: string;
@@ -45,9 +45,9 @@ interface RecapData {
 
 /** Query results from parallel execution */
 interface QueryResults {
-  completedToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
-  upcomingNextActions: TodoAlpha3[];
+  completedToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
+  upcomingNextActions: TodoAlpha4[];
 }
 
 /**
@@ -58,11 +58,11 @@ async function executeQuery(
   query: MangoQuery,
   context: ToolContext,
   queryName: string,
-): Promise<TodoAlpha3[]> {
+): Promise<TodoAlpha4[]> {
   try {
     context.log.debug(`Executing ${queryName} query`, { query: JSON.stringify(query) });
     const response = await db.find(query);
-    return response.docs as TodoAlpha3[];
+    return response.docs as TodoAlpha4[];
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     context.log.warn(`Query ${queryName} failed, returning empty array`, { error: message });
@@ -73,7 +73,7 @@ async function executeQuery(
 /**
  * Deduplicates todos by ID
  */
-function deduplicateTodos(todos: TodoAlpha3[]): TodoAlpha3[] {
+function deduplicateTodos(todos: TodoAlpha4[]): TodoAlpha4[] {
   const seenIds = new Set<string>();
   return todos.filter((todo) => {
     if (seenIds.has(todo._id)) return false;
@@ -88,7 +88,7 @@ function deduplicateTodos(todos: TodoAlpha3[]): TodoAlpha3[] {
 async function getActiveTimeTracking(
   db: ReturnType<GetUserDb>,
   context: ToolContext,
-): Promise<Array<TodoAlpha3 & { activeSessionCount: number }>> {
+): Promise<Array<TodoAlpha4 & { activeSessionCount: number }>> {
   try {
     const result = await db.view('todos_by_time_tracking_active', 'byTimeTrackingActive', {
       include_docs: true,
@@ -97,7 +97,7 @@ async function getActiveTimeTracking(
     const seenIds = new Set<string>();
     return result.rows
       .map((row) => row.doc)
-      .filter((doc): doc is TodoAlpha3 => {
+      .filter((doc): doc is TodoAlpha4 => {
         if (!doc || seenIds.has(doc._id)) return false;
         seenIds.add(doc._id);
         return true;
@@ -123,13 +123,14 @@ async function executeAllQueries(
   context: ToolContext,
   dateRange: DateRange,
 ): Promise<QueryResults> {
-  const { todayStart, todayEnd } = dateRange;
+  const completedStart = `${dateRange.todayDate}T00:00:00.000Z`;
+  const completedEnd = `${dateRange.todayDate}T23:59:59.999Z`;
 
   const [completedToday, activeTimeTracking, upcomingNextActions] = await Promise.all([
     executeQuery(
       db,
       {
-        selector: { version: 'alpha3', completed: { $gte: todayStart, $lte: todayEnd } },
+        selector: { version: 'alpha4', completed: { $gte: completedStart, $lte: completedEnd } },
         sort: [{ due: 'asc' }],
         limit: 100,
         use_index: 'version-completed-due-index',
@@ -141,7 +142,7 @@ async function executeAllQueries(
     executeQuery(
       db,
       {
-        selector: { version: 'alpha3', completed: null, tags: { $in: ['gtd:next'] } },
+        selector: { version: 'alpha4', completed: null, tags: { $in: ['gtd:next'] } },
         sort: [{ due: 'asc' }],
         limit: 10,
         use_index: 'version-completed-due-index',

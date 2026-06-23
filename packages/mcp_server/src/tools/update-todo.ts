@@ -1,7 +1,7 @@
 /**
  * Update Todo Tool - Updates an existing todo
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import { z } from 'zod';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
@@ -21,7 +21,18 @@ export const updateTodoParameters = z.object({
   title: z.string().optional().describe('Updated title/name of the todo item'),
   description: z.string().optional().describe('Updated description or notes'),
   context: z.string().optional().describe('Updated GTD context category'),
-  due: z.string().optional().describe('Updated due date in ISO format'),
+  due: z.string().optional().describe('Updated due date in YYYY-MM-DD format'),
+  scheduledTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .nullable()
+    .optional()
+    .describe('Updated scheduled local time in HH:mm format.'),
+  scheduledTimeZone: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('Updated IANA timezone for scheduled time interpretation.'),
   tags: z.array(z.string()).optional().describe('Updated array of tags'),
   repeat: z
     .number()
@@ -72,36 +83,23 @@ function pickValue<T>(argValue: T | undefined, existingValue: T): T {
 }
 
 /**
- * Normalize due date to full ISO format (YYYY-MM-DDTHH:mm:ss.sssZ).
- * Accepts:
- * - Full ISO: "2026-01-07T23:59:59.999Z" -> unchanged
- * - Date only: "2026-01-07" -> "2026-01-07T23:59:59.999Z"
- * - undefined -> returns undefined (no change)
+ * Normalize due date to YYYY-MM-DD format.
+ *
+ * @param due Due date input.
+ * @return Date-only due value.
  */
 function normalizeDueDate(due: string | undefined): string | undefined {
   if (!due) {
     return undefined;
   }
 
-  // Check if it's already a full ISO string (contains 'T')
-  if (due.includes('T')) {
-    return due;
-  }
-
-  // Date-only format (YYYY-MM-DD) -> add end of day time
-  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) {
-    return due + 'T23:59:59.999Z';
-  }
-
-  // Invalid format - log warning and use as-is with time appended
-  console.warn(`Invalid due date format: "${due}". Expected ISO format. Appending default time.`);
-  return due + 'T23:59:59.999Z';
+  return due.slice(0, 10);
 }
 
 /**
  * Merges update arguments with existing todo
  */
-function mergeUpdates(todo: TodoAlpha3, args: UpdateTodoArgs): TodoAlpha3 {
+function mergeUpdates(todo: TodoAlpha4, args: UpdateTodoArgs): TodoAlpha4 {
   const normalizedDue = normalizeDueDate(args.due);
   return {
     ...todo,
@@ -109,6 +107,8 @@ function mergeUpdates(todo: TodoAlpha3, args: UpdateTodoArgs): TodoAlpha3 {
     description: args.description ?? todo.description,
     context: args.context ?? todo.context,
     due: normalizedDue ?? todo.due,
+    scheduledTime: pickValue(args.scheduledTime, todo.scheduledTime ?? null),
+    scheduledTimeZone: pickValue(args.scheduledTimeZone, todo.scheduledTimeZone ?? null),
     tags: args.tags ?? todo.tags,
     repeat: pickValue(args.repeat, todo.repeat),
     link: pickValue(args.link, todo.link),
@@ -155,7 +155,7 @@ export async function executeUpdateTodo(
   context.log.info('Updating todo for user', { userId: context.session?.userId, todoId: args.id });
 
   try {
-    const todo = (await db.get(args.id)) as TodoAlpha3;
+    const todo = (await db.get(args.id)) as TodoAlpha4;
     const updated = mergeUpdates(todo, args);
 
     const startTime = Date.now();

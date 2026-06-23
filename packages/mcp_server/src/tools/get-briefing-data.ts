@@ -1,7 +1,7 @@
 /**
  * Get Briefing Data Tool - Aggregates all data needed for daily briefing in one call
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type { MangoQuery } from 'nano';
 import { z } from 'zod';
 
@@ -31,12 +31,12 @@ export type GetBriefingDataArgs = z.infer<typeof getBriefingDataParameters>;
 
 /** Structure for briefing data response */
 interface BriefingData {
-  todaysTodos: TodoAlpha3[];
-  overdueTodos: TodoAlpha3[];
-  nextActions: TodoAlpha3[];
-  waitingFor: TodoAlpha3[];
-  calendarToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
+  todaysTodos: TodoAlpha4[];
+  overdueTodos: TodoAlpha4[];
+  nextActions: TodoAlpha4[];
+  waitingFor: TodoAlpha4[];
+  calendarToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
   metadata: {
     date: string;
     dateStart: string;
@@ -54,12 +54,12 @@ interface BriefingData {
 
 /** Query results from parallel execution */
 interface QueryResults {
-  todaysTodos: TodoAlpha3[];
-  overdueTodos: TodoAlpha3[];
-  nextActions: TodoAlpha3[];
-  waitingFor: TodoAlpha3[];
-  calendarToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
+  todaysTodos: TodoAlpha4[];
+  overdueTodos: TodoAlpha4[];
+  nextActions: TodoAlpha4[];
+  waitingFor: TodoAlpha4[];
+  calendarToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
 }
 
 /**
@@ -70,11 +70,11 @@ async function executeQuery(
   query: MangoQuery,
   context: ToolContext,
   queryName: string,
-): Promise<TodoAlpha3[]> {
+): Promise<TodoAlpha4[]> {
   try {
     context.log.debug(`Executing ${queryName} query`, { query: JSON.stringify(query) });
     const response = await db.find(query);
-    return response.docs as TodoAlpha3[];
+    return response.docs as TodoAlpha4[];
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     context.log.warn(`Query ${queryName} failed, returning empty array`, { error: message });
@@ -85,7 +85,7 @@ async function executeQuery(
 /**
  * Deduplicates todos by ID
  */
-function deduplicateTodos(todos: TodoAlpha3[]): TodoAlpha3[] {
+function deduplicateTodos(todos: TodoAlpha4[]): TodoAlpha4[] {
   const seenIds = new Set<string>();
   return todos.filter((todo) => {
     if (seenIds.has(todo._id)) return false;
@@ -100,7 +100,7 @@ function deduplicateTodos(todos: TodoAlpha3[]): TodoAlpha3[] {
 async function getActiveTimeTracking(
   db: ReturnType<GetUserDb>,
   context: ToolContext,
-): Promise<Array<TodoAlpha3 & { activeSessionCount: number }>> {
+): Promise<Array<TodoAlpha4 & { activeSessionCount: number }>> {
   try {
     const result = await db.view('todos_by_time_tracking_active', 'byTimeTrackingActive', {
       include_docs: true,
@@ -109,7 +109,7 @@ async function getActiveTimeTracking(
     const seenIds = new Set<string>();
     return result.rows
       .map((row) => row.doc)
-      .filter((doc): doc is TodoAlpha3 => {
+      .filter((doc): doc is TodoAlpha4 => {
         if (!doc || seenIds.has(doc._id)) return false;
         seenIds.add(doc._id);
         return true;
@@ -132,7 +132,7 @@ async function getActiveTimeTracking(
  */
 function buildBriefingQueries(dateRange: DateRange): Array<{ name: string; query: MangoQuery }> {
   const { todayStart, todayEnd } = dateRange;
-  const baseSelector = { version: 'alpha3', completed: null };
+  const baseSelector = { version: 'alpha4', completed: null };
   const defaultOptions = {
     sort: [{ due: 'asc' as const }],
     limit: 50,

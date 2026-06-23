@@ -18,7 +18,7 @@ describe('GitHub Client', () => {
     body: 'Users cannot login with special characters in password',
     state: 'open',
     html_url: 'https://github.com/owner/repo/issues/42',
-    created_at: '2025-12-20T10:00:00Z',
+    created_at: '2025-12-20',
     updated_at: '2025-12-21T09:00:00Z',
     closed_at: null,
     labels: [
@@ -58,7 +58,7 @@ describe('GitHub Client', () => {
   });
 
   describe('mapIssueToTodo', () => {
-    it('should map open GitHub issue to TodoAlpha3', () => {
+    it('should map open GitHub issue to TodoAlpha4', () => {
       const todo = mapIssueToTodo(mockIssue, 'work', ['github']);
 
       expect(todo.title).toBe('Fix login bug');
@@ -68,9 +68,9 @@ describe('GitHub Client', () => {
       expect(todo.externalId).toBe('github:owner/repo/issues/42');
       expect(todo.link).toBe('https://github.com/owner/repo/issues/42');
       expect(todo.completed).toBe(null);
-      expect(todo.version).toBe('alpha3');
+      expect(todo.version).toBe('alpha4');
       expect(todo.active).toEqual({});
-      expect(todo.due).toBe('2025-12-20T10:00:00Z');
+      expect(todo.due).toBe('2025-12-20');
       expect(todo.repeat).toBe(null);
     });
 

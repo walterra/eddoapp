@@ -100,6 +100,24 @@ export const TagsField: FC<TagsFieldProps> = ({ todo, onChange, allTags }) => (
   </div>
 );
 
+export const ScheduledTimeField: FC<TodoFieldProps> = ({ todo, onChange }) => (
+  <div>
+    <div className="mb-2 block">
+      <Label htmlFor="eddoTodoScheduledTime">Scheduled time</Label>
+    </div>
+    <TextInput
+      aria-label="Scheduled time"
+      id="eddoTodoScheduledTime"
+      onChange={(e) =>
+        onChange((t) => ({ ...t, scheduledTime: e.target.value !== '' ? e.target.value : null }))
+      }
+      placeholder="HH:mm"
+      type="text"
+      value={todo.scheduledTime ?? ''}
+    />
+  </div>
+);
+
 export const DueDateField: FC<TodoFieldProps> = ({ todo, onChange }) => (
   <div>
     <div className="-mx-3 mb-2 flex flex-wrap items-end">
@@ -122,7 +140,7 @@ export const DueDateField: FC<TodoFieldProps> = ({ todo, onChange }) => (
           onClick={() =>
             onChange((t) => ({
               ...t,
-              due: `${new Date().toISOString().split('T')[0]}T${t.due.split('T')[1]}`,
+              due: new Date().toISOString().split('T')[0],
             }))
           }
         >

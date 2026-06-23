@@ -1,7 +1,7 @@
 /**
  * Helper functions for GitHub sync operations
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type nano from 'nano';
 
 import { logSyncAudit } from '../utils/sync-audit.js';
@@ -17,7 +17,7 @@ export interface SyncLogger {
 }
 
 export interface ProcessIssueConfig {
-  db: nano.DocumentScope<TodoAlpha3>;
+  db: nano.DocumentScope<TodoAlpha4>;
   issue: GithubIssue;
   context: string;
   tags: string[];
@@ -34,10 +34,10 @@ export type ProcessIssueResult = 'created' | 'updated' | 'completed' | 'unchange
  * Returns true if todos are meaningfully different
  */
 export function hasTodoChanged(
-  existing: TodoAlpha3,
-  updated: Partial<TodoAlpha3> & { _id: string; _rev: string },
+  existing: TodoAlpha4,
+  updated: Partial<TodoAlpha4> & { _id: string; _rev: string },
 ): boolean {
-  const fieldsToCompare: (keyof TodoAlpha3)[] = [
+  const fieldsToCompare: (keyof TodoAlpha4)[] = [
     'title',
     'description',
     'context',
@@ -72,7 +72,7 @@ export function hasTodoChanged(
 async function createNewTodo(config: ProcessIssueConfig): Promise<ProcessIssueResult> {
   const { db, issue, context, tags, githubClient, username } = config;
   const newTodo = githubClient.mapIssueToTodo(issue, context, tags);
-  await db.insert(newTodo as TodoAlpha3);
+  await db.insert(newTodo as TodoAlpha4);
 
   await logSyncAudit({
     username,
@@ -91,7 +91,7 @@ async function createNewTodo(config: ProcessIssueConfig): Promise<ProcessIssueRe
  */
 async function forceResyncTodo(
   config: ProcessIssueConfig,
-  existingTodo: TodoAlpha3,
+  existingTodo: TodoAlpha4,
 ): Promise<ProcessIssueResult> {
   const { db, issue, context, tags, githubClient, username } = config;
   const freshTodo = githubClient.mapIssueToTodo(issue, context, tags);
@@ -103,7 +103,7 @@ async function forceResyncTodo(
     active: existingTodo.active, // Preserve time tracking
     repeat: existingTodo.repeat, // Preserve repeat settings
     completed: existingTodo.completed || freshTodo.completed,
-  } as TodoAlpha3;
+  } as TodoAlpha4;
 
   if (hasTodoChanged(existingTodo, updatedTodo)) {
     await db.insert(updatedTodo);
@@ -128,7 +128,7 @@ async function forceResyncTodo(
  */
 async function handleClosedIssue(
   config: ProcessIssueConfig,
-  existingTodo: TodoAlpha3,
+  existingTodo: TodoAlpha4,
 ): Promise<ProcessIssueResult> {
   const { db, issue, username } = config;
 
@@ -162,7 +162,7 @@ async function handleClosedIssue(
  */
 async function updateTodoContent(
   config: ProcessIssueConfig,
-  existingTodo: TodoAlpha3,
+  existingTodo: TodoAlpha4,
 ): Promise<ProcessIssueResult> {
   const { db, issue, username } = config;
 

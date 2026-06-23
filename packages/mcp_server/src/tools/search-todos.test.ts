@@ -1,7 +1,7 @@
 /**
  * Tests for searchTodos MCP tool
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type { Client } from '@elastic/elasticsearch';
 import type nano from 'nano';
 import { describe, expect, it, vi } from 'vitest';
@@ -38,7 +38,7 @@ function createMockEsClient(hits: Array<{ todoId: string; _score: number }>): Cl
 }
 
 /** Creates a mock CouchDB that returns full todos */
-function createMockCouchDb(todos: TodoAlpha3[]): nano.DocumentScope<TodoAlpha3> {
+function createMockCouchDb(todos: TodoAlpha4[]): nano.DocumentScope<TodoAlpha4> {
   const todoMap = new Map(todos.map((t) => [t._id, t]));
   return {
     fetch: vi.fn().mockResolvedValue({
@@ -49,15 +49,15 @@ function createMockCouchDb(todos: TodoAlpha3[]): nano.DocumentScope<TodoAlpha3> 
       if (todo) return Promise.resolve(todo);
       return Promise.reject(new Error('not_found'));
     }),
-  } as unknown as nano.DocumentScope<TodoAlpha3>;
+  } as unknown as nano.DocumentScope<TodoAlpha4>;
 }
 
 /** Creates a mock todo */
-function createMockTodo(overrides: Partial<TodoAlpha3> = {}): TodoAlpha3 {
+function createMockTodo(overrides: Partial<TodoAlpha4> = {}): TodoAlpha4 {
   return {
     _id: 'todo-1',
     _rev: '1-abc',
-    version: 'alpha3',
+    version: 'alpha4',
     title: 'Test todo',
     description: 'Test description',
     context: 'work',
@@ -332,7 +332,7 @@ describe('executeSearchTodos', () => {
           { id: 'todo-2', error: 'not_found' }, // Missing doc
         ],
       }),
-    } as unknown as nano.DocumentScope<TodoAlpha3>;
+    } as unknown as nano.DocumentScope<TodoAlpha4>;
     mockGetUserDb.mockReturnValue(couchDb);
 
     const args: SearchTodosArgs = { query: 'test', limit: 20, includeCompleted: true };

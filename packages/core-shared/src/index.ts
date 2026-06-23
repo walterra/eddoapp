@@ -122,6 +122,14 @@ export {
   type TodoNote,
 } from './versions/todo_alpha3';
 export {
+  extractScheduledTimeFromTitle,
+  isTodoAlpha4,
+  migrateToAlpha4,
+  normalizeDueDate,
+  type TitleTimeExtractionResult,
+  type TodoAlpha4,
+} from './versions/todo_alpha4';
+export {
   isUserRegistryEntryAlpha1,
   type UserPermission,
   type UserPermissions as UserPermissionsAlpha1,

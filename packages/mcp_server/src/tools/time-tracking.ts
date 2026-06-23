@@ -1,7 +1,7 @@
 /**
  * Time Tracking Tools - Start, stop, and query time tracking
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import { z } from 'zod';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
@@ -31,7 +31,7 @@ export const startTimeTrackingParameters = z.object({
 export type StartTimeTrackingArgs = z.infer<typeof startTimeTrackingParameters>;
 
 /** Build success response for start time tracking */
-function buildStartResponse(todo: TodoAlpha3, startedAt: string, executionTime: number): string {
+function buildStartResponse(todo: TodoAlpha4, startedAt: string, executionTime: number): string {
   return createSuccessResponse({
     summary: 'Time tracking started',
     data: {
@@ -55,7 +55,7 @@ export async function executeStartTimeTracking(
   context.log.info('Starting time tracking', { userId: context.session?.userId, todoId: args.id });
 
   try {
-    const todo = (await db.get(args.id)) as TodoAlpha3;
+    const todo = (await db.get(args.id)) as TodoAlpha4;
     const originalTodo = { ...todo, active: { ...todo.active } };
 
     const now = new Date().toISOString();
@@ -124,7 +124,7 @@ function formatDuration(durationMs: number): string {
  * Creates response for successfully stopped time tracking session
  */
 function createStopSuccessResponse(
-  todo: TodoAlpha3,
+  todo: TodoAlpha4,
   sessionStart: string,
   now: string,
   executionTime: number,
@@ -151,7 +151,7 @@ function createStopSuccessResponse(
 /**
  * Creates response when no active session was found
  */
-function createNoActiveSessionResponse(todo: TodoAlpha3): string {
+function createNoActiveSessionResponse(todo: TodoAlpha4): string {
   const response: ToolResponse = {
     summary: 'No active time tracking found',
     data: { id: todo._id, title: todo.title, active_sessions: 0 },
@@ -166,8 +166,8 @@ function createNoActiveSessionResponse(todo: TodoAlpha3): string {
 
 /** Params for processStopSession */
 interface StopSessionParams {
-  todo: TodoAlpha3;
-  originalTodo: TodoAlpha3;
+  todo: TodoAlpha4;
+  originalTodo: TodoAlpha4;
   sessionStart: string;
   now: string;
   db: ReturnType<GetUserDb>;
@@ -204,7 +204,7 @@ export async function executeStopTimeTracking(
   context.log.info('Stopping time tracking', { userId: context.session?.userId, todoId: args.id });
 
   try {
-    const todo = (await db.get(args.id)) as TodoAlpha3;
+    const todo = (await db.get(args.id)) as TodoAlpha4;
     const originalTodo = { ...todo, active: { ...todo.active } };
     const now = new Date().toISOString();
 
@@ -251,11 +251,11 @@ export const getActiveTimeTrackingParameters = z
 /**
  * Deduplicates todos from view results
  */
-function deduplicateTodos(rows: Array<{ doc?: TodoAlpha3 | null | undefined }>): TodoAlpha3[] {
+function deduplicateTodos(rows: Array<{ doc?: TodoAlpha4 | null | undefined }>): TodoAlpha4[] {
   const seenIds = new Set<string>();
   return rows
     .map((row) => row.doc)
-    .filter((doc): doc is TodoAlpha3 => {
+    .filter((doc): doc is TodoAlpha4 => {
       if (!doc || seenIds.has(doc._id)) return false;
       seenIds.add(doc._id);
       return true;

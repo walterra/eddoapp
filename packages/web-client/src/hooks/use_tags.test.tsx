@@ -1,4 +1,4 @@
-import { type TodoAlpha3 } from '@eddo/core-client';
+import { type TodoAlpha4 } from '@eddo/core-client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -116,7 +116,7 @@ describe('useTags', () => {
     });
   };
 
-  const createTestTodo = (id: string, tags: string[] = [], title = 'Test Todo'): TodoAlpha3 =>
+  const createTestTodo = (id: string, tags: string[] = [], title = 'Test Todo'): TodoAlpha4 =>
     ({
       _id: id,
       active: {},
@@ -128,8 +128,8 @@ describe('useTags', () => {
       repeat: null,
       tags,
       title,
-      version: 'alpha3',
-    }) as TodoAlpha3;
+      version: 'alpha4',
+    }) as TodoAlpha4;
 
   describe('Initial state', () => {
     it('starts with loading state', () => {

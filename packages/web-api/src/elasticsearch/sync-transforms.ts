@@ -2,7 +2,7 @@
  * Document transformation functions for CouchDB to Elasticsearch sync.
  */
 
-import type { AuditLogAlpha1, TodoAlpha3 } from '@eddo/core-shared';
+import type { AuditLogAlpha1, TodoAlpha4 } from '@eddo/core-shared';
 
 import type { IndexedAuditLog } from './audit-mapping';
 import type { DatabaseType } from './sync-types';
@@ -34,16 +34,16 @@ export function extractUserId(dbName: string): string {
  * Extracts all note content as a single string for full-text search.
  * ES|QL doesn't support nested field MATCH, so we denormalize.
  */
-function extractNotesContent(notes?: TodoAlpha3['notes']): string | null {
+function extractNotesContent(notes?: TodoAlpha4['notes']): string | null {
   if (!notes || notes.length === 0) return null;
   return notes.map((note) => note.content).join('\n');
 }
 
 /**
- * Converts a TodoAlpha3 document to an IndexedTodo for Elasticsearch.
+ * Converts a TodoAlpha4 document to an IndexedTodo for Elasticsearch.
  */
 export function toIndexedTodo(
-  doc: TodoAlpha3 & { _id: string; _rev: string },
+  doc: TodoAlpha4 & { _id: string; _rev: string },
   userId: string,
   database: string,
 ): IndexedTodo {

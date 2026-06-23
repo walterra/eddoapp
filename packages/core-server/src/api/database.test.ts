@@ -1,6 +1,6 @@
 import '@eddo/core-shared/api/test-setup';
-import { createTestTodoAlpha3 } from '@eddo/core-shared/api/test-utils';
-import { type TodoAlpha3 } from '@eddo/core-shared/versions/todo_alpha3';
+import { createTestTodoAlpha4 } from '@eddo/core-shared/api/test-utils';
+import { type TodoAlpha4 } from '@eddo/core-shared/versions/todo_alpha4';
 import memory from 'pouchdb-adapter-memory';
 import PouchDB from 'pouchdb-browser';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -28,7 +28,7 @@ describe('Database Operations', () => {
 
   describe('Basic CRUD Operations', () => {
     it('should create a todo document', async () => {
-      const todo = createTestTodoAlpha3({
+      const todo = createTestTodoAlpha4({
         _id: '2025-01-01T00:00:00.000Z',
         title: 'Test Todo',
         description: 'Test description',
@@ -40,13 +40,13 @@ describe('Database Operations', () => {
       expect(result.ok).toBe(true);
       expect(result.id).toBe(todo._id);
 
-      const retrieved = await db.get<TodoAlpha3>(todo._id);
+      const retrieved = await db.get<TodoAlpha4>(todo._id);
       expect(retrieved.title).toBe('Test Todo');
-      expect(retrieved.version).toBe('alpha3');
+      expect(retrieved.version).toBe('alpha4');
     });
 
     it('should update a todo document', async () => {
-      const todo = createTestTodoAlpha3({
+      const todo = createTestTodoAlpha4({
         _id: '2025-01-01T00:00:00.000Z',
         title: 'Original Title',
         description: 'Original description',
@@ -64,13 +64,13 @@ describe('Database Operations', () => {
       const updateResult = await db.put(updatedTodo);
       expect(updateResult.ok).toBe(true);
 
-      const retrieved = await db.get<TodoAlpha3>(todo._id);
+      const retrieved = await db.get<TodoAlpha4>(todo._id);
       expect(retrieved.title).toBe('Updated Title');
       expect(retrieved.completed).toBe('2025-01-01T12:00:00.000Z');
     });
 
     it('should delete a todo document', async () => {
-      const todo = createTestTodoAlpha3({
+      const todo = createTestTodoAlpha4({
         _id: '2025-01-01T00:00:00.000Z',
         title: 'To Be Deleted',
         description: 'This will be deleted',
@@ -90,7 +90,7 @@ describe('Database Operations', () => {
   describe('Bulk Operations', () => {
     it('should handle bulk document creation', async () => {
       const todos = Array.from({ length: 10 }, (_, i) =>
-        createTestTodoAlpha3({
+        createTestTodoAlpha4({
           _id: `2025-01-${String(i + 1).padStart(2, '0')}T00:00:00.000Z`,
           title: `Todo ${i + 1}`,
           description: `Description ${i + 1}`,
@@ -111,13 +111,13 @@ describe('Database Operations', () => {
 
     it('should query documents with allDocs', async () => {
       const todos = [
-        createTestTodoAlpha3({
+        createTestTodoAlpha4({
           _id: '2025-01-01T00:00:00.000Z',
           title: 'First Todo',
           description: 'First',
           context: 'work',
         }),
-        createTestTodoAlpha3({
+        createTestTodoAlpha4({
           _id: '2025-01-02T00:00:00.000Z',
           title: 'Second Todo',
           description: 'Second',
@@ -135,7 +135,7 @@ describe('Database Operations', () => {
       expect(result.rows).toHaveLength(2);
       const docs = result.rows
         .map((row) => row.doc)
-        .filter((doc): doc is TodoAlpha3 => doc !== undefined);
+        .filter((doc): doc is TodoAlpha4 => doc !== undefined);
       expect(docs[0]?.title).toBe('First Todo');
       expect(docs[1]?.title).toBe('Second Todo');
     });
@@ -143,7 +143,7 @@ describe('Database Operations', () => {
 
   describe('Error Handling', () => {
     it('should handle document conflicts', async () => {
-      const todo = createTestTodoAlpha3({
+      const todo = createTestTodoAlpha4({
         _id: 'conflict-test',
         title: 'Original',
         description: 'Original description',
@@ -183,7 +183,7 @@ describe('Database Operations', () => {
     it('should handle invalid document structure', async () => {
       const invalidDoc = {
         _id: 'invalid-doc',
-        // Missing required fields for TodoAlpha3
+        // Missing required fields for TodoAlpha4
       };
 
       // Database will accept any structure, but application logic should validate
@@ -209,7 +209,7 @@ describe('Database Operations', () => {
           changes.push(change);
         });
 
-      const todo = createTestTodoAlpha3({
+      const todo = createTestTodoAlpha4({
         _id: '2025-01-01T00:00:00.000Z',
         title: 'Change Test',
         description: 'Testing changes feed',
@@ -222,7 +222,7 @@ describe('Database Operations', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(changes).toHaveLength(1);
-      expect((changes[0].doc as TodoAlpha3).title).toBe('Change Test');
+      expect((changes[0].doc as TodoAlpha4).title).toBe('Change Test');
 
       changeHandler.cancel();
     });
@@ -241,13 +241,13 @@ describe('Database Operations', () => {
         });
 
       const todos = [
-        createTestTodoAlpha3({
+        createTestTodoAlpha4({
           _id: '2025-01-01T00:00:00.000Z',
           title: 'First Change',
           description: 'First',
           context: 'test',
         }),
-        createTestTodoAlpha3({
+        createTestTodoAlpha4({
           _id: '2025-01-02T00:00:00.000Z',
           title: 'Second Change',
           description: 'Second',
@@ -269,7 +269,7 @@ describe('Database Operations', () => {
 
   describe('Database Isolation', () => {
     it('should maintain isolation between test runs', async () => {
-      const todo = createTestTodoAlpha3({
+      const todo = createTestTodoAlpha4({
         _id: 'isolation-test',
         title: 'Isolation Test',
         description: 'Testing isolation',
@@ -291,14 +291,14 @@ describe('Database Operations', () => {
       });
 
       try {
-        const todo1 = createTestTodoAlpha3({
+        const todo1 = createTestTodoAlpha4({
           _id: 'db1-todo',
           title: 'DB1 Todo',
           description: 'In first database',
           context: 'test',
         });
 
-        const todo2 = createTestTodoAlpha3({
+        const todo2 = createTestTodoAlpha4({
           _id: 'db2-todo',
           title: 'DB2 Todo',
           description: 'In second database',

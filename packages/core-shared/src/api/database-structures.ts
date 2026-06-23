@@ -76,9 +76,9 @@ export const DESIGN_DOCS: DesignDocument[] = [
         // Emits [parentId, due] for querying children sorted by due date
         // parentId of null/_ROOT_ for root-level todos
         map: `function (doc) {
-          if (doc.version === 'alpha3') {
+          if (doc.version === 'alpha4') {
             var parent = doc.parentId || '_ROOT_';
-            emit([parent, doc.due || ''], null);
+            emit([parent, doc.due || '', doc.scheduledTime || ''], null);
           }
         }`,
       },
@@ -89,7 +89,7 @@ export const DESIGN_DOCS: DesignDocument[] = [
     views: {
       by_tag: {
         map: `function(doc) {
-          if (doc.version === 'alpha3' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
+          if (doc.version === 'alpha4' && doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
             for (var i = 0; i < doc.tags.length; i++) {
               var tag = (doc.tags[i] || '').trim();
               if (tag) emit(tag, 1);
@@ -105,7 +105,7 @@ export const DESIGN_DOCS: DesignDocument[] = [
     views: {
       by_context: {
         map: `function(doc) {
-          if (doc.version === 'alpha3' && doc.context) {
+          if (doc.version === 'alpha4' && doc.context) {
             var ctx = doc.context.trim();
             if (ctx) emit(ctx, 1);
           }
@@ -159,6 +159,11 @@ export const REQUIRED_INDEXES: IndexDefinition[] = [
   {
     index: { fields: ['parentId', 'due'] },
     name: 'parentId-due-index',
+    type: 'json',
+  },
+  {
+    index: { fields: ['version', 'due', 'scheduledTime'] },
+    name: 'version-due-scheduled-time-index',
     type: 'json',
   },
 ];

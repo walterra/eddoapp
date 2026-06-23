@@ -168,7 +168,7 @@ describe('TodoBoard', () => {
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalledWith(
           expect.objectContaining({
-            version: 'alpha3',
+            version: 'alpha4',
             due: expect.objectContaining({
               $gte: expect.any(String),
               $lte: expect.any(String),
@@ -206,7 +206,7 @@ describe('TodoBoard', () => {
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalledWith(
           expect.objectContaining({
-            version: 'alpha3',
+            version: 'alpha4',
             active: { $exists: true, $ne: {} },
           }),
           { limit: 10000 },
@@ -236,7 +236,7 @@ describe('TodoBoard', () => {
       await waitFor(() => {
         expect(testDb.contextValue.safeDb.safeFind).toHaveBeenCalledWith(
           expect.objectContaining({
-            version: 'alpha3',
+            version: 'alpha4',
             active: { $exists: true, $ne: {} },
           }),
           { limit: 10000 },
@@ -385,7 +385,7 @@ describe('TodoBoard', () => {
         active: {},
         repeat: null,
         link: null,
-        version: 'alpha3' as const,
+        version: 'alpha4' as const,
       };
 
       testDb.contextValue.safeDb.safeFind = vi.fn().mockResolvedValue([todoWithoutContext]);

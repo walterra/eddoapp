@@ -2,7 +2,7 @@
  * GitHub sync utility functions
  * Extracted for testability
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type nano from 'nano';
 
 /**
@@ -32,12 +32,12 @@ export function shouldSyncUser(preferences?: {
  * Uses externalId index for efficient lookup
  */
 export async function findTodoByExternalId(
-  db: nano.DocumentScope<TodoAlpha3>,
+  db: nano.DocumentScope<TodoAlpha4>,
   externalId: string,
   logger: {
     error: (msg: string, meta?: unknown) => void;
   },
-): Promise<TodoAlpha3 | null> {
+): Promise<TodoAlpha4 | null> {
   try {
     // Use Mango query with externalId index
     const result = await db.find({

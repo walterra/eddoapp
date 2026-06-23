@@ -54,7 +54,7 @@ describe('MCP Analytics Integration', () => {
 
       // Should contain all sections
       expect(serverInfo).toContain('# Eddo MCP Server Overview');
-      expect(serverInfo).toContain('# TodoAlpha3 Data Model');
+      expect(serverInfo).toContain('# TodoAlpha4 Data Model');
       expect(serverInfo).toContain('# Usage Examples');
       expect(serverInfo).toContain('# Top Used Tags');
     });
@@ -337,7 +337,7 @@ describe('MCP Analytics Integration', () => {
       expect(serverInfo).toBeDefined();
       expect(typeof serverInfo).toBe('string');
       expect(serverInfo).toContain('# Eddo MCP Server Overview');
-      expect(serverInfo).toContain('# TodoAlpha3 Data Model');
+      expect(serverInfo).toContain('# TodoAlpha4 Data Model');
       expect(serverInfo).toContain('# Usage Examples');
       expect(serverInfo).toContain('# Top Used Tags');
     });

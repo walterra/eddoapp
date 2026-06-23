@@ -29,6 +29,6 @@ export function getRepeatTodo(todo: Todo): NewTodo {
     _id,
     active: {},
     completed: null,
-    due: `${newDueDateString}T23:59:59.999Z`,
+    due: newDueDateString,
   };
 }

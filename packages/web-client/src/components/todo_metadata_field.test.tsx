@@ -21,7 +21,7 @@ const createMockTodo = (overrides: Partial<Todo> = {}): Todo => ({
   active: {},
   externalId: null,
   link: null,
-  version: 'alpha3',
+  version: 'alpha4',
   ...overrides,
 });
 

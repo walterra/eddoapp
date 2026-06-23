@@ -5,18 +5,18 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData, testDates } from '../__fixtures__/todo-factory.js';
-import type { MCPResponse, TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type { MCPResponse, TodoAlpha4 } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 /** Briefing data structure returned by getBriefingData */
 interface BriefingData {
-  todaysTodos: TodoAlpha3[];
-  overdueTodos: TodoAlpha3[];
-  nextActions: TodoAlpha3[];
-  waitingFor: TodoAlpha3[];
-  calendarToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
+  todaysTodos: TodoAlpha4[];
+  overdueTodos: TodoAlpha4[];
+  nextActions: TodoAlpha4[];
+  waitingFor: TodoAlpha4[];
+  calendarToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
   metadata: {
     date: string;
     dateStart: string;
@@ -34,9 +34,9 @@ interface BriefingData {
 
 /** Recap data structure returned by getRecapData */
 interface RecapData {
-  completedToday: TodoAlpha3[];
-  activeTimeTracking: Array<TodoAlpha3 & { activeSessionCount: number }>;
-  upcomingNextActions: TodoAlpha3[];
+  completedToday: TodoAlpha4[];
+  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
+  upcomingNextActions: TodoAlpha4[];
   metadata: {
     date: string;
     dateStart: string;
@@ -187,7 +187,8 @@ describe('Briefing and Recap Data Integration', () => {
       const result = response.data;
 
       expect(result.calendarToday.length).toBe(1);
-      expect(result.calendarToday[0].title).toBe('10:00 Team Meeting');
+      expect(result.calendarToday[0].title).toBe('Team Meeting');
+      expect(result.calendarToday[0].scheduledTime).toBe('10:00');
       expect(result.calendarToday[0].tags).toContain('gtd:calendar');
       expect(result.metadata.counts.calendarToday).toBe(1);
     });
@@ -296,8 +297,8 @@ describe('Briefing and Recap Data Integration', () => {
 
       expect(result.metadata).toBeDefined();
       expect(result.metadata.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 
@@ -391,8 +392,8 @@ describe('Briefing and Recap Data Integration', () => {
 
       expect(result.metadata).toBeDefined();
       expect(result.metadata.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(result.metadata.dateStart).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(result.metadata.dateEnd).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
     it('should not include completed next actions in upcomingNextActions', async () => {

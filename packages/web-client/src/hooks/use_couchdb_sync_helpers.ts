@@ -64,11 +64,11 @@ export function isAuthError(error: unknown): boolean {
 /** Index selectors that match actual query patterns */
 const INDEX_SELECTORS = [
   // Primary: version + due compound index (used by useTodosByDateRange)
-  { version: 'alpha3', due: { $gt: null } },
+  { version: 'alpha4', due: { $gt: null } },
   // Secondary: version + context + due (used by context filtering)
-  { version: 'alpha3', context: { $gt: null }, due: { $gt: null } },
+  { version: 'alpha4', context: { $gt: null }, due: { $gt: null } },
   // Tertiary: version + completed + due (used by status filtering)
-  { version: 'alpha3', completed: { $gt: null }, due: { $gt: null } },
+  { version: 'alpha4', completed: { $gt: null }, due: { $gt: null } },
 ];
 
 /**

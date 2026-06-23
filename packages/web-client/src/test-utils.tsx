@@ -1,5 +1,5 @@
 // Test utilities for React component testing with real PouchDB
-import type { TodoAlpha3 } from '@eddo/core-client';
+import type { TodoAlpha4 } from '@eddo/core-client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type RenderOptions, render } from '@testing-library/react';
 import { type ReactElement, type ReactNode } from 'react';
@@ -9,22 +9,30 @@ import { TodoFlyoutProvider } from './hooks/use_todo_flyout';
 import { PouchDbContext, type PouchDbContextType } from './pouch_db_types';
 import { createTestPouchDb } from './test-setup';
 
+const defaultTestTodo: Omit<TodoAlpha4, '_id' | '_rev'> = {
+  title: 'Test Todo',
+  description: '',
+  completed: null,
+  due: '2025-01-02',
+  context: 'test',
+  tags: [],
+  active: {},
+  repeat: null,
+  link: null,
+  scheduledTime: null,
+  scheduledTimeZone: null,
+  version: 'alpha4',
+};
+
 // Local test todo factory to avoid import issues
 export const createTestTodo = (
-  overrides: Partial<TodoAlpha3> & { _id: string },
-): Omit<TodoAlpha3, '_rev'> => {
+  overrides: Partial<TodoAlpha4> & { _id: string },
+): Omit<TodoAlpha4, '_rev'> => {
   return {
+    ...defaultTestTodo,
+    ...overrides,
     _id: overrides._id,
-    title: overrides.title ?? 'Test Todo',
-    description: overrides.description ?? '',
-    completed: overrides.completed ?? null,
-    due: overrides.due ?? '2025-01-02',
-    context: overrides.context ?? 'test',
-    tags: overrides.tags ?? [],
-    active: overrides.active ?? {},
-    repeat: overrides.repeat ?? null,
-    link: overrides.link ?? null,
-    version: 'alpha3',
+    version: 'alpha4',
   };
 };
 
@@ -75,8 +83,8 @@ export const renderWithPouchDb = (
 // Create multiple test todos
 export const createTestTodos = (
   count: number,
-  baseOverrides: Partial<TodoAlpha3> = {},
-): Omit<TodoAlpha3, '_rev'>[] => {
+  baseOverrides: Partial<TodoAlpha4> = {},
+): Omit<TodoAlpha4, '_rev'>[] => {
   return Array.from({ length: count }, (_, index) =>
     createTestTodo({
       _id: new Date(Date.now() + index).toISOString(),
@@ -89,7 +97,7 @@ export const createTestTodos = (
 // Helper to populate database with test data
 export const populateTestDatabase = async (
   db: PouchDB.Database,
-  todos: Omit<TodoAlpha3, '_rev'>[],
+  todos: Omit<TodoAlpha4, '_rev'>[],
 ) => {
   for (const todo of todos) {
     await db.put(todo);

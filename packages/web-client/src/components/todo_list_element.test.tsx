@@ -1,4 +1,4 @@
-import type { TodoAlpha3 } from '@eddo/core-client';
+import type { TodoAlpha4 } from '@eddo/core-client';
 import '@testing-library/jest-dom';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -70,7 +70,7 @@ describe('TodoListElement', () => {
   describe('Basic Rendering', () => {
     it('renders todo title', () => {
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -79,7 +79,7 @@ describe('TodoListElement', () => {
 
     it('renders link icon when todo has link', () => {
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.withLink as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.withLink as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -90,7 +90,7 @@ describe('TodoListElement', () => {
 
     it('renders tags when todo has tags', () => {
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.withTags as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.withTags as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -100,7 +100,7 @@ describe('TodoListElement', () => {
 
     it('applies active styling when active prop is true', () => {
       const { container } = renderWithPouchDb(
-        <TodoListElement {...defaultProps} active={true} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} active={true} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -111,7 +111,7 @@ describe('TodoListElement', () => {
 
     it('shows completed styling for completed todos', () => {
       const { container } = renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.completed as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.completed as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -125,7 +125,7 @@ describe('TodoListElement', () => {
   describe('Checkbox Functionality', () => {
     it('renders checkbox checked for completed todos', () => {
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.completed as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.completed as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -135,7 +135,7 @@ describe('TodoListElement', () => {
 
     it('renders checkbox unchecked for incomplete todos', () => {
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -148,7 +148,7 @@ describe('TodoListElement', () => {
         <TodoListElement
           {...defaultProps}
           activityOnly={true}
-          todo={testTodos.active as TodoAlpha3}
+          todo={testTodos.active as TodoAlpha4}
         />,
         { testDb: testDb.contextValue },
       );
@@ -163,7 +163,7 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
-      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha4} />, {
         testDb: testDb.contextValue,
       });
 
@@ -172,7 +172,7 @@ describe('TodoListElement', () => {
 
       await waitFor(async () => {
         const updatedTodo = await testDb.db.get(testTodos.active._id);
-        expect((updatedTodo as TodoAlpha3).completed).toBeTruthy();
+        expect((updatedTodo as TodoAlpha4).completed).toBeTruthy();
       });
     });
 
@@ -183,7 +183,7 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(testTodos.repeating._id);
 
-      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha4} />, {
         testDb: testDb.contextValue,
       });
 
@@ -209,7 +209,7 @@ describe('TodoListElement', () => {
       await populateTestDatabase(testDb.db, [testTodos.active]);
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
-      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha4} />, {
         testDb: testDb.contextValue,
       });
 
@@ -234,7 +234,7 @@ describe('TodoListElement', () => {
       testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(new Error('Database error'));
 
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -253,7 +253,7 @@ describe('TodoListElement', () => {
       testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(new Error('Database error'));
 
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -280,7 +280,7 @@ describe('TodoListElement', () => {
           active: {},
         }),
         _rev: '1-test',
-      } as TodoAlpha3;
+      } as TodoAlpha4;
 
       renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoWithoutTracking} />, {
         testDb: testDb.contextValue,
@@ -291,7 +291,7 @@ describe('TodoListElement', () => {
 
     it('shows pause button for todos with active time tracking', () => {
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -303,7 +303,7 @@ describe('TodoListElement', () => {
         <TodoListElement
           {...defaultProps}
           activityOnly={true}
-          todo={testTodos.active as TodoAlpha3}
+          todo={testTodos.active as TodoAlpha4}
         />,
         { testDb: testDb.contextValue },
       );
@@ -321,7 +321,7 @@ describe('TodoListElement', () => {
           active: {},
         }),
         _rev: '1-test',
-      } as TodoAlpha3;
+      } as TodoAlpha4;
 
       renderWithPouchDb(
         <TodoListElement {...defaultProps} timeTrackingActive={true} todo={todoWithoutTracking} />,
@@ -337,7 +337,7 @@ describe('TodoListElement', () => {
         <TodoListElement
           {...defaultProps}
           timeTrackingActive={true}
-          todo={testTodos.active as TodoAlpha3}
+          todo={testTodos.active as TodoAlpha4}
         />,
         { testDb: testDb.contextValue },
       );
@@ -359,7 +359,7 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(todoWithoutTracking._id);
 
-      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha4} />, {
         testDb: testDb.contextValue,
       });
 
@@ -369,7 +369,7 @@ describe('TodoListElement', () => {
 
       await waitFor(async () => {
         const updatedTodo = await testDb.db.get(todoWithoutTracking._id);
-        const activeEntries = Object.values((updatedTodo as TodoAlpha3).active);
+        const activeEntries = Object.values((updatedTodo as TodoAlpha4).active);
         expect(activeEntries).toContain(null); // Should have an open time entry
       });
     });
@@ -381,7 +381,7 @@ describe('TodoListElement', () => {
       // Get the todo with _rev from database to pass to component
       const todoFromDb = await testDb.db.get(testTodos.active._id);
 
-      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha3} />, {
+      renderWithPouchDb(<TodoListElement {...defaultProps} todo={todoFromDb as TodoAlpha4} />, {
         testDb: testDb.contextValue,
       });
 
@@ -391,7 +391,7 @@ describe('TodoListElement', () => {
 
       await waitFor(async () => {
         const updatedTodo = await testDb.db.get(testTodos.active._id);
-        const activeEntries = Object.values((updatedTodo as TodoAlpha3).active);
+        const activeEntries = Object.values((updatedTodo as TodoAlpha4).active);
         expect(activeEntries).not.toContain(null); // Should have no open time entries
       });
     });
@@ -406,7 +406,7 @@ describe('TodoListElement', () => {
           },
         }),
         _rev: '1-test',
-      } as TodoAlpha3;
+      } as TodoAlpha4;
 
       renderWithPouchDb(
         <TodoListElement {...defaultProps} activeDate="2025-07-12" todo={todoWithDuration} />,
@@ -422,7 +422,7 @@ describe('TodoListElement', () => {
       testDb.contextValue.safeDb.safePut = vi.fn().mockRejectedValue(new Error('Database error'));
 
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -441,7 +441,7 @@ describe('TodoListElement', () => {
       const user = userEvent.setup();
 
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -458,7 +458,7 @@ describe('TodoListElement', () => {
         <TodoListElement
           {...defaultProps}
           activityOnly={true}
-          todo={testTodos.active as TodoAlpha3}
+          todo={testTodos.active as TodoAlpha4}
         />,
         { testDb: testDb.contextValue },
       );
@@ -480,7 +480,7 @@ describe('TodoListElement', () => {
       testDb.contextValue.safeDb.safePut = vi.fn().mockReturnValue(putPromise);
 
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 
@@ -512,7 +512,7 @@ describe('TodoListElement', () => {
       testDb.contextValue.safeDb.safePut = mockSafePut;
 
       renderWithPouchDb(
-        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha3} />,
+        <TodoListElement {...defaultProps} todo={testTodos.active as TodoAlpha4} />,
         { testDb: testDb.contextValue },
       );
 

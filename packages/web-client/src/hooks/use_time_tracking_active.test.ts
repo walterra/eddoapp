@@ -125,7 +125,7 @@ describe('useTimeTrackingActive', () => {
     await waitFor(() =>
       expect(mockSafeDb.safeFind).toHaveBeenCalledWith(
         {
-          version: 'alpha3',
+          version: 'alpha4',
           active: { $exists: true, $ne: {} },
         },
         { limit: 10000 },

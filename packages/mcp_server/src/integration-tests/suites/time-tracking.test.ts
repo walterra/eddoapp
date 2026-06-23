@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestTodoData } from '../__fixtures__/todo-factory.js';
-import type { TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type { TodoAlpha4 } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
@@ -33,7 +33,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', todoData);
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos[0]; // Most recent todo
       assert.expectValidTodo(createdTodo);
 
@@ -46,7 +46,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo and verify tracking started
-      const todosAfterStart = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todosAfterStart = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const todoWithTracking = todosAfterStart.find((t) => t._id === createdTodo._id)!;
       assert.expectHasActiveTimeTracking(todoWithTracking);
 
@@ -56,7 +56,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo and verify tracking stopped
-      const todosAfterStop = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todosAfterStop = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const todoAfterStop = todosAfterStop.find((t) => t._id === createdTodo._id)!;
       assert.expectHasNoActiveTimeTracking(todoAfterStop);
     });
@@ -67,7 +67,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', todoData);
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos[0]; // Most recent todo
       assert.expectValidTodo(createdTodo);
 
@@ -80,7 +80,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo and verify tracking started
-      let updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      let updatedTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       currentTodo = updatedTodos.find((t) => t._id === createdTodo._id)!;
       assert.expectHasActiveTimeTracking(currentTodo);
 
@@ -90,7 +90,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo and verify tracking stopped
-      updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      updatedTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       currentTodo = updatedTodos.find((t) => t._id === createdTodo._id)!;
       assert.expectHasNoActiveTimeTracking(currentTodo);
 
@@ -100,7 +100,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo and verify tracking started again
-      updatedTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      updatedTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       currentTodo = updatedTodos.find((t) => t._id === createdTodo._id)!;
       assert.expectHasActiveTimeTracking(currentTodo);
 
@@ -110,7 +110,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get final state
-      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const finalTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const finalTodo = finalTodos.find((t) => t._id === createdTodo._id)!;
 
       assert.expectHasNoActiveTimeTracking(finalTodo);
@@ -127,7 +127,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', todoData3);
 
       // Get the created todos
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       assert.expectValidTodos(allTodos);
       assert.expectTodoCount(allTodos, 3);
 
@@ -150,7 +150,7 @@ describe('MCP Time Tracking Integration', () => {
       // Third todo has no active tracking
 
       // Query active time tracking
-      const activeTracking = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+      const activeTracking = await assert.expectToolCallSuccess<TodoAlpha4[]>(
         'getActiveTimeTracking',
         {},
       );
@@ -179,7 +179,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', todoData);
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos[0]; // Most recent todo
       assert.expectValidTodo(createdTodo);
 
@@ -205,7 +205,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', todoData);
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos[0]; // Most recent todo
       assert.expectValidTodo(createdTodo);
 
@@ -225,7 +225,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', todoData);
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos[0]; // Most recent todo
       assert.expectValidTodo(createdTodo);
 
@@ -241,7 +241,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo
-      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+      const todosAfterCompletion = await assert.expectToolCallSuccess<TodoAlpha4[]>(
         'listTodos',
         {},
       );
@@ -256,7 +256,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo and verify tracking stopped
-      const todosAfterStop = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todosAfterStop = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const todoAfterStop = todosAfterStop.find((t) => t._id === createdTodo._id)!;
       assert.expectHasNoActiveTimeTracking(todoAfterStop);
     });
@@ -266,7 +266,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', todoData);
 
       // Get the created todo
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const createdTodo = allTodos[0]; // Most recent todo
       assert.expectValidTodo(createdTodo);
 
@@ -278,7 +278,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo and verify timestamp
-      const todosAfterStart = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todosAfterStart = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const todoWithTracking = todosAfterStart.find((t) => t._id === createdTodo._id)!;
 
       // Verify timestamp is reasonable (within last few seconds)
@@ -301,7 +301,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Get updated todo
-      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const todosAfterUpdate = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       const updatedTodo = todosAfterUpdate.find((t) => t._id === createdTodo._id)!;
 
       // Time tracking data should be preserved
@@ -329,7 +329,7 @@ describe('MCP Time Tracking Integration', () => {
       await assert.expectToolCallSuccess('createTodo', createTestTodoData.withContext('private'));
 
       // Get the created todos
-      const allTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {});
+      const allTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});
       assert.expectValidTodos(allTodos);
       assert.expectTodoCount(allTodos, 2);
 
@@ -346,7 +346,7 @@ describe('MCP Time Tracking Integration', () => {
       });
 
       // Query active tracking (should get both)
-      const allActiveTracking = await assert.expectToolCallSuccess<TodoAlpha3[]>(
+      const allActiveTracking = await assert.expectToolCallSuccess<TodoAlpha4[]>(
         'getActiveTimeTracking',
         {},
       );
@@ -354,11 +354,11 @@ describe('MCP Time Tracking Integration', () => {
       assert.expectTodoCount(allActiveTracking, 2);
 
       // Filter by context through listTodos
-      const workTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const workTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'work',
       });
 
-      const privateTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const privateTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'private',
       });
 

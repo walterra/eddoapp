@@ -5,7 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type { TodoAlpha4 } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
@@ -51,7 +51,7 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Verify subtask was created with parentId
-      const todos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const todos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId,
       });
 
@@ -66,7 +66,7 @@ describe('Parent-Child Todo Relationships', () => {
         context: 'private',
       });
 
-      const todos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const todos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'private',
       });
 
@@ -108,7 +108,7 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Query children
-      const children = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const children = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId,
       });
 
@@ -150,7 +150,7 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Query children of Project A only
-      const childrenA = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const childrenA = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: parent1Result.data.id,
       });
 
@@ -167,7 +167,7 @@ describe('Parent-Child Todo Relationships', () => {
         },
       );
 
-      const children = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const children = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: parentResult.data.id,
       });
 
@@ -201,7 +201,7 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Filter by parentId + tags
-      const nextActions = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const nextActions = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId,
         tags: ['gtd:next'],
       });
@@ -247,12 +247,12 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Verify move
-      const oldParentChildren = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const oldParentChildren = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: parent1Result.data.id,
       });
       expect(oldParentChildren).toHaveLength(0);
 
-      const newParentChildren = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const newParentChildren = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: parent2Result.data.id,
       });
       expect(newParentChildren).toHaveLength(1);
@@ -284,13 +284,13 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Verify no longer under parent
-      const children = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const children = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: parentResult.data.id,
       });
       expect(children).toHaveLength(0);
 
       // Verify todo still exists
-      const todoResponse = await assert.expectToolCallSuccess<{ data: TodoAlpha3 }>('getTodo', {
+      const todoResponse = await assert.expectToolCallSuccess<{ data: TodoAlpha4 }>('getTodo', {
         id: subtaskResult.data.id,
       });
       expect(todoResponse.data.title).toBe('Will become root');
@@ -323,7 +323,7 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Verify
-      const children = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const children = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: parentResult.data.id,
       });
       expect(children).toHaveLength(1);
@@ -339,14 +339,14 @@ describe('Parent-Child Todo Relationships', () => {
         context: 'private',
       });
 
-      const todos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const todos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'private',
       });
 
       const legacy = todos.find((t) => t.title === 'Legacy todo');
       expect(legacy).toBeDefined();
       expect(legacy!.parentId == null).toBe(true); // null or undefined
-      expect(legacy!.version).toBe('alpha3');
+      expect(legacy!.version).toBe('alpha4');
     });
 
     it('should list todos with and without parentId together', async () => {
@@ -369,7 +369,7 @@ describe('Parent-Child Todo Relationships', () => {
         context: 'work',
       });
 
-      const todos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const todos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'work',
       });
 
@@ -415,13 +415,13 @@ describe('Parent-Child Todo Relationships', () => {
       });
 
       // Verify each level
-      const children = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const children = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: grandparentResult.data.id,
       });
       expect(children).toHaveLength(1);
       expect(children[0].title).toBe('Story: Implement header');
 
-      const grandchildren = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const grandchildren = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         parentId: parentResult.data.id,
       });
       expect(grandchildren).toHaveLength(1);

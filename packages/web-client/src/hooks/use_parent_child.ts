@@ -29,7 +29,7 @@ export function useChildTodos(parentId: string | null | undefined, enabled = tru
 
       const children = await safeDb.safeFind<Todo>(
         {
-          version: 'alpha3',
+          version: 'alpha4',
           parentId,
         },
         { limit: 100 },
@@ -76,7 +76,7 @@ export function useChildCount(parentId: string | null | undefined, enabled = tru
 
       const children = await safeDb.safeFind<Todo>(
         {
-          version: 'alpha3',
+          version: 'alpha4',
           parentId,
         },
         { limit: 100 },
@@ -133,7 +133,7 @@ export function useSubtaskCountsForParents(parentIds: string[], enabled = true) 
       // PouchDB Mango supports $in operator for this
       const children = await safeDb.safeFind<Todo>(
         {
-          version: 'alpha3',
+          version: 'alpha4',
           parentId: { $in: parentIds },
         },
         { limit: 10000 },

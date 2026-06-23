@@ -90,7 +90,7 @@ function getOverviewSection(context: ToolContext): string {
 The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD-inspired todo and time tracking application with per-user authentication.
 
 - **Database**: CouchDB with per-user databases
-- **Data Model**: TodoAlpha3 schema
+- **Data Model**: TodoAlpha4 schema
 - **Features**: Todo CRUD, time tracking, repeating tasks, GTD contexts
 - **Authentication**: Per-request authentication via Authorization: Bearer <api-key> or X-API-Key header
 - **Current User**: ${userId}
@@ -101,7 +101,7 @@ The Eddo MCP server provides a Model Context Protocol interface for the Eddo GTD
  * Returns the data model section
  */
 function getDataModelSection(): string {
-  return `# TodoAlpha3 Data Model
+  return `# TodoAlpha4 Data Model
 
 {
   _id: string;              // ISO timestamp of creation (auto-generated)
@@ -115,7 +115,7 @@ function getDataModelSection(): string {
   repeat: number | null;    // Repeat interval in days
   tags: string[];           // Categorization tags
   title: string;            // Todo title
-  version: 'alpha3';        // Schema version
+  version: 'alpha4';        // Schema version
 }`;
 }
 

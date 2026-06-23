@@ -78,7 +78,7 @@ describe('GlobalTodoFlyout', () => {
     active: {},
     link: null,
     repeat: null,
-    version: 'alpha3',
+    version: 'alpha4',
   };
 
   it('renders nothing when no todo is selected', () => {

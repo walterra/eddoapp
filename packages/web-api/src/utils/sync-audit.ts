@@ -9,7 +9,7 @@ import {
   type AuditAction,
   type AuditSource,
   type Env,
-  type TodoAlpha3,
+  type TodoAlpha4,
 } from '@eddo/core-server';
 
 /** Lazy-loaded env to avoid issues during test imports */
@@ -27,8 +27,8 @@ export interface SyncAuditOptions {
   source: AuditSource;
   action: AuditAction;
   entityId: string;
-  before?: Partial<TodoAlpha3>;
-  after?: Partial<TodoAlpha3>;
+  before?: Partial<TodoAlpha4>;
+  after?: Partial<TodoAlpha4>;
   /** Optional human-readable message describing the action (short, like a git commit message) */
   message?: string;
   metadata?: Record<string, unknown>;

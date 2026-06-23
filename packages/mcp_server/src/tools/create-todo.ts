@@ -1,7 +1,7 @@
 /**
  * Create Todo Tool - Creates a new todo item with GTD tag support
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import { extractScheduledTimeFromTitle, type TodoAlpha4 } from '@eddo/core-server';
 import { z } from 'zod';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
@@ -17,13 +17,13 @@ When the user asks to remember something, create a todo with:
 - title: Brief summary of what to remember
 - description: Full details to remember
 - context: "memory" (NOT "private" - ALWAYS "memory")
-- due: Current date in ISO format ending with T23:59:59.999Z
+- due: Current date in YYYY-MM-DD format
 
-Creates a TodoAlpha3 object with:
+Creates a TodoAlpha4 object with:
 - Auto-generated ID (current ISO timestamp)
 - Empty time tracking (active: {})
 - Not completed status (completed: null)
-- Default due date of end of current day if not specified
+- Default due date of current day if not specified
 
 GTD TAG GUIDELINES (for calling LLM):
 - "gtd:next" for clear, actionable items ready to be done
@@ -31,18 +31,18 @@ GTD TAG GUIDELINES (for calling LLM):
 - "gtd:waiting" for items blocked by others or external dependencies
 - "gtd:someday" for vague, future, or low-priority items
 - "gtd:calendar" for time-specific appointments and meetings
-  Note: For gtd:calendar items, prefix title with time in HH:MM format (24-hour)
+  Note: For gtd:calendar items, set scheduledTime or prefix title with time in HH:MM format (24-hour)
 
 🧠 CRITICAL REMINDER: For memory requests (user says "remember..."):
 - ALWAYS use context "memory" - never "private" or any other context!
-- ALWAYS use due date as TODAY'S date at 23:59:59.999Z - NEVER use future dates!`;
+- ALWAYS use due date as TODAY'S date in YYYY-MM-DD format - NEVER use future dates!`;
 
 /** Zod schema for createTodo parameters */
 export const createTodoParameters = z.object({
   title: z
     .string()
     .describe(
-      'The main title/name of the todo item (required). For gtd:calendar items, prefix with time in HH:MM format (24-hour), e.g., "15:00 Doctor appointment"',
+      'The main title/name of the todo item (required). For gtd:calendar items, use scheduledTime or prefix with time in HH:MM format, e.g., "15:00 Doctor appointment".',
     ),
   description: z
     .string()
@@ -57,9 +57,18 @@ export const createTodoParameters = z.object({
   due: z
     .string()
     .optional()
-    .describe(
-      'Due date in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ). For gtd:calendar items, use exact appointment time. Defaults to 23:59:59.999Z of current day if not provided',
-    ),
+    .describe('Due date in YYYY-MM-DD format. Defaults to the current day if not provided.'),
+  scheduledTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .nullable()
+    .default(null)
+    .describe('Optional scheduled local time in HH:mm format.'),
+  scheduledTimeZone: z
+    .string()
+    .nullable()
+    .default(null)
+    .describe('Optional IANA timezone for scheduled time interpretation.'),
   tags: z
     .array(z.string())
     .default([])
@@ -138,42 +147,33 @@ async function ensureUserDatabase(
 }
 
 /**
- * Normalize due date to full ISO format (YYYY-MM-DDTHH:mm:ss.sssZ).
- * Accepts:
- * - Full ISO: "2026-01-07T23:59:59.999Z" -> unchanged
- * - Date only: "2026-01-07" -> "2026-01-07T23:59:59.999Z"
- * - undefined/null -> today at 23:59:59.999Z
+ * Normalize due date to YYYY-MM-DD format.
+ *
+ * @param due Due date input.
+ * @return Date-only due value.
  */
 function normalizeDueDate(due: string | undefined): string {
   if (!due) {
-    return new Date().toISOString().split('T')[0] + 'T23:59:59.999Z';
+    return new Date().toISOString().split('T')[0];
   }
 
-  // Check if it's already a full ISO string (contains 'T')
-  if (due.includes('T')) {
-    return due;
-  }
-
-  // Date-only format (YYYY-MM-DD) -> add end of day time
-  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) {
-    return due + 'T23:59:59.999Z';
-  }
-
-  // Invalid format - log warning and use as-is with time appended
-  console.warn(`Invalid due date format: "${due}". Expected ISO format. Appending default time.`);
-  return due + 'T23:59:59.999Z';
+  return due.slice(0, 10);
 }
 
 /**
- * Builds a new TodoAlpha3 object from the provided arguments
+ * Builds a new TodoAlpha4 object from the provided arguments.
+ *
+ * @param args Create todo arguments.
+ * @return New todo document.
  */
-function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha3, '_rev'> {
+function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha4, '_rev'> {
   const now = new Date().toISOString();
   const dueDate = normalizeDueDate(args.due);
+  const titleTime = extractScheduledTimeFromTitle(args.title);
 
   return {
     _id: now,
-    title: args.title,
+    title: titleTime.title,
     description: args.description,
     context: args.context,
     due: dueDate,
@@ -184,9 +184,11 @@ function buildTodoDocument(args: CreateTodoArgs): Omit<TodoAlpha3, '_rev'> {
     externalId: args.externalId,
     link: args.link,
     parentId: args.parentId,
+    scheduledTime: args.scheduledTime ?? titleTime.scheduledTime,
+    scheduledTimeZone: args.scheduledTimeZone,
     blockedBy: args.blockedBy,
     metadata: args.metadata,
-    version: 'alpha3',
+    version: 'alpha4',
   };
 }
 
@@ -212,7 +214,7 @@ export async function executeCreateTodo(
 
   try {
     const startTime = Date.now();
-    await db.insert(newTodo as TodoAlpha3);
+    await db.insert(newTodo as TodoAlpha4);
     const executionTime = Date.now() - startTime;
 
     // Log audit entry and push audit ID to todo

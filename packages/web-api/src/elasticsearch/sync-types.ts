@@ -2,7 +2,7 @@
  * Type definitions for CouchDB to Elasticsearch sync.
  */
 
-import type { AuditLogAlpha1, TodoAlpha3 } from '@eddo/core-shared';
+import type { AuditLogAlpha1, TodoAlpha4 } from '@eddo/core-shared';
 import type { Client } from '@elastic/elasticsearch';
 import type { EventEmitter } from 'events';
 import type nano from 'nano';
@@ -53,7 +53,7 @@ export interface ChangeEvent {
   id: string;
   changes: Array<{ rev: string }>;
   deleted?: boolean;
-  doc?: (TodoAlpha3 | AuditLogAlpha1) & { _id: string; _rev: string };
+  doc?: (TodoAlpha4 | AuditLogAlpha1) & { _id: string; _rev: string };
 }
 
 /** Sync status response */

@@ -5,7 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { TodoAlpha3 } from '../helpers/mcp-assertions.js';
+import type { TodoAlpha4 } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
@@ -37,7 +37,7 @@ describe('External ID Support', () => {
       });
 
       // Verify by querying with externalId filter
-      const todos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const todos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'github:walterra/eddoapp/issues/123',
       });
 
@@ -54,7 +54,7 @@ describe('External ID Support', () => {
       });
 
       // List all private todos
-      const todos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const todos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'private',
       });
 
@@ -77,12 +77,12 @@ describe('External ID Support', () => {
       });
 
       // Verify both were created with correct externalId
-      const githubTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const githubTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'github:owner/repo/issues/1',
       });
       expect(githubTodos[0].externalId).toBe('github:owner/repo/issues/1');
 
-      const jiraTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const jiraTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'jira:PROJECT-123',
       });
       expect(jiraTodos[0].externalId).toBe('jira:PROJECT-123');
@@ -110,7 +110,7 @@ describe('External ID Support', () => {
       });
 
       // Filter by exact match
-      const result = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const result = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'github:walterra/eddoapp/issues/100',
       });
 
@@ -141,19 +141,19 @@ describe('External ID Support', () => {
       });
 
       // Query for each specific externalId
-      const githubA = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const githubA = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'github:org1/repo1/issues/1',
       });
       expect(githubA.length).toBe(1);
       expect(githubA[0].title).toBe('GitHub issue A');
 
-      const githubB = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const githubB = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'github:org2/repo2/issues/2',
       });
       expect(githubB.length).toBe(1);
       expect(githubB[0].title).toBe('GitHub issue B');
 
-      const jira = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const jira = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'jira:PROJ-123',
       });
       expect(jira.length).toBe(1);
@@ -177,7 +177,7 @@ describe('External ID Support', () => {
       });
 
       // Filter by exact externalId + work context
-      const result = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const result = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId,
         context: 'work',
         completed: false,
@@ -190,7 +190,7 @@ describe('External ID Support', () => {
     });
 
     it('should return empty array when no matches found', async () => {
-      const result = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const result = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId: 'nonexistent:system/id',
       });
 
@@ -212,7 +212,7 @@ describe('External ID Support', () => {
       });
 
       // Check if already exists before re-import
-      const existingTodos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const existingTodos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         externalId,
       });
 
@@ -232,14 +232,14 @@ describe('External ID Support', () => {
       });
 
       // Verify it was created correctly
-      const todos = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const todos = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'private',
       });
 
       const oldStyleTodo = todos.find((t) => t.title === 'Old-style todo');
       expect(oldStyleTodo).toBeDefined();
       expect(oldStyleTodo!.externalId == null).toBe(true); // null or undefined
-      expect(oldStyleTodo!.version).toBe('alpha3');
+      expect(oldStyleTodo!.version).toBe('alpha4');
     });
 
     it('should list todos with and without externalId', async () => {
@@ -254,7 +254,7 @@ describe('External ID Support', () => {
         context: 'work',
       });
 
-      const result = await assert.expectToolCallSuccess<TodoAlpha3[]>('listTodos', {
+      const result = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {
         context: 'work',
       });
 

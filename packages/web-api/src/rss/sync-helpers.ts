@@ -1,7 +1,7 @@
 /**
  * Helper functions for RSS sync operations
  */
-import type { TodoAlpha3 } from '@eddo/core-server';
+import type { TodoAlpha4 } from '@eddo/core-server';
 import type nano from 'nano';
 
 import { logSyncAudit } from '../utils/sync-audit.js';
@@ -9,7 +9,7 @@ import type { RssClient, SyncLogger } from './client.js';
 import type { RssItem } from './types.js';
 
 export interface ProcessItemConfig {
-  db: nano.DocumentScope<TodoAlpha3>;
+  db: nano.DocumentScope<TodoAlpha4>;
   item: RssItem;
   tags: string[];
   rssClient: RssClient;
@@ -24,10 +24,10 @@ export type ProcessItemResult = 'created' | 'updated' | 'skipped';
  * Uses externalId index for efficient lookup
  */
 export async function findTodoByExternalId(
-  db: nano.DocumentScope<TodoAlpha3>,
+  db: nano.DocumentScope<TodoAlpha4>,
   externalId: string,
   logger: SyncLogger,
-): Promise<TodoAlpha3 | null> {
+): Promise<TodoAlpha4 | null> {
   try {
     const result = await db.find({
       selector: {
@@ -50,7 +50,7 @@ export async function findTodoByExternalId(
 /**
  * Check if todo needs updating (due date differs from RSS pubDate)
  */
-function needsUpdate(existingTodo: TodoAlpha3, newTodo: Omit<TodoAlpha3, '_rev'>): boolean {
+function needsUpdate(existingTodo: TodoAlpha4, newTodo: Omit<TodoAlpha4, '_rev'>): boolean {
   // Update if due date differs (fixes old items with wrong due date)
   return existingTodo.due !== newTodo.due;
 }
@@ -70,7 +70,7 @@ export async function processItem(config: ProcessItemConfig): Promise<ProcessIte
     // Check if update is needed
     if (needsUpdate(existingTodo, newTodo)) {
       // Update existing todo with new due date (spread includes _id and _rev)
-      const updatedTodo: TodoAlpha3 = {
+      const updatedTodo: TodoAlpha4 = {
         ...existingTodo,
         due: newTodo.due,
       };
@@ -103,7 +103,7 @@ export async function processItem(config: ProcessItemConfig): Promise<ProcessIte
   }
 
   // Create new todo
-  await db.insert(newTodo as TodoAlpha3);
+  await db.insert(newTodo as TodoAlpha4);
 
   await logSyncAudit({
     username,

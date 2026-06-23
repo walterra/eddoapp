@@ -33,9 +33,8 @@ function getPlaceholderTodos(
   if (allCachedTodos.length === 0) return undefined;
 
   // Filter to requested date range
-  const endDateWithTime = endDate + 'T\uffff';
   const filtered = allCachedTodos.filter(
-    (todo) => todo.due && todo.due >= startDate && todo.due <= endDateWithTime,
+    (todo) => todo.due && todo.due >= startDate && todo.due <= endDate,
   );
 
   // Deduplicate by _id (same todo might be in multiple cached ranges)
@@ -149,8 +148,8 @@ async function fetchTodosForRange(
 ): Promise<Todo[]> {
   return safeDb.safeFind<Todo>(
     {
-      version: 'alpha3',
-      due: { $gte: startDate, $lte: endDate + 'T\uffff' },
+      version: 'alpha4',
+      due: { $gte: startDate, $lte: endDate },
     },
     { limit: 10000 },
   );
