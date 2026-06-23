@@ -139,6 +139,23 @@ describe('Database Migration Functions', () => {
       expect(result.scheduledTimeZone).toBe(null);
     });
 
+    it('should not extract title prefix times without remaining text', () => {
+      const alpha3Todo = {
+        ...createTestTodoAlpha3({
+          _id: '2025-01-01T00:00:00.000Z',
+          title: `0:00 ${' '.repeat(1000)}`,
+          due: '2025-01-02T23:59:59.999Z',
+          context: 'work',
+        }),
+        _rev: '1-abc',
+      } as TodoAlpha3;
+
+      const result = migrateTodo(alpha3Todo);
+
+      expect(result.title).toBe(alpha3Todo.title);
+      expect(result.scheduledTime).toBe(null);
+    });
+
     it('should not extract non-prefix title times during alpha3 migration', () => {
       const alpha3Todo = {
         ...createTestTodoAlpha3({

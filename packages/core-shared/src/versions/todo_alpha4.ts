@@ -17,8 +17,12 @@ export interface TitleTimeExtractionResult {
   scheduledTime: string | null;
 }
 
-const TITLE_TIME_PREFIX_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)\s+(.+)$/;
 const DATE_PREFIX_LENGTH = 10;
+const MAX_HOUR = 23;
+const MAX_MINUTE = 59;
+const SINGLE_DIGIT_HOUR_LENGTH = 1;
+const DOUBLE_DIGIT_HOUR_LENGTH = 2;
+const MINUTE_LENGTH = 2;
 
 export function isTodoAlpha4(arg: unknown): arg is TodoAlpha4 {
   return (
@@ -29,6 +33,50 @@ export function isTodoAlpha4(arg: unknown): arg is TodoAlpha4 {
   );
 }
 
+const isDigit = (value: string): boolean => value >= '0' && value <= '9';
+
+const isWhitespace = (value: string): boolean => value !== '' && value.trim() === '';
+
+const parseTimePart = (value: string, maxValue: number): string | null => {
+  if (value === '' || [...value].some((character) => !isDigit(character))) {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  if (parsedValue > maxValue) {
+    return null;
+  }
+
+  return value.padStart(2, '0');
+};
+
+const findTitleStartIndex = (title: string, searchStartIndex: number): number => {
+  for (let index = searchStartIndex; index < title.length; index += 1) {
+    if (!isWhitespace(title.charAt(index))) {
+      return index;
+    }
+  }
+
+  return -1;
+};
+
+const parseTitlePrefixTime = (title: string): string | null => {
+  const colonIndex = title.indexOf(':');
+  if (colonIndex !== SINGLE_DIGIT_HOUR_LENGTH && colonIndex !== DOUBLE_DIGIT_HOUR_LENGTH) {
+    return null;
+  }
+
+  const minuteStartIndex = colonIndex + 1;
+  const minuteEndIndex = minuteStartIndex + MINUTE_LENGTH;
+  const hour = parseTimePart(title.slice(0, colonIndex), MAX_HOUR);
+  const minute = parseTimePart(title.slice(minuteStartIndex, minuteEndIndex), MAX_MINUTE);
+  if (!hour || !minute || !isWhitespace(title.charAt(minuteEndIndex))) {
+    return null;
+  }
+
+  return `${hour}:${minute}`;
+};
+
 /**
  * Extracts strict HH:mm or H:mm title prefixes.
  *
@@ -36,17 +84,22 @@ export function isTodoAlpha4(arg: unknown): arg is TodoAlpha4 {
  * @return Title without time prefix and extracted scheduled time.
  */
 export function extractScheduledTimeFromTitle(title: string): TitleTimeExtractionResult {
-  const match = TITLE_TIME_PREFIX_PATTERN.exec(title.trim());
+  const trimmedTitle = title.trim();
+  const scheduledTime = parseTitlePrefixTime(trimmedTitle);
 
-  if (!match) {
+  if (!scheduledTime) {
     return { title, scheduledTime: null };
   }
 
-  const hour = match[1].padStart(2, '0');
-  const minute = match[2];
-  const extractedTitle = match[3].trim();
+  const titleStartIndex = findTitleStartIndex(
+    trimmedTitle,
+    MINUTE_LENGTH + DOUBLE_DIGIT_HOUR_LENGTH,
+  );
+  if (titleStartIndex === -1) {
+    return { title, scheduledTime: null };
+  }
 
-  return { title: extractedTitle, scheduledTime: `${hour}:${minute}` };
+  return { title: trimmedTitle.slice(titleStartIndex), scheduledTime };
 }
 
 /**
