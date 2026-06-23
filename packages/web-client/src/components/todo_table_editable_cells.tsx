@@ -173,6 +173,22 @@ interface TitleCellProps {
   row: TodoRowData;
 }
 
+interface ScheduledTimePrefixProps {
+  scheduledTime?: string | null;
+}
+
+const ScheduledTimePrefix: FC<ScheduledTimePrefixProps> = ({ scheduledTime }) => {
+  if (!scheduledTime) {
+    return null;
+  }
+
+  return (
+    <>
+      <span className="text-neutral-500 dark:text-neutral-400">{scheduledTime}</span>{' '}
+    </>
+  );
+};
+
 export const TitleCell: FC<TitleCellProps> = ({ row }) => {
   const { todo } = row;
   const { openTodo } = useTodoFlyoutContext();
@@ -220,6 +236,7 @@ export const TitleCell: FC<TitleCellProps> = ({ row }) => {
         onDoubleClick={handleDoubleClick}
         type="button"
       >
+        <ScheduledTimePrefix scheduledTime={todo.scheduledTime} />
         <FormattedMessage message={todo.title} />
       </button>
     </div>

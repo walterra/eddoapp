@@ -152,6 +152,31 @@ describe('TodoTable', () => {
       });
     });
 
+    it('should render scheduled time before title', async () => {
+      vi.mocked(useTodosByDateRange).mockReturnValue({
+        data: [
+          createTestTodo({
+            _id: '2025-01-13T10:00:00.000Z',
+            title: 'Kaiserwinkl Oldtimertage',
+            context: 'work',
+            due: '2025-01-13',
+            scheduledTime: '11:00',
+          }),
+        ],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useTodosByDateRange>);
+
+      renderWithPouchDb(<TodoTable {...defaultProps} />, { testDb: testDb.contextValue });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: '11:00 Kaiserwinkl Oldtimertage' }),
+        ).toBeInTheDocument();
+      });
+    });
+
     it('should render only selected columns headers', async () => {
       vi.mocked(useTodosByDateRange).mockReturnValue({
         data: [
