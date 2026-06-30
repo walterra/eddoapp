@@ -586,8 +586,8 @@ importers:
         specifier: ^4.11.9
         version: 4.11.9
       imapflow:
-        specifier: ^1.2.9
-        version: 1.2.9
+        specifier: ^1.4.0
+        version: 1.4.0
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -5134,8 +5134,8 @@ packages:
   '@xyflow/system@0.0.75':
     resolution: {integrity: sha512-iXs+AGFLi8w/VlAoc/iSxk+CxfT6o64Uw/k0CKASOPqjqz6E0rb5jFZgJtXGZCpfQI6OQpu5EnumP5fGxQheaQ==}
 
-  '@zone-eu/mailsplit@5.4.8':
-    resolution: {integrity: sha512-eEyACj4JZ7sjzRvy26QhLgKEMWwQbsw1+QZnlLX+/gihcNH07lVPOcnwf5U6UAL7gkc//J3jVd76o/WS+taUiA==}
+  '@zone-eu/mailsplit@5.4.12':
+    resolution: {integrity: sha512-w7Gy+NvjZ0MiXm8F6zfjImAqcTONKDImgWVBjDKQVFUXWuz3VFM5levNArkL2M877ajql5+bkS2pDV56injlmg==}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -7105,8 +7105,8 @@ packages:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
 
-  imapflow@1.2.9:
-    resolution: {integrity: sha512-1YVsP1/cGoDlBfmGYepnm66L+h6a1Cb4wH1ZRD/rr0eblvvDqDzXywNN5TMDCKWM+zvaTx2ftfOWAe+bfOnyWQ==}
+  imapflow@1.4.0:
+    resolution: {integrity: sha512-bpNWv3AwzZryMMYoKiqPebcxmldCQwWxqhBQ5b/nTlJYAgexCzDIpN0LdhVJpJp6H25lAmwvShX+Fu/9AU5Spg==}
 
   immediate@3.3.0:
     resolution: {integrity: sha512-HR7EVodfFUdQCTIeySw+WDRFJlPcLOJbXfwwZ7Oom6tjsvZ3bOkCDJHehQC3nxJrv7+f9XecwazynjU8e4Vw3Q==}
@@ -7170,8 +7170,8 @@ packages:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
 
-  ip-address@10.1.0:
-    resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
+  ip-address@10.2.0:
+    resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -7631,8 +7631,8 @@ packages:
   libbase64@1.3.0:
     resolution: {integrity: sha512-GgOXd0Eo6phYgh0DJtjQ2tO8dc0IVINtZJeARPeiIJqge+HdsWSuaDTe8ztQ7j/cONByDZ3zeB325AHiv5O0dg==}
 
-  libmime@5.3.7:
-    resolution: {integrity: sha512-FlDb3Wtha8P01kTL3P9M+ZDNDWPKPmKHWaU/cG/lg5pfuAwdflVpZE+wm9m7pKmC5ww6s+zTxBKS1p6yl3KpSw==}
+  libmime@5.3.8:
+    resolution: {integrity: sha512-ZrCY+Q66mPvasAfjsQ/IgahzoBvfE1VdtGRpo1hwRB1oK3wJKxhKA3GOcd2a6j7AH5eMFccxK9fBoCpRZTf8ng==}
 
   libqp@2.1.1:
     resolution: {integrity: sha512-0Wd+GPz1O134cP62YU2GTOPNA7Qgl09XwCqM5zpBv87ERCXdfDtyKXvV7c9U22yWJh44QZqBocFnXN11K96qow==}
@@ -8239,8 +8239,8 @@ packages:
   node-thermal-printer@4.6.0:
     resolution: {integrity: sha512-nl/beSbygyBf4qv6zDZimiD78S2VrMrpffULZWUgKxNjMUfzV2S0MO4/Qposrn2QZosVrQSGYq49VN1HIecw+A==}
 
-  nodemailer@8.0.0:
-    resolution: {integrity: sha512-xvVJf/f0bzmNpnRIbhCp/IKxaHgJ6QynvUbLXzzMRPG3LDQr5oXkYuw4uDFyFYs8cge8agwwrJAXZsd4hhMquw==}
+  nodemailer@8.0.10:
+    resolution: {integrity: sha512-BLFuSth7QtHOkBzyqTehWWyub0NTRDuK2Q2SQfnGLsrJnzyU+Yeh4WpV1eZGuARFj1xQJHIdnTuJZLP+b9R1GQ==}
     engines: {node: '>=6.0.0'}
 
   normalize-package-data@2.5.0:
@@ -8591,10 +8591,6 @@ packages:
 
   pino-std-serializers@7.1.0:
     resolution: {integrity: sha512-BndPH67/JxGExRgiX1dX0w1FvZck5Wa4aal9198SrRhZjH3GxKQUKIBnYJTdj2HDN3UQAS06HlfcSbQj2OHmaw==}
-
-  pino@10.3.0:
-    resolution: {integrity: sha512-0GNPNzHXBKw6U/InGe79A3Crzyk9bcSyObF9/Gfo9DLEf5qj5RF50RSjsu0W1rZ6ZqRGdzDFCRBQvi9/rSGPtA==}
-    hasBin: true
 
   pino@10.3.1:
     resolution: {integrity: sha512-r34yH/GlQpKZbU1BvFFqOjhISRo1MNx1tWYsYvmj6KIRHSPMT2+yHOEb1SG6NMvRoHRF0a07kCOox/9yakl1vg==}
@@ -9297,8 +9293,8 @@ packages:
     resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
     engines: {node: '>= 18'}
 
-  socks@2.8.7:
-    resolution: {integrity: sha512-HLpt+uLy/pxB+bum/9DzAgiKS8CX1EvbWxI4zlmgGCExImLdiad2iCwXT5Z4c9c3Eq8rP2318mPW2c+QbtjK8A==}
+  socks@2.8.9:
+    resolution: {integrity: sha512-LJhUYUvItdQ0LkJTmPeaEObWXAqFyfmP85x0tch/ez9cahmhlBBLbIqDFnvBnUJGagb0JbIQrkBs1wJ+yRYpEw==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
 
   sonic-boom@4.2.0:
@@ -15089,10 +15085,10 @@ snapshots:
       d3-selection: 3.0.0
       d3-zoom: 3.0.0
 
-  '@zone-eu/mailsplit@5.4.8':
+  '@zone-eu/mailsplit@5.4.12':
     dependencies:
       libbase64: 1.3.0
-      libmime: 5.3.7
+      libmime: 5.3.8
       libqp: 2.1.1
 
   abort-controller@3.0.0:
@@ -17443,17 +17439,17 @@ snapshots:
 
   ignore@7.0.5: {}
 
-  imapflow@1.2.9:
+  imapflow@1.4.0:
     dependencies:
-      '@zone-eu/mailsplit': 5.4.8
+      '@zone-eu/mailsplit': 5.4.12
       encoding-japanese: 2.2.0
       iconv-lite: 0.7.2
       libbase64: 1.3.0
-      libmime: 5.3.7
+      libmime: 5.3.8
       libqp: 2.1.1
-      nodemailer: 8.0.0
-      pino: 10.3.0
-      socks: 2.8.7
+      nodemailer: 8.0.10
+      pino: 10.3.1
+      socks: 2.8.9
 
   immediate@3.3.0: {}
 
@@ -17530,7 +17526,7 @@ snapshots:
 
   internmap@2.0.3: {}
 
-  ip-address@10.1.0: {}
+  ip-address@10.2.0: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -18020,10 +18016,10 @@ snapshots:
 
   libbase64@1.3.0: {}
 
-  libmime@5.3.7:
+  libmime@5.3.8:
     dependencies:
       encoding-japanese: 2.2.0
-      iconv-lite: 0.6.3
+      iconv-lite: 0.7.2
       libbase64: 1.3.0
       libqp: 2.1.1
 
@@ -18747,7 +18743,7 @@ snapshots:
       unorm: 1.6.0
       write-file-queue: 0.0.1
 
-  nodemailer@8.0.0: {}
+  nodemailer@8.0.10: {}
 
   normalize-package-data@2.5.0:
     dependencies:
@@ -19165,20 +19161,6 @@ snapshots:
       strip-json-comments: 5.0.2
 
   pino-std-serializers@7.1.0: {}
-
-  pino@10.3.0:
-    dependencies:
-      '@pinojs/redact': 0.4.0
-      atomic-sleep: 1.0.0
-      on-exit-leak-free: 2.1.2
-      pino-abstract-transport: 3.0.0
-      pino-std-serializers: 7.1.0
-      process-warning: 5.0.0
-      quick-format-unescaped: 4.0.4
-      real-require: 0.2.0
-      safe-stable-stringify: 2.5.0
-      sonic-boom: 4.2.1
-      thread-stream: 4.2.0
 
   pino@10.3.1:
     dependencies:
@@ -20116,9 +20098,9 @@ snapshots:
 
   smol-toml@1.6.1: {}
 
-  socks@2.8.7:
+  socks@2.8.9:
     dependencies:
-      ip-address: 10.1.0
+      ip-address: 10.2.0
       smart-buffer: 4.2.0
 
   sonic-boom@4.2.0:
