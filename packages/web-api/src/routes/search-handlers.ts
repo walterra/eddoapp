@@ -5,6 +5,7 @@
 import type { Context as HonoContext } from 'hono';
 import { z } from 'zod';
 
+import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { Client } from '@elastic/elasticsearch';
 
 import { logger, withSpan } from '../utils/logger';
@@ -65,6 +66,14 @@ export const searchTodosSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
+/** Returns the user's timezone preference for search date filters. */
+async function getUserTimeZone(username: string): Promise<string | undefined> {
+  const env = createEnv();
+  const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
+  const user = await userRegistry.findByUsername(username);
+  return user?.preferences?.timezone;
+}
+
 /** Handles todo search requests. */
 export async function handleTodoSearch(c: HonoContext, esClient: Client): Promise<Response> {
   return withSpan('search_todos', { 'search.type': 'todos' }, async (span) => {
@@ -82,13 +91,14 @@ export async function handleTodoSearch(c: HonoContext, esClient: Client): Promis
       span.setAttribute('search.query', params.query);
 
       const indexName = `eddo_user_${username}`;
+      const timeZone = await getUserTimeZone(username);
       const parsed = parseSearchQuery(params.query);
-      const conditions = generateWhereConditions(parsed, escapeEsqlString);
+      const conditions = generateWhereConditions(parsed, escapeEsqlString, { timeZone });
 
       addApiParamConditions(conditions, params, parsed);
 
       const esqlQuery = buildTodoQuery(indexName, conditions, parsed, params.limit);
-      logger.info({ esqlQuery, parsed, username }, 'Executing todo search');
+      logger.info({ esqlQuery, parsed, timeZone, username }, 'Executing todo search');
 
       const response = await esClient.esql.query({ format: 'json', query: esqlQuery });
       const results = transformEsqlResponse(

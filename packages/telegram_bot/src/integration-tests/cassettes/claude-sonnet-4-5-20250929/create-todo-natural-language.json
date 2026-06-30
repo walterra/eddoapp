@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "create-todo-natural-language",
-  "createdAt": "2026-06-23T09:48:51.153Z",
-  "frozenTime": "2026-06-23T09:48:51.153Z",
+  "createdAt": "2026-06-23T17:19:48.361Z",
+  "frozenTime": "2026-06-23T17:19:48.361Z",
   "interactions": [
     {
       "requestHash": "8408e21af51d23a2",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "TOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"errands\", \"due\": \"2026-07-03T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}",
+      "response": "TOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"errands\", \"due\": \"2026-07-04T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}",
       "metadata": {
-        "recordedAt": "2026-06-23T09:48:59.251Z",
-        "responseTimeMs": 8022
+        "recordedAt": "2026-06-23T17:19:55.244Z",
+        "responseTimeMs": 6800
       }
     },
     {
@@ -34,18 +34,18 @@
           },
           {
             "role": "assistant",
-            "content": "TOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"errands\", \"due\": \"2026-07-03T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}"
+            "content": "TOOL_CALL: {\"name\": \"createTodo\", \"parameters\": {\"title\": \"Go shopping\", \"context\": \"errands\", \"due\": \"2026-07-04T23:59:59.999Z\", \"tags\": [\"gtd:next\"]}}"
           },
           {
             "role": "user",
-            "content": "Tool \"createTodo\" result: {\"summary\":\"Todo created successfully\",\"data\":{\"id\":\"2026-06-23T09:48:59.274Z\",\"title\":\"Go shopping\",\"context\":\"errands\",\"due\":\"2026-07-03\"},\"metadata\":{\"execution_time\":\"7.0..."
+            "content": "Tool \"createTodo\" result: {\"summary\":\"Todo created successfully\",\"data\":{\"id\":\"2026-06-23T17:19:55.271Z\",\"title\":\"Go shopping\",\"context\":\"errands\",\"due\":\"2026-07-04\"},\"metadata\":{\"execution_time\":\"8.0..."
           }
         ]
       },
-      "response": "Perfect! Shopping trip scheduled for next Friday! 🛒 Ready to tackle when the time comes!",
+      "response": "✅ Shopping trip locked in for next Friday! Ready to tackle when the time comes! 🛒",
       "metadata": {
-        "recordedAt": "2026-06-23T09:49:07.781Z",
-        "responseTimeMs": 8475
+        "recordedAt": "2026-06-23T17:19:58.736Z",
+        "responseTimeMs": 3425
       }
     }
   ]

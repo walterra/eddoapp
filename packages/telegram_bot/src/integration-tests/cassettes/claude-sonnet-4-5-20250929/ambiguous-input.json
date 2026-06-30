@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-06-23T09:50:35.433Z",
-  "frozenTime": "2026-06-23T09:50:35.433Z",
+  "createdAt": "2026-06-23T17:21:04.068Z",
+  "frozenTime": "2026-06-23T17:21:04.068Z",
   "interactions": [
     {
       "requestHash": "c464a3c0721df984",
@@ -16,10 +16,10 @@
           }
         ]
       },
-      "response": "Hey there! I'd love to help you capture that todo! 🎯\n\nWhat task do you want to add? Give me a title and any details like when it's due, what context (work, home, errands, etc.), or anything else that'll help you nail it when the time comes!",
+      "response": "What would you like to add? Give me a title and I'll create it with smart defaults!",
       "metadata": {
-        "recordedAt": "2026-06-23T09:50:40.393Z",
-        "responseTimeMs": 4898
+        "recordedAt": "2026-06-23T17:21:08.102Z",
+        "responseTimeMs": 3972
       }
     }
   ]

@@ -1,6 +1,7 @@
 /**
  * Preferences tab component for UserProfile
  */
+import { getSystemTimeZone } from '@eddo/core-client';
 import { Button, Card, Label, TextInput } from 'flowbite-react';
 import { type FC } from 'react';
 
@@ -176,6 +177,55 @@ const buildRecapSection = (props: PreferencesTabProps) => ({
   },
 });
 
+const COMMON_TIME_ZONES = [
+  'UTC',
+  'Europe/Vienna',
+  'Europe/Berlin',
+  'Europe/London',
+  'America/New_York',
+  'America/Los_Angeles',
+  'Asia/Tokyo',
+  'Australia/Sydney',
+];
+
+interface TimezoneSectionProps {
+  disabled: boolean;
+  timezone: string;
+  onChange: (timezone: string) => void;
+}
+
+const TimezoneSection: FC<TimezoneSectionProps> = ({ disabled, timezone, onChange }) => (
+  <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-medium text-neutral-900 dark:text-white">Timezone</h3>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          Sets local day boundaries and Telegram schedule times.
+        </p>
+      </div>
+      <div>
+        <Label htmlFor="timezone">IANA timezone</Label>
+        <TextInput
+          disabled={disabled}
+          id="timezone"
+          list="timezone-options"
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={getSystemTimeZone()}
+          value={timezone}
+        />
+        <datalist id="timezone-options">
+          {COMMON_TIME_ZONES.map((timeZone) => (
+            <option key={timeZone} value={timeZone} />
+          ))}
+        </datalist>
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          Example: Europe/Vienna. Defaults to your browser timezone.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
 const ThemeSection: FC = () => (
   <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">
     <div className="space-y-4">
@@ -209,6 +259,11 @@ export const PreferencesTab: FC<PreferencesTabProps> = (props) => {
         <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Preferences</h2>
         <div className="space-y-6">
           <ThemeSection />
+          <TimezoneSection
+            disabled={isLoading}
+            onChange={props.onTimezoneChange}
+            timezone={props.preferencesState.timezone}
+          />
           <ScheduleSection {...briefingSection} isLoading={isLoading} />
           <ScheduleSection {...recapSection} isLoading={isLoading} />
           <div className="flex justify-end">

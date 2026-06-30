@@ -1,12 +1,13 @@
 /**
  * Read-only view components for todo display
  */
-import { type Todo, type TodoNote } from '@eddo/core-client';
+import { formatScheduledTimeForTimeZone, type Todo, type TodoNote } from '@eddo/core-client';
 import { type FC, useState } from 'react';
 import { BiCheckCircle, BiCircle, BiNote, BiSubdirectoryRight } from 'react-icons/bi';
 
 import { useChildTodos, useParentTodo } from '../hooks/use_parent_child';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
+import { useUserTimeZone } from '../hooks/use_user_timezone';
 import { TEXT_LINK } from '../styles/interactive';
 import { AttachmentMarkdown, MARKDOWN_PROSE_CLASSES } from './attachment_markdown';
 import { CopyIdButton } from './copy_id_button';
@@ -138,9 +139,32 @@ const DueDateView: FC<{ due: string }> = ({ due }) => {
   return <FieldRow label="Due Date">{dateOnly || EMPTY_VALUE}</FieldRow>;
 };
 
-const ScheduledTimeView: FC<{ scheduledTime: string | null | undefined }> = ({ scheduledTime }) => (
-  <FieldRow label="Scheduled Time">{scheduledTime ?? EMPTY_VALUE}</FieldRow>
-);
+const ScheduledTimeView: FC<{ todo: Todo }> = ({ todo }) => {
+  const displayTimeZone = useUserTimeZone();
+
+  if (!todo.scheduledTime) {
+    return <FieldRow label="Scheduled Time">{EMPTY_VALUE}</FieldRow>;
+  }
+
+  const display = formatScheduledTimeForTimeZone(
+    todo.due,
+    todo.scheduledTime,
+    todo.scheduledTimeZone,
+    displayTimeZone,
+  );
+  const dayOffset =
+    display.dayOffset === 0 ? '' : display.dayOffset > 0 ? ' (+1 day)' : ' (-1 day)';
+
+  return (
+    <FieldRow label="Scheduled Time">
+      {display.time}
+      {dayOffset}
+      <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
+        {display.timeZone}
+      </span>
+    </FieldRow>
+  );
+};
 
 const RepeatView: FC<{ repeat: number | null }> = ({ repeat }) => (
   <FieldRow label="Repeat">
@@ -275,7 +299,7 @@ export const TodoViewFields: FC<TodoViewFieldsProps> = ({ todo }) => (
 
     <div className="grid grid-cols-2 gap-4">
       <DueDateView due={todo.due} />
-      <ScheduledTimeView scheduledTime={todo.scheduledTime} />
+      <ScheduledTimeView todo={todo} />
       <RepeatView repeat={todo.repeat} />
     </div>
 

@@ -161,6 +161,54 @@ function buildSuccessResponse(opts: SuccessResponseOptions): string {
   });
 }
 
+interface SearchExecutionOptions {
+  args: SearchTodosArgs;
+  context: ToolContext;
+  esClient: Client;
+  getUserDb: GetUserDb;
+  indexName: string;
+  limit: number;
+}
+
+/** Runs the ES search and CouchDB hydration. */
+async function executeSearchQuery(options: SearchExecutionOptions): Promise<string> {
+  const { args, context, esClient, getUserDb, indexName, limit } = options;
+  const startTime = Date.now();
+  const parsed = parseSearchQuery(args.query);
+  const esqlQuery = buildEsqlQuery({
+    dateContext: { timeZone: context.session?.timezone },
+    includeCompleted: args.includeCompleted,
+    indexName,
+    limit,
+    parsed,
+  });
+
+  context.log.debug('Executing ES|QL query', {
+    esqlQuery,
+    timeZone: context.session?.timezone,
+    ...parsed,
+  });
+
+  const response = await esClient.esql.query({ format: 'json', query: esqlQuery });
+  const esTime = Date.now() - startTime;
+  const hits = transformEsqlResponse(
+    response as { columns: Array<{ name: string; type: string }>; values: unknown[][] },
+  );
+  const couchStartTime = Date.now();
+  const results = await fetchTodosFromCouchDb(getUserDb(context), hits);
+  const couchTime = Date.now() - couchStartTime;
+
+  context.log.info('Search completed', { hitsCount: hits.length, resultsCount: results.length });
+
+  return buildSuccessResponse({
+    indexName,
+    parsed,
+    query: args.query,
+    results,
+    times: { couch: couchTime, es: esTime, total: Date.now() - startTime },
+  });
+}
+
 /** Execute handler for searchTodos tool. */
 export async function executeSearchTodos(
   args: SearchTodosArgs,
@@ -168,11 +216,11 @@ export async function executeSearchTodos(
   getEsClient: () => Client | null,
   getUserDb: GetUserDb,
 ): Promise<string> {
-  const validation = validateSearchContext(getEsClient(), context.session?.userId);
+  const esClient = getEsClient();
+  const validation = validateSearchContext(esClient, context.session?.userId);
   if (validation.error) return validation.error;
 
-  const username = validation.username!;
-  const indexName = `eddo_user_${username}`;
+  const indexName = `eddo_user_${validation.username!}`;
   const limit = Math.min(args.limit, 100);
 
   context.log.info('Searching todos', {
@@ -182,32 +230,13 @@ export async function executeSearchTodos(
   });
 
   try {
-    const startTime = Date.now();
-    const parsed = parseSearchQuery(args.query);
-    const esqlQuery = buildEsqlQuery(indexName, parsed, limit, args.includeCompleted);
-
-    context.log.debug('Executing ES|QL query', { esqlQuery, ...parsed });
-
-    const esClient = getEsClient()!;
-    const response = await esClient.esql.query({ format: 'json', query: esqlQuery });
-    const esTime = Date.now() - startTime;
-
-    const hits = transformEsqlResponse(
-      response as { columns: Array<{ name: string; type: string }>; values: unknown[][] },
-    );
-    const db = getUserDb(context);
-    const couchStartTime = Date.now();
-    const results = await fetchTodosFromCouchDb(db, hits);
-    const couchTime = Date.now() - couchStartTime;
-
-    context.log.info('Search completed', { hitsCount: hits.length, resultsCount: results.length });
-
-    return buildSuccessResponse({
+    return await executeSearchQuery({
+      args,
+      context,
+      esClient: esClient!,
+      getUserDb,
       indexName,
-      parsed,
-      query: args.query,
-      results,
-      times: { couch: couchTime, es: esTime, total: Date.now() - startTime },
+      limit,
     });
   } catch (error) {
     return handleSearchError(error, args.query, context);

@@ -20,6 +20,7 @@ import { FormattedMessage } from './formatted_message';
 import { SubtaskIndicator } from './subtask_indicator';
 import { TagDisplay } from './tag_display';
 import { TodoFlyout } from './todo_flyout';
+import { TodoScheduledTimeBadge } from './todo_scheduled_time_badge';
 
 interface TodoListElementProps {
   active: boolean;
@@ -53,8 +54,8 @@ interface TitleDisplayProps {
   onClick: () => void;
 }
 
-const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly, onClick }) => {
-  const className = [
+const getTitleClassName = (todo: Todo, activityOnly: boolean): string =>
+  [
     'text-xs',
     todo.completed || activityOnly ? 'text-neutral-400' : '',
     todo.completed ? 'line-through' : '',
@@ -62,17 +63,19 @@ const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly, onClick }) =>
     .filter(Boolean)
     .join(' ');
 
+const TitleDisplay: FC<TitleDisplayProps> = ({ todo, activityOnly, onClick }) => {
+  const className = getTitleClassName(todo, activityOnly);
+
   return (
     <button
       className={`cursor-pointer text-left font-medium hover:underline ${className}`}
       onClick={onClick}
       type="button"
     >
-      {todo.scheduledTime ? (
-        <span className="text-primary-600 dark:text-primary-400 mr-1 font-mono text-[0.7rem]">
-          {todo.scheduledTime}
-        </span>
-      ) : null}
+      <TodoScheduledTimeBadge
+        className="text-primary-600 dark:text-primary-400 mr-1 font-mono text-[0.7rem]"
+        todo={todo}
+      />
       <FormattedMessage message={todo.title} />
     </button>
   );

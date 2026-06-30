@@ -2,6 +2,7 @@ import { type DatabaseError, type NewTodo, type TodoAlpha4 } from '@eddo/core-cl
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
 import { useAuditedCreateTodoMutation } from '../hooks/use_audited_todo_mutations';
+import { useUserTimeZone } from '../hooks/use_user_timezone';
 import {
   type AddTodoCreateContext,
   type AddTodoFormState,
@@ -17,6 +18,7 @@ interface SubmitHandlerOptions {
   resetState: () => void;
   setValidationError: Dispatch<SetStateAction<DatabaseError | null>>;
   state: AddTodoFormState;
+  timeZone: string;
 }
 
 interface AddTodoFormStateResult {
@@ -61,6 +63,7 @@ const createSubmitHandler = ({
   resetState,
   setValidationError,
   state,
+  timeZone,
 }: SubmitHandlerOptions): ((event: React.FormEvent<HTMLFormElement>) => Promise<void>) => {
   return async (event) => {
     event.preventDefault();
@@ -74,7 +77,7 @@ const createSubmitHandler = ({
     setValidationError(null);
 
     try {
-      await createTodo(createTodoFromState(state, createContext));
+      await createTodo(createTodoFromState(state, createContext, timeZone));
       resetState();
       onSuccess();
     } catch (err) {
@@ -88,12 +91,13 @@ export const useAddTodoForm = (
   createContext: AddTodoCreateContext,
 ): AddTodoFormStateResult => {
   const createTodoMutation = useAuditedCreateTodoMutation();
+  const timeZone = useUserTimeZone();
   const [state, setState] = useState<AddTodoFormState>(
-    createInitialState(createContext.parentTodo),
+    createInitialState(createContext.parentTodo, timeZone),
   );
   const [validationError, setValidationError] = useState<DatabaseError | null>(null);
 
-  const resetState = () => setState(createInitialState(createContext.parentTodo));
+  const resetState = () => setState(createInitialState(createContext.parentTodo, timeZone));
 
   const handleSubmit = createSubmitHandler({
     createContext,
@@ -102,6 +106,7 @@ export const useAddTodoForm = (
     resetState,
     setValidationError,
     state,
+    timeZone,
   });
 
   const clearError = () => {

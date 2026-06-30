@@ -18,6 +18,8 @@
  * - `"lens ui"` → exact phrase match for "lens ui"
  */
 
+import { formatDateInTimeZone, normalizeTimeZone } from '@eddo/core-shared';
+
 /** Parsed search query result */
 export interface ParsedQuery {
   /** Full-text search terms (remaining after extracting filters) */
@@ -113,17 +115,33 @@ function generatePhraseCondition(phrase: string, escapeString: (s: string) => st
   return `(COALESCE(TO_LOWER(title), "") LIKE "*${escaped}*" OR COALESCE(TO_LOWER(description), "") LIKE "*${escaped}*" OR COALESCE(TO_LOWER(notesContent), "") LIKE "*${escaped}*")`;
 }
 
+export interface SearchDateContext {
+  now?: Date;
+  timeZone?: string;
+}
+
+const addDaysToDateOnly = (dateOnly: string, days: number): string => {
+  const [year = 1970, month = 1, day = 1] = dateOnly.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return date.toISOString().split('T')[0] ?? '1970-01-01';
+};
+
+const getTodayDate = (context: SearchDateContext = {}): string => {
+  return formatDateInTimeZone(context.now ?? new Date(), normalizeTimeZone(context.timeZone));
+};
+
 /** Generate due date filter condition */
-function generateDueDateCondition(dueFilter: 'today' | 'week' | 'overdue'): string {
-  const today = new Date().toISOString().split('T')[0];
+function generateDueDateCondition(
+  dueFilter: 'today' | 'week' | 'overdue',
+  context: SearchDateContext = {},
+): string {
+  const today = getTodayDate(context);
 
   if (dueFilter === 'today') {
     return `due == "${today}"`;
   }
   if (dueFilter === 'week') {
-    const weekEnd = new Date();
-    weekEnd.setDate(weekEnd.getDate() + 7);
-    return `due >= "${today}" AND due <= "${weekEnd.toISOString().split('T')[0]}"`;
+    return `due >= "${today}" AND due <= "${addDaysToDateOnly(today, 7)}"`;
   }
   return `due < "${today}" AND completed IS NULL`; // overdue
 }
@@ -137,6 +155,7 @@ function generateDueDateCondition(dueFilter: 'today' | 'week' | 'overdue'): stri
 export function generateWhereConditions(
   parsed: ParsedQuery,
   escapeString: (s: string) => string,
+  context: SearchDateContext = {},
 ): string[] {
   const conditions: string[] = [];
 
@@ -162,7 +181,7 @@ export function generateWhereConditions(
   }
 
   if (parsed.dueFilter) {
-    conditions.push(generateDueDateCondition(parsed.dueFilter));
+    conditions.push(generateDueDateCondition(parsed.dueFilter, context));
   }
 
   return conditions;

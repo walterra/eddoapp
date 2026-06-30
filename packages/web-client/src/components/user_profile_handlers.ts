@@ -117,6 +117,8 @@ export function buildGithubUpdateData(githubState: GithubFormState) {
   };
 }
 
+import { getSystemTimeZone } from '@eddo/core-client';
+
 /** Default preferences state values */
 const DEFAULT_PREFERENCES: PreferencesFormState = {
   dailyBriefing: false,
@@ -125,6 +127,7 @@ const DEFAULT_PREFERENCES: PreferencesFormState = {
   dailyRecap: false,
   recapTime: '18:00',
   printRecap: false,
+  timezone: getSystemTimeZone(),
 };
 
 /**
@@ -138,6 +141,7 @@ export function initializePreferencesState(
     dailyRecap?: boolean;
     recapTime?: string;
     printRecap?: boolean;
+    timezone?: string;
   } | null,
 ): PreferencesFormState {
   if (!preferences) return { ...DEFAULT_PREFERENCES };
@@ -148,6 +152,7 @@ export function initializePreferencesState(
     dailyRecap: preferences.dailyRecap ?? DEFAULT_PREFERENCES.dailyRecap,
     recapTime: preferences.recapTime ?? DEFAULT_PREFERENCES.recapTime,
     printRecap: preferences.printRecap ?? DEFAULT_PREFERENCES.printRecap,
+    timezone: preferences.timezone ?? DEFAULT_PREFERENCES.timezone,
   };
 }
 
