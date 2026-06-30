@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) >= 18.11.0 (see `.nvmrc`)
+- [Node.js](https://nodejs.org/) >= 24.0.0 (see `.nvmrc`)
 - [pnpm](https://pnpm.io/) >= 7.1.0
 - A modern web browser
 

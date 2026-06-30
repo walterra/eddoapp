@@ -11,12 +11,12 @@ import { extractVersion, isVersionAtLeast } from './prerequisites.js';
 
 describe('prerequisites', () => {
   describe('extractVersion', () => {
-    it('extracts version from "v22.12.0" format', () => {
-      expect(extractVersion('v22.12.0')).toBe('22.12.0');
+    it('extracts version from "v24.0.0" format', () => {
+      expect(extractVersion('v24.0.0')).toBe('24.0.0');
     });
 
-    it('extracts version from "22.12.0" format without v prefix', () => {
-      expect(extractVersion('22.12.0')).toBe('22.12.0');
+    it('extracts version from "24.0.0" format without v prefix', () => {
+      expect(extractVersion('24.0.0')).toBe('24.0.0');
     });
 
     it('extracts version from verbose output', () => {
@@ -38,35 +38,35 @@ describe('prerequisites', () => {
 
   describe('isVersionAtLeast', () => {
     it('returns true when current equals minimum', () => {
-      expect(isVersionAtLeast('18.11.0', '18.11.0')).toBe(true);
+      expect(isVersionAtLeast('24.0.0', '24.0.0')).toBe(true);
     });
 
     it('returns true when current major is higher', () => {
-      expect(isVersionAtLeast('22.0.0', '18.11.0')).toBe(true);
+      expect(isVersionAtLeast('25.0.0', '24.0.0')).toBe(true);
     });
 
     it('returns true when current minor is higher', () => {
-      expect(isVersionAtLeast('18.15.0', '18.11.0')).toBe(true);
+      expect(isVersionAtLeast('24.15.0', '24.0.0')).toBe(true);
     });
 
     it('returns true when current patch is higher', () => {
-      expect(isVersionAtLeast('18.11.5', '18.11.0')).toBe(true);
+      expect(isVersionAtLeast('24.0.5', '24.0.0')).toBe(true);
     });
 
     it('returns false when current major is lower', () => {
-      expect(isVersionAtLeast('16.0.0', '18.11.0')).toBe(false);
+      expect(isVersionAtLeast('22.0.0', '24.0.0')).toBe(false);
     });
 
     it('returns false when current minor is lower', () => {
-      expect(isVersionAtLeast('18.10.0', '18.11.0')).toBe(false);
+      expect(isVersionAtLeast('24.10.0', '24.11.0')).toBe(false);
     });
 
     it('returns false when current patch is lower', () => {
-      expect(isVersionAtLeast('18.11.0', '18.11.1')).toBe(false);
+      expect(isVersionAtLeast('24.0.0', '24.0.1')).toBe(false);
     });
 
     it('handles missing patch versions', () => {
-      expect(isVersionAtLeast('22.12.0', '18.0.0')).toBe(true);
+      expect(isVersionAtLeast('24.12.0', '24.0.0')).toBe(true);
     });
 
     it('handles single digit versions', () => {
