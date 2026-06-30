@@ -151,7 +151,7 @@ async function generateBriefingRecap(ctx: Context, user: TelegramUser): Promise<
     });
 
     if (ctx.message) {
-      ctx.message.text = getRecapRequestMessage();
+      ctx.message.text = getRecapRequestMessage(user.preferences?.timezone);
     }
 
     await handleMessage(ctx as BotContext);
