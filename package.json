@@ -57,7 +57,7 @@
     "@typescript-eslint/parser": "^8.57.1",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^3.2.4",
-    "autoprefixer": "^10.4.27",
+    "autoprefixer": "^10.5.0",
     "bcryptjs": "^3.0.3",
     "chalk": "^5.6.2",
     "clet": "^1.0.1",
