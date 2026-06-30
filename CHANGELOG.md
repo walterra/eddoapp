@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.10.0
+
+### Minor Changes
+
+- [#614](https://github.com/walterra/eddoapp/pull/614) [`692cb8e`](https://github.com/walterra/eddoapp/commit/692cb8ee4b6ec0456a73d3d085c5926f552c5302) - Add structured todo scheduling with date-only due dates and editable times
+
+- [#616](https://github.com/walterra/eddoapp/pull/616) [`6820220`](https://github.com/walterra/eddoapp/commit/6820220e74f76ccb70192b4d41e458a7d32761fc) - Add user timezone preferences for scheduling and daily briefings
+
+### Patch Changes
+
+- [#612](https://github.com/walterra/eddoapp/pull/612) [`21c94a1`](https://github.com/walterra/eddoapp/commit/21c94a1a7b0f2c33d4ba7d83656d1c46b3dd45d8) - Fix briefing and recap date ranges to use UTC day boundaries.
+
+- [#628](https://github.com/walterra/eddoapp/pull/628) [`0c06564`](https://github.com/walterra/eddoapp/commit/0c06564d910722a24925660c5cf58eb1e4140efe) - Require Node.js 24 and pin CI to Node.js 24.18.0
+
+- [#627](https://github.com/walterra/eddoapp/pull/627) [`f15d5c4`](https://github.com/walterra/eddoapp/commit/f15d5c427e5d5d208362a4cf81ee86191ec29a1e) - Honor user timezones in daily recap prompts and activity reports.
+
 ## 0.9.0
 
 ### Minor Changes
