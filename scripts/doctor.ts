@@ -33,7 +33,7 @@ function checkPrerequisites(): DiagnosticResult[] {
       name: 'Node.js',
       command: 'node',
       versionArg: '--version',
-      minVersion: '18.11.0',
+      minVersion: '24.0.0',
       installHint: 'Install from https://nodejs.org/',
     },
     {

@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Use Node.js 22.x
+      - name: Use Node.js 24.18.0
         uses: actions/setup-node@v6.3.0
         with:
-          node-version: 22.x
+          node-version: 24.18.0
       - uses: pnpm/action-setup@v6
         with:
           run_install: false
@@ -126,10 +126,10 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v6
-      - name: Use Node.js 22.x
+      - name: Use Node.js 24.18.0
         uses: actions/setup-node@v6.3.0
         with:
-          node-version: 22.x
+          node-version: 24.18.0
       - uses: pnpm/action-setup@v6
         with:
           run_install: false
@@ -155,10 +155,10 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v6
-      - name: Use Node.js 22.x
+      - name: Use Node.js 24.18.0
         uses: actions/setup-node@v6.3.0
         with:
-          node-version: 22.x
+          node-version: 24.18.0
       - uses: pnpm/action-setup@v6
         with:
           run_install: false
@@ -186,10 +186,10 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v6
-      - name: Use Node.js 22.x
+      - name: Use Node.js 24.18.0
         uses: actions/setup-node@v6.3.0
         with:
-          node-version: 22.x
+          node-version: 24.18.0
       - uses: pnpm/action-setup@v6
         with:
           run_install: false
@@ -217,10 +217,10 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v6
-      - name: Use Node.js 22.x
+      - name: Use Node.js 24.18.0
         uses: actions/setup-node@v6.3.0
         with:
-          node-version: 22.x
+          node-version: 24.18.0
       - uses: pnpm/action-setup@v6
         with:
           run_install: false

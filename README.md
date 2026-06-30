@@ -38,7 +38,7 @@ Manage todos through a web interface, Telegram bot with Claude AI, or programmat
 
 ## Quick Start
 
-**Requirements**: Node.js ≥18.11.0, pnpm ≥7.1.0, Docker
+**Requirements**: Node.js ≥24.0.0, pnpm ≥7.1.0, Docker
 
 ```bash
 # Clone repository

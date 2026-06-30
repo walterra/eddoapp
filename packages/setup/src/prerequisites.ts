@@ -122,7 +122,7 @@ export function checkPrerequisites(): PrerequisiteResult[] {
   const results: PrerequisiteResult[] = [];
 
   results.push(
-    checkVersionedPrerequisite('Node.js', 'node', '18.11.0', 'Install from https://nodejs.org/'),
+    checkVersionedPrerequisite('Node.js', 'node', '24.0.0', 'Install from https://nodejs.org/'),
   );
 
   results.push(
