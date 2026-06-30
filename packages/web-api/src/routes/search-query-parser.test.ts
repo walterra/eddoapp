@@ -173,6 +173,16 @@ describe('search-query-parser', () => {
       expect(conditions.some((c) => c.includes('completed IS NULL'))).toBe(true);
     });
 
+    it('should generate due filter in the user timezone', () => {
+      const parsed = parseSearchQuery('due:today');
+      const conditions = generateWhereConditions(parsed, escapeString, {
+        now: new Date('2026-01-02T23:30:00.000Z'),
+        timeZone: 'Europe/Vienna',
+      });
+
+      expect(conditions).toContain('due == "2026-01-03"');
+    });
+
     it('should return empty array for empty query', () => {
       const parsed = parseSearchQuery('');
       const conditions = generateWhereConditions(parsed, escapeString);

@@ -228,6 +228,39 @@ describe('executeSearchTodos', () => {
     );
   });
 
+  it('uses the user timezone for due:today searches', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-02T23:30:00.000Z'));
+
+    const context = createMockContext({
+      userId: 'user_test',
+      dbName: 'eddo_user_test',
+      attachmentsDbName: 'eddo_attachments_test',
+      username: 'test',
+      timezone: 'Europe/Vienna',
+    });
+    const esClient = createMockEsClient([]);
+    const couchDb = createMockCouchDb([]);
+    mockGetUserDb.mockReturnValue(couchDb);
+
+    try {
+      await executeSearchTodos(
+        { query: 'due:today', limit: 20, includeCompleted: true },
+        context,
+        () => esClient,
+        mockGetUserDb,
+      );
+
+      expect(esClient.esql.query).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: expect.stringContaining('due == "2026-01-03"'),
+        }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('filters out completed when includeCompleted is false', async () => {
     const context = createMockContext({
       userId: 'user_test',

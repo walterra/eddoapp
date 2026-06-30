@@ -45,15 +45,26 @@ function getPlaceholderTodos(
 
 type DateRange = { start: string; end: string };
 
-/** Formats a Date to YYYY-MM-DD string */
-const toDateString = (d: Date): string => d.toISOString().split('T')[0];
+const formatDateOnly = (year: number, month: number, day: number): string => {
+  return new Date(Date.UTC(year, month, day)).toISOString().split('T')[0] ?? '1970-01-01';
+};
+
+const parseDateOnly = (dateOnly: string): Date => {
+  const [year = 1970, month = 1, day = 1] = dateOnly.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+};
+
+const addDaysToDateOnly = (dateOnly: string, days: number): string => {
+  const date = parseDateOnly(dateOnly);
+  return formatDateOnly(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days);
+};
 
 type RangeType = 'day' | 'week' | 'month' | 'year' | 'custom';
 
 /** Detects the range type based on start/end dates */
 function detectRangeType(startDate: string, endDate: string): RangeType {
   const diffDays = Math.round(
-    (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24),
+    (parseDateOnly(endDate).getTime() - parseDateOnly(startDate).getTime()) / (1000 * 60 * 60 * 24),
   );
 
   if (diffDays === 0) return 'day';
@@ -64,73 +75,62 @@ function detectRangeType(startDate: string, endDate: string): RangeType {
 }
 
 /** Gets prev/next day ranges */
-function getAdjacentDays(startD: Date, endD: Date): DateRange[] {
-  const prev = new Date(startD);
-  prev.setDate(prev.getDate() - 1);
-  const next = new Date(endD);
-  next.setDate(next.getDate() + 1);
+function getAdjacentDays(startDate: string, endDate: string): DateRange[] {
+  const prev = addDaysToDateOnly(startDate, -1);
+  const next = addDaysToDateOnly(endDate, 1);
 
   return [
-    { start: toDateString(prev), end: toDateString(prev) },
-    { start: toDateString(next), end: toDateString(next) },
+    { start: prev, end: prev },
+    { start: next, end: next },
   ];
 }
 
 /** Gets prev/next week ranges */
-function getAdjacentWeeks(startD: Date, endD: Date): DateRange[] {
-  const prevStart = new Date(startD);
-  prevStart.setDate(prevStart.getDate() - 7);
-  const prevEnd = new Date(prevStart);
-  prevEnd.setDate(prevEnd.getDate() + 6);
-
-  const nextStart = new Date(endD);
-  nextStart.setDate(nextStart.getDate() + 1);
-  const nextEnd = new Date(nextStart);
-  nextEnd.setDate(nextEnd.getDate() + 6);
+function getAdjacentWeeks(startDate: string, endDate: string): DateRange[] {
+  const prevStart = addDaysToDateOnly(startDate, -7);
+  const nextStart = addDaysToDateOnly(endDate, 1);
 
   return [
-    { start: toDateString(prevStart), end: toDateString(prevEnd) },
-    { start: toDateString(nextStart), end: toDateString(nextEnd) },
+    { start: prevStart, end: addDaysToDateOnly(prevStart, 6) },
+    { start: nextStart, end: addDaysToDateOnly(nextStart, 6) },
   ];
 }
 
 /** Gets prev/next month ranges */
 function getAdjacentMonths(startD: Date, endD: Date): DateRange[] {
-  const prevStart = new Date(startD.getFullYear(), startD.getMonth() - 1, 1);
-  const prevEnd = new Date(startD.getFullYear(), startD.getMonth(), 0);
-  const nextStart = new Date(endD.getFullYear(), endD.getMonth() + 1, 1);
-  const nextEnd = new Date(endD.getFullYear(), endD.getMonth() + 2, 0);
+  const prevStart = formatDateOnly(startD.getUTCFullYear(), startD.getUTCMonth() - 1, 1);
+  const prevEnd = formatDateOnly(startD.getUTCFullYear(), startD.getUTCMonth(), 0);
+  const nextStart = formatDateOnly(endD.getUTCFullYear(), endD.getUTCMonth() + 1, 1);
+  const nextEnd = formatDateOnly(endD.getUTCFullYear(), endD.getUTCMonth() + 2, 0);
 
   return [
-    { start: toDateString(prevStart), end: toDateString(prevEnd) },
-    { start: toDateString(nextStart), end: toDateString(nextEnd) },
+    { start: prevStart, end: prevEnd },
+    { start: nextStart, end: nextEnd },
   ];
 }
 
 /** Gets prev/next year ranges */
 function getAdjacentYears(startD: Date, endD: Date): DateRange[] {
-  const prevStart = new Date(startD.getFullYear() - 1, 0, 1);
-  const prevEnd = new Date(startD.getFullYear() - 1, 11, 31);
-  const nextStart = new Date(endD.getFullYear() + 1, 0, 1);
-  const nextEnd = new Date(endD.getFullYear() + 1, 11, 31);
+  const prevYear = startD.getUTCFullYear() - 1;
+  const nextYear = endD.getUTCFullYear() + 1;
 
   return [
-    { start: toDateString(prevStart), end: toDateString(prevEnd) },
-    { start: toDateString(nextStart), end: toDateString(nextEnd) },
+    { start: formatDateOnly(prevYear, 0, 1), end: formatDateOnly(prevYear, 11, 31) },
+    { start: formatDateOnly(nextYear, 0, 1), end: formatDateOnly(nextYear, 11, 31) },
   ];
 }
 
 /** Gets adjacent ranges based on detected range type */
 function getAdjacentRanges(startDate: string, endDate: string): DateRange[] {
   const rangeType = detectRangeType(startDate, endDate);
-  const startD = new Date(startDate);
-  const endD = new Date(endDate);
+  const startD = parseDateOnly(startDate);
+  const endD = parseDateOnly(endDate);
 
   switch (rangeType) {
     case 'day':
-      return getAdjacentDays(startD, endD);
+      return getAdjacentDays(startDate, endDate);
     case 'week':
-      return getAdjacentWeeks(startD, endD);
+      return getAdjacentWeeks(startDate, endDate);
     case 'month':
       return getAdjacentMonths(startD, endD);
     case 'year':
