@@ -11,6 +11,7 @@ import { useActivitiesByWeek } from '../hooks/use_activities_by_week';
 import { useDelayedLoading } from '../hooks/use_delayed_loading';
 import { useTimeTrackingActive } from '../hooks/use_time_tracking_active';
 import { useTodosByDateRange } from '../hooks/use_todos_by_date_range';
+import { useUserTimeZone } from '../hooks/use_user_timezone';
 import { usePouchDb } from '../pouch_db';
 import type { ActivityItem } from './todo_board_helpers';
 import { migrateLocalTodosInBackground, migrateVisibleLegacyTodos } from './todo_migration';
@@ -129,10 +130,16 @@ export function useTodoBoardData({
   endDate: string;
   isInitialized: boolean;
 }) {
+  const timeZone = useUserTimeZone();
   const isVisibleMigrationDone = useVisibleTodoMigration(startDate, endDate, isInitialized);
   const isQueryEnabled = isInitialized && isVisibleMigrationDone;
   const todosQuery = useTodosByDateRange({ startDate, endDate, enabled: isQueryEnabled });
-  const activitiesQuery = useActivitiesByWeek({ startDate, endDate, enabled: isQueryEnabled });
+  const activitiesQuery = useActivitiesByWeek({
+    startDate,
+    endDate,
+    timeZone,
+    enabled: isQueryEnabled,
+  });
   const timeTrackingQuery = useTimeTrackingActive({ enabled: isQueryEnabled });
 
   const activities = useMemo(

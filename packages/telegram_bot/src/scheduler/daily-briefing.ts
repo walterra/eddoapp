@@ -283,7 +283,7 @@ export class DailyBriefingScheduler {
 
     const result = await executeAgentForUser(
       user,
-      getRecapRequestMessage(),
+      getRecapRequestMessage(user.preferences?.timezone),
       RECAP_CONTENT_MARKER,
       'recap',
     );

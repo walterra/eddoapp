@@ -1,3 +1,5 @@
+import { formatDateInTimeZone, normalizeTimeZone } from '@eddo/core-server';
+
 /**
  * Constants for daily briefing and recap functionality
  */
@@ -29,12 +31,14 @@ IMPORTANT: Start your briefing response with exactly this marker on its own line
 export const RECAP_CONTENT_MARKER = '---RECAP-START---';
 
 /**
- * Generates a recap request message
- * Uses getRecapData tool for efficient single-call data retrieval
+ * Generates a recap request message.
+ * Uses getRecapData tool for efficient single-call data retrieval.
+ *
+ * @param timeZone User timezone.
+ * @return Recap prompt.
  */
-export function getRecapRequestMessage(): string {
-  const now = new Date();
-  const dateStr = now.toISOString().split('T')[0];
+export function getRecapRequestMessage(timeZone?: string): string {
+  const dateStr = formatDateInTimeZone(new Date(), normalizeTimeZone(timeZone));
 
   return `Generate an INSIGHTFUL daily recap with SPECIFIC completed tasks. Today is ${dateStr}. Call the getRecapData tool to get all recap data in one call. This returns:
 - completedToday: Todos completed today with timestamps

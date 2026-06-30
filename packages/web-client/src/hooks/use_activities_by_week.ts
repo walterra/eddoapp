@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import type { Activity, Todo } from '@eddo/core-shared';
+import { getUtcRangeForTimeZoneDate, type Activity, type Todo } from '@eddo/core-shared';
 import { usePouchDb } from '../pouch_db';
 
 /** Maximum number of activity range queries to keep in cache */
@@ -32,22 +32,26 @@ interface UseActivitiesByWeekParams {
   startDate: string;
   /** End date in YYYY-MM-DD format */
   endDate: string;
+  /** IANA timezone for local day boundaries */
+  timeZone: string;
   enabled?: boolean;
 }
 
 /**
  * Fetches activities (time tracking entries) for a date range.
  * Uses Mango query to find todos with active entries, then expands and filters client-side.
- * Uses date-only strings (YYYY-MM-DD) for comparison to avoid timezone issues.
+ * Converts local date boundaries to UTC for timezone-aware comparisons.
  *
  * @param startDate - Start date in YYYY-MM-DD format
  * @param endDate - End date in YYYY-MM-DD format
+ * @param timeZone - IANA timezone for local day boundaries
  * @param enabled - Whether the query should run
  * @returns TanStack Query result with activities data
  */
 export function useActivitiesByWeek({
   startDate,
   endDate,
+  timeZone,
   enabled = true,
 }: UseActivitiesByWeekParams) {
   const { safeDb } = usePouchDb();
@@ -59,14 +63,15 @@ export function useActivitiesByWeek({
   }, [queryClient, startDate, endDate]);
 
   return useQuery({
-    queryKey: ['activities', 'byActive', startDate, endDate],
+    queryKey: ['activities', 'byActive', startDate, endDate, timeZone],
     queryFn: async () => {
       const timerId = `fetchActivities-${Date.now()}`;
       console.time(timerId);
 
-      // Use date-only prefix for comparison (avoids timezone issues)
-      const startKey = startDate;
-      const endKey = endDate + 'T\uffff';
+      const startRange = getUtcRangeForTimeZoneDate(startDate, timeZone);
+      const endRange = getUtcRangeForTimeZoneDate(endDate, timeZone);
+      const startKey = startRange.start;
+      const endKey = endRange.end;
 
       // Use Mango to find todos that have active entries
       // Note: PouchDB defaults to limit=25, so we set a high limit
@@ -82,8 +87,10 @@ export function useActivitiesByWeek({
       const activities: Activity[] = [];
       for (const todo of todos) {
         for (const [from, to] of Object.entries(todo.active)) {
-          // Check if this activity overlaps with the date range using date prefix comparison
-          if (from >= startKey && from <= endKey) {
+          const effectiveTo = to ?? new Date().toISOString();
+          const overlapsRange = from <= endKey && effectiveTo >= startKey;
+
+          if (overlapsRange) {
             activities.push({
               doc: todo,
               from,
