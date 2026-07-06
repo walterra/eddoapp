@@ -21,7 +21,7 @@ overrides:
   '@changesets/parse': '>=0.4.2'
 
 allowBuilds:
-  '@google/genai': false
+  '@google/genai': true
   '@pnpm/exe': true
   '@swc/core': true
   '@tailwindcss/oxide': true
