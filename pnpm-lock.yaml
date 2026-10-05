@@ -27,7 +27,7 @@ importers:
         version: 0.27.16(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3)
       d3-array:
         specifier: ^3.0.3
         version: 3.2.4
@@ -41,8 +41,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       fastmcp:
-        specifier: ^4.0.1
-        version: 4.0.1
+        specifier: ^4.3.1
+        version: 4.3.1
       flowbite:
         specifier: ^4.0.1
         version: 4.0.1(rollup@4.62.2)
@@ -79,7 +79,7 @@ importers:
         version: 0.8.0
       '@cloudant/couchbackup':
         specifier: ^2.11.12
-        version: 2.11.12(@types/tough-cookie@4.0.5)(axios@1.18.0)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.5)(tough-cookie@6.0.0)
+        version: 2.11.12(@types/tough-cookie@4.0.5)(axios@1.18.1)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.5)(tough-cookie@6.0.0)
       '@commitlint/cli':
         specifier: ^20.4.1
         version: 20.4.1(@types/node@25.9.3)(typescript@5.9.3)
@@ -375,8 +375,8 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
       fastmcp:
-        specifier: ^4.0.1
-        version: 4.0.1
+        specifier: ^4.3.1
+        version: 4.3.1
       nano:
         specifier: ^11.0.4
         version: 11.0.4
@@ -392,7 +392,7 @@ importers:
     devDependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3)
       '@types/node':
         specifier: ^25.9.3
         version: 25.9.3
@@ -475,7 +475,7 @@ importers:
     dependencies:
       '@earendil-works/pi-ai':
         specifier: ^0.74.0
-        version: 0.74.2(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3))(@opentelemetry/api@1.9.0)(ws@8.20.0)(zod@4.4.3)
+        version: 0.74.2(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3))(@opentelemetry/api@1.9.0)(ws@8.20.0)(zod@4.4.3)
       '@eddo/core-instrumentation':
         specifier: workspace:*
         version: link:../core-instrumentation
@@ -496,7 +496,7 @@ importers:
         version: 1.8.0(@opentelemetry/api@1.9.0)
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3)
+        version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3)
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
@@ -504,8 +504,8 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
       fastmcp:
-        specifier: ^4.0.1
-        version: 4.0.1
+        specifier: ^4.3.1
+        version: 4.3.1
       grammy:
         specifier: ^1.40.0
         version: 1.40.0
@@ -5380,8 +5380,8 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.18.0:
-    resolution: {integrity: sha512-E32NzpYKp++W7XRe52rHiXV2ehxmh3wbdgO7MHeFM+vqxLBYHzt0ElkiImtOBxtOmyp0yoC8C6uESVV84Y2/hw==}
+  axios@1.18.1:
+    resolution: {integrity: sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==}
 
   b4a@1.8.0:
     resolution: {integrity: sha512-qRuSmNSkGQaHwNbM7J78Wwy+ghLEYF1zNrSeMxj4Kgw6y33O3mXcQ6Ie9fRvfU/YnxWkOchPXbaLb73TkIsfdg==}
@@ -6618,8 +6618,8 @@ packages:
     resolution: {integrity: sha512-C0AaNuC+mscy6vrAQKAc/rMq+zAPHodfHGZu4sGVehvAQt/JLG1O5zEcYcXSY5zSqr4YVgxsB+pHXTq0i7eDlg==}
     hasBin: true
 
-  fastmcp@4.0.1:
-    resolution: {integrity: sha512-ZNTCxyKJT/3WVR7iZ5PI7+WNj6Hba+Hzbc18h5GhggKaWyrTDHPNikGvPY/idC2gbEITJWuZRaUNbssbSPfBUw==}
+  fastmcp@4.3.1:
+    resolution: {integrity: sha512-mlLK1LVfNR2a4t9albNutBMOfJhG8qZILpdYnhMsXmhLce+mljJ/g9CY4uApibWoRoDXtaOKrFYWZKR3iDFgvQ==}
     hasBin: true
     peerDependencies:
       jose: ^5.0.0
@@ -7036,8 +7036,8 @@ packages:
     resolution: {integrity: sha512-Eaw2YTGM6WOxA6CXbckaEvslr2Ne4NFsKrvc0v97JD5awbmeBLO5w9Ho9L9kmKonrwF9RJlW6BxT1PVv/agBHQ==}
     engines: {node: '>=16.9.0'}
 
-  hono@4.12.26:
-    resolution: {integrity: sha512-uyZtpnYxM9CmQ7QsQknM4zN8EftNqhON1qYeIKM0Se67CCEe2c44xyGURwB0axX2fBDu1dqHrHAc1hmNT8ITkw==}
+  hono@4.12.27:
+    resolution: {integrity: sha512-1yrb/+w6HWQJrUCLkJ2IF5jNIPvvFkblV5RNOYl6bV+OA6p9GLcMpHFFGTosSvHvcAUibuUukRqhlYI4z32C7Q==}
     engines: {node: '>=16.9.0'}
 
   hosted-git-info@2.8.9:
@@ -11163,10 +11163,10 @@ snapshots:
       human-id: 4.2.0
       prettier: 2.8.8
 
-  '@cloudant/couchbackup@2.11.12(@types/tough-cookie@4.0.5)(axios@1.18.0)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.5)(tough-cookie@6.0.0)':
+  '@cloudant/couchbackup@2.11.12(@types/tough-cookie@4.0.5)(axios@1.18.1)(extend@3.0.2)(ibm-cloud-sdk-core@5.4.5)(tough-cookie@6.0.0)':
     dependencies:
       '@ibm-cloud/cloudant': 0.12.13(@types/tough-cookie@4.0.5)(extend@3.0.2)(tough-cookie@6.0.0)
-      axios: 1.18.0(debug@4.4.3)
+      axios: 1.18.1(debug@4.4.3)
       commander: 14.0.2
       debug: 4.4.3
       ibm-cloud-sdk-core: 5.4.5
@@ -11362,11 +11362,11 @@ snapshots:
       enabled: 2.0.0
       kuler: 2.0.0
 
-  '@earendil-works/pi-ai@0.74.2(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3))(@opentelemetry/api@1.9.0)(ws@8.20.0)(zod@4.4.3)':
+  '@earendil-works/pi-ai@0.74.2(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3))(@opentelemetry/api@1.9.0)(ws@8.20.0)(zod@4.4.3)':
     dependencies:
       '@anthropic-ai/sdk': 0.91.1(zod@4.4.3)
       '@aws-sdk/client-bedrock-runtime': 3.1070.0
-      '@google/genai': 1.48.0(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3))
+      '@google/genai': 1.48.0(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3))
       '@mistralai/mistralai': 2.2.6(@opentelemetry/api@1.9.0)
       http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.6
@@ -11859,14 +11859,14 @@ snapshots:
 
   '@fontsource-variable/inter@5.2.8': {}
 
-  '@google/genai@1.48.0(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3))':
+  '@google/genai@1.48.0(@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3))':
     dependencies:
       google-auth-library: 10.5.0
       p-retry: 4.6.2
       protobufjs: 7.5.4
       ws: 8.20.0
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -11909,9 +11909,9 @@ snapshots:
     dependencies:
       hono: 4.11.9
 
-  '@hono/node-server@1.19.7(hono@4.12.26)':
+  '@hono/node-server@1.19.7(hono@4.12.27)':
     dependencies:
-      hono: 4.12.26
+      hono: 4.12.27
 
   '@humanfs/core@0.19.1': {}
 
@@ -12018,9 +12018,9 @@ snapshots:
 
   '@mixmark-io/domino@2.2.0': {}
 
-  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3)':
+  '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.12.26)
+      '@hono/node-server': 1.19.7(hono@4.12.27)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -15416,7 +15416,7 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.18.0(debug@4.4.3):
+  axios@1.18.1(debug@4.4.3):
     dependencies:
       follow-redirects: 1.16.0(debug@4.4.3)
       form-data: 4.0.6
@@ -16844,14 +16844,14 @@ snapshots:
       path-expression-matcher: 1.5.0
       strnum: 2.4.0
 
-  fastmcp@4.0.1:
+  fastmcp@4.3.1:
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.26)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(zod@4.4.3)
       '@standard-schema/spec': 1.1.0
       execa: 9.6.1
       file-type: 21.3.4
       fuse.js: 7.4.2
-      hono: 4.12.26
+      hono: 4.12.27
       mcp-proxy: 6.5.2
       strict-event-emitter-types: 2.0.0
       undici: 7.28.0
@@ -17370,7 +17370,7 @@ snapshots:
 
   hono@4.11.9: {}
 
-  hono@4.12.26: {}
+  hono@4.12.27: {}
 
   hosted-git-info@2.8.9: {}
 
@@ -17460,7 +17460,7 @@ snapshots:
       '@types/debug': 4.1.13
       '@types/node': 18.19.130
       '@types/tough-cookie': 4.0.5
-      axios: 1.18.0(debug@4.4.3)
+      axios: 1.18.1(debug@4.4.3)
       camelcase: 6.3.0
       debug: 4.4.3
       dotenv: 16.6.1
@@ -17470,7 +17470,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.3
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.18.0)
+      retry-axios: 2.6.0(axios@1.18.1)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -19226,7 +19226,7 @@ snapshots:
 
   pipenet@1.4.2:
     dependencies:
-      axios: 1.18.0(debug@4.4.3)
+      axios: 1.18.1(debug@4.4.3)
       debug: 4.4.3
       human-readable-ids: 1.0.4
       koa: 3.2.1
@@ -19882,9 +19882,9 @@ snapshots:
       onetime: 7.0.0
       signal-exit: 4.1.0
 
-  retry-axios@2.6.0(axios@1.18.0):
+  retry-axios@2.6.0(axios@1.18.1):
     dependencies:
-      axios: 1.18.0(debug@4.4.3)
+      axios: 1.18.1(debug@4.4.3)
 
   retry@0.12.0: {}
 
