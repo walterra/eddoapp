@@ -37,7 +37,12 @@ export function createScheduledAgentContext(params: CreateScheduledAgentContextP
       chat: telegramId ? { id: telegramId, type: 'private' } : undefined,
       text: messageText,
     },
-    session: { user },
+    session: {
+      userId: user._id,
+      lastActivity: new Date(),
+      context: {},
+      user,
+    },
     reply: async (text: string, options?: Parameters<typeof bot.api.sendMessage>[2]) => {
       if (!telegramId) return undefined;
       return bot.api.sendMessage(telegramId, text, options);
