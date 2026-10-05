@@ -11,6 +11,7 @@ import {
   type AssistantChatHistoryStore,
 } from './chat-history-store.js';
 import { warnWhenContextIsLarge } from './context-budget.js';
+import { handleAgentExecutionError } from './execution-error.js';
 import {
   extractConversationalPart,
   extractStatusMessage,
@@ -31,6 +32,10 @@ export interface SimpleAgentConfig {
   llmService?: LlmService;
   /** Optional history store for dependency injection (used in testing) */
   historyStore?: AssistantChatHistoryStore;
+}
+
+export interface SimpleAgentExecutionOptions {
+  replyOnError?: boolean;
 }
 
 /**
@@ -65,6 +70,7 @@ export class SimpleAgent {
     userMessage: string,
     userId: string,
     telegramContext: BotContext,
+    options: SimpleAgentExecutionOptions = {},
   ): Promise<{
     success: boolean;
     finalResponse?: string;
@@ -104,37 +110,16 @@ export class SimpleAgent {
             toolResults: result.toolResults,
           };
         } catch (error) {
-          return this.handleExecutionError(error, userId, startTime, telegramContext);
+          return handleAgentExecutionError({
+            error,
+            userId,
+            startTime,
+            telegramContext,
+            replyOnError: options.replyOnError ?? true,
+          });
         }
       },
     );
-  }
-
-  private async handleExecutionError(
-    error: unknown,
-    userId: string,
-    startTime: number,
-    telegramContext: BotContext,
-  ): Promise<{ success: boolean; error: Error }> {
-    const duration = Date.now() - startTime;
-    logger.error('Simple agent failed', {
-      error: error instanceof Error ? error.message : String(error),
-      userId,
-      duration,
-    });
-
-    try {
-      await telegramContext.reply(
-        '❌ Sorry, I encountered an error processing your request. Please try again.',
-      );
-    } catch (replyError) {
-      logger.error('Failed to send error message to user', { replyError });
-    }
-
-    return {
-      success: false,
-      error: error instanceof Error ? error : new Error(String(error)),
-    };
   }
 
   private async agentLoop(

@@ -165,12 +165,13 @@ export class DailyBriefingScheduler {
         [SpanAttributes.TELEGRAM_CHAT_ID]: user.telegram_id,
       },
       async () => {
-        const result = await executeAgentForUser(
+        const result = await executeAgentForUser({
+          bot: this.bot,
           user,
-          DAILY_BRIEFING_REQUEST_MESSAGE,
-          BRIEFING_CONTENT_MARKER,
-          'briefing',
-        );
+          requestMessage: DAILY_BRIEFING_REQUEST_MESSAGE,
+          contentMarker: BRIEFING_CONTENT_MARKER,
+          contentType: 'briefing',
+        });
 
         if (result.hasMarker) {
           await this.sendBriefingWithMarker(user, result.message);
@@ -281,12 +282,13 @@ export class DailyBriefingScheduler {
       return;
     }
 
-    const result = await executeAgentForUser(
+    const result = await executeAgentForUser({
+      bot: this.bot,
       user,
-      getRecapRequestMessage(user.preferences?.timezone),
-      RECAP_CONTENT_MARKER,
-      'recap',
-    );
+      requestMessage: getRecapRequestMessage(user.preferences?.timezone),
+      contentMarker: RECAP_CONTENT_MARKER,
+      contentType: 'recap',
+    });
 
     if (result.hasMarker) {
       const cleanMessage = stripMarker(result.message, RECAP_CONTENT_MARKER);

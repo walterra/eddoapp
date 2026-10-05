@@ -38,7 +38,7 @@ function toHistoryEntry(message: AssistantConversationMessageDoc): AgentState['h
 
 /** Returns assistant conversation operations for the authenticated user. */
 function getUsername(telegramContext: BotContext): string | null {
-  return telegramContext.session.user?.username ?? null;
+  return telegramContext.session?.user?.username ?? null;
 }
 
 function buildCacheSessionId(username: string, conversationId: string): string {
