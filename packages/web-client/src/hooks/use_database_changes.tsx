@@ -14,6 +14,8 @@ import {
   useState,
 } from 'react';
 
+import { exposeBenchmarkQueryStatus } from '../config/benchmark_query_status';
+import { exposeBenchmarkSyncStatus, recordBenchmarkChange } from '../config/benchmark_sync_status';
 import { usePouchDb } from '../pouch_db';
 import { recentMutations } from './use_recent_mutations';
 
@@ -73,6 +75,7 @@ function useChangesListener(config: ChangesListenerConfig) {
   useEffect(() => {
     const listener = changes({ live: true, since: 'now', include_docs: false });
     listener.on('change', (change) => {
+      recordBenchmarkChange(change.id, change.changes[0]?.rev ?? '');
       setChangeCount(Number(change.seq));
       scheduleInvalidation(change.id);
     });
@@ -91,8 +94,10 @@ function useChangesListener(config: ChangesListenerConfig) {
 }
 
 export const DatabaseChangesProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const { changes } = usePouchDb();
+  const { changes, safeDb } = usePouchDb();
+  useEffect(() => exposeBenchmarkSyncStatus(safeDb), [safeDb]);
   const queryClient = useQueryClient();
+  useEffect(() => exposeBenchmarkQueryStatus(queryClient), [queryClient]);
   const [changeCount, setChangeCount] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -227,6 +227,22 @@ pnpm dev:create-user  # Create user manually
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for architecture details, testing, and contribution guidelines.
 
+### Day-paging performance benchmark
+
+Run a reproducible synthetic workload against an isolated CouchDB container with a visible browser:
+
+```bash
+pnpm benchmark:profile-reference walterra
+pnpm build:web-client
+pnpm benchmark:day-paging --headed --months 3
+pnpm benchmark:background-writes --headed --steps 6
+```
+
+Requires Docker and `agent-browser` with Chromium installed. Profiles the configured account read-only, then generates synthetic data.
+Produces kanban/table HTML, JSON, and CSV timing reports with live replication progress.
+Background-write scenarios compare controls against concurrent updates and RSS-style ingestion using disposable databases.
+See [benchmark documentation](scripts/benchmarks/README.md) for profiles, measurement boundaries, and headless runs.
+
 ## License
 
 MIT

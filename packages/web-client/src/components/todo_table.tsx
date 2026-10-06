@@ -12,6 +12,7 @@ import { useDbInitialization } from './todo_board_state';
 import { TodoGraph } from './todo_graph';
 import { LoadingSpinner, TodoTableContent } from './todo_table_content';
 import { type TodoTableData, type TodoTableProps, useTableData } from './todo_table_data';
+import { getTodoViewReadiness } from './todo_view_readiness';
 
 const TableErrorFallback: FC<{
   error: DatabaseError;
@@ -39,13 +40,25 @@ const DependencyGraphView: FC<{
   />
 );
 
-const TableMainContent: FC<{
+interface TableMainContentProps {
   data: TodoTableData;
+  currentDate: Date;
   selectedColumns: string[];
   onDismissError: () => void;
   onShowDependencies: (todoId: string) => void;
-}> = ({ data, selectedColumns, onDismissError, onShowDependencies }) => (
-  <div className="bg-neutral-50 dark:bg-neutral-800">
+}
+
+const TableMainContent: FC<TableMainContentProps> = ({
+  data,
+  currentDate,
+  selectedColumns,
+  onDismissError,
+  onShowDependencies,
+}) => (
+  <div
+    {...getTodoViewReadiness(currentDate, data, 'table')}
+    className="bg-neutral-50 dark:bg-neutral-800"
+  >
     {data.displayError && data.todos.length > 0 ? (
       <div className="px-4 pt-2">
         <DatabaseErrorMessage error={data.displayError} onDismiss={onDismissError} />
@@ -111,6 +124,7 @@ export const TodoTable: FC<TodoTableProps> = (props) => {
 
   return (
     <TableMainContent
+      currentDate={props.currentDate}
       data={data}
       onDismissError={() => setError(null)}
       onShowDependencies={handleShowDependencies}
