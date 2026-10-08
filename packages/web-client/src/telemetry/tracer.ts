@@ -28,6 +28,7 @@ import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 
 import type { TelemetryConfig } from './config';
 import { createTelemetryConfig } from './config';
+import { browserTelemetryHeaders } from './headers';
 
 /** Maps config log level to OTEL DiagLogLevel */
 function getDiagLogLevel(level: TelemetryConfig['logLevel']): DiagLogLevel {
@@ -44,17 +45,30 @@ function getDiagLogLevel(level: TelemetryConfig['logLevel']): DiagLogLevel {
 /** Creates resource with service metadata and browser detection */
 function createResource(config: TelemetryConfig): Resource {
   const detectedResources = detectResources({ detectors: [browserDetector] });
+  const benchmark = sessionStorage.getItem('eddoBenchmarkTelemetry') === 'true';
   const baseResource = resourceFromAttributes({
     'service.name': config.serviceName,
     'service.version': config.serviceVersion,
-    'deployment.environment.name': config.environment,
+    'deployment.environment.name': benchmark ? 'benchmark' : config.environment,
+    'data_stream.dataset': benchmark ? 'eddo.benchmark' : 'eddo.app',
+    'data_stream.namespace': benchmark ? 'benchmark' : config.environment,
+    ...(benchmark
+      ? {
+          'deployment.environment': 'benchmark',
+          'benchmark.run.id': sessionStorage.getItem('eddoBenchmarkRunId') ?? 'unknown',
+          'benchmark.scenario': sessionStorage.getItem('eddoBenchmarkScenario') ?? 'control',
+        }
+      : {}),
   });
   return baseResource.merge(detectedResources);
 }
 
 /** Creates and configures tracer provider */
 function createTracerProvider(config: TelemetryConfig, resource: Resource): WebTracerProvider {
-  const exporter = new OTLPTraceExporter({ url: config.tracesEndpoint });
+  const exporter = new OTLPTraceExporter({
+    url: config.tracesEndpoint,
+    headers: browserTelemetryHeaders,
+  });
 
   // Configure batch processor with smaller batches to avoid Beacon API's 64KB limit
   // Default values are too large for browser environments
@@ -89,6 +103,7 @@ function setupInstrumentations(): void {
         ignorePerformancePaintEvents: false,
       }),
       new FetchInstrumentation({
+        ignoreUrls: [/\/api\/telemetry\//],
         propagateTraceHeaderCorsUrls: [/^\/api\//, new RegExp(`^${window.location.origin}`)],
         clearTimingResources: true,
       }),
@@ -134,6 +149,11 @@ export function initTelemetry(): void {
   });
 
   initialized = true;
+}
+
+/** Flushes completed spans without shutting down the browser provider. */
+export async function flushTelemetry(): Promise<void> {
+  await tracerProvider?.forceFlush();
 }
 
 /**

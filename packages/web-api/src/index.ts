@@ -68,7 +68,8 @@ app.route('/auth', authRoutes);
 // Email OAuth callback (no JWT required - Google redirects here)
 app.route('/api/email', emailRoutes);
 
-// Telemetry proxy (no JWT required - browser sends traces before auth)
+// Authenticate browser senders before granting access to the collector's shared credential.
+app.use('/api/telemetry/*', jwt({ secret: config.jwtSecret, alg: 'HS256' }));
 app.route('/api/telemetry', telemetryRoutes);
 
 // Protected API routes (JWT required)

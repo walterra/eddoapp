@@ -52,6 +52,7 @@ export const envSchema = z.object({
   // OpenTelemetry Configuration (for RUM proxy)
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().default('http://localhost:4318'),
   OTEL_API_KEY: z.string().optional(),
+  OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
 });
 
 /**

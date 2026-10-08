@@ -1,7 +1,9 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { exposeBenchmarkSyncControl } from '../config/benchmark_sync_status';
 import { usePouchDb } from '../pouch_db';
 import { recordSyncEvent } from '../telemetry';
+import { setReplicationActive } from './replication_activity';
 import { useAuth } from './use_auth';
 import {
   createRemoteAttachmentsDb,
@@ -18,6 +20,7 @@ function setupMainSyncHandlers(
   handleAuthError: () => void,
 ) {
   syncHandler.on('error', (error) => {
+    setReplicationActive(false);
     console.error('Sync error:', error);
     recordSyncEvent('error', { error: String(error) });
     if (isAuthError(error)) handleAuthError();
@@ -25,11 +28,13 @@ function setupMainSyncHandlers(
   });
 
   syncHandler.on('active', () => {
+    setReplicationActive(true);
     recordSyncEvent('active');
     healthMonitor.updateSyncStatus('syncing');
   });
 
   syncHandler.on('complete', () => {
+    setReplicationActive(false);
     recordSyncEvent('complete');
     healthMonitor.updateSyncStatus('connected');
   });
@@ -38,6 +43,9 @@ function setupMainSyncHandlers(
 export const useCouchDbSync = () => {
   const { sync, healthMonitor, rawDb, attachmentsDb } = usePouchDb();
   const { authToken, logout } = useAuth();
+  const [syncEnabled, setSyncEnabled] = useState(true);
+
+  useEffect(() => exposeBenchmarkSyncControl(setSyncEnabled), []);
 
   const handleAuthError = useCallback(() => {
     console.warn('Sync authentication failed - token may be expired');
@@ -47,7 +55,7 @@ export const useCouchDbSync = () => {
 
   // Main database sync
   useEffect(() => {
-    if (!authToken) return;
+    if (!authToken || !syncEnabled) return;
 
     let isCancelled = false;
     const remoteDb = createRemoteDb(authToken.token);
@@ -56,6 +64,7 @@ export const useCouchDbSync = () => {
     setupMainSyncHandlers(syncHandler, healthMonitor, handleAuthError);
 
     syncHandler.on('paused', async () => {
+      setReplicationActive(false);
       recordSyncEvent('paused');
       healthMonitor.updateSyncStatus('connected');
       await preWarmIndexes(rawDb, () => isCancelled);
@@ -66,16 +75,17 @@ export const useCouchDbSync = () => {
 
     return () => {
       isCancelled = true;
+      setReplicationActive(false);
       syncHandler.cancel();
       remoteDb.close();
       recordSyncEvent('cancelled');
       healthMonitor.updateSyncStatus('disconnected');
     };
-  }, [sync, authToken, handleAuthError, healthMonitor, rawDb]);
+  }, [sync, authToken, handleAuthError, healthMonitor, rawDb, syncEnabled]);
 
   // Attachments database sync (separate effect to keep concerns isolated)
   useEffect(() => {
-    if (!authToken) return;
+    if (!authToken || !syncEnabled) return;
 
     const remoteAttachmentsDb = createRemoteAttachmentsDb(authToken.token);
     const attachmentsSyncHandler = attachmentsDb.sync(remoteAttachmentsDb, SYNC_OPTIONS);
@@ -89,5 +99,5 @@ export const useCouchDbSync = () => {
       attachmentsSyncHandler.cancel();
       remoteAttachmentsDb.close();
     };
-  }, [attachmentsDb, authToken, handleAuthError]);
+  }, [attachmentsDb, authToken, handleAuthError, syncEnabled]);
 };

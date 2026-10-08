@@ -20,7 +20,13 @@ export const PeriodNavigation: FC<PeriodNavigationProps> = ({
 
   return (
     <>
-      <Button className="p-0" color="gray" onClick={() => onNavigate('prev')} size="xs">
+      <Button
+        aria-label="Previous period"
+        className="p-0"
+        color="gray"
+        onClick={() => onNavigate('prev')}
+        size="xs"
+      >
         <RiArrowLeftSLine size="2em" />
       </Button>
       <button
@@ -31,7 +37,13 @@ export const PeriodNavigation: FC<PeriodNavigationProps> = ({
       >
         {getPeriodLabel(currentDate, selectedTimeRange)}
       </button>
-      <Button className="p-0" color="gray" onClick={() => onNavigate('next')} size="xs">
+      <Button
+        aria-label="Next period"
+        className="p-0"
+        color="gray"
+        onClick={() => onNavigate('next')}
+        size="xs"
+      >
         <RiArrowRightSLine size="2em" />
       </Button>
     </>

@@ -29,6 +29,7 @@ import {
   useOutdatedTodos,
   useTodoBoardData,
 } from './todo_board_state';
+import { getTodoViewReadiness } from './todo_view_readiness';
 
 interface TodoBoardProps {
   currentDate: Date;
@@ -245,7 +246,10 @@ export const TodoBoard: FC<TodoBoardProps> = (props) => {
   if (data.showLoadingSpinner) return <LoadingSpinner />;
 
   return (
-    <div className="bg-neutral-50 dark:bg-neutral-800">
+    <div
+      {...getTodoViewReadiness(props.currentDate, data, 'kanban')}
+      className="bg-neutral-50 dark:bg-neutral-800"
+    >
       {data.displayError && data.todos.length > 0 && (
         <div className="px-4 pt-2">
           <DatabaseErrorMessage error={data.displayError} onDismiss={() => setError(null)} />
