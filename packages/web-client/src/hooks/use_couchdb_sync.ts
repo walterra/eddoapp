@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { exposeBenchmarkSyncControl } from '../config/benchmark_sync_status';
 import { usePouchDb } from '../pouch_db';
 import { recordSyncEvent } from '../telemetry';
+import { setReplicationActive } from './replication_activity';
 import { useAuth } from './use_auth';
 import {
   createRemoteAttachmentsDb,
@@ -19,6 +20,7 @@ function setupMainSyncHandlers(
   handleAuthError: () => void,
 ) {
   syncHandler.on('error', (error) => {
+    setReplicationActive(false);
     console.error('Sync error:', error);
     recordSyncEvent('error', { error: String(error) });
     if (isAuthError(error)) handleAuthError();
@@ -26,11 +28,13 @@ function setupMainSyncHandlers(
   });
 
   syncHandler.on('active', () => {
+    setReplicationActive(true);
     recordSyncEvent('active');
     healthMonitor.updateSyncStatus('syncing');
   });
 
   syncHandler.on('complete', () => {
+    setReplicationActive(false);
     recordSyncEvent('complete');
     healthMonitor.updateSyncStatus('connected');
   });
@@ -60,6 +64,7 @@ export const useCouchDbSync = () => {
     setupMainSyncHandlers(syncHandler, healthMonitor, handleAuthError);
 
     syncHandler.on('paused', async () => {
+      setReplicationActive(false);
       recordSyncEvent('paused');
       healthMonitor.updateSyncStatus('connected');
       await preWarmIndexes(rawDb, () => isCancelled);
@@ -70,6 +75,7 @@ export const useCouchDbSync = () => {
 
     return () => {
       isCancelled = true;
+      setReplicationActive(false);
       syncHandler.cancel();
       remoteDb.close();
       recordSyncEvent('cancelled');

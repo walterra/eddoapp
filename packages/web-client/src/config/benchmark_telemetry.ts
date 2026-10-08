@@ -1,4 +1,4 @@
-import { SpanStatusCode, type Span } from '@opentelemetry/api';
+import { context, SpanStatusCode, trace, type Context, type Span } from '@opentelemetry/api';
 import { createTelemetryConfig } from '../telemetry/config';
 import { flushTelemetry, getTracer } from '../telemetry/tracer';
 
@@ -12,6 +12,18 @@ interface PagingSpanResult {
   localChanges: number;
   failed: boolean;
 }
+type PagingContextProvider = () => Context | undefined;
+
+/** Runs instrumented fetches inside the active paging span context. */
+function installPagingFetchContext(provider: PagingContextProvider): void {
+  const instrumentedFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const pagingContext = provider();
+    if (!pagingContext) return instrumentedFetch(input, init);
+    return context.with(pagingContext, () => instrumentedFetch(input, init));
+  };
+}
+
 declare global {
   interface Window {
     __eddoBenchmarkStartSpan?: (options: PagingSpanOptions) => void;
@@ -28,6 +40,8 @@ export function exposeBenchmarkTelemetry(): void {
   )
     return;
   let current: Span | undefined;
+  let pagingContext: Context | undefined;
+  installPagingFetchContext(() => pagingContext);
   window.__eddoBenchmarkStartSpan = (options) => {
     current?.end();
     current = getTracer().startSpan('benchmark.paging', {
@@ -37,6 +51,7 @@ export function exposeBenchmarkTelemetry(): void {
         'benchmark.todo_count': options.todoCount,
       },
     });
+    pagingContext = trace.setSpan(context.active(), current);
   };
   window.__eddoBenchmarkEndSpan = (result) => {
     current?.setAttributes({
@@ -46,6 +61,7 @@ export function exposeBenchmarkTelemetry(): void {
     current?.setStatus({ code: result.failed ? SpanStatusCode.ERROR : SpanStatusCode.OK });
     current?.end();
     current = undefined;
+    pagingContext = undefined;
   };
   window.__eddoBenchmarkFlushTelemetry = flushTelemetry;
 }
