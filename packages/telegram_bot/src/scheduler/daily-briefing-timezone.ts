@@ -14,10 +14,16 @@ export interface SentTrackerState {
  * @param userId User ID.
  * @param now Reference instant.
  * @param timeZone User timezone.
+ * @param scheduledTime Scheduled local time.
  * @return Sent tracker key.
  */
-export function createSentKey(userId: string, now: Date, timeZone: string): string {
-  return `${userId}:${formatDateInTimeZone(now, timeZone)}`;
+export function createSentKey(
+  userId: string,
+  now: Date,
+  timeZone: string,
+  scheduledTime: string,
+): string {
+  return `${userId}:${formatDateInTimeZone(now, timeZone)}:${scheduledTime}`;
 }
 
 /**

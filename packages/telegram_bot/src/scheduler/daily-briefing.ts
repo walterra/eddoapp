@@ -21,6 +21,10 @@ import {
   isWithinTimeWindow,
   resetSentTrackersForNewTimeZoneDays,
 } from './daily-briefing-timezone.js';
+import type {
+  DailyBriefingSchedulerConfig,
+  DailyBriefingSchedulerStatus,
+} from './daily-briefing-types.js';
 import {
   executeAgentForUser,
   logSuccessfulSend,
@@ -28,11 +32,6 @@ import {
   sendTelegramMessage,
   stripMarker,
 } from './helpers/index.js';
-
-interface DailyBriefingSchedulerConfig {
-  bot: Bot<BotContext>;
-  checkIntervalMs: number;
-}
 
 export class DailyBriefingScheduler {
   private bot: Bot<BotContext>;
@@ -121,10 +120,10 @@ export class DailyBriefingScheduler {
 
   private async checkUserBriefingTime(user: TelegramUser, now: Date): Promise<void> {
     const timeZone = normalizeTimeZone(user.preferences?.timezone);
-    const sentKey = createSentKey(user._id, now, timeZone);
+    const briefingTime = user.preferences?.briefingTime || '07:00';
+    const sentKey = createSentKey(user._id, now, timeZone, briefingTime);
     if (this.sentBriefingsToday.has(sentKey)) return;
 
-    const briefingTime = user.preferences?.briefingTime || '07:00';
     if (!isWithinTimeWindow(briefingTime, now, timeZone)) return;
 
     logger.info('Sending briefing to user at their preferred time', {
@@ -136,7 +135,9 @@ export class DailyBriefingScheduler {
     });
 
     try {
-      await this.sendBriefingToUser(user);
+      const wasSent = await this.sendBriefingToUser(user);
+      if (!wasSent) return;
+
       this.sentBriefingsToday.add(sentKey);
       logger.info('Successfully sent briefing to user', {
         userId: user._id,
@@ -151,10 +152,10 @@ export class DailyBriefingScheduler {
     }
   }
 
-  private async sendBriefingToUser(user: TelegramUser): Promise<void> {
+  private async sendBriefingToUser(user: TelegramUser): Promise<boolean> {
     if (!user.telegram_id) {
       logger.warn('User has no telegram_id', { userId: user._id });
-      return;
+      return false;
     }
 
     return withSpan(
@@ -165,18 +166,21 @@ export class DailyBriefingScheduler {
         [SpanAttributes.TELEGRAM_CHAT_ID]: user.telegram_id,
       },
       async () => {
-        const result = await executeAgentForUser(
+        const result = await executeAgentForUser({
+          bot: this.bot,
           user,
-          DAILY_BRIEFING_REQUEST_MESSAGE,
-          BRIEFING_CONTENT_MARKER,
-          'briefing',
-        );
+          requestMessage: DAILY_BRIEFING_REQUEST_MESSAGE,
+          contentMarker: BRIEFING_CONTENT_MARKER,
+          contentType: 'briefing',
+        });
 
         if (result.hasMarker) {
           await this.sendBriefingWithMarker(user, result.message);
         } else {
           await this.sendBriefingWithoutMarker(user, result.message);
         }
+
+        return result.success;
       },
     );
   }
@@ -248,10 +252,10 @@ export class DailyBriefingScheduler {
 
   private async checkUserRecapTime(user: TelegramUser, now: Date): Promise<void> {
     const timeZone = normalizeTimeZone(user.preferences?.timezone);
-    const sentKey = createSentKey(user._id, now, timeZone);
+    const recapTime = user.preferences?.recapTime || '18:00';
+    const sentKey = createSentKey(user._id, now, timeZone, recapTime);
     if (this.sentRecapsToday.has(sentKey)) return;
 
-    const recapTime = user.preferences?.recapTime || '18:00';
     if (!isWithinTimeWindow(recapTime, now, timeZone)) return;
 
     logger.info('Sending recap to user at their preferred time', {
@@ -263,7 +267,9 @@ export class DailyBriefingScheduler {
     });
 
     try {
-      await this.sendRecapToUser(user);
+      const wasSent = await this.sendRecapToUser(user);
+      if (!wasSent) return;
+
       this.sentRecapsToday.add(sentKey);
       logger.info('Successfully sent recap to user', { userId: user._id, username: user.username });
     } catch (error) {
@@ -275,18 +281,19 @@ export class DailyBriefingScheduler {
     }
   }
 
-  private async sendRecapToUser(user: TelegramUser): Promise<void> {
+  private async sendRecapToUser(user: TelegramUser): Promise<boolean> {
     if (!user.telegram_id) {
       logger.warn('User has no telegram_id', { userId: user._id });
-      return;
+      return false;
     }
 
-    const result = await executeAgentForUser(
+    const result = await executeAgentForUser({
+      bot: this.bot,
       user,
-      getRecapRequestMessage(user.preferences?.timezone),
-      RECAP_CONTENT_MARKER,
-      'recap',
-    );
+      requestMessage: getRecapRequestMessage(user.preferences?.timezone),
+      contentMarker: RECAP_CONTENT_MARKER,
+      contentType: 'recap',
+    });
 
     if (result.hasMarker) {
       const cleanMessage = stripMarker(result.message, RECAP_CONTENT_MARKER);
@@ -315,15 +322,11 @@ export class DailyBriefingScheduler {
         message: result.message,
       });
     }
+
+    return result.success;
   }
 
-  getStatus(): {
-    isRunning: boolean;
-    currentDatesByTimeZone: Record<string, string>;
-    sentBriefingsToday: number;
-    sentRecapsToday: number;
-    checkIntervalMs: number;
-  } {
+  getStatus(): DailyBriefingSchedulerStatus {
     return {
       isRunning: this.isRunning,
       currentDatesByTimeZone: Object.fromEntries(this.currentDatesByTimeZone),
