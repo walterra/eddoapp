@@ -1,12 +1,11 @@
 /**
  * React hook for context management and filtering.
- * Uses MapReduce view for efficient aggregation, wrapped in TanStack Query for caching.
+ * Uses a projected Mango query, wrapped in TanStack Query for caching.
  */
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
+import { type Todo } from '@eddo/core-client';
 import { usePouchDb } from '../pouch_db';
-import { useDatabaseChanges } from './use_database_changes';
 
 export interface EddoContextsState {
   /** All unique contexts from existing todos */
@@ -17,47 +16,28 @@ export interface EddoContextsState {
   error: Error | null;
 }
 
-/** Result row from MapReduce query with group=true */
-interface ViewRow {
-  key: string;
-  value: number;
-}
-
 /**
  * Hook for fetching all existing contexts for filtering.
- * Uses MapReduce view (_design/contexts/by_context) with reduce for O(1) aggregation.
- * Results are cached via TanStack Query and invalidated on database changes.
+ * Fetches only context fields to avoid rebuilding a JavaScript MapReduce index after sync.
+ * Results remain cached during sync and refresh after their stale interval.
  */
 export const useEddoContexts = (): EddoContextsState => {
-  const { rawDb } = usePouchDb();
-  const { changeCount } = useDatabaseChanges();
-  const queryClient = useQueryClient();
-
-  // Invalidate contexts query when database changes
-  useEffect(() => {
-    if (changeCount > 0) {
-      queryClient.invalidateQueries({ queryKey: ['contexts'] });
-    }
-  }, [changeCount, queryClient]);
-
+  const { safeDb } = usePouchDb();
   const { data, isLoading, error } = useQuery({
     queryKey: ['contexts'],
     queryFn: async () => {
-      // Query MapReduce view with reduce to get unique contexts
-      // group=true returns one row per unique context with count
-      const result = await rawDb!.query('contexts/by_context', {
-        group: true,
-        reduce: true,
-      });
-
-      // Extract just the context names (keys), sorted alphabetically
-      return (result.rows as ViewRow[])
-        .map((row) => row.key)
-        .filter((key) => key && key.trim())
-        .sort();
+      const todos = await safeDb.safeFind<Pick<Todo, 'context'>>(
+        { version: 'alpha4' },
+        { fields: ['context'], limit: 10000 },
+      );
+      const contexts = todos
+        .map((todo) => todo.context)
+        .filter((context) => context && context.trim())
+        .map((context) => context.trim());
+      return [...new Set(contexts)].sort();
     },
-    enabled: !!rawDb,
-    staleTime: Infinity, // Contexts don't change often, rely on invalidation
+    enabled: !!safeDb,
+    staleTime: 5 * 60 * 1000,
   });
 
   return {
