@@ -1,5 +1,6 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { exposeBenchmarkSyncControl } from '../config/benchmark_sync_status';
 import { usePouchDb } from '../pouch_db';
 import { recordSyncEvent } from '../telemetry';
 import { useAuth } from './use_auth';
@@ -38,6 +39,9 @@ function setupMainSyncHandlers(
 export const useCouchDbSync = () => {
   const { sync, healthMonitor, rawDb, attachmentsDb } = usePouchDb();
   const { authToken, logout } = useAuth();
+  const [syncEnabled, setSyncEnabled] = useState(true);
+
+  useEffect(() => exposeBenchmarkSyncControl(setSyncEnabled), []);
 
   const handleAuthError = useCallback(() => {
     console.warn('Sync authentication failed - token may be expired');
@@ -47,7 +51,7 @@ export const useCouchDbSync = () => {
 
   // Main database sync
   useEffect(() => {
-    if (!authToken) return;
+    if (!authToken || !syncEnabled) return;
 
     let isCancelled = false;
     const remoteDb = createRemoteDb(authToken.token);
@@ -71,11 +75,11 @@ export const useCouchDbSync = () => {
       recordSyncEvent('cancelled');
       healthMonitor.updateSyncStatus('disconnected');
     };
-  }, [sync, authToken, handleAuthError, healthMonitor, rawDb]);
+  }, [sync, authToken, handleAuthError, healthMonitor, rawDb, syncEnabled]);
 
   // Attachments database sync (separate effect to keep concerns isolated)
   useEffect(() => {
-    if (!authToken) return;
+    if (!authToken || !syncEnabled) return;
 
     const remoteAttachmentsDb = createRemoteAttachmentsDb(authToken.token);
     const attachmentsSyncHandler = attachmentsDb.sync(remoteAttachmentsDb, SYNC_OPTIONS);
@@ -89,5 +93,5 @@ export const useCouchDbSync = () => {
       attachmentsSyncHandler.cancel();
       remoteAttachmentsDb.close();
     };
-  }, [attachmentsDb, authToken, handleAuthError]);
+  }, [attachmentsDb, authToken, handleAuthError, syncEnabled]);
 };

@@ -17,10 +17,20 @@ declare global {
   interface Window {
     __eddoBenchmarkChanges?: BenchmarkChange[];
     __eddoBenchmarkRevisions?: (ids: string[]) => Promise<BenchmarkRevision[]>;
+    __eddoBenchmarkSetSyncEnabled?: (enabled: boolean) => void;
   }
 }
 
 /** Exposes read-only revision verification in explicitly enabled benchmark sessions. */
+export function exposeBenchmarkSyncControl(setEnabled: (enabled: boolean) => void): () => void {
+  if (typeof window === 'undefined' || sessionStorage.getItem('eddoBenchmark') !== 'true') {
+    return () => undefined;
+  }
+  window.__eddoBenchmarkSetSyncEnabled = setEnabled;
+  return () => delete window.__eddoBenchmarkSetSyncEnabled;
+}
+
+/** Exposes read-only local revision state in explicitly enabled benchmark sessions. */
 export function exposeBenchmarkSyncStatus(safeDb: SafeDbOperations): void {
   if (typeof window === 'undefined' || sessionStorage.getItem('eddoBenchmark') !== 'true') return;
   window.__eddoBenchmarkChanges = [];

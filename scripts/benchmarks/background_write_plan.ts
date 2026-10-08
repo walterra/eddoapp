@@ -8,6 +8,9 @@ export const backgroundScenarios = [
   'rss-50',
   'rss-200',
   'sustained',
+  'catch-up-200',
+  'catch-up-1000',
+  'catch-up-10000',
 ] as const;
 export type BackgroundScenario = (typeof backgroundScenarios)[number];
 export interface BackgroundPlan {
@@ -37,6 +40,26 @@ interface PlanOptions {
   steps: number;
   directory: string;
 }
+interface WriteSchedule {
+  delayMs: number;
+  intervalMs: number;
+  batches: number;
+  count: number;
+}
+
+function createWriteSchedule(scenario: BackgroundScenario, targetCount: number): WriteSchedule {
+  if (scenario === 'control') return { delayMs: 1000, intervalMs: 1000, batches: 0, count: 0 };
+  if (scenario === 'sustained') return { delayMs: 1000, intervalMs: 1000, batches: 60, count: 2 };
+  if (scenario.endsWith('updates')) {
+    return { delayMs: 1000, intervalMs: 1000, batches: 1, count: targetCount };
+  }
+  const total = Number(scenario.split('-').at(-1));
+  if (scenario.startsWith('catch-up-')) {
+    const count = Math.min(total, 200);
+    return { delayMs: 0, intervalMs: 0, batches: Math.ceil(total / count), count };
+  }
+  return { delayMs: 1000, intervalMs: 1000, batches: 1, count: total };
+}
 
 /** Selects deterministic writes that preserve the expected due-date ID sets. */
 export function createBackgroundPlan(
@@ -55,17 +78,10 @@ export function createBackgroundPlan(
     .slice(0, 10);
   const updates = scenario.endsWith('updates');
   if (updates && !targets.length) throw new Error(`No target documents for ${scenario}`);
-  const count = updates
-    ? targets.length
-    : scenario === 'sustained'
-      ? 2
-      : Number(scenario.split('-')[1] ?? 0);
+  const schedule = createWriteSchedule(scenario, targets.length);
   return {
     scenario,
-    delayMs: 1000,
-    intervalMs: 1000,
-    batches: scenario === 'control' ? 0 : scenario === 'sustained' ? 60 : 1,
-    count,
+    ...schedule,
     targetIds: updates ? targets.map((doc) => doc._id) : [],
     due: offsetDate(end, 365),
     visibleDay,

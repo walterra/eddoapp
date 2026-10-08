@@ -10,7 +10,7 @@ import { browser } from './day_paging_browser';
 import { generateFixture } from './day_paging_fixture';
 import type { BenchmarkOptions } from './day_paging_options';
 
-interface BackgroundRun {
+export interface BackgroundRun {
   child: ChildProcess;
   finished: Promise<void>;
   plan: BackgroundPlan;
@@ -89,6 +89,11 @@ export async function startBackgroundWrites(
     await stopBackgroundWrites(run);
     throw error;
   }
+}
+
+/** Waits until all remote writes finish without checking local replication. */
+export async function waitForRemoteWrites(run: BackgroundRun | undefined): Promise<void> {
+  await run?.finished;
 }
 
 /** Verifies every acknowledged revision reached the local PouchDB, not just the server. */

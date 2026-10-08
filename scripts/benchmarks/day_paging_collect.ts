@@ -3,6 +3,7 @@ import {
   finishBackgroundWrites,
   startBackgroundWrites,
   stopBackgroundWrites,
+  waitForRemoteWrites,
 } from './background_write_run';
 import {
   browser,
@@ -14,6 +15,18 @@ import {
 import { generateFixture, offsetDate } from './day_paging_fixture';
 import { waitForQueryIdle } from './day_paging_idle';
 import type { BenchmarkOptions } from './day_paging_options';
+
+function setBenchmarkSyncEnabled(session: string, enabled: boolean): void {
+  const result = browser(session, [
+    'eval',
+    `(() => { window.__eddoBenchmarkSetSyncEnabled?.(${enabled}); return Boolean(window.__eddoBenchmarkSetSyncEnabled); })()`,
+  ]);
+  if (result !== 'true') throw new Error('Benchmark sync control is unavailable');
+}
+
+function isCatchUpScenario(background: string): boolean {
+  return background.startsWith('catch-up-');
+}
 
 /** Persists each measurement before the next interaction can fail. */
 function saveSample(sample: PagingSample, directory: string): void {
@@ -41,7 +54,13 @@ export async function collectSamples(
     browser(session, ['eval', 'Boolean(window.__eddoBenchmarkStartSpan)']) !== 'true'
   )
     throw new Error('Rebuild the browser with VITE_OTEL_ENABLED=true before --telemetry');
+  const catchUp = isCatchUpScenario(options.background);
+  if (catchUp) setBenchmarkSyncEnabled(session, false);
   const writer = await startBackgroundWrites(couchUrl, options);
+  if (catchUp) {
+    await waitForRemoteWrites(writer);
+    setBenchmarkSyncEnabled(session, true);
+  }
   try {
     const samples: PagingSample[] = [];
     for (let day = 1; day <= steps; day++) {

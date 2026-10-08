@@ -1,6 +1,14 @@
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
-import { parseOtlpHeaders } from '../../packages/web-api/src/routes/telemetry_headers';
+
+interface TelemetryHeadersModule {
+  parseOtlpHeaders: (value: string | undefined) => Headers;
+}
+
+const requireTelemetryModule = createRequire(import.meta.url);
+const { parseOtlpHeaders } = requireTelemetryModule(
+  '../../packages/web-api/src/routes/telemetry_headers.ts',
+) as TelemetryHeadersModule;
 
 interface BenchmarkTelemetry {
   telemetry: boolean;

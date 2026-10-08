@@ -52,4 +52,12 @@ describe('background write plans', () => {
     expect(plan.count * plan.batches).toBe(120);
     expect(plan.intervalMs).toBe(1000);
   });
+  it.each([200, 1000, 10000])('batches a %i-revision catch-up backlog', (total) => {
+    const plan = planFor(`catch-up-${total}` as BackgroundScenario);
+
+    expect(plan.count).toBe(200);
+    expect(plan.count * plan.batches).toBe(total);
+    expect(plan.delayMs).toBe(0);
+    expect(plan.intervalMs).toBe(0);
+  });
 });

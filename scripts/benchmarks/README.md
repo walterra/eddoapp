@@ -89,6 +89,9 @@ It repeats the no-write control after the write scenarios. It never pools cases 
 | `visible-updates`             | Update up to ten top-level todos on the first destination day |
 | `rss-10`, `rss-50`, `rss-200` | Create an offscreen burst with RSS-style fields               |
 | `sustained`                   | Create two offscreen todos per second across sixty batches    |
+| `catch-up-200`                | Resume sync with 200 pending offscreen revisions              |
+| `catch-up-1000`               | Resume sync with 1,000 pending offscreen revisions            |
+| `catch-up-10000`              | Resume sync with 10,000 pending offscreen revisions           |
 
 The writer runs in a separate process; synchronous browser commands cannot pause its schedule.
 Writes start one second after writer readiness. Receipts record scheduled, started, and acknowledged times.
@@ -107,7 +110,8 @@ Incomplete cases return a nonzero exit code. Their failed clicks are not latency
 Do not interpret incomplete-case percentiles as a successful workload result.
 
 The writer simulates server database ingestion, not RSS network fetching or scheduler internals.
-No production sync settings change. No traces are collected.
+Catch-up cases pause browser replication, write the complete remote backlog, then resume replication immediately before paging.
+Sync control exists only in explicit benchmark sessions and does not change production sync settings.
 
 ## Reports
 
