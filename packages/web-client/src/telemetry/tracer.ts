@@ -45,16 +45,16 @@ function getDiagLogLevel(level: TelemetryConfig['logLevel']): DiagLogLevel {
 /** Creates resource with service metadata and browser detection */
 function createResource(config: TelemetryConfig): Resource {
   const detectedResources = detectResources({ detectors: [browserDetector] });
+  const benchmark = sessionStorage.getItem('eddoBenchmarkTelemetry') === 'true';
   const baseResource = resourceFromAttributes({
     'service.name': config.serviceName,
     'service.version': config.serviceVersion,
-    'deployment.environment.name': config.environment,
-    ...(sessionStorage.getItem('eddoBenchmarkTelemetry') === 'true'
+    'deployment.environment.name': benchmark ? 'benchmark' : config.environment,
+    'data_stream.dataset': benchmark ? 'eddo.benchmark' : 'eddo.app',
+    'data_stream.namespace': benchmark ? 'benchmark' : config.environment,
+    ...(benchmark
       ? {
           'deployment.environment': 'benchmark',
-          'deployment.environment.name': 'benchmark',
-          'data_stream.dataset': 'eddo.benchmark',
-          'data_stream.namespace': 'benchmark',
           'benchmark.run.id': sessionStorage.getItem('eddoBenchmarkRunId') ?? 'unknown',
           'benchmark.scenario': sessionStorage.getItem('eddoBenchmarkScenario') ?? 'control',
         }
