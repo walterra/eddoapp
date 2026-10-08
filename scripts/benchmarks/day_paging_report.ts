@@ -24,6 +24,8 @@ export interface PagingReport {
   expectedClicksPerView: number;
   background: BackgroundScenario;
   preparationVersion: number;
+  telemetry: boolean;
+  runId: string;
 }
 
 /** Renders comparison rows with explicit empirical percentile labels. */
@@ -67,6 +69,7 @@ export function writeReport(directory: string, report: PagingReport): void {
     `<!doctype html><html lang="en"><meta charset="utf-8"><title>Eddo day paging benchmark</title>
 <style>body{font:16px system-ui;max-width:1200px;margin:40px auto;padding:16px}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:8px;border-bottom:1px solid #ddd}pre{white-space:pre-wrap}</style>
 <h1>Click → populated todo view</h1>
+<p>Telemetry: ${report.telemetry ? 'enabled — instrumented run, not an untraced baseline' : 'disabled'}. Run ID: ${escapeHtml(report.runId)}.</p>
 <p>Background scenario: ${escapeHtml(report.background)}. Server writes run independently of browser commands; see per-view background.json for acknowledged and verified client revisions. RSS additions stay outside the measured date range; visible updates preserve IDs and due dates. Preparation version ${report.preparationVersion}: bootstrap mode initializes the existing production indexes before measurement; replication mode retains application-mounted setup.</p>
 <p>Status: ${report.failures.length ? 'INCOMPLETE — failures excluded from latency percentiles; inspect diagnostics' : 'complete'}. Expected ${report.expectedClicksPerView} clicks per view.</p>
 ${report.failures.map((failure) => `<pre>${escapeHtml(failure.view)}: ${escapeHtml(failure.message)}</pre>`).join('')}

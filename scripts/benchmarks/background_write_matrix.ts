@@ -57,6 +57,7 @@ function invokeBenchmark(
         '--output',
         output,
         ...(process.argv.includes('--headed') ? ['--headed'] : []),
+        ...(process.argv.includes('--telemetry') ? ['--telemetry'] : []),
       ],
       { stdio: ['ignore', log, log], timeout: 600000 },
     );
@@ -67,6 +68,18 @@ function invokeBenchmark(
   } finally {
     closeSync(log);
   }
+}
+
+/** Compares instrumentation and paging settings before accepting a cached case. */
+function resumeMatches(report: PagingReport, options: MatrixOptions, profile: unknown): boolean {
+  return (
+    report.preparationVersion === 2 &&
+    (report.telemetry ?? false) === process.argv.includes('--telemetry') &&
+    report.expectedClicksPerView === Number(options.steps) * 2 &&
+    report.samples[0]?.date === offsetDate(options.startDate, 1) &&
+    report.headed === process.argv.includes('--headed') &&
+    JSON.stringify(report.profile) === JSON.stringify(profile)
+  );
 }
 
 /** Reuses completed cases only when their fixture, protocol, and paging settings match. */
@@ -81,13 +94,7 @@ function readResumeResults(directory: string, options: MatrixOptions): MatrixRes
     const report: PagingReport = JSON.parse(
       readFileSync(`${directory}/${result.report.replace('.html', '.json')}`, 'utf8'),
     );
-    if (
-      report.preparationVersion !== 2 ||
-      report.expectedClicksPerView !== Number(options.steps) * 2 ||
-      report.samples[0]?.date !== offsetDate(options.startDate, 1) ||
-      report.headed !== process.argv.includes('--headed') ||
-      JSON.stringify(report.profile) !== JSON.stringify(profile)
-    )
+    if (!resumeMatches(report, options, profile))
       throw new Error('Resume settings differ from the completed matrix cases');
   }
   return results.filter((result) => result.completed);

@@ -5,6 +5,7 @@ import {
   type BackgroundPlan,
   type WriteReceipt,
 } from './background_write_plan';
+import { telemetryEnvironment, telemetryImports } from './benchmark_telemetry';
 import { browser } from './day_paging_browser';
 import { generateFixture } from './day_paging_fixture';
 import type { BenchmarkOptions } from './day_paging_options';
@@ -24,6 +25,38 @@ interface LocalChange {
   at: number;
 }
 
+/** Launches the owned writer with optional SDK preloading and isolated service metadata. */
+function launchWriter(url: string, options: BenchmarkOptions, plan: BackgroundPlan): BackgroundRun {
+  const child = spawn(
+    process.execPath,
+    [
+      ...telemetryImports(options.telemetry),
+      '--import',
+      'tsx',
+      'scripts/benchmarks/background_write_worker.ts',
+      `${options.directory}/write-plan.json`,
+    ],
+    {
+      env: {
+        ...process.env,
+        BENCHMARK_COUCH_URL: url,
+        ...telemetryEnvironment(options, 'eddo-benchmark-writer'),
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+  child.stdout?.on('data', (chunk) => appendFileSync(`${options.directory}/writer.log`, chunk));
+  child.stderr?.on('data', (chunk) => appendFileSync(`${options.directory}/writer.log`, chunk));
+  const finished = new Promise<void>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('exit', (code) =>
+      code === 0 ? resolve() : reject(new Error('Background writer failed; inspect writer.log')),
+    );
+  });
+  void finished.catch(() => undefined);
+  return { child, finished, plan };
+}
+
 /** Starts a separate writer after application readiness, not during preparation. */
 export async function startBackgroundWrites(
   url: string,
@@ -40,21 +73,8 @@ export async function startBackgroundWrites(
   const ready = `${options.directory}/writer-ready.json`;
   rmSync(ready, { force: true });
   writeFileSync(`${options.directory}/writer.log`, '');
-  const child = spawn(
-    process.execPath,
-    ['--import', 'tsx', 'scripts/benchmarks/background_write_worker.ts', path],
-    { env: { ...process.env, BENCHMARK_COUCH_URL: url }, stdio: ['ignore', 'pipe', 'pipe'] },
-  );
-  child.stdout?.on('data', (chunk) => appendFileSync(`${options.directory}/writer.log`, chunk));
-  child.stderr?.on('data', (chunk) => appendFileSync(`${options.directory}/writer.log`, chunk));
-  const finished = new Promise<void>((resolve, reject) => {
-    child.once('error', reject);
-    child.once('exit', (code) =>
-      code === 0 ? resolve() : reject(new Error('Background writer failed; inspect writer.log')),
-    );
-  });
-  void finished.catch(() => undefined);
-  const run = { child, finished, plan };
+  const run = launchWriter(url, options, plan);
+  const { child, finished } = run;
   try {
     for (let attempt = 0; attempt < 500; attempt++) {
       if (existsSync(ready)) return run;

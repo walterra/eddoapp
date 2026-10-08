@@ -4,7 +4,13 @@ import {
   startBackgroundWrites,
   stopBackgroundWrites,
 } from './background_write_run';
-import { installObservers, pageDay, waitForDay, type PagingSample } from './day_paging_browser';
+import {
+  browser,
+  installObservers,
+  pageDay,
+  waitForDay,
+  type PagingSample,
+} from './day_paging_browser';
 import { generateFixture, offsetDate } from './day_paging_fixture';
 import { waitForQueryIdle } from './day_paging_idle';
 import type { BenchmarkOptions } from './day_paging_options';
@@ -30,6 +36,11 @@ export async function collectSamples(
   waitForDay(session, idsFor(0), startDate);
   await waitForQueryIdle(session, options.directory);
   installObservers(session);
+  if (
+    options.telemetry &&
+    browser(session, ['eval', 'Boolean(window.__eddoBenchmarkStartSpan)']) !== 'true'
+  )
+    throw new Error('Rebuild the browser with VITE_OTEL_ENABLED=true before --telemetry');
   const writer = await startBackgroundWrites(couchUrl, options);
   try {
     const samples: PagingSample[] = [];

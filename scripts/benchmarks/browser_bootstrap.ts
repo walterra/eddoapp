@@ -55,6 +55,10 @@ async function login(): Promise<SyntheticToken> {
   const token: SyntheticToken = await response.json();
   localStorage.setItem('authToken', JSON.stringify(token));
   sessionStorage.setItem('eddoBenchmark', 'true');
+  const params = new URLSearchParams(location.search);
+  sessionStorage.setItem('eddoBenchmarkTelemetry', String(params.get('telemetry') === '1'));
+  sessionStorage.setItem('eddoBenchmarkRunId', params.get('runId') ?? 'unknown');
+  sessionStorage.setItem('eddoBenchmarkScenario', params.get('scenario') ?? 'control');
   return token;
 }
 

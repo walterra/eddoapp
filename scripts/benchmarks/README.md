@@ -4,6 +4,13 @@ Measures paging-button click to populated todo view in kanban and table.
 Uses the production browser bundle, production authentication/database proxy routes, and disposable CouchDB Testcontainers.
 Runs separately from ordinary E2E correctness tests.
 
+## Opt-in telemetry
+
+Add `--telemetry` to day-paging or background-write runs after configuring the server-side Collector environment.
+See [Synology telemetry setup](../../spec/synology_telemetry.md) for TLS, protected credentials, and verification.
+Reports record instrumentation state and run ID; do not compare traced runs directly with disabled baselines.
+Without the flag, benchmark Node SDKs remain disabled and browser exports are discarded.
+
 ## Local setup
 
 Run commands from the repository root. Requires Docker, `agent-browser`, and Chromium:

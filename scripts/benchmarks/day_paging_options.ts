@@ -1,6 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { backgroundScenarios, type BackgroundScenario } from './background_write_plan';
+import { validateBenchmarkTelemetry } from './benchmark_telemetry';
 import { checkCalibration } from './day_paging_calibration_check';
 import { generateFixture, type DayPagingProfile } from './day_paging_fixture';
 
@@ -18,6 +20,8 @@ export interface BenchmarkOptions {
   views: BenchmarkView[];
   warmupMode: WarmupMode;
   background: BackgroundScenario;
+  telemetry: boolean;
+  runId: string;
 }
 
 /** Returns the value following a named CLI option. */
@@ -58,6 +62,8 @@ function getBackgroundScenario(): BackgroundScenario {
 
 /** Validates options and fixture calibration before starting owned resources. */
 export function getOptions(): BenchmarkOptions {
+  const telemetry = process.argv.includes('--telemetry');
+  validateBenchmarkTelemetry(telemetry);
   const profilePath = option('--profile', 'benchmark-results/reference/walterra-profile.json');
   if (!existsSync(profilePath))
     throw new Error('Run pnpm benchmark:profile-reference walterra or provide --profile');
@@ -90,5 +96,7 @@ export function getOptions(): BenchmarkOptions {
     views: [...new Set(views)] as BenchmarkView[],
     warmupMode,
     background: background as BackgroundScenario,
+    telemetry,
+    runId: randomUUID(),
   };
 }

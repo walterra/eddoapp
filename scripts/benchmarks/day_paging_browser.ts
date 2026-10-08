@@ -90,10 +90,14 @@ function armPagingMeasurement(
       document.removeEventListener('click', onClick, true);
       const start = performance.now();
       window.__pagingClickStartedAt = performance.timeOrigin + start;
+      window.__eddoBenchmarkStartSpan?.({ view: document.querySelector('[data-testid="todo-view"]')?.getAttribute('data-view'), date: ${JSON.stringify(date)}, todoCount: ${ids.length} });
       const fetchingAtClick = window.__eddoBenchmarkQueryStatus?.().fetching ?? null;
       const initialResources = performance.getEntriesByType('resource').length;
       const timer = setTimeout(() => {
-        if (window.__pagingResult === null) window.__pagingResult = { error: 'Content readiness timed out' };
+        if (window.__pagingResult === null) {
+          window.__pagingResult = { error: 'Content readiness timed out' };
+          window.__eddoBenchmarkEndSpan?.({ failed: true, durationMs: performance.now() - start, localChanges: (window.__eddoBenchmarkChanges ?? []).filter(change => change.at >= window.__pagingClickStartedAt).length });
+        }
       }, 60000);
       const check = () => {
         if (window.__pagingResult !== null) return;
@@ -103,6 +107,7 @@ function armPagingMeasurement(
           if (!isReady()) { requestAnimationFrame(check); return; }
           clearTimeout(timer);
           window.__pagingResult = ${resultPayload(direction, date, ids.length)};
+          window.__eddoBenchmarkEndSpan?.({ failed: false, durationMs: window.__pagingResult.durationMs, localChanges: window.__pagingResult.localChanges });
         }));
       };
       requestAnimationFrame(check);

@@ -1,150 +1,93 @@
-/**
- * Telemetry Proxy Routes
- *
- * Proxies browser telemetry data to OTEL Collector.
- * This avoids exposing OTEL API keys in the browser and handles CORS.
- *
- * @see https://www.elastic.co/docs/solutions/observability/applications/otel-rum
- */
-
 import { createEnv } from '@eddo/core-server';
-import { Hono } from 'hono';
-
+import { Hono, type Context } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { logger } from '../utils/logger';
+import { buildTelemetryHeaders } from './telemetry_headers';
 
-const telemetryApp = new Hono();
+type TelemetrySignal = 'traces' | 'metrics' | 'logs';
+type TelemetryConfig = Pick<
+  ReturnType<typeof createEnv>,
+  'OTEL_EXPORTER_OTLP_ENDPOINT' | 'OTEL_EXPORTER_OTLP_HEADERS' | 'OTEL_API_KEY'
+>;
+interface TelemetryDependencies {
+  getConfig: () => TelemetryConfig;
+  fetch: typeof globalThis.fetch;
+  allowDefaultEndpoint?: boolean;
+}
 
-/** Gets OTEL collector endpoint from environment, returns null if not configured */
-function getOtelEndpoint(): string | null {
-  const env = createEnv();
-  const endpoint = env.OTEL_EXPORTER_OTLP_ENDPOINT;
-  // Default endpoint means OTEL isn't explicitly configured
-  if (!endpoint || endpoint === 'http://localhost:4318') {
-    return null;
+/** Validates generic HTTP endpoints without including configuration values in errors. */
+function collectorEndpoint(endpoint: string, allowDefaultEndpoint: boolean): string | null {
+  if (!endpoint || (endpoint === 'http://localhost:4318' && !allowDefaultEndpoint)) return null;
+  const url = new URL(endpoint);
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    /\/v1\/(traces|metrics|logs)\/?$/.test(url.pathname)
+  ) {
+    throw new Error('Invalid generic OTLP endpoint');
   }
-  return endpoint;
+  return url.toString().replace(/\/$/, '');
 }
 
-/** Gets optional OTEL API key from environment */
-function getOtelApiKey(): string | undefined {
-  const env = createEnv();
-  return env.OTEL_API_KEY;
-}
-
-/** Builds headers for OTEL collector request */
-function buildOtelHeaders(contentType: string | undefined): Record<string, string> {
-  const headers: Record<string, string> = {
-    'Content-Type': contentType ?? 'application/json',
-  };
-
-  const apiKey = getOtelApiKey();
-  if (apiKey) {
-    headers['Authorization'] = `ApiKey ${apiKey}`;
-  }
-
-  return headers;
-}
-
-/** Proxies request to OTEL collector */
-async function proxyToOtel(
-  endpoint: string,
-  body: string,
-  headers: Record<string, string>,
+/** Forwards OTLP JSON or protobuf bytes with server-side credentials and bounded requests. */
+async function forwardTelemetry(
+  context: Context,
+  signal: TelemetrySignal,
+  dependencies: TelemetryDependencies,
 ): Promise<Response> {
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body,
-  });
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: {
-      'Content-Type': response.headers.get('Content-Type') ?? 'application/json',
-    },
-  });
+  // Let Hono's streaming body limiter handle read errors outside the exporter catch.
+  const body = await context.req.arrayBuffer();
+  if (body.byteLength > 1024 * 1024) return context.json({ error: 'Payload too large' }, 413);
+  try {
+    const config = dependencies.getConfig();
+    const endpoint = collectorEndpoint(
+      config.OTEL_EXPORTER_OTLP_ENDPOINT,
+      dependencies.allowDefaultEndpoint ?? false,
+    );
+    if (!endpoint)
+      return context.json(
+        { status: 'ok', message: `OTEL not configured, ${signal} discarded` },
+        200,
+      );
+    const contentType = context.req.header('Content-Type') ?? 'application/json';
+    if (
+      !['application/json', 'application/x-protobuf'].includes(contentType.split(';')[0].trim())
+    ) {
+      return context.json({ error: 'Unsupported OTLP content type' }, 415);
+    }
+    const response = await dependencies.fetch(`${endpoint}/v1/${signal}`, {
+      method: 'POST',
+      headers: buildTelemetryHeaders(config, contentType),
+      body,
+      signal: AbortSignal.timeout(10000),
+      redirect: 'error',
+    });
+    return new Response(response.body, {
+      status: response.status,
+      headers: {
+        'Content-Type': response.headers.get('Content-Type') ?? 'application/json',
+      },
+    });
+  } catch {
+    // Exporter errors can contain credentials; never log the raw error or request headers.
+    logger.warn({ signal }, 'Telemetry forwarding failed');
+    return context.json({ error: 'Failed to send telemetry' }, 502);
+  }
 }
 
-/**
- * POST /api/telemetry/v1/traces
- * Proxies trace data to OTEL Collector
- */
-telemetryApp.post('/v1/traces', async (c) => {
-  const otelEndpoint = getOtelEndpoint();
-
-  // Silently accept when OTEL not configured (dev mode without collector)
-  if (!otelEndpoint) {
-    return c.json({ status: 'ok', message: 'OTEL not configured, traces discarded' }, 200);
+/** Creates a same-origin proxy without exposing collector credentials to browser clients. */
+export function createTelemetryRoutes(
+  dependencies: TelemetryDependencies = { getConfig: createEnv, fetch: globalThis.fetch },
+): Hono {
+  const app = new Hono();
+  app.use('*', bodyLimit({ maxSize: 1024 * 1024 }));
+  for (const signal of ['traces', 'metrics', 'logs'] as const) {
+    app.post(`/v1/${signal}`, (context) => forwardTelemetry(context, signal, dependencies));
   }
+  return app;
+}
 
-  const tracesUrl = `${otelEndpoint}/v1/traces`;
-
-  try {
-    const body = await c.req.text();
-    const headers = buildOtelHeaders(c.req.header('Content-Type'));
-
-    logger.debug({ tracesUrl }, 'Proxying traces to OTEL collector');
-
-    return await proxyToOtel(tracesUrl, body, headers);
-  } catch (error) {
-    logger.warn({ error, tracesUrl }, 'Failed to proxy traces to OTEL collector');
-    return c.json({ error: 'Failed to send telemetry' }, 502);
-  }
-});
-
-/**
- * POST /api/telemetry/v1/metrics
- * Proxies metrics data to OTEL Collector
- */
-telemetryApp.post('/v1/metrics', async (c) => {
-  const otelEndpoint = getOtelEndpoint();
-
-  // Silently accept when OTEL not configured (dev mode without collector)
-  if (!otelEndpoint) {
-    return c.json({ status: 'ok', message: 'OTEL not configured, metrics discarded' }, 200);
-  }
-
-  const metricsUrl = `${otelEndpoint}/v1/metrics`;
-
-  try {
-    const body = await c.req.text();
-    const headers = buildOtelHeaders(c.req.header('Content-Type'));
-
-    logger.debug({ metricsUrl }, 'Proxying metrics to OTEL collector');
-
-    return await proxyToOtel(metricsUrl, body, headers);
-  } catch (error) {
-    logger.warn({ error, metricsUrl }, 'Failed to proxy metrics to OTEL collector');
-    return c.json({ error: 'Failed to send telemetry' }, 502);
-  }
-});
-
-/**
- * POST /api/telemetry/v1/logs
- * Proxies log data to OTEL Collector
- */
-telemetryApp.post('/v1/logs', async (c) => {
-  const otelEndpoint = getOtelEndpoint();
-
-  // Silently accept when OTEL not configured (dev mode without collector)
-  if (!otelEndpoint) {
-    return c.json({ status: 'ok', message: 'OTEL not configured, logs discarded' }, 200);
-  }
-
-  const logsUrl = `${otelEndpoint}/v1/logs`;
-
-  try {
-    const body = await c.req.text();
-    const headers = buildOtelHeaders(c.req.header('Content-Type'));
-
-    logger.debug({ logsUrl }, 'Proxying logs to OTEL collector');
-
-    return await proxyToOtel(logsUrl, body, headers);
-  } catch (error) {
-    logger.warn({ error, logsUrl }, 'Failed to proxy logs to OTEL collector');
-    return c.json({ error: 'Failed to send telemetry' }, 502);
-  }
-});
-
-export { telemetryApp as telemetryRoutes };
+export const telemetryRoutes = createTelemetryRoutes();

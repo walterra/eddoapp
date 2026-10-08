@@ -242,6 +242,7 @@ Requires Docker and `agent-browser` with Chromium installed. Profiles the config
 Produces kanban/table HTML, JSON, and CSV timing reports with live replication progress.
 Background-write scenarios compare controls against concurrent updates and RSS-style ingestion using disposable databases.
 See [benchmark documentation](scripts/benchmarks/README.md) for profiles, measurement boundaries, and headless runs.
+See [Synology telemetry setup](spec/synology_telemetry.md) for authenticated Collector forwarding and opt-in benchmark traces.
 
 ## License
 

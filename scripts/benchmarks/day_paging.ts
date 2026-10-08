@@ -3,6 +3,7 @@ import nano from 'nano';
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
+import { telemetryEnvironment, telemetryImports } from './benchmark_telemetry';
 import { getOptions, type BenchmarkOptions } from './day_paging_options';
 
 import { waitForBootstrap } from './day_paging_bootstrap';
@@ -41,7 +42,7 @@ async function waitForServer(url: string, child: ChildProcess): Promise<void> {
 }
 
 /** Authenticates inside the browser without exposing the synthetic JWT. */
-function authenticate(session: string): void {
+function authenticate(session: string, options: BenchmarkOptions): void {
   browser(session, [
     'eval',
     `(async () => {
@@ -51,6 +52,9 @@ function authenticate(session: string): void {
     const token = await response.json();
     localStorage.setItem('authToken', JSON.stringify(token));
     sessionStorage.setItem('eddoBenchmark', 'true');
+    sessionStorage.setItem('eddoBenchmarkTelemetry', '${options.telemetry}');
+    sessionStorage.setItem('eddoBenchmarkRunId', '${options.runId}');
+    sessionStorage.setItem('eddoBenchmarkScenario', '${options.background}');
     return true;
   })()`,
   ]);
@@ -58,10 +62,20 @@ function authenticate(session: string): void {
 }
 
 /** Starts only the isolated benchmark backend, never development servers. */
-function startServer(couchUrl: string, port: number, log: number): ChildProcess {
+function startServer(
+  couchUrl: string,
+  port: number,
+  log: number,
+  options: BenchmarkOptions,
+): ChildProcess {
   return spawn(
     process.execPath,
-    ['--import', 'tsx', 'packages/web-api/src/benchmarks/day_paging_server.ts'],
+    [
+      ...telemetryImports(options.telemetry),
+      '--import',
+      'tsx',
+      'packages/web-api/src/benchmarks/day_paging_server.ts',
+    ],
     {
       cwd: process.cwd(),
       stdio: ['ignore', log, log],
@@ -72,7 +86,7 @@ function startServer(couchUrl: string, port: number, log: number): ChildProcess 
         NODE_ENV: 'production',
         PORT: String(port),
         JWT_SECRET: 'isolated-benchmark-secret-not-for-production',
-        OTEL_SDK_DISABLED: 'true',
+        ...telemetryEnvironment(options, 'eddo-benchmark-api'),
       },
     },
   );
@@ -108,13 +122,16 @@ async function prepareBrowser(
     directory: options.directory,
     timeoutSeconds: options.warmupTimeout,
   };
-  const firstUrl = options.warmupMode === 'bootstrap' ? `${url}/benchmark/bootstrap` : url;
+  const firstUrl =
+    options.warmupMode === 'bootstrap'
+      ? `${url}/benchmark/bootstrap?telemetry=${options.telemetry ? '1' : '0'}&runId=${options.runId}&scenario=${options.background}`
+      : url;
   browser(session, [...(options.headed ? ['--headed'] : []), 'open', firstUrl]);
   browser(session, ['set', 'viewport', '1440', '1000']);
   if (options.warmupMode === 'bootstrap') {
     await waitForBootstrap(warmup);
     browser(session, ['open', url]);
-  } else authenticate(session);
+  } else authenticate(session, options);
   await waitForReplication(warmup);
 }
 
@@ -165,6 +182,19 @@ interface ViewResults {
   failures: BenchmarkFailure[];
 }
 
+/** Records flush failures separately without preventing owned browser cleanup. */
+function flushBrowserTelemetry(session: string, options: BenchmarkOptions): void {
+  if (!options.telemetry) return;
+  try {
+    browser(session, ['eval', 'window.__eddoBenchmarkFlushTelemetry?.().then(() => true)']);
+  } catch {
+    writeFileSync(
+      `${options.directory}/telemetry-flush-error.txt`,
+      'Browser telemetry flush failed; ingestion is not verified.',
+    );
+  }
+}
+
 /** Benchmarks each view in a fresh browser session with identical fixture data. */
 async function runViews(
   couchUrl: string,
@@ -203,6 +233,7 @@ async function runViews(
       console.error(`benchmark: ${view} failed; preserving samples and continuing remaining views`);
     } finally {
       try {
+        flushBrowserTelemetry(session, viewOptions);
         browser(session, ['close']);
       } catch {
         /* Browser may not have started. */
@@ -240,7 +271,7 @@ async function main(): Promise<void> {
     console.log(`setup: seeding ${profile.totalTodos} synthetic todos`);
     const fixtureHash = await seedDatabase(couchUrl, profile);
     const port = await availablePort();
-    child = startServer(couchUrl, port, log);
+    child = startServer(couchUrl, port, log, options);
     const url = `http://localhost:${port}`;
     await waitForServer(url, child);
     console.log(`setup: isolated server ready at ${url}`);
@@ -251,6 +282,8 @@ async function main(): Promise<void> {
       warmupMode: options.warmupMode,
       background: options.background,
       preparationVersion: 2,
+      telemetry: options.telemetry,
+      runId: options.runId,
       profile,
       fixtureHash,
       browserVersion,
