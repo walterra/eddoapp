@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.1
+
+### Patch Changes
+
+- [#650](https://github.com/walterra/eddoapp/pull/650) [`3203f11`](https://github.com/walterra/eddoapp/commit/3203f11c4f46883217e74d2649f23e089862d53a) - Improve day paging responsiveness during PouchDB synchronization and add correlated performance telemetry.
+
+- [#646](https://github.com/walterra/eddoapp/pull/646) [`f739a0c`](https://github.com/walterra/eddoapp/commit/f739a0ca4fdd70044f1d5db4ffe05433d51e162e) - Restore automated briefings and recaps and support same-day schedule changes.
+
 ## 0.10.0
 
 ### Minor Changes
