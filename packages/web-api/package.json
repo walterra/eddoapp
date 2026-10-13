@@ -27,7 +27,7 @@
     "bcryptjs": "^3.0.3",
     "dockerode": "^4.0.10",
     "feedsmith": "^2.9.0",
-    "google-auth-library": "^10.5.0",
+    "google-auth-library": "^11.1.0",
     "hono": "^4.11.9",
     "imapflow": "^1.4.0",
     "jsonwebtoken": "^9.0.3",
