@@ -8,7 +8,7 @@
     "@assistant-ui/react-markdown": "^0.12.5",
     "@eddo/core-client": "workspace:*",
     "@eddo/core-shared": "workspace:*",
-    "@floating-ui/react": "^0.27.16",
+    "@floating-ui/react": "^0.27.20",
     "@fontsource-variable/inter": "^5.2.8",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.21",

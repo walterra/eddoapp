@@ -13,7 +13,7 @@
     "pnpm": ">=11.5.3"
   },
   "dependencies": {
-    "@floating-ui/react": "^0.27.16",
+    "@floating-ui/react": "^0.27.20",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "d3-array": "^3.0.3",
     "date-fns": "^4.1.0",
