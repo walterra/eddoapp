@@ -3,7 +3,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getAllBackupFiles } from './backup-utils.js';
-import { inspectBackup } from './backup_inspection.js';
 import { readBackupMetadata, validateBackupArchive } from './backup_metadata.js';
 
 export interface ValidationResult {
@@ -16,25 +15,28 @@ export interface ValidationResult {
 
 /** Validates one archive, including empty databases and legacy files. */
 export async function validateBackupFile(file: string): Promise<ValidationResult> {
-  const inspection = await inspectBackup(file, readBackupMetadata(file)?.decodedAttachmentDigests);
-  const errors = [...inspection.errors];
+  let documents = 0;
+  let attachments = 0;
+  const errors: string[] = [];
   const warnings: string[] = [];
   try {
-    await validateBackupArchive(file);
+    const validated = await validateBackupArchive(file);
+    documents = validated.documents;
+    attachments = validated.attachments;
     if (!readBackupMetadata(file))
       warnings.push('Legacy archive: security settings and source completeness cannot be verified');
   } catch (error) {
     errors.push(error instanceof Error ? error.message : String(error));
   }
   const result: ValidationResult = {
-    totalDocuments: inspection.documents,
-    validDocuments: errors.length ? 0 : inspection.documents,
+    totalDocuments: documents,
+    validDocuments: errors.length ? 0 : documents,
     errors: [...new Set(errors)],
     warnings,
     isValid: errors.length === 0,
   };
   console.log(
-    `${result.isValid ? 'PASS' : 'FAIL'} ${path.basename(file)}: ${inspection.documents} records, ${inspection.attachments} attachments`,
+    `${result.isValid ? 'PASS' : 'FAIL'} ${path.basename(file)}: ${documents} records, ${attachments} attachments`,
   );
   for (const warning of warnings) console.warn(`Warning: ${warning}`);
   for (const error of result.errors) console.error(`Error: ${error}`);

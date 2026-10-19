@@ -76,17 +76,13 @@ export function getLatestBackupFile(
     throw new Error(`Backup directory does not exist: ${backupDir}`);
   }
 
-  const files = fs
-    .readdirSync(backupDir)
-    .filter((file) => file.startsWith(`${database}-`) && file.endsWith('.json'))
-    .sort()
-    .reverse();
+  const files = getAllBackupFiles(backupDir).filter((file) => file.database === database);
 
   if (files.length === 0) {
     throw new Error(`No backup files found for database: ${database}`);
   }
 
-  return path.join(backupDir, files[0]);
+  return files[0].path;
 }
 
 /**

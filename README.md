@@ -230,7 +230,10 @@ pnpm backup:retention
 Backups include attachment bodies and a matching `.json.metadata.json` sidecar with security settings,
 SHA-256 checksum, and source document revisions. Keep both files together. Restore validates the archive
 before replacing a database, decodes UTF-8 safely, and reapplies security settings. Legacy archives remain
-supported; missing attachment bodies fail validation, and missing metadata limits recovery verification.
+supported when documents use array batches and any header occupies physical line one; individual-document
+NDJSON is rejected before replacement. Missing attachment bodies fail validation, and missing metadata limits
+recovery verification. Source and restored inventories verify winning live revisions only, not losing conflict
+leaves or tombstones independently.
 
 Archive creation rejects concurrent source changes and leaves incomplete files as `.partial`. Retry during
 an idle period. Published archives have private file permissions; retention removes their sidecars too.

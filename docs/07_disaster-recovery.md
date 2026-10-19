@@ -57,6 +57,10 @@ Keep the archive and metadata sidecar together. Files use private permissions, a
 Registry backups and metadata contain sensitive data. Do not commit or publish them.
 
 Archive creation verifies source revisions, attachment bytes, and a stable source inventory before publication.
+Source and post-restore inventories cover winning live revisions only. They do not independently verify losing
+conflict leaves or tombstones. Checksums detect archive changes, not omissions from the source.
+Restore accepts document-array batches and headers on physical line one. Individual-document NDJSON and
+misplaced headers fail validation before target replacement.
 CouchDB can digest compressed attachment bytes; metadata also records verified decoded-body digests.
 The `.json` filename appears only after validation. Failed or interrupted archives remain `.partial` and are not
 selected as completed backups. Inspect and remove stale partial files manually after resolving the failure.

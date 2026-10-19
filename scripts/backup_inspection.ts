@@ -25,7 +25,8 @@ export type DocumentVisitor = (document: BackupDocument) => void | Promise<void>
 
 /** Validates and visits one decoded document batch. */
 async function visitBatch(value: unknown, visit: DocumentVisitor): Promise<void> {
-  const documents: unknown[] = Array.isArray(value) ? value : [value];
+  if (!Array.isArray(value)) throw new Error('Backup records must be document arrays');
+  const documents: unknown[] = value;
   const schema = z.object({ _id: z.string().min(1), _rev: z.string().optional() }).passthrough();
   for (const document of documents) {
     const parsed = schema.safeParse(document);
@@ -45,10 +46,11 @@ export async function visitBackup(
   let first = true;
   try {
     for await (const line of lines) {
-      if (!line.trim()) continue;
-      const value: unknown = JSON.parse(line);
-      const parsed = first ? backupHeaderSchema.safeParse(value) : null;
+      const isFirstLine = first;
       first = false;
+      if (line === '') continue;
+      const value: unknown = JSON.parse(line);
+      const parsed = isFirstLine ? backupHeaderSchema.safeParse(value) : null;
       if (parsed?.success) {
         header = parsed.data;
         continue;
@@ -68,7 +70,7 @@ export async function readBackupHeader(file: string): Promise<BackupHeader | nul
   const lines = readline.createInterface({ input, crlfDelay: Infinity });
   try {
     for await (const line of lines) {
-      if (!line.trim()) continue;
+      if (line === '') return null;
       const parsed = backupHeaderSchema.safeParse(JSON.parse(line));
       return parsed.success ? parsed.data : null;
     }
