@@ -5,7 +5,6 @@
  * Supports both interactive prompts and direct command-line arguments
  */
 
-import couchbackup from '@cloudant/couchbackup';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import fs from 'fs';
@@ -19,13 +18,13 @@ import {
   type BackupConfig,
 } from './backup-interactive-prompts.js';
 import {
-  createBackupOptions,
   DEFAULT_CONFIG,
   ensureBackupDir,
   formatFileSize,
-  generateBackupFilename,
   getAllBackupFiles,
 } from './backup-utils.js';
+import { createBackupArchive } from './backup_archive.js';
+import { redactDatabaseUrl } from './backup_transport.js';
 
 async function listExistingBackups(backupDir: string, database: string): Promise<string[]> {
   const allBackups = getAllBackupFiles(backupDir);
@@ -40,7 +39,7 @@ async function listExistingBackups(backupDir: string, database: string): Promise
 function displayBackupSummary(config: BackupConfig, dbUrl: string, backupFile: string): void {
   console.log('\n' + chalk.bold('Backup Configuration:'));
   console.log(`  Database: ${chalk.cyan(config.database)}`);
-  console.log(`  Source: ${chalk.cyan(dbUrl)}`);
+  console.log(`  Source: ${chalk.cyan(redactDatabaseUrl(dbUrl))}`);
   console.log(`  Destination: ${chalk.cyan(backupFile)}`);
   console.log(`  Parallelism: ${chalk.cyan(config.parallelism)}`);
   console.log(`  Timeout: ${chalk.cyan(config.timeout + 'ms')}`);
@@ -66,11 +65,7 @@ async function displayExistingBackups(backupDir: string, database: string): Prom
 /**
  * Execute the backup operation
  */
-async function executeBackup(
-  config: BackupConfig,
-  dbUrl: string,
-  backupFile: string,
-): Promise<void> {
+async function executeBackup(config: BackupConfig, dbUrl: string): Promise<void> {
   const spinner = ora({
     text: 'Starting backup...',
     isSilent: !process.stdout.isTTY,
@@ -79,34 +74,18 @@ async function executeBackup(
   if (!process.stdout.isTTY) console.log('Starting backup...');
 
   const startTime = Date.now();
-  const writeStream = fs.createWriteStream(backupFile);
-
-  const options = createBackupOptions({
-    parallelism: config.parallelism,
-    requestTimeout: config.timeout,
-    logfile: `${backupFile}.log`,
-  });
-
-  let documentsProcessed = 0;
-
-  const updateProgress = setInterval(() => {
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    spinner.text = `Backing up... (${documentsProcessed} documents, ${elapsed}s)`;
-  }, 1000);
-
-  await new Promise<void>((resolve, reject) => {
-    const backup = couchbackup.backup(dbUrl, writeStream, options, (err: Error | null) => {
-      clearInterval(updateProgress);
-      if (err) reject(err);
-      else resolve();
+  let backupFile: string;
+  try {
+    backupFile = await createBackupArchive({
+      databaseUrl: dbUrl,
+      directory: config.backupDir,
+      options: { parallelism: config.parallelism, requestTimeout: config.timeout },
     });
-
-    backup.on('changes', (batch: number) => {
-      documentsProcessed += batch;
-    });
-  });
-
-  spinner.succeed(chalk.green('Backup completed successfully!'));
+    spinner.succeed(chalk.green('Backup completed and verified!'));
+  } catch (error) {
+    spinner.fail('Backup failed');
+    throw error;
+  }
 
   const stats = fs.statSync(backupFile);
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -114,7 +93,6 @@ async function executeBackup(
   console.log('\n' + chalk.bold('Backup Summary:'));
   console.log(`  File: ${chalk.cyan(backupFile)}`);
   console.log(`  Size: ${chalk.cyan(formatFileSize(stats.size))}`);
-  console.log(`  Documents: ${chalk.cyan(documentsProcessed)}`);
   console.log(`  Duration: ${chalk.cyan(duration + 's')}`);
 
   if (fs.existsSync(`${backupFile}.log`)) {
@@ -131,8 +109,7 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
 
   await displayExistingBackups(config.backupDir, config.database);
 
-  const backupFile = generateBackupFilename(config.database, config.backupDir);
-  displayBackupSummary(config, dbUrl, backupFile);
+  displayBackupSummary(config, dbUrl, config.backupDir);
 
   ensureBackupDir(config.backupDir);
 
@@ -156,7 +133,7 @@ async function performBackup(config: BackupConfig, isInteractive: boolean = true
   }
 
   try {
-    await executeBackup(config, dbUrl, backupFile);
+    await executeBackup(config, dbUrl);
   } catch (error) {
     console.error(chalk.red('\nBackup failed!'));
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));

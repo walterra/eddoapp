@@ -4,7 +4,6 @@
 import chalk from 'chalk';
 
 import { applyRetentionPolicy, type RetentionConfig } from './backup-retention.js';
-import { getAllBackupFiles } from './backup-utils.js';
 import { backup } from './backup.js';
 import { verifyBackup } from './verify-backup.js';
 
@@ -120,6 +119,39 @@ async function verifyBackupFile(
   }
 }
 
+/** Displays backup results and verification failures. */
+export function displayResults(results: readonly BackupResult[]): void {
+  const successful = results.filter((result) => result.success).length;
+  const failed = results.length - successful;
+  console.log(chalk.bold('\nBackup Results:'));
+  for (const result of results) {
+    if (!result.success) {
+      console.log(chalk.red(`  ❌ ${result.database}: ${result.error}`));
+      continue;
+    }
+    const verified = result.verified
+      ? 'verified'
+      : 'archive validated; extra verification disabled';
+    console.log(chalk.green(`  ✅ ${result.database} (${verified})`));
+  }
+  console.log(`Total: ${results.length} | Success: ${successful} | Failed: ${failed}`);
+}
+
+/** Logs the completed cycle without treating verification failures as successes. */
+export function logBackupCycleCompleted(
+  results: readonly BackupResult[],
+  startTime: number,
+  intervalMs: number,
+  logger: SchedulerLogger,
+): void {
+  logger.info('Backup cycle completed', {
+    duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`,
+    successful: results.filter((result) => result.success).length,
+    failed: results.filter((result) => !result.success).length,
+    nextBackup: new Date(Date.now() + intervalMs).toISOString(),
+  });
+}
+
 /**
  * Backup a single database
  */
@@ -134,39 +166,21 @@ export async function backupDatabase(
   try {
     logger.info(`Backing up database: ${dbName}`);
 
-    const originalBackupDir = process.env.BACKUP_DIR;
-    process.env.BACKUP_DIR = backupDir;
-
-    await backup(dbName);
-
-    if (originalBackupDir) {
-      process.env.BACKUP_DIR = originalBackupDir;
-    } else {
-      delete process.env.BACKUP_DIR;
+    result.backupFile = await backup(dbName, backupDir);
+    result.verified = verifyAfterBackup
+      ? await verifyBackupFile(result.backupFile, dbName, logger)
+      : undefined;
+    result.success = result.verified !== false;
+    if (!result.success) {
+      result.error = 'Backup verification failed';
+      return result;
     }
-
-    const backupFiles = getAllBackupFiles(backupDir)
-      .filter((f) => f.database === dbName)
-      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-
-    if (backupFiles.length > 0) {
-      result.backupFile = backupFiles[0].path;
-      result.success = true;
-
-      if (verifyAfterBackup && result.backupFile) {
-        result.verified = await verifyBackupFile(result.backupFile, dbName, logger);
-      }
-
-      logger.info(`Successfully backed up database: ${dbName}`, {
-        backupFile: result.backupFile,
-        verified: result.verified,
-      });
-    } else {
-      result.error = 'Backup file not found after backup';
-      logger.error(`Backup file not found for ${dbName}`);
-    }
-  } catch (error) {
-    result.error = error instanceof Error ? error.message : String(error);
+    logger.info(`Successfully backed up database: ${dbName}`, {
+      backupFile: result.backupFile,
+      verified: result.verified,
+    });
+  } catch {
+    result.error = 'Backup failed; no verified archive published';
     logger.error(`Failed to backup database: ${dbName}`, { error: result.error });
   }
 

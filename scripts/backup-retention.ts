@@ -21,6 +21,7 @@ import { DEFAULT_CONFIG, formatFileSize, getAllBackupFiles } from './backup-util
 
 dotenvLoad();
 
+export { DEFAULT_RETENTION_CONFIG } from './backup-retention-utils.js';
 export type { RetentionConfig } from './backup-retention-utils.js';
 
 export interface RetentionPolicyConfig extends RetentionConfig {

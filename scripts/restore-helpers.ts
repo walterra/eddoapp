@@ -6,11 +6,12 @@ import { getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
 import fs from 'fs';
 import {
   checkDatabaseExists,
-  createRestoreOptions,
   DEFAULT_CONFIG,
   formatFileSize,
   getLatestBackupFile,
 } from './backup-utils.js';
+import { restoreBackupArchive } from './backup_restore.js';
+import { redactDatabaseUrl } from './backup_transport.js';
 
 /** Configuration for couchbackup restore */
 export interface RestoreContext {
@@ -102,7 +103,7 @@ export async function checkDatabaseForRestore(
 export function logRestoreStart(ctx: RestoreContext): void {
   console.log(`Starting restore of ${ctx.dbName} database...`);
   console.log(`Source: ${ctx.restoreFile}`);
-  console.log(`Destination: ${ctx.dbUrl}`);
+  console.log(`Destination: ${redactDatabaseUrl(ctx.dbUrl)}`);
 
   const fileStats = fs.statSync(ctx.restoreFile);
   console.log(`Backup file size: ${formatFileSize(fileStats.size)}`);
@@ -112,35 +113,16 @@ export function logRestoreStart(ctx: RestoreContext): void {
  * Perform the actual couchbackup restore operation
  */
 export async function performCouchbackupRestore(restoreFile: string, dbUrl: string): Promise<void> {
-  const couchbackupModule = await import('@cloudant/couchbackup');
-  const readStream = fs.createReadStream(restoreFile);
-
-  const options = createRestoreOptions({
-    logfile: `${restoreFile}.restore.log`,
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    couchbackupModule.default.restore(
-      readStream,
-      dbUrl,
-      options,
-      (err: Error | null, _data?: unknown) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log('Restore process completed');
-          resolve();
-        }
-      },
-    );
-  });
+  await restoreBackupArchive(restoreFile, dbUrl);
+  console.log('Restore process completed and inventory verified');
 }
 
 /**
  * Verify restored database and log results
  */
 export async function verifyRestoredDatabase(dbName: string, couchUrl?: string): Promise<void> {
-  const { exists, docCount } = await checkDatabaseExists(dbName, couchUrl);
+  const serverUrl = couchUrl || getCouchDbConfig(validateEnv(process.env)).url;
+  const { exists, docCount } = await checkDatabaseExists(dbName, serverUrl);
   if (exists) {
     console.log(`Verified: Database '${dbName}' now contains ${docCount} documents`);
   }

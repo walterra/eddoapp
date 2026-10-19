@@ -10,12 +10,15 @@ import fs from 'fs';
 import path from 'path';
 
 export interface BackupOptions extends CouchBackupOptions {
+  attachments?: boolean;
+  mode?: 'full' | 'shallow';
   parallelism?: number;
   requestTimeout?: number;
   logfile?: string;
 }
 
 export interface RestoreOptions extends CouchRestoreOptions {
+  attachments?: boolean;
   parallelism?: number;
   requestTimeout?: number;
   logfile?: string;
@@ -47,7 +50,7 @@ export const DEFAULT_CONFIG = {
  */
 export function ensureBackupDir(backupDir: string = DEFAULT_CONFIG.backupDir): void {
   if (!fs.existsSync(backupDir)) {
-    fs.mkdirSync(backupDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
   }
 }
 
@@ -268,6 +271,8 @@ export function createBackupOptions(overrides?: Partial<BackupOptions>): BackupO
   return {
     parallelism: DEFAULT_CONFIG.parallelism,
     requestTimeout: DEFAULT_CONFIG.timeout,
+    mode: 'full',
+    attachments: true,
     ...overrides,
   };
 }

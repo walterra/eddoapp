@@ -1,130 +1,57 @@
 #!/usr/bin/env tsx
-
-/**
- * Basic backup script using @cloudant/couchbackup
- * Backs up CouchDB database to a JSON file
- */
-
-import couchbackup from '@cloudant/couchbackup';
+/** Creates a verified CouchDB archive using environment configuration. */
 import { getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
 import { dotenvLoad } from 'dotenv-mono';
-import fs from 'fs';
-import {
-  createBackupOptions,
-  DEFAULT_CONFIG,
-  ensureBackupDir,
-  formatFileSize,
-  generateBackupFilename,
-} from './backup-utils.js';
+import { DEFAULT_CONFIG } from './backup-utils.js';
+import { createBackupArchive } from './backup_archive.js';
 
-// Load environment variables
 dotenvLoad();
 
-// Additional backup-specific configuration
-const BACKUP_DIR = process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir;
-
-async function backup(database?: string): Promise<void> {
-  try {
-    // Environment configuration using shared validation
-    const env = validateEnv(process.env);
-    const couchConfig = getCouchDbConfig(env);
-
-    // Use provided database or default from config
-    const dbName = database || couchConfig.dbName;
-
-    // Ensure backup directory exists
-    ensureBackupDir(BACKUP_DIR);
-
-    // Generate backup filename with timestamp
-    const backupFile = generateBackupFilename(dbName, BACKUP_DIR);
-
-    // Build the full database URL
-    const dbUrl = couchConfig.url + '/' + dbName;
-
-    console.log(`Starting backup of ${dbName} database...`);
-    console.log(`Source: ${dbUrl}`);
-    console.log(`Destination: ${backupFile}`);
-
-    const writeStream = fs.createWriteStream(backupFile);
-
-    const options = createBackupOptions({
-      logfile: `${backupFile}.log`,
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      couchbackup.backup(dbUrl, writeStream, options, (err: Error | null, _data?: unknown) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
-
-    console.log(`Backup completed successfully: ${backupFile}`);
-
-    // Display backup file size
-    const stats = fs.statSync(backupFile);
-    console.log(`Backup size: ${formatFileSize(stats.size)}`);
-  } catch (error) {
-    console.error('Backup failed:', error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
+/** Backs up one database and returns its published archive path. */
+export async function backup(database?: string, directory?: string): Promise<string> {
+  const env = validateEnv(process.env);
+  const config = getCouchDbConfig(env);
+  const name = database || config.dbName;
+  console.log(`Starting backup of ${name} database...`);
+  const file = await createBackupArchive({
+    databaseUrl: `${config.url}/${encodeURIComponent(name)}`,
+    directory: directory || process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir,
+  });
+  console.log(`Backup completed and verified: ${file}`);
+  return file;
 }
 
-// Add basic CLI argument parsing
-function parseArgs(): { showHelp: boolean; database?: string; backupDir?: string } {
+interface BackupArguments {
+  showHelp: boolean;
+  database?: string;
+  backupDir?: string;
+}
+
+/** Parses the basic backup command options. */
+function parseArgs(): BackupArguments {
   const args = process.argv.slice(2);
-
-  if (args.includes('--help') || args.includes('-h')) {
-    return { showHelp: true };
-  }
-
   const databaseIndex = args.findIndex((arg) => arg === '--database' || arg === '-d');
-  const backupDirIndex = args.findIndex((arg) => arg === '--backup-dir' || arg === '-b');
-
+  const directoryIndex = args.findIndex((arg) => arg === '--backup-dir' || arg === '-b');
   return {
-    showHelp: false,
+    showHelp: args.includes('--help') || args.includes('-h'),
     database: databaseIndex >= 0 ? args[databaseIndex + 1] : undefined,
-    backupDir: backupDirIndex >= 0 ? args[backupDirIndex + 1] : undefined,
+    backupDir: directoryIndex >= 0 ? args[directoryIndex + 1] : undefined,
   };
 }
 
-function showHelp() {
-  console.log(`
-Usage: backup [options]
-
-Basic CouchDB backup tool
-
-Options:
-  -d, --database <name>     database name to backup
-  -b, --backup-dir <path>   backup directory (default: "./backups")
-  -h, --help                display help for command
-
-Examples:
-  backup                    # backup default database
-  backup --database mydb    # backup specific database
-  backup --backup-dir /tmp  # backup to custom directory
-
-Note: For more advanced features, use 'pnpm backup:interactive'
-`);
-}
-
-// Run backup if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = parseArgs();
-
   if (args.showHelp) {
-    showHelp();
-    process.exit(0);
+    console.log('Usage: pnpm backup [--database <name>] [--backup-dir <path>]');
+    console.log(
+      'Includes attachments and security metadata. Use backup:auto --all-databases --run-once for a full server backup.',
+    );
+  } else {
+    backup(args.database, args.backupDir).catch(() => {
+      console.error(
+        'Backup failed; no verified archive was published. Check database access and concurrent writes.',
+      );
+      process.exitCode = 1;
+    });
   }
-
-  // Override backup directory if specified
-  if (args.backupDir) {
-    process.env.BACKUP_DIR = args.backupDir;
-  }
-
-  backup(args.database).catch(console.error);
 }
-
-export { backup };

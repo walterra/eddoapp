@@ -104,7 +104,7 @@ function getBackupFiles(backupDir: string): BackupFileInfo[] {
       path: backup.path,
       database: backup.database,
       timestamp: backup.timestamp,
-      size: formatFileSize(backup.size),
+      size: backup.size,
       age: getRelativeTime(stats.mtime),
     };
   });
@@ -161,7 +161,7 @@ function createBackupFilePrompts(backupFiles: BackupFileInfo[]): prompts.PromptO
   const choices = displayBackups.map((backup) => ({
     title: backup.filename,
     value: backup.fullPath,
-    description: `${backup.database} | ${backup.size} | ${backup.age}`,
+    description: `${backup.database} | ${formatFileSize(backup.size)} | ${backup.age}`,
   }));
 
   choices.push({

@@ -5,7 +5,7 @@
  * Runs backups on a configurable schedule with verification and retention policy
  */
 
-import { getAvailableDatabases, validateEnv } from '@eddo/core-server/config';
+import { validateEnv } from '@eddo/core-server/config';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { dotenvLoad } from 'dotenv-mono';
@@ -15,11 +15,14 @@ import {
   backupDatabase,
   type BackupResult,
   createConsoleLogger,
+  displayResults,
+  logBackupCycleCompleted,
   matchesPattern,
   parseInterval,
   type SchedulerLogger,
 } from './backup-scheduler-helpers.js';
 import { DEFAULT_CONFIG, ensureBackupDir } from './backup-utils.js';
+import { discoverBackupDatabases } from './backup_transport.js';
 
 // Load environment variables
 dotenvLoad();
@@ -28,6 +31,7 @@ interface BackupSchedulerConfig {
   intervalMs: number;
   backupDir: string;
   databasePattern: string;
+  allDatabases: boolean;
   verifyAfterBackup: boolean;
   applyRetention: boolean;
   retentionConfig: RetentionConfig;
@@ -38,6 +42,7 @@ const DEFAULT_SCHEDULER_CONFIG: Omit<BackupSchedulerConfig, 'logger'> = {
   intervalMs: 24 * 60 * 60 * 1000,
   backupDir: process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir,
   databasePattern: process.env.BACKUP_DATABASE_PATTERN || 'eddo_*',
+  allDatabases: false,
   verifyAfterBackup: true,
   applyRetention: true,
   retentionConfig: {
@@ -139,7 +144,7 @@ export class BackupScheduler {
         results.push(result);
       }
 
-      if (this.config.applyRetention) {
+      if (this.config.applyRetention && results.every((result) => result.success)) {
         await applyRetention(
           this.config.backupDir,
           this.config.retentionConfig,
@@ -147,19 +152,13 @@ export class BackupScheduler {
         );
       }
 
-      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-      const successful = results.filter((r) => r.success).length;
-      const failed = results.filter((r) => !r.success).length;
-
       this.lastBackupTime = new Date();
+      logBackupCycleCompleted(results, startTime, this.config.intervalMs, this.config.logger);
 
-      this.config.logger.info('Backup cycle completed', {
-        duration: `${duration}s`,
-        successful,
-        failed,
-        nextBackup: new Date(Date.now() + this.config.intervalMs).toISOString(),
-      });
-
+      return results;
+    } catch {
+      this.config.logger.error('Backup cycle failed during database discovery or retention');
+      results.push({ database: '<backup-cycle>', success: false, error: 'Backup cycle failed' });
       return results;
     } finally {
       this.backupInProgress = false;
@@ -167,14 +166,11 @@ export class BackupScheduler {
   }
 
   private async getDatabasesToBackup(): Promise<string[]> {
-    try {
-      const env = validateEnv(process.env);
-      const allDatabases = await getAvailableDatabases(env);
-      return allDatabases.filter((db) => matchesPattern(db, this.config.databasePattern));
-    } catch (error) {
-      this.config.logger.error('Failed to get available databases', { error });
-      return [];
-    }
+    const env = validateEnv(process.env);
+    const databases = await discoverBackupDatabases(env.COUCHDB_URL, this.config.allDatabases);
+    return this.config.allDatabases
+      ? databases
+      : databases.filter((db) => matchesPattern(db, this.config.databasePattern));
   }
 
   getStatus(): {
@@ -193,6 +189,7 @@ export class BackupScheduler {
         intervalMs: this.config.intervalMs,
         backupDir: this.config.backupDir,
         databasePattern: this.config.databasePattern,
+        allDatabases: this.config.allDatabases,
         verifyAfterBackup: this.config.verifyAfterBackup,
         applyRetention: this.config.applyRetention,
         retentionConfig: this.config.retentionConfig,
@@ -205,31 +202,6 @@ export function createBackupScheduler(config?: Partial<BackupSchedulerConfig>): 
   return new BackupScheduler(config || {});
 }
 
-/**
- * Display backup results
- */
-function displayResults(results: BackupResult[]): void {
-  const successful = results.filter((r) => r.success).length;
-  const failed = results.filter((r) => !r.success).length;
-
-  console.log(chalk.bold('\nBackup Results:'));
-  results.forEach((result) => {
-    if (result.success) {
-      const verifiedText = result.verified
-        ? chalk.gray(' (verified)')
-        : chalk.yellow(' (not verified)');
-      console.log(chalk.green(`  ✅ ${result.database}`) + verifiedText);
-    } else {
-      console.log(chalk.red(`  ❌ ${result.database}: ${result.error}`));
-    }
-  });
-
-  console.log();
-  console.log(
-    `Total: ${chalk.cyan(results.length)} | Success: ${chalk.green(successful)} | Failed: ${chalk.red(failed)}`,
-  );
-}
-
 interface CliOptions {
   interval: string;
   backupDir: string;
@@ -240,6 +212,7 @@ interface CliOptions {
   retentionWeekly: string;
   retentionMonthly: string;
   runOnce?: boolean;
+  allDatabases?: boolean;
 }
 
 /** Display CLI configuration */
@@ -250,7 +223,9 @@ function displayConfig(options: CliOptions, intervalMs: number): void {
     `  Interval: ${chalk.cyan(options.interval)} (${(intervalMs / (1000 * 60 * 60)).toFixed(1)} hours)`,
   );
   console.log(`  Backup Directory: ${chalk.cyan(options.backupDir)}`);
-  console.log(`  Database Pattern: ${chalk.cyan(options.pattern)}`);
+  console.log(
+    `  Database Scope: ${options.allDatabases ? 'ALL (including system databases)' : chalk.cyan(options.pattern)}`,
+  );
   console.log(
     `  Verification: ${options.verify ? chalk.green('enabled') : chalk.yellow('disabled')}`,
   );
@@ -271,6 +246,7 @@ function createSchedulerFromOptions(options: CliOptions, intervalMs: number): Ba
     intervalMs,
     backupDir: options.backupDir,
     databasePattern: options.pattern,
+    allDatabases: options.allDatabases ?? false,
     verifyAfterBackup: options.verify,
     applyRetention: options.retention,
     retentionConfig: {
@@ -303,7 +279,7 @@ async function runCli(options: CliOptions): Promise<void> {
     console.log(chalk.yellow('Running single backup cycle...\n'));
     const results = await scheduler.runBackupCycle();
     displayResults(results);
-    process.exit(results.filter((r) => !r.success).length > 0 ? 1 : 0);
+    process.exit(results.length === 0 || results.some((r) => !r.success) ? 1 : 0);
   } else {
     setupShutdownHandlers(scheduler);
     scheduler.start();
@@ -318,9 +294,24 @@ program
   .description('Automated CouchDB backup scheduler with retention policy')
   .version('1.0.0')
   .option('-i, --interval <interval>', 'backup interval (e.g., 24h, 1d, 30m)', '24h')
-  .option('-b, --backup-dir <path>', 'backup directory', DEFAULT_CONFIG.backupDir)
-  .option('-p, --pattern <pattern>', 'database name pattern (glob)', 'eddo_*')
-  .option('--no-verify', 'disable backup verification')
+  .option(
+    '-b, --backup-dir <path>',
+    'backup directory',
+    process.env.BACKUP_DIR || DEFAULT_CONFIG.backupDir,
+  )
+  .option(
+    '-p, --pattern <pattern>',
+    'database name pattern (glob)',
+    process.env.BACKUP_DATABASE_PATTERN || 'eddo_*',
+  )
+  .option(
+    '--all-databases',
+    'include every database, including system databases; overrides --pattern',
+  )
+  .option(
+    '--no-verify',
+    'disable additional post-backup verification; archive creation still validates integrity',
+  )
   .option('--no-retention', 'disable retention policy')
   .option('--retention-daily <days>', 'daily retention days', '30')
   .option('--retention-weekly <weeks>', 'weekly retention weeks', '12')
