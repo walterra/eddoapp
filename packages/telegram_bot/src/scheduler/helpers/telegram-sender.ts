@@ -5,6 +5,7 @@ import type { Bot } from 'grammy';
 
 import type { BotContext } from '../../bot/bot.js';
 import { logger } from '../../utils/logger.js';
+import type { TelegramUser } from '../../utils/user-lookup.js';
 
 interface SendMessageOptions {
   telegramId: number;
@@ -25,6 +26,23 @@ export async function sendTelegramMessage(
   await bot.api.sendMessage(telegramId, message, {
     parse_mode: parseMode,
     link_preview_options: disableLinkPreview ? { is_disabled: true } : undefined,
+  });
+}
+
+/** Sends an unmarked briefing without printing it. */
+export async function sendBriefingWithoutMarker(
+  bot: Bot<BotContext>,
+  user: TelegramUser,
+  message: string,
+): Promise<void> {
+  await sendTelegramMessage(bot, {
+    telegramId: user.telegram_id!,
+    message,
+    disableLinkPreview: true,
+  });
+  logger.warn('Briefing sent without marker (printer skipped)', {
+    userId: user._id,
+    username: user.username,
   });
 }
 

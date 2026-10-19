@@ -29,9 +29,12 @@ import {
   executeAgentForUser,
   logSuccessfulSend,
   printIfEnabled,
+  sendBriefingWithoutMarker,
   sendTelegramMessage,
   stripMarker,
 } from './helpers/index.js';
+
+import { runReservedReport } from './report-reservation.js';
 
 export class DailyBriefingScheduler {
   private bot: Bot<BotContext>;
@@ -135,7 +138,9 @@ export class DailyBriefingScheduler {
     });
 
     try {
-      const wasSent = await this.sendBriefingToUser(user);
+      const wasSent = await runReservedReport(user.database_name, `briefing:${sentKey}`, () =>
+        this.sendBriefingToUser(user),
+      );
       if (!wasSent) return;
 
       this.sentBriefingsToday.add(sentKey);
@@ -174,10 +179,12 @@ export class DailyBriefingScheduler {
           contentType: 'briefing',
         });
 
+        if (!result.success) return false;
+
         if (result.hasMarker) {
           await this.sendBriefingWithMarker(user, result.message);
         } else {
-          await this.sendBriefingWithoutMarker(user, result.message);
+          await sendBriefingWithoutMarker(this.bot, user, result.message);
         }
 
         return result.success;
@@ -209,19 +216,6 @@ export class DailyBriefingScheduler {
       username: user.username,
       telegramId: user.telegram_id!,
       messageLength: cleanMessage.length,
-    });
-  }
-
-  private async sendBriefingWithoutMarker(user: TelegramUser, message: string): Promise<void> {
-    await sendTelegramMessage(this.bot, {
-      telegramId: user.telegram_id!,
-      message,
-      disableLinkPreview: true,
-    });
-
-    logger.warn('Briefing sent without marker (printer skipped)', {
-      userId: user._id,
-      username: user.username,
     });
   }
 
@@ -267,7 +261,9 @@ export class DailyBriefingScheduler {
     });
 
     try {
-      const wasSent = await this.sendRecapToUser(user);
+      const wasSent = await runReservedReport(user.database_name, `recap:${sentKey}`, () =>
+        this.sendRecapToUser(user),
+      );
       if (!wasSent) return;
 
       this.sentRecapsToday.add(sentKey);
@@ -294,6 +290,8 @@ export class DailyBriefingScheduler {
       contentMarker: RECAP_CONTENT_MARKER,
       contentType: 'recap',
     });
+
+    if (!result.success) return false;
 
     if (result.hasMarker) {
       const cleanMessage = stripMarker(result.message, RECAP_CONTENT_MARKER);
