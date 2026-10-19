@@ -3,6 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { listBackupArchives } from './backup_test_helpers';
 import {
   createTestEnv,
   generateTestDbName,
@@ -62,9 +63,7 @@ describe('Backup Interactive E2E', () => {
       .code(0);
 
     // Verify backup file was created
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
 
     // Verify backup content
@@ -138,9 +137,7 @@ describe('Backup Interactive E2E', () => {
       .code(0);
 
     // Verify backup was created
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
   }, 60000);
 
@@ -188,9 +185,7 @@ describe('Backup Interactive E2E', () => {
 
     // Verify custom directory was created and contains backup
     expect(fs.existsSync(customBackupDir)).toBe(true);
-    const backupFiles = fs
-      .readdirSync(customBackupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(customBackupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
   }, 60000);
 
@@ -263,9 +258,7 @@ describe('Backup Interactive E2E', () => {
       .code(0);
 
     // Verify backup was created
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
   }, 60000);
 
@@ -296,9 +289,7 @@ describe('Backup Interactive E2E', () => {
 
     // Directory should be created and contain backup
     expect(fs.existsSync(nonExistentDir)).toBe(true);
-    const backupFiles = fs
-      .readdirSync(nonExistentDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(nonExistentDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
   }, 60000);
 
@@ -349,9 +340,7 @@ describe('Backup Interactive E2E', () => {
       .code(0);
 
     // Verify both backup files exist
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(2);
   }, 45000);
 });
@@ -405,9 +394,7 @@ describe('Backup Interactive E2E - Error Scenarios', () => {
       .code(0);
 
     // Verify backup was created
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
   }, 60000);
 
@@ -439,9 +426,7 @@ describe('Backup Interactive E2E - Error Scenarios', () => {
       .code(0);
 
     // Verify backup was created
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
   }, 60000);
 

@@ -1,8 +1,10 @@
 import { runner } from 'clet';
 import fs from 'fs';
+import nano from 'nano';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { listBackupArchives } from './backup_test_helpers';
 import {
   createTestEnv,
   generateTestDbName,
@@ -66,9 +68,7 @@ describe('Restore Interactive E2E', () => {
       .code(0);
 
     // Step 3: Find the backup file
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
@@ -183,9 +183,7 @@ describe('Restore Interactive E2E', () => {
       .stdout(/Backup Summary:/)
       .code(0);
 
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
     // Test restore with custom parameters
@@ -342,9 +340,7 @@ describe('Restore Interactive E2E', () => {
       .stdout(/Backup Summary:/)
       .code(0);
 
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
     await runner()
@@ -411,15 +407,16 @@ describe('Restore Interactive E2E', () => {
   it('should handle invalid backup file format', async () => {
     const targetDbName = generateTestDbName('invalid-format-test');
     const testEnv = createTestEnv();
-
-    // Track the target database that will be created by the restore script
-    dbManager.trackDatabase(targetDbName);
+    await dbManager.createTestDatabase(targetDbName);
+    await dbManager.addSampleData(targetDbName, SAMPLE_TODO_DOCS);
+    const database = nano(couchDbUrl).db.use(targetDbName);
+    const before = await database.list({ include_docs: true });
 
     // Create an invalid backup file
     const invalidBackupFile = path.join(backupDir, 'invalid-backup.json');
     fs.writeFileSync(invalidBackupFile, 'invalid json content');
 
-    // The restore may succeed but with 0 documents restored due to invalid format
+    // Reject invalid input without replacing existing documents.
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
@@ -434,11 +431,10 @@ describe('Restore Interactive E2E', () => {
         invalidBackupFile,
         '--force-overwrite',
       ])
-      .stdout(/Restore Summary:/)
-      .code(0);
+      .stderr(/not valid JSON/)
+      .code(1);
 
-    // The restore "succeeds" but should have restored 0 documents due to invalid format
-    // This is actually expected behavior with @cloudant/couchbackup - it handles invalid JSON gracefully
+    expect(await database.list({ include_docs: true })).toEqual(before);
   }, 30000);
 });
 
@@ -496,7 +492,7 @@ describe('Restore Interactive E2E - File Discovery', () => {
     }
 
     // Verify multiple backup files were created
-    const backupFiles = fs.readdirSync(backupDir).filter((f) => f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir);
     expect(backupFiles.length).toBe(3);
 
     // Test restore using one of the backup files
