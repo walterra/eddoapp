@@ -41,12 +41,13 @@ export function createScheduledAgentContext(params: CreateScheduledAgentContextP
       userId: user._id,
       lastActivity: new Date(),
       context: {},
-      user,
+      user: {
+        ...user,
+        preferences: { ...user.preferences, printBriefing: false, printRecap: false },
+      },
     },
-    reply: async (text: string, options?: Parameters<typeof bot.api.sendMessage>[2]) => {
-      if (!telegramId) return undefined;
-      return bot.api.sendMessage(telegramId, text, options);
-    },
+    // The scheduler owns delivery and printing; agent iterations only generate content.
+    reply: async () => undefined,
     replyWithChatAction: async (action: Parameters<typeof bot.api.sendChatAction>[1]) => {
       if (!telegramId) return true;
       return bot.api.sendChatAction(telegramId, action);

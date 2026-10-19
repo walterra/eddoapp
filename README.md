@@ -36,6 +36,14 @@ Manage todos through a web interface, Telegram bot with Claude AI, or programmat
 - **MCP Server** — Programmatic access via Model Context Protocol
 - **pi-coding-agent Skills** — AI coding assistant integration
 
+### Scheduled Telegram reports
+
+Briefings and recaps reserve each user's local date and configured report time in CouchDB before generation.
+Reservations prevent duplicate runs across overlapping checks and bot restarts. The scheduler alone delivers and prints reports.
+Confirmed generation failures release the reservation for retry. Delivery errors retain it because Telegram may have accepted the message.
+A process crash after reservation can skip that report. Change its configured time to schedule another attempt that day.
+Reservations use server-local CouchDB documents; database replication and backups do not preserve them.
+
 ## Quick Start
 
 **Requirements**: Node.js ≥24.0.0, pnpm ≥7.1.0, Docker

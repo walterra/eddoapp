@@ -3,4 +3,9 @@
  */
 export { executeAgentForUser } from './agent-runner.js';
 export { printIfEnabled } from './printer.js';
-export { logSuccessfulSend, sendTelegramMessage, stripMarker } from './telegram-sender.js';
+export {
+  logSuccessfulSend,
+  sendBriefingWithoutMarker,
+  sendTelegramMessage,
+  stripMarker,
+} from './telegram-sender.js';

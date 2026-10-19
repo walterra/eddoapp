@@ -42,6 +42,23 @@ function createBot(): Bot<BotContext> {
 }
 
 describe('createScheduledAgentContext', () => {
+  it('leaves delivery and printing exclusively to the scheduler', async () => {
+    const bot = createBot();
+    const user = createUser();
+    user.preferences = { ...user.preferences, printBriefing: true, printRecap: true };
+    const context = createScheduledAgentContext({ bot, user, messageText: 'briefing' });
+
+    await context.reply('Gathering your accomplishments...');
+    await context.reply('DAILY RECAP');
+
+    expect(bot.api.sendMessage).not.toHaveBeenCalled();
+    expect(context.session.user?.preferences).toMatchObject({
+      printBriefing: false,
+      printRecap: false,
+    });
+    expect(user.preferences.printBriefing).toBe(true);
+  });
+
   it('creates the complete session required by agent helpers', () => {
     const user = createUser();
     const context = createScheduledAgentContext({
