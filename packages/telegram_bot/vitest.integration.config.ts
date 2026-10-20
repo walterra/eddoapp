@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     name: 'telegram-bot-integration',
     include: ['src/integration-tests/**/*.test.ts'],
-    exclude: ['src/**/*.unit.test.ts'],
+    exclude: ['src/**/*.unit.test.ts', 'src/integration-tests/durable/**'],
     testTimeout: 60000, // 1 minute timeout for integration tests
     hookTimeout: 30000, // 30 second timeout for setup/teardown
     globals: true,

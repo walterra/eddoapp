@@ -126,6 +126,7 @@
     "test:coverage": "vitest run --coverage packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup",
     "coverage:open": "open coverage/index.html",
     "test:integration:mcp-server": "tsx scripts/run-mcp-server-integration-tests.ts",
+    "test:integration:durable": "vitest run --config packages/telegram_bot/vitest.durable.config.ts",
     "test:integration:agent-loop": "tsx scripts/run-telegram-bot-integration-tests.ts",
     "test:integration:agent-loop:record": "VCR_MODE=record tsx scripts/run-telegram-bot-integration-tests.ts",
     "test:integration:agent-loop:playback": "tsx scripts/run-telegram-bot-vcr-playback-tests.ts",

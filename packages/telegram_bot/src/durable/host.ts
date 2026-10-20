@@ -1,0 +1,139 @@
+import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
+import { createEnv, createUserRegistry } from '@eddo/core-server';
+import type { Bot } from 'grammy';
+import { builtinModels } from 'pi-ai-durable/providers/all';
+import { openCouchDbStorage } from 'pi-durable-couchdb';
+import type { BotContext } from '../bot/bot.js';
+import { getMCPClient } from '../mcp/client.js';
+import { appConfig } from '../utils/config.js';
+import { logger } from '../utils/logger.js';
+import { parseDurableConfig } from './config.js';
+import { provisionDurableDatabase } from './couch.js';
+import { projectDurableExchange } from './projection.js';
+import { buildDurablePrompt } from './prompt.js';
+import { openDurableRuntime, type DurableRuntime } from './runtime.js';
+import type { DurableRequestInput } from './state.js';
+import { resolveDurableUser } from './tools.js';
+
+const runtimes = new Map<string, Promise<DurableRuntime>>();
+let bot: Bot<BotContext> | undefined;
+let timer: ReturnType<typeof setInterval> | undefined;
+let stopping = false;
+
+/** Opens a user's private runtime using current registry identity and server credentials. */
+async function openUserRuntime(username: string): Promise<DurableRuntime> {
+  if (!bot || stopping) throw new Error('Durable host is not running');
+  const env = createEnv();
+  const user = await createUserRegistry(env.COUCHDB_URL, env).findByUsername(username);
+  if (!user?.telegram_id || user.status !== 'active')
+    throw new Error('Durable pilot user is inactive or unlinked');
+  const telegramId = user.telegram_id;
+  await resolveDurableUser(username, telegramId);
+  const client = getMCPClient();
+  if (!client) throw new Error('MCP is not initialized');
+  const models = builtinModels();
+  const model = parseDurableConfig(process.env).model;
+  if (!models.getModel(model.provider, model.modelId) || !(await models.getAuth(model.provider))) {
+    throw new Error('Durable model is unknown or missing provider credentials');
+  }
+  const endpoint = await provisionDurableDatabase(username);
+  const storage = await openCouchDbStorage(endpoint);
+  let projection = Promise.resolve();
+  try {
+    return await openDurableRuntime({
+      storage,
+      models,
+      client,
+      username,
+      telegramId,
+      model,
+      instructions: buildDurablePrompt(appConfig.BOT_PERSONA_ID),
+      authorize: () => resolveDurableUser(username, telegramId),
+      send: (chatId, text) => bot!.api.sendMessage(chatId, text),
+      project: (input, answer) => {
+        const pending = projection.then(() => projectDurableExchange({ username, input, answer }));
+        projection = pending.catch(() => undefined);
+        return pending;
+      },
+      onReport: (error) => logger.error('Durable runtime reported an error', { username, error }),
+    });
+  } catch (error) {
+    await storage.close(context);
+    throw error;
+  }
+}
+
+/** Shares one opening attempt and evicts closed/failed handles before recovery. */
+function getRuntime(username: string): Promise<DurableRuntime> {
+  const existing = runtimes.get(username);
+  if (existing) return existing;
+  const pending = openUserRuntime(username);
+  runtimes.set(username, pending);
+  void pending
+    .then((runtime) =>
+      runtime.closed.then(() => {
+        if (runtimes.get(username) === pending) runtimes.delete(username);
+      }),
+    )
+    .catch((error) => {
+      if (runtimes.get(username) === pending) runtimes.delete(username);
+      logger.error('Durable runtime opening failed; recovery will retry', { username, error });
+    });
+  return pending;
+}
+
+/** Recovers all allowlisted journals even when no new Telegram update arrives. */
+export async function startDurableHost(instance: Bot<BotContext>): Promise<void> {
+  bot = instance;
+  stopping = false;
+  const recover = (): Promise<unknown[]> =>
+    Promise.allSettled(
+      parseDurableConfig(process.env).users.map((username) => getRuntime(username)),
+    );
+  await recover();
+  timer = setInterval(() => {
+    void recover();
+  }, 30_000);
+  timer.unref();
+}
+
+/** Closes durable work before disconnecting MCP during shutdown. */
+export async function stopDurableHost(): Promise<void> {
+  stopping = true;
+  clearInterval(timer);
+  const opened = await Promise.allSettled(runtimes.values());
+  await Promise.all(
+    opened.map((result) => (result.status === 'fulfilled' ? result.value.close() : undefined)),
+  );
+  runtimes.clear();
+}
+
+/** Admits private Telegram updates with a bot-scoped stable deduplication key. */
+export async function executeDurableMessage(text: string, ctx: BotContext): Promise<string> {
+  const username = ctx.session.user?.username;
+  if (!username || !ctx.from || !ctx.chat || !ctx.message || ctx.chat.type !== 'private') {
+    throw new Error('Durable pilot requires a linked private Telegram chat');
+  }
+  await resolveDurableUser(username, ctx.from.id);
+  const runtime = await getRuntime(username);
+  const env = createEnv();
+  const database = (await import('@eddo/core-server')).createAssistantConversationDatabase(
+    env.COUCHDB_URL,
+    env,
+    username,
+  );
+  await database.ensureDatabase();
+  await database.setupDesignDocuments();
+  const conversation = await database.getOrCreateActive();
+  const input: DurableRequestInput = {
+    requestId: `telegram:${bot!.botInfo.id}:${ctx.update.update_id}`,
+    text,
+    conversationId: conversation._id,
+    chatId: ctx.chat.id,
+    telegramId: ctx.from.id,
+    messageId: ctx.message.message_id,
+    createdAt: new Date(ctx.message.date * 1000).toISOString(),
+    deadline: Date.now() + 300_000,
+  };
+  return runtime.execute(input);
+}

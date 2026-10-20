@@ -145,6 +145,54 @@ Features:
 - Daily briefings at scheduled times
 - GitHub/RSS/Email sync configuration via bot commands
 
+#### Experimental durable Telegram pilot
+
+Opt individual Eddo usernames into restartable interactive agent execution:
+
+```bash
+TELEGRAM_DURABLE_USERS=alice,bob
+TELEGRAM_DURABLE_MODEL=anthropic/claude-sonnet-4-5
+```
+
+Leave `TELEGRAM_DURABLE_USERS` empty to retain the existing agent for everyone. Restart the bot after configuration changes.
+Configure the selected provider's API key. The legacy `LLM_MODEL` remains separate for other users and scheduled reports.
+
+The pilot uses Pi Durable 1.3.0 and `pi-durable-couchdb` 0.0.1. It supports linked private Telegram chats only.
+The bot provisions an administrator-only `${DATABASE_PREFIX}_pi_durable_<username-sha256>` database for each enrolled user.
+CouchDB credentials must permit database creation, security configuration, and runtime journal access. Use TLS outside local development.
+Run **exactly one bot process** against these databases. No distributed lock or automatic ownership failover exists.
+
+Accepted updates, model/tool state, and pending replies survive process restarts.
+Startup recovers enrolled users; failed storage sessions reopen on a 30-second recovery cycle.
+Completed exchanges project into the existing assistant chat database with stable message IDs.
+`/new` selects a separate durable conversation through the existing active-conversation mechanism.
+The first durable conversation starts without importing legacy history. Existing history stays available in the application.
+Scheduled briefings and recaps continue using the existing agent and reservation flow.
+
+Safety boundaries:
+
+- Duplicate Telegram updates reuse their stored request, including after `/new` or a restart.
+- Durable failures never retry the request through the legacy agent.
+- Read tools allow replay. Interrupted mutations return an unknown-outcome error instead of replaying automatically.
+- Authorization and MCP credentials refresh before resumed actions; revoked or unlinked users cannot invoke tools.
+- Journals bind to one Telegram identity. Relinking the Eddo account to another Telegram ID blocks recovery pending operator review.
+- Runs allow 50 tool executions and a five-minute deadline, including downtime. In-flight external actions may finish after cancellation.
+- Failed projection/delivery retries every 30 seconds. The Telegram handler stops waiting after six minutes; durable delivery continues.
+- Ambiguous Telegram sends can produce duplicate reply chunks.
+- Entire journal history loads into memory. Context compaction reduces model context, not stored history or memory growth.
+
+Back up each runtime database as a complete authoritative copy. Default `eddo_*` backups include default-prefix runtime databases.
+Do not delete journal/head documents, apply TTL retention, or restore incomplete replicated copies.
+To roll back, stop the bot, empty the enrollment list, then restart. Pending durable work remains paused until re-enrollment.
+Keep the runtime databases for recovery; the existing agent does not resume their pending work.
+
+Run pilot tests from the repository root:
+
+```bash
+pnpm vitest:run packages/telegram_bot/src/durable
+pnpm test:integration:durable # Disposable CouchDB 3.5 container; Docker required, no model API calls
+```
+
 ### GitHub Issue Sync
 
 Sync issues assigned to you into Eddo todos:

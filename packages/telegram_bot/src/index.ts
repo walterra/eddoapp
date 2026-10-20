@@ -14,6 +14,7 @@ import { handleNewConversation } from './bot/commands/new.js';
 import { handleRss } from './bot/commands/rss.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
+import { parseDurableConfig } from './durable/config.js';
 import { getMCPClient, setupMCPIntegration } from './mcp/client.js';
 import { createDailyBriefingScheduler } from './scheduler/daily-briefing.js';
 import { appConfig } from './utils/config.js';
@@ -96,6 +97,11 @@ async function main(): Promise<void> {
       logger.error('Bot error occurred', { error: err.error, context: err.ctx });
     });
 
+    if (parseDurableConfig(process.env).users.length > 0) {
+      const { startDurableHost } = await import('./durable/host.js');
+      await startDurableHost(bot);
+    }
+
     initializeScheduler(bot);
 
     logger.info('Starting bot polling...');
@@ -118,6 +124,11 @@ async function handleShutdown(signal: string): Promise<void> {
   if (globalScheduler) {
     globalScheduler.stop();
     logger.info('Daily briefing scheduler stopped');
+  }
+
+  if (parseDurableConfig(process.env).users.length > 0) {
+    const { stopDurableHost } = await import('./durable/host.js');
+    await stopDurableHost();
   }
 
   const mcpClient = getMCPClient();

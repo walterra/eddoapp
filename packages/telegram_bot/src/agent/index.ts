@@ -1,4 +1,5 @@
 import type { BotContext } from '../bot/bot.js';
+import { routeAgentMessage } from '../durable/routing.js';
 import { logger } from '../utils/logger.js';
 import { SimpleAgent } from './simple-agent.js';
 import type { WorkflowConfig, WorkflowResult } from './types/workflow-types.js';
@@ -44,7 +45,9 @@ export class EddoAgent {
     });
 
     try {
-      const result = await this.workflow.execute(userMessage, userId, telegramContext);
+      const result = await routeAgentMessage(userMessage, telegramContext, () =>
+        this.workflow.execute(userMessage, userId, telegramContext),
+      );
 
       const duration = Date.now() - startTime;
       logger.info('Agent processing completed', {
