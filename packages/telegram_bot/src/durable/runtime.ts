@@ -28,6 +28,7 @@ export interface DurableRuntimeOptions extends RequestDependencies {
 }
 
 export interface DurableRuntime {
+  enqueue: (input: DurableRequestInput) => Promise<void>;
   execute: (input: DurableRequestInput) => Promise<string>;
   close: () => Promise<void>;
   closed: Harness['closed'];
@@ -118,16 +119,23 @@ export async function openDurableRuntime(options: DurableRuntimeOptions): Promis
       return taskId;
     }, context);
   };
+  const submit = (input: DurableRequestInput): Promise<TaskId<string>> => {
+    const pending = admission.then(() => admit(input));
+    admission = pending.then(
+      () => undefined,
+      () => undefined,
+    );
+    return pending;
+  };
   harness.resume();
   return {
     closed: harness.closed,
     close: () => harness.close(context),
+    enqueue: async (input) => {
+      await submit(input);
+    },
     execute: async (input) => {
-      const pending = admission.then(() => admit(input));
-      admission = pending.then(
-        () => undefined,
-        () => undefined,
-      );
+      const pending = submit(input);
       const wait = withAbortSignal(AbortSignal.timeout(360_000), context);
       const task = await harness.waitForTask(await pending, wait);
       if (task.state.outcome.status !== 'completed')

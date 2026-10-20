@@ -11,9 +11,10 @@ import { parseDurableConfig } from './config.js';
 import { provisionDurableDatabase } from './couch.js';
 import { projectDurableExchange } from './projection.js';
 import { buildDurablePrompt } from './prompt.js';
+import { printDurableReport } from './report_delivery.js';
 import { openDurableRuntime, type DurableRuntime } from './runtime.js';
-import type { DurableRequestInput } from './state.js';
-import { resolveDurableUser } from './tools.js';
+import type { DurableRequestInput, ReportType } from './state.js';
+import { authorizeDurableRequest, resolveDurableUser } from './tools.js';
 
 const runtimes = new Map<string, Promise<DurableRuntime>>();
 let bot: Bot<BotContext> | undefined;
@@ -48,8 +49,9 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
       telegramId,
       model,
       instructions: buildDurablePrompt(appConfig.BOT_PERSONA_ID),
-      authorize: () => resolveDurableUser(username, telegramId),
+      authorize: (input) => authorizeDurableRequest(username, telegramId, input),
       send: (chatId, text) => bot!.api.sendMessage(chatId, text),
+      print: (input, answer) => printDurableReport(username, input, answer),
       project: (input, answer) => {
         const pending = projection.then(() => projectDurableExchange({ username, input, answer }));
         projection = pending.catch(() => undefined);
@@ -108,14 +110,8 @@ export async function stopDurableHost(): Promise<void> {
   runtimes.clear();
 }
 
-/** Admits private Telegram updates with a bot-scoped stable deduplication key. */
-export async function executeDurableMessage(text: string, ctx: BotContext): Promise<string> {
-  const username = ctx.session.user?.username;
-  if (!username || !ctx.from || !ctx.chat || !ctx.message || ctx.chat.type !== 'private') {
-    throw new Error('Durable pilot requires a linked private Telegram chat');
-  }
-  await resolveDurableUser(username, ctx.from.id);
-  const runtime = await getRuntime(username);
+/** Resolves the same active Eddo conversation for interactive and scheduled inputs. */
+async function activeConversationId(username: string): Promise<string> {
   const env = createEnv();
   const database = (await import('@eddo/core-server')).createAssistantConversationDatabase(
     env.COUCHDB_URL,
@@ -124,11 +120,51 @@ export async function executeDurableMessage(text: string, ctx: BotContext): Prom
   );
   await database.ensureDatabase();
   await database.setupDesignDocuments();
-  const conversation = await database.getOrCreateActive();
+  return (await database.getOrCreateActive())._id;
+}
+
+export interface ScheduledReportRequest {
+  username: string;
+  telegramId: number;
+  type: ReportType;
+  occurrence: string;
+  text: string;
+  deadline: number;
+}
+
+/** Durably admits a report without blocking the scheduler on queued generation or delivery. */
+export async function enqueueDurableReport(request: ScheduledReportRequest): Promise<void> {
+  if (!parseDurableConfig(process.env).users.includes(request.username))
+    throw new Error('Report user is not enrolled in Durable');
+  await resolveDurableUser(request.username, request.telegramId);
+  const runtime = await getRuntime(request.username);
+  const now = new Date();
+  await runtime.enqueue({
+    requestId: `report:${bot!.botInfo.id}:${request.type}:${request.occurrence}`,
+    text: request.text,
+    conversationId: await activeConversationId(request.username),
+    chatId: request.telegramId,
+    telegramId: request.telegramId,
+    messageId: 0,
+    createdAt: now.toISOString(),
+    deadline: request.deadline,
+    report: { type: request.type, occurrence: request.occurrence },
+  });
+}
+
+/** Admits private Telegram updates with a bot-scoped stable deduplication key. */
+export async function executeDurableMessage(text: string, ctx: BotContext): Promise<string> {
+  const username = ctx.session.user?.username;
+  if (!username || !ctx.from || !ctx.chat || !ctx.message || ctx.chat.type !== 'private') {
+    throw new Error('Durable pilot requires a linked private Telegram chat');
+  }
+  await resolveDurableUser(username, ctx.from.id);
+  const runtime = await getRuntime(username);
+  const conversationId = await activeConversationId(username);
   const input: DurableRequestInput = {
     requestId: `telegram:${bot!.botInfo.id}:${ctx.update.update_id}`,
     text,
-    conversationId: conversation._id,
+    conversationId,
     chatId: ctx.chat.id,
     telegramId: ctx.from.id,
     messageId: ctx.message.message_id,

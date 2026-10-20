@@ -36,6 +36,45 @@ afterAll(async () => {
 });
 
 describe('real CouchDB durable Telegram execution', () => {
+  it('persists shared report context and deduplicates report delivery/printing after reopen', async () => {
+    const fixture = await createRuntimeFixture();
+    await fixture.options.storage.close(
+      (await import('@earendil-works/chord/context')).BACKGROUND_CONTEXT,
+    );
+    fixture.options.storage = await openCouchDbStorage(endpoint);
+    fixture.options.print = vi.fn().mockResolvedValue(undefined);
+    fixture.provider.setResponses([
+      fauxAssistantMessage('Prioritize the API migration this week.'),
+      (context) => {
+        expect(JSON.stringify(context.messages)).toContain('Prioritize the API migration');
+        return fauxAssistantMessage('---BRIEFING-START---\nAPI migration is the priority.');
+      },
+    ]);
+    const runtime = await openDurableRuntime(fixture.options);
+    runtimes.push(runtime);
+    await runtime.execute(createTestInput({ requestId: 'telegram:report-context' }));
+    const report = createTestInput({
+      requestId: 'report:briefing:2026-10-20:07:00',
+      report: { type: 'briefing', occurrence: '2026-10-20:07:00' },
+      text: 'Generate the scheduled briefing using our discussion.',
+    });
+    await runtime.enqueue(report);
+    expect(await runtime.execute(report)).toBe('API migration is the priority.');
+    await runtime.close();
+    const recovered = await openDurableRuntime({
+      ...fixture.options,
+      storage: await openCouchDbStorage(endpoint),
+    });
+    runtimes.push(recovered);
+    expect(await recovered.execute({ ...report, conversationId: 'new-after-report' })).toBe(
+      'API migration is the priority.',
+    );
+    expect(fixture.provider.state.callCount).toBe(2);
+    expect(fixture.options.print).toHaveBeenCalledOnce();
+    expect(fixture.options.send).toHaveBeenCalledTimes(2);
+    await recovered.close();
+  });
+
   it('recovers delivery and deduplicates updates from the published journal', async () => {
     const fixture = await createRuntimeFixture();
     await fixture.options.storage.close(

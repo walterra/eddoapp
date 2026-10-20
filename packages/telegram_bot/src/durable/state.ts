@@ -23,6 +23,13 @@ export const RunBudget = defineDoc({
   initial: (): { input: number; tools: number } => ({ input: 0, tools: 0 }),
 });
 
+export type ReportType = 'briefing' | 'recap';
+
+export interface DurableReport {
+  type: ReportType;
+  occurrence: string;
+}
+
 export interface DurableRequestInput {
   requestId: string;
   text: string;
@@ -32,8 +39,17 @@ export interface DurableRequestInput {
   messageId: number;
   createdAt: string;
   deadline: number;
+  report?: DurableReport;
 }
 
 export type RequestCheckpoint =
   | { phase: 'generate' }
-  | { phase: 'deliver'; answer: string; offset: number; projected: boolean; attempts: number };
+  | {
+      phase: 'deliver';
+      answer: string;
+      offset: number;
+      projected: boolean;
+      attempts: number;
+      printable?: boolean;
+    }
+  | { phase: 'print'; answer: string; printable: boolean };

@@ -31,7 +31,7 @@ export async function reserveReport(
   const env = createEnv();
   const database = nano(env.COUCHDB_URL).db.use<ReservationDocument>(databaseName);
   const document = {
-    _id: `_local/scheduled-report-${createHash('sha256').update(key).digest('hex')}`,
+    _id: reservationId(key),
   };
   try {
     const result = await database.insert(document);
@@ -40,6 +40,29 @@ export async function reserveReport(
     };
   } catch (error) {
     if (isConflict(error)) return null;
+    throw error;
+  }
+}
+
+function reservationId(key: string): string {
+  return `_local/scheduled-report-${createHash('sha256').update(key).digest('hex')}`;
+}
+
+/** Honors reports already reserved by the legacy scheduler during a runtime migration. */
+export async function hasReportReservation(databaseName: string, key: string): Promise<boolean> {
+  const env = createEnv();
+  const database = nano(env.COUCHDB_URL).db.use<ReservationDocument>(databaseName);
+  try {
+    await database.get(reservationId(key));
+    return true;
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'statusCode' in error &&
+      error.statusCode === 404
+    )
+      return false;
     throw error;
   }
 }

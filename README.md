@@ -155,7 +155,7 @@ TELEGRAM_DURABLE_MODEL=anthropic/claude-sonnet-4-5
 ```
 
 Leave `TELEGRAM_DURABLE_USERS` empty to retain the existing agent for everyone. Restart the bot after configuration changes.
-Configure the selected provider's API key. The legacy `LLM_MODEL` remains separate for other users and scheduled reports.
+Configure the selected provider's API key. The legacy `LLM_MODEL` remains separate for unenrolled users.
 
 The pilot uses Pi Durable 1.3.0 and `pi-durable-couchdb` 0.0.1. It supports linked private Telegram chats only.
 The bot provisions an administrator-only `${DATABASE_PREFIX}_pi_durable_<username-sha256>` database for each enrolled user.
@@ -167,7 +167,13 @@ Startup recovers enrolled users; failed storage sessions reopen on a 30-second r
 Completed exchanges project into the existing assistant chat database with stable message IDs.
 `/new` selects a separate durable conversation through the existing active-conversation mechanism.
 The first durable conversation starts without importing legacy history. Existing history stays available in the application.
-Scheduled briefings and recaps continue using the existing agent and reservation flow.
+Scheduled briefings and recaps for enrolled users submit into the same active Durable conversation.
+Reports use discussion for priorities and constraints, then fetch current todo data for facts.
+Interactive requests and scheduled reports share Pi's conversation queue and automatic compaction.
+Each scheduled occurrence has a stable request ID, including after restart or `/new`.
+The scheduler returns after durable admission; recovery owns generation, Telegram delivery, and optional printing.
+Unenrolled users retain the existing agent and reservation flow.
+Legacy reservation receipts prevent duplicate reports when switching runtimes; Durable writes a receipt only after successful admission.
 
 Safety boundaries:
 
@@ -176,9 +182,14 @@ Safety boundaries:
 - Read tools allow replay. Interrupted mutations return an unknown-outcome error instead of replaying automatically.
 - Authorization and MCP credentials refresh before resumed actions; revoked or unlinked users cannot invoke tools.
 - Journals bind to one Telegram identity. Relinking the Eddo account to another Telegram ID blocks recovery pending operator review.
-- Runs allow 50 tool executions and a five-minute deadline, including downtime. In-flight external actions may finish after cancellation.
+- Interactive inputs retain a five-minute admission budget. Expired queued inputs withdraw without aborting another request.
+- Reports can wait until the end of their scheduled local day. New tool calls stop five minutes after the report enters the conversation.
+- Runs allow 50 tool executions. In-flight external actions can finish after the deadline; active runs finish without aborting other queued inputs.
+- Scheduled report tools are read-only. Current report preferences and credentials revalidate before resumed phases and tool calls.
 - Failed projection/delivery retries every 30 seconds. The Telegram handler stops waiting after six minutes; durable delivery continues.
 - Ambiguous Telegram sends can produce duplicate reply chunks.
+- Printing claims its attempt before contacting the printer. Recovery never repeats an ambiguous print; interruption can miss a print.
+- Reports without the expected content marker deliver to Telegram but do not print. Printer failures remain non-fatal.
 - Entire journal history loads into memory. Context compaction reduces model context, not stored history or memory growth.
 
 Back up each runtime database as a complete authoritative copy. Default `eddo_*` backups include default-prefix runtime databases.

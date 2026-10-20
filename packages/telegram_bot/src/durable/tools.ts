@@ -10,7 +10,7 @@ import type { TSchema } from 'pi-ai-durable';
 import type { MCPClient, MCPTool } from '../mcp/client.js';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
-import { RunBudget } from './state.js';
+import { RunBudget, type DurableRequestInput, type ReportType } from './state.js';
 
 const REPLAY_SAFE_TOOLS = new Set([
   'listTodos',
@@ -29,10 +29,17 @@ const REPLAY_SAFE_TOOLS = new Set([
 export async function resolveDurableUser(
   username: string,
   telegramId: number,
+  report?: ReportType,
 ): Promise<MCPUserContext> {
   const user = await lookupUserByTelegramId(telegramId);
   if (user?.username !== username || !user.preferences.mcpApiKey) {
     throw new Error('Durable user is inactive, unlinked, or missing MCP credentials');
+  }
+  if (
+    report &&
+    !(report === 'briefing' ? user.preferences.dailyBriefing : user.preferences.dailyRecap)
+  ) {
+    throw new Error('Scheduled report is disabled for this user');
   }
   return { username, telegramId, mcpApiKey: user.preferences.mcpApiKey };
 }
@@ -43,19 +50,42 @@ interface ToolBridgeOptions {
   client: MCPClient;
 }
 
+/** Revalidates report preferences when request phases resume. */
+export function authorizeDurableRequest(
+  username: string,
+  telegramId: number,
+  input: DurableRequestInput,
+): Promise<MCPUserContext> {
+  return resolveDurableUser(username, telegramId, input.report?.type);
+}
+
 /** Checks the persisted input deadline before an external action can start. */
 function deadlineExpired(entry: EntryRecord | undefined): boolean {
   const data = entry?.data;
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-  return typeof data.deadline === 'number' && Date.now() >= data.deadline;
+  let deadline = typeof data.deadline === 'number' ? data.deadline : Infinity;
+  const placed = entry?.model?.find((message) => message.role === 'user');
+  if (reportType(entry) && placed) deadline = Math.min(deadline, placed.timestamp + 300_000);
+  return Date.now() >= deadline;
 }
 
 /** Counts calls durably, including replay attempts, against the placed input. */
-async function consumeToolBudget(api: ToolExecutionApi, context: Context): Promise<boolean> {
+interface ToolPermission {
+  allowed: boolean;
+  report?: ReportType;
+}
+
+function reportType(entry: EntryRecord | undefined): ReportType | undefined {
+  const data = entry?.data;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
+  return data.report === 'briefing' || data.report === 'recap' ? data.report : undefined;
+}
+
+async function consumeToolBudget(api: ToolExecutionApi, context: Context): Promise<ToolPermission> {
   return api.commit(async (tx) => {
     const entries = await tx.scanEntries({ conversationId: api.conversationId }, 1000);
     const entry = entries.items.find((item) => item.kind === 'eddo.input');
-    if (deadlineExpired(entry)) return false;
+    if (deadlineExpired(entry)) return { allowed: false };
     const input = entry?.id ?? 0;
     const budget = await tx.doc(RunBudget, api.conversationId);
     if (budget.input !== input) {
@@ -63,7 +93,7 @@ async function consumeToolBudget(api: ToolExecutionApi, context: Context): Promi
       budget.tools = 0;
     }
     budget.tools += 1;
-    return budget.tools <= 50;
+    return { allowed: budget.tools <= 50, report: reportType(entry) };
   }, context);
 }
 
@@ -75,19 +105,23 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
     parameters: tool.inputSchema as TSchema,
     replay: REPLAY_SAFE_TOOLS.has(tool.name) ? 'safe' : undefined,
     execute: async (args, api, context) => {
-      const allowed = await consumeToolBudget(api, context);
-      if (!allowed)
+      const permission = await consumeToolBudget(api, context);
+      if (!permission.allowed || (permission.report && !REPLAY_SAFE_TOOLS.has(tool.name)))
         return {
           output: [
             {
               type: 'text',
-              text: 'Tool execution limit reached. Inspect current state before continuing.',
+              text: 'Tool execution denied: budget expired or scheduled reports cannot mutate tasks.',
             },
           ],
           isError: true,
           control: { terminate: true },
         };
-      const user = await resolveDurableUser(options.username, options.telegramId);
+      const user = await resolveDurableUser(
+        options.username,
+        options.telegramId,
+        permission.report,
+      );
       const result = await options.client.invoke(tool.name, args as Record<string, unknown>, user);
       const text = JSON.stringify(result) ?? '';
       return { output: [{ type: 'text', text: text.slice(0, 12_000) }] };

@@ -6,12 +6,15 @@ const fixture = vi.hoisted(() => ({
   open: vi.fn(),
   close: vi.fn(),
   execute: vi.fn(),
+  enqueue: vi.fn(),
   authorize: vi.fn(),
   getOrCreateActive: vi.fn(),
   provision: vi.fn(),
 }));
 vi.mock('@eddo/core-server', () => ({
   createEnv: () => ({ COUCHDB_URL: 'http://unused' }),
+  normalizeTimeZone: () => 'UTC',
+  formatDateInTimeZone: (date: Date) => date.toISOString().slice(0, 10),
   createUserRegistry: () => ({
     findByUsername: async () => ({ username: 'alice', telegram_id: 123, status: 'active' }),
   }),
@@ -31,9 +34,17 @@ vi.mock('../utils/logger.js', () => ({ logger: { error: vi.fn() } }));
 vi.mock('./couch.js', () => ({ provisionDurableDatabase: fixture.provision }));
 vi.mock('./projection.js', () => ({ projectDurableExchange: vi.fn() }));
 vi.mock('./runtime.js', () => ({ openDurableRuntime: fixture.open }));
-vi.mock('./tools.js', () => ({ resolveDurableUser: fixture.authorize }));
+vi.mock('./tools.js', () => ({
+  resolveDurableUser: fixture.authorize,
+  authorizeDurableRequest: fixture.authorize,
+}));
 
-import { executeDurableMessage, startDurableHost, stopDurableHost } from './host.js';
+import {
+  enqueueDurableReport,
+  executeDurableMessage,
+  startDurableHost,
+  stopDurableHost,
+} from './host.js';
 
 let finish: () => void;
 const bot = { botInfo: { id: 77 }, api: { sendMessage: vi.fn() } } as unknown as Bot<BotContext>;
@@ -56,13 +67,19 @@ beforeEach(() => {
   fixture.provision.mockResolvedValue({ url: 'http://unused/runtime' });
   fixture.authorize.mockResolvedValue({ username: 'alice' });
   fixture.execute.mockResolvedValue('Done');
+  fixture.enqueue.mockResolvedValue(undefined);
   const closed = new Promise<void>((resolve) => {
     finish = resolve;
   });
   fixture.close.mockImplementation(async () => {
     finish();
   });
-  fixture.open.mockResolvedValue({ execute: fixture.execute, close: fixture.close, closed });
+  fixture.open.mockResolvedValue({
+    execute: fixture.execute,
+    enqueue: fixture.enqueue,
+    close: fixture.close,
+    closed,
+  });
 });
 afterEach(async () => {
   await stopDurableHost();
@@ -71,6 +88,26 @@ afterEach(async () => {
 });
 
 describe('durable host ownership and supervision', () => {
+  it('admits scheduled reports into the same active conversation without awaiting delivery', async () => {
+    await startDurableHost(bot);
+    await enqueueDurableReport({
+      username: 'alice',
+      telegramId: 123,
+      type: 'briefing',
+      occurrence: 'alice:2026-10-20:07:00',
+      text: 'Scheduled briefing',
+      deadline: Date.now() + 300_000,
+    });
+    expect(fixture.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: 'active_chat',
+        requestId: 'report:77:briefing:alice:2026-10-20:07:00',
+        report: { type: 'briefing', occurrence: 'alice:2026-10-20:07:00' },
+      }),
+    );
+    expect(fixture.execute).not.toHaveBeenCalled();
+  });
+
   it('shares one runtime and uses stable bot/update identities', async () => {
     await startDurableHost(bot);
     expect(await executeDurableMessage('hello', context())).toBe('Done');

@@ -34,7 +34,7 @@ import {
   stripMarker,
 } from './helpers/index.js';
 
-import { runReservedReport } from './report-reservation.js';
+import { runScheduledReport } from './report_routing.js';
 
 export class DailyBriefingScheduler {
   private bot: Bot<BotContext>;
@@ -138,13 +138,13 @@ export class DailyBriefingScheduler {
     });
 
     try {
-      const wasSent = await runReservedReport(user.database_name, `briefing:${sentKey}`, () =>
+      const wasSent = await runScheduledReport({ user, type: 'briefing', sentKey }, () =>
         this.sendBriefingToUser(user),
       );
       if (!wasSent) return;
 
       this.sentBriefingsToday.add(sentKey);
-      logger.info('Successfully sent briefing to user', {
+      logger.info('Scheduled briefing sent or durably admitted', {
         userId: user._id,
         username: user.username,
       });
@@ -261,13 +261,16 @@ export class DailyBriefingScheduler {
     });
 
     try {
-      const wasSent = await runReservedReport(user.database_name, `recap:${sentKey}`, () =>
+      const wasSent = await runScheduledReport({ user, type: 'recap', sentKey }, () =>
         this.sendRecapToUser(user),
       );
       if (!wasSent) return;
 
       this.sentRecapsToday.add(sentKey);
-      logger.info('Successfully sent recap to user', { userId: user._id, username: user.username });
+      logger.info('Scheduled recap sent or durably admitted', {
+        userId: user._id,
+        username: user.username,
+      });
     } catch (error) {
       logger.error('Failed to send recap to user', {
         userId: user._id,
