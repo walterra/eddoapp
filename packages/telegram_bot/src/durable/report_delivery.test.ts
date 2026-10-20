@@ -12,14 +12,27 @@ beforeEach(() => {
 
 describe('report formatting and current printer preferences', () => {
   it('strips report markers and introductions without altering interactive text', () => {
-    const input = createTestInput({ report: { type: 'recap', occurrence: 'today' } });
+    const input = createTestInput({ report: { type: 'recap', occurrence: '2026-10-20' } });
     expect(prepareReply(input, 'Intro\n---RECAP-START---\nDone today')).toEqual({
-      answer: 'Done today',
+      answer: 'DAILY RECAP - Tuesday, October 20, 2026\n\nDone today',
       printable: true,
     });
     expect(prepareReply(input, 'No marker')).toEqual({ answer: 'No marker', printable: false });
     expect(prepareReply(createTestInput(), '---RECAP-START---\nInteractive')).toEqual({
       answer: '---RECAP-START---\nInteractive',
+      printable: false,
+    });
+  });
+
+  it('replaces an incorrect weekday even when the model omitted its marker', () => {
+    const input = createTestInput({
+      createdAt: '2026-10-21T01:00:00Z',
+      report: { type: 'briefing', occurrence: 'user:2026-10-20:08:49' },
+    });
+    expect(
+      prepareReply(input, 'DAILY BRIEFING - Sunday, October 20, 2026\n=====\nActual tasks'),
+    ).toEqual({
+      answer: 'DAILY BRIEFING - Tuesday, October 20, 2026\n\nActual tasks',
       printable: false,
     });
   });

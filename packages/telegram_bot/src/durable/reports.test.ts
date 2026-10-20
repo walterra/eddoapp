@@ -30,6 +30,10 @@ function report(overrides: Partial<DurableRequestInput> = {}): DurableRequestInp
   });
 }
 
+function rendered(body: string): string {
+  return `DAILY BRIEFING - Tuesday, October 20, 2026\n\n${body}`;
+}
+
 describe('reports in the interactive Durable conversation', () => {
   it('shares discussion with reports and report context with subsequent interactive messages', async () => {
     const fixture = await createRuntimeFixture();
@@ -47,17 +51,17 @@ describe('reports in the interactive Durable conversation', () => {
     ]);
     const runtime = await open(fixture.options);
     await runtime.execute(createTestInput({ text: 'Focus on the API migration this week.' }));
-    expect(await runtime.execute(report())).toBe('Focus on the API migration.');
+    expect(await runtime.execute(report())).toBe(rendered('Focus on the API migration.'));
     expect(fixture.options.print).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ report: expect.any(Object) }),
-      'Focus on the API migration.',
+      rendered('Focus on the API migration.'),
     );
     await runtime.execute(
       createTestInput({ requestId: 'telegram:bot:2', text: 'What did the briefing recommend?' }),
     );
     expect(vi.mocked(fixture.options.send).mock.calls.map(([, text]) => text)).toEqual([
       'Priority: finish the API migration.',
-      'Focus on the API migration.',
+      rendered('Focus on the API migration.'),
       'The briefing recommended the API migration.',
     ]);
   });
@@ -79,7 +83,7 @@ describe('reports in the interactive Durable conversation', () => {
     expect(fixture.provider.state.callCount).toBe(1);
     gate.resolve();
     await interactive;
-    expect(await runtime.execute(report())).toBe('Queued report');
+    expect(await runtime.execute(report())).toBe(rendered('Queued report'));
     expect(fixture.provider.state.callCount).toBe(2);
   });
 
@@ -101,7 +105,7 @@ describe('reports in the interactive Durable conversation', () => {
     expect(expired).toContain('queued request expired');
     expect(fixture.provider.state.callCount).toBe(1);
     gate.resolve();
-    expect(await active).toBe('Active report survives');
+    expect(await active).toBe(rendered('Active report survives'));
   });
 
   it('treats printer errors as non-fatal without resending Telegram output', async () => {
@@ -128,7 +132,9 @@ describe('reports in the interactive Durable conversation', () => {
     await first.execute(report());
     await first.close();
     const second = await open(await fixture.reopen());
-    expect(await second.execute(report({ conversationId: 'new_conversation' }))).toBe('One report');
+    expect(await second.execute(report({ conversationId: 'new_conversation' }))).toBe(
+      rendered('One report'),
+    );
     expect(fixture.provider.state.callCount).toBe(1);
     expect(fixture.options.print).toHaveBeenCalledOnce();
     expect(fixture.options.send).toHaveBeenCalledOnce();
@@ -147,7 +153,7 @@ describe('reports in the interactive Durable conversation', () => {
     await closing;
     await pending;
     const second = await open(await fixture.reopen());
-    expect(await second.execute(report())).toBe('Printed report');
+    expect(await second.execute(report())).toBe(rendered('Printed report'));
     expect(fixture.options.print).toHaveBeenCalledOnce();
     expect(fixture.options.send).toHaveBeenCalledOnce();
   });
@@ -176,7 +182,7 @@ describe('reports in the interactive Durable conversation', () => {
       fauxAssistantMessage('---BRIEFING-START---\nCurrent report'),
     ]);
     const runtime = await open(fixture.options);
-    expect(await runtime.execute(report())).toBe('Current report');
+    expect(await runtime.execute(report())).toBe(rendered('Current report'));
     expect(fixture.options.client.invoke).toHaveBeenCalledExactlyOnceWith(
       'getBriefingData',
       {},

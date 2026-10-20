@@ -11,6 +11,7 @@ import type { MCPClient, MCPTool } from '../mcp/client.js';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
 import { RunBudget, type DurableRequestInput, type ReportType } from './state.js';
+import { normalizeToolOutput } from './tool_output.js';
 
 const REPLAY_SAFE_TOOLS = new Set([
   'listTodos',
@@ -123,8 +124,8 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
         permission.report,
       );
       const result = await options.client.invoke(tool.name, args as Record<string, unknown>, user);
-      const text = JSON.stringify(result) ?? '';
-      return { output: [{ type: 'text', text: text.slice(0, 12_000) }] };
+      const formatted = normalizeToolOutput(result);
+      return { output: [{ type: 'text', text: formatted.text }], isError: formatted.isError };
     },
   });
 }

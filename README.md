@@ -38,11 +38,21 @@ Manage todos through a web interface, Telegram bot with Claude AI, or programmat
 
 ### Scheduled Telegram reports
 
-Briefings and recaps reserve each user's local date and configured report time in CouchDB before generation.
+Unenrolled users' briefings and recaps reserve the local date and configured report time in CouchDB before generation.
 Reservations prevent duplicate runs across overlapping checks and bot restarts. The scheduler alone delivers and prints reports.
 Confirmed generation failures release the reservation for retry. Delivery errors retain it because Telegram may have accepted the message.
 A process crash after reservation can skip that report. Change its configured time to schedule another attempt that day.
 Reservations use server-local CouchDB documents; database replication and backups do not preserve them.
+Enrolled Durable users use the [durable report flow](#experimental-durable-telegram-pilot) instead.
+
+Report data contains compact task summaries, not full todo documents or descriptions.
+Briefings select 10 actions today, 10 recent overdue actions, 10 next actions, 5 waiting items, and 20 calendar appointments.
+Someday backlog items contribute a separate count instead of occupying the action lists. Recaps select 10 completions and 10 next actions.
+Both tools include summarized active tracking, date, weekday, timezone, total counts, and selection/truncation metadata.
+Counts marked `countExact: false` are lower bounds; paging stops after 20,000 matching records per section.
+The Durable MCP bridge unwraps text responses and bounds complete JSON values, preserving section metadata instead of cutting JSON strings.
+Oversized responses expose `outputTruncation`; their `result` contains the reduced payload. Use `getTodo` for full task details.
+Scheduled Durable report headings use the occurrence's local calendar date and a weekday computed in code.
 
 ## Quick Start
 

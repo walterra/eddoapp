@@ -579,6 +579,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
         version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(supports-color@7.2.0)(zod@4.4.3)
+      '@testcontainers/couchdb':
+        specifier: ^12.2.0
+        version: 12.2.0(supports-color@7.2.0)
       '@types/node':
         specifier: ^25.9.3
         version: 25.9.3

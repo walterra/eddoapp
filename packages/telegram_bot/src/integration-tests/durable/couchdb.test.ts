@@ -59,7 +59,9 @@ describe('real CouchDB durable Telegram execution', () => {
       text: 'Generate the scheduled briefing using our discussion.',
     });
     await runtime.enqueue(report);
-    expect(await runtime.execute(report)).toBe('API migration is the priority.');
+    expect(await runtime.execute(report)).toBe(
+      'DAILY BRIEFING - Tuesday, October 20, 2026\n\nAPI migration is the priority.',
+    );
     await runtime.close();
     const recovered = await openDurableRuntime({
       ...fixture.options,
@@ -67,7 +69,7 @@ describe('real CouchDB durable Telegram execution', () => {
     });
     runtimes.push(recovered);
     expect(await recovered.execute({ ...report, conversationId: 'new-after-report' })).toBe(
-      'API migration is the priority.',
+      'DAILY BRIEFING - Tuesday, October 20, 2026\n\nAPI migration is the priority.',
     );
     expect(fixture.provider.state.callCount).toBe(2);
     expect(fixture.options.print).toHaveBeenCalledOnce();

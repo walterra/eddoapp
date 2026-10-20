@@ -1,6 +1,7 @@
 import { BRIEFING_CONTENT_MARKER, RECAP_CONTENT_MARKER } from '../constants/briefing.js';
 import { printIfEnabled } from '../scheduler/helpers/printer.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
+import { renderReportHeading } from './report_heading.js';
 import type { DurableRequestInput } from './state.js';
 
 export interface PreparedReply {
@@ -13,9 +14,18 @@ export function prepareReply(input: DurableRequestInput, answer: string): Prepar
   if (!input.report) return { answer, printable: false };
   const marker = input.report.type === 'briefing' ? BRIEFING_CONTENT_MARKER : RECAP_CONTENT_MARKER;
   const position = answer.indexOf(marker);
-  if (position < 0) return { answer, printable: false };
+  if (position < 0)
+    return {
+      answer: /^DAILY (?:BRIEFING|RECAP)\b/i.test(answer)
+        ? renderReportHeading(input, answer)
+        : answer,
+      printable: false,
+    };
   const clean = answer.slice(position + marker.length).trim();
-  return { answer: clean || 'The report contained no content.', printable: Boolean(clean) };
+  return {
+    answer: clean ? renderReportHeading(input, clean) : 'The report contained no content.',
+    printable: Boolean(clean),
+  };
 }
 
 /** Resolves current preferences before a best-effort, non-replayed printer attempt. */

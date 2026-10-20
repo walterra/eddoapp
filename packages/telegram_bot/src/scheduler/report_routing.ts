@@ -5,6 +5,7 @@ import {
 } from '@eddo/core-server';
 import { DAILY_BRIEFING_REQUEST_MESSAGE, getRecapRequestMessage } from '../constants/briefing.js';
 import { parseDurableConfig } from '../durable/config.js';
+import { reportHeading } from '../durable/report_heading.js';
 import type { ReportType } from '../durable/state.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 import { hasReportReservation, reserveReport, runReservedReport } from './report-reservation.js';
@@ -24,6 +25,8 @@ export function scheduledReportPrompt(type: ReportType, timezone?: string): stri
     'Use our conversation for priorities, constraints, and earlier decisions. Fetch current todo/time-tracking data for facts.',
     'Generate the report only. Do not create, update, delete, or start tracking tasks based on conversation history.',
     request,
+    `The application renders this exact heading: ${reportHeading(type, formatDateInTimeZone(new Date(), normalizeTimeZone(timezone)))}. Return the report body without a date heading.`,
+    'Include the content marker only in the final report, never before or alongside a tool call. Use tool metadata counts and selection flags; do not confuse returned items with totals.',
   ].join('\n\n');
 }
 
