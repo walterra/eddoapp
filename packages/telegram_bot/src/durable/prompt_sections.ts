@@ -2,33 +2,6 @@
  * System prompt template sections for the AI agent
  */
 
-interface ToolInfo {
-  name: string;
-  description: string;
-}
-
-/**
- * Generates the tools section of the system prompt
- * @param tools - Available MCP tools
- * @returns Formatted tools section
- */
-export function buildToolsSection(tools?: ToolInfo[]): string {
-  if (!tools) return '';
-
-  const toolsList = tools
-    .map((tool, index) => `${index + 1}. **${tool.name}** - ${tool.description}`)
-    .join('\n');
-
-  return `
-# Available Tools
-
-${toolsList}
-
----
-
-`;
-}
-
 /**
  * Returns the communication style instructions
  */
@@ -83,24 +56,6 @@ Examples:
 - "https://github.com/user/repo" → title: "GitHub: user/repo"
 - "https://docs.example.com/guide" → title: "Example Docs: guide"
 - "https://blog.site.com/article-title" → title: "Site Blog: article-title"`;
-}
-
-/**
- * Returns the MCP tool usage rules
- */
-export function getMcpToolRulesSection(): string {
-  return `CRITICAL: Follow each tool's parameter schema EXACTLY as defined. Each tool description includes usage examples showing the correct parameter format. Study the examples carefully and replicate the exact structure.
-
-MCP Tool Usage Rules:
-- Pass parameters directly as specified in the tool's inputSchema
-- Do NOT wrap parameters in nested objects unless explicitly required
-- Use the exact parameter names and types shown in tool descriptions
-- Follow the usage examples provided by each tool
-
-CRITICAL: Execute tools ONE AT A TIME. When you need data to answer a user question:
-1. Response with a brief conversational message explaining what you are about to do
-2. Make the tool call IMMEDIATELY without any prefacing text
-3. STOP your response immediately after the tool call`;
 }
 
 /**
@@ -180,39 +135,4 @@ export function getNextActionSection(): string {
 6. Trust your analysis to pick the most appropriate single next action
 
 Example: "Work on: Review Q4 budget spreadsheet. It's due tomorrow and requires focused attention."`;
-}
-
-/**
- * Returns the response format instructions
- */
-export function getResponseFormatSection(): string {
-  return `If you don't need to use any tools, provide a direct response to help the user and stop responding.
-
-Always respond in character according to your personality described above.
-
-You have 2 response options:
-
-1. FINAL RESPONSE (no tools needed): Provide your complete response to help the user.
-
-2. TOOL CALL (need data first): Optionally include a STATUS line, then make EXACTLY ONE tool call and STOP.
-   - Optional status: STATUS: <short message under 10 words>
-   - Tool call: TOOL_CALL: {"name": "toolName", "parameters": {...}}
-   - STOP your response RIGHT AFTER the closing brace }
-
-   Example with status:
-   STATUS: Checking your completed tasks...
-   TOOL_CALL: {"name": "listTodos", "parameters": {"completed": true}}
-
-   Example without status:
-   TOOL_CALL: {"name": "listTodos", "parameters": {"completed": true}}
-
-CRITICAL RULES:
-- STATUS must be SHORT (under 10 words) - just what you're doing, not results
-- ONE tool call per response, then STOP
-- Do NOT add ANY text after the tool call
-- NEVER generate content (summaries, recaps, lists) BEFORE receiving tool results
-- NEVER echo back tool results - analyze them and create your response
-- After receiving tool results, either make another tool call OR provide your final response
-
-Now create your response:`;
 }

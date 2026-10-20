@@ -1,13 +1,14 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
+import { builtinModels } from '@earendil-works/pi-ai/providers/all';
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { Bot } from 'grammy';
-import { builtinModels } from 'pi-ai-durable/providers/all';
 import { openCouchDbStorage } from 'pi-durable-couchdb';
+import { resolveConfiguredModel } from '../ai/llm-model-resolution.js';
+import { parseLlmSettings } from '../ai/llm-options.js';
 import type { BotContext } from '../bot/bot.js';
 import { getMCPClient } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { parseDurableConfig } from './config.js';
 import { provisionDurableDatabase } from './couch.js';
 import { projectDurableExchange } from './projection.js';
 import { buildDurablePrompt } from './prompt.js';
@@ -17,6 +18,7 @@ import type { DurableRequestInput, ReportType } from './state.js';
 import { authorizeDurableRequest, resolveDurableUser } from './tools.js';
 
 const runtimes = new Map<string, Promise<DurableRuntime>>();
+const models = builtinModels();
 let bot: Bot<BotContext> | undefined;
 let timer: ReturnType<typeof setInterval> | undefined;
 let stopping = false;
@@ -27,13 +29,12 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
   const env = createEnv();
   const user = await createUserRegistry(env.COUCHDB_URL, env).findByUsername(username);
   if (!user?.telegram_id || user.status !== 'active')
-    throw new Error('Durable pilot user is inactive or unlinked');
+    throw new Error('Durable user is inactive or unlinked');
   const telegramId = user.telegram_id;
   await resolveDurableUser(username, telegramId);
   const client = getMCPClient();
   if (!client) throw new Error('MCP is not initialized');
-  const models = builtinModels();
-  const model = parseDurableConfig(process.env).model;
+  const model = resolveConfiguredModel(appConfig.LLM_MODEL, models);
   if (!models.getModel(model.provider, model.modelId) || !(await models.getAuth(model.provider))) {
     throw new Error('Durable model is unknown or missing provider credentials');
   }
@@ -48,6 +49,7 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
       username,
       telegramId,
       model,
+      generation: parseLlmSettings(),
       instructions: buildDurablePrompt(appConfig.BOT_PERSONA_ID),
       authorize: (input) => authorizeDurableRequest(username, telegramId, input),
       send: (chatId, text) => bot!.api.sendMessage(chatId, text),
@@ -84,19 +86,36 @@ function getRuntime(username: string): Promise<DurableRuntime> {
   return pending;
 }
 
-/** Recovers all allowlisted journals even when no new Telegram update arrives. */
+/** Recovers every active linked user's journal without waiting for a Telegram update. */
 export async function startDurableHost(instance: Bot<BotContext>): Promise<void> {
+  parseLlmSettings();
   bot = instance;
   stopping = false;
-  const recover = (): Promise<unknown[]> =>
-    Promise.allSettled(
-      parseDurableConfig(process.env).users.map((username) => getRuntime(username)),
-    );
-  await recover();
+  const model = resolveConfiguredModel(appConfig.LLM_MODEL, models);
+  if (!(await models.getAuth(model.provider)))
+    throw new Error(`LLM credentials are required for provider "${model.provider}"`);
+  await recoverUsers();
   timer = setInterval(() => {
-    void recover();
+    void recoverUsers();
   }, 30_000);
   timer.unref();
+}
+
+/** Retries registry/storage outages without creating a second owner for an open journal. */
+async function recoverUsers(): Promise<void> {
+  try {
+    const env = createEnv();
+    const users = await createUserRegistry(env.COUCHDB_URL, env).list();
+    await Promise.allSettled(
+      users
+        .filter(
+          (user) => user.status === 'active' && user.telegram_id && user.preferences?.mcpApiKey,
+        )
+        .map((user) => getRuntime(user.username)),
+    );
+  } catch (error) {
+    logger.error('Durable user recovery failed; recovery will retry', { error });
+  }
 }
 
 /** Closes durable work before disconnecting MCP during shutdown. */
@@ -134,8 +153,6 @@ export interface ScheduledReportRequest {
 
 /** Durably admits a report without blocking the scheduler on queued generation or delivery. */
 export async function enqueueDurableReport(request: ScheduledReportRequest): Promise<void> {
-  if (!parseDurableConfig(process.env).users.includes(request.username))
-    throw new Error('Report user is not enrolled in Durable');
   await resolveDurableUser(request.username, request.telegramId);
   const runtime = await getRuntime(request.username);
   const now = new Date();
@@ -156,7 +173,7 @@ export async function enqueueDurableReport(request: ScheduledReportRequest): Pro
 export async function executeDurableMessage(text: string, ctx: BotContext): Promise<string> {
   const username = ctx.session.user?.username;
   if (!username || !ctx.from || !ctx.chat || !ctx.message || ctx.chat.type !== 'private') {
-    throw new Error('Durable pilot requires a linked private Telegram chat');
+    throw new Error('Durable requires a linked private Telegram chat');
   }
   await resolveDurableUser(username, ctx.from.id);
   const runtime = await getRuntime(username);

@@ -1,360 +1,224 @@
-/**
- * Test Agent Server
- * Manages agent test environment for integration tests
- */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-import { createTestUserRegistry, getUserDatabaseName, validateEnv } from '@eddo/core-server';
-import type { Context } from 'grammy';
+import { createModels, type Models } from '@earendil-works/pi-ai/models';
+import { builtinModels } from '@earendil-works/pi-ai/providers/all';
+import { MemoryStorage, type ModelRef } from '@earendil-works/pi-durable';
+import { fileURLToPath } from 'node:url';
 import { vi } from 'vitest';
-
-import { SimpleAgent } from '../../agent/simple-agent.js';
-import type { LlmService } from '../../ai/llm-service.js';
-import type { MCPClient } from '../../mcp/client.js';
-import { setupMCPIntegration } from '../../mcp/client.js';
+import { resolveConfiguredModel } from '../../ai/llm-model-resolution.js';
+import { projectDurableExchange } from '../../durable/projection.js';
+import { buildDurablePrompt } from '../../durable/prompt.js';
+import { openDurableRuntime, type DurableRuntime } from '../../durable/runtime.js';
+import { resolveDurableUser } from '../../durable/tools.js';
+import { setupMCPIntegration, type MCPClient } from '../../mcp/client.js';
 import {
-  createCachedLlmService,
+  createCachedProvider,
   createCassetteManager,
   type CassetteManager,
+  type LlmRequestSnapshot,
   type RecordMode,
-  type TimeController,
 } from '../vcr/index.js';
+import { conversationDatabase, createAgentTestUser } from './durable-agent-helpers.js';
 import {
   buildMockContext,
-  buildTestUserPreferences,
-  buildUserRegistryEntry,
-  ensureRegistryApiKey,
   generateTestApiKey,
-  generateTestUserData,
-  setupUserDatabase,
   type TestUser,
 } from './test-agent-server-helpers.js';
 
+export type { LlmRequestSnapshot } from '../vcr/index.js';
 export interface TestAgentServerConfig {
+  sourceModels?: Models;
+  cassettesDir?: string;
   mcpServerUrl?: string;
   llmModel?: string;
-  mockTelegramResponses?: boolean;
-  /** VCR recording mode: 'auto' (default), 'record', or 'playback' */
   vcrMode?: RecordMode;
 }
-
-interface ResolvedTestAgentServerConfig {
-  mcpServerUrl: string;
-  llmModel: string;
-  mockTelegramResponses: boolean;
-  vcrMode: RecordMode;
-}
-
-export interface LlmRequestSnapshot {
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-  sessionId?: string;
-}
-
-// Define session data structure for compatibility
-interface SessionData {
-  userId: string;
-  conversationId?: string;
-  lastActivity: Date;
-  context: Record<string, unknown>;
-  lastBotMessage?: string;
-  user?: TestUser;
-}
-
-// Extend the context with session data to match BotContext
-type BotContext = Context & {
-  session: SessionData;
-};
-
 export interface MockTelegramContext {
   replies: string[];
   chatActions: string[];
   toolResults?: Array<{ toolName: string; result: unknown; timestamp: number }>;
-  reply: (text: string) => Promise<any>;
-  replyWithChatAction: (action: string) => Promise<any>;
-  from?: {
-    id: number;
-    is_bot: boolean;
-    first_name: string;
-    username?: string;
-  };
-  chat?: {
-    id: number;
-    type: string;
-    first_name?: string;
-    username?: string;
-  };
-  message?: {
-    message_id: number;
-    date: number;
-    chat: {
-      id: number;
-      type: string;
-      first_name?: string;
-      username?: string;
-    };
-    from: {
-      id: number;
-      is_bot: boolean;
-      first_name: string;
-      username?: string;
-    };
-    text: string;
-  };
-  session?: SessionData & {
+  reply: (text: string) => Promise<unknown>;
+  replyWithChatAction: (action: string) => Promise<unknown>;
+  from?: { id: number; is_bot: boolean; first_name: string; username?: string };
+  chat?: { id: number; type: string; first_name?: string; username?: string };
+  message?: { message_id: number; date: number; chat: unknown; from: unknown; text: string };
+  session?: {
+    userId: string;
+    conversationId?: string;
+    lastActivity: Date;
+    context: Record<string, unknown>;
     user?: TestUser;
   };
 }
+interface TestAgentState {
+  user: TestUser | null;
+  runtime: DurableRuntime | null;
+  mcp: MCPClient | null;
+  context: MockTelegramContext | null;
+  requests: LlmRequestSnapshot[];
+  testName: string;
+  sequence: number;
+}
+interface AgentExecutionResult {
+  success: boolean;
+  message: string;
+  context: MockTelegramContext;
+}
 
-export class TestAgentServer {
-  private agent: SimpleAgent | null = null;
-  private mcpClient: MCPClient | null = null;
-  private config: ResolvedTestAgentServerConfig;
-  private testApiKey: string;
-  private llmRequests: LlmRequestSnapshot[] = [];
-  private testUser: TestUser | null = null;
-  private cassetteManager: CassetteManager | null = null;
-  private currentTestName: string | null = null;
-
-  constructor(config: TestAgentServerConfig = {}) {
-    const testPort = process.env.MCP_SERVER_PORT || '3001';
-    const vcrMode = (process.env.VCR_MODE as RecordMode) || config.vcrMode || 'auto';
-    const llmModel = config.llmModel || process.env.LLM_MODEL || 'claude-sonnet-4-5-20250929';
-
-    this.config = {
-      mcpServerUrl:
-        config.mcpServerUrl || process.env.MCP_SERVER_URL || `http://localhost:${testPort}/mcp`,
-      llmModel,
-      mockTelegramResponses: config.mockTelegramResponses ?? true,
-      vcrMode,
-    };
-
-    // Generate unique test API key for database isolation
-    this.testApiKey = generateTestApiKey();
-
-    // Time controller for freezing time during cassette replay
-    const timeController: TimeController = {
-      freeze: (isoTime: string) => {
-        vi.useFakeTimers();
-        vi.setSystemTime(new Date(isoTime));
+/** Builds a native model collection whose only generation boundary is the cassette adapter. */
+function cachedModels(config: TestAgentServerConfig, state: TestAgentState): ModelsAndCassettes {
+  const source = config.sourceModels ?? builtinModels();
+  const model = resolveConfiguredModel(
+    config.llmModel || process.env.LLM_MODEL || 'claude-sonnet-4-5-20250929',
+    source,
+  );
+  const provider = source.getProvider(model.provider)!;
+  const cassettes = createCassetteManager(
+    {
+      cassettesDir:
+        config.cassettesDir ?? fileURLToPath(new URL('../cassettes/durable', import.meta.url)),
+      namespace: `${model.provider}/${model.modelId}`,
+      mode: config.vcrMode || (process.env.VCR_MODE as RecordMode) || 'auto',
+    },
+    {
+      freeze: (time) => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(time));
       },
-      unfreeze: () => {
-        vi.useRealTimers();
-      },
-    };
+      unfreeze: () => vi.useRealTimers(),
+    },
+  );
+  const models = createModels();
+  models.setProvider(
+    createCachedProvider({
+      source,
+      provider,
+      cassetteManager: cassettes,
+      onRequest: (request) => state.requests.push(request),
+    }),
+  );
+  return { models, model, cassettes };
+}
+interface ModelsAndCassettes {
+  models: Models;
+  model: ModelRef;
+  cassettes: CassetteManager;
+}
 
-    // Initialize cassette manager for VCR-style caching
-    // Use __dirname to get path relative to this file, not cwd (which varies between local/CI)
-    const cassettesDir = join(__dirname, '..', 'cassettes');
-    this.cassetteManager = createCassetteManager(
-      {
-        cassettesDir,
-        mode: this.config.vcrMode,
-        namespace: this.config.llmModel,
-      },
-      timeController,
-    );
-  }
+/** Opens the production Durable runtime against real MCP tools and real chat projection storage. */
+async function startRuntime(state: TestAgentState, cached: ModelsAndCassettes): Promise<void> {
+  const user = state.user!;
+  const original = await setupMCPIntegration();
+  state.mcp = {
+    ...original,
+    invoke: async (name, args, identity) => {
+      const result = await original.invoke(name, args, identity);
+      state.context?.toolResults?.push({ toolName: name, result, timestamp: Date.now() });
+      return result;
+    },
+  };
+  state.runtime = await openDurableRuntime({
+    storage: new MemoryStorage(),
+    models: cached.models,
+    client: state.mcp,
+    username: user.username,
+    telegramId: user.telegram_id,
+    model: cached.model,
+    instructions: buildDurablePrompt('gtd_coach'),
+    authorize: () => resolveDurableUser(user.username, user.telegram_id),
+    send: async (_chatId, text) => {
+      await state.context!.reply(text);
+    },
+    project: (input, answer) => projectDurableExchange({ username: user.username, input, answer }),
+    onReport: (error) => console.error('Durable test runtime report:', error),
+  });
+}
 
-  async start(): Promise<void> {
-    if (this.agent) {
-      throw new Error('Test agent server already started');
-    }
-
-    // Set up environment variables for MCP client
-    process.env.MCP_SERVER_URL = this.config.mcpServerUrl;
-    process.env.MCP_API_KEY = this.testApiKey;
-    process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'test-token';
-    process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'test-key';
-
-    // Create test user in the registry
-    await this.createTestUser();
-
-    // Initialize MCP integration
-    this.mcpClient = await setupMCPIntegration();
-
-    const cachedLlmService = createCachedLlmService({
-      cassetteManager: this.cassetteManager!,
-      model: this.config.llmModel,
+/** Executes through the real Harness; no text-protocol parser or alternate agent loop exists. */
+async function execute(
+  state: TestAgentState,
+  input: string,
+  context?: MockTelegramContext,
+): Promise<AgentExecutionResult> {
+  if (!state.user || !state.runtime) throw new Error('Test agent not started');
+  const ctx = context ?? buildMockContext(state.user);
+  state.context = ctx;
+  ctx.toolResults ??= [];
+  await ctx.replyWithChatAction('typing');
+  const conversation = await (await conversationDatabase(state.user)).getOrCreateActive();
+  try {
+    const message = await state.runtime.execute({
+      requestId: `vcr:${state.testName}:${++state.sequence}`,
+      text: input,
+      conversationId: conversation._id,
+      chatId: state.user.telegram_id,
+      telegramId: state.user.telegram_id,
+      messageId: state.sequence,
+      createdAt: new Date().toISOString(),
+      deadline: Date.now() + 300_000,
     });
-
-    this.agent = new SimpleAgent({
-      llmService: this.createRecordingLlmService(cachedLlmService),
-    });
-  }
-
-  /** Records LLM requests before delegating to the configured service. */
-  private createRecordingLlmService(llmService: LlmService): LlmService {
+    return { success: true, message, context: ctx };
+  } catch (error) {
     return {
-      generateResponse: async (conversationHistory, systemPrompt, sessionId) => {
-        this.llmRequests.push({
-          messages: conversationHistory.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
-          sessionId,
-        });
-        return llmService.generateResponse(conversationHistory, systemPrompt, sessionId);
-      },
+      success: false,
+      message: error instanceof Error ? error.message : String(error),
+      context: ctx,
     };
-  }
-
-  /**
-   * Create a test user in the user registry and their database
-   */
-  private async createTestUser(): Promise<void> {
-    const couchDbUrl = process.env.COUCHDB_URL;
-    if (!couchDbUrl) {
-      throw new Error('COUCHDB_URL not set - testcontainer setup may have failed');
-    }
-
-    const env = validateEnv(process.env);
-    const userRegistry = await createTestUserRegistry(couchDbUrl, env);
-
-    if (userRegistry.setupDatabase) {
-      await userRegistry.setupDatabase();
-    }
-
-    const apiKeySetAt = new Date().toISOString();
-    const preferences = buildTestUserPreferences(undefined, this.testApiKey, apiKeySetAt);
-    this.testUser = generateTestUserData(preferences);
-    this.testUser.database_name = getUserDatabaseName(env, this.testUser.username);
-
-    const existingUser = await userRegistry.findByUsername(this.testUser.username);
-    const registryUser =
-      existingUser ?? (await userRegistry.create(buildUserRegistryEntry(this.testUser)));
-
-    await ensureRegistryApiKey(userRegistry, registryUser, this.testApiKey, apiKeySetAt);
-    await setupUserDatabase(couchDbUrl, this.testUser.database_name);
-  }
-
-  async stop(): Promise<void> {
-    // Save cassette if recording
-    if (this.cassetteManager) {
-      this.cassetteManager.ejectCassette();
-    }
-
-    if (this.mcpClient) {
-      await this.mcpClient.close();
-      this.mcpClient = null;
-    }
-    this.agent = null;
-  }
-
-  /**
-   * Set the cassette name for VCR recording/playback
-   * Call this before executing agent for each test
-   */
-  loadCassette(testName: string): void {
-    if (!this.cassetteManager) {
-      throw new Error('Cassette manager not initialized');
-    }
-    this.currentTestName = testName;
-    this.cassetteManager.loadCassette(testName);
-  }
-
-  /**
-   * Get the current VCR mode
-   */
-  getVcrMode(): RecordMode {
-    return this.config.vcrMode;
-  }
-
-  getAgent(): SimpleAgent {
-    if (!this.agent) {
-      throw new Error('Test agent not started. Call start() first.');
-    }
-    return this.agent;
-  }
-
-  getLlmRequests(): LlmRequestSnapshot[] {
-    return this.llmRequests;
-  }
-
-  getMCPClient(): MCPClient {
-    if (!this.mcpClient) {
-      throw new Error('MCP client not initialized');
-    }
-    return this.mcpClient;
-  }
-
-  /**
-   * Create a mock Telegram context for testing with proper user session
-   */
-  createMockContext(): MockTelegramContext {
-    if (!this.testUser) {
-      throw new Error('Test user not created. Call start() first.');
-    }
-    return buildMockContext(this.testUser);
-  }
-
-  /**
-   * Execute agent with test input
-   */
-  async executeAgent(
-    input: string,
-    userId: string = 'test-user',
-    context?: MockTelegramContext,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    context: MockTelegramContext;
-  }> {
-    const agent = this.getAgent();
-    const mockContext = context || this.createMockContext();
-
-    try {
-      const result = await agent.execute(input, userId, mockContext as unknown as BotContext);
-
-      // Capture tool results in mock context
-      if (result.toolResults) {
-        mockContext.toolResults = result.toolResults;
-      }
-
-      return {
-        success: result.success,
-        message: result.finalResponse || result.error?.message || 'Agent completed successfully',
-        context: mockContext,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        context: mockContext,
-      };
-    }
-  }
-
-  /**
-   * Get test API key for direct database access
-   */
-  getTestApiKey(): string {
-    return this.testApiKey;
-  }
-
-  /**
-   * Get the user's database name for direct database access
-   */
-  getUserDatabaseName(): string {
-    if (!this.testUser) {
-      throw new Error('Test user not created. Call start() first.');
-    }
-    return this.testUser.database_name;
-  }
-
-  /**
-   * List available MCP tools
-   */
-  async listTools(): Promise<Array<{ name: string; description: string; inputSchema: unknown }>> {
-    const client = this.getMCPClient();
-    return client.tools.map((tool) => ({
-      name: tool.name,
-      description: tool.description || '',
-      inputSchema: tool.inputSchema,
-    }));
   }
 }
+
+/** Checks full replay consumption and closes both runtime and MCP resources. */
+async function stopRuntime(state: TestAgentState, cassettes: CassetteManager): Promise<void> {
+  try {
+    await state.runtime?.close();
+    cassettes.assertConsumed();
+  } finally {
+    cassettes.ejectCassette();
+    await state.mcp?.close();
+    state.runtime = null;
+  }
+}
+
+/** Preserves the behavioral suite's test-server API while replacing SimpleAgent with Durable. */
+export function createTestAgentServer(config: TestAgentServerConfig = {}) {
+  const state: TestAgentState = {
+    user: null,
+    runtime: null,
+    mcp: null,
+    context: null,
+    requests: [],
+    testName: '',
+    sequence: 0,
+  };
+  const cached = cachedModels(config, state);
+  const apiKey = generateTestApiKey();
+  return {
+    start: async (): Promise<void> => {
+      if (state.runtime) throw new Error('Test agent server already started');
+      if (config.mcpServerUrl) process.env.MCP_SERVER_URL = config.mcpServerUrl;
+      state.user = await createAgentTestUser(apiKey);
+      await startRuntime(state, cached);
+    },
+    stop: (): Promise<void> => stopRuntime(state, cached.cassettes),
+    loadCassette: (name: string): void => {
+      state.testName = name;
+      state.sequence = 0;
+      cached.cassettes.loadCassette(name);
+    },
+    getVcrMode: () => cached.cassettes.getMode(),
+    getLlmRequests: () => state.requests,
+    createMockContext: (): MockTelegramContext => {
+      if (!state.user) throw new Error('Test user not created');
+      return buildMockContext(state.user);
+    },
+    executeAgent: (input: string, _userId = 'test-user', context?: MockTelegramContext) =>
+      execute(state, input, context),
+    startNewConversation: async (): Promise<void> => {
+      await (await conversationDatabase(state.user!)).startNewConversation();
+    },
+    getTestApiKey: () => apiKey,
+    getUserDatabaseName: (): string => {
+      if (!state.user) throw new Error('Test user not created');
+      return state.user.database_name;
+    },
+  };
+}
+export type TestAgentServer = ReturnType<typeof createTestAgentServer>;

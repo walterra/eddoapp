@@ -1,6 +1,6 @@
+import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
 import { CouchDBContainer, type StartedCouchDBContainer } from '@testcontainers/couchdb';
 import { randomUUID } from 'node:crypto';
-import { fauxAssistantMessage } from 'pi-ai-durable/providers/faux';
 import { openCouchDbStorage } from 'pi-durable-couchdb';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { couchRequest, type CouchEndpoint } from '../../durable/couch.js';

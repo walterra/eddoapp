@@ -1,4 +1,9 @@
-import { fauxAssistantMessage, fauxToolCall } from 'pi-ai-durable/providers/faux';
+import { createModels } from '@earendil-works/pi-ai/models';
+import {
+  fauxAssistantMessage,
+  fauxProvider,
+  fauxToolCall,
+} from '@earendil-works/pi-ai/providers/faux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { openDurableRuntime, type DurableRuntime } from './runtime.js';
 import { createRuntimeFixture, createTestInput, deferred } from './test_helpers.js';
@@ -21,6 +26,32 @@ async function open(options: Parameters<typeof openDurableRuntime>[0]): Promise<
 }
 
 describe('durable Telegram runtime', () => {
+  it('applies a changed LLM_MODEL to existing conversations after reopening', async () => {
+    const fixture = await createRuntimeFixture();
+    fixture.provider.setResponses([fauxAssistantMessage('Original model answer')]);
+    const first = await open(fixture.options);
+    await first.execute(createTestInput());
+    await first.close();
+    const replacement = fauxProvider({ provider: 'replacement', models: [{ id: 'new-model' }] });
+    replacement.setResponses([
+      (context) => {
+        expect(JSON.stringify(context.messages)).toContain('Original model answer');
+        return fauxAssistantMessage('Replacement model answer');
+      },
+    ]);
+    const models = createModels();
+    models.setProvider(replacement.provider);
+    const second = await open({
+      ...(await fixture.reopen()),
+      models,
+      model: { provider: 'replacement', modelId: 'new-model' },
+    });
+    expect(await second.execute(createTestInput({ requestId: 'telegram:bot:new-model' }))).toBe(
+      'Replacement model answer',
+    );
+    expect(replacement.state.callCount).toBe(1);
+  });
+
   it('deduplicates concurrent updates and projects before delivery', async () => {
     const { options, provider } = await createRuntimeFixture();
     provider.setResponses([fauxAssistantMessage('Three tasks')]);

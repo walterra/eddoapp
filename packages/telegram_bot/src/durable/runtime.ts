@@ -1,16 +1,23 @@
 import { BACKGROUND_CONTEXT as context, withAbortSignal } from '@earendil-works/chord/context';
+import type { Models, ModelThinkingLevel } from '@earendil-works/pi-ai';
 import {
-  Harness,
   createRegistry,
   defineExtension,
+  Harness,
   section,
   type Conversation,
+  type ModelRef,
   type Storage,
   type TaskId,
 } from '@earendil-works/pi-durable';
-import type { Models } from 'pi-ai-durable';
+import {
+  modelThinkingLevel,
+  parseLlmSettings,
+  type LlmGenerationSettings,
+} from '../ai/llm-options.js';
+import { modelsWithOptions } from '../ai/models_with_options.js';
 import type { MCPClient } from '../mcp/client.js';
-import type { DurableConfig } from './config.js';
+import { configureConversationModels } from './model_configuration.js';
 import { bindRuntimeOwner } from './ownership.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
 import { ConversationMap, RequestMap, type DurableRequestInput } from './state.js';
@@ -22,9 +29,22 @@ export interface DurableRuntimeOptions extends RequestDependencies {
   client: MCPClient;
   username: string;
   telegramId: number;
-  model: DurableConfig['model'];
+  model: ModelRef;
+  generation?: LlmGenerationSettings;
   instructions: string;
   onReport: (error: unknown) => void;
+}
+
+interface ResolvedRuntimeOptions extends DurableRuntimeOptions {
+  generation: LlmGenerationSettings;
+  thinkingLevel: ModelThinkingLevel;
+}
+
+function resolveRuntimeOptions(options: DurableRuntimeOptions): ResolvedRuntimeOptions {
+  const generation = options.generation ?? parseLlmSettings();
+  const model = options.models.getModel(options.model.provider, options.model.modelId);
+  if (!model) throw new Error('Cannot configure generation for an unknown model');
+  return { ...options, generation, thinkingLevel: modelThinkingLevel(model, generation) };
 }
 
 export interface DurableRuntime {
@@ -37,7 +57,7 @@ export interface DurableRuntime {
 /** Finds or creates a native conversation for an existing Eddo chat identity. */
 async function getConversation(
   harness: Harness,
-  options: DurableRuntimeOptions,
+  options: ResolvedRuntimeOptions,
   externalId: string,
 ): Promise<Conversation> {
   const mapping = await harness.snapshot(ConversationMap, context);
@@ -51,7 +71,7 @@ async function getConversation(
   return harness.createConversation(
     {
       ownership: { kind: 'ownerless' },
-      agent: { model: options.model },
+      agent: { model: options.model, thinkingLevel: options.thinkingLevel },
       init: async (tx, conversation) => {
         (await tx.doc(ConversationMap)).conversations[externalId] = conversation;
       },
@@ -76,11 +96,11 @@ function createRuntimeRegistry(options: DurableRuntimeOptions): ReturnType<typeo
 }
 
 /** Validates persisted ownership before starting any recovered tasks. */
-async function createHarness(options: DurableRuntimeOptions): Promise<Harness> {
+async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> {
   const harness = await Harness.open(
     options.storage,
     {
-      models: options.models,
+      models: modelsWithOptions(options.models, options.generation),
       registry: createRuntimeRegistry(options),
       onReport: options.onReport,
       settings: {
@@ -92,6 +112,7 @@ async function createHarness(options: DurableRuntimeOptions): Promise<Harness> {
   );
   try {
     await bindRuntimeOwner(harness, options);
+    await configureConversationModels(harness, options.model, options.thinkingLevel);
     return harness;
   } catch (error) {
     await harness.close(context);
@@ -101,7 +122,8 @@ async function createHarness(options: DurableRuntimeOptions): Promise<Harness> {
 
 /** Opens one single-owner journal and resumes persisted request/delivery work. */
 export async function openDurableRuntime(options: DurableRuntimeOptions): Promise<DurableRuntime> {
-  const harness = await createHarness(options);
+  const configured = resolveRuntimeOptions(options);
+  const harness = await createHarness(configured);
   let admission = Promise.resolve();
   const admit = async (input: DurableRequestInput): Promise<TaskId<string>> => {
     if (input.telegramId !== options.telegramId || input.chatId !== options.telegramId) {
@@ -109,7 +131,7 @@ export async function openDurableRuntime(options: DurableRuntimeOptions): Promis
     }
     const previous = await harness.snapshot(RequestMap, context);
     if (previous?.tasks[input.requestId] !== undefined) return previous.tasks[input.requestId];
-    const conversation = await getConversation(harness, options, input.conversationId);
+    const conversation = await getConversation(harness, configured, input.conversationId);
     return conversation.commit(async (tx) => {
       const taskId = await tx.createTask(createRequestTask(options), input, {
         ownership: { kind: 'conversation' },

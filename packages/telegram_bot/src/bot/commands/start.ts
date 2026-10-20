@@ -1,5 +1,5 @@
-import { getEddoAgent } from '../../agent/index.js';
 import { getPersona } from '../../ai/personas.js';
+import { getAgentStatus } from '../../durable/routing.js';
 import { getConnectionInfo } from '../../mcp/client.js';
 import { appConfig } from '../../utils/config.js';
 import { logger } from '../../utils/logger.js';
@@ -93,8 +93,7 @@ import {
  * Handles /status command to show bot status
  */
 export async function handleStatus(ctx: BotContext): Promise<void> {
-  const agent = getEddoAgent();
-  const agentStatus = await agent.getStatus();
+  const agentStatus = getAgentStatus();
   const connectionInfo = getConnectionInfo();
 
   const mcpStatusLine = `🔌 MCP Server: ${escapeMarkdown(connectionInfo.state)}`;
@@ -117,7 +116,7 @@ ${mcpMetrics}
 • Natural Language Processing: ✅
 • Todo Management: ✅ \\(via MCP\\)
 • Time Tracking: ✅ \\(via MCP\\)
-• AI Assistant: ✅ \\(Claude\\)
+• AI Assistant: ✅ \\(Pi Durable\\)
 
 Everything is running smoothly\\! 🤖`;
 

@@ -1,27 +1,49 @@
-import type { WorkflowResult } from '../agent/types/workflow-types.js';
-import { startPeriodicTyping, stopPeriodicTyping } from '../agent/typing-indicator.js';
 import type { BotContext } from '../bot/bot.js';
-import { parseDurableConfig } from './config.js';
+import { getMCPClient } from '../mcp/client.js';
+import { appConfig } from '../utils/config.js';
+import { logger, SpanAttributes, withSpan } from '../utils/logger.js';
+import { startPeriodicTyping, stopPeriodicTyping } from './typing_indicator.js';
 
-/** Checks explicit pilot enrollment without loading the durable SDK. */
-export function usesDurableRuntime(ctx: BotContext): boolean {
-  const username = ctx.session.user?.username;
-  return Boolean(username && parseDurableConfig(process.env).users.includes(username));
+export interface DurableAgentStatus {
+  version: string;
+  workflowType: string;
+  model: string;
+  uptime: number;
+  mcpToolsAvailable: number;
 }
 
-/** Uses Durable only for enrolled interactive users; never retries via the legacy agent. */
-export async function routeAgentMessage(
-  text: string,
-  ctx: BotContext,
-  legacy: () => Promise<WorkflowResult>,
-): Promise<WorkflowResult> {
-  if (!usesDurableRuntime(ctx)) return legacy();
-  const { executeDurableMessage } = await import('./host.js');
+/** Processes every authenticated message through the single durable runtime. */
+export async function executeAgentMessage(text: string, ctx: BotContext): Promise<string> {
   const typing = startPeriodicTyping(ctx);
   try {
-    const finalResponse = await executeDurableMessage(text, ctx);
-    return { success: true, finalResponse };
+    return await withSpan(
+      'agent_execute',
+      {
+        [SpanAttributes.USER_ID]: ctx.from?.id.toString() ?? '',
+        'message.length': text.length,
+      },
+      async () => {
+        const { executeDurableMessage } = await import('./host.js');
+        const answer = await executeDurableMessage(text, ctx);
+        logger.info('Durable agent completed', {
+          username: ctx.session.user?.username,
+          responseLength: answer.length,
+        });
+        return answer;
+      },
+    );
   } finally {
     stopPeriodicTyping(typing);
   }
+}
+
+/** Returns runtime identity without opening a journal or admitting work. */
+export function getAgentStatus(): DurableAgentStatus {
+  return {
+    version: '1.3.0',
+    workflowType: 'Pi Durable',
+    model: appConfig.LLM_MODEL,
+    uptime: process.uptime(),
+    mcpToolsAvailable: getMCPClient()?.tools.length ?? 0,
+  };
 }

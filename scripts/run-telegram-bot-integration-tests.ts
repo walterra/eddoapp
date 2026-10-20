@@ -14,7 +14,7 @@ import {
   waitForServerReady,
 } from './integration-test-helpers.js';
 
-const DEFAULT_TEST_DB = 'todos-dev';
+const DEFAULT_TEST_DB = 'eddo_test';
 
 /**
  * Verify server is still running and ready
@@ -47,6 +47,10 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
   let testExitCode = 0;
 
   try {
+    // Keep MCP's test registry and the production user lookup on the same disposable namespace.
+    process.env.COUCHDB_DB_NAME = DEFAULT_TEST_DB;
+    process.env.DATABASE_TEST_PREFIX = DEFAULT_TEST_DB;
+    process.env.COUCHDB_API_KEY = '';
     containerSetup = await setupTestContainer();
     await createTestDatabase(containerSetup.url, DEFAULT_TEST_DB);
 
@@ -62,7 +66,10 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
       MCP_SERVER_URL: serverProcess.url,
       MCP_SERVER_PORT: serverProcess.port.toString(),
       NODE_ENV: 'test',
-    });
+      COUCHDB_DB_NAME: DEFAULT_TEST_DB,
+      DATABASE_TEST_PREFIX: DEFAULT_TEST_DB,
+      COUCHDB_API_KEY: '',
+    }, process.argv.slice(2).filter((argument) => argument !== '--'));
   } finally {
     if (serverProcess) {
       await stopMcpServer(serverProcess);

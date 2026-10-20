@@ -30,13 +30,13 @@ CRITICAL: Run `pnpm check:commit` to verify code before requesting a commit.
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`
 - MCP server integration tests: `pnpm test:integration:mcp-server` (uses vitest with global setup)
-- Agent loop integration tests: `pnpm test:integration:agent-loop` (uses VCR caching, see below)
-- Agent loop tests (record): `pnpm test:integration:agent-loop:record` (re-record cassettes)
-- Agent loop tests (playback): `pnpm test:integration:agent-loop:playback` (CI mode, no API calls)
+- Durable agent integration tests: `pnpm test:integration:durable` (disposable CouchDB, scripted provider, no API calls)
+- Behavioral agent integration tests: `pnpm test:integration:agent-loop` (VCR auto mode; missing interactions call the provider)
+- Record native behavioral cassettes: `pnpm test:integration:agent-loop:record` (incurs API charges)
+- Replay native behavioral cassettes: `pnpm test:integration:agent-loop:playback` (no provider credentials)
 - E2E tests: `pnpm test:e2e`
 - Full test suite: `pnpm test:all`
-- CI test suite: `pnpm test:ci` (excludes telegram-bot integration tests)
-- CI test suite with all tests: `pnpm test:ci:all` (requires ANTHROPIC_API_KEY)
+- CI test suite: `pnpm test:ci` (includes deterministic Durable integration tests; no model API key required)
 - Run single test: `pnpm vitest:run src/path/to/file.test.ts`
 - TypeScript check: `pnpm tsc:check`
 - MCP server test: `pnpm test:mcp-server` (this lets you run commands against mcp-server)
@@ -149,8 +149,8 @@ interface TodoAlpha3 {
   - `tools/`: MCP tool definitions
   - `server.ts`: FastMCP server setup
 - `packages/telegram_bot/src/`: Telegram bot with AI agent
-  - `agent/`: Simple agent loop implementation
-  - `ai/`: Claude integration and persona management
+  - `durable/`: Pi Durable runtime, journal recovery, MCP bridge, and report delivery
+  - `ai/`: Model resolution and persona management
   - `bot/`: Telegram bot handlers and commands
   - `mcp/`: MCP client integration
 - `packages/web-api/src/github/`: GitHub issue sync integration
@@ -187,40 +187,24 @@ Runner script: `scripts/run-mcp-server-integration-tests.ts`
 
 **Command**: `pnpm test:integration:mcp-server`
 
-#### Agent Loop Integration Tests
+#### Durable Agent Integration Tests
 
-Runner script: `scripts/run-telegram-bot-integration-tests.ts`
+**Command**: `pnpm test:integration:durable`
 
-Tests the Telegram bot's AI agent loop with VCR-style caching for LLM responses.
+Configuration: `packages/telegram_bot/vitest.durable.config.ts`.
+Tests use a disposable CouchDB 3.5 container and Pi's scripted faux provider.
+No model API keys, Telegram credentials, or existing databases are required.
+Tests cover journal recovery, reply delivery, shared chat/report context, and report deduplication.
 
-**VCR Caching System** (`packages/telegram_bot/src/integration-tests/vcr/`):
+All production chat and scheduled reports use Pi Durable. `LLM_MODEL` selects the provider/model.
+Do not reintroduce the removed string-parsed SimpleAgent or enrollment flags.
 
-- Records LLM API responses to cassette files on first run
-- Replays cached responses on subsequent runs (fast, free, deterministic)
-- Freezes time during playback to match recording timestamp
-- Normalizes dynamic content (user IDs, timestamps, database names) for hash matching
-
-**VCR Modes**:
-
-- `VCR_MODE=auto` (default): Record if cassette missing, replay if exists
-- `VCR_MODE=record`: Always record fresh responses (updates cassettes)
-- `VCR_MODE=playback`: Only replay, fail if cassette missing (CI mode)
-- `VCR_DEBUG=1`: Enable verbose logging for debugging hash mismatches
-
-**Commands**:
-
-- `pnpm test:integration:agent-loop` - Auto mode (hybrid, requires `ANTHROPIC_API_KEY`)
-- `pnpm test:integration:agent-loop:record` - Re-record all cassettes (requires `ANTHROPIC_API_KEY`)
-- `pnpm test:integration:agent-loop:playback` - Playback all recorded model cassette sets, no API key needed (CI default)
-
-**API Key Requirements**:
-
-- Playback mode: No `ANTHROPIC_API_KEY` required (uses cached responses)
-- Auto/Record modes: `ANTHROPIC_API_KEY` required for live API calls
-
-**Limitations**: Multi-step workflows that reference specific todo IDs cannot use cached playback because the LLM response contains hardcoded IDs from the recording session. These tests are skipped in playback mode and run live in auto/record modes.
-
-**Cassette Location**: `packages/telegram_bot/src/integration-tests/cassettes/`
+The restored VCR harness wraps Pi Durable's model-provider boundary, not a second agent loop.
+Cassette management and old recordings remain intact. Native assistant messages record under `cassettes/durable/`.
+Old text-protocol recordings cannot validate native tools and require a one-time re-record.
+Playback fails closed on missing/mismatched or unconsumed interactions and never calls the source model.
+CI always runs provider-boundary tests; native behavioral playback runs when native JSON recordings exist.
+See `packages/telegram_bot/src/integration-tests/README.md` for commands and migration limitations.
 
 ### GitHub Issue Sync Architecture
 
@@ -729,38 +713,18 @@ Test aggregated changelog locally: `pnpm changeset:aggregate`
 
 When working on AI agent code (especially in the telegram-bot package), follow these principles:
 
-### Telegram Bot Dev Philosophy: Simplicity First
+### Telegram Bot Runtime Principles
 
-- **Agents are just "for loops with LLM calls"** - avoid over-engineering
-- Prefer minimal recursive loops over complex state machines
-- Trust the LLM to orchestrate its own workflow rather than imposing rigid patterns
-- NO: Graph-based workflows, state machines, rigid node systems
-- YES: Simple loops, direct tool calls, minimal state
-- Fetch MCP tool definitions dynamically from server
-- Pass tool descriptions directly to LLM in system prompt
-- Let the LLM select tools based on descriptions, not complex routing
-- Keep state minimal: current input, history, context
-- Store conversation history in simple data structures (Map, Array)
-- Avoid complex state objects with 20+ fields
-- Use simple try-catch blocks
-- Let the LLM interpret and learn from errors
-- Provide environmental feedback, not pre-programmed error flows
-
-### What to Avoid
-
-- ❌ LangGraph or similar workflow frameworks
-- ❌ Pre-defined workflow patterns (Intent → Plan → Execute → Reflect)
-- ❌ Complex approval/routing nodes
-- ❌ Over-engineered state management
-- ❌ Hardcoded tool mappings or action registries
-
-### What to Embrace
-
-- ✅ Direct LLM API calls with minimal abstraction
-- ✅ Dynamic tool discovery from MCP servers
-- ✅ Environmental feedback loops
-- ✅ Trust in LLM's ability to self-organize
-- ✅ Code that reads like a simple script, not a framework
+- Use Pi Durable for generation, native tool calls, conversation queues, compaction, and recovery.
+- Keep host code focused on authentication, scheduling, delivery, and bounded MCP output.
+- Fetch MCP tool definitions dynamically; let the model select tools from their schemas and descriptions.
+- Persist custom delivery checkpoints through the Harness, not a second in-memory agent loop.
+- Use stable Telegram update and scheduled-occurrence IDs for admission deduplication.
+- Revalidate credentials and authorization before resumed side effects.
+- Keep mutation tools non-replay-safe until the server provides idempotency.
+- Keep scheduled report tools read-only and share the active interactive conversation.
+- Preserve one Harness owner per database; do not introduce active-active execution without an ownership protocol.
+- Test the real Harness with scripted providers, VCR-wrapped real providers, and disposable CouchDB; do not build a parallel agent implementation.
 
 ### Telegram Bot Architecture
 

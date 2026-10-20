@@ -38,12 +38,10 @@ Manage todos through a web interface, Telegram bot with Claude AI, or programmat
 
 ### Scheduled Telegram reports
 
-Unenrolled users' briefings and recaps reserve the local date and configured report time in CouchDB before generation.
-Reservations prevent duplicate runs across overlapping checks and bot restarts. The scheduler alone delivers and prints reports.
-Confirmed generation failures release the reservation for retry. Delivery errors retain it because Telegram may have accepted the message.
-A process crash after reservation can skip that report. Change its configured time to schedule another attempt that day.
-Reservations use server-local CouchDB documents; database replication and backups do not preserve them.
-Enrolled Durable users use the [durable report flow](#experimental-durable-telegram-pilot) instead.
+All scheduled reports use the [durable Telegram runtime](#durable-telegram-runtime).
+The scheduler admits each user's local-date/time occurrence into their active conversation.
+Pi Durable deduplicates occurrences and recovers generation, Telegram delivery, and printing state after restart.
+Existing pre-migration reservation receipts remain read-only safeguards against duplicate reports; new reports create no legacy reservations.
 
 Report data contains compact task summaries, not full todo documents or descriptions.
 Briefings select 10 actions today, 10 recent overdue actions, 10 next actions, 5 waiting items, and 20 calendar appointments.
@@ -155,40 +153,45 @@ Features:
 - Daily briefings at scheduled times
 - GitHub/RSS/Email sync configuration via bot commands
 
-#### Experimental durable Telegram pilot
+#### Durable Telegram runtime
 
-Opt individual Eddo usernames into restartable interactive agent execution:
+All linked private Telegram chats, scheduled briefings, and recaps use Pi Durable 1.3.0 with `pi-durable-couchdb` 0.0.1.
+There is no feature flag or alternate agent implementation.
 
 ```bash
-TELEGRAM_DURABLE_USERS=alice,bob
-TELEGRAM_DURABLE_MODEL=anthropic/claude-sonnet-4-5
+LLM_MODEL=claude-sonnet-4-5-20250929
+LLM_MAX_TOKENS=4096
+LLM_REASONING_EFFORT=low
+# Or select a registered provider/model explicitly:
+# LLM_MODEL=openai/gpt-5.2
 ```
 
-Leave `TELEGRAM_DURABLE_USERS` empty to retain the existing agent for everyone. Restart the bot after configuration changes.
-Configure the selected provider's API key. The legacy `LLM_MODEL` remains separate for unenrolled users.
-
-The pilot uses Pi Durable 1.3.0 and `pi-durable-couchdb` 0.0.1. It supports linked private Telegram chats only.
-The bot provisions an administrator-only `${DATABASE_PREFIX}_pi_durable_<username-sha256>` database for each enrolled user.
+Configure the selected provider's API key and restart the bot after model changes.
+Unqualified Claude IDs resolve to Anthropic; ambiguous IDs require a provider prefix. Unknown model IDs fail validation.
+Existing conversations retain their history and receive the configured model and reasoning level when the host reopens them.
+Output requests default to 4,096 tokens, capped by the model limit and any tighter Harness request limit, including compaction.
+Reasoning defaults to `low` for capable models. Accepted levels: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`.
+Non-reasoning models always run with reasoning disabled. Invalid token limits or reasoning settings fail startup validation.
+Restart after changing generation settings. Already-prepared model turns retain their checkpointed reasoning choice; the current output cap still applies.
+The bot provisions an administrator-only `${DATABASE_PREFIX}_pi_durable_<username-sha256>` database per user.
 CouchDB credentials must permit database creation, security configuration, and runtime journal access. Use TLS outside local development.
 Run **exactly one bot process** against these databases. No distributed lock or automatic ownership failover exists.
 
 Accepted updates, model/tool state, and pending replies survive process restarts.
-Startup recovers enrolled users; failed storage sessions reopen on a 30-second recovery cycle.
+Startup recovers all active users linked to Telegram with MCP credentials; failed sessions reopen on a 30-second recovery cycle.
 Completed exchanges project into the existing assistant chat database with stable message IDs.
 `/new` selects a separate durable conversation through the existing active-conversation mechanism.
 The first durable conversation starts without importing legacy history. Existing history stays available in the application.
-Scheduled briefings and recaps for enrolled users submit into the same active Durable conversation.
+Scheduled briefings and recaps submit into the same active Durable conversation.
 Reports use discussion for priorities and constraints, then fetch current todo data for facts.
 Interactive requests and scheduled reports share Pi's conversation queue and automatic compaction.
 Each scheduled occurrence has a stable request ID, including after restart or `/new`.
 The scheduler returns after durable admission; recovery owns generation, Telegram delivery, and optional printing.
-Unenrolled users retain the existing agent and reservation flow.
-Legacy reservation receipts prevent duplicate reports when switching runtimes; Durable writes a receipt only after successful admission.
 
 Safety boundaries:
 
 - Duplicate Telegram updates reuse their stored request, including after `/new` or a restart.
-- Durable failures never retry the request through the legacy agent.
+- Runtime failures never select another execution path.
 - Read tools allow replay. Interrupted mutations return an unknown-outcome error instead of replaying automatically.
 - Authorization and MCP credentials refresh before resumed actions; revoked or unlinked users cannot invoke tools.
 - Journals bind to one Telegram identity. Relinking the Eddo account to another Telegram ID blocks recovery pending operator review.
@@ -204,15 +207,24 @@ Safety boundaries:
 
 Back up each runtime database as a complete authoritative copy. Default `eddo_*` backups include default-prefix runtime databases.
 Do not delete journal/head documents, apply TTL retention, or restore incomplete replicated copies.
-To roll back, stop the bot, empty the enrollment list, then restart. Pending durable work remains paused until re-enrollment.
-Keep the runtime databases for recovery; the existing agent does not resume their pending work.
+Keep runtime databases intact when restarting or rolling back a deployment; they contain pending execution and delivery state.
 
-Run pilot tests from the repository root:
+Run runtime tests from the repository root:
 
 ```bash
 pnpm vitest:run packages/telegram_bot/src/durable
 pnpm test:integration:durable # Disposable CouchDB 3.5 container; Docker required, no model API calls
 ```
+
+VCR-backed behavioral scenarios also run through the Durable Harness:
+
+```bash
+pnpm test:integration:agent-loop:record   # Records native model responses; incurs API charges
+pnpm test:integration:agent-loop:playback # Replays native recordings without provider credentials
+```
+
+Existing text-protocol recordings are preserved. Native recordings require a one-time re-record, not an automatic conversion.
+See [agent integration tests](packages/telegram_bot/src/integration-tests/README.md) for auto mode, offline boundary tests, and migration details.
 
 ### GitHub Issue Sync
 

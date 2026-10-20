@@ -216,8 +216,9 @@ export async function runTestProcess(
   filter: string,
   testCommand: string,
   env: Record<string, string>,
+  args: readonly string[] = [],
 ): Promise<number> {
-  const testProcess = spawn('pnpm', ['--filter', filter, testCommand], {
+  const testProcess = spawn('pnpm', ['--filter', filter, testCommand, ...args], {
     env: { ...process.env, ...env },
     stdio: 'inherit',
   });

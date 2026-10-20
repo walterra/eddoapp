@@ -1,97 +1,49 @@
-# Telegram Bot Integration Tests
+# Agent integration tests
 
-These integration tests verify the complete agent loop workflow with real MCP server and CouchDB integration.
+Run all commands from the repository root.
 
-## Prerequisites
-
-1. **MCP server must be running** on `http://localhost:3001/mcp` (or port 3002 if using proxy)
-
-   ```bash
-   pnpm dev:server
-   ```
-
-2. **CouchDB** must be accessible and configured
-
-3. **Valid provider credentials** are required (tests make real API calls)
-
-   ```bash
-   # Anthropic
-   export ANTHROPIC_API_KEY="your-api-key"
-   # or
-   export ANTHROPIC_OAUTH_TOKEN="your-oauth-token"
-
-   # OpenAI
-   export OPENAI_API_KEY="your-api-key"
-   ```
-
-## Running Tests
-
-### From telegram-bot package:
+## Durable recovery tests
 
 ```bash
-cd packages/telegram-bot
-pnpm test:integration
+pnpm test:integration:durable
 ```
 
-### From repository root:
+Starts disposable CouchDB 3.5 and uses Pi's scripted faux provider. No model API keys or live model calls are required.
+Covers journal recovery, pending Telegram delivery, shared chat/report context, occurrence deduplication, and printing state.
+
+## VCR-backed behavioral tests
 
 ```bash
-# Run with automatic server startup (finds available port)
-pnpm test:integration:agent-loop
-
-# Run assuming server is already running on specific port
-MCP_TEST_URL=http://localhost:3001/mcp pnpm --filter @eddo/telegram-bot test:integration
-
-# Run with custom port
-MCP_TEST_PORT=3005 pnpm test:integration:agent-loop
+pnpm test:integration:agent-loop          # auto: replay matching interactions; record missing ones
+pnpm test:integration:agent-loop:record   # real provider calls; incurs API charges
+pnpm test:integration:agent-loop:playback # strict offline model playback for every native recorded model
 ```
 
-## Environment Variables
+The runner starts an isolated CouchDB container and MCP server. Tests exercise the production Durable Harness, real MCP tools, and chat projections.
+They retain the create, date parsing, context/tag, multi-step, persistent-history, ambiguous-input, and recap scenarios.
+The provider adapter records complete native assistant messages, including structured tool calls, rather than translating text protocols.
+Token limits and reasoning effort participate in request hashes; changing generation settings requires matching native recordings.
+Both modes expose terminal response streams; partial-stream/restart behavior is covered by the Harness recovery tests.
 
-- `ANTHROPIC_API_KEY`: Anthropic API key (pi-ai convention)
-- `ANTHROPIC_OAUTH_TOKEN`: Anthropic OAuth token (preferred when available)
-- `MCP_SERVER_URL`: MCP server URL (default: `http://localhost:3001/mcp`)
-- `MCP_TEST_URL`: Override MCP URL for tests
-- `MCP_TEST_PORT`: Port for test server (default: 3003)
-- `LLM_MODEL`: Model to use (default: `claude-sonnet-4-5-20250929`, example: `openai/gpt-5.2`)
-- `LLM_MAX_TOKENS`: Maximum output tokens for pi-ai calls (default: 4096)
-- `LLM_REASONING_EFFORT`: Reasoning effort for reasoning models (default: `low`)
+Set `LLM_MODEL` and provider credentials for record/auto modes. Playback needs no provider credentials.
+The wrapper only resolves real credentials when a recording is required. Missing/mismatched playback fails without a source-model call.
+Only `Date` is frozen during replay; network timers and the Durable scheduler continue running.
+`VCR_DEBUG=1` prints hash diagnostics.
 
-## Model-specific VCR recordings
+Native cassettes use `cassettes/durable/<provider-model>/`. Existing model recordings remain byte-for-byte in their original folders.
+They describe the removed text protocol and require a one-time native re-record. No fabricated conversion is performed.
+Until native JSON recordings exist, CI reports the pending migration explicitly while still running VCR round-trip and Harness recovery tests.
+The standalone playback command fails if no native recordings exist.
 
-Cassettes are stored under a model-specific directory. `VCR_MODE=record` overwrites only that model's cassette set.
+The completion workflow remains skipped in playback because recorded tool arguments can reference IDs created by a different database run.
+All other scenarios verify live test database state rather than exact answer phrasing. Test shutdown verifies that every recorded interaction was consumed.
+Review recordings for secrets before committing them; provider credentials and request headers are not recorded.
+
+## VCR infrastructure tests without Docker or API keys
 
 ```bash
-OPENAI_API_KEY="sk-..." \
-LLM_MODEL="openai/gpt-5.2" \
-VCR_MODE=record \
-pnpm test:integration:agent-loop
+pnpm vitest:run --config packages/telegram_bot/vitest.integration.config.ts packages/telegram_bot/src/integration-tests/vcr
 ```
 
-This writes OpenAI recordings under `cassettes/openai_gpt-5_2/`.
-
-Playback discovers all model cassette directories and runs the suite once per recorded model:
-
-```bash
-pnpm test:integration:agent-loop:playback
-```
-
-## Test Structure
-
-- `suites/agent-loop.test.ts`: Main agent loop E2E tests
-- `helpers/agent-assertions.ts`: Custom assertions for agent behavior
-- `setup/test-agent-server.ts`: Test harness for agent testing
-
-## Notes
-
-- Tests create isolated databases using unique API keys
-- Each test uses a separate user ID to prevent conflicts
-- Tests verify both agent behavior and database state
-- Timeouts are set to 60 seconds to accommodate LLM response times
-
-## CI Considerations
-
-Due to the requirement for valid Anthropic credentials, these tests are excluded from the default `test:ci` command. To run all tests including telegram-bot integration tests in CI:
-
-1. Set `ANTHROPIC_API_KEY` or `ANTHROPIC_OAUTH_TOKEN`
-2. Use `pnpm test:ci:all` instead of `pnpm test:ci`
+These tests create temporary scripted-provider recordings and verify native tool-call round trips, fail-closed mismatches, immutable playback files, and Harness execution.
+They do not create checked-in real-model recordings.

@@ -10,13 +10,20 @@ const fixture = vi.hoisted(() => ({
   authorize: vi.fn(),
   getOrCreateActive: vi.fn(),
   provision: vi.fn(),
+  users: vi.fn(),
+  selection: vi.fn(),
 }));
 vi.mock('@eddo/core-server', () => ({
   createEnv: () => ({ COUCHDB_URL: 'http://unused' }),
   normalizeTimeZone: () => 'UTC',
   formatDateInTimeZone: (date: Date) => date.toISOString().slice(0, 10),
   createUserRegistry: () => ({
-    findByUsername: async () => ({ username: 'alice', telegram_id: 123, status: 'active' }),
+    list: fixture.users,
+    findByUsername: async (username: string) => ({
+      username,
+      telegram_id: username === 'bob' ? 456 : 123,
+      status: 'active',
+    }),
   }),
   createAssistantConversationDatabase: () => ({
     ensureDatabase: async () => {},
@@ -25,11 +32,14 @@ vi.mock('@eddo/core-server', () => ({
   }),
 }));
 vi.mock('pi-durable-couchdb', () => ({ openCouchDbStorage: async () => ({ close: vi.fn() }) }));
-vi.mock('pi-ai-durable/providers/all', () => ({
+vi.mock('@earendil-works/pi-ai/providers/all', () => ({
   builtinModels: () => ({ getModel: () => true, getAuth: async () => true }),
 }));
 vi.mock('../mcp/client.js', () => ({ getMCPClient: () => ({ tools: [] }) }));
-vi.mock('../utils/config.js', () => ({ appConfig: { BOT_PERSONA_ID: 'gtd_coach' } }));
+vi.mock('../utils/config.js', () => ({
+  appConfig: { BOT_PERSONA_ID: 'gtd_coach', LLM_MODEL: 'anthropic/configured-model' },
+}));
+vi.mock('../ai/llm-model-resolution.js', () => ({ resolveConfiguredModel: fixture.selection }));
 vi.mock('../utils/logger.js', () => ({ logger: { error: vi.fn() } }));
 vi.mock('./couch.js', () => ({ provisionDurableDatabase: fixture.provision }));
 vi.mock('./projection.js', () => ({ projectDurableExchange: vi.fn() }));
@@ -62,7 +72,10 @@ function context(): BotContext {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
-  vi.stubEnv('TELEGRAM_DURABLE_USERS', 'alice');
+  fixture.users.mockResolvedValue([
+    { username: 'alice', status: 'active', telegram_id: 123, preferences: { mcpApiKey: 'secret' } },
+  ]);
+  fixture.selection.mockReturnValue({ provider: 'anthropic', modelId: 'configured-model' });
   fixture.getOrCreateActive.mockResolvedValue({ _id: 'active_chat' });
   fixture.provision.mockResolvedValue({ url: 'http://unused/runtime' });
   fixture.authorize.mockResolvedValue({ username: 'alice' });
@@ -88,6 +101,49 @@ afterEach(async () => {
 });
 
 describe('durable host ownership and supervision', () => {
+  it.each([
+    ['LLM_MAX_TOKENS', '0'],
+    ['LLM_REASONING_EFFORT', 'turbo'],
+  ])('rejects invalid %s before opening any user journal', async (name, value) => {
+    vi.stubEnv(name, value);
+    await expect(startDurableHost(bot)).rejects.toThrow();
+    expect(fixture.open).not.toHaveBeenCalled();
+  });
+
+  it('recovers all active linked users without an enrollment flag and uses LLM_MODEL', async () => {
+    fixture.users.mockResolvedValue([
+      {
+        username: 'alice',
+        status: 'active',
+        telegram_id: 123,
+        preferences: { mcpApiKey: 'secret' },
+      },
+      {
+        username: 'bob',
+        status: 'active',
+        telegram_id: 456,
+        preferences: { mcpApiKey: 'other-key' },
+      },
+      { username: 'unlinked', status: 'active', preferences: { mcpApiKey: 'secret' } },
+      {
+        username: 'inactive',
+        status: 'inactive',
+        telegram_id: 456,
+        preferences: { mcpApiKey: 'secret' },
+      },
+      { username: 'missing-key', status: 'active', telegram_id: 456, preferences: {} },
+    ]);
+    await startDurableHost(bot);
+    expect(fixture.open).toHaveBeenCalledTimes(2);
+    expect(fixture.selection).toHaveBeenCalledWith(
+      'anthropic/configured-model',
+      expect.any(Object),
+    );
+    expect(fixture.open).toHaveBeenCalledWith(
+      expect.objectContaining({ model: { provider: 'anthropic', modelId: 'configured-model' } }),
+    );
+  });
+
   it('admits scheduled reports into the same active conversation without awaiting delivery', async () => {
     await startDurableHost(bot);
     await enqueueDurableReport({

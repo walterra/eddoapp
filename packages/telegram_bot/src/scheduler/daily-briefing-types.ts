@@ -1,9 +1,4 @@
-import type { Bot } from 'grammy';
-
-import type { BotContext } from '../bot/bot.js';
-
 export interface DailyBriefingSchedulerConfig {
-  bot: Bot<BotContext>;
   checkIntervalMs: number;
 }
 

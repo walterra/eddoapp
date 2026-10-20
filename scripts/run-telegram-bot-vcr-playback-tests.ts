@@ -23,6 +23,7 @@ const CASSETTES_DIR = join(
   'src',
   'integration-tests',
   'cassettes',
+  'durable',
 );
 
 /** Returns cassette JSON paths within a model directory. */
@@ -73,7 +74,7 @@ function runPlaybackForModel(model: string): Promise<number> {
 async function runPlaybackForAllModels(): Promise<void> {
   const models = discoverRecordedModels();
   if (models.length === 0) {
-    throw new Error(`No model cassette directories found in ${CASSETTES_DIR}`);
+    throw new Error(`No native Durable cassettes found in ${CASSETTES_DIR}. Record with pnpm test:integration:agent-loop:record first; legacy text-protocol cassettes are preserved but incompatible.`);
   }
 
   console.log(`📼 Found ${models.length} VCR model cassette set(s): ${models.join(', ')}`);

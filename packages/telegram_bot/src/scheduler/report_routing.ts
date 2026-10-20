@@ -4,11 +4,10 @@ import {
   normalizeTimeZone,
 } from '@eddo/core-server';
 import { DAILY_BRIEFING_REQUEST_MESSAGE, getRecapRequestMessage } from '../constants/briefing.js';
-import { parseDurableConfig } from '../durable/config.js';
 import { reportHeading } from '../durable/report_heading.js';
 import type { ReportType } from '../durable/state.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
-import { hasReportReservation, reserveReport, runReservedReport } from './report-reservation.js';
+import { hasReportReservation } from './report-reservation.js';
 
 export interface ScheduledReportOptions {
   user: TelegramUser;
@@ -37,16 +36,10 @@ function reportExpiry(user: TelegramUser): number {
   return Date.parse(getUtcRangeForTimeZoneDate(date, timezone).end);
 }
 
-/** Admits Durable reports into the active chat; legacy users retain their reservation flow. */
-export async function runScheduledReport(
-  options: ScheduledReportOptions,
-  legacy: () => Promise<boolean>,
-): Promise<boolean> {
+/** Admits every scheduled report into the active durable conversation. */
+export async function runScheduledReport(options: ScheduledReportOptions): Promise<boolean> {
   const { user, type, sentKey } = options;
   const key = `${type}:${sentKey}`;
-  if (!parseDurableConfig(process.env).users.includes(user.username)) {
-    return runReservedReport(user.database_name, key, legacy);
-  }
   if (await hasReportReservation(user.database_name, key)) return false;
   const { enqueueDurableReport } = await import('../durable/host.js');
   await enqueueDurableReport({
@@ -57,7 +50,5 @@ export async function runScheduledReport(
     text: scheduledReportPrompt(type, user.preferences.timezone),
     deadline: reportExpiry(user),
   });
-  // Write compatibility evidence only after admission: legacy rollback must not resend this occurrence.
-  await reserveReport(user.database_name, key);
   return true;
 }

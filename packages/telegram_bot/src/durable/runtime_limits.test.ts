@@ -1,4 +1,4 @@
-import { fauxAssistantMessage, fauxToolCall } from 'pi-ai-durable/providers/faux';
+import { fauxAssistantMessage, fauxToolCall } from '@earendil-works/pi-ai/providers/faux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { openDurableRuntime, type DurableRuntime } from './runtime.js';
 import { createRuntimeFixture, createTestInput, deferred } from './test_helpers.js';

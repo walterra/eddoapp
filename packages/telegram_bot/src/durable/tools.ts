@@ -1,4 +1,5 @@
 import type { Context } from '@earendil-works/chord';
+import type { TSchema } from '@earendil-works/pi-ai';
 import {
   defineExtension,
   defineTool,
@@ -6,7 +7,6 @@ import {
   type ToolExecutionApi,
   type ToolRegistration,
 } from '@earendil-works/pi-durable';
-import type { TSchema } from 'pi-ai-durable';
 import type { MCPClient, MCPTool } from '../mcp/client.js';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';

@@ -1,3 +1,4 @@
+import { getPersona } from '../ai/personas.js';
 import {
   getBulkOperationsSection,
   getCommunicationStyleSection,
@@ -7,8 +8,7 @@ import {
   getNextActionSection,
   getUrlHandlingSection,
   getWorkRequestSection,
-} from '../agent/system-prompt-sections.js';
-import { getPersona } from '../ai/personas.js';
+} from './prompt_sections.js';
 
 /** Preserves GTD behavior while using native tool calls and plain Telegram text. */
 export function buildDurablePrompt(personaId: string): string {

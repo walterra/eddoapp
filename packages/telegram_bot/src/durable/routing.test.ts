@@ -1,49 +1,41 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { BotContext } from '../bot/bot.js';
-import { routeAgentMessage } from './routing.js';
+import { executeAgentMessage, getAgentStatus } from './routing.js';
 
 const durable = vi.hoisted(() => vi.fn());
 vi.mock('./host.js', () => ({ executeDurableMessage: durable }));
+vi.mock('../utils/config.js', () => ({ appConfig: { LLM_MODEL: 'anthropic/configured' } }));
+vi.mock('../mcp/client.js', () => ({ getMCPClient: () => ({ tools: [{ name: 'getTodo' }] }) }));
+vi.mock('../utils/logger.js', () => ({
+  logger: { info: vi.fn() },
+  SpanAttributes: { USER_ID: 'user.id' },
+  withSpan: async (_name: string, _attributes: unknown, action: () => Promise<string>) => action(),
+}));
 
-function context(username?: string): BotContext {
-  return { session: { user: username ? { username } : undefined } } as BotContext;
+function context(username: string): BotContext {
+  return { session: { user: { username } }, from: { id: 123 } } as unknown as BotContext;
 }
+afterEach(() => vi.clearAllMocks());
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.clearAllMocks();
-});
-
-describe('durable runtime routing', () => {
-  it('keeps legacy behavior when enrollment is disabled', async () => {
-    vi.stubEnv('TELEGRAM_DURABLE_USERS', '');
-    const legacy = vi.fn().mockResolvedValue({ success: true });
-    await routeAgentMessage('hello', context('alice'), legacy);
-    expect(legacy).toHaveBeenCalledOnce();
-    expect(durable).not.toHaveBeenCalled();
-  });
-
-  it('routes only enrolled users to Durable', async () => {
-    vi.stubEnv('TELEGRAM_DURABLE_USERS', 'alice');
-    const legacy = vi.fn().mockResolvedValue({ success: true });
+describe('single durable agent entry point', () => {
+  it('routes every linked user through the durable runtime', async () => {
     durable.mockResolvedValue('Done');
-    expect(await routeAgentMessage('hello', context('alice'), legacy)).toEqual({
-      success: true,
-      finalResponse: 'Done',
-    });
-    await routeAgentMessage('hello', context('bob'), legacy);
-    await routeAgentMessage('hello', context(), legacy);
-    expect(durable).toHaveBeenCalledOnce();
-    expect(legacy).toHaveBeenCalledTimes(2);
+    expect(await executeAgentMessage('hello', context('alice'))).toBe('Done');
+    expect(await executeAgentMessage('hello', context('bob'))).toBe('Done');
+    expect(durable).toHaveBeenCalledTimes(2);
   });
-
-  it('never retries an admitted durable request through the legacy runtime', async () => {
-    vi.stubEnv('TELEGRAM_DURABLE_USERS', 'alice');
-    durable.mockRejectedValue(new Error('storage unavailable'));
-    const legacy = vi.fn();
-    await expect(routeAgentMessage('create todo', context('alice'), legacy)).rejects.toThrow(
+  it('propagates failures without selecting another agent implementation', async () => {
+    durable.mockRejectedValueOnce(new Error('storage unavailable'));
+    await expect(executeAgentMessage('create todo', context('alice'))).rejects.toThrow(
       'storage unavailable',
     );
-    expect(legacy).not.toHaveBeenCalled();
+    expect(durable).toHaveBeenCalledOnce();
+  });
+  it('reports the actual runtime and configured model', () => {
+    expect(getAgentStatus()).toMatchObject({
+      workflowType: 'Pi Durable',
+      model: 'anthropic/configured',
+      mcpToolsAvailable: 1,
+    });
   });
 });

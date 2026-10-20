@@ -1,6 +1,6 @@
+import { createModels } from '@earendil-works/pi-ai/models';
+import { fauxProvider } from '@earendil-works/pi-ai/providers/faux';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { createModels } from 'pi-ai-durable/models';
-import { fauxProvider } from 'pi-ai-durable/providers/faux';
 import { CouchDbStorage, type CouchDatabase, type CouchDocument } from 'pi-durable-couchdb';
 import { vi } from 'vitest';
 import type { DurableRuntimeOptions } from './runtime.js';
@@ -27,10 +27,17 @@ export interface RuntimeFixture {
   reopen: () => Promise<DurableRuntimeOptions>;
 }
 
+export interface RuntimeFixtureModel {
+  reasoning?: boolean;
+  maxTokens?: number;
+}
+
 /** Creates an isolated real Harness and CouchDB journal adapter without network calls. */
-export async function createRuntimeFixture(): Promise<RuntimeFixture> {
+export async function createRuntimeFixture(
+  modelOptions: RuntimeFixtureModel = {},
+): Promise<RuntimeFixture> {
   const database = createJournalDatabase();
-  const provider = fauxProvider({ models: [{ id: 'test' }] });
+  const provider = fauxProvider({ models: [{ id: 'test', ...modelOptions }] });
   const models = createModels();
   models.setProvider(provider.provider);
   const options: DurableRuntimeOptions = {

@@ -4,7 +4,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { UserPermissions, UserPreferences, UserStatus } from '@eddo/core-shared';
-import { getRandomHex, getRandomInt, REQUIRED_INDEXES } from '@eddo/core-shared';
+import { DESIGN_DOCS, getRandomHex, getRandomInt, REQUIRED_INDEXES } from '@eddo/core-shared';
 import nano from 'nano';
 import { vi } from 'vitest';
 
@@ -101,8 +101,10 @@ export async function setupUserDatabase(couchDbUrl: string, databaseName: string
     }
   }
 
-  // Create required indexes
+  // Native briefing/recap tools need the same design views as the application.
   const userDb = couch.use(databaseName);
+  await setupDesignDocuments(userDb);
+  // Create required indexes
   for (const indexDef of REQUIRED_INDEXES) {
     try {
       await userDb.createIndex(indexDef);
@@ -110,6 +112,23 @@ export async function setupUserDatabase(couchDbUrl: string, databaseName: string
       if (err.statusCode !== 409) {
         throw err;
       }
+    }
+  }
+}
+
+/** Installs the application's views for native read/report tools. */
+async function setupDesignDocuments(database: nano.DocumentScope<unknown>): Promise<void> {
+  for (const design of DESIGN_DOCS) {
+    try {
+      await database.insert(design);
+    } catch (error: unknown) {
+      if (
+        !error ||
+        typeof error !== 'object' ||
+        !('statusCode' in error) ||
+        error.statusCode !== 409
+      )
+        throw error;
     }
   }
 }
@@ -197,7 +216,7 @@ export function buildMockContext(testUser: TestUser): MockTelegramContext {
     },
     message: {
       message_id: 1,
-      date: Date.now(),
+      date: Math.floor(Date.now() / 1000),
       chat: {
         id: telegramId,
         type: 'private',
