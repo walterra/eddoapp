@@ -140,8 +140,10 @@ export function deleteBackupFile(
   if (dryRun) return { success: true };
   try {
     fs.unlinkSync(backup.path);
-    const logFile = `${backup.path}.log`;
-    if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
+    for (const suffix of ['.log', '.metadata.json', '.restore.log']) {
+      const companion = `${backup.path}${suffix}`;
+      if (fs.existsSync(companion)) fs.unlinkSync(companion);
+    }
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) };

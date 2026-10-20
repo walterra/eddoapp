@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "references": [],
+  "exclude": ["**/*.test.ts"],
+  "include": ["backup*.ts", "restore*.ts", "verify-backup.ts", "couchbackup.d.ts"]
+}

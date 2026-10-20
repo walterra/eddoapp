@@ -214,12 +214,39 @@ The setup wizard auto-links these if pi is installed globally (`npm i -g @marioz
 pnpm backup:interactive
 pnpm restore:interactive
 
-# Automated backups
-pnpm backup:auto --pattern "eddo_user_*"
+# Full CouchDB server backup, including system databases; preserve existing backups
+pnpm backup:auto --all-databases --run-once --no-retention
+
+# Scheduled application backups (default scope: eddo_*)
+pnpm backup:auto
+
+# Verify an archive and its matching metadata sidecar
+pnpm backup:verify backups/<database>-<timestamp>.json
 
 # Retention policy
 pnpm backup:retention
 ```
+
+Backups include attachment bodies and a matching `.json.metadata.json` sidecar with security settings,
+SHA-256 checksum, and source document revisions. Keep both files together. Restore validates the archive
+before replacing a database, decodes UTF-8 safely, and reapplies security settings. Legacy archives remain
+supported when documents use array batches and any header occupies physical line one; individual-document
+NDJSON is rejected before replacement. Missing attachment bodies fail validation, and missing metadata limits
+recovery verification. Source and restored inventories verify winning live revisions only, not losing conflict
+leaves or tombstones independently.
+
+Archive creation rejects concurrent source changes and leaves incomplete files as `.partial`. Retry during
+an idle period. Published archives have private file permissions; retention removes their sidecars too.
+Full-server scope overrides `--pattern` and includes system databases. Discovery, backup, and verification
+failures return a nonzero exit status in one-shot mode; zero matches also fail.
+
+These are logical CouchDB backups, not cross-database atomic snapshots. They exclude server/admin
+configuration, `_local` documents, unsynced browser data, and other services. Store configuration backups
+and encrypted off-host copies separately. Attachment support uses couchbackup's experimental CouchDB-only
+option; do not use these tools against IBM Cloudant.
+
+Run `pnpm test:backup` for regression tests and `pnpm test:integration:backup` for disposable CouchDB
+round-trip tests (Docker required; production databases are never selected).
 
 See [Disaster Recovery Guide](docs/07_disaster-recovery.md).
 

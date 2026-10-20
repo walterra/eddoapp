@@ -1,283 +1,163 @@
 # Disaster Recovery Guide
 
-This guide covers backup strategy, restore procedures, and recovery objectives for Eddo's CouchDB data.
+Eddo creates logical CouchDB backups with attachment bodies, integrity metadata, and database security settings.
 
-## Overview
+## Backup scope
 
-Eddo uses a multi-layer backup strategy:
+The default scheduler scope, `eddo_*`, includes user todos, registry/preferences, chats, audit logs, attachments, and Pi sessions.
+Use `--all-databases` to include every database returned by CouchDB, including `default` and system databases.
+This option overrides `--pattern` and requires credentials with access to every selected database.
 
-| Layer                   | Tool                    | Purpose                                       |
-| ----------------------- | ----------------------- | --------------------------------------------- |
-| **Logical Backup**      | `@cloudant/couchbackup` | Point-in-time JSON backups for recovery       |
-| **Automated Scheduler** | `pnpm backup:auto`      | Continuous backup with configurable intervals |
-| **Retention Policy**    | `pnpm backup:retention` | Storage management with tiered retention      |
-| **Verification**        | `pnpm backup:verify`    | Backup integrity validation                   |
+Backups exclude CouchDB server/admin configuration, `_local` documents, browser-local unsynced data, and other services.
+They preserve current documents and available leaf revisions, not arbitrary historical revision bodies.
+They are not atomic snapshots across databases. Each archive requires a stable source during its backup window.
+Pause application writes and sync clients when a consistent maintenance snapshot is required.
 
-## Recovery Objectives
+Back up server configuration separately. Keep encrypted off-host copies of archives, metadata, and configuration.
+The default recovery-point target is 24 hours. Measure restore time against disposable infrastructure.
 
-| Objective                          | Target     | How Achieved                          |
-| ---------------------------------- | ---------- | ------------------------------------- |
-| **RPO** (Recovery Point Objective) | < 24 hours | Automated daily backups via scheduler |
-| **RTO** (Recovery Time Objective)  | < 4 hours  | Restore procedures documented below   |
+## Create backups
 
-### RTO Considerations
-
-Restore time depends on:
-
-- Database size and document count
-- Network latency to CouchDB instance
-- Parallelism settings (default: 5 concurrent connections)
-- CouchDB server performance
-
-For production environments, measure RTO by running a test restore against a non-production database.
-
-## Backup Commands
-
-### Manual Backup
+Run commands from the repository root.
 
 ```bash
-# Interactive backup (recommended for first-time use)
+# One database using configured CouchDB credentials
+pnpm backup --database eddo_user_walterra --backup-dir ./backups/manual
+
+# Interactive backup with configurable connection and timeout
 pnpm backup:interactive
 
-# Direct backup with arguments
-pnpm backup -- --database eddo_user_username --output ./backups/
+# Full-server maintenance backup; do not delete existing backups
+pnpm backup:auto --all-databases --run-once --no-retention --backup-dir ./backups/pre-migration
 
-# Verify backup integrity
-pnpm backup:verify ./backups/eddo_user_username-2024-12-25T12-00-00-000Z.json
+# Continuous application backups, every 24 hours
+pnpm backup:auto
+
+# Restrict scope intentionally (this excludes chats, attachments, audit, and registry)
+pnpm backup:auto --pattern 'eddo_user_*' --interval 12h
 ```
 
-### Automated Backup
+`backup` and `backup:auto` load repository environment configuration, including `COUCHDB_URL`.
+Interactive tools accept `--url` or prompt for connection details. URLs containing credentials appear in shell history;
+prefer environment configuration or interactive input.
 
-```bash
-# Start continuous backup scheduler (default: 24h interval)
-pnpm backup:auto --pattern "eddo_user_*"
+The scheduler defaults to `eddo_*` and 24 hours. `--all-databases` includes system databases without changing
+interactive database discovery. Zero matches and discovery failures return a nonzero exit status in one-shot mode.
+Verification failures count as backup failures. Retention runs only after a successful cycle.
 
-# Custom interval
-pnpm backup:auto --interval 12h --pattern "eddo_user_*"
+## Archive contents
 
-# Single backup run (for cron jobs)
-pnpm backup:auto --run-once --pattern "eddo_user_*"
+Each completed backup produces:
+
+- `<database>-<timestamp>.json`: couchbackup full-mode document batches with inline attachment bodies.
+- `<database>-<timestamp>.json.metadata.json`: format version, source database/revisions, checksum, and `_security` settings.
+- `<database>-<timestamp>.json.log`: couchbackup progress log.
+
+Keep the archive and metadata sidecar together. Files use private permissions, and new backup directories use mode `0700`.
+Registry backups and metadata contain sensitive data. Do not commit or publish them.
+
+Archive creation verifies source revisions, attachment bytes, and a stable source inventory before publication.
+Source and post-restore inventories cover winning live revisions only. They do not independently verify losing
+conflict leaves or tombstones. Checksums detect archive changes, not omissions from the source.
+Restore accepts document-array batches and headers on physical line one. Individual-document NDJSON and
+misplaced headers fail validation before target replacement.
+CouchDB can digest compressed attachment bytes; metadata also records verified decoded-body digests.
+The `.json` filename appears only after validation. Failed or interrupted archives remain `.partial` and are not
+selected as completed backups. Inspect and remove stale partial files manually after resolving the failure.
+
+The data format starts with:
+
+```text
+{"name":"@cloudant/couchbackup","version":"2.x","mode":"full","attachments":true}
+[{"_id":"...","_rev":"..."}, ...]
 ```
 
-### Retention Policy
+Attachment support uses couchbackup's experimental Apache CouchDB option. These tools do not support IBM Cloudant.
+
+## Verify backups
 
 ```bash
-# Preview cleanup actions
+pnpm backup:verify ./backups/manual/<database>-<timestamp>.json
+
+# Verify every published archive in a directory
+BACKUP_DIR=./backups/manual pnpm backup:verify
+```
+
+Verification checks JSON structure, revision uniqueness, inline attachment payloads/digests, the archive checksum,
+and source revisions recorded in metadata. Header-only empty database archives are valid.
+A missing sidecar produces a legacy-archive warning: source completeness and security settings cannot be verified.
+Attachment stubs without bodies fail verification. Such historical backups cannot recover the missing files.
+
+Run disposable round-trip tests regularly:
+
+```bash
+pnpm test:backup
+pnpm test:integration:backup
+```
+
+Integration tests start a fresh CouchDB Testcontainer and remove it afterward. They never use configured production
+credentials. Coverage includes Unicode across stream boundaries, compressed attachments, conflicts, tombstones,
+design documents, security settings, empty databases, legacy files, and corruption detection.
+
+## Restore one database
+
+1. Stop or isolate clients and writers before recovery.
+2. Preserve the damaged database and its configuration separately.
+3. Verify the selected archive and matching sidecar.
+4. Restore into a disposable target first and inspect application behavior.
+5. Confirm the intended production target before replacing it.
+
+```bash
+pnpm backup:verify ./backups/manual/<database>-<timestamp>.json
+
+# Interactive recovery prompts for connection, archive, and target
+pnpm restore:interactive
+
+# Explicit replacement using environment credentials; DELETES the target database
+pnpm restore ./backups/manual/<database>-<timestamp>.json --database eddo_recovery_check --force
+```
+
+Restore validates the archive before deleting the target, uses UTF-8-decoded input streams, checks the saved live
+revision inventory, and restores `_security`. Binary input streams can corrupt Unicode at buffer boundaries;
+use the shared restore tooling rather than calling couchbackup with an undecoded file stream.
+
+Legacy non-attachment archives remain supported without enabling attachment mode. Legacy archives have no recoverable
+security settings unless those settings were saved separately. Inspect restored content before relying on them.
+
+## Restore a full server
+
+Provision a compatible CouchDB server and restore its configuration/admin credentials separately.
+Review the source database inventory, select one maintenance snapshot per database, and repeat the single-database
+procedure for each database. Include registry, chats, audit, attachment, session, todo, and system databases present
+in that snapshot. Do not feed `.metadata.json` files into restore as document archives.
+
+Restore documents before enabling application traffic. Database security settings reference account names and roles;
+confirm the corresponding users and administrative access exist on the recovery server.
+Server-local `_local` reservations are not restored. Reconcile scheduled jobs before enabling their workers.
+
+## Retention
+
+```bash
 pnpm backup:retention --dry-run
-
-# Apply retention policy
 pnpm backup:retention
 ```
 
-**Default retention tiers:**
-
-- Daily backups: 30 days
-- Weekly backups: 12 weeks (oldest daily per week)
-- Monthly backups: 12 months (oldest weekly per month)
-
-## Restore Procedures
-
-### Prerequisites
-
-Verify CouchDB is running and accessible:
-
-```bash
-curl http://localhost:5984/
-# Should return: {"couchdb":"Welcome",...}
-```
-
-The backup/restore scripts use CLI flags (not environment variables) for CouchDB connection:
-
-```bash
-# Interactive mode prompts for URL
-pnpm backup:interactive
-pnpm restore:interactive
-
-# Or pass URL directly
-pnpm backup:interactive -- --url http://admin:password@localhost:5984
-pnpm restore:interactive -- --url http://admin:password@localhost:5984
-```
-
-### Scenario 1: Single Database Restore
-
-Use when restoring a specific user's data.
-
-```bash
-# Step 1: List available backups
-ls -la ./backups/ | grep "eddo_user_username"
-
-# Step 2: Verify backup integrity
-pnpm backup:verify ./backups/eddo_user_username-2024-12-25T12-00-00-000Z.json
-
-# Step 3: Interactive restore (safest option)
-pnpm restore:interactive
-
-# Step 4: Verify restored data
-curl -u admin:password http://localhost:5984/eddo_user_username
-```
-
-### Scenario 2: Full System Restore
-
-Use after complete data loss or migration to new server.
-
-```bash
-# Step 1: Ensure CouchDB is running and accessible
-curl http://localhost:5984/
-
-# Step 2: List all backup files
-ls -la ./backups/
-
-# Step 3: Restore each database
-for backup in ./backups/eddo_*.json; do
-  dbname=$(basename "$backup" | sed 's/-[0-9T-]*\.json$//')
-  echo "Restoring $dbname..."
-  pnpm restore -- --input "$backup" --database "$dbname" --force-overwrite
-done
-
-# Step 4: Verify all databases
-curl -u admin:password http://localhost:5984/_all_dbs
-```
-
-### Scenario 3: Point-in-Time Recovery
-
-Use when recovering to a specific backup timestamp.
-
-```bash
-# Step 1: Find backup for desired point in time
-ls -la ./backups/ | grep "2024-12-24"
-
-# Step 2: Restore from specific backup
-pnpm restore:interactive
-# Select the backup file for the desired timestamp
-
-# Step 3: Note that newer data will be lost
-# PouchDB clients will sync their local data back to the restored database
-```
-
-## CLI Options
-
-The interactive backup/restore scripts accept:
-
-| Option                 | Short | Description                                                |
-| ---------------------- | ----- | ---------------------------------------------------------- |
-| `--url <url>`          | `-u`  | CouchDB URL (e.g., `http://admin:password@localhost:5984`) |
-| `--database <name>`    | `-d`  | Database name                                              |
-| `--backup-dir <path>`  | `-b`  | Backup directory (default: `./backups`)                    |
-| `--backup-file <path>` | `-f`  | Backup file path (restore only)                            |
-| `--parallelism <n>`    | `-p`  | Parallel connections (default: 5)                          |
-| `--timeout <ms>`       | `-t`  | Request timeout (default: 60000)                           |
-| `--dry-run`            |       | Show actions without executing                             |
-| `--no-interactive`     |       | Disable prompts (requires all options)                     |
-
-## Environment Variables
-
-The automated scheduler (`backup:auto`) still uses environment variables:
-
-| Variable                  | Default     | Description                             |
-| ------------------------- | ----------- | --------------------------------------- |
-| `BACKUP_DIR`              | `./backups` | Directory for backup files              |
-| `BACKUP_DATABASE_PATTERN` | `eddo_*`    | Glob pattern for databases              |
-| `COUCHDB_URL`             | Required    | CouchDB connection URL (scheduler only) |
-
-## Backup File Format
-
-Backups use `@cloudant/couchbackup` format:
-
-```
-Line 1: {"name":"@cloudant/couchbackup","version":"2.x","mode":"full","attachments":false}
-Line 2+: [{doc1}, {doc2}, ...] (batched JSON arrays)
-```
-
-Each backup creates:
-
-- `{database}-{timestamp}.json` - Backup data
-- `{database}-{timestamp}.json.log` - Operation log
+Default tiers retain daily backups for 30 days, one backup per week for 12 weeks, and one per month for 12 months.
+Retention removes the archive, matching metadata, and logs together. It ignores incomplete `.partial` archives.
+Use dedicated directories for maintenance snapshots that must not enter routine retention.
 
 ## Troubleshooting
 
-### Backup Fails with Timeout
+- **Source changed:** retry during an idle period; do not rename `.partial` files to completed archives.
+- **Timeout:** use `pnpm backup:interactive --timeout 120000` and adjust parallelism with `--parallelism`.
+- **Attachment body missing:** create a fresh attachment-enabled backup while the source remains available.
+- **Checksum/inventory mismatch:** preserve the failed files and select a separately verified archive.
+- **Discovery/access failure:** verify CouchDB availability and privileges, including system database access.
+- **Unexpected data after recovery:** connected PouchDB clients can sync newer local changes back into CouchDB.
 
-```bash
-# Increase timeout (default: 60000ms)
-pnpm backup:interactive
-# Select higher timeout value when prompted
+CouchDB's deterministic conflict winner does not replace application-level conflict review after recovery.
 
-# Or via CLI
-pnpm backup -- --database mydb --timeout 120000
-```
+## Related documentation
 
-### Restore Fails with "Database Not Empty"
-
-```bash
-# Use force-overwrite flag (recreates database)
-pnpm restore -- --input backup.json --database mydb --force-overwrite
-```
-
-### Backup Verification Fails
-
-```bash
-# Check file integrity
-pnpm backup:verify ./backups/problematic-backup.json
-
-# Common issues:
-# - Incomplete backup (process interrupted)
-# - Disk corruption
-# - JSON parse errors
-
-# Solution: Use the previous valid backup
-```
-
-### Large Database Backup Performance
-
-```bash
-# Increase parallelism for faster backups
-pnpm backup -- --database large_db --parallelism 10
-
-# Monitor backup progress in log file
-tail -f ./backups/large_db-*.json.log
-```
-
-## Offline-First Considerations
-
-Eddo uses PouchDB for offline-first storage. After a restore:
-
-1. **Browser clients** retain local PouchDB data
-2. **Sync resumes** automatically when clients reconnect
-3. **Conflicts** are resolved by CouchDB's deterministic algorithm
-4. **Newer local changes** will sync back to the restored database
-
-This means:
-
-- Users won't lose local changes made while offline
-- Restored database receives updates from all connected clients
-- No manual intervention required for conflict resolution
-
-## Recommended Backup Schedule
-
-### Production Environment
-
-```bash
-# Run as systemd service or cron job
-pnpm backup:auto --interval 24h --pattern "eddo_user_*"
-```
-
-Add to crontab for retention cleanup:
-
-```cron
-# Run retention policy weekly at 3 AM Sunday
-0 3 * * 0 cd /path/to/eddoapp && pnpm backup:retention
-```
-
-### Development Environment
-
-Manual backups before major changes:
-
-```bash
-pnpm backup:interactive
-```
-
-## Related Documentation
-
-- [CouchDB Local Setup](./06_couchdb_local.md)
-- [Architecture Overview](./03_architecture.md)
-- [Deployment Guide](./05_deployment.md)
+- [README](../README.md#backup--recovery)
+- [Development Guide](../DEVELOPMENT.md)

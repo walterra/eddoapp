@@ -69,6 +69,7 @@ export default defineConfig({
             'packages/setup/src/**/*.test.ts',
             'scripts/benchmarks/*.test.ts',
             'scripts/backup-interactive.test.ts',
+            'scripts/backup_*.test.ts',
             'scripts/backup-retention.test.ts',
             'scripts/backup-scheduler.test.ts',
             'scripts/create-release-pr.test.js',

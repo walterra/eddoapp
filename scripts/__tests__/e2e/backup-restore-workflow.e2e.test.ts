@@ -1,8 +1,10 @@
 import { runner } from 'clet';
 import fs from 'fs';
+import nano from 'nano';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { listBackupArchives } from './backup_test_helpers';
 import {
   createTestEnv,
   generateTestDbName,
@@ -67,9 +69,7 @@ describe('Backup-Restore Workflow E2E', () => {
       .code(0);
 
     // Step 3: Find the created backup file
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
@@ -141,9 +141,7 @@ describe('Backup-Restore Workflow E2E', () => {
       .code(0);
 
     // Find backup file
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(backupDir, backupFiles[0]);
 
@@ -175,15 +173,16 @@ describe('Backup-Restore Workflow E2E', () => {
   it('should handle invalid backup file format during restore', async () => {
     const targetDbName = generateTestDbName('invalid-backup-test');
     const testEnv = createTestEnv();
-
-    // Track the target database that will be created by the restore script
-    dbManager.trackDatabase(targetDbName);
+    await dbManager.createTestDatabase(targetDbName);
+    await dbManager.addSampleData(targetDbName, SAMPLE_TODO_DOCS);
+    const database = nano(couchDbUrl).db.use(targetDbName);
+    const before = await database.list({ include_docs: true });
 
     // Create an invalid backup file
     const invalidBackupFile = path.join(backupDir, 'invalid-backup.json');
     fs.writeFileSync(invalidBackupFile, 'invalid json content');
 
-    // Try to restore from invalid backup file - @cloudant/couchbackup handles this gracefully
+    // Reject invalid input without replacing existing documents.
     await runner()
       .env(testEnv)
       .cwd(PROJECT_ROOT)
@@ -198,9 +197,10 @@ describe('Backup-Restore Workflow E2E', () => {
         invalidBackupFile,
         '--force-overwrite',
       ])
-      .stdout(/Restore Summary:/)
-      .code(0);
+      .stderr(/not valid JSON/)
+      .code(1);
 
+    expect(await database.list({ include_docs: true })).toEqual(before);
     expect(fs.existsSync(invalidBackupFile)).toBe(true);
   }, 30000);
 
@@ -253,9 +253,7 @@ describe('Backup-Restore Workflow E2E', () => {
       .code(0);
 
     // Step 4: Verify multiple backup files exist
-    const backupFiles = fs
-      .readdirSync(backupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(backupDir, sourceDbName);
     expect(backupFiles.length).toBe(2);
 
     // Step 5: Restore using the latest backup file
@@ -313,9 +311,7 @@ describe('Backup-Restore Workflow E2E', () => {
     expect(fs.existsSync(subdirBackupDir)).toBe(true);
 
     // Step 3: Find backup file in subdirectory
-    const backupFiles = fs
-      .readdirSync(subdirBackupDir)
-      .filter((f) => f.startsWith(sourceDbName) && f.endsWith('.json'));
+    const backupFiles = listBackupArchives(subdirBackupDir, sourceDbName);
     expect(backupFiles.length).toBe(1);
     const backupFile = path.join(subdirBackupDir, backupFiles[0]);
 

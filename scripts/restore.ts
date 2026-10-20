@@ -6,7 +6,9 @@
  */
 
 import { getCouchDbConfig, validateEnv } from '@eddo/core-server/config';
+import { dotenvLoad } from 'dotenv-mono';
 import { recreateDatabase } from './backup-utils.js';
+import { validateBackupArchive } from './backup_metadata.js';
 import {
   checkDatabaseForRestore,
   checkRestoreLogFile,
@@ -18,6 +20,7 @@ import {
 } from './restore-helpers.js';
 
 // Environment configuration using shared validation
+dotenvLoad();
 const env = validateEnv(process.env);
 const couchConfig = getCouchDbConfig(env);
 
@@ -41,6 +44,7 @@ async function restore(
       process.exit(1);
     }
 
+    await validateBackupArchive(ctx.restoreFile);
     logRestoreStart(ctx);
     await recreateDatabase(ctx.dbName, ctx.couchUrl);
     await performCouchbackupRestore(ctx.restoreFile, ctx.dbUrl);
@@ -48,10 +52,11 @@ async function restore(
     console.log(`Restore completed successfully from: ${ctx.restoreFile}`);
 
     checkRestoreLogFile(ctx.restoreFile);
-    await verifyRestoredDatabase(ctx.dbName);
+    await verifyRestoredDatabase(ctx.dbName, ctx.couchUrl);
   } catch (error) {
-    console.error('Restore failed:', error instanceof Error ? error.message : String(error));
-    process.exit(1);
+    throw new Error('Restore failed; check archive validation and database access', {
+      cause: error,
+    });
   }
 }
 
@@ -104,7 +109,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     delegateToInteractiveRestore().catch(console.error);
   } else {
     const { backupFile, database, force } = parseArgs();
-    restore(backupFile, database, force).catch(console.error);
+    restore(backupFile, database, force).catch(() => {
+      console.error('Restore failed');
+      process.exitCode = 1;
+    });
   }
 }
 

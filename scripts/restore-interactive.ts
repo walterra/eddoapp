@@ -5,19 +5,20 @@
  * Supports both interactive prompts and direct command-line arguments
  */
 
-import couchbackup from '@cloudant/couchbackup';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import fs from 'fs';
 import ora from 'ora';
 import prompts from 'prompts';
 import {
-  createRestoreOptions,
   DEFAULT_CONFIG,
   formatDuration,
   formatFileSize,
   recreateDatabase,
 } from './backup-utils.js';
+import { validateBackupArchive } from './backup_metadata.js';
+import { restoreBackupArchive } from './backup_restore.js';
+import { redactDatabaseUrl } from './backup_transport.js';
 import {
   buildDbUrl,
   getRestoreConfig,
@@ -34,7 +35,7 @@ function displayRestoreSummary(config: RestoreConfig, dbUrl: string): void {
   console.log(`  Backup File: ${chalk.cyan(config.backupFile)}`);
   console.log(`  File Size: ${chalk.cyan(formatFileSize(backupStats.size))}`);
   console.log(`  Target Database: ${chalk.cyan(config.database)}`);
-  console.log(`  Destination: ${chalk.cyan(dbUrl)}`);
+  console.log(`  Destination: ${chalk.cyan(redactDatabaseUrl(dbUrl))}`);
   console.log(`  Parallelism: ${chalk.cyan(config.parallelism)}`);
   console.log(`  Timeout: ${chalk.cyan(config.timeout + 'ms')}`);
 }
@@ -72,28 +73,16 @@ async function executeRestore(config: RestoreConfig, dbUrl: string): Promise<voi
   if (!process.stdout.isTTY) console.log('Starting restore...');
 
   const startTime = Date.now();
-  const readStream = fs.createReadStream(config.backupFile!);
-
-  const options = createRestoreOptions({
-    parallelism: config.parallelism,
-    requestTimeout: config.timeout,
-    logfile: `${config.backupFile}.restore.log`,
-  });
-
-  const updateProgress = setInterval(() => {
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    spinner.text = `Restoring... (${elapsed}s elapsed)`;
-  }, 1000);
-
-  await new Promise<void>((resolve, reject) => {
-    couchbackup.restore(readStream, dbUrl, options, (err: Error | null) => {
-      clearInterval(updateProgress);
-      if (err) reject(err);
-      else resolve();
+  try {
+    await restoreBackupArchive(config.backupFile!, dbUrl, {
+      parallelism: config.parallelism,
+      requestTimeout: config.timeout,
     });
-  });
-
-  spinner.succeed(chalk.green('Restore completed successfully!'));
+    spinner.succeed(chalk.green('Restore completed and verified!'));
+  } catch (error) {
+    spinner.fail('Restore failed');
+    throw error;
+  }
 
   const duration = Date.now() - startTime;
   console.log('\n' + chalk.bold('Restore Summary:'));
@@ -162,10 +151,11 @@ async function performRestore(config: RestoreConfig, isInteractive: boolean = tr
   if (config.dryRun && handleDryRun()) return;
   if (!config.forceOverwrite && handleNoForceOverwrite()) return;
 
-  await prepareDatabase(config);
-
   const shouldProceed = await getInteractiveConfirmation(isInteractive);
   if (!shouldProceed) return;
+
+  await validateBackupArchive(config.backupFile!);
+  await prepareDatabase(config);
 
   try {
     await executeRestore(config, dbUrl);
