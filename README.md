@@ -227,7 +227,9 @@ Safety boundaries:
 - Retries stay within the report deadline. Interactive failures, empty answers, and guardrail stops do not trigger automatic generation retries.
 - Failed generation and expired inputs retain failed outcomes after their user-facing notices deliver; the handler sends no duplicate notice.
 - History projection retries independently every 30 seconds without blocking Telegram replies or request completion.
-- Failed delivery retries every 30 seconds. The Telegram handler stops waiting after six minutes; durable delivery continues.
+- Telegram delivery stops on permanent API errors or five failed sends. Transient failures retry after at least 30 seconds, honoring rate limits and preserving backoff across restarts.
+- Scheduled delivery expires at the end of its occurrence's local day. Interactive delivery expires one hour after its generation deadline.
+- The Telegram handler stops waiting after six minutes; bounded durable delivery can continue.
 - Ambiguous Telegram sends can produce duplicate reply chunks.
 - Printing claims its attempt before contacting the printer. Recovery never repeats an ambiguous print; interruption can miss a print.
 - Reports without the expected content marker deliver to Telegram but do not print. Printer failures remain non-fatal.

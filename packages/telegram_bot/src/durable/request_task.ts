@@ -1,11 +1,12 @@
 import type { Context } from '@earendil-works/chord';
-import { defineTask, type NextTaskState, type RunningTask } from '@earendil-works/pi-durable';
-import { createProjectionTask } from './projection_task.js';
+import { defineTask, type RunningTask } from '@earendil-works/pi-durable';
 import { correctReportContext, type ContextWriter } from './report_context.js';
 import { prepareReply } from './report_delivery.js';
+import { deliverAnswer } from './request_delivery.js';
 import { requestOutcome } from './request_failure.js';
 import { generateAnswer, type RequestRuntime } from './request_generation.js';
 import type { DurableRequestInput, ReportType, RequestCheckpoint } from './state.js';
+export { telegramChunk } from './request_delivery.js';
 
 export interface RequestDependencies {
   authorize: (input: DurableRequestInput) => Promise<unknown>;
@@ -26,8 +27,6 @@ type RetryTask = RunningTask<
   Extract<RequestCheckpoint, { phase: 'retry' }>,
   string
 >;
-type DeliveryCheckpoint = Extract<RequestCheckpoint, { phase: 'deliver' }>;
-type DeliveryTask = RunningTask<DurableRequestInput, DeliveryCheckpoint, string>;
 type PrintTask = RunningTask<
   DurableRequestInput,
   Extract<RequestCheckpoint, { phase: 'print' }>,
@@ -98,77 +97,6 @@ async function retryGeneration(
     }),
     context,
   );
-}
-
-/** Splits plain-text Telegram output without separating UTF-16 surrogate pairs. */
-export function telegramChunk(answer: string, offset: number): string {
-  let end = Math.min(answer.length, offset + 4000);
-  const last = answer.charCodeAt(end - 1);
-  if (end < answer.length && last >= 0xd800 && last <= 0xdbff) end -= 1;
-  return answer.slice(offset, end);
-}
-
-/** Retries external failures but lets failed journal commits terminate the Harness. */
-async function deliverAnswer(
-  task: DeliveryTask,
-  runtime: RequestRuntime,
-  context: Context,
-  dependencies: RequestDependencies,
-): Promise<void> {
-  await dependencies.authorize(task.input);
-  const checkpoint = task.state.checkpoint;
-  if (!checkpoint.projected) {
-    await runtime.commit(async (tx) => {
-      await tx.createTask(
-        createProjectionTask(dependencies),
-        { request: task.input, answer: checkpoint.answer },
-        { ownership: { kind: 'conversation' }, background: true },
-      );
-      return { status: 'running', checkpoint: { ...checkpoint, projected: true } };
-    }, context);
-    return;
-  }
-  const chunk = telegramChunk(checkpoint.answer, checkpoint.offset);
-  try {
-    if (chunk) await dependencies.send(task.input.chatId, chunk);
-  } catch (error) {
-    if (runtime.signal.aborted) throw error;
-    runtime.report(error);
-    await runtime.sleep(Date.now() + 30_000, context);
-    await runtime.commit(
-      () => ({
-        status: 'running',
-        checkpoint: { ...checkpoint, attempts: checkpoint.attempts + 1 },
-      }),
-      context,
-    );
-    return;
-  }
-  const offset = checkpoint.offset + chunk.length;
-  await runtime.commit(
-    () =>
-      offset >= checkpoint.answer.length
-        ? deliveryFinished(task)
-        : { status: 'running', checkpoint: { ...checkpoint, projected: true, offset } },
-    context,
-  );
-}
-
-/** Moves reports to printing only after every Telegram chunk has a committed delivery receipt. */
-function deliveryFinished(task: DeliveryTask): NextTaskState<RequestCheckpoint, string> {
-  const { answer, printable, reportType, failure } = task.state.checkpoint;
-  if (task.input.report || reportType)
-    return {
-      status: 'running',
-      checkpoint: {
-        phase: 'print',
-        answer,
-        printable: printable ?? false,
-        ...(reportType ? { reportType } : {}),
-        ...(failure ? { failure } : {}),
-      },
-    };
-  return { status: 'terminal', outcome: requestOutcome(answer, failure) };
 }
 
 /** Claims printing before the external effect, preferring a missed print over a duplicate. */

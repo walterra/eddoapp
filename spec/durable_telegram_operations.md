@@ -66,9 +66,14 @@ Do not assume restoring chat history restores native execution state.
 | Interactive mutation interrupted    | Inspect current todo state before submitting another mutation                                      |
 | Telegram send ambiguous             | Check Telegram and delivery receipts; a retry can duplicate the affected chunk                     |
 | Print ambiguous                     | Check the printer; automatic recovery does not repeat the claimed attempt                          |
-| Projection/delivery unavailable     | Restore dependencies; delivery retries every 30 seconds                                            |
+| Projection unavailable              | Restore the chat database; independent projection retries do not block Telegram replies            |
+| Telegram delivery unavailable       | Restore connectivity before expiry; delivery stops after five failed sends or permanent API errors |
 | Journal publication failed          | Allow the failed runtime to close and recovery to reopen it; do not reuse failed handles           |
 | Relinked Telegram identity rejected | Keep execution blocked pending an approved ownership migration                                     |
+
+Delivery backoff persists across restarts and honors Telegram rate-limit delays, with a minimum of 30 seconds.
+Scheduled delivery expires at the occurrence's local day boundary. Interactive delivery expires one hour after its generation deadline.
+Delivery expiry and permanent failures skip printing. Ambiguous sends can still duplicate chunks within the retry budget.
 
 Do not delete request or MCP operation receipts to force a retry. The request may already have performed an external effect.
 Pending MCP receipts have unknown outcomes and never expire automatically. Inspect todo, audit, and attachment state before recovery.

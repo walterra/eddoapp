@@ -51,6 +51,7 @@ export type RequestCheckpoint =
       offset: number;
       projected: boolean;
       attempts: number;
+      retryAt?: number;
       printable?: boolean;
       reportType?: ReportType;
       failure?: string;
