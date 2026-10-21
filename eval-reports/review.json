@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "completed",
-  "createdAt": "2026-10-21T21:30:45.550Z",
+  "createdAt": "2026-10-21T21:36:19.337Z",
   "reviewerModel": "openai/gpt-5.2",
   "rubricVersion": "2",
   "rubricSha256": "d0957930ec49879de7446b8e68593fb40ad5cce7f3169523c961f2961e94bef7",
@@ -36,7 +36,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant asked for the missing task title/details needed to add a todo given the ambiguous request.",
+            "explanation": "The assistant correctly asked for the missing todo details needed to add a task after the user’s ambiguous “add todo” request.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -45,7 +45,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "It made no claims of creating a todo and only requested clarification, matching the conversation results.",
+            "explanation": "It made no claims about creating a todo and only asked a clarifying question, so there are no unsupported success claims.",
             "evidenceIds": [
               "event-2"
             ]
@@ -53,7 +53,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user prompt by seeking required specifics instead of inventing a todo entry.",
+            "explanation": "It followed the user’s request flow by seeking required specifics (title, due date, context) rather than inventing task content.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -62,16 +62,15 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool use or errors occurred in the recorded conversation.",
+            "explanation": "No tool calls or errors occurred in the recorded conversation.",
             "evidenceIds": [
-              "event-1",
               "event-2"
             ]
           },
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response was clear and directly asked for the necessary information to proceed.",
+            "explanation": "The response was clear and directly requested the information needed to proceed (title and optional details like due date or context).",
             "evidenceIds": [
               "event-2"
             ]
@@ -151,18 +150,16 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a todo titled \"integration test task\" and later marked that same todo as completed as requested.",
+            "explanation": "It created a todo titled \"integration test task\" and then marked that same todo as completed as requested.",
             "evidenceIds": [
-              "event-1",
               "event-2",
-              "event-6",
-              "event-8"
+              "event-6"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "Its confirmations of creation and completion match successful tool results showing the todo ID and completed status.",
+            "explanation": "Its success confirmations align with tool results showing the todo was created and later completed successfully.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -173,7 +170,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user requests without adding conflicting constraints, using reasonable defaults for due date, context, and tags.",
+            "explanation": "It followed the user's requests without adding conflicting constraints, using reasonable defaults for due date, context, and tags.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -184,7 +181,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred, so no recovery was needed.",
+            "explanation": "No tool errors occurred in the recording, so recovery behavior was not exercised.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -193,7 +190,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear and directly stated the todo was created and then marked done.",
+            "explanation": "Responses were brief, clear, and consistent with the actions performed and confirmed by the tools.",
             "evidenceIds": [
               "event-4",
               "event-8"
@@ -246,8 +243,9 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "Created a work-context todo for the quarterly report with an urgent tag and a due date next month (end of November).",
+            "explanation": "It created a work todo for the quarterly report with an urgent tag and a due date in the next month window.",
             "evidenceIds": [
+              "event-1",
               "event-2",
               "event-3",
               "event-4"
@@ -256,7 +254,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s confirmation of creation is supported by a successful createTodo tool result showing “Todo created successfully.”",
+            "explanation": "The confirmation that the todo was added is supported by the createTodo toolResult reporting successful creation.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -265,7 +263,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request by using work context, urgent tag, and a next-month due date without adding conflicting constraints.",
+            "explanation": "It followed the user request without adding conflicting constraints, using a reasonable end-of-next-month due date and urgent tag.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -274,16 +272,17 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred in the recording, so error recovery was not needed.",
+            "explanation": "No tool errors occurred in the recording.",
             "evidenceIds": [
               "event-3"
             ]
           },
           {
             "criterion": "communication_quality",
-            "verdict": "partial",
-            "explanation": "The response is clear but includes extra emojis and hype beyond the user’s simple request.",
+            "verdict": "pass",
+            "explanation": "The final message clearly confirms what was created and when it is due, consistent with the tool output.",
             "evidenceIds": [
+              "event-3",
               "event-4"
             ]
           }
@@ -334,17 +333,18 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant created a todo for “Go shopping” due next Friday (2026-10-30) with reasonable context/tags as requested.",
+            "explanation": "It created a todo for “Go shopping” due next Friday (Oct 30, 2026) with reasonable GTD context/tags.",
             "evidenceIds": [
               "event-1",
               "event-2",
-              "event-3"
+              "event-3",
+              "event-4"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "It claimed the shopping trip was scheduled, and the tool result confirms the todo was created with due date 2026-10-30.",
+            "explanation": "The confirmation that the todo was created and scheduled for Oct 30 aligns with the successful createTodo tool result.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -353,10 +353,11 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s natural-language request without adding conflicting constraints, using acceptable GTD-style defaults.",
+            "explanation": "It followed the user’s request to add a todo for next Friday without adding conflicting constraints.",
             "evidenceIds": [
               "event-1",
-              "event-2"
+              "event-2",
+              "event-4"
             ]
           },
           {
@@ -370,10 +371,9 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The confirmation message clearly states the scheduled date and intent, aligning with the created todo.",
+            "explanation": "The final message is clear and directly states the scheduled date for the shopping todo.",
             "evidenceIds": [
-              "event-4",
-              "event-3"
+              "event-4"
             ]
           }
         ]
@@ -430,7 +430,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a work-context todo for code review and then listed all work todos showing the new item.",
+            "explanation": "It created a work-context todo for code review and then displayed the list of work todos containing that item.",
             "evidenceIds": [
               "event-2",
               "event-4",
@@ -440,7 +440,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The confirmation and list shown match the successful createTodo and listTodos tool results including title, context, due, and tag.",
+            "explanation": "Its statements that the todo was added and that one work todo exists are supported by the createTodo and listTodos tool results.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -450,7 +450,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request to create a work todo and display all work todos without adding conflicting constraints.",
+            "explanation": "It followed the user’s request to create a work todo and show all work todos without adding conflicting constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -460,7 +460,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred in the recording, so no recovery behavior was needed.",
+            "explanation": "No tool errors occurred in the recording, so error recovery behavior was not exercised.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -469,9 +469,10 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response is clear and concise, summarizing the created task and presenting the work todo list in an easy-to-read format.",
+            "explanation": "The response clearly confirms creation and presents the work todo list with relevant details like due date and tag.",
             "evidenceIds": [
-              "event-5"
+              "event-5",
+              "event-4"
             ]
           }
         ]
@@ -549,7 +550,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It stored the user's planning keyword and later correctly answered that the keyword mentioned was deep-work.",
+            "explanation": "It stored the planning keyword and later correctly answered that the keyword was deep-work.",
             "evidenceIds": [
               "event-2",
               "event-8"
@@ -558,29 +559,27 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "Its claims of saving and recalling the keyword are supported by successful createTodo and listTodos tool results showing 'Planning keyword: deep-work'.",
+            "explanation": "Its “saved to memory” and recall response are supported by successful createTodo and listTodos tool results showing deep-work.",
             "evidenceIds": [
               "event-3",
-              "event-7",
               "event-4",
+              "event-7",
               "event-8"
             ]
           },
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user's requests without adding conflicting constraints, using a reasonable memory tag to persist the keyword.",
+            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable tags/context for storage.",
             "evidenceIds": [
-              "event-1",
               "event-2",
-              "event-5",
               "event-8"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred in the recording, so error handling was not exercised.",
+            "explanation": "No tool errors occurred in the recording.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -589,7 +588,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear and directly answered the user's question, with consistent wording matching the stored keyword.",
+            "explanation": "Responses were clear and directly answered the user while indicating when the keyword was saved and recalled.",
             "evidenceIds": [
               "event-4",
               "event-8"
@@ -673,7 +672,6 @@
             "explanation": "It created the requested work todo and later listed completed todos for today, correctly reporting none found.",
             "evidenceIds": [
               "event-2",
-              "event-4",
               "event-6",
               "event-8"
             ]
@@ -681,7 +679,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s success and “no completions” statements match the tool results showing todo creation and zero completed items.",
+            "explanation": "Its success and zero-results statements match the createTodo and listTodos tool results.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -691,19 +689,17 @@
           },
           {
             "criterion": "instruction_compliance",
-            "verdict": "pass",
-            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable defaults for due date and tags.",
+            "verdict": "partial",
+            "explanation": "It complied with both user requests but added an unrequested due date and tag when creating the todo.",
             "evidenceIds": [
               "event-1",
-              "event-2",
-              "event-5",
-              "event-6"
+              "event-2"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred, so no error recovery was needed.",
+            "explanation": "No tool errors occurred, so no recovery was needed.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -712,7 +708,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were concise and clear, confirming creation and plainly stating there were no completed tasks today.",
+            "explanation": "Responses were clear and concise, confirming creation and clearly stating that nothing was completed today.",
             "evidenceIds": [
               "event-4",
               "event-8"
@@ -750,17 +746,16 @@
         "judgments": [
           {
             "criterion": "task_fulfillment",
-            "verdict": "partial",
-            "explanation": "It did not add a todo and instead asked for the title and due date details needed to proceed.",
+            "verdict": "pass",
+            "explanation": "The assistant asked for the missing todo title and due date/time needed to add a todo, appropriately handling the ambiguous request.",
             "evidenceIds": [
-              "event-1",
               "event-2"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "It made no claims of having created a todo or completed actions beyond asking a clarifying question.",
+            "explanation": "It made no claims that a todo was added and only requested more details, which matches the available conversation evidence.",
             "evidenceIds": [
               "event-2"
             ]
@@ -768,24 +763,24 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s vague \"add todo\" request by requesting the missing required fields without inventing details.",
+            "explanation": "It followed the user's vague \"add todo\" request by asking clarifying questions without inventing details or taking unsupported actions.",
             "evidenceIds": [
-              "event-1",
               "event-2"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool use or errors occurred in the recorded exchange.",
+            "explanation": "No tool calls or errors occurred in the recording, so error recovery was not exercised.",
             "evidenceIds": [
+              "event-1",
               "event-2"
             ]
           },
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response clearly and succinctly asked for the todo title and due date with examples of acceptable formats.",
+            "explanation": "The response was clear and specific about what information was needed (title, due date, and optional time) to proceed.",
             "evidenceIds": [
               "event-2"
             ]
@@ -893,7 +888,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created the requested todo and then marked the same \"Integration test task\" as completed.",
+            "explanation": "It created the requested todo and then marked that same todo as done as the user asked.",
             "evidenceIds": [
               "event-2",
               "event-4",
@@ -904,7 +899,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "Creation and completion claims match successful tool results showing the todo ID and completed status.",
+            "explanation": "The assistant’s creation and completion confirmations match successful tool results with the same todo id and status.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -915,7 +910,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s two requests without adding conflicting constraints, using reasonable defaults for context, tags, and due date.",
+            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable defaults for context, due date, and tags.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -926,7 +921,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "pass",
-            "explanation": "When search failed, it transparently fell back to listTodos and then completed the found matching todo.",
+            "explanation": "After searchTodos failed, it transparently switched to listTodos and then completed the task without claiming the failed search succeeded.",
             "evidenceIds": [
               "event-7",
               "event-8",
@@ -937,7 +932,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were brief and clear, confirming what was created and later that it was marked completed.",
+            "explanation": "Responses were brief and clear, stating the todo title and completion state consistent with performed actions.",
             "evidenceIds": [
               "event-4",
               "event-12"
@@ -990,16 +985,17 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a work todo for the quarterly report with an urgent tag and a due date in the next month.",
+            "explanation": "It created a work todo for the quarterly report due next month and applied an urgent tag as requested.",
             "evidenceIds": [
               "event-2",
+              "event-3",
               "event-4"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s confirmation of creation matches the tool result reporting successful todo creation and the returned fields.",
+            "explanation": "The assistant’s confirmation matches the tool result showing the todo was created with the stated title, context, due date, and tags.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -1008,7 +1004,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request without adding conflicting constraints, using reasonable defaults for title and date.",
+            "explanation": "It followed the user’s constraints by creating a work todo due next month and including the urgent tag without adding conflicting details.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1018,7 +1014,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred in the recording.",
+            "explanation": "No tool error occurred in the recording.",
             "evidenceIds": [
               "event-3"
             ]
@@ -1026,7 +1022,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response clearly states what was created including context, due date, and tags in a concise summary.",
+            "explanation": "The final message clearly summarizes what was created, including title, context, due date, and tags.",
             "evidenceIds": [
               "event-4"
             ]
@@ -1078,17 +1074,18 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a todo for “Go shopping” scheduled for next Friday (2026-10-30) with a reasonable errands context and GTD tag.",
+            "explanation": "It created a todo for \"Go shopping\" with an appropriate errands context and due date set to next Friday 2026-10-30 as requested.",
             "evidenceIds": [
               "event-1",
               "event-2",
+              "event-3",
               "event-4"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s “Added” confirmation matches the tool result showing the todo was created with due date 2026-10-30 and context errands.",
+            "explanation": "The assistant’s confirmation of adding the todo matches the tool result reporting successful creation with the same title, context, and due date.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -1097,7 +1094,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request to add a todo for next Friday without adding conflicting constraints or extra tasks.",
+            "explanation": "It followed the user’s instruction to add a todo for next Friday without adding conflicting extra requirements or constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1107,7 +1104,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool error occurred, so recovery behavior was not needed.",
+            "explanation": "No tool error occurred, so no recovery behavior was needed.",
             "evidenceIds": [
               "event-3"
             ]
@@ -1115,7 +1112,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The final message is clear and concise, summarizing the created todo with title, context, and due date tied to “next Friday.”",
+            "explanation": "The final message clearly summarizes what was added, including task name, context, and due date in both absolute and relative terms.",
             "evidenceIds": [
               "event-4"
             ]
@@ -1191,7 +1188,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s created-and-listed claims match tool results showing one created todo and one work todo returned.",
+            "explanation": "The confirmation and listed items match the successful createTodo and listTodos tool results.",
             "evidenceIds": [
               "event-3",
               "event-5",
@@ -1201,7 +1198,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request to create and then display work todos without adding conflicting constraints.",
+            "explanation": "It followed the user request to create a work todo for code review and show all work todos without adding conflicting constraints.",
             "evidenceIds": [
               "event-1",
               "event-6"
@@ -1210,7 +1207,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred in the recording, so no recovery behavior was needed.",
+            "explanation": "No tool errors occurred in the recording.",
             "evidenceIds": [
               "event-3",
               "event-5"
@@ -1219,7 +1216,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The final message clearly summarizes what was created and presents the work todo list in an easy-to-scan format.",
+            "explanation": "The response is clear and concise, showing the created todo details and a readable list of work todos.",
             "evidenceIds": [
               "event-6"
             ]
@@ -1285,7 +1282,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant stored the user’s planning keyword as a todo and later correctly answered that the keyword was deep-work.",
+            "explanation": "The assistant stored and later correctly recalled the user’s planning keyword deep-work as requested.",
             "evidenceIds": [
               "event-2",
               "event-4",
@@ -1295,7 +1292,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "Its confirmation of storing the keyword aligns with the tool result showing the todo was created successfully.",
+            "explanation": "The claim that the keyword was stored is supported by the createTodo tool result reporting successful creation.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -1304,7 +1301,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable defaults for context, due date, and tags.",
+            "explanation": "The assistant followed the user’s requests by saving the provided keyword and answering the recall question without adding conflicting details.",
             "evidenceIds": [
               "event-2",
               "event-6"
@@ -1313,7 +1310,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool error occurred in the recording.",
+            "explanation": "No tool errors occurred in the recording.",
             "evidenceIds": [
               "event-3"
             ]
@@ -1321,7 +1318,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear and directly addressed the user’s keyword and confirmation needs.",
+            "explanation": "Responses were brief and clear, confirming the keyword and answering the user’s question directly.",
             "evidenceIds": [
               "event-4",
               "event-6"
@@ -1402,18 +1399,17 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created the requested work todo and correctly reported that nothing was completed today when asked for today’s completions.",
+            "explanation": "It created the requested work todo and correctly reported that nothing was completed today when asked.",
             "evidenceIds": [
               "event-2",
-              "event-4",
-              "event-6",
+              "event-3",
               "event-8"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The creation confirmation and “0 tasks completed today” statement match the tool results showing a successful create and an empty completedToday list.",
+            "explanation": "Its claims about todo creation and zero completed items match the tool results returned by createTodo and getRecapData.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -1424,10 +1420,11 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable defaults like due date today and a GTD next tag.",
+            "explanation": "It followed the user requests without adding conflicting constraints, using reasonable defaults like due date today and tag gtd:next.",
             "evidenceIds": [
               "event-1",
               "event-2",
+              "event-4",
               "event-5",
               "event-8"
             ]
@@ -1444,7 +1441,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were concise and clearly summarized what was done and what the recap showed, with an optional helpful follow-up question.",
+            "explanation": "Responses were clear and concise, summarizing the created todo and the recap result in plain language.",
             "evidenceIds": [
               "event-4",
               "event-8"
