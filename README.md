@@ -214,6 +214,9 @@ Safety boundaries:
 - Duplicate Telegram updates reuse their stored request, including after `/new` or a restart.
 - Runtime failures never select another execution path.
 - Read tools allow replay. Interrupted mutations return an unknown-outcome error instead of replaying automatically.
+- Mutation calls carry stable command IDs. MCP reserves them before execution and replays completed results without repeating the handler.
+- Pending or ambiguous command receipts block duplicate attempts; they do not authorize automatic mutation replay.
+- MCP provisions private `${userDatabase}_mcp_operations` databases. Include these receipts in coordinated backups and do not delete them to force retries.
 - Authorization and MCP credentials refresh before resumed actions; revoked or unlinked users cannot invoke tools.
 - Journals bind to one Telegram identity. Relinking the Eddo account to another Telegram ID blocks recovery pending operator review.
 - Interactive inputs retain a five-minute admission budget. Expired queued inputs withdraw without aborting another request.

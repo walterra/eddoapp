@@ -7,7 +7,7 @@ import { context, propagation } from '@opentelemetry/api';
 
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import type { MCPUserContext } from './user-context.js';
+import { createMCPHeaders, type MCPUserContext } from './user-context.js';
 
 /**
  * Injects OpenTelemetry trace context into headers for distributed tracing
@@ -26,10 +26,7 @@ function injectTraceContext(headers: Record<string, string>): Record<string, str
  * @returns Headers object
  */
 export function createUserHeaders(userContext: MCPUserContext): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${userContext.mcpApiKey}`,
-  };
+  return createMCPHeaders(userContext);
 }
 
 /**
@@ -84,7 +81,7 @@ export async function invokeToolOnClient(
     result: result.content,
   });
 
-  return result.content;
+  return result.isError ? { content: result.content, isError: true } : result.content;
 }
 
 /**

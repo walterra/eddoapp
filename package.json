@@ -120,7 +120,7 @@
     "lint": "eslint --cache ./packages ./scripts --ignore-pattern '**/dist/**'",
     "check:commit": "npm-run-all tsc:check --parallel tsc:check:backup lint lint:format",
     "test": "pnpm test:unit",
-    "test:unit": "vitest run packages/web-client/src packages/web-api/src packages/core-shared/src packages/core-server/src packages/telegram_bot/src/durable packages/telegram_bot/src/ai packages/telegram_bot/src/scheduler scripts/backup",
+    "test:unit": "vitest run packages/web-client/src packages/web-api/src packages/core-shared/src packages/core-server/src packages/mcp_server/src/tools packages/telegram_bot/src/durable packages/telegram_bot/src/ai packages/telegram_bot/src/scheduler scripts/backup",
     "test:backup": "vitest run scripts/backup",
     "test:integration:backup": "vitest run --config scripts/backup_integration.config.ts",
     "test:coverage": "vitest run --coverage packages/web-client/src packages/core-shared/src packages/core-server/src scripts/backup",

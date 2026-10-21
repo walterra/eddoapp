@@ -9,6 +9,7 @@ export interface MCPUserContext {
   username: string;
   telegramId: number;
   mcpApiKey: string;
+  operationId?: string;
 }
 
 /** Extract user context from cached session */
@@ -78,6 +79,7 @@ export function createMCPHeaders(userContext: MCPUserContext): Record<string, st
   return {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${userContext.mcpApiKey}`,
+    ...(userContext.operationId ? { 'x-eddo-operation-id': userContext.operationId } : {}),
   };
 }
 

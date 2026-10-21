@@ -14,7 +14,8 @@ Production startup does not use it yet. The single-owner deployment requirement 
 - [x] Fail closed after an ambiguous acquisition or release acknowledgment.
 - [ ] Production storage lifecycle and side-effect integration.
 - [ ] Safe crash recovery and operator recovery tooling.
-- [ ] Receiver-enforced fencing/idempotency for external mutations and delivery.
+- [x] Receiver-side MCP command deduplication and completed-result replay.
+- [ ] Receiver-enforced ownership fencing and remote delivery idempotency.
 - [ ] Validated automatic failover under process pauses, partitions, and delayed requests.
 
 Do not enable production ownership by calling acquisition alone. Every execution path must participate first.
@@ -68,18 +69,47 @@ This does not atomically fence a remote service:
 - Waiting for local promises does not prove that every remote effect has stopped.
 
 Telegram does not accept this fencing epoch as an execution precondition.
-Current MCP mutation tools also lack a receiver-enforced fencing/idempotency contract.
+MCP commands now have receiver-side attempt deduplication, but no ownership-epoch fencing contract.
 Journal fencing therefore must not be described as exactly-once external execution or safe automatic failover.
 Retain the existing non-replay-safe mutation policy and ambiguous-delivery safeguards.
 
+## MCP command receipts
+
+Native mutation calls derive operation IDs from a persisted journal namespace and tool-task ID.
+Preserve that namespace during migration and restore; replacing it changes command identities.
+The client sends `x-eddo-operation-id`; the model cannot select or override that transport identifier.
+Authenticated MCP sessions use private `${userDatabase}_mcp_operations` databases with administrator-only access.
+
+The receiver reserves each operation through a revision-checked create before invoking the tool handler.
+Matching completed requests return the saved result. Reused IDs with different arguments or tools are rejected.
+Completed receipts record handler responses, including returned tool errors; they do not independently prove business success.
+Pending receipts block duplicate execution indefinitely; there is no automatic expiry or retry.
+An ambiguous reservation acknowledgment can block a command that never executed. Safety takes priority over availability.
+An ambiguous completion acknowledgment returns the saved result on retry if completion actually committed.
+
+This provides at-most-once handler invocation for a command, not atomic multi-document mutation execution.
+A handler can partially update todo, audit, or attachment documents before failing.
+Pending receipts require state inspection, not deletion or blind replay.
+The receiver saves only argument hashes, status/timestamps, and serialized results; results can contain private task data.
+Receipts are limited to 1 MB serialized responses and must be retained with authoritative execution backups.
+
+Ordinary MCP clients without the operation header remain compatible.
+Mutation tools remain non-replay-safe in Pi Durable; do not change replay policies based on receipts alone.
+All MCP servers must run the receipt-aware implementation before relying on this protection.
+This protocol does not reject a stale owner submitting a different command ID.
+
 ## Remaining integration design
+
+Telegram polling requires one global bot leader, not independent per-user journal leaders.
+Separate processes owning different users would still compete for the same bot's Telegram updates.
+Global leadership must cover polling, scheduler admission, runtime recovery, and ownership transitions.
 
 1. Open the ownership-aware storage transport before resuming any Harness work.
 2. Cover interactive and scheduled admission, MCP calls, projections, Telegram sends, progress, printing, and recovery callbacks.
 3. Stop admissions before shutdown; drain execution and publication before releasing the claim.
 4. Establish explicit behavior for ambiguous external operations and lost acknowledgments.
 5. Add approved crash-recovery tooling without deleting ownership or journal documents blindly.
-6. Define receiver-side mutation idempotency and fencing before enabling automatic takeover.
+6. Add receiver-side ownership fencing and pending-command handover barriers before enabling automatic takeover.
 7. Test separate processes against real CouchDB, including pauses and partitions, before claiming multi-instance safety.
 
 ## Verification

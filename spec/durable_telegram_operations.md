@@ -40,6 +40,7 @@ Recovered pending requests can resume immediately after startup.
 - Back up each runtime database as a complete authority, including journal and publication-head documents.
 - Use `pnpm backup:interactive` and `pnpm backup:verify`; inspect the selected database inventory.
 - The default `eddo_*` pattern includes default-prefix runtime databases. Custom prefixes require an explicit matching selection.
+- Include private `${userDatabase}_mcp_operations` receipt databases in coordinated backups; default `eddo_*` selection includes them.
 - Treat application chat databases as projections, not replacements for runtime journals.
 - Pause the sole bot and relevant writers when requiring a coordinated restore point across databases.
 - Backup operations do not provide a transaction across the runtime, registry, chat, and todo databases.
@@ -69,7 +70,8 @@ Do not assume restoring chat history restores native execution state.
 | Journal publication failed          | Allow the failed runtime to close and recovery to reopen it; do not reuse failed handles           |
 | Relinked Telegram identity rejected | Keep execution blocked pending an approved ownership migration                                     |
 
-Do not delete request receipts to force a retry. The request may already have performed an external effect.
+Do not delete request or MCP operation receipts to force a retry. The request may already have performed an external effect.
+Pending MCP receipts have unknown outcomes and never expire automatically. Inspect todo, audit, and attachment state before recovery.
 Do not roll back to pre-Durable execution while journaled work remains pending.
 Older binaries also need review before resuming checkpoints introduced by newer code.
 

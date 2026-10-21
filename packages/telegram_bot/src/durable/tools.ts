@@ -10,6 +10,7 @@ import {
 import type { MCPClient, MCPTool } from '../mcp/client.js';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
+import { mutationContext } from './mcp_operation.js';
 import { notifyProgress, type ProgressOptions } from './progress.js';
 import { RunBudget, type DurableRequestInput, type ReportType } from './state.js';
 import { invokeMcpTool } from './tool_execution.js';
@@ -130,7 +131,7 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
         options.client,
         tool.name,
         args as Record<string, unknown>,
-        user,
+        REPLAY_SAFE_TOOLS.has(tool.name) ? user : await mutationContext(user, api, context),
       );
       return { output: [{ type: 'text', text: formatted.text }], isError: formatted.isError };
     },

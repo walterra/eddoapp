@@ -23,7 +23,9 @@ import { dotenvLoad } from 'dotenv-mono';
 import { FastMCP } from 'fastmcp';
 import nano from 'nano';
 
+import { createMutationStoreFactory, parseMcpOperationId } from './auth/mutation_store.js';
 import { validateUserContext } from './auth/user-auth.js';
+import { attachMutationStore } from './tools/mutation_receipts.js';
 import { registerTools } from './tools/register-tools.js';
 import { storeTraceContext } from './tools/tool-wrapper.js';
 import type { ToolContext, UserSession } from './tools/types.js';
@@ -60,6 +62,7 @@ async function ensureUserRegistrySetup(): Promise<void> {
 // Initialize nano connection
 const couchDbConfig = getCouchDbConfig(env);
 const couch = nano(couchDbConfig.url);
+const getMutationStore = createMutationStoreFactory(couch);
 
 // Initialize Elasticsearch client (optional - for search functionality)
 let esClient: Client | null = null;
@@ -148,13 +151,16 @@ const server = new FastMCP<UserSession>({
     // Build attachments database name (parallel to user db)
     const attachmentsDbName = authResult.dbName.replace('_user_', '_attachments_');
 
-    const session = {
+    const operationId = parseMcpOperationId(request.headers['x-eddo-operation-id']);
+    const session: UserSession = {
       userId: authResult.userId,
       dbName: authResult.dbName,
       attachmentsDbName,
       username: authResult.username,
       timezone: authResult.timezone,
+      ...(operationId ? { operationId } : {}),
     };
+    if (operationId) attachMutationStore(session, await getMutationStore(session.dbName));
     storeTraceContext(session, extractedContext);
     return session;
   },
