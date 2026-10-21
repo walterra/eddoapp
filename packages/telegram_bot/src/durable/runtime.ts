@@ -1,4 +1,4 @@
-import { BACKGROUND_CONTEXT as context, withAbortSignal } from '@earendil-works/chord/context';
+import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import type { Models, ModelThinkingLevel } from '@earendil-works/pi-ai';
 import {
   createRegistry,
@@ -23,8 +23,8 @@ import { configureConversationModels } from './model_configuration.js';
 import { bindRuntimeOwner } from './ownership.js';
 import { createProjectionTask } from './projection_task.js';
 import type { ContextWriter } from './report_context.js';
-import { deliveredRequestFailure } from './request_failure.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
+import { waitForRequestResult } from './request_wait.js';
 import { ConversationMap, RequestMap, type DurableRequestInput } from './state.js';
 import { createMcpExtension } from './tools.js';
 
@@ -181,14 +181,8 @@ export async function openDurableRuntime(options: DurableRuntimeOptions): Promis
       await submit(input);
     },
     execute: async (input) => {
-      const pending = submit(input);
-      const wait = withAbortSignal(AbortSignal.timeout(360_000), context);
-      const task = await harness.waitForTask(await pending, wait);
-      if (task.state.outcome.status === 'failed' && task.state.outcome.result !== undefined)
-        throw deliveredRequestFailure(task.state.outcome.error.message);
-      if (task.state.outcome.status !== 'completed')
-        throw new Error(`Durable request ${task.state.outcome.status}`);
-      return task.state.outcome.result;
+      const taskId = await submit(input);
+      return waitForRequestResult(harness, taskId, { requestId: input.requestId });
     },
   };
 }

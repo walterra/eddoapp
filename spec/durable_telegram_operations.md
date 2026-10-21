@@ -75,6 +75,10 @@ Delivery backoff persists across restarts and honors Telegram rate-limit delays,
 Scheduled delivery expires at the occurrence's local day boundary. Interactive delivery expires one hour after its generation deadline.
 Delivery expiry and permanent failures skip printing. Ambiguous sends can still duplicate chunks within the retry budget.
 
+After six minutes, the Telegram handler stops waiting without cancelling admitted work.
+Interrupted waits produce a pending notice rather than an execution-failure reply, including when recovery can resume work.
+Do not repeat a pending request until its outcome is confirmed. Final replies continue through bounded durable delivery.
+
 Do not delete request or MCP operation receipts to force a retry. The request may already have performed an external effect.
 Pending MCP receipts have unknown outcomes and never expire automatically. Inspect todo, audit, and attachment state before recovery.
 Do not roll back to pre-Durable execution while journaled work remains pending.

@@ -1,4 +1,5 @@
 import { isDeliveredRequestFailure } from '../../durable/request_failure.js';
+import { isPendingDurableRequest } from '../../durable/request_wait.js';
 import { executeAgentMessage } from '../../durable/routing.js';
 import { logger, SpanAttributes, withSpan } from '../../utils/logger.js';
 import type { BotContext } from '../bot.js';
@@ -36,6 +37,13 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
         ctx.session.lastBotMessage = await executeAgentMessage(messageText, ctx);
         logSuccess(userId, Boolean(ctx.session.lastBotMessage));
       } catch (error) {
+        if (isPendingDurableRequest(error)) {
+          logger.info('Durable request remains pending', { userId, requestId: error.requestId });
+          await ctx.reply(
+            'The request is still pending. Its outcome is not confirmed; do not repeat it. Any resulting reply will be sent here when delivery succeeds.',
+          );
+          return;
+        }
         logFatalError(userId, error, messageText);
         if (!isDeliveredRequestFailure(error)) await sendFatalErrorMessage(ctx);
       }
