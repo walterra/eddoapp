@@ -34,7 +34,7 @@ System snapshots are shortened in cassettes, so reviews assess explicit user ins
 Reports go to `eval-reports/<timestamp>/` directories. Review reports for secrets before committing them. `--out <directory>` selects another repository-relative or absolute location.
 
 - `review.json`: Findings, source events, cassette hashes, reviewer model, and rubric version/hash.
-- `review.md`: A table with exact recorded evidence selected by the reviewer.
+- `review.md`: One row per scenario comparing models, followed by concerns only. Full evidence stays in JSON.
 - `judge-response.schema.json`: Version 1 JSON Schema for reviewer submissions.
 
 The command validates criteria and evidence IDs. Invalid responses and provider failures produce error entries and exit code 1.

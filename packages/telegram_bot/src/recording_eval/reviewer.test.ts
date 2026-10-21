@@ -85,13 +85,14 @@ describe('structured recording review', () => {
     expect(validateReview(uncertain, recording)).toEqual(uncertain);
   });
 
-  it('renders source evidence and errors without invented quotations', () => {
+  it('keeps full evidence in JSON and shows only concerns and errors in Markdown', () => {
     const report = renderReport([
       { status: 'completed', recording, review: review() },
       { status: 'error', recording, error: 'Provider unavailable' },
     ]);
-    expect(report).toContain('Created &#124; task');
-    expect(report).toContain('interaction 0');
+    expect(report).not.toContain('Created');
+    expect(report).not.toContain('Supported by the recording.');
+    expect(report).toContain('[review.json](review.json)');
     expect(report).toContain('Provider unavailable');
   });
 });

@@ -7,49 +7,74 @@ export interface ReviewResult {
   error?: string;
 }
 
-/** Escapes table cells while keeping source quotations intact in JSON. */
+/** Escapes table cells and keeps each finding on one line. */
 function cell(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\|/g, '&#124;')
-    .replace(/\r?\n/g, '<br>');
+    .replace(/\r?\n/g, ' ');
 }
 
-/** Renders findings with exact source evidence rather than model-generated quotations. */
+function concerns(result: ReviewResult): Review['judgments'] {
+  return (
+    result.review?.judgments.filter((item) => !['pass', 'not_applicable'].includes(item.verdict)) ??
+    []
+  );
+}
+
+function verdict(result: ReviewResult | undefined): string {
+  if (!result) return '—';
+  if (result.status === 'error' || !result.review) return 'Error';
+  const findings = concerns(result);
+  if (findings.some((item) => item.verdict === 'fail')) return 'Fail';
+  if (findings.some((item) => item.verdict === 'partial')) return 'Concern';
+  if (findings.length) return 'Unclear';
+  return result.review.judgments.every((item) => item.verdict === 'not_applicable')
+    ? 'N/A'
+    : 'Pass';
+}
+
+/** Limits older verbose explanations without changing the stored evaluation. */
+function brief(text: string): string {
+  const line = cell(text);
+  return line.length > 240 ? `${line.slice(0, 237)}...` : line;
+}
+
+function findingLines(result: ReviewResult): string[] {
+  const name = `${result.recording.subjectModel} / ${result.recording.scenarioId}`;
+  if (result.status === 'error' || !result.review)
+    return [`- **${cell(name)}:** Error — ${brief(result.error ?? 'Review failed')}`];
+  return concerns(result).map(
+    (item) =>
+      `- **${cell(name)} · ${item.criterion}:** ${brief(item.explanation)} (${item.verdict}; ${item.evidenceIds.join(', ') || 'no evidence'})`,
+  );
+}
+
+/** Shows one row per scenario and details only for concerns; full evidence stays in JSON. */
 export function renderReport(results: ReviewResult[]): string {
+  const models = [...new Set(results.map((item) => item.recording.subjectModel))];
+  const scenarios = [...new Set(results.map((item) => item.recording.scenarioId))];
   const lines = [
     '# Recording review',
     '',
-    'Reviews recorded behavior only. Does not verify database state or replay compatibility.',
+    'Recorded behavior only. Full findings and evidence: [review.json](review.json).',
     '',
-    '| Model / scenario | User requests | Criterion | Verdict | Explanation | Recorded evidence |',
-    '| --- | --- | --- | --- | --- | --- |',
+    `| Scenario | ${models.map(cell).join(' | ')} |`,
+    `| --- | ${models.map(() => '---').join(' | ')} |`,
   ];
-  for (const result of results) {
-    const name = `${result.recording.subjectModel} / ${result.recording.scenarioId}`;
-    const requests = result.recording.events
-      .filter((event) => event.role === 'user')
-      .map((event) => `${event.id}: ${event.content}`)
-      .join('\n');
-    if (!result.review) {
-      lines.push(
-        `| ${cell(name)} | ${cell(requests)} | — | error | ${cell(result.error ?? 'Review failed')} | — |`,
-      );
-      continue;
-    }
-    for (const judgment of result.review.judgments) {
-      const evidence = judgment.evidenceIds
-        .map((id) => {
-          const event = result.recording.events.find((item) => item.id === id)!;
-          return `${id} (${event.role}, interaction ${event.interaction}): ${event.content}`;
-        })
-        .join('\n');
-      lines.push(
-        `| ${[name, requests, judgment.criterion, judgment.verdict, judgment.explanation, evidence].map(cell).join(' | ')} |`,
-      );
-    }
+  for (const scenario of scenarios) {
+    const cells = models.map((model) =>
+      verdict(
+        results.find(
+          (item) => item.recording.scenarioId === scenario && item.recording.subjectModel === model,
+        ),
+      ),
+    );
+    lines.push(`| ${[scenario, ...cells].map(cell).join(' | ')} |`);
   }
+  const findings = results.flatMap(findingLines);
+  lines.push('', '## Concerns', '', ...(findings.length ? findings : ['None.']));
   return `${lines.join('\n')}\n`;
 }
