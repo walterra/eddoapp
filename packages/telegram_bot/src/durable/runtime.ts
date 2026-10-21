@@ -21,6 +21,7 @@ import type { MCPClient } from '../mcp/client.js';
 import { ensureLegacyHistory } from './legacy_history.js';
 import { configureConversationModels } from './model_configuration.js';
 import { bindRuntimeOwner } from './ownership.js';
+import { createProjectionTask } from './projection_task.js';
 import type { ContextWriter } from './report_context.js';
 import { deliveredRequestFailure } from './request_failure.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
@@ -95,7 +96,7 @@ function createRuntimeRegistry(options: DurableRuntimeOptions): ReturnType<typeo
   registry.install(
     defineExtension({
       name: 'eddo.telegram',
-      tasks: [requestTask],
+      tasks: [requestTask, createProjectionTask(options)],
       sections: [
         section('eddo', () => options.instructions, { tag: false }),
         ...(options.memoryContext

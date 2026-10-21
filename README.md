@@ -226,7 +226,8 @@ Safety boundaries:
 - Scheduled model failures allow two additional read-only generation attempts, with persisted 30-second backoff and stable attempt IDs.
 - Retries stay within the report deadline. Interactive failures, empty answers, and guardrail stops do not trigger automatic generation retries.
 - Failed generation and expired inputs retain failed outcomes after their user-facing notices deliver; the handler sends no duplicate notice.
-- Failed projection/delivery retries every 30 seconds. The Telegram handler stops waiting after six minutes; durable delivery continues.
+- History projection retries independently every 30 seconds without blocking Telegram replies or request completion.
+- Failed delivery retries every 30 seconds. The Telegram handler stops waiting after six minutes; durable delivery continues.
 - Ambiguous Telegram sends can produce duplicate reply chunks.
 - Printing claims its attempt before contacting the printer. Recovery never repeats an ambiguous print; interruption can miss a print.
 - Reports without the expected content marker deliver to Telegram but do not print. Printer failures remain non-fatal.

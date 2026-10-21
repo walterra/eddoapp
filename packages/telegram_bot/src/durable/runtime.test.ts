@@ -52,7 +52,7 @@ describe('durable Telegram runtime', () => {
     expect(replacement.state.callCount).toBe(1);
   });
 
-  it('deduplicates concurrent updates and projects before delivery', async () => {
+  it('deduplicates concurrent updates and projects independently of delivery', async () => {
     const { options, provider } = await createRuntimeFixture();
     provider.setResponses([fauxAssistantMessage('Three tasks')]);
     const runtime = await open(options);
@@ -62,11 +62,8 @@ describe('durable Telegram runtime', () => {
       'Three tasks',
     ]);
     expect(provider.state.callCount).toBe(1);
-    expect(options.project).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(options.project).toHaveBeenCalledOnce());
     expect(options.send).toHaveBeenCalledExactlyOnceWith(123, 'Three tasks');
-    expect(vi.mocked(options.project).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(options.send).mock.invocationCallOrder[0],
-    );
   });
 
   it('deduplicates a completed update after reopening and /new', async () => {

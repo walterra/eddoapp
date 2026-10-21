@@ -1,5 +1,6 @@
 import type { Context } from '@earendil-works/chord';
 import { defineTask, type NextTaskState, type RunningTask } from '@earendil-works/pi-durable';
+import { createProjectionTask } from './projection_task.js';
 import { correctReportContext, type ContextWriter } from './report_context.js';
 import { prepareReply } from './report_delivery.js';
 import { requestOutcome } from './request_failure.js';
@@ -116,9 +117,19 @@ async function deliverAnswer(
 ): Promise<void> {
   await dependencies.authorize(task.input);
   const checkpoint = task.state.checkpoint;
+  if (!checkpoint.projected) {
+    await runtime.commit(async (tx) => {
+      await tx.createTask(
+        createProjectionTask(dependencies),
+        { request: task.input, answer: checkpoint.answer },
+        { ownership: { kind: 'conversation' }, background: true },
+      );
+      return { status: 'running', checkpoint: { ...checkpoint, projected: true } };
+    }, context);
+    return;
+  }
   const chunk = telegramChunk(checkpoint.answer, checkpoint.offset);
   try {
-    if (!checkpoint.projected) await dependencies.project(task.input, checkpoint.answer);
     if (chunk) await dependencies.send(task.input.chatId, chunk);
   } catch (error) {
     if (runtime.signal.aborted) throw error;
