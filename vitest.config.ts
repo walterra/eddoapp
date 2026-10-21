@@ -30,11 +30,11 @@ export default defineConfig({
       ],
       exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts', '**/test-*.{ts,tsx}', '**/index.ts'],
       thresholds: {
-        // Initial thresholds based on current coverage baseline
-        // Increase these as test coverage improves
+        // Baseline measured with Vitest 4 V8 coverage remapping.
+        // Increase these as test coverage improves.
         lines: 10,
-        functions: 40,
-        branches: 50,
+        functions: 32,
+        branches: 28,
         statements: 10,
       },
     },
