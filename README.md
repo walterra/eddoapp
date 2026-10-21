@@ -180,7 +180,8 @@ Non-reasoning models always run with reasoning disabled. Invalid token limits or
 Restart after changing generation settings. Already-prepared model turns retain their checkpointed reasoning choice; the current output cap still applies.
 The bot provisions an administrator-only `${DATABASE_PREFIX}_pi_durable_<username-sha256>` database per user.
 CouchDB credentials must permit database creation, security configuration, and runtime journal access. Use TLS outside local development.
-Run **exactly one bot process** against these databases. No distributed lock or automatic ownership failover exists.
+Run **exactly one bot process** against these databases. No production distributed lock or automatic ownership failover exists.
+An unintegrated [ownership/fencing foundation](spec/durable_ownership_fencing.md) is under development; it does not change deployment safety.
 Follow the [operations runbook](spec/durable_telegram_operations.md) for stop-first deployment, restore, capacity monitoring, and identity changes.
 Private-chat scope, plain-text replies, catalog-only models, and bounded report projections are intentional compatibility boundaries.
 
