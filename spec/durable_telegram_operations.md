@@ -4,17 +4,17 @@
 
 Use Pi Durable as the sole Telegram execution authority. Keep application chat projections separate from execution journals.
 
-| Capability         | Supported behavior                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------- |
-| Chat scope         | Linked private Telegram chats; group execution is rejected                                         |
-| Message format     | Markdown renders through Telegram entities; explicit formatting rejection falls back to plain text |
-| Models             | Registered catalog models selected through `LLM_MODEL`; unknown IDs fail validation                |
-| Process ownership  | Exactly one bot process across every host sharing the runtime databases                            |
-| Recovery           | Persisted requests, delivery checkpoints, and bounded scheduled-generation retries                 |
-| External effects   | Read replay; no blind replay of interrupted mutations                                              |
-| Printing           | Claimed before the attempt; ambiguous printing can be missed rather than repeated                  |
-| Storage            | Complete journal history loads into memory; no supported journal garbage collection                |
-| Ownership transfer | No supported automatic transfer or operator transfer command                                       |
+| Capability         | Supported behavior                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Chat scope         | Linked private Telegram chats; group messages receive guidance before authentication or session access |
+| Message format     | Markdown renders through Telegram entities; explicit formatting rejection falls back to plain text     |
+| Models             | Registered catalog models selected through `LLM_MODEL`; unknown IDs fail validation                    |
+| Process ownership  | Exactly one bot process across every host sharing the runtime databases                                |
+| Recovery           | Persisted requests, delivery checkpoints, and bounded scheduled-generation retries                     |
+| External effects   | Read replay; no blind replay of interrupted mutations                                                  |
+| Printing           | Claimed before the attempt; ambiguous printing can be missed rather than repeated                      |
+| Storage            | Complete journal history loads into memory; no supported journal garbage collection                    |
+| Ownership transfer | No supported automatic transfer or operator transfer command                                           |
 
 Neither Telegram polling conflicts nor missing activity prove that another journal owner has stopped.
 The adapter supplies no distributed lock, fencing token, ownership election, or automatic failover.

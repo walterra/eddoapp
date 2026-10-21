@@ -26,6 +26,8 @@ ${persona.messages.welcomeContent}
 • 🎯 Organize tasks by context (work, personal, etc.)
 • 📅 Set due dates and reminders
 
+*Private chat only:* Send requests directly to this bot, not in groups.
+
 *Quick Start:*
 • Try: "Add buy groceries to my personal tasks for tomorrow"
 • Or: "What do I have due this week?"
@@ -45,6 +47,8 @@ ${persona.messages.closingMessage}
 export async function handleHelp(ctx: BotContext): Promise<void> {
   const helpMessage = `
 🤖 *Eddo Bot Commands & Usage*
+
+Use commands and natural language in a private chat with this bot. Group requests are not processed.
 
 *Basic Commands:*
 /start - Welcome message and introduction

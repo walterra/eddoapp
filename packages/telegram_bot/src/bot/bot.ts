@@ -4,6 +4,7 @@ import { appConfig } from '../utils/config.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 import { createLoggingMiddleware, createRateLimitMiddleware } from './bot-middleware.js';
 import { authMiddleware } from './middleware/auth.js';
+import { privateChatMiddleware } from './middleware/private_chat.js';
 
 interface SessionData {
   userId: string;
@@ -28,6 +29,7 @@ function createInitialSession(): SessionData {
 export function createBot(): Bot<BotContext> {
   const bot = new Bot<BotContext>(appConfig.TELEGRAM_BOT_TOKEN);
 
+  bot.use(privateChatMiddleware);
   bot.use(session({ initial: createInitialSession }));
   bot.use(authMiddleware);
   bot.use(createLoggingMiddleware<BotContext>());

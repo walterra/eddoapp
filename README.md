@@ -184,6 +184,8 @@ Run **exactly one bot process** against these databases. No production distribut
 An unintegrated [ownership/fencing foundation](spec/durable_ownership_fencing.md) is under development; it does not change deployment safety.
 Follow the [operations runbook](spec/durable_telegram_operations.md) for stop-first deployment, restore, capacity monitoring, and identity changes.
 Private-chat scope, catalog-only models, and bounded report projections are intentional compatibility boundaries.
+Group messages and commands receive private-chat guidance with an Open private chat button; they never reach account lookup, session loading, or agent execution.
+Non-text group updates and channel posts are ignored. Send requests again in the private chat; group content is not forwarded.
 
 Accepted updates, model/tool state, and pending replies survive process restarts.
 Startup recovers all active users linked to Telegram with MCP credentials; failed sessions reopen on a 30-second recovery cycle.
