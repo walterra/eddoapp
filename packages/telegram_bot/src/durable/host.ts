@@ -61,6 +61,7 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
       },
       authorize: (input) => authorizeDurableRequest(username, telegramId, input),
       send: (chatId, text) => bot!.api.sendMessage(chatId, text),
+      progress: (text) => bot!.api.sendMessage(telegramId, text),
       print: (input, answer, reportType) => printDurableReport(username, input, answer, reportType),
       project: (input, answer) => {
         const pending = projection.then(() => projectDurableExchange({ username, input, answer }));

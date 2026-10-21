@@ -10,8 +10,9 @@ import {
 import type { MCPClient, MCPTool } from '../mcp/client.js';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
+import { notifyProgress, type ProgressOptions } from './progress.js';
 import { RunBudget, type DurableRequestInput, type ReportType } from './state.js';
-import { normalizeToolOutput } from './tool_output.js';
+import { invokeMcpTool } from './tool_execution.js';
 
 const REPLAY_SAFE_TOOLS = new Set([
   'listTodos',
@@ -45,7 +46,7 @@ export async function resolveDurableUser(
   return { username, telegramId, mcpApiKey: user.preferences.mcpApiKey };
 }
 
-interface ToolBridgeOptions {
+interface ToolBridgeOptions extends ProgressOptions {
   username: string;
   telegramId: number;
   client: MCPClient;
@@ -73,6 +74,7 @@ function deadlineExpired(entry: EntryRecord | undefined): boolean {
 /** Counts calls durably, including replay attempts, against the placed input. */
 interface ToolPermission {
   allowed: boolean;
+  callNumber: number;
   report?: ReportType;
 }
 
@@ -86,7 +88,7 @@ async function consumeToolBudget(api: ToolExecutionApi, context: Context): Promi
   return api.commit(async (tx) => {
     const entries = await tx.scanEntries({ conversationId: api.conversationId }, 1000);
     const entry = entries.items.find((item) => item.kind === 'eddo.input');
-    if (deadlineExpired(entry)) return { allowed: false };
+    if (deadlineExpired(entry)) return { allowed: false, callNumber: 0 };
     const input = entry?.id ?? 0;
     const budget = await tx.doc(RunBudget, api.conversationId);
     if (budget.input !== input) {
@@ -94,7 +96,7 @@ async function consumeToolBudget(api: ToolExecutionApi, context: Context): Promi
       budget.tools = 0;
     }
     budget.tools += 1;
-    return { allowed: budget.tools <= 50, report: reportType(entry) };
+    return { allowed: budget.tools <= 50, report: reportType(entry), callNumber: budget.tools };
   }, context);
 }
 
@@ -123,8 +125,13 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
         options.telegramId,
         permission.report,
       );
-      const result = await options.client.invoke(tool.name, args as Record<string, unknown>, user);
-      const formatted = normalizeToolOutput(result);
+      if (!permission.report) await notifyProgress(options, permission.callNumber);
+      const formatted = await invokeMcpTool(
+        options.client,
+        tool.name,
+        args as Record<string, unknown>,
+        user,
+      );
       return { output: [{ type: 'text', text: formatted.text }], isError: formatted.isError };
     },
   });

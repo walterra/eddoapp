@@ -16,6 +16,7 @@ import {
   type LlmGenerationSettings,
 } from '../ai/llm-options.js';
 import { modelsWithOptions } from '../ai/models_with_options.js';
+import { modelsWithTelemetry } from '../ai/models_with_telemetry.js';
 import type { MCPClient } from '../mcp/client.js';
 import { ensureLegacyHistory } from './legacy_history.js';
 import { configureConversationModels } from './model_configuration.js';
@@ -35,6 +36,7 @@ export interface DurableRuntimeOptions extends RequestDependencies {
   generation?: LlmGenerationSettings;
   instructions: string;
   memoryContext?: () => Promise<string>;
+  progress?: (text: string) => Promise<unknown>;
   legacyHistory?: (conversationId: string) => Promise<string>;
   onReport: (error: unknown) => void;
 }
@@ -109,7 +111,9 @@ async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> 
   const harness = await Harness.open(
     options.storage,
     {
-      models: modelsWithOptions(options.models, options.generation),
+      models: modelsWithTelemetry(modelsWithOptions(options.models, options.generation), {
+        'user.id': String(options.telegramId),
+      }),
       registry: createRuntimeRegistry(options),
       onReport: options.onReport,
       settings: {

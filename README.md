@@ -192,6 +192,12 @@ Model requests refresh stored user memories through authenticated MCP, with a 6,
 Memory retrieval failures do not block replies. Memory content provides reference data, not tool authorization.
 Generation and compaction default to long prompt-cache retention unless request options override it.
 Manual briefings and recaps strip content markers and use current printer preferences without requiring scheduled reports.
+Interactive tool runs send sparse progress notices before the first tool and at ten-call milestones.
+Progress notices do not claim task completion, enter chat history, or block execution when delivery fails.
+Scheduled reports send no progress notices.
+Model requests emit `agent_iteration` and `llm_generate` spans; authenticated tool execution emits `mcp_tool_execute`.
+Model spans cover generation, compaction, and deferred retrieval, with token/cache usage and estimated costs.
+Iteration spans cover model requests, not the entire tool round. Spans omit prompts, tool arguments, and response bodies.
 Each scheduled occurrence has a stable request ID, including after restart or `/new`.
 The scheduler returns after durable admission; recovery owns generation, Telegram delivery, and optional printing.
 

@@ -898,12 +898,21 @@ OTEL_SDK_DISABLED=true pnpm dev:telegram-bot
 
 | Span Name                 | Description                 | Attributes                                     |
 | ------------------------- | --------------------------- | ---------------------------------------------- |
-| `agent_execute`           | Full agent workflow         | user.id, message.length, agent.tool_calls      |
-| `agent_iteration`         | Single agent loop iteration | agent.iteration, mcp.tool                      |
-| `llm_generate`            | Claude API call             | llm.model, llm.input_tokens, llm.output_tokens |
-| `mcp_tool_execute`        | MCP tool invocation         | mcp.tool, mcp.operation                        |
+| `agent_execute`           | Interactive request wait    | user.id, message.length                        |
+| `agent_iteration`         | Model request attempt       | user.id, agent.iteration, agent.iteration.kind  |
+| `llm_generate`            | Generation or deferred fetch | llm.model, llm.operation, llm.input_tokens, llm.output_tokens |
+| `mcp_tool_execute`        | Authenticated MCP execution | user.id, mcp.tool, mcp.operation, mcp.is_error   |
 | `telegram_message_handle` | Incoming message processing | telegram.chat.id, user.id                      |
-| `scheduler_send_briefing` | Daily briefing delivery     | user.id, username, telegram.chat.id            |
+| `scheduler_send_briefing` | Briefing admission          | user.id                                       |
+| `scheduler_send_recap`    | Recap admission             | user.id                                       |
+
+Model spans remain open until their original response streams settle, including compaction calls.
+Iteration numbers count assistant rounds after the latest user input; retries can share a round number.
+Deferred fetch spans use `llm.operation=deferred_fetch` and report that response's usage, not incremental billing.
+Usage attributes include cache reads/writes, total tokens, and `llm.estimated_cost_usd`.
+Protocol errors, transport failures, and aborted model responses mark their spans as errors.
+Telemetry excludes prompts, arguments, response bodies, credentials, and raw provider error messages.
+Recovered work emits new spans; tracing does not persist active span ownership across process restarts.
 
 ### Instrumented Operations (web-api / Elasticsearch Sync)
 
