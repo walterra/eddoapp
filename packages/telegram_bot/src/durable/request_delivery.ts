@@ -6,6 +6,7 @@ import { requestOutcome } from './request_failure.js';
 import type { RequestRuntime } from './request_generation.js';
 import type { RequestDependencies } from './request_task.js';
 import type { DurableRequestInput, RequestCheckpoint } from './state.js';
+import { formatTelegramText, telegramChunkEntities } from './telegram_format.js';
 
 type DeliveryCheckpoint = Extract<RequestCheckpoint, { phase: 'deliver' }>;
 type DeliveryTask = RunningTask<DurableRequestInput, DeliveryCheckpoint, string>;
@@ -59,6 +60,39 @@ async function recordSendFailure(
   );
 }
 
+/** Persists rendered text so chunk offsets remain stable across restarts and parser upgrades. */
+async function prepareTelegramDelivery(
+  task: DeliveryTask,
+  runtime: RequestRuntime,
+  context: Context,
+): Promise<boolean> {
+  const checkpoint = task.state.checkpoint;
+  if (checkpoint.telegram || checkpoint.offset > 0) return false;
+  const telegram = formatTelegramText(checkpoint.answer);
+  if (telegram.text === checkpoint.answer && !telegram.entities.length) return false;
+  await runtime.commit(
+    () => ({ status: 'running', checkpoint: { ...checkpoint, telegram } }),
+    context,
+  );
+  return true;
+}
+
+/** Sends entity-aware chunks while preserving raw offsets for older partial deliveries. */
+async function sendChunk(task: DeliveryTask, dependencies: RequestDependencies): Promise<number> {
+  const checkpoint = task.state.checkpoint;
+  const chunk = telegramChunk(checkpoint.telegram?.text ?? checkpoint.answer, checkpoint.offset);
+  const entities = telegramChunkEntities(
+    checkpoint.telegram?.entities ?? [],
+    checkpoint.offset,
+    chunk.length,
+  );
+  if (chunk) {
+    if (entities.length) await dependencies.send(task.input.chatId, chunk, entities);
+    else await dependencies.send(task.input.chatId, chunk);
+  }
+  return chunk.length;
+}
+
 /** Checks expiry before each chunk and persists backoff before sleeping. */
 export async function deliverAnswer(
   task: DeliveryTask,
@@ -84,16 +118,17 @@ export async function deliverAnswer(
     );
     return;
   }
-  const chunk = telegramChunk(checkpoint.answer, checkpoint.offset);
+  if (await prepareTelegramDelivery(task, runtime, context)) return;
+  let sent: number;
   try {
-    if (chunk) await dependencies.send(task.input.chatId, chunk);
+    sent = await sendChunk(task, dependencies);
   } catch (error) {
     return recordSendFailure(task, runtime, context, error);
   }
-  const offset = checkpoint.offset + chunk.length;
+  const offset = checkpoint.offset + sent;
   await runtime.commit(
     () =>
-      offset >= checkpoint.answer.length
+      offset >= (checkpoint.telegram?.text ?? checkpoint.answer).length
         ? deliveryFinished(task)
         : { status: 'running', checkpoint: { ...checkpoint, offset } },
     context,

@@ -17,6 +17,7 @@ import { buildDurablePrompt } from './prompt.js';
 import { printDurableReport } from './report_delivery.js';
 import { openDurableRuntime, type DurableRuntime, type DurableRuntimeOptions } from './runtime.js';
 import type { DurableRequestInput, ReportType } from './state.js';
+import { sendTelegramText } from './telegram_send.js';
 import { authorizeDurableRequest, resolveDurableUser } from './tools.js';
 
 const runtimes = new Map<string, Promise<DurableRuntime>>();
@@ -74,7 +75,7 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
         loadMemoryContext(client, await resolveDurableUser(username, telegramId)),
       ...legacyLoaders(username, telegramId),
       authorize: (input) => authorizeDurableRequest(username, telegramId, input),
-      send: (chatId, text) => bot!.api.sendMessage(chatId, text),
+      send: (chatId, text, entities) => sendTelegramText(bot!.api, chatId, text, entities),
       progress: (text) => bot!.api.sendMessage(telegramId, text),
       print: (input, answer, reportType) => printDurableReport(username, input, answer, reportType),
       project: (input, answer) => {

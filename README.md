@@ -183,11 +183,15 @@ CouchDB credentials must permit database creation, security configuration, and r
 Run **exactly one bot process** against these databases. No production distributed lock or automatic ownership failover exists.
 An unintegrated [ownership/fencing foundation](spec/durable_ownership_fencing.md) is under development; it does not change deployment safety.
 Follow the [operations runbook](spec/durable_telegram_operations.md) for stop-first deployment, restore, capacity monitoring, and identity changes.
-Private-chat scope, plain-text replies, catalog-only models, and bounded report projections are intentional compatibility boundaries.
+Private-chat scope, catalog-only models, and bounded report projections are intentional compatibility boundaries.
 
 Accepted updates, model/tool state, and pending replies survive process restarts.
 Startup recovers all active users linked to Telegram with MCP credentials; failed sessions reopen on a 30-second recovery cycle.
 Completed exchanges project into the existing assistant chat database with stable message IDs.
+Telegram replies render Markdown emphasis, code, descriptive links, headings, lists, and quotes through explicit entities.
+Rendered text and entity offsets persist before formatted delivery, preserving chunk boundaries across restart and parser changes.
+Telegram formatting rejections fall back to readable plain text; transport and rate-limit failures retain bounded delivery retries.
+History, model context, and printer content retain the original Markdown. Partially delivered older replies retain their original plain-text offsets.
 `/new` selects a separate durable conversation through the existing active-conversation mechanism.
 Each conversation imports its recent legacy history once, including native conversations created before history import existed.
 The initial preview contains at most 40 messages, with 2,000 characters per message and a 16,000-character serialized payload bound.

@@ -1,4 +1,5 @@
 import { defineDoc, type ConversationId, type TaskId } from '@earendil-works/pi-durable';
+import type { TelegramText } from './telegram_format.js';
 
 export const ConversationMap = defineDoc({
   kind: 'eddo.conversations',
@@ -51,6 +52,7 @@ export type RequestCheckpoint =
       offset: number;
       projected: boolean;
       attempts: number;
+      telegram?: TelegramText;
       retryAt?: number;
       printable?: boolean;
       reportType?: ReportType;

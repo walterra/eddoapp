@@ -701,6 +701,9 @@ importers:
       grammy:
         specifier: ^1.46.0
         version: 1.46.0(supports-color@7.2.0)
+      mdast-util-from-markdown:
+        specifier: 2.0.2
+        version: 2.0.2(supports-color@7.2.0)
       nano:
         specifier: ^11.0.4
         version: 11.0.4
