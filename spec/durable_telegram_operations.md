@@ -20,6 +20,24 @@ Neither Telegram polling conflicts nor missing activity prove that another journ
 The adapter supplies no distributed lock, fencing token, ownership election, or automatic failover.
 Do not promote an independently writable replica while another owner can remain active.
 
+## Runtime configuration
+
+All linked private chats, scheduled briefings, and recaps use Pi Durable 1.3.0 with `pi-durable-couchdb` 0.0.1.
+No feature flag or alternate execution path exists.
+
+- `LLM_MODEL` selects a registered catalog model. Unqualified Claude IDs resolve to Anthropic; ambiguous IDs require a provider prefix.
+- Unknown model IDs fail validation. Configure the selected provider's credentials.
+- `LLM_MAX_TOKENS` defaults to `4096`, capped by the model limit and any tighter Harness request limit, including compaction.
+- `LLM_REASONING_EFFORT` defaults to `low` for capable models. Accepted values: `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`.
+- Non-reasoning models disable reasoning. Invalid token limits or reasoning settings fail startup validation.
+- Restart after configuration changes. Reopened conversations retain history and receive the configured model and reasoning level.
+- Already-prepared turns retain their checkpointed reasoning choice; the current output cap still applies.
+
+The host provisions administrator-only `${DATABASE_PREFIX}_pi_durable_<username-sha256>` databases.
+CouchDB credentials require database creation, security configuration, and journal access. Use TLS outside local development.
+MCP provisions private `${userDatabase}_mcp_operations` databases for mutation receipts.
+The [ownership/fencing foundation](durable_ownership_fencing.md) remains unintegrated; it does not enable distributed execution.
+
 ## Deploy and restart
 
 1. Run `pnpm check:commit` and the relevant unit and integration tests.
@@ -104,10 +122,87 @@ CouchDB compaction does not implement Pi journal snapshots or garbage collection
 Do not delete old journal records to reclaim space.
 Snapshots, bounded-memory storage, safe journal retention, and distributed ownership require adapter-level support.
 
+## Admission and execution limits
+
+Startup recovers active users linked to Telegram with MCP credentials. Failed runtimes reopen on a 30-second recovery cycle.
+Duplicate Telegram updates reuse stored requests, including after restart or `/new`.
+Scheduled occurrences use stable request IDs; admission returns before generation or delivery completes.
+Pre-migration reservation receipts remain read-only duplicate safeguards. New reports create no legacy reservations.
+
+| Limit                     | Behavior                                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| Interactive input         | Five-minute admission budget; expired queued inputs withdraw without aborting another request      |
+| Scheduled input           | Queues until the end of its local day; new tool calls stop five minutes after placement            |
+| Tool calls                | At most 50 executions per input, including archive retrieval                                       |
+| Scheduled model errors    | At most two additional read-only attempts, with persisted 30-second backoff and stable attempt IDs |
+| Other generation failures | No automatic retries for interactive failures, empty answers, or guardrail stops                   |
+
+In-flight external actions can finish after the deadline. Active runs do not abort other queued inputs.
+Scheduled tools remain read-only. Report preferences, identity, and MCP credentials revalidate before resumed actions.
+Revoked or unlinked users cannot invoke tools. Runtime failures never select a fallback execution implementation.
+
+Mutation calls carry stable command IDs. MCP claims commands before execution and replays completed results without repeating handlers.
+Interrupted or pending commands retain unknown outcomes and never authorize blind mutation replay.
+Failed generation and expired inputs retain failed outcomes after delivery of their notices; handlers send no duplicate notice.
+
+## Conversation and delivery state
+
+Interactive requests and scheduled reports share the active conversation queue and native automatic compaction.
+`/new` selects a separate conversation and isolates earlier archives.
+Completed exchanges project into application-facing chat databases through stable IDs and independent durable retry tasks.
+Projection failures do not block Telegram delivery or request completion.
+
+### Legacy context
+
+Each conversation imports its recent legacy preview once, including native conversations created before import existed.
+Previews contain at most 40 messages, 2,000 characters per message, and a 16,000-character serialized payload.
+Imports exclude Durable projections and contain reference data, not executable tool calls. Original messages remain unchanged.
+Loading failures block admission until a retry succeeds.
+
+The authenticated, read-only `readLegacyHistory` tool searches and pages the full original conversation, including long message tails.
+Retrieval follows the native conversation mapping, revalidates identity, and shares request deadlines and tool budgets.
+Existing journals gain archive access after restart without reimporting their previews.
+
+### Model context and feedback
+
+Model requests refresh stored memories through authenticated MCP with a 6,000-character payload bound.
+Memory failures do not block replies. Memories provide reference data, not authorization or system instructions.
+Generation and compaction default to long prompt-cache retention unless request options override it.
+Interactive tool runs send progress before the first tool and at ten-call milestones; scheduled reports send no progress notices.
+Progress does not claim completion, enter chat history, or block execution when delivery fails.
+
+### Formatting and printing
+
+Telegram entities render Markdown emphasis, code, links, headings, lists, and quotes.
+Rendered text and offsets persist before formatted delivery, preserving chunks across restart and parser changes.
+Explicit formatting rejections fall back to readable plain text; other failures follow the bounded delivery policy.
+Scheduled briefings suppress link previews on every chunk, including fallback and resumed delivery. Other replies retain Telegram defaults.
+History, model context, and printer content retain original Markdown. Older partial deliveries retain their raw-text offsets.
+
+Manual reports strip transport markers and use current printer preferences without requiring scheduled reports.
+Printing claims its attempt before contacting the printer. Recovery never repeats an ambiguous print, so interruption can miss printing.
+Unmarked reports deliver without printing. Printer errors remain non-fatal.
+
+### Telemetry
+
+Model requests emit `agent_iteration` and `llm_generate` spans; authenticated MCP execution emits `mcp_tool_execute`.
+Model spans cover generation, compaction, and deferred retrieval, including token/cache usage and estimated costs.
+Iteration spans cover model requests, not entire tool rounds. Spans omit prompts, arguments, and response bodies.
+
 ## Report response contract
 
 `getBriefingData` and `getRecapData` expose bounded report projections, not complete todo documents.
 Metadata declares `contractVersion: 2`, `itemsAreCompleteTodos: false`, and `detailTool: "getTodo"`.
+
+Briefings select 10 actions today, 10 recent overdue actions, 10 next actions, 5 waiting items, and 20 calendar appointments.
+Someday backlog items contribute a separate count instead of occupying action lists. Recaps select 10 completions and 10 next actions.
+Both tools summarize active tracking and provide date, weekday, timezone, total counts, and selection metadata.
+Counting stops after 20,000 matching records per section; `countExact: false` identifies lower bounds.
+Actionability tags take priority over ordinary tags when the tag budget is exceeded.
+
+The MCP bridge unwraps text responses and bounds complete JSON values rather than cutting serialized JSON.
+Oversized responses expose `outputTruncation`; `result` contains the reduced payload.
+Scheduled headings use the occurrence's local date and a weekday computed in code.
 
 - Use `id` or its compatibility alias `_id` for report items.
 - Read `metadata.counts` and `metadata.selection`; returned array lengths are not total counts.
@@ -128,6 +223,13 @@ An override cannot change a model request already in flight before the correctio
 
 ## Behavioral verification
 
+Run commands from the repository root:
+
+```bash
+pnpm vitest:run packages/telegram_bot/src/durable
+pnpm test:integration:durable # Disposable CouchDB; Docker required, no model API calls
+```
+
 Offline checks cover the native provider boundary, deterministic fixtures, and CouchDB recovery.
 Real-model native recordings live in the original model directories and run through CI playback.
 Refreshing them requires provider credentials and incurs API charges:
@@ -137,4 +239,6 @@ pnpm test:integration:agent-loop:record
 pnpm test:integration:agent-loop:playback
 ```
 
+Native recordings replace legacy text-protocol cassettes; Git retains historical versions.
 Never manufacture native cassettes from legacy text-protocol recordings.
+See [agent integration tests](../packages/telegram_bot/src/integration-tests/README.md) for auto mode, offline checks, and migration details.
