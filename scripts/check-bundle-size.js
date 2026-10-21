@@ -24,7 +24,7 @@ const limits = {
   todo_board: 50,
   todo_board_state: 50,
   todo_table: 60,
-  chat_page: 200,
+  chat_page: 400,
   chat_view: 10,
   subtasks_popover: 20,
 };
