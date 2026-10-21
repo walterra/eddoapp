@@ -9,6 +9,9 @@ pnpm test:integration:durable
 ```
 
 Starts disposable CouchDB 3.5 and uses Pi's scripted faux provider. No model API keys or live model calls are required.
+The shared `test/integration-global-setup.ts` provisions CouchDB before worker setup loads its connection configuration.
+No local `.env` file is required. Storage tests retain separate CouchDB 3.5 containers for journal isolation.
+Shared global teardown stops the configuration container after the suite.
 Covers journal recovery, pending Telegram delivery, shared chat/report context, occurrence deduplication, and printing state.
 
 ## VCR-backed behavioral tests
