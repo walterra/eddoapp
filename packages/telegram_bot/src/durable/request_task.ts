@@ -3,8 +3,8 @@ import { defineTask, type RunningTask } from '@earendil-works/pi-durable';
 import { correctReportContext, type ContextWriter } from './report_context.js';
 import { prepareReply } from './report_delivery.js';
 import { deliverAnswer } from './request_delivery.js';
-import { requestOutcome } from './request_failure.js';
 import { generateAnswer, type RequestRuntime } from './request_generation.js';
+import { projectRequest } from './request_projection.js';
 import type { DurableRequestInput, ReportType, RequestCheckpoint } from './state.js';
 import type { TelegramSendOptions } from './telegram_send.js';
 export { telegramChunk } from './request_delivery.js';
@@ -125,7 +125,10 @@ async function printAnswer(
     }
   }
   await runtime.commit(
-    () => ({ status: 'terminal', outcome: requestOutcome(answer, failure) }),
+    () => ({
+      status: 'running',
+      checkpoint: { phase: 'project', answer, ...(failure ? { failure } : {}) },
+    }),
     context,
   );
 }
@@ -143,6 +146,7 @@ export function createRequestTask(
       retry: (task, runtime, context) => retryGeneration(task, runtime, context),
       deliver: (task, runtime, context) => deliverAnswer(task, runtime, context, dependencies),
       print: (task, runtime, context) => printAnswer(task, runtime, context, dependencies),
+      project: (task, runtime, context) => projectRequest(task, runtime, context, dependencies),
     },
     abort: async (_task, runtime, context) => {
       await runtime.commit(() => ({ status: 'terminal', outcome: { status: 'aborted' } }), context);

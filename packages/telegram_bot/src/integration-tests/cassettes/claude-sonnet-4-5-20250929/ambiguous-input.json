@@ -1,11 +1,11 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-10-21T13:36:36.616Z",
-  "frozenTime": "2026-10-21T13:36:36.616Z",
+  "createdAt": "2026-10-21T21:02:20.767Z",
+  "frozenTime": "2026-10-21T21:02:20.767Z",
   "interactions": [
     {
-      "requestHash": "3e2817b0ccac621d",
+      "requestHash": "b2df9fd2c53bf4f1",
       "request": {
         "model": "anthropic/claude-sonnet-4-5-20250929",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -16,14 +16,14 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-21T13:36:36.641Z\\n\\nadd todo\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-21T21:02:20.796Z\\n\\nadd todo\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo but hasn't provided any details like title, description, due date, context, etc. I need to ask them for the essential information - at minimum, I need a title for the todo.\\n\\nAccording to my instructions, I should keep responses concise and brief for Telegram chat, and get straight to the point.\",\"thinkingSignature\":\"EuIECroBCBMYAipA4MpNjU0kzawcBmS692N1MAHQu4bIJEk9xYe5dEqRd9MUxD5oNK0L/jQoWq3JMTfhm8vACQDzV2zWCKzcdGLMdjIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAef/4tYGEgw3iQw6jxYxxp8VZIcaDMb0NN9DtsXuMRPjiSIwWXbpQC+d+faqjKbflkdhPAS0Rje0WjAcLtN9puNPrdx8n3TWIBU9mJJovRk744z5KtQCL2+I86ZAuixBCybMu6rUVRPVekoNUYPpLNWBS/7E+dUGgb71lP3hSZybuLR+ywCxiCxiwhyBZgBFoovkyQB0NoNcj7YbomtJk/gJ6ygFDwHRxh5sMD86qucKgdnq7Iw0cZmRZykUpKLMd5P6V/b++BYk0IycAbyWdIjPF4J2iuF9DnBBx8kBim2Uh4atOt9piQfztz53zPwPfb6bRyfa7q8Mb5CwHf7xL3ShGaLt7YUv6nV8t7Ufu83YHrgHjoXAC130vg4EQ0P98tQ9Q2TJmQ2r36pXEx2u8TrUUFIUBgZpprcgA1v836X8cQfk/4duwX3/a9EOR9W4gV88q/PoxhnQ7hpmdOfwDCgDx8kiLwgrJbdi9mzJ7gfOhic2iEwPSS7StbSaiYQhR7BOJ+L6ClIjqkzLmGhWY82EVLGM4hE9V1+a0J2kodSA4XpoR+cpZYDXwBgB\"},{\"type\":\"text\",\"text\":\"What task do you want to add? Give me a title and any details (due date, context, etc.)\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":106,\"cacheRead\":6929,\"cacheWrite\":516,\"totalTokens\":7561,\"cost\":{\"input\":0.00003,\"output\":0.00159,\"cacheRead\":0.0020786999999999997,\"cacheWrite\":0.003096,\"total\":0.0067947},\"cacheWrite1h\":516,\"reasoning\":77},\"stopReason\":\"stop\",\"timestamp\":1792589796655,\"responseId\":\"msg_011CgFULDAZGrYqbWgM7rHRr\",\"rawStopReason\":\"end_turn\",\"durationMs\":3229}}",
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo but hasn't provided any details. I should ask them what they want to add - I need at least a title for the todo. I should be brief and direct, as per the Telegram communication style.\",\"thinkingSignature\":\"EvIDCroBCBMYAipABTGKny84sYv8xSUCWuQq4UT1fhyNXUkMKuq5KAO/COx2KYVCgkHoWiq/XFASyuRXFoj7KpkFcP+HHiHBG9vT2jIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAd/Q5NYGEgzbuAeYDlaOBLoCkwAaDGLcERRh582rezUVmyIwTHZfpJAlJAJ9OGZZZwqOZnnYnl+RR+yXdFtITtaLtw+duOFm4X3bV0CFczTLbtIgKuQBNL4QlLOYpZps5HJlFlAT4s041yACjZC5haQq1URnsgJaVCCT3J6WSk/O8RgtW9pIuv5Bdvd8drQfxeu+p0uqDOo8pL+qw54hXt4wNlL99JiPo2K2nuEZR+hvBA3/I0pw41ZfK7eMeATPGEW4p+5+YZtdi4gb842LibQXSkmIVRlKcKolSfb/dFIQaRNbarYHZ6SeiV+NMD63W8AZ+whLxNOmOoBPwczXI9ZdC+Y2vt5FpqrbxSJoHJm09lpyNIijKx2NYS4dk9h8lQXehDCHq/4OviwJldTlEZezVaXObRXYwLKtGAE=\"},{\"type\":\"text\",\"text\":\"What task would you like to add? Give me the title and any details like due date or context!\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":81,\"cacheRead\":6953,\"cacheWrite\":516,\"totalTokens\":7560,\"cost\":{\"input\":0.00003,\"output\":0.001215,\"cacheRead\":0.0020859,\"cacheWrite\":0.003096,\"total\":0.006426899999999999},\"cacheWrite1h\":516,\"reasoning\":54},\"stopReason\":\"stop\",\"timestamp\":1792616540812,\"responseId\":\"msg_011CgG4KdhdFc3jgyPYQNcrU\",\"rawStopReason\":\"end_turn\",\"durationMs\":3185}}",
       "metadata": {
-        "recordedAt": "2026-10-21T13:36:39.884Z",
-        "responseTimeMs": 3229
+        "recordedAt": "2026-10-21T21:02:23.998Z",
+        "responseTimeMs": 3186
       }
     }
   ]

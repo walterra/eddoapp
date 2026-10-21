@@ -2,8 +2,6 @@ import type { Context } from '@earendil-works/chord';
 import type { NextTaskState, RunningTask } from '@earendil-works/pi-durable';
 import type { MessageEntity } from 'grammy/types';
 import { deliveryDeadline, deliveryRetry, MAX_DELIVERY_FAILURES } from './delivery_policy.js';
-import { createProjectionTask } from './projection_task.js';
-import { requestOutcome } from './request_failure.js';
 import type { RequestRuntime } from './request_generation.js';
 import type { RequestDependencies } from './request_task.js';
 import type { DurableRequestInput, RequestCheckpoint } from './state.js';
@@ -23,23 +21,6 @@ export function telegramChunk(answer: string, offset: number): string {
 
 function failedDelivery(failure: string): NextTaskState<RequestCheckpoint, string> {
   return { status: 'terminal', outcome: { status: 'failed', error: { message: failure } } };
-}
-
-/** Journals projection admission independently from Telegram delivery. */
-async function queueProjection(
-  task: DeliveryTask,
-  runtime: RequestRuntime,
-  context: Context,
-  dependencies: RequestDependencies,
-): Promise<void> {
-  await runtime.commit(async (tx) => {
-    await tx.createTask(
-      createProjectionTask(dependencies),
-      { request: task.input, answer: task.state.checkpoint.answer },
-      { ownership: { kind: 'conversation' }, background: true },
-    );
-    return { status: 'running', checkpoint: { ...task.state.checkpoint, projected: true } };
-  }, context);
 }
 
 async function recordSendFailure(
@@ -118,7 +99,6 @@ export async function deliverAnswer(
 ): Promise<void> {
   await dependencies.authorize(task.input);
   const checkpoint = task.state.checkpoint;
-  if (!checkpoint.projected) return queueProjection(task, runtime, context, dependencies);
   if (Date.now() >= deliveryDeadline(task.input) || checkpoint.attempts >= MAX_DELIVERY_FAILURES) {
     await runtime.commit(
       () => failedDelivery('Telegram delivery deadline or retry limit reached.'),
@@ -165,5 +145,8 @@ function deliveryFinished(task: DeliveryTask): NextTaskState<RequestCheckpoint, 
         ...(failure ? { failure } : {}),
       },
     };
-  return { status: 'terminal', outcome: requestOutcome(answer, failure) };
+  return {
+    status: 'running',
+    checkpoint: { phase: 'project', answer, ...(failure ? { failure } : {}) },
+  };
 }

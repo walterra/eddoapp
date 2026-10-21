@@ -14,6 +14,34 @@ No local `.env` file is required. Storage tests retain separate CouchDB 3.5 cont
 Shared global teardown stops the configuration container after the suite.
 Covers journal recovery, pending Telegram delivery, shared chat/report context, occurrence deduplication, and printing state.
 
+## Qualitative recording review
+
+Run a paid reviewer after recording. No Docker, MCP server, or replay is required.
+
+```bash
+pnpm eval:recordings --model anthropic/claude-sonnet-4-5-20250929
+pnpm eval:recordings --model openai/gpt-5.2 --staged
+```
+
+Set the reviewer's provider credentials as for recording. `EVAL_MODEL` supplies the model when `--model` is absent.
+The command reviews both subject models by default. `--staged` reads changed recordings from the Git index, not later working-tree edits.
+
+Each recording gets one reviewer call. The reviewer submits a schema-defined tool result; the command never executes recorded tools.
+The five checks cover task fulfillment, supported claims, user instructions, error recovery, and clear communication.
+Verdicts are `pass`, `partial`, `fail`, `not_applicable`, or `insufficient_evidence`. Explanations use plain language.
+System snapshots are shortened in cassettes, so reviews assess explicit user instructions rather than reconstructing missing system policies.
+
+Reports go to `eval-reports/<timestamp>/` directories. Review reports for secrets before committing them. `--out <directory>` selects another repository-relative or absolute location.
+
+- `review.json`: Findings, source events, cassette hashes, reviewer model, and rubric version/hash.
+- `review.md`: A table with exact recorded evidence selected by the reviewer.
+- `judge-response.schema.json`: Version 1 JSON Schema for reviewer submissions.
+
+The command validates criteria and evidence IDs. Invalid responses and provider failures produce error entries and exit code 1.
+A completed review can contain failed judgments; qualitative findings do not act as CI gates.
+Reviewing sends visible conversation and tool-result data to the selected provider. Use test recordings without secrets.
+Private reasoning and provider accounting are excluded. Reviews do not prove database persistence or replay compatibility.
+
 ## VCR-backed behavioral tests
 
 ```bash

@@ -84,7 +84,7 @@ Do not assume restoring chat history restores native execution state.
 | Interactive mutation interrupted    | Inspect current todo state before submitting another mutation                                      |
 | Telegram send ambiguous             | Check Telegram and delivery receipts; a retry can duplicate the affected chunk                     |
 | Print ambiguous                     | Check the printer; automatic recovery does not repeat the claimed attempt                          |
-| Projection unavailable              | Restore the chat database; independent projection retries do not block Telegram replies            |
+| Projection unavailable              | Restore the chat database; history retries do not block replies, but request completion waits      |
 | Telegram delivery unavailable       | Restore connectivity before expiry; delivery stops after five failed sends or permanent API errors |
 | Journal publication failed          | Allow the failed runtime to close and recovery to reopen it; do not reuse failed handles           |
 | Relinked Telegram identity rejected | Keep execution blocked pending an approved ownership migration                                     |
@@ -149,8 +149,11 @@ Failed generation and expired inputs retain failed outcomes after delivery of th
 
 Interactive requests and scheduled reports share the active conversation queue and native automatic compaction.
 `/new` selects a separate conversation and isolates earlier archives.
-Completed exchanges project into application-facing chat databases through stable IDs and independent durable retry tasks.
-Projection failures do not block Telegram delivery or request completion.
+Replies deliver before application-facing chat history persists. Successful request completion guarantees persisted history.
+History writes use stable IDs and a persisted request phase with 30-second retry checkpoints.
+Projection failures delay request completion without repeating committed Telegram sends or report printing.
+The caller's wait remains bounded; durable history recovery continues after the caller stops waiting.
+Legacy background projection tasks remain registered so existing journals can recover.
 
 ### Legacy context
 

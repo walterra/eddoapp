@@ -58,6 +58,7 @@ export type RequestCheckpoint =
       reportType?: ReportType;
       failure?: string;
     }
+  | { phase: 'project'; answer: string; failure?: string; retryAt?: number }
   | {
       phase: 'print';
       answer: string;
