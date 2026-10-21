@@ -246,7 +246,7 @@ pnpm test:integration:agent-loop:record   # Records native model responses; incu
 pnpm test:integration:agent-loop:playback # Replays native recordings without provider credentials
 ```
 
-Existing text-protocol recordings are preserved. Native recordings require a one-time re-record, not an automatic conversion.
+Native recordings replace text-protocol cassettes in the original model directories; Git retains historical versions.
 See [agent integration tests](packages/telegram_bot/src/integration-tests/README.md) for auto mode, offline boundary tests, and migration details.
 
 ### GitHub Issue Sync

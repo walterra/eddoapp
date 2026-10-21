@@ -118,8 +118,8 @@ An override cannot change a model request already in flight before the correctio
 ## Behavioral verification
 
 Offline checks cover the native provider boundary, deterministic fixtures, and CouchDB recovery.
-They do not replace real-model behavioral recordings.
-Native behavioral recordings remain a separate requirement until provider charges are authorized:
+Real-model native recordings live in the original model directories and run through CI playback.
+Refreshing them requires provider credentials and incurs API charges:
 
 ```bash
 pnpm test:integration:agent-loop:record

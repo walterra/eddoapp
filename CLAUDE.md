@@ -200,10 +200,11 @@ All production chat and scheduled reports use Pi Durable. `LLM_MODEL` selects th
 Do not reintroduce the removed string-parsed SimpleAgent or enrollment flags.
 
 The restored VCR harness wraps Pi Durable's model-provider boundary, not a second agent loop.
-Cassette management and old recordings remain intact. Native assistant messages record under `cassettes/durable/`.
-Old text-protocol recordings cannot validate native tools and require a one-time re-record.
+Native assistant recordings replace legacy recordings in the original `cassettes/<model>/` directories.
+Anthropic model directories omit the provider prefix; other directories use sanitized provider/model names.
+Git retains legacy text-protocol versions; native-format validation rejects incompatible recordings.
 Playback fails closed on missing/mismatched or unconsumed interactions and never calls the source model.
-CI always runs provider-boundary tests; native behavioral playback runs when native JSON recordings exist.
+CI always runs provider-boundary tests and native behavioral playback.
 See `packages/telegram_bot/src/integration-tests/README.md` for commands and migration limitations.
 
 ### GitHub Issue Sync Architecture
@@ -896,15 +897,15 @@ OTEL_SDK_DISABLED=true pnpm dev:telegram-bot
 
 ### Instrumented Operations (telegram-bot)
 
-| Span Name                 | Description                 | Attributes                                     |
-| ------------------------- | --------------------------- | ---------------------------------------------- |
-| `agent_execute`           | Interactive request wait    | user.id, message.length                        |
-| `agent_iteration`         | Model request attempt       | user.id, agent.iteration, agent.iteration.kind  |
+| Span Name                 | Description                  | Attributes                                                    |
+| ------------------------- | ---------------------------- | ------------------------------------------------------------- |
+| `agent_execute`           | Interactive request wait     | user.id, message.length                                       |
+| `agent_iteration`         | Model request attempt        | user.id, agent.iteration, agent.iteration.kind                |
 | `llm_generate`            | Generation or deferred fetch | llm.model, llm.operation, llm.input_tokens, llm.output_tokens |
-| `mcp_tool_execute`        | Authenticated MCP execution | user.id, mcp.tool, mcp.operation, mcp.is_error   |
-| `telegram_message_handle` | Incoming message processing | telegram.chat.id, user.id                      |
-| `scheduler_send_briefing` | Briefing admission          | user.id                                       |
-| `scheduler_send_recap`    | Recap admission             | user.id                                       |
+| `mcp_tool_execute`        | Authenticated MCP execution  | user.id, mcp.tool, mcp.operation, mcp.is_error                |
+| `telegram_message_handle` | Incoming message processing  | telegram.chat.id, user.id                                     |
+| `scheduler_send_briefing` | Briefing admission           | user.id                                                       |
+| `scheduler_send_recap`    | Recap admission              | user.id                                                       |
 
 Model spans remain open until their original response streams settle, including compaction calls.
 Iteration numbers count assistant rounds after the latest user input; retries can share a round number.

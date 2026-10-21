@@ -215,13 +215,9 @@ jobs:
           CI: true
         run: pnpm test:integration:durable
       - name: Replay recorded Durable model behavior
-        if: ${{ hashFiles('packages/telegram_bot/src/integration-tests/cassettes/durable/**/*.json') != '' }}
         env:
           CI: true
         run: pnpm test:integration:agent-loop:playback
-      - name: Report pending native cassette migration
-        if: ${{ hashFiles('packages/telegram_bot/src/integration-tests/cassettes/durable/**/*.json') == '' }}
-        run: echo '::warning::Native Durable behavioral cassettes require a one-time re-record. Legacy recordings are preserved; provider round-trip and Harness recovery tests still run.'
 
   e2e-tests:
     name: E2E Tests

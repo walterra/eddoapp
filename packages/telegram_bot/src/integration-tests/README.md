@@ -22,6 +22,9 @@ pnpm test:integration:agent-loop:playback # strict offline model playback for ev
 The runner starts an isolated CouchDB container and MCP server. Tests exercise the production Durable Harness, real MCP tools, and chat projections.
 They retain the create, date parsing, context/tag, multi-step, persistent-history, ambiguous-input, and recap scenarios.
 The provider adapter records complete native assistant messages, including structured tool calls, rather than translating text protocols.
+System-message snapshots retain the first 200 characters plus an ellipsis; user/tool messages and assistant responses remain complete.
+The model receives full system instructions, and request hashes use full normalized contents. Only stored system-message previews are shortened.
+Snapshots can contain private task data and tool results. Review cassette contents before committing.
 Token limits and reasoning effort participate in request hashes; changing generation settings requires matching native recordings.
 Both modes expose terminal response streams; partial-stream/restart behavior is covered by the Harness recovery tests.
 
@@ -30,10 +33,10 @@ The wrapper only resolves real credentials when a recording is required. Missing
 Only `Date` is frozen during replay; network timers and the Durable scheduler continue running.
 `VCR_DEBUG=1` prints hash diagnostics.
 
-Native cassettes use `cassettes/durable/<provider-model>/`. Existing model recordings remain byte-for-byte in their original folders.
-They describe the removed text protocol and require a one-time native re-record. No fabricated conversion is performed.
-Until native JSON recordings exist, CI reports the pending migration explicitly while still running VCR round-trip and Harness recovery tests.
-The standalone playback command fails if no native recordings exist.
+Native cassettes replace legacy recordings in `cassettes/<model>/`; no separate runtime namespace exists.
+Anthropic models retain unqualified directory names, such as `claude-sonnet-4-5-20250929`. Other providers use sanitized provider/model names, such as `openai_gpt-5_2`.
+Record mode replaces the selected model's recordings. Git retains prior text-protocol versions; incompatible response formats fail validation.
+CI always runs behavioral playback. The standalone playback command fails if no model recordings exist.
 
 The completion workflow remains skipped in playback because recorded tool arguments can reference IDs created by a different database run.
 All other scenarios verify live test database state rather than exact answer phrasing. Test shutdown verifies that every recorded interaction was consumed.

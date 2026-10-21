@@ -73,8 +73,7 @@ function cachedModels(config: TestAgentServerConfig, state: TestAgentState): Mod
   const provider = source.getProvider(model.provider)!;
   const cassettes = createCassetteManager(
     {
-      cassettesDir:
-        config.cassettesDir ?? fileURLToPath(new URL('../cassettes/durable', import.meta.url)),
+      cassettesDir: config.cassettesDir ?? fileURLToPath(new URL('../cassettes', import.meta.url)),
       namespace: `${model.provider}/${model.modelId}`,
       mode: config.vcrMode || (process.env.VCR_MODE as RecordMode) || 'auto',
     },
