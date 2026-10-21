@@ -10,7 +10,7 @@ import {
   type TaskRuntime,
 } from '@earendil-works/pi-durable';
 import { prepareReply } from './report_delivery.js';
-import type { DurableRequestInput, RequestCheckpoint } from './state.js';
+import type { DurableRequestInput, ReportType, RequestCheckpoint } from './state.js';
 
 type RequestRuntime = TaskRuntime<DurableRequestInput, RequestCheckpoint, string, object>;
 
@@ -18,7 +18,7 @@ export interface RequestDependencies {
   authorize: (input: DurableRequestInput) => Promise<unknown>;
   send: (chatId: number, text: string) => Promise<unknown>;
   project: (input: DurableRequestInput, answer: string) => Promise<void>;
-  print?: (input: DurableRequestInput, answer: string) => Promise<void>;
+  print?: (input: DurableRequestInput, answer: string, reportType?: ReportType) => Promise<void>;
 }
 
 /** Waits until completion or the persisted admission deadline, without aborting on shutdown. */
@@ -170,11 +170,16 @@ async function deliverAnswer(
 
 /** Moves reports to printing only after every Telegram chunk has a committed delivery receipt. */
 function deliveryFinished(task: DeliveryTask): NextTaskState<RequestCheckpoint, string> {
-  const { answer, printable } = task.state.checkpoint;
-  if (task.input.report)
+  const { answer, printable, reportType } = task.state.checkpoint;
+  if (task.input.report || reportType)
     return {
       status: 'running',
-      checkpoint: { phase: 'print', answer, printable: printable ?? false },
+      checkpoint: {
+        phase: 'print',
+        answer,
+        printable: printable ?? false,
+        ...(reportType ? { reportType } : {}),
+      },
     };
   return { status: 'terminal', outcome: { status: 'completed', result: answer } };
 }
@@ -193,7 +198,7 @@ async function printAnswer(
   dependencies: RequestDependencies,
 ): Promise<void> {
   await dependencies.authorize(task.input);
-  const { answer, printable } = task.state.checkpoint;
+  const { answer, printable, reportType } = task.state.checkpoint;
   if (
     printable &&
     dependencies.print &&
@@ -202,7 +207,8 @@ async function printAnswer(
     await runtime.memo('print-attempted', true, context);
     runtime.signal.throwIfAborted();
     try {
-      await dependencies.print(task.input, answer);
+      if (reportType) await dependencies.print(task.input, answer, reportType);
+      else await dependencies.print(task.input, answer);
     } catch (error) {
       if (runtime.signal.aborted) throw error;
       runtime.report(error);
@@ -233,6 +239,7 @@ export function createRequestTask(
               phase: 'deliver',
               answer: reply.answer,
               printable: reply.printable,
+              ...(reply.reportType ? { reportType: reply.reportType } : {}),
               offset: 0,
               projected: false,
               attempts: 0,

@@ -32,6 +32,7 @@ export interface DurableRuntimeOptions extends RequestDependencies {
   model: ModelRef;
   generation?: LlmGenerationSettings;
   instructions: string;
+  memoryContext?: () => Promise<string>;
   onReport: (error: unknown) => void;
 }
 
@@ -89,7 +90,12 @@ function createRuntimeRegistry(options: DurableRuntimeOptions): ReturnType<typeo
     defineExtension({
       name: 'eddo.telegram',
       tasks: [requestTask],
-      sections: [section('eddo', () => options.instructions, { tag: false })],
+      sections: [
+        section('eddo', () => options.instructions, { tag: false }),
+        ...(options.memoryContext
+          ? [section('eddo_memories', () => options.memoryContext?.())]
+          : []),
+      ],
     }),
   );
   return registry;

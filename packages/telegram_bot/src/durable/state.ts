@@ -51,5 +51,6 @@ export type RequestCheckpoint =
       projected: boolean;
       attempts: number;
       printable?: boolean;
+      reportType?: ReportType;
     }
-  | { phase: 'print'; answer: string; printable: boolean };
+  | { phase: 'print'; answer: string; printable: boolean; reportType?: ReportType };

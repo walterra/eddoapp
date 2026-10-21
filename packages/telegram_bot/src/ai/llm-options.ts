@@ -55,6 +55,7 @@ export function boundedLlmOptions(
 ): ModelsSimpleStreamOptions {
   return {
     ...options,
+    cacheRetention: options.cacheRetention ?? 'long',
     maxTokens: Math.min(settings.maxTokens, model.maxTokens, options.maxTokens ?? Infinity),
     ...(model.reasoning ? {} : { reasoning: undefined }),
   };

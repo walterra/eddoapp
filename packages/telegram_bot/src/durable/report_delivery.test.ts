@@ -19,8 +19,9 @@ describe('report formatting and current printer preferences', () => {
     });
     expect(prepareReply(input, 'No marker')).toEqual({ answer: 'No marker', printable: false });
     expect(prepareReply(createTestInput(), '---RECAP-START---\nInteractive')).toEqual({
-      answer: '---RECAP-START---\nInteractive',
-      printable: false,
+      answer: 'Interactive',
+      printable: true,
+      reportType: 'recap',
     });
   });
 

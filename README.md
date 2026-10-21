@@ -185,6 +185,10 @@ The first durable conversation starts without importing legacy history. Existing
 Scheduled briefings and recaps submit into the same active Durable conversation.
 Reports use discussion for priorities and constraints, then fetch current todo data for facts.
 Interactive requests and scheduled reports share Pi's conversation queue and automatic compaction.
+Model requests refresh stored user memories through authenticated MCP, with a 6,000-character payload bound.
+Memory retrieval failures do not block replies. Memory content provides reference data, not tool authorization.
+Generation and compaction default to long prompt-cache retention unless request options override it.
+Manual briefings and recaps strip content markers and use current printer preferences without requiring scheduled reports.
 Each scheduled occurrence has a stable request ID, including after restart or `/new`.
 The scheduler returns after durable admission; recovery owns generation, Telegram delivery, and optional printing.
 
