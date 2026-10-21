@@ -505,7 +505,20 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/email/oauth/callback
 
 ## Documentation Maintenance
 
-Keep `README.md` up to date when making changes. The README is end-user focused (installation, usage, configuration) while CLAUDE.md is agent-focused (debugging, restrictions, architecture).
+Update documentation when a change affects documented behavior, workflows, configuration, or architectural contracts. Choose files by audience and scope. Do not update `README.md` for every change.
+
+- `README.md`: High-level introduction, capabilities, quick start, and links to detailed guides. Update when these summaries change. Exclude internal CI commands, debugging details, and implementation notes.
+- `DEVELOPMENT.md`: Contributor setup, development commands, testing, CI workflows, and troubleshooting. Document repository-wide test commands and prerequisites here.
+- Package and subsystem READMEs: Scoped usage, configuration, and testing details. Use `packages/telegram_bot/src/integration-tests/README.md` for VCR recording, playback, cassette compatibility, and agent integration testing.
+- `docs/01_getting-started.md`: Detailed onboarding and initial setup.
+- `docs/02_project-structure.md` and `docs/03_architecture.md`: Package organization, system boundaries, and data flow.
+- `docs/04_development-workflow.md`: Contribution workflow and development practices.
+- `docs/05_deployment.md`, `docs/06_couchdb_local.md`, and `docs/07_disaster-recovery.md`: Deployment, local CouchDB operation, and backup/recovery procedures.
+- Focused guides under `docs/`, such as `docs/gmail-oauth-setup.md`: Integration-specific setup and operation.
+- `spec/`: Design decisions, constraints, and operational contracts. Update the relevant specification when those contracts change.
+- `CLAUDE.md`: Agent-facing restrictions, commands, debugging guidance, and architectural guardrails. Keep detailed contributor instructions in the relevant guide.
+
+Inspect existing documentation before choosing a target. Update the narrowest applicable source of truth and link to it from broader guides when needed. Avoid duplicating detailed instructions across files. No documentation edit is required when existing documentation remains accurate. Do not edit generated `CHANGELOG.md` entries manually; follow the release workflow.
 
 ## UI/UX Design Principles
 

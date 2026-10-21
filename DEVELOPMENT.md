@@ -117,6 +117,9 @@ pnpm test:all          # Run full test suite with linting
 pnpm test:ci           # CI test suite
 ```
 
+Run VCR boundary tests with `pnpm test:integration:agent-loop -- packages/telegram_bot/src/integration-tests/vcr`.
+The runner provisions disposable CouchDB and MCP services; these tests make no live LLM requests.
+
 ### Quality Commands
 
 ```bash
