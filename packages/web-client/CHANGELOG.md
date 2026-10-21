@@ -1,5 +1,13 @@
 # @eddo/web-client
 
+## 0.10.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @eddo/core-client@0.10.1
+  - @eddo/core-shared@0.10.1
+
 ## 0.10.0
 
 ### Patch Changes
