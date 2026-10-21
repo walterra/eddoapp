@@ -20,12 +20,12 @@ describe('durable formatted replies', () => {
     const runtime = await openDurableRuntime(fixture.options);
     try {
       expect(await runtime.execute(input)).toBe(answer);
-      expect(fixture.options.send).toHaveBeenNthCalledWith(1, 123, 'a'.repeat(3999), [
-        { type: 'bold', offset: 0, length: 3999 },
-      ]);
-      expect(fixture.options.send).toHaveBeenNthCalledWith(2, 123, '😀tail', [
-        { type: 'bold', offset: 0, length: 6 },
-      ]);
+      expect(fixture.options.send).toHaveBeenNthCalledWith(1, 123, 'a'.repeat(3999), {
+        entities: [{ type: 'bold', offset: 0, length: 3999 }],
+      });
+      expect(fixture.options.send).toHaveBeenNthCalledWith(2, 123, '😀tail', {
+        entities: [{ type: 'bold', offset: 0, length: 6 }],
+      });
       await vi.waitFor(() => expect(fixture.options.project).toHaveBeenCalledWith(input, answer));
     } finally {
       await runtime.close();
@@ -62,12 +62,12 @@ describe('durable formatted replies', () => {
       expect(await second.execute(input)).toBe(answer);
       expect(formatter).not.toHaveBeenCalled();
       expect(options.send).toHaveBeenCalledTimes(2);
-      expect(options.send).toHaveBeenNthCalledWith(1, 123, 'x'.repeat(4000), [
-        { type: 'pre', language: 'typescript', offset: 0, length: 4000 },
-      ]);
-      expect(options.send).toHaveBeenNthCalledWith(2, 123, 'x'.repeat(100), [
-        { type: 'pre', language: 'typescript', offset: 0, length: 100 },
-      ]);
+      expect(options.send).toHaveBeenNthCalledWith(1, 123, 'x'.repeat(4000), {
+        entities: [{ type: 'pre', language: 'typescript', offset: 0, length: 4000 }],
+      });
+      expect(options.send).toHaveBeenNthCalledWith(2, 123, 'x'.repeat(100), {
+        entities: [{ type: 'pre', language: 'typescript', offset: 0, length: 100 }],
+      });
       expect(fixture.provider.state.callCount).toBe(1);
     } finally {
       formatter.mockRestore();

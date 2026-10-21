@@ -193,6 +193,7 @@ Completed exchanges project into the existing assistant chat database with stabl
 Telegram replies render Markdown emphasis, code, descriptive links, headings, lists, and quotes through explicit entities.
 Rendered text and entity offsets persist before formatted delivery, preserving chunk boundaries across restart and parser changes.
 Telegram formatting rejections fall back to readable plain text; transport and rate-limit failures retain bounded delivery retries.
+Scheduled briefings disable link previews on every chunk, including fallback and resumed delivery. Interactive replies and recaps retain default preview behavior.
 History, model context, and printer content retain the original Markdown. Partially delivered older replies retain their original plain-text offsets.
 `/new` selects a separate durable conversation through the existing active-conversation mechanism.
 Each conversation imports its recent legacy history once, including native conversations created before history import existed.

@@ -75,7 +75,7 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
         loadMemoryContext(client, await resolveDurableUser(username, telegramId)),
       ...legacyLoaders(username, telegramId),
       authorize: (input) => authorizeDurableRequest(username, telegramId, input),
-      send: (chatId, text, entities) => sendTelegramText(bot!.api, chatId, text, entities),
+      send: (chatId, text, options) => sendTelegramText(bot!.api, chatId, text, options),
       progress: (text) => bot!.api.sendMessage(telegramId, text),
       print: (input, answer, reportType) => printDurableReport(username, input, answer, reportType),
       project: (input, answer) => {

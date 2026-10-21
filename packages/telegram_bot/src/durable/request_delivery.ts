@@ -1,5 +1,6 @@
 import type { Context } from '@earendil-works/chord';
 import type { NextTaskState, RunningTask } from '@earendil-works/pi-durable';
+import type { MessageEntity } from 'grammy/types';
 import { deliveryDeadline, deliveryRetry, MAX_DELIVERY_FAILURES } from './delivery_policy.js';
 import { createProjectionTask } from './projection_task.js';
 import { requestOutcome } from './request_failure.js';
@@ -7,6 +8,7 @@ import type { RequestRuntime } from './request_generation.js';
 import type { RequestDependencies } from './request_task.js';
 import type { DurableRequestInput, RequestCheckpoint } from './state.js';
 import { formatTelegramText, telegramChunkEntities } from './telegram_format.js';
+import type { TelegramSendOptions } from './telegram_send.js';
 
 type DeliveryCheckpoint = Extract<RequestCheckpoint, { phase: 'deliver' }>;
 type DeliveryTask = RunningTask<DurableRequestInput, DeliveryCheckpoint, string>;
@@ -77,6 +79,19 @@ async function prepareTelegramDelivery(
   return true;
 }
 
+/** Applies scheduled briefing preview suppression without changing other reply defaults. */
+function chunkSendOptions(
+  input: DurableRequestInput,
+  entities: MessageEntity[],
+): TelegramSendOptions | undefined {
+  const disableLinkPreview = input.report?.type === 'briefing';
+  if (!entities.length && !disableLinkPreview) return undefined;
+  return {
+    ...(entities.length ? { entities } : {}),
+    ...(disableLinkPreview ? { disableLinkPreview: true } : {}),
+  };
+}
+
 /** Sends entity-aware chunks while preserving raw offsets for older partial deliveries. */
 async function sendChunk(task: DeliveryTask, dependencies: RequestDependencies): Promise<number> {
   const checkpoint = task.state.checkpoint;
@@ -86,8 +101,9 @@ async function sendChunk(task: DeliveryTask, dependencies: RequestDependencies):
     checkpoint.offset,
     chunk.length,
   );
+  const options = chunkSendOptions(task.input, entities);
   if (chunk) {
-    if (entities.length) await dependencies.send(task.input.chatId, chunk, entities);
+    if (options) await dependencies.send(task.input.chatId, chunk, options);
     else await dependencies.send(task.input.chatId, chunk);
   }
   return chunk.length;

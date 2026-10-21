@@ -1,17 +1,17 @@
 import type { Context } from '@earendil-works/chord';
 import { defineTask, type RunningTask } from '@earendil-works/pi-durable';
-import type { MessageEntity } from 'grammy/types';
 import { correctReportContext, type ContextWriter } from './report_context.js';
 import { prepareReply } from './report_delivery.js';
 import { deliverAnswer } from './request_delivery.js';
 import { requestOutcome } from './request_failure.js';
 import { generateAnswer, type RequestRuntime } from './request_generation.js';
 import type { DurableRequestInput, ReportType, RequestCheckpoint } from './state.js';
+import type { TelegramSendOptions } from './telegram_send.js';
 export { telegramChunk } from './request_delivery.js';
 
 export interface RequestDependencies {
   authorize: (input: DurableRequestInput) => Promise<unknown>;
-  send: (chatId: number, text: string, entities?: MessageEntity[]) => Promise<unknown>;
+  send: (chatId: number, text: string, options?: TelegramSendOptions) => Promise<unknown>;
   project: (input: DurableRequestInput, answer: string) => Promise<void>;
   print?: (input: DurableRequestInput, answer: string, reportType?: ReportType) => Promise<void>;
   reportRetryDelayMs?: number;
