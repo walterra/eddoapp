@@ -21,6 +21,7 @@ import type { MCPClient } from '../mcp/client.js';
 import { ensureLegacyHistory } from './legacy_history.js';
 import { configureConversationModels } from './model_configuration.js';
 import { bindRuntimeOwner } from './ownership.js';
+import type { ContextWriter } from './report_context.js';
 import { deliveredRequestFailure } from './request_failure.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
 import { ConversationMap, RequestMap, type DurableRequestInput } from './state.js';
@@ -108,13 +109,20 @@ function createRuntimeRegistry(options: DurableRuntimeOptions): ReturnType<typeo
 
 /** Validates persisted ownership before starting any recovered tasks. */
 async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> {
+  // Harness.open() starts paused; registry callbacks run after this handle exists.
+  const writeContext: ContextWriter = async (id, submission, context) => {
+    const conversation = await harness.conversation(id, context);
+    if (!conversation) throw new Error('Report conversation is missing');
+    const settled = await (await conversation.submit(submission, context)).wait(context);
+    if (settled.status !== 'done') throw new Error('Report context correction could not be placed');
+  };
   const harness = await Harness.open(
     options.storage,
     {
       models: modelsWithTelemetry(modelsWithOptions(options.models, options.generation), {
         'user.id': String(options.telegramId),
       }),
-      registry: createRuntimeRegistry(options),
+      registry: createRuntimeRegistry({ ...options, writeContext }),
       onReport: options.onReport,
       settings: {
         toolExecution: 'sequential',

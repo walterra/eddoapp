@@ -77,6 +77,9 @@ function buildReportData(
   return {
     ...data,
     metadata: {
+      contractVersion: 2,
+      itemsAreCompleteTodos: false,
+      detailTool: 'getTodo',
       date: options.range.todayDate,
       weekday,
       timeZone: options.range.timeZone,

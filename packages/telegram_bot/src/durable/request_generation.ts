@@ -1,6 +1,7 @@
 import type { Context } from '@earendil-works/chord';
 import { withAbortSignal } from '@earendil-works/chord/context';
 import type {
+  EntryId,
   EntryRecord,
   Submission,
   SubmissionRecord,
@@ -12,6 +13,7 @@ export type RequestRuntime = TaskRuntime<DurableRequestInput, RequestCheckpoint,
 
 export interface GenerationResult {
   answer: string;
+  answerEntry?: EntryId;
   failure?: string;
   retryable?: boolean;
 }
@@ -129,7 +131,7 @@ function answerText(entry: EntryRecord | undefined): GenerationResult {
     .join('\n')
     .trim();
   return text
-    ? { answer: text }
+    ? { answer: text, answerEntry: entry?.id }
     : {
         answer:
           'Execution stopped without a final answer. Inspect current task state before continuing.',

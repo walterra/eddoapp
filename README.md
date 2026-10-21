@@ -44,6 +44,10 @@ Pi Durable deduplicates occurrences and recovers generation, Telegram delivery, 
 Existing pre-migration reservation receipts remain read-only safeguards against duplicate reports; new reports create no legacy reservations.
 
 Report data contains compact task summaries, not full todo documents or descriptions.
+Metadata declares contract version 2, incomplete todo projections, and `getTodo` as the detail tool.
+Items retain `id` plus the `_id` compatibility alias, bounded links, parent references, and up to five dependency IDs.
+Oversized URLs and relationship IDs are omitted, not shortened; `fieldsTruncated` flags omitted details.
+Actionability tags take priority over ordinary tags when the tag budget is exceeded.
 Briefings select 10 actions today, 10 recent overdue actions, 10 next actions, 5 waiting items, and 20 calendar appointments.
 Someday backlog items contribute a separate count instead of occupying the action lists. Recaps select 10 completions and 10 next actions.
 Both tools include summarized active tracking, date, weekday, timezone, total counts, and selection/truncation metadata.
@@ -51,6 +55,7 @@ Counts marked `countExact: false` are lower bounds; paging stops after 20,000 ma
 The Durable MCP bridge unwraps text responses and bounds complete JSON values, preserving section metadata instead of cutting JSON strings.
 Oversized responses expose `outputTruncation`; their `result` contains the reduced payload. Use `getTodo` for full task details.
 Scheduled Durable report headings use the occurrence's local calendar date and a weekday computed in code.
+Native context overrides preserve corrected delivered text for subsequent model requests while retaining original provider entries for audit.
 
 ## Quick Start
 
@@ -176,6 +181,8 @@ Restart after changing generation settings. Already-prepared model turns retain 
 The bot provisions an administrator-only `${DATABASE_PREFIX}_pi_durable_<username-sha256>` database per user.
 CouchDB credentials must permit database creation, security configuration, and runtime journal access. Use TLS outside local development.
 Run **exactly one bot process** against these databases. No distributed lock or automatic ownership failover exists.
+Follow the [operations runbook](spec/durable_telegram_operations.md) for stop-first deployment, restore, capacity monitoring, and identity changes.
+Private-chat scope, plain-text replies, catalog-only models, and bounded report projections are intentional compatibility boundaries.
 
 Accepted updates, model/tool state, and pending replies survive process restarts.
 Startup recovers all active users linked to Telegram with MCP credentials; failed sessions reopen on a 30-second recovery cycle.

@@ -125,6 +125,9 @@ describe('compact report payloads', () => {
       try {
         const result = JSON.parse(await execute({}, context, () => database([todo(1)])));
         expect(result.data.metadata).toMatchObject({
+          contractVersion: 2,
+          itemsAreCompleteTodos: false,
+          detailTool: 'getTodo',
           date: '2026-10-20',
           weekday: 'Tuesday',
           timeZone: 'Europe/Vienna',

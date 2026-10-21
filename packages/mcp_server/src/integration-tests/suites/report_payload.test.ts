@@ -68,6 +68,9 @@ beforeAll(async () => {
         due: new Date(Date.parse(`${range.todayDate}T12:00:00Z`) - (index + 1) * 86_400_000)
           .toISOString()
           .slice(0, 10),
+        link: 'https://example.com/proposal',
+        parentId: 'project',
+        blockedBy: ['dependency'],
       }),
     ),
     ...Array.from({ length: 20 }, (_, index) => todo(`today-${index}`)),
@@ -103,7 +106,18 @@ describe('compact report queries against real CouchDB', () => {
       returned: 0,
     });
     expect(response.data.overdueTodos).toHaveLength(10);
-    expect(response.data.overdueTodos[0].id).toBe('overdue-0');
+    expect(response.data.overdueTodos[0]).toMatchObject({
+      id: 'overdue-0',
+      _id: 'overdue-0',
+      link: 'https://example.com/proposal',
+      parentId: 'project',
+      blockedBy: ['dependency'],
+    });
+    expect(response.data.metadata).toMatchObject({
+      contractVersion: 2,
+      itemsAreCompleteTodos: false,
+      detailTool: 'getTodo',
+    });
     expect(
       response.data.calendarToday.map((item: { scheduledTime: string }) => item.scheduledTime),
     ).toEqual(['09:00', '16:00']);

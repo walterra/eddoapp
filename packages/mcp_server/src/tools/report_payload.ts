@@ -1,8 +1,9 @@
 import type { TodoAlpha4 } from '@eddo/core-server';
 import type { MangoQuery } from 'nano';
+import { reportDetails, reportTags, type ReportDetails } from './report_details.js';
 import type { GetUserDb } from './types.js';
 
-export interface ReportItem {
+export interface ReportItem extends ReportDetails {
   id: string;
   title: string;
   context: string;
@@ -40,6 +41,9 @@ const FIELDS = [
   'scheduledTime',
   'scheduledTimeZone',
   'active',
+  'link',
+  'parentId',
+  'blockedBy',
 ];
 
 /** Summarizes time entries without exposing their unbounded timestamp map. */
@@ -59,8 +63,10 @@ function tracking(
 
 /** Projects only bounded fields needed to discuss and schedule work. */
 export function reportItem(todo: TodoAlpha4, now: number): ReportItem {
-  const tags = (todo.tags ?? []).slice(0, 6).map((tag) => tag.slice(0, 48));
+  const tags = reportTags(todo.tags ?? []);
+  const details = reportDetails(todo);
   return {
+    ...details.fields,
     id: todo._id.slice(0, 80),
     title: todo.title.slice(0, 160),
     context: todo.context.slice(0, 80),
@@ -71,6 +77,7 @@ export function reportItem(todo: TodoAlpha4, now: number): ReportItem {
     scheduledTimeZone: todo.scheduledTimeZone,
     ...tracking(todo, now),
     fieldsTruncated:
+      details.truncated ||
       todo.title.length > 160 ||
       todo.context.length > 80 ||
       todo._id.length > 80 ||

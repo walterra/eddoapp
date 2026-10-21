@@ -77,6 +77,48 @@ describe('real CouchDB durable Telegram execution', () => {
     await recovered.close();
   });
 
+  it('persists corrected model-facing report text in published CouchDB history', async () => {
+    const fixture = await createRuntimeFixture();
+    await fixture.options.storage.close(
+      (await import('@earendil-works/chord/context')).BACKGROUND_CONTEXT,
+    );
+    fixture.options.storage = await openCouchDbStorage(endpoint);
+    fixture.provider.setResponses([
+      fauxAssistantMessage(
+        '---BRIEFING-START---\nDAILY BRIEFING - Sunday, October 20, 2026\nTasks',
+      ),
+      (context) => {
+        const history = JSON.stringify(context.messages);
+        expect(history).toContain('DAILY BRIEFING - Tuesday, October 20, 2026');
+        expect(history).not.toContain('Sunday, October 20');
+        return fauxAssistantMessage('Tuesday');
+      },
+    ]);
+    const report = createTestInput({
+      requestId: 'report:corrected',
+      conversationId: 'report-corrected',
+      report: { type: 'briefing', occurrence: '2026-10-20' },
+    });
+    const first = await openDurableRuntime(fixture.options);
+    runtimes.push(first);
+    expect(await first.execute(report)).toContain('Tuesday, October 20');
+    await first.close();
+    const second = await openDurableRuntime({
+      ...fixture.options,
+      storage: await openCouchDbStorage(endpoint),
+    });
+    runtimes.push(second);
+    expect(
+      await second.execute(
+        createTestInput({
+          requestId: 'telegram:corrected-followup',
+          conversationId: report.conversationId,
+        }),
+      ),
+    ).toBe('Tuesday');
+    await second.close();
+  });
+
   it('recovers delivery and deduplicates updates from the published journal', async () => {
     const fixture = await createRuntimeFixture();
     await fixture.options.storage.close(

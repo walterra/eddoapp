@@ -1,5 +1,6 @@
 import type { Context } from '@earendil-works/chord';
 import { defineTask, type NextTaskState, type RunningTask } from '@earendil-works/pi-durable';
+import { correctReportContext, type ContextWriter } from './report_context.js';
 import { prepareReply } from './report_delivery.js';
 import { requestOutcome } from './request_failure.js';
 import { generateAnswer, type RequestRuntime } from './request_generation.js';
@@ -11,6 +12,7 @@ export interface RequestDependencies {
   project: (input: DurableRequestInput, answer: string) => Promise<void>;
   print?: (input: DurableRequestInput, answer: string, reportType?: ReportType) => Promise<void>;
   reportRetryDelayMs?: number;
+  writeContext?: ContextWriter;
 }
 
 type GenerateTask = RunningTask<
@@ -58,6 +60,11 @@ async function generateReply(
   }
   if (result.failure) runtime.report(new Error(result.failure));
   const reply = prepareReply(task.input, result.answer);
+  await correctReportContext(
+    { input: task.input, generated: result, reply, writeContext: dependencies.writeContext },
+    runtime,
+    context,
+  );
   await runtime.commit(
     () => ({
       status: 'running',
