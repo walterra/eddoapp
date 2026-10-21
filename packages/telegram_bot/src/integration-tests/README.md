@@ -31,7 +31,7 @@ The five checks cover task fulfillment, supported claims, user instructions, err
 Verdicts are `pass`, `partial`, `fail`, `not_applicable`, or `insufficient_evidence`. Explanations use plain language.
 System snapshots are shortened in cassettes, so reviews assess explicit user instructions rather than reconstructing missing system policies.
 
-Reports go to `eval-reports/<timestamp>/` directories. Review reports for secrets before committing them. `--out <directory>` selects another repository-relative or absolute location.
+Reports overwrite the same files in `eval-reports/` so Git tracks changes between runs. Review reports for secrets before committing them. `--out <directory>` selects another repository-relative or absolute location.
 
 - `review.json`: Findings, source events, cassette hashes, reviewer model, and rubric version/hash.
 - `review.md`: One row per scenario comparing models, followed by concerns only. Full evidence stays in JSON.

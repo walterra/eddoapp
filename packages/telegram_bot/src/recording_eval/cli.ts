@@ -59,7 +59,7 @@ async function main(): Promise<void> {
   if (!recordings.length) throw new Error('No recordings selected');
   const results = await runReviews(modelName, recordings);
   const createdAt = new Date().toISOString();
-  const output = resolve(ROOT, values.out ?? `eval-reports/${createdAt.replace(/[:.]/g, '-')}`);
+  const output = resolve(ROOT, values.out ?? 'eval-reports');
   mkdirSync(output, { recursive: true });
   const report = {
     schemaVersion: 1,
