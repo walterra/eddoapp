@@ -190,7 +190,11 @@ Startup recovers all active users linked to Telegram with MCP credentials; faile
 Completed exchanges project into the existing assistant chat database with stable message IDs.
 `/new` selects a separate durable conversation through the existing active-conversation mechanism.
 Each conversation imports its recent legacy history once, including native conversations created before history import existed.
-Imports contain at most 40 messages, with 2,000 characters per message and a 16,000-character serialized payload bound.
+The initial preview contains at most 40 messages, with 2,000 characters per message and a 16,000-character serialized payload bound.
+The complete original archive remains accessible through the authenticated, read-only `readLegacyHistory` tool.
+The assistant can search older discussion and page through long message tails using continuation cursors without dropping text.
+Archive retrieval follows the current conversation, revalidates identity, and shares request deadlines and tool-call budgets.
+Existing Durable conversations gain archive access after restart without reimporting their previews.
 Imports exclude Durable projections and contain reference text, not executable tool calls. Existing messages remain unchanged.
 `/new` isolates the new conversation from earlier archives. History-loading failures block admission until a retry succeeds.
 Scheduled briefings and recaps submit into the same active Durable conversation.

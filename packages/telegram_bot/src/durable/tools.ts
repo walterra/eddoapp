@@ -85,7 +85,10 @@ function reportType(entry: EntryRecord | undefined): ReportType | undefined {
   return data.report === 'briefing' || data.report === 'recap' ? data.report : undefined;
 }
 
-async function consumeToolBudget(api: ToolExecutionApi, context: Context): Promise<ToolPermission> {
+export async function consumeToolBudget(
+  api: ToolExecutionApi,
+  context: Context,
+): Promise<ToolPermission> {
   return api.commit(async (tx) => {
     const entries = await tx.scanEntries({ conversationId: api.conversationId }, 1000);
     const entry = entries.items.find((item) => item.kind === 'eddo.input');

@@ -10,12 +10,12 @@ import { getMCPClient } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import { provisionDurableDatabase } from './couch.js';
-import { loadLegacyHistory } from './legacy_history.js';
+import { loadLegacyArchive, loadLegacyHistory } from './legacy_history.js';
 import { loadMemoryContext } from './memory_context.js';
 import { projectDurableExchange } from './projection.js';
 import { buildDurablePrompt } from './prompt.js';
 import { printDurableReport } from './report_delivery.js';
-import { openDurableRuntime, type DurableRuntime } from './runtime.js';
+import { openDurableRuntime, type DurableRuntime, type DurableRuntimeOptions } from './runtime.js';
 import type { DurableRequestInput, ReportType } from './state.js';
 import { authorizeDurableRequest, resolveDurableUser } from './tools.js';
 
@@ -24,6 +24,23 @@ const models = builtinModels();
 let bot: Bot<BotContext> | undefined;
 let timer: ReturnType<typeof setInterval> | undefined;
 let stopping = false;
+
+/** Revalidates identity before loading either the preview or complete original archive. */
+function legacyLoaders(
+  username: string,
+  telegramId: number,
+): Pick<DurableRuntimeOptions, 'legacyArchive' | 'legacyHistory'> {
+  return {
+    legacyArchive: async (conversationId) => {
+      await resolveDurableUser(username, telegramId);
+      return loadLegacyArchive(username, conversationId);
+    },
+    legacyHistory: async (conversationId) => {
+      await resolveDurableUser(username, telegramId);
+      return loadLegacyHistory(username, conversationId);
+    },
+  };
+}
 
 /** Opens a user's private runtime using current registry identity and server credentials. */
 async function openUserRuntime(username: string): Promise<DurableRuntime> {
@@ -55,10 +72,7 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
       instructions: buildDurablePrompt(appConfig.BOT_PERSONA_ID),
       memoryContext: async () =>
         loadMemoryContext(client, await resolveDurableUser(username, telegramId)),
-      legacyHistory: async (conversationId) => {
-        await resolveDurableUser(username, telegramId);
-        return loadLegacyHistory(username, conversationId);
-      },
+      ...legacyLoaders(username, telegramId),
       authorize: (input) => authorizeDurableRequest(username, telegramId, input),
       send: (chatId, text) => bot!.api.sendMessage(chatId, text),
       progress: (text) => bot!.api.sendMessage(telegramId, text),

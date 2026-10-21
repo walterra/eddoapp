@@ -18,6 +18,7 @@ import {
 import { modelsWithOptions } from '../ai/models_with_options.js';
 import { modelsWithTelemetry } from '../ai/models_with_telemetry.js';
 import type { MCPClient } from '../mcp/client.js';
+import { createLegacyArchiveExtension, type LegacyArchiveOptions } from './legacy_archive_tool.js';
 import { ensureLegacyHistory } from './legacy_history.js';
 import { configureConversationModels } from './model_configuration.js';
 import { bindRuntimeOwner } from './ownership.js';
@@ -28,7 +29,7 @@ import { waitForRequestResult } from './request_wait.js';
 import { ConversationMap, RequestMap, type DurableRequestInput } from './state.js';
 import { createMcpExtension } from './tools.js';
 
-export interface DurableRuntimeOptions extends RequestDependencies {
+export interface DurableRuntimeOptions extends RequestDependencies, LegacyArchiveOptions {
   storage: Storage;
   models: Models;
   client: MCPClient;
@@ -93,6 +94,7 @@ function createRuntimeRegistry(options: DurableRuntimeOptions): ReturnType<typeo
   const registry = createRegistry();
   const requestTask = createRequestTask(options);
   registry.install(createMcpExtension(options));
+  registry.install(createLegacyArchiveExtension(options));
   registry.install(
     defineExtension({
       name: 'eddo.telegram',
