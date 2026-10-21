@@ -93,7 +93,7 @@ Diagnoses: prerequisites, Docker status, service health, port availability, conf
 pnpm check:commit
 ```
 
-Runs TypeScript build checks, ESLint, and Prettier verification.
+Runs the TypeScript build first, then checks backup script types, ESLint, and Prettier in parallel.
 
 ## Architecture
 
