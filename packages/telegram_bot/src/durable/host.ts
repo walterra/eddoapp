@@ -10,6 +10,7 @@ import { getMCPClient } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import { provisionDurableDatabase } from './couch.js';
+import { loadLegacyHistory } from './legacy_history.js';
 import { loadMemoryContext } from './memory_context.js';
 import { projectDurableExchange } from './projection.js';
 import { buildDurablePrompt } from './prompt.js';
@@ -54,6 +55,10 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
       instructions: buildDurablePrompt(appConfig.BOT_PERSONA_ID),
       memoryContext: async () =>
         loadMemoryContext(client, await resolveDurableUser(username, telegramId)),
+      legacyHistory: async (conversationId) => {
+        await resolveDurableUser(username, telegramId);
+        return loadLegacyHistory(username, conversationId);
+      },
       authorize: (input) => authorizeDurableRequest(username, telegramId, input),
       send: (chatId, text) => bot!.api.sendMessage(chatId, text),
       print: (input, answer, reportType) => printDurableReport(username, input, answer, reportType),

@@ -17,8 +17,10 @@ import {
 } from '../ai/llm-options.js';
 import { modelsWithOptions } from '../ai/models_with_options.js';
 import type { MCPClient } from '../mcp/client.js';
+import { ensureLegacyHistory } from './legacy_history.js';
 import { configureConversationModels } from './model_configuration.js';
 import { bindRuntimeOwner } from './ownership.js';
+import { deliveredRequestFailure } from './request_failure.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
 import { ConversationMap, RequestMap, type DurableRequestInput } from './state.js';
 import { createMcpExtension } from './tools.js';
@@ -33,6 +35,7 @@ export interface DurableRuntimeOptions extends RequestDependencies {
   generation?: LlmGenerationSettings;
   instructions: string;
   memoryContext?: () => Promise<string>;
+  legacyHistory?: (conversationId: string) => Promise<string>;
   onReport: (error: unknown) => void;
 }
 
@@ -138,6 +141,8 @@ export async function openDurableRuntime(options: DurableRuntimeOptions): Promis
     const previous = await harness.snapshot(RequestMap, context);
     if (previous?.tasks[input.requestId] !== undefined) return previous.tasks[input.requestId];
     const conversation = await getConversation(harness, configured, input.conversationId);
+    if (options.legacyHistory)
+      await ensureLegacyHistory(conversation, input.conversationId, options.legacyHistory);
     return conversation.commit(async (tx) => {
       const taskId = await tx.createTask(createRequestTask(options), input, {
         ownership: { kind: 'conversation' },
@@ -166,6 +171,8 @@ export async function openDurableRuntime(options: DurableRuntimeOptions): Promis
       const pending = submit(input);
       const wait = withAbortSignal(AbortSignal.timeout(360_000), context);
       const task = await harness.waitForTask(await pending, wait);
+      if (task.state.outcome.status === 'failed' && task.state.outcome.result !== undefined)
+        throw deliveredRequestFailure(task.state.outcome.error.message);
       if (task.state.outcome.status !== 'completed')
         throw new Error(`Durable request ${task.state.outcome.status}`);
       return task.state.outcome.result;

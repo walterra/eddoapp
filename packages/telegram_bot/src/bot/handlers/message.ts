@@ -1,3 +1,4 @@
+import { isDeliveredRequestFailure } from '../../durable/request_failure.js';
 import { executeAgentMessage } from '../../durable/routing.js';
 import { logger, SpanAttributes, withSpan } from '../../utils/logger.js';
 import type { BotContext } from '../bot.js';
@@ -36,7 +37,7 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
         logSuccess(userId, Boolean(ctx.session.lastBotMessage));
       } catch (error) {
         logFatalError(userId, error, messageText);
-        await sendFatalErrorMessage(ctx);
+        if (!isDeliveredRequestFailure(error)) await sendFatalErrorMessage(ctx);
       }
     },
   );

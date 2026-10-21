@@ -181,7 +181,10 @@ Accepted updates, model/tool state, and pending replies survive process restarts
 Startup recovers all active users linked to Telegram with MCP credentials; failed sessions reopen on a 30-second recovery cycle.
 Completed exchanges project into the existing assistant chat database with stable message IDs.
 `/new` selects a separate durable conversation through the existing active-conversation mechanism.
-The first durable conversation starts without importing legacy history. Existing history stays available in the application.
+Each conversation imports its recent legacy history once, including native conversations created before history import existed.
+Imports contain at most 40 messages, with 2,000 characters per message and a 16,000-character serialized payload bound.
+Imports exclude Durable projections and contain reference text, not executable tool calls. Existing messages remain unchanged.
+`/new` isolates the new conversation from earlier archives. History-loading failures block admission until a retry succeeds.
 Scheduled briefings and recaps submit into the same active Durable conversation.
 Reports use discussion for priorities and constraints, then fetch current todo data for facts.
 Interactive requests and scheduled reports share Pi's conversation queue and automatic compaction.
@@ -203,6 +206,9 @@ Safety boundaries:
 - Reports can wait until the end of their scheduled local day. New tool calls stop five minutes after the report enters the conversation.
 - Runs allow 50 tool executions. In-flight external actions can finish after the deadline; active runs finish without aborting other queued inputs.
 - Scheduled report tools are read-only. Current report preferences and credentials revalidate before resumed phases and tool calls.
+- Scheduled model failures allow two additional read-only generation attempts, with persisted 30-second backoff and stable attempt IDs.
+- Retries stay within the report deadline. Interactive failures, empty answers, and guardrail stops do not trigger automatic generation retries.
+- Failed generation and expired inputs retain failed outcomes after their user-facing notices deliver; the handler sends no duplicate notice.
 - Failed projection/delivery retries every 30 seconds. The Telegram handler stops waiting after six minutes; durable delivery continues.
 - Ambiguous Telegram sends can produce duplicate reply chunks.
 - Printing claims its attempt before contacting the printer. Recovery never repeats an ambiguous print; interruption can miss a print.

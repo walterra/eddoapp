@@ -43,9 +43,10 @@ describe('durable execution limits and recovery', () => {
   it('never starts an expired request after recovery', async () => {
     const fixture = await createRuntimeFixture();
     const runtime = await open(fixture.options);
-    expect(await runtime.execute(createTestInput({ deadline: Date.now() - 1 }))).toContain(
+    await expect(runtime.execute(createTestInput({ deadline: Date.now() - 1 }))).rejects.toThrow(
       'expired',
     );
+    expect(fixture.options.send).toHaveBeenCalledOnce();
     expect(fixture.provider.state.callCount).toBe(0);
   });
 
@@ -61,7 +62,7 @@ describe('durable execution limits and recovery', () => {
       ),
     );
     const runtime = await open(fixture.options);
-    await runtime.execute(createTestInput());
+    await expect(runtime.execute(createTestInput())).rejects.toThrow('no final answer');
     expect(fixture.options.client.invoke).toHaveBeenCalledTimes(50);
     expect(fixture.provider.state.callCount).toBe(51);
     expect(fixture.options.send).toHaveBeenCalledOnce();

@@ -43,7 +43,8 @@ export interface DurableRequestInput {
 }
 
 export type RequestCheckpoint =
-  | { phase: 'generate' }
+  | { phase: 'generate'; attempt?: number }
+  | { phase: 'retry'; attempt: number; notBefore: number }
   | {
       phase: 'deliver';
       answer: string;
@@ -52,5 +53,12 @@ export type RequestCheckpoint =
       attempts: number;
       printable?: boolean;
       reportType?: ReportType;
+      failure?: string;
     }
-  | { phase: 'print'; answer: string; printable: boolean; reportType?: ReportType };
+  | {
+      phase: 'print';
+      answer: string;
+      printable: boolean;
+      reportType?: ReportType;
+      failure?: string;
+    };

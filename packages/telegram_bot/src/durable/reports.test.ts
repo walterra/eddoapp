@@ -99,10 +99,9 @@ describe('reports in the interactive Durable conversation', () => {
     const runtime = await open(fixture.options);
     const active = runtime.execute(report());
     await vi.waitFor(() => expect(fixture.provider.state.callCount).toBe(1));
-    const expired = await runtime.execute(
-      createTestInput({ requestId: 'telegram:late', deadline: Date.now() + 25 }),
-    );
-    expect(expired).toContain('queued request expired');
+    await expect(
+      runtime.execute(createTestInput({ requestId: 'telegram:late', deadline: Date.now() + 25 })),
+    ).rejects.toThrow('expired');
     expect(fixture.provider.state.callCount).toBe(1);
     gate.resolve();
     expect(await active).toBe(rendered('Active report survives'));
@@ -203,7 +202,7 @@ describe('reports in the interactive Durable conversation', () => {
       fauxAssistantMessage(fauxToolCall('createTodo', {}), { stopReason: 'toolUse' }),
     ]);
     const runtime = await open(fixture.options);
-    await runtime.execute(report());
+    await expect(runtime.execute(report())).rejects.toThrow('no final answer');
     expect(fixture.options.client.invoke).not.toHaveBeenCalled();
     expect(fixture.options.send).toHaveBeenCalledOnce();
   });
