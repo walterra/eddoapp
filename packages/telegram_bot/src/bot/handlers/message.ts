@@ -1,37 +1,9 @@
-import { getEddoAgent } from '../../agent/index.js';
+import { isDeliveredRequestFailure } from '../../durable/request_failure.js';
+import { isPendingDurableRequest } from '../../durable/request_wait.js';
+import { executeAgentMessage } from '../../durable/routing.js';
 import { logger, SpanAttributes, withSpan } from '../../utils/logger.js';
 import type { BotContext } from '../bot.js';
-import {
-  logFailure,
-  logFatalError,
-  logSuccess,
-  sendFatalErrorMessage,
-  sendWorkflowErrorMessage,
-} from './message-helpers.js';
-
-interface AgentResult {
-  success: boolean;
-  finalResponse?: string;
-  error?: Error;
-}
-
-async function processAgentResult(
-  ctx: BotContext,
-  result: AgentResult,
-  userId: number,
-): Promise<void> {
-  if (result.success) {
-    logSuccess(userId, !!result.finalResponse);
-    if (result.finalResponse) {
-      ctx.session.lastBotMessage = result.finalResponse;
-    }
-  } else {
-    logFailure(userId, result.error);
-    if (!result.finalResponse) {
-      await sendWorkflowErrorMessage(ctx);
-    }
-  }
-}
+import { logFatalError, logSuccess, sendFatalErrorMessage } from './message-helpers.js';
 
 /**
  * Handles incoming text messages using the AI agent workflow
@@ -62,17 +34,18 @@ export async function handleMessage(ctx: BotContext): Promise<void> {
       try {
         await ctx.replyWithChatAction('typing');
 
-        const agent = getEddoAgent({
-          enableStreaming: true,
-          enableApprovals: true,
-          maxExecutionTime: 300000,
-        });
-
-        const result = await agent.processMessage(messageText, userId.toString(), ctx);
-        await processAgentResult(ctx, result, userId);
+        ctx.session.lastBotMessage = await executeAgentMessage(messageText, ctx);
+        logSuccess(userId, Boolean(ctx.session.lastBotMessage));
       } catch (error) {
+        if (isPendingDurableRequest(error)) {
+          logger.info('Durable request remains pending', { userId, requestId: error.requestId });
+          await ctx.reply(
+            'The request is still pending. Its outcome is not confirmed; do not repeat it. Any resulting reply will be sent here when delivery succeeds.',
+          );
+          return;
+        }
         logFatalError(userId, error, messageText);
-        await sendFatalErrorMessage(ctx);
+        if (!isDeliveredRequestFailure(error)) await sendFatalErrorMessage(ctx);
       }
     },
   );

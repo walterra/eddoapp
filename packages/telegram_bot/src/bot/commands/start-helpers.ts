@@ -97,7 +97,8 @@ interface AgentStatus {
   version: string;
   workflowType: string;
   uptime: number;
-  simpleFeatures?: { mcpToolsAvailable?: number };
+  model: string;
+  mcpToolsAvailable: number;
 }
 
 /**
@@ -113,5 +114,6 @@ export function buildAgentSection(agentStatus: AgentStatus): string {
 • Version: ${escapeMarkdown(agentStatus.version)}
 • Workflow: ${escapeMarkdown(agentStatus.workflowType)}
 • Uptime: ${uptimeMin}m ${uptimeSec}s
-• MCP Tools: ${agentStatus.simpleFeatures?.mcpToolsAvailable || 0}`;
+• Model: ${escapeMarkdown(agentStatus.model)}
+• MCP Tools: ${agentStatus.mcpToolsAvailable}`;
 }

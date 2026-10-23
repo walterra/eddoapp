@@ -73,7 +73,9 @@ function runPlaybackForModel(model: string): Promise<number> {
 async function runPlaybackForAllModels(): Promise<void> {
   const models = discoverRecordedModels();
   if (models.length === 0) {
-    throw new Error(`No model cassette directories found in ${CASSETTES_DIR}`);
+    throw new Error(
+      `No model cassettes found in ${CASSETTES_DIR}. Record with pnpm test:integration:agent-loop:record first.`,
+    );
   }
 
   console.log(`📼 Found ${models.length} VCR model cassette set(s): ${models.join(', ')}`);

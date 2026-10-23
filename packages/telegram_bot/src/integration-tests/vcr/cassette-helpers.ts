@@ -88,7 +88,10 @@ function sanitizePathSegment(value: string): string {
 export function getCassettePath(input: CassettePathInput): string {
   const { cassettesDir, testName, namespace } = input;
   const safeName = sanitizePathSegment(testName);
-  return join(cassettesDir, sanitizePathSegment(namespace), `${safeName}.json`);
+  const modelNamespace = namespace.startsWith('anthropic/')
+    ? namespace.slice('anthropic/'.length)
+    : namespace;
+  return join(cassettesDir, sanitizePathSegment(modelNamespace), `${safeName}.json`);
 }
 
 /**
@@ -144,10 +147,6 @@ interface InteractionRecordInput {
   responseTimeMs: number;
 }
 
-function truncateMessageContent(content: string, maxLen = 200): string {
-  return content.length > maxLen ? content.substring(0, maxLen) + '...' : content;
-}
-
 /**
  * Creates interaction record for storage
  * @param input - Interaction record input parameters
@@ -161,7 +160,13 @@ export function createInteractionRecord(input: InteractionRecordInput): LLMInter
     request: {
       model,
       systemPrompt: normalizeSystemPromptForStorage(systemPrompt),
-      messages: messages.map((m) => ({ role: m.role, content: truncateMessageContent(m.content) })),
+      messages: messages.map((message) => ({
+        role: message.role,
+        content:
+          message.role === 'system' && message.content.length > 200
+            ? `${message.content.slice(0, 200)}...`
+            : message.content,
+      })),
     },
     response,
     metadata: {

@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
+    "@testcontainers/couchdb": "^12.2.0",
     "@types/node": "^25.9.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

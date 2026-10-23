@@ -1,342 +1,134 @@
 import {
   createEnv,
   createUserRegistry,
+  formatDateInTimeZone,
   formatTimeInTimeZone,
   normalizeTimeZone,
 } from '@eddo/core-server';
-import type { Bot } from 'grammy';
-
-import type { BotContext } from '../bot/bot.js';
-import {
-  BRIEFING_CONTENT_MARKER,
-  DAILY_BRIEFING_REQUEST_MESSAGE,
-  getRecapRequestMessage,
-  RECAP_CONTENT_MARKER,
-} from '../constants/briefing.js';
-import { logger, SpanAttributes, withSpan } from '../utils/logger.js';
+import type { ReportType } from '../durable/state.js';
+import { logger, withSpan } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
-
 import {
   createSentKey,
   isWithinTimeWindow,
   resetSentTrackersForNewTimeZoneDays,
+  type SentTrackerState,
 } from './daily-briefing-timezone.js';
 import type {
   DailyBriefingSchedulerConfig,
   DailyBriefingSchedulerStatus,
 } from './daily-briefing-types.js';
-import {
-  executeAgentForUser,
-  logSuccessfulSend,
-  printIfEnabled,
-  sendBriefingWithoutMarker,
-  sendTelegramMessage,
-  stripMarker,
-} from './helpers/index.js';
+import { runScheduledReport } from './report_routing.js';
 
-import { runReservedReport } from './report-reservation.js';
+export interface DailyBriefingScheduler {
+  start: () => void;
+  stop: () => void;
+  checkNow: () => Promise<void>;
+  getStatus: () => DailyBriefingSchedulerStatus;
+}
+interface SchedulerState extends SentTrackerState {
+  timer: ReturnType<typeof setInterval> | undefined;
+  inFlight: Set<string>;
+}
+interface ReportCheck {
+  user: TelegramUser;
+  type: ReportType;
+  now: Date;
+}
 
-export class DailyBriefingScheduler {
-  private bot: Bot<BotContext>;
-  private checkIntervalMs: number;
-  private intervalId: NodeJS.Timeout | null = null;
-  private sentBriefingsToday: Set<string> = new Set();
-  private sentRecapsToday: Set<string> = new Set();
-  private currentDatesByTimeZone: Map<string, string> = new Map();
-  private isRunning = false;
-
-  constructor(config: DailyBriefingSchedulerConfig) {
-    this.bot = config.bot;
-    this.checkIntervalMs = config.checkIntervalMs;
-
-    logger.info('Daily briefing scheduler created', { checkIntervalMs: this.checkIntervalMs });
-  }
-
-  start(): void {
-    if (this.isRunning) {
-      logger.warn('Daily briefing scheduler is already running');
-      return;
-    }
-
-    this.isRunning = true;
-    this.intervalId = setInterval(() => {
-      this.checkAndSendBriefings().catch((error) => {
-        logger.error('Error in daily briefing check', { error });
-      });
-    }, this.checkIntervalMs);
-
-    logger.info('Daily briefing scheduler started');
-  }
-
-  stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
-    this.isRunning = false;
-    logger.info('Daily briefing scheduler stopped');
-  }
-
-  private async checkAndSendBriefings(): Promise<void> {
-    const now = new Date();
-    resetSentTrackersForNewTimeZoneDays(
-      {
-        currentDatesByTimeZone: this.currentDatesByTimeZone,
-        sentBriefingsToday: this.sentBriefingsToday,
-        sentRecapsToday: this.sentRecapsToday,
-      },
-      now,
+/** Checks one local-time occurrence and durably admits it without owning delivery. */
+async function checkReport(state: SchedulerState, check: ReportCheck): Promise<void> {
+  const { user, type, now } = check;
+  const timezone = normalizeTimeZone(user.preferences.timezone);
+  const scheduled =
+    type === 'briefing'
+      ? user.preferences.briefingTime || '07:00'
+      : user.preferences.recapTime || '18:00';
+  const sentKey = createSentKey(user._id, now, timezone, scheduled);
+  const sent = type === 'briefing' ? state.sentBriefingsToday : state.sentRecapsToday;
+  const key = `${type}:${sentKey}`;
+  if (sent.has(sentKey) || state.inFlight.has(key) || !isWithinTimeWindow(scheduled, now, timezone))
+    return;
+  state.currentDatesByTimeZone.set(timezone, formatDateInTimeZone(now, timezone));
+  state.inFlight.add(key);
+  logger.info('Admitting scheduled report at preferred time', {
+    username: user.username,
+    type,
+    timezone,
+    scheduled,
+    currentTime: formatTimeInTimeZone(now, timezone),
+  });
+  try {
+    const admitted = await withSpan(`scheduler_send_${type}`, { 'user.id': user._id }, () =>
+      runScheduledReport({ user, type, sentKey }),
     );
-
-    try {
-      await this.checkAndSendUserBriefings(now);
-      await this.checkAndSendUserRecaps(now);
-    } catch (error) {
-      logger.error('Failed to check and send daily briefings/recaps', { error });
-    }
-  }
-
-  private async checkAndSendUserBriefings(now: Date): Promise<void> {
-    const env = createEnv();
-    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
-
-    try {
-      const users = await userRegistry.list();
-      const briefingUsers = users.filter(
-        (user) =>
-          user.status === 'active' && user.preferences?.dailyBriefing === true && user.telegram_id,
-      );
-
-      logger.debug('Checking briefing times for users', {
-        totalUsers: users.length,
-        briefingUsers: briefingUsers.length,
-        currentTime: now.toISOString(),
-      });
-
-      for (const user of briefingUsers) {
-        await this.checkUserBriefingTime(user as TelegramUser, now);
-      }
-    } catch (error) {
-      logger.error('Failed to check user briefing times', { error });
-    }
-  }
-
-  private async checkUserBriefingTime(user: TelegramUser, now: Date): Promise<void> {
-    const timeZone = normalizeTimeZone(user.preferences?.timezone);
-    const briefingTime = user.preferences?.briefingTime || '07:00';
-    const sentKey = createSentKey(user._id, now, timeZone, briefingTime);
-    if (this.sentBriefingsToday.has(sentKey)) return;
-
-    if (!isWithinTimeWindow(briefingTime, now, timeZone)) return;
-
-    logger.info('Sending briefing to user at their preferred time', {
-      userId: user._id,
+    if (admitted) sent.add(sentKey);
+    logger.info('Scheduled report occurrence handled', { username: user.username, type, admitted });
+  } catch (error) {
+    logger.error('Failed to admit scheduled report; next check can retry admission', {
       username: user.username,
-      briefingTime,
-      currentTime: formatTimeInTimeZone(now, timeZone),
-      timeZone,
+      type,
+      error,
     });
-
-    try {
-      const wasSent = await runReservedReport(user.database_name, `briefing:${sentKey}`, () =>
-        this.sendBriefingToUser(user),
-      );
-      if (!wasSent) return;
-
-      this.sentBriefingsToday.add(sentKey);
-      logger.info('Successfully sent briefing to user', {
-        userId: user._id,
-        username: user.username,
-      });
-    } catch (error) {
-      logger.error('Failed to send briefing to user', {
-        userId: user._id,
-        username: user.username,
-        error,
-      });
-    }
-  }
-
-  private async sendBriefingToUser(user: TelegramUser): Promise<boolean> {
-    if (!user.telegram_id) {
-      logger.warn('User has no telegram_id', { userId: user._id });
-      return false;
-    }
-
-    return withSpan(
-      'scheduler_send_briefing',
-      {
-        [SpanAttributes.USER_ID]: user._id,
-        [SpanAttributes.USERNAME]: user.username,
-        [SpanAttributes.TELEGRAM_CHAT_ID]: user.telegram_id,
-      },
-      async () => {
-        const result = await executeAgentForUser({
-          bot: this.bot,
-          user,
-          requestMessage: DAILY_BRIEFING_REQUEST_MESSAGE,
-          contentMarker: BRIEFING_CONTENT_MARKER,
-          contentType: 'briefing',
-        });
-
-        if (!result.success) return false;
-
-        if (result.hasMarker) {
-          await this.sendBriefingWithMarker(user, result.message);
-        } else {
-          await sendBriefingWithoutMarker(this.bot, user, result.message);
-        }
-
-        return result.success;
-      },
-    );
-  }
-
-  private async sendBriefingWithMarker(user: TelegramUser, message: string): Promise<void> {
-    const cleanMessage = stripMarker(message, BRIEFING_CONTENT_MARKER);
-
-    await sendTelegramMessage(this.bot, {
-      telegramId: user.telegram_id!,
-      message: cleanMessage,
-      disableLinkPreview: true,
-    });
-
-    if (user.preferences?.printBriefing) {
-      await printIfEnabled({
-        userId: user._id,
-        username: user.username,
-        content: cleanMessage,
-        type: 'briefing',
-      });
-    }
-
-    logSuccessfulSend({
-      contentType: 'briefing',
-      userId: user._id,
-      username: user.username,
-      telegramId: user.telegram_id!,
-      messageLength: cleanMessage.length,
-    });
-  }
-
-  private async checkAndSendUserRecaps(now: Date): Promise<void> {
-    const env = createEnv();
-    const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
-
-    try {
-      const users = await userRegistry.list();
-      const recapUsers = users.filter(
-        (user) =>
-          user.status === 'active' && user.preferences?.dailyRecap === true && user.telegram_id,
-      );
-
-      logger.debug('Checking recap times for users', {
-        totalUsers: users.length,
-        recapUsers: recapUsers.length,
-        currentTime: now.toISOString(),
-      });
-
-      for (const user of recapUsers) {
-        await this.checkUserRecapTime(user as TelegramUser, now);
-      }
-    } catch (error) {
-      logger.error('Failed to check user recap times', { error });
-    }
-  }
-
-  private async checkUserRecapTime(user: TelegramUser, now: Date): Promise<void> {
-    const timeZone = normalizeTimeZone(user.preferences?.timezone);
-    const recapTime = user.preferences?.recapTime || '18:00';
-    const sentKey = createSentKey(user._id, now, timeZone, recapTime);
-    if (this.sentRecapsToday.has(sentKey)) return;
-
-    if (!isWithinTimeWindow(recapTime, now, timeZone)) return;
-
-    logger.info('Sending recap to user at their preferred time', {
-      userId: user._id,
-      username: user.username,
-      recapTime,
-      currentTime: formatTimeInTimeZone(now, timeZone),
-      timeZone,
-    });
-
-    try {
-      const wasSent = await runReservedReport(user.database_name, `recap:${sentKey}`, () =>
-        this.sendRecapToUser(user),
-      );
-      if (!wasSent) return;
-
-      this.sentRecapsToday.add(sentKey);
-      logger.info('Successfully sent recap to user', { userId: user._id, username: user.username });
-    } catch (error) {
-      logger.error('Failed to send recap to user', {
-        userId: user._id,
-        username: user.username,
-        error,
-      });
-    }
-  }
-
-  private async sendRecapToUser(user: TelegramUser): Promise<boolean> {
-    if (!user.telegram_id) {
-      logger.warn('User has no telegram_id', { userId: user._id });
-      return false;
-    }
-
-    const result = await executeAgentForUser({
-      bot: this.bot,
-      user,
-      requestMessage: getRecapRequestMessage(user.preferences?.timezone),
-      contentMarker: RECAP_CONTENT_MARKER,
-      contentType: 'recap',
-    });
-
-    if (!result.success) return false;
-
-    if (result.hasMarker) {
-      const cleanMessage = stripMarker(result.message, RECAP_CONTENT_MARKER);
-      await sendTelegramMessage(this.bot, { telegramId: user.telegram_id, message: cleanMessage });
-
-      logSuccessfulSend({
-        contentType: 'recap',
-        userId: user._id,
-        username: user.username,
-        telegramId: user.telegram_id,
-        messageLength: cleanMessage.length,
-      });
-
-      if (user.preferences?.printRecap) {
-        await printIfEnabled({
-          userId: user._id,
-          username: user.username,
-          content: cleanMessage,
-          type: 'recap',
-        });
-      }
-    } else {
-      logger.warn('Recap did not contain expected marker, sending anyway', { userId: user._id });
-      await sendTelegramMessage(this.bot, {
-        telegramId: user.telegram_id,
-        message: result.message,
-      });
-    }
-
-    return result.success;
-  }
-
-  getStatus(): DailyBriefingSchedulerStatus {
-    return {
-      isRunning: this.isRunning,
-      currentDatesByTimeZone: Object.fromEntries(this.currentDatesByTimeZone),
-      sentBriefingsToday: this.sentBriefingsToday.size,
-      sentRecapsToday: this.sentRecapsToday.size,
-      checkIntervalMs: this.checkIntervalMs,
-    };
+  } finally {
+    state.inFlight.delete(key);
   }
 }
 
+/** Lists active linked users and checks enabled report schedules. */
+async function checkScheduledReports(state: SchedulerState): Promise<void> {
+  const now = new Date();
+  resetSentTrackersForNewTimeZoneDays(state, now);
+  try {
+    const env = createEnv();
+    const users = await createUserRegistry(env.COUCHDB_URL, env).list();
+    for (const user of users.filter((item) => item.status === 'active' && item.telegram_id)) {
+      if (user.preferences.dailyBriefing)
+        await checkReport(state, { user: user as TelegramUser, type: 'briefing', now });
+      if (user.preferences.dailyRecap)
+        await checkReport(state, { user: user as TelegramUser, type: 'recap', now });
+    }
+  } catch (error) {
+    logger.error('Failed to check scheduled reports', { error });
+  }
+}
+
+/** Keeps timezone scheduling in the bot while Durable owns execution and recovery. */
 export function createDailyBriefingScheduler(
   config: DailyBriefingSchedulerConfig,
 ): DailyBriefingScheduler {
-  return new DailyBriefingScheduler(config);
+  const state: SchedulerState = {
+    timer: undefined,
+    inFlight: new Set(),
+    currentDatesByTimeZone: new Map(),
+    sentBriefingsToday: new Set(),
+    sentRecapsToday: new Set(),
+  };
+  const checkNow = (): Promise<void> => checkScheduledReports(state);
+  logger.info('Daily briefing scheduler created', { checkIntervalMs: config.checkIntervalMs });
+  return {
+    checkNow,
+    start: () => {
+      if (state.timer) {
+        logger.warn('Daily briefing scheduler is already running');
+        return;
+      }
+      state.timer = setInterval(() => {
+        void checkNow();
+      }, config.checkIntervalMs);
+      logger.info('Daily briefing scheduler started');
+    },
+    stop: () => {
+      clearInterval(state.timer);
+      state.timer = undefined;
+      logger.info('Daily briefing scheduler stopped');
+    },
+    getStatus: () => ({
+      isRunning: Boolean(state.timer),
+      currentDatesByTimeZone: Object.fromEntries(state.currentDatesByTimeZone),
+      sentBriefingsToday: state.sentBriefingsToday.size,
+      sentRecapsToday: state.sentRecapsToday.size,
+      checkIntervalMs: config.checkIntervalMs,
+    }),
+  };
 }

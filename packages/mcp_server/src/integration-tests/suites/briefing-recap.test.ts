@@ -4,19 +4,20 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import type { ReportItem } from '../../tools/report_payload.js';
 import { createTestTodoData, testDates } from '../__fixtures__/todo-factory.js';
-import type { MCPResponse, TodoAlpha4 } from '../helpers/mcp-assertions.js';
+import type { MCPResponse } from '../helpers/mcp-assertions.js';
 import { createMCPAssertions } from '../helpers/mcp-assertions.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
 /** Briefing data structure returned by getBriefingData */
 interface BriefingData {
-  todaysTodos: TodoAlpha4[];
-  overdueTodos: TodoAlpha4[];
-  nextActions: TodoAlpha4[];
-  waitingFor: TodoAlpha4[];
-  calendarToday: TodoAlpha4[];
-  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
+  todaysTodos: ReportItem[];
+  overdueTodos: ReportItem[];
+  nextActions: ReportItem[];
+  waitingFor: ReportItem[];
+  calendarToday: ReportItem[];
+  activeTimeTracking: ReportItem[];
   metadata: {
     date: string;
     dateStart: string;
@@ -34,9 +35,9 @@ interface BriefingData {
 
 /** Recap data structure returned by getRecapData */
 interface RecapData {
-  completedToday: TodoAlpha4[];
-  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
-  upcomingNextActions: TodoAlpha4[];
+  completedToday: ReportItem[];
+  activeTimeTracking: ReportItem[];
+  upcomingNextActions: ReportItem[];
   metadata: {
     date: string;
     dateStart: string;
@@ -456,8 +457,10 @@ describe('Briefing and Recap Data Integration', () => {
       expect(duration).toBeLessThan(5000);
 
       // Verify data was retrieved
-      expect(result.todaysTodos.length).toBe(batchSize);
-      expect(result.nextActions.length).toBe(batchSize);
+      expect(result.todaysTodos.length).toBe(10);
+      expect(result.nextActions.length).toBe(10);
+      expect(result.metadata.counts.todaysTodos).toBe(batchSize);
+      expect(result.metadata.counts.nextActions).toBe(batchSize);
     });
   });
 });

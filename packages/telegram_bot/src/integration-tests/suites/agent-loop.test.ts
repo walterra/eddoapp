@@ -20,9 +20,13 @@ import nano from 'nano';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createAgentAssertions } from '../helpers/agent-assertions.js';
-import { TestAgentServer } from '../setup/test-agent-server.js';
+import { createTestAgentServer, type TestAgentServer } from '../setup/test-agent-server.js';
 
 const TELEGRAM_BOT_MODEL = 'claude-sonnet-4-5-20250929';
+
+interface NativeMessage {
+  content: string | Array<{ type: string; text?: string }>;
+}
 
 interface AssistantConversationMessageDoc {
   version: 'assistant_conversation_message_alpha1';
@@ -53,16 +57,6 @@ async function getAssistantConversationMessages(
     .sort((a, b) => a.sequence - b.sequence || a.createdAt.localeCompare(b.createdAt));
 }
 
-async function clearAssistantConversationMessages(username: string): Promise<void> {
-  const chatDb = getAssistantConversationDb(username);
-  const result = await chatDb.list({ include_docs: true });
-  const docs = result.rows
-    .map((row) => row.doc as { _id?: string; _rev?: string; version?: string } | undefined)
-    .filter((doc) => doc?.version?.startsWith('assistant_conversation_'));
-
-  await Promise.all(docs.map((doc) => chatDb.destroy(doc!._id!, doc!._rev!)));
-}
-
 describe('Agent Loop E2E Integration', () => {
   let agentServer: TestAgentServer;
   let assert: ReturnType<typeof createAgentAssertions>;
@@ -80,7 +74,7 @@ describe('Agent Loop E2E Integration', () => {
   });
 
   beforeEach(async () => {
-    agentServer = new TestAgentServer({
+    agentServer = createTestAgentServer({
       llmModel: process.env.LLM_MODEL || TELEGRAM_BOT_MODEL,
     });
 
@@ -275,14 +269,22 @@ describe('Agent Loop E2E Integration', () => {
       expect(secondResponse.message.toLowerCase()).toContain('deep-work');
 
       const secondRequest = agentServer.getLlmRequests()[requestCountAfterFirstMessage];
-      const conversationId = secondRequest.sessionId?.replace(`assistant:${username}:`, '');
-      expect(conversationId).toBeTruthy();
-      expect(secondRequest.sessionId).toBe(`assistant:${username}:${conversationId}`);
-      expect(secondRequest.messages.map((message) => message.content)).toEqual([
-        firstInput,
-        firstMessages[1].content,
-        secondInput,
-      ]);
+      expect(secondRequest.sessionId).toBeTruthy();
+      expect(secondRequest.sessionId).toBe(agentServer.getLlmRequests()[0].sessionId);
+      const history = secondRequest.messages
+        .filter((message) => message.role === 'user' || message.role === 'assistant')
+        .map((message) => {
+          const native = JSON.parse(message.content) as NativeMessage;
+          return typeof native.content === 'string'
+            ? native.content
+            : native.content
+                .filter((block) => block.type === 'text')
+                .map((block) => block.text ?? '')
+                .join('');
+        });
+      expect(history.some((content) => content.includes(firstInput))).toBe(true);
+      expect(history).toContain(firstMessages[1].content);
+      expect(history.at(-1)).toContain(secondInput);
 
       const allMessages = await getAssistantConversationMessages(username!);
       expect(allMessages.map((message) => message.role)).toEqual([
@@ -325,15 +327,15 @@ describe('Agent Loop E2E Integration', () => {
     });
   });
 
-  describe('STATUS Message Pattern', () => {
-    it('should use STATUS for intermediate feedback without hallucinated content', async () => {
+  describe('Native Tool Feedback', () => {
+    it('delivers the final recap after native tools without leaking text tool protocols', async () => {
       agentServer.loadCassette('status-message-pattern');
 
       // First create some todos to have data for the recap
       const setupInput = 'create a work todo called "Test task for recap"';
       const setupContext = agentServer.createMockContext();
       await assert.expectTimely(agentServer.executeAgent(setupInput, 'test-user-6', setupContext));
-      await clearAssistantConversationMessages(setupContext.session!.user!.username);
+      await agentServer.startNewConversation();
 
       // Request a recap which requires multiple tool calls
       const recapInput = 'show me what I completed today';
@@ -372,6 +374,7 @@ describe('Agent Loop E2E Integration', () => {
       // Final response should have actual content
       const finalReply = replies[replies.length - 1];
       expect(finalReply.length).toBeGreaterThan(20);
+      expect(finalReply).not.toMatch(/TOOL_CALL:|^STATUS:/m);
     });
   });
 });

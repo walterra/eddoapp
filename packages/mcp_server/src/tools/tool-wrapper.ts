@@ -4,6 +4,7 @@
 import { context, trace } from '@opentelemetry/api';
 
 import { logger } from '../utils/logger.js';
+import { executeWithMutationReceipt } from './mutation_receipts.js';
 import type { ToolContext, UserSession } from './types.js';
 
 // Store extracted trace context per request (keyed by session)
@@ -40,9 +41,11 @@ export function wrapToolExecution<TArgs, TResult>(
 
     return context.with(trace.setSpan(parentContext, span), async () => {
       try {
-        const result = await Promise.resolve(executeFn(args, toolContext));
+        const result = await executeWithMutationReceipt(toolName, args, toolContext.session, () =>
+          Promise.resolve(executeFn(args, toolContext)),
+        );
         span.setAttribute('mcp.result', 'success');
-        logger.info({ toolName, userId: toolContext.session?.userId }, 'MCP tool executed');
+        logger.info({ toolName, userId: toolContext.session?.userId }, 'MCP tool request handled');
         span.end();
         return result;
       } catch (error) {

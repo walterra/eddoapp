@@ -21,6 +21,7 @@ overrides:
   '@changesets/parse': '>=0.4.2'
 
 allowBuilds:
+  '@google/genai': false
   '@pnpm/exe': true
   '@swc/core': true
   '@tailwindcss/oxide': true
@@ -33,3 +34,6 @@ allowBuilds:
   ssh2: true
   tldjs: true
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - pi-durable-couchdb@0.0.1

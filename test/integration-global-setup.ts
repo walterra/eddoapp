@@ -6,6 +6,7 @@ import { setupTestcontainer, teardownTestcontainer } from './global-testcontaine
 
 export default async function setup() {
   await setupTestcontainer();
+  return teardown;
 }
 
 export async function teardown() {

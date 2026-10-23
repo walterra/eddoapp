@@ -1,270 +1,128 @@
-/**
- * Get Briefing Data Tool - Aggregates all data needed for daily briefing in one call
- */
-import type { TodoAlpha4 } from '@eddo/core-server';
-import type { MangoQuery } from 'nano';
 import { z } from 'zod';
-
 import { getTimezoneDateRange, type DateRange } from './date-range.js';
-import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
+import type { ReportQuery } from './report_payload.js';
+import { reportResponse } from './report_response.js';
+import { createErrorResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
 
-/** Tool description for LLM consumption */
-export const getBriefingDataDescription = `Get all data needed for a daily briefing in a single call.
+export const getBriefingDataDescription = `Get compact daily briefing data with current date, weekday, timezone, total counts and explicit selection/truncation metadata.
+Returns up to 10 actionable todos today, 10 most recently overdue actions, 10 next actions, 5 waiting items, 20 calendar appointments, and all summarized active sessions.
+Someday items are excluded from action lists and counted separately as somedayBacklog. Counts with countExact=false are lower bounds.
+Todo fields include id, title, context, due, tags, calendar time, trackedMinutes and activeSessionCount; descriptions and internal revisions are omitted.
+Use this instead of multiple listTodos calls. Never infer zero items from a failed tool response.`;
 
-Returns aggregated data including:
-- Today's todos (due today, not completed)
-- Overdue todos (past due date, not completed)
-- Next actions (tagged gtd:next, not completed)
-- Waiting for items (tagged gtd:waiting, not completed)
-- Calendar appointments (tagged gtd:calendar, due today)
-- Active time tracking entries
-
-Use this instead of multiple listTodos calls when generating daily briefings.`;
-
-/** Zod schema for getBriefingData parameters */
 export const getBriefingDataParameters = z
   .object({})
-  .describe('No parameters required - returns all briefing-relevant data for the current date');
-
+  .describe('Returns briefing data for the current date in the user timezone');
 export type GetBriefingDataArgs = z.infer<typeof getBriefingDataParameters>;
 
-/** Structure for briefing data response */
-interface BriefingData {
-  todaysTodos: TodoAlpha4[];
-  overdueTodos: TodoAlpha4[];
-  nextActions: TodoAlpha4[];
-  waitingFor: TodoAlpha4[];
-  calendarToday: TodoAlpha4[];
-  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
-  metadata: {
-    date: string;
-    dateStart: string;
-    dateEnd: string;
-    timeZone: string;
-    counts: {
-      todaysTodos: number;
-      overdueTodos: number;
-      nextActions: number;
-      waitingFor: number;
-      calendarToday: number;
-      activeTimeTracking: number;
-    };
-  };
-}
-
-/** Query results from parallel execution */
-interface QueryResults {
-  todaysTodos: TodoAlpha4[];
-  overdueTodos: TodoAlpha4[];
-  nextActions: TodoAlpha4[];
-  waitingFor: TodoAlpha4[];
-  calendarToday: TodoAlpha4[];
-  activeTimeTracking: Array<TodoAlpha4 & { activeSessionCount: number }>;
-}
-
-/**
- * Executes a Mango query and returns results
- */
-async function executeQuery(
-  db: ReturnType<GetUserDb>,
-  query: MangoQuery,
-  context: ToolContext,
-  queryName: string,
-): Promise<TodoAlpha4[]> {
-  try {
-    context.log.debug(`Executing ${queryName} query`, { query: JSON.stringify(query) });
-    const response = await db.find(query);
-    return response.docs as TodoAlpha4[];
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    context.log.warn(`Query ${queryName} failed, returning empty array`, { error: message });
-    return [];
-  }
-}
-
-/**
- * Deduplicates todos by ID
- */
-function deduplicateTodos(todos: TodoAlpha4[]): TodoAlpha4[] {
-  const seenIds = new Set<string>();
-  return todos.filter((todo) => {
-    if (seenIds.has(todo._id)) return false;
-    seenIds.add(todo._id);
-    return true;
-  });
-}
-
-/**
- * Gets todos with active time tracking using the view
- */
-async function getActiveTimeTracking(
-  db: ReturnType<GetUserDb>,
-  context: ToolContext,
-): Promise<Array<TodoAlpha4 & { activeSessionCount: number }>> {
-  try {
-    const result = await db.view('todos_by_time_tracking_active', 'byTimeTrackingActive', {
-      include_docs: true,
-    });
-
-    const seenIds = new Set<string>();
-    return result.rows
-      .map((row) => row.doc)
-      .filter((doc): doc is TodoAlpha4 => {
-        if (!doc || seenIds.has(doc._id)) return false;
-        seenIds.add(doc._id);
-        return true;
-      })
-      .map((todo) => ({
-        ...todo,
-        activeSessionCount: Object.values(todo.active).filter((end) => end === null).length,
-      }));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    context.log.warn('Failed to get active time tracking, returning empty array', {
-      error: message,
-    });
-    return [];
-  }
-}
-
-/**
- * Builds all briefing queries for parallel execution
- */
-function buildBriefingQueries(dateRange: DateRange): Array<{ name: string; query: MangoQuery }> {
-  const { todayStart, todayEnd } = dateRange;
-  const baseSelector = { version: 'alpha4', completed: null };
-  const defaultOptions = {
-    sort: [{ due: 'asc' as const }],
-    limit: 50,
-    use_index: 'version-completed-due-index',
-  };
-
+/** Selects recent overdue actions instead of letting an old read-later backlog dominate. */
+function actionQueries(range: DateRange): ReportQuery[] {
+  const base = { version: 'alpha4', completed: null };
+  const options = { use_index: 'version-completed-due-index' };
   return [
     {
       name: 'todaysTodos',
+      limit: 10,
       query: {
-        selector: { ...baseSelector, due: { $gte: todayStart, $lte: todayEnd } },
-        ...defaultOptions,
+        ...options,
+        selector: {
+          ...base,
+          due: { $gte: range.todayStart, $lte: range.todayEnd },
+          tags: { $nin: ['gtd:someday', 'gtd:waiting', 'gtd:calendar'] },
+        },
+        sort: [{ due: 'asc' }],
       },
     },
     {
       name: 'overdueTodos',
-      query: { selector: { ...baseSelector, due: { $lt: todayStart } }, ...defaultOptions },
+      limit: 10,
+      query: {
+        ...options,
+        selector: {
+          ...base,
+          due: { $lt: range.todayStart },
+          tags: { $nin: ['gtd:someday', 'gtd:waiting', 'gtd:calendar'] },
+        },
+        sort: [{ due: 'desc' }],
+      },
     },
     {
       name: 'nextActions',
-      query: { selector: { ...baseSelector, tags: { $in: ['gtd:next'] } }, ...defaultOptions },
-    },
-    {
-      name: 'waitingFor',
-      query: { selector: { ...baseSelector, tags: { $in: ['gtd:waiting'] } }, ...defaultOptions },
-    },
-    {
-      name: 'calendarToday',
+      limit: 10,
       query: {
-        selector: {
-          ...baseSelector,
-          tags: { $in: ['gtd:calendar'] },
-          due: { $gte: todayStart, $lte: todayEnd },
-        },
-        ...defaultOptions,
+        ...options,
+        selector: { ...base, tags: { $all: ['gtd:next'], $nin: ['gtd:someday'] } },
+        sort: [{ due: 'asc' }],
       },
     },
   ];
 }
 
-/**
- * Executes all briefing queries in parallel
- */
-async function executeAllQueries(
-  db: ReturnType<GetUserDb>,
-  context: ToolContext,
-  dateRange: DateRange,
-): Promise<QueryResults> {
-  const queries = buildBriefingQueries(dateRange);
-
-  const [queryResults, activeTimeTracking] = await Promise.all([
-    Promise.all(queries.map((q) => executeQuery(db, q.query, context, q.name))),
-    getActiveTimeTracking(db, context),
-  ]);
-
-  const [todaysTodos, overdueTodos, nextActions, waitingFor, calendarToday] = queryResults;
-
-  return { todaysTodos, overdueTodos, nextActions, waitingFor, calendarToday, activeTimeTracking };
-}
-
-/**
- * Builds the briefing data response structure
- */
-function buildBriefingData(results: QueryResults, dateRange: DateRange): BriefingData {
-  return {
-    todaysTodos: deduplicateTodos(results.todaysTodos),
-    overdueTodos: deduplicateTodos(results.overdueTodos),
-    nextActions: deduplicateTodos(results.nextActions),
-    waitingFor: deduplicateTodos(results.waitingFor),
-    calendarToday: deduplicateTodos(results.calendarToday),
-    activeTimeTracking: results.activeTimeTracking,
-    metadata: {
-      date: dateRange.todayDate,
-      dateStart: dateRange.todayStart,
-      dateEnd: dateRange.todayEnd,
-      timeZone: dateRange.timeZone,
-      counts: {
-        todaysTodos: results.todaysTodos.length,
-        overdueTodos: results.overdueTodos.length,
-        nextActions: results.nextActions.length,
-        waitingFor: results.waitingFor.length,
-        calendarToday: results.calendarToday.length,
-        activeTimeTracking: results.activeTimeTracking.length,
+function contextQueries(range: DateRange): ReportQuery[] {
+  const base = { version: 'alpha4', completed: null };
+  const options = { use_index: 'version-completed-due-index' };
+  return [
+    {
+      name: 'waitingFor',
+      limit: 5,
+      query: {
+        ...options,
+        selector: { ...base, tags: { $in: ['gtd:waiting'] } },
+        sort: [{ due: 'asc' }],
       },
     },
-  };
+    {
+      name: 'calendarToday',
+      limit: 20,
+      query: {
+        ...options,
+        selector: {
+          ...base,
+          tags: { $in: ['gtd:calendar'] },
+          due: { $gte: range.todayStart, $lte: range.todayEnd },
+        },
+        sort: [{ due: 'asc' }],
+      },
+    },
+    {
+      name: 'somedayBacklog',
+      limit: 0,
+      query: {
+        ...options,
+        selector: { ...base, due: { $lt: range.todayStart }, tags: { $in: ['gtd:someday'] } },
+      },
+    },
+  ];
 }
 
-/**
- * Execute handler for getBriefingData tool
- */
+export function briefingQueries(range: DateRange): ReportQuery[] {
+  return [...actionQueries(range), ...contextQueries(range)];
+}
+
+/** Fetches bounded briefing sections and fails explicitly when a database query fails. */
 export async function executeGetBriefingData(
   _args: GetBriefingDataArgs,
   context: ToolContext,
   getUserDb: GetUserDb,
 ): Promise<string> {
-  const db = getUserDb(context);
-  const startTime = Date.now();
-  const dateRange = getTimezoneDateRange(new Date(), context.session?.timezone);
-
-  context.log.info('Getting briefing data for user', { userId: context.session?.userId });
-
+  const range = getTimezoneDateRange(new Date(), context.session?.timezone);
   try {
-    const results = await executeAllQueries(db, context, dateRange);
-    const briefingData = buildBriefingData(results, dateRange);
-    const executionTime = Date.now() - startTime;
-
-    context.log.info('Briefing data retrieved successfully', {
-      counts: briefingData.metadata.counts,
-      executionTime,
-    });
-
-    return createSuccessResponse({
-      summary: `Briefing data for ${dateRange.todayDate}`,
-      data: briefingData,
-      operation: 'get_briefing_data',
-      executionTime,
-    });
+    return await reportResponse(
+      { type: 'briefing', range, queries: briefingQueries(range) },
+      context,
+      getUserDb,
+    );
   } catch (error) {
     context.log.error('Failed to get briefing data', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : String(error),
     });
-
     return createErrorResponse({
       summary: 'Failed to get briefing data',
       error,
       operation: 'get_briefing_data',
       recoverySuggestions: [
-        'Check database connection',
-        'Verify authentication credentials',
-        'Try using individual listTodos calls as fallback',
+        'Check database connection and retry; do not treat unavailable sections as empty.',
       ],
     });
   }

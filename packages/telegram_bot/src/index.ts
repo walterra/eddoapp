@@ -14,6 +14,7 @@ import { handleNewConversation } from './bot/commands/new.js';
 import { handleRss } from './bot/commands/rss.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
+import { startDurableHost, stopDurableHost } from './durable/host.js';
 import { getMCPClient, setupMCPIntegration } from './mcp/client.js';
 import { createDailyBriefingScheduler } from './scheduler/daily-briefing.js';
 import { appConfig } from './utils/config.js';
@@ -65,10 +66,9 @@ async function initializeMCP(): Promise<void> {
 /**
  * Initialize and start the daily briefing scheduler
  */
-function initializeScheduler(bot: Bot<BotContext>): void {
+function initializeScheduler(): void {
   logger.info('Initializing daily briefing scheduler...');
   const dailyBriefingScheduler = createDailyBriefingScheduler({
-    bot,
     checkIntervalMs: 60 * 1000,
   });
 
@@ -96,7 +96,8 @@ async function main(): Promise<void> {
       logger.error('Bot error occurred', { error: err.error, context: err.ctx });
     });
 
-    initializeScheduler(bot);
+    await startDurableHost(bot);
+    initializeScheduler();
 
     logger.info('Starting bot polling...');
     bot.start();
@@ -119,6 +120,8 @@ async function handleShutdown(signal: string): Promise<void> {
     globalScheduler.stop();
     logger.info('Daily briefing scheduler stopped');
   }
+
+  await stopDurableHost();
 
   const mcpClient = getMCPClient();
   if (mcpClient) {

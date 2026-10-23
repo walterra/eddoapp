@@ -64,28 +64,25 @@ export function createAgentAssertions() {
      * Extract tool calls from agent response
      */
     extractToolCalls(response: AgentResponse): string[] {
-      const replies = response.context.replies;
-      const toolCalls: string[] = [];
-
-      replies.forEach((reply) => {
-        const toolMatch = reply.match(/Tool (\w+)/g);
-        if (toolMatch) {
-          toolCalls.push(...toolMatch.map((m) => m.replace('Tool ', '')));
-        }
-      });
-
-      return toolCalls;
+      return response.context.toolResults?.map((result) => result.toolName) ?? [];
     },
 
     /**
      * Assert that agent completed within reasonable time
      */
     async expectTimely<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
+        timer = setTimeout(
+          () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
+          timeoutMs,
+        );
       });
-
-      return Promise.race([promise, timeoutPromise]);
+      try {
+        return await Promise.race([promise, timeoutPromise]);
+      } finally {
+        clearTimeout(timer);
+      }
     },
   };
 }

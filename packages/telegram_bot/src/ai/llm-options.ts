@@ -1,51 +1,62 @@
-import type { Api, Model, SimpleStreamOptions, ThinkingLevel } from '@earendil-works/pi-ai';
+import type {
+  Api,
+  Model,
+  ModelThinkingLevel,
+  ModelsSimpleStreamOptions,
+} from '@earendil-works/pi-ai';
+import { z } from 'zod';
 
 const DEFAULT_MAX_TOKENS = 4096;
-const DEFAULT_REASONING: ThinkingLevel = 'low';
-const REASONING_LEVELS: readonly ThinkingLevel[] = ['minimal', 'low', 'medium', 'high', 'xhigh'];
+const DEFAULT_REASONING: ModelThinkingLevel = 'low';
+const REASONING_LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
 
-/** Parses positive integer env values. */
-function parsePositiveInteger(value: string | undefined): number | null {
-  if (!value) return null;
+const generationSchema = z.object({
+  LLM_MAX_TOKENS: z
+    .string()
+    .trim()
+    .regex(/^[1-9]\d*$/, 'LLM_MAX_TOKENS must be a positive integer')
+    .default(String(DEFAULT_MAX_TOKENS))
+    .transform(Number)
+    .pipe(z.number().int().positive()),
+  LLM_REASONING_EFFORT: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.enum(REASONING_LEVELS))
+    .default(DEFAULT_REASONING),
+});
 
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isInteger(parsed) || parsed <= 0) return null;
-
-  return parsed;
+export interface LlmGenerationSettings {
+  maxTokens: number;
+  thinkingLevel: ModelThinkingLevel;
 }
 
-/** Parses pi-ai reasoning effort env value. */
-function parseReasoning(value: string | undefined): ThinkingLevel {
-  if (!value) return DEFAULT_REASONING;
-
-  const normalized = value.trim().toLowerCase();
-  const reasoning = REASONING_LEVELS.find((level) => level === normalized);
-  return reasoning ?? DEFAULT_REASONING;
+/** Validates generation controls once per runtime instead of silently ignoring invalid settings. */
+export function parseLlmSettings(
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+): LlmGenerationSettings {
+  const parsed = generationSchema.parse(environment);
+  return { maxTokens: parsed.LLM_MAX_TOKENS, thinkingLevel: parsed.LLM_REASONING_EFFORT };
 }
 
-/** Returns model-aware max tokens for pi-ai simple calls. */
-export function getLlmMaxTokens(model: Model<Api>): number {
-  const configured = parsePositiveInteger(process.env.LLM_MAX_TOKENS);
-  const requested = configured ?? DEFAULT_MAX_TOKENS;
-  return Math.min(requested, model.maxTokens);
-}
-
-/** Builds pi-ai simple call options for chat agent requests. */
-export function createLlmOptions(
+/** Disables reasoning for models that do not advertise support. */
+export function modelThinkingLevel(
   model: Model<Api>,
-  apiKey: string,
-  sessionId?: string,
-): SimpleStreamOptions {
-  const options: SimpleStreamOptions = {
-    apiKey,
-    maxTokens: getLlmMaxTokens(model),
-    cacheRetention: 'long',
-    sessionId,
+  settings: LlmGenerationSettings,
+): ModelThinkingLevel {
+  return model.reasoning ? settings.thinkingLevel : 'off';
+}
+
+/** Caps generation and compaction requests without increasing a tighter Harness-supplied limit. */
+export function boundedLlmOptions(
+  model: Model<Api>,
+  settings: LlmGenerationSettings,
+  options: ModelsSimpleStreamOptions = {},
+): ModelsSimpleStreamOptions {
+  return {
+    ...options,
+    cacheRetention: options.cacheRetention ?? 'long',
+    maxTokens: Math.min(settings.maxTokens, model.maxTokens, options.maxTokens ?? Infinity),
+    ...(model.reasoning ? {} : { reasoning: undefined }),
   };
-
-  if (model.reasoning) {
-    options.reasoning = parseReasoning(process.env.LLM_REASONING_EFFORT);
-  }
-
-  return options;
 }

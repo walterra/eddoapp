@@ -206,7 +206,15 @@ jobs:
             ${{ runner.os }}-pnpm-store-
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Run agent loop integration tests (VCR playback)
+      - name: Test native VCR recording and playback boundary
+        run: pnpm test:integration:agent-loop -- packages/telegram_bot/src/integration-tests/vcr
+      - name: Test VCR round trip with real MCP and CouchDB
+        run: pnpm test:integration:agent-loop -- packages/telegram_bot/src/integration-tests/suites/durable-vcr-smoke.test.ts
+      - name: Run durable agent integration tests
+        env:
+          CI: true
+        run: pnpm test:integration:durable
+      - name: Replay recorded Durable model behavior
         env:
           CI: true
         run: pnpm test:integration:agent-loop:playback

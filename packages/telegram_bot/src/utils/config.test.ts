@@ -16,25 +16,6 @@ vi.mock('dotenv-mono', () => ({
   dotenvLoad: vi.fn(),
 }));
 
-vi.mock('@earendil-works/pi-ai', () => ({
-  getEnvApiKey: vi.fn(() => 'mock-key'),
-  getProviders: vi.fn(() => ['anthropic']),
-  getModels: vi.fn(() => [
-    {
-      id: 'claude-haiku-4-5-20251001',
-      name: 'Claude Haiku',
-      api: 'anthropic-messages',
-      provider: 'anthropic',
-      baseUrl: 'https://api.anthropic.com',
-      reasoning: true,
-      input: ['text'],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      contextWindow: 200000,
-      maxTokens: 1000,
-    },
-  ]),
-}));
-
 describe('Config Module', () => {
   beforeEach(() => {
     vi.clearAllMocks();

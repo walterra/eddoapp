@@ -80,7 +80,8 @@ function tryReplayFromCassette(ctx: ReplayContext): { replayed: boolean; respons
     model,
     messages,
   });
-  state.cassette.interactions = state.cassette.interactions.slice(0, state.index);
+  if (mode !== 'playback')
+    state.cassette.interactions = state.cassette.interactions.slice(0, state.index);
   return { replayed: false };
 }
 
@@ -177,7 +178,7 @@ export function createCassetteManager(
   if (!existsSync(cassettesDir)) mkdirSync(cassettesDir, { recursive: true });
 
   const saveCassette = (): void => {
-    if (!state.cassette || !state.path) return;
+    if (mode === 'playback' || !state.cassette || !state.path) return;
     saveCassetteToFile(state.path, state.cassette);
     state.modified = false;
   };
@@ -194,6 +195,13 @@ export function createCassetteManager(
       Object.assign(state, { cassette: null, path: null, index: 0, modified: false });
     },
     saveCassette,
+    assertConsumed: (): void => {
+      if (state.cassette && state.index !== state.cassette.interactions.length) {
+        throw new Error(
+          `Unconsumed cassette interactions: ${state.index}/${state.cassette.interactions.length}`,
+        );
+      }
+    },
     getMode: () => mode,
     isReplaying: () =>
       !!state.cassette && mode !== 'record' && state.cassette.interactions.length > 0,
