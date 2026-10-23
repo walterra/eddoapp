@@ -67,6 +67,25 @@ describe('cassette helpers', () => {
     ).toBe('/tmp/cassettes/claude-sonnet-4-5-20250929/scenario.json');
   });
 
+  it.each([false, true])('normalizes tool weekdays with nested JSON=%s', (nested) => {
+    const hash = (weekday: string): string => {
+      const result = { metadata: { weekday } };
+      const content = nested
+        ? JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(result) }] })
+        : JSON.stringify(result);
+      return hashRequest('test-model', 'Stable prompt', [{ role: 'toolResult', content }]);
+    };
+    expect(hash('Wednesday')).toBe(hash('Friday'));
+  });
+
+  it('preserves weekday references in user requests', () => {
+    const hash = (weekday: string): string =>
+      hashRequest('test-model', 'Stable prompt', [
+        { role: 'user', content: JSON.stringify({ metadata: { weekday } }) },
+      ]);
+    expect(hash('Wednesday')).not.toBe(hash('Friday'));
+  });
+
   it('normalizes bare dates in request hashes', () => {
     const firstHash = hashRequest('test-model', 'Stable prompt', [
       { role: 'user', content: 'Tool result: {"summary":"Recap data for 2026-06-18"}' },
