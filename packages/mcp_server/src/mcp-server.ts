@@ -7,8 +7,7 @@ import {
 } from '@eddo/core-server';
 import { Client } from '@elastic/elasticsearch';
 import { serve, type ServerType } from '@hono/node-server';
-import { createMcpHonoApp } from '@modelcontextprotocol/hono';
-import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
+import { McpServer } from '@modelcontextprotocol/server';
 import { context, propagation } from '@opentelemetry/api';
 import { dotenvLoad } from 'dotenv-mono';
 import nano from 'nano';
@@ -16,6 +15,7 @@ import { Agent, setGlobalDispatcher } from 'undici';
 
 import { createMutationStoreFactory, parseMcpOperationId } from './auth/mutation_store.js';
 import { validateUserContext } from './auth/user-auth.js';
+import { createMcpHttpApp } from './http_app.js';
 import { SERVER_INSTRUCTIONS } from './server_instructions.js';
 import { createToolRegistry } from './tool_registry.js';
 import { attachMutationStore } from './tools/mutation_receipts.js';
@@ -43,7 +43,12 @@ const esClient = esUrl
 async function authenticateRequest(request: Request): Promise<UserSession> {
   const headers = Object.fromEntries(request.headers.entries());
   const identity = await validateUserContext(headers);
-  const operationId = parseMcpOperationId(headers['x-eddo-operation-id']);
+  let operationId: string | undefined;
+  try {
+    operationId = parseMcpOperationId(headers['x-eddo-operation-id']);
+  } catch {
+    throw new Response(null, { status: 400, statusText: 'Invalid MCP operation ID' });
+  }
   const session: UserSession = {
     ...identity,
     attachmentsDbName: identity.dbName.replace('_user_', '_attachments_'),
@@ -83,18 +88,13 @@ function createRequestServer(session: UserSession): McpServer {
   return server;
 }
 
-export const mcpServer = createMcpHonoApp();
-
-mcpServer.all('/mcp', async (c) => {
-  try {
-    const session = await authenticateRequest(c.req.raw);
-    const handler = createMcpHandler(() => createRequestServer(session), { legacy: 'reject' });
-    return await handler.fetch(c.req.raw);
-  } catch (error) {
-    if (error instanceof Response) return error;
-    logger.error({ error }, 'MCP request failed');
-    return c.json({ error: 'MCP request failed' }, 500);
-  }
+export const mcpServer = createMcpHttpApp({
+  authenticate: authenticateRequest,
+  createServer: createRequestServer,
+  host: process.env.MCP_HOST || 'localhost',
+  allowedHosts: process.env.MCP_ALLOWED_HOSTS?.split(',')
+    .map((host) => host.trim())
+    .filter(Boolean),
 });
 
 let httpServer: ServerType | undefined;

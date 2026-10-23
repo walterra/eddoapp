@@ -1,7 +1,7 @@
 /**
  * Tool execution wrapper with OpenTelemetry tracing support
  */
-import { context, trace } from '@opentelemetry/api';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 
 import { logger } from '../utils/logger.js';
 import { executeWithMutationReceipt } from './mutation_receipts.js';
@@ -46,15 +46,14 @@ export function wrapToolExecution<TArgs, TResult>(
         );
         span.setAttribute('mcp.result', 'success');
         logger.info({ toolName, userId: toolContext.session?.userId }, 'MCP tool request handled');
-        span.end();
         return result;
       } catch (error) {
         span.setAttribute('mcp.result', 'error');
-        span.setAttribute('error.message', error instanceof Error ? error.message : String(error));
-        span.recordException(error instanceof Error ? error : new Error(String(error)));
-        logger.error({ toolName, error }, 'MCP tool execution failed');
-        span.end();
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        logger.error({ toolName }, 'MCP tool execution failed');
         throw error;
+      } finally {
+        span.end();
       }
     });
   };
