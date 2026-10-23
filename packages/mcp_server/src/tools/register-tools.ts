@@ -3,8 +3,8 @@
  */
 import type { AttachmentDoc, TodoAlpha4 } from '@eddo/core-server';
 import type { Client } from '@elastic/elasticsearch';
-import type { FastMCP } from 'fastmcp';
 import type nano from 'nano';
+import type { ToolRegistry } from '../tool_registry.js';
 
 import {
   addNoteDescription,
@@ -72,7 +72,7 @@ import {
   uploadAttachmentParameters,
 } from './index.js';
 import { wrapToolExecution } from './tool-wrapper.js';
-import type { ToolContext, UserSession } from './types.js';
+import type { ToolContext } from './types.js';
 
 type GetUserDbFn = (context: ToolContext) => nano.DocumentScope<TodoAlpha4>;
 type GetAttachmentsDbFn = (context: ToolContext) => nano.DocumentScope<AttachmentDoc>;
@@ -80,7 +80,7 @@ type GetEsClientFn = () => Client | null;
 
 /** Registers todo CRUD tools */
 function registerTodoTools(
-  server: FastMCP<UserSession>,
+  server: ToolRegistry,
   getUserDb: GetUserDbFn,
   couch: nano.ServerScope,
 ): void {
@@ -136,7 +136,7 @@ function registerTodoTools(
 }
 
 /** Registers note management tools */
-function registerNoteTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
+function registerNoteTools(server: ToolRegistry, getUserDb: GetUserDbFn): void {
   server.addTool({
     name: 'addNote',
     description: addNoteDescription,
@@ -164,7 +164,7 @@ function registerNoteTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn)
 }
 
 /** Registers time tracking tools */
-function registerTimeTrackingTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
+function registerTimeTrackingTools(server: ToolRegistry, getUserDb: GetUserDbFn): void {
   server.addTool({
     name: 'startTimeTracking',
     description: startTimeTrackingDescription,
@@ -194,10 +194,7 @@ function registerTimeTrackingTools(server: FastMCP<UserSession>, getUserDb: GetU
 }
 
 /** Registers attachment management tools */
-function registerAttachmentTools(
-  server: FastMCP<UserSession>,
-  getAttachmentsDb: GetAttachmentsDbFn,
-): void {
+function registerAttachmentTools(server: ToolRegistry, getAttachmentsDb: GetAttachmentsDbFn): void {
   server.addTool({
     name: 'uploadAttachment',
     description: uploadAttachmentDescription,
@@ -237,7 +234,7 @@ function registerAttachmentTools(
 
 /** Registers search tools (requires Elasticsearch) */
 function registerSearchTools(
-  server: FastMCP<UserSession>,
+  server: ToolRegistry,
   getEsClient: GetEsClientFn,
   getUserDb: GetUserDbFn,
 ): void {
@@ -252,7 +249,7 @@ function registerSearchTools(
 }
 
 /** Registers utility and info tools */
-function registerUtilityTools(server: FastMCP<UserSession>, getUserDb: GetUserDbFn): void {
+function registerUtilityTools(server: ToolRegistry, getUserDb: GetUserDbFn): void {
   server.addTool({
     name: 'getUserInfo',
     description: getUserInfoDescription,
@@ -290,7 +287,7 @@ function registerUtilityTools(server: FastMCP<UserSession>, getUserDb: GetUserDb
 
 /** Options for registering MCP tools */
 export interface RegisterToolsOptions {
-  server: FastMCP<UserSession>;
+  server: ToolRegistry;
   getUserDb: GetUserDbFn;
   getAttachmentsDb: GetAttachmentsDbFn;
   couch: nano.ServerScope;
