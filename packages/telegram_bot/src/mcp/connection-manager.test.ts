@@ -4,16 +4,20 @@ import { ConnectionState, MCPConnectionManager } from './connection-manager.js';
 
 // Mock the MCP SDK modules
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
-  Client: vi.fn().mockImplementation(() => ({
-    connect: vi.fn(),
-    listTools: vi.fn().mockResolvedValue({
-      tools: [{ name: 'test-tool', description: 'Test tool', inputSchema: {} }],
-    }),
-    callTool: vi.fn().mockResolvedValue({
-      content: { result: 'success' },
-    }),
-    close: vi.fn(),
-  })),
+  // Vitest 4 constructor mocks require constructable implementations.
+  // eslint-disable-next-line prefer-arrow-callback
+  Client: vi.fn().mockImplementation(function () {
+    return {
+      connect: vi.fn(),
+      listTools: vi.fn().mockResolvedValue({
+        tools: [{ name: 'test-tool', description: 'Test tool', inputSchema: {} }],
+      }),
+      callTool: vi.fn().mockResolvedValue({
+        content: { result: 'success' },
+      }),
+      close: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
@@ -76,13 +80,16 @@ describe('MCPConnectionManager', () => {
 
     it('should handle connection failure', async () => {
       const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
-      // @ts-expect-error - Mocking external SDK for testing purposes
-      vi.mocked(Client).mockImplementationOnce(() => ({
-        connect: vi.fn().mockRejectedValue(new Error('Connection refused')),
-        listTools: vi.fn(),
-        callTool: vi.fn(),
-        close: vi.fn(),
-      }));
+      // Vitest 4 invokes this mock with new.
+      // eslint-disable-next-line prefer-arrow-callback
+      vi.mocked(Client).mockImplementationOnce(function () {
+        return {
+          connect: vi.fn().mockRejectedValue(new Error('Connection refused')),
+          listTools: vi.fn(),
+          callTool: vi.fn(),
+          close: vi.fn(),
+        };
+      });
 
       await expect(manager.initialize()).rejects.toThrow('Connection refused');
       expect(manager.getState()).toBe(ConnectionState.FAILED);

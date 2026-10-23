@@ -3,6 +3,7 @@
  */
 import '@testing-library/jest-dom';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { format } from 'date-fns';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../test-polyfill';
@@ -256,7 +257,7 @@ describe('AddTodoPopover', () => {
 
       await waitFor(() => {
         const dueDateInput = screen.getByLabelText('Due date');
-        const today = new Date().toISOString().split('T')[0];
+        const today = format(new Date(), 'yyyy-MM-dd');
         expect(dueDateInput).toHaveValue(today);
       });
     });

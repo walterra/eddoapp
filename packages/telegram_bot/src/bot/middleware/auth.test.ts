@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import type { BotContext } from '../bot.js';
 import {
@@ -42,10 +42,10 @@ const {
 } = await import('../../utils/user-lookup');
 
 describe('Authentication Middleware', () => {
-  let nextMock: ReturnType<typeof vi.fn>;
+  let nextMock: Mock<() => Promise<void>>;
 
   beforeEach(() => {
-    nextMock = vi.fn();
+    nextMock = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
     vi.clearAllMocks();
     // Clear auth failures between tests
     authFailures.clear();

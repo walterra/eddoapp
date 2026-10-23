@@ -10,6 +10,9 @@ auditConfig:
     - GHSA-8r9q-7v3j-jr4g
 
 overrides:
+  # Preserve the lookup export required by @assistant-ui/core@0.1.17.
+  '@assistant-ui/core@0.1.17>@assistant-ui/store': '0.2.9'
+  '@assistant-ui/react@0.12.28>@assistant-ui/store': '0.2.9'
   jws: '>=4.0.0'
   qs: '>=6.14.1'
   systeminformation: '>=5.27.14'
@@ -21,7 +24,7 @@ overrides:
   '@changesets/parse': '>=0.4.2'
 
 allowBuilds:
-  '@google/genai': false
+  '@google/genai': true
   '@pnpm/exe': true
   '@swc/core': true
   '@tailwindcss/oxide': true
