@@ -432,9 +432,7 @@ describe('MCP Query and Filtering Integration', () => {
       const limit5 = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', { limit: 5 });
       assert.expectTodoCount(limit5, 5);
 
-      const limit0 = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', { limit: 0 });
-      // Limit 0 should return all or none depending on implementation
-      expect(limit0.length).toBeGreaterThanOrEqual(0);
+      await expect(testServer.callTool('listTodos', { limit: 0 })).rejects.toThrow(/limit/);
 
       // No limit should return all
       const noLimit = await assert.expectToolCallSuccess<TodoAlpha4[]>('listTodos', {});

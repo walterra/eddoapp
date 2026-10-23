@@ -30,6 +30,13 @@ describe('MCP receiver error propagation', () => {
     });
   });
 
+  it('preserves SDK validation errors that have no structured envelope', async () => {
+    const result = { content: [{ type: 'text', text: 'Invalid arguments' }], isError: true };
+    const client = { callTool: vi.fn().mockResolvedValue(result) } as unknown as Client;
+    const output = await invokeToolOnClient(client, 'listTodos', { limit: 0 });
+    expect(normalizeToolOutput(output)).toEqual({ text: 'Invalid arguments', isError: true });
+  });
+
   it('rejects a missing structured result', async () => {
     const client = { callTool: vi.fn().mockResolvedValue({ content: [] }) } as unknown as Client;
     await expect(invokeToolOnClient(client, 'createTodo', {})).rejects.toThrow(
