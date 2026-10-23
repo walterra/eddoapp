@@ -2,12 +2,10 @@
  * Shared types for MCP tool handlers
  */
 import type { AttachmentDoc, TodoAlpha4 } from '@eddo/core-server';
-import type { Context } from 'fastmcp';
 import type nano from 'nano';
 
 /**
  * User session for MCP authentication
- * Extends Record<string, unknown> to satisfy FastMCPSessionAuth constraint
  */
 export interface UserSession extends Record<string, unknown> {
   userId: string;
@@ -18,11 +16,16 @@ export interface UserSession extends Record<string, unknown> {
   operationId?: string;
 }
 
-/**
- * Tool execution context provided by FastMCP
- * Re-exports the Context type from fastmcp with our UserSession
- */
-export type ToolContext = Context<UserSession>;
+/** Provides authenticated request data and logging to domain handlers. */
+export interface ToolContext {
+  session?: UserSession;
+  log: {
+    debug: (message: string, data?: unknown) => void;
+    info: (message: string, data?: unknown) => void;
+    warn: (message: string, data?: unknown) => void;
+    error: (message: string, data?: unknown) => void;
+  };
+}
 
 /**
  * Standard response format for tool operations

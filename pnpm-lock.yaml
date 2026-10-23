@@ -556,15 +556,24 @@ importers:
       '@elastic/opentelemetry-node':
         specifier: ^1.8.0
         version: 1.8.0(@opentelemetry/api@1.9.0)(supports-color@7.2.0)
+      '@hono/node-server':
+        specifier: ^1.19.12
+        version: 1.19.12(hono@4.12.27)
+      '@modelcontextprotocol/hono':
+        specifier: ^2.0.2
+        version: 2.0.2(@modelcontextprotocol/server@2.3.1)(hono@4.12.27)
+      '@modelcontextprotocol/server':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
       dotenv-mono:
         specifier: ^1.5.1
         version: 1.5.1
-      fastmcp:
-        specifier: ^4.3.1
-        version: 4.3.1(supports-color@7.2.0)
+      hono:
+        specifier: ^4.12.27
+        version: 4.12.27
       nano:
         specifier: ^11.0.4
         version: 11.0.4
@@ -2124,6 +2133,17 @@ packages:
   '@mixmark-io/domino@2.2.0':
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==}
 
+  '@modelcontextprotocol/core@2.3.1':
+    resolution: {integrity: sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/hono@2.0.2':
+    resolution: {integrity: sha512-hXtSVm0S6d0EJWMVoaeAWevATQLzHrHiPuPBLxW5vM5OQJG+SFlm7D9iJT5cG3p84DDahCD4bAuqcCPdgNFAEw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@modelcontextprotocol/server': ^2.3.0
+      hono: ^4.11.4
+
   '@modelcontextprotocol/sdk@1.25.1':
     resolution: {integrity: sha512-yO28oVFFC7EBoiKdAn+VqRm+plcfv4v0xp6osG/VsCB0NlPZWi87ajbCZZ8f/RvOFLEu7//rSRmuZZ7lMoe3gQ==}
     engines: {node: '>=18'}
@@ -2133,6 +2153,10 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@modelcontextprotocol/server@2.3.1':
+    resolution: {integrity: sha512-e59MfWuSssj6DoQ96JCTqdW1AXT5/XtnTl0WWd6MU1Ka434fFUGGosCLJbGNySDhHGvxQWoRWK137FXYFkYNWw==}
+    engines: {node: '>=20'}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -11591,6 +11615,10 @@ snapshots:
     dependencies:
       hono: 4.11.9
 
+  '@hono/node-server@1.19.12(hono@4.12.27)':
+    dependencies:
+      hono: 4.12.27
+
   '@hono/node-server@1.19.7(hono@4.12.27)':
     dependencies:
       hono: 4.12.27
@@ -11686,6 +11714,15 @@ snapshots:
 
   '@mixmark-io/domino@2.2.0': {}
 
+  '@modelcontextprotocol/core@2.3.1':
+    dependencies:
+      zod: 4.4.3
+
+  '@modelcontextprotocol/hono@2.0.2(@modelcontextprotocol/server@2.3.1)(hono@4.12.27)':
+    dependencies:
+      '@modelcontextprotocol/server': 2.3.1
+      hono: 4.12.27
+
   '@modelcontextprotocol/sdk@1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(supports-color@7.2.0)(zod@4.4.3)':
     dependencies:
       '@hono/node-server': 1.19.7(hono@4.12.27)
@@ -11707,6 +11744,11 @@ snapshots:
     transitivePeerDependencies:
       - hono
       - supports-color
+
+  '@modelcontextprotocol/server@2.3.1':
+    dependencies:
+      '@modelcontextprotocol/core': 2.3.1
+      zod: 4.4.3
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
