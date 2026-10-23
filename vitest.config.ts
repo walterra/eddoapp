@@ -65,6 +65,7 @@ export default defineConfig({
             'packages/core-client/src/**/*.test.ts',
             'packages/core-instrumentation/src/**/*.test.ts',
             'packages/mcp_server/src/**/*.test.ts',
+            'packages/chat-agent/skills/**/*.test.js',
             'packages/telegram_bot/src/**/*.test.ts',
             'packages/setup/src/**/*.test.ts',
             'scripts/benchmarks/*.test.ts',

@@ -10,5 +10,11 @@
   ],
   "scripts": {
     "build": "echo 'No build required - skills are runtime JavaScript'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.3.1"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/server": "^2.3.1"
   }
 }
