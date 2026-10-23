@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-10-21T21:02:20.767Z",
-  "frozenTime": "2026-10-21T21:02:20.767Z",
+  "createdAt": "2026-10-23T07:08:41.612Z",
+  "frozenTime": "2026-10-23T07:08:41.612Z",
   "interactions": [
     {
       "requestHash": "b2df9fd2c53bf4f1",
@@ -16,14 +16,14 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-21T21:02:20.796Z\\n\\nadd todo\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:41.635Z\\n\\nadd todo\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo but hasn't provided any details. I should ask them what they want to add - I need at least a title for the todo. I should be brief and direct, as per the Telegram communication style.\",\"thinkingSignature\":\"EvIDCroBCBMYAipABTGKny84sYv8xSUCWuQq4UT1fhyNXUkMKuq5KAO/COx2KYVCgkHoWiq/XFASyuRXFoj7KpkFcP+HHiHBG9vT2jIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAd/Q5NYGEgzbuAeYDlaOBLoCkwAaDGLcERRh582rezUVmyIwTHZfpJAlJAJ9OGZZZwqOZnnYnl+RR+yXdFtITtaLtw+duOFm4X3bV0CFczTLbtIgKuQBNL4QlLOYpZps5HJlFlAT4s041yACjZC5haQq1URnsgJaVCCT3J6WSk/O8RgtW9pIuv5Bdvd8drQfxeu+p0uqDOo8pL+qw54hXt4wNlL99JiPo2K2nuEZR+hvBA3/I0pw41ZfK7eMeATPGEW4p+5+YZtdi4gb842LibQXSkmIVRlKcKolSfb/dFIQaRNbarYHZ6SeiV+NMD63W8AZ+whLxNOmOoBPwczXI9ZdC+Y2vt5FpqrbxSJoHJm09lpyNIijKx2NYS4dk9h8lQXehDCHq/4OviwJldTlEZezVaXObRXYwLKtGAE=\"},{\"type\":\"text\",\"text\":\"What task would you like to add? Give me the title and any details like due date or context!\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":81,\"cacheRead\":6953,\"cacheWrite\":516,\"totalTokens\":7560,\"cost\":{\"input\":0.00003,\"output\":0.001215,\"cacheRead\":0.0020859,\"cacheWrite\":0.003096,\"total\":0.006426899999999999},\"cacheWrite1h\":516,\"reasoning\":54},\"stopReason\":\"stop\",\"timestamp\":1792616540812,\"responseId\":\"msg_011CgG4KdhdFc3jgyPYQNcrU\",\"rawStopReason\":\"end_turn\",\"durationMs\":3185}}",
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo but hasn't provided any details yet. I should ask them what they want to add in a brief, concise way since we're on Telegram.\",\"thinkingSignature\":\"ErgDCroBCBMYAipAj3vl6yxMZTZLZ9PS5eZKSBnuxRiY2faZyUwnyYswST4kBHBuFZQsN3lnfKL3InRMkKDMScjSioeolLVnmIOb5DIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAfuP7NYGEgxINvPKNMMMK6QKuiMaDOITj7nIA605vDdMSCIwiQGYLmLC2vBa46z285vV2kxjcgJC4Mtxve+1e9kNXP4GBwLnU/Ht2ytIxUy40vgwKqoBsLHo2/n4l+2LTqIKahtOlVuLLwi507pvbl/CXPz2k9dg1vyB5YCPpe7ZpAK19wZavhL8vGbn8iyaAco7nEEIj2ZS/Luq1/m5P2yDMBO17k53Y/pzctcvLmvY7aWI+1Ihrw422EU2EHWKL9AdHHvQ0GlmRUeowu0SSAh34b1WXXtRwSqDG1p9vbvIyl90XSZ6TrEa+THQiViLpO7Y3oRL8u4OsrT/TXk1bCEYAQ==\"},{\"type\":\"text\",\"text\":\"What would you like to add to your list? Give me the task details and I'll capture it for you! 📝\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":75,\"cacheRead\":6953,\"cacheWrite\":516,\"totalTokens\":7554,\"cost\":{\"input\":0.00003,\"output\":0.0011250000000000001,\"cacheRead\":0.0020859,\"cacheWrite\":0.003096,\"total\":0.0063368999999999995},\"cacheWrite1h\":516,\"reasoning\":43},\"stopReason\":\"stop\",\"timestamp\":1792739321646,\"responseId\":\"msg_011CgJkNLSo21ygKwrhYVkkc\",\"rawStopReason\":\"end_turn\",\"durationMs\":2618}}",
       "metadata": {
-        "recordedAt": "2026-10-21T21:02:23.998Z",
-        "responseTimeMs": 3186
+        "recordedAt": "2026-10-23T07:08:44.264Z",
+        "responseTimeMs": 2618
       }
     }
   ]

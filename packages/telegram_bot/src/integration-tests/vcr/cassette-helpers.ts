@@ -51,6 +51,14 @@ function normalizeMessageContent(content: string): string {
     .replace(/http:\/\/localhost:\d+/g, 'http://localhost:[PORT]');
 }
 
+/** Normalizes calendar metadata in plain and nested JSON tool results. */
+function normalizeToolWeekday(content: string): string {
+  return content.replace(
+    /("weekday"\s*:\s*"|\\"weekday\\"\s*:\s*\\")(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?=\\?")/g,
+    '$1[DAY]',
+  );
+}
+
 /**
  * Creates a hash of the LLM request for matching
  */
@@ -62,7 +70,9 @@ export function hashRequest(
   const normalizedSystemPrompt = normalizeSystemPrompt(systemPrompt);
   const normalizedMessages = messages.map((msg) => ({
     role: msg.role,
-    content: normalizeMessageContent(msg.content),
+    content: normalizeMessageContent(
+      msg.role === 'toolResult' ? normalizeToolWeekday(msg.content) : msg.content,
+    ),
   }));
 
   const data = JSON.stringify({
