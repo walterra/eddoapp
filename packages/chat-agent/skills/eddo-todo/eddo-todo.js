@@ -3,49 +3,9 @@
  * Eddo Todo CLI for pi-coding-agent skill
  * Uses MCP SDK to communicate with Eddo MCP server
  */
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { readFileSync, writeFileSync } from 'fs';
 import { basename } from 'path';
-
-const MCP_URL = process.env.EDDO_MCP_URL || 'http://localhost:3001/mcp';
-const MCP_API_KEY = process.env.EDDO_MCP_API_KEY;
-
-// API-key authentication (no user headers)
-const USER_HEADERS = {
-  ...(MCP_API_KEY ? { Authorization: `Bearer ${MCP_API_KEY}` } : {}),
-};
-
-/**
- * Create MCP client with authentication
- */
-async function createClient() {
-  const transport = new StreamableHTTPClientTransport(new URL(MCP_URL), {
-    requestInit: {
-      headers: USER_HEADERS,
-    },
-  });
-
-  const client = new Client(
-    { name: 'eddo-todo-skill', version: '1.0.0' },
-    { capabilities: { tools: {} } },
-  );
-
-  await client.connect(transport);
-  return client;
-}
-
-/**
- * Call MCP tool and return result
- */
-async function callTool(client, toolName, args = {}) {
-  const result = await client.callTool({ name: toolName, arguments: args });
-
-  if (result.content && result.content.length > 0) {
-    return result.content.map((c) => (c.type === 'text' ? c.text : JSON.stringify(c))).join('\n');
-  }
-  return 'No response';
-}
+import { callTool, createClient } from './mcp_client.js';
 
 /**
  * Format todo for display (compact list view)
@@ -1103,7 +1063,7 @@ async function main() {
       console.error('\nMake sure Eddo MCP server is running:');
       console.error('  cd /Users/walterra/dev/eddoapp && pnpm dev:mcp-server');
     }
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     if (client) {
       try {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "completed",
-  "createdAt": "2026-10-23T07:12:31.166Z",
+  "createdAt": "2026-10-23T14:34:02.282Z",
   "reviewerModel": "openai/gpt-5.2",
   "rubricVersion": "2",
   "rubricSha256": "d0957930ec49879de7446b8e68593fb40ad5cce7f3169523c961f2961e94bef7",
@@ -10,7 +10,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/ambiguous-input.json",
-        "sha256": "b7e681381b415badcdff6ab414b58412895587a22fec9060fa6c1eca983fe525",
+        "sha256": "16d5abe94ff8f8941df9df9ee239f5b5841b6c6e07ef08b0eaf3473ff0b5b273",
         "scenarioId": "ambiguous-input",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -19,14 +19,14 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:41.635Z\\n\\nadd todo\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:24.996Z\\n\\nadd todo\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"What would you like to add to your list? Give me the task details and I'll capture it for you! 📝\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"What would you like to add to your todo list? Tell me the task and I'll capture it for you! 🎯\"}]}"
           }
         ]
       },
@@ -35,8 +35,8 @@
         "judgments": [
           {
             "criterion": "task_fulfillment",
-            "verdict": "pass",
-            "explanation": "The assistant appropriately asked for the missing task details after the vague request \"add todo\".",
+            "verdict": "partial",
+            "explanation": "The assistant asked for the task details instead of adding a todo, which is reasonable given the user’s ambiguous \"add todo\" request.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -45,7 +45,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "It made no claims about successfully creating a todo, only requested more information.",
+            "explanation": "The assistant made no claims about creating a todo or completing an action beyond requesting clarification.",
             "evidenceIds": [
               "event-2"
             ]
@@ -53,7 +53,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request by seeking clarification rather than inventing a task, date, tags, or context.",
+            "explanation": "The assistant followed the user’s vague request by asking what todo to add and did not introduce conflicting constraints or extra steps.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -62,7 +62,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool calls or errors occurred in the recorded conversation.",
+            "explanation": "No tool calls or errors occurred in the recording, so there was nothing to recover from.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -71,7 +71,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response was clear and directly asked for the details needed to add the todo.",
+            "explanation": "The response was clear and directly requested the missing information needed to proceed.",
             "evidenceIds": [
               "event-2"
             ]
@@ -83,7 +83,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/complete-todo-workflow.json",
-        "sha256": "c3bb4aedb822bde2612e158fa08cf2f37969224560d395f85e66ce3d44c9f515",
+        "sha256": "ab7f9b4dec0e75734ba03a8eb1f7d893f068d64e26b3b5d9f24c89a797936cf3",
         "scenarioId": "complete-todo-workflow",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -92,56 +92,56 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:10.026Z\\n\\ncreate todo called integration test task\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:01.412Z\\n\\ncreate todo called integration test task\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01BRVZuGbNz7Um5WmJZyTL3U\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"integration test task\",\"context\":\"private\",\"due\":\"2026-10-23T23:59:59.999Z\",\"tags\":[\"gtd:next\"]}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01MKLvKB1DxcCAou5Drt6CGh\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"integration test task\",\"due\":\"2026-10-23T23:59:59.999Z\",\"context\":\"private\",\"tags\":[\"gtd:next\"],\"message\":\"User requested todo creation\"}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:08:16.022Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"context\\\":\\\"private\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"5.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:16.060Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01BRVZuGbNz7Um5WmJZyTL3U\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:29:06.922Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"context\\\":\\\"private\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:29:06.964Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01MKLvKB1DxcCAou5Drt6CGh\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Created \\\"integration test task\\\" for today! Ready to tackle it when you are!\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Created \\\"integration test task\\\" – tagged as a next action and ready to tackle today!\"}]}"
           },
           {
             "id": "event-5",
             "interaction": 2,
             "source": "request.messages[5]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:21.011Z\\n\\nmark the integration test task as done\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:10.138Z\\n\\nmark the integration test task as done\"}"
           },
           {
             "id": "event-6",
             "interaction": 2,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_012eveZNefMQ2FjV1oqgQYZB\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-10-23T07:08:16.022Z\",\"completed\":true}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01539Pi45e9qQ89fdsvMPfAm\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-10-23T14:29:06.922Z\",\"completed\":true,\"message\":\"User completed task\"}}]}"
           },
           {
             "id": "event-7",
             "interaction": 3,
             "source": "request.messages[7]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:08:16.022Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"status\\\":\\\"completed\\\",\\\"completed_at\\\":\\\"2026-10-23T07:08:24.314Z\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"5.00ms\\\",\\\"operation\\\":\\\"toggle_completion\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:24.347Z\\\"}}\"}],\"toolName\":\"toggleTodoCompletion\",\"toolCallId\":\"toolu_012eveZNefMQ2FjV1oqgQYZB\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:29:06.922Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"status\\\":\\\"completed\\\",\\\"completed_at\\\":\\\"2026-10-23T14:29:13.959Z\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"toggle_completion\\\",\\\"timestamp\\\":\\\"2026-10-23T14:29:13.994Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"toggleTodoCompletion\",\"toolCallId\":\"toolu_01539Pi45e9qQ89fdsvMPfAm\",\"isError\":false}"
           },
           {
             "id": "event-8",
             "interaction": 3,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"🎉 Done! \\\"integration test task\\\" completed! Nice work!\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"🎉 Done! Integration test task completed – great work!\"}]}"
           }
         ]
       },
@@ -151,20 +151,16 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a todo titled \"integration test task\" and then marked that same todo as completed as requested.",
+            "explanation": "It created a todo titled \"integration test task\" and later marked that same todo as completed as requested.",
             "evidenceIds": [
-              "event-1",
               "event-2",
-              "event-3",
-              "event-5",
-              "event-6",
-              "event-7"
+              "event-6"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s confirmations of creation and completion match the tool results showing successful create and toggle_completion operations.",
+            "explanation": "Its confirmations of creation and completion match the tool results showing successful create and toggle_completion operations.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -175,20 +171,16 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable defaults for context, tags, and a due date of today.",
+            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable defaults for due date, context, and tags.",
             "evidenceIds": [
-              "event-1",
               "event-2",
-              "event-3",
-              "event-5",
-              "event-6",
-              "event-7"
+              "event-6"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred, so no recovery behavior was needed.",
+            "explanation": "No tool errors occurred in the recording.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -197,7 +189,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear and directly stated that the todo was created and later completed.",
+            "explanation": "Responses were clear and aligned with the performed actions, indicating when the todo was created and when it was completed.",
             "evidenceIds": [
               "event-4",
               "event-8"
@@ -210,7 +202,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/create-todo-context-tags.json",
-        "sha256": "9c19371526bf4f19aca9d173c0fac4948f11cbcfe6f3b5b260493dbaf81982f2",
+        "sha256": "0bdd532535989511770f790bed0016ef8713d2d6599a6964d23c517fa313367b",
         "scenarioId": "create-todo-context-tags",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -219,28 +211,28 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:07:47.680Z\\n\\ncreate work todo for quarterly report due next month with urgent tag\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:28:41.855Z\\n\\ncreate work todo for quarterly report due next month with urgent tag\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01WTRvxuLTA4qPHRMprRHi9S\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Complete quarterly report\",\"context\":\"work\",\"tags\":[\"gtd:next\",\"urgent\"],\"due\":\"2026-11-30T23:59:59.999Z\",\"message\":\"Created urgent work todo for quarterly report\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01NUPhTvAMmLKA5XxnqWq1QC\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Complete quarterly report\",\"context\":\"work\",\"tags\":[\"gtd:next\",\"urgent\"],\"due\":\"2026-11-30T23:59:59.999Z\",\"message\":\"Create urgent quarterly report task\"}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:07:57.637Z\\\",\\\"title\\\":\\\"Complete quarterly report\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-30\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"4.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:07:57.674Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01WTRvxuLTA4qPHRMprRHi9S\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:28:48.458Z\\\",\\\"title\\\":\\\"Complete quarterly report\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-30\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:28:48.510Z\\\",\\\"execution_time\\\":\\\"9.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01NUPhTvAMmLKA5XxnqWq1QC\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ **Quarterly report** locked in for Nov 30! Tagged as urgent and ready to tackle. Let's crush it! 💪\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Created! \\\"Complete quarterly report\\\" tagged as urgent and ready in your work context, due end of November. Let's crush it! 💪\"}]}"
           }
         ]
       },
@@ -250,17 +242,18 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a work todo for the quarterly report with an urgent tag and a due date next month.",
+            "explanation": "Created a work-context todo for the quarterly report with an urgent tag and a due date set to next month’s end.",
             "evidenceIds": [
               "event-1",
               "event-2",
-              "event-3"
+              "event-3",
+              "event-4"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The confirmation of creation is supported by the successful createTodo tool result showing the new todo details.",
+            "explanation": "The assistant’s confirmation matches the successful createTodo tool result including title, context, and due date.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -269,10 +262,99 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request by setting context to work, adding an urgent tag, and choosing a reasonable due date next month.",
+            "explanation": "It followed the user’s request to create a work todo for a quarterly report due next month and added an urgent tag without extra conflicting constraints.",
             "evidenceIds": [
               "event-1",
               "event-2"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool error occurred, so error recovery was not needed.",
+            "evidenceIds": [
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "partial",
+            "explanation": "The response is clear but adds emojis and motivational text that may be unnecessary for a straightforward task confirmation.",
+            "evidenceIds": [
+              "event-4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/create-todo-natural-language.json",
+        "sha256": "948bf81c1a2137ac67db4c2ad037e254f4cceecd98bffcb7c7a550aab167deda",
+        "scenarioId": "create-todo-natural-language",
+        "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:28:32.648Z\\n\\nadd todo next friday to go shopping\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01EdstyF5jLFWbp5G5t1CU71\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-10-30T23:59:59.999Z\",\"context\":\"shopping\",\"tags\":[\"gtd:next\"]}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:28:38.638Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"shopping\\\",\\\"due\\\":\\\"2026-10-30\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:28:38.681Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01EdstyF5jLFWbp5G5t1CU71\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Shopping todo added for next Friday, Oct 30th! Ready to tackle it when the time comes! 🛒\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "It created a 'Go shopping' todo due next Friday (Oct 30, 2026) with reasonable context/tags and confirmed to the user.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "The confirmation that the todo was added is supported by the tool result reporting successful creation with matching title and due date.",
+            "evidenceIds": [
+              "event-3",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "It followed the user request to add a todo for next Friday and did not introduce conflicting constraints.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-4"
             ]
           },
           {
@@ -286,96 +368,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "partial",
-            "explanation": "The response is clear but adds emojis and hype text that may be unnecessary for a simple todo confirmation.",
-            "evidenceIds": [
-              "event-4"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "status": "completed",
-      "recording": {
-        "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/create-todo-natural-language.json",
-        "sha256": "3ddbee0d6675a93aee338f6d85704ab863880e7d98111f116b739bb1aced8a99",
-        "scenarioId": "create-todo-natural-language",
-        "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
-        "events": [
-          {
-            "id": "event-1",
-            "interaction": 0,
-            "source": "request.messages[1]",
-            "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:07:37.556Z\\n\\nadd todo next friday to go shopping\"}"
-          },
-          {
-            "id": "event-2",
-            "interaction": 0,
-            "source": "response.message",
-            "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01La37qEuigvnQr959fPRoz4\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-10-30T23:59:59.999Z\",\"context\":\"shopping\",\"tags\":[\"gtd:next\"],\"message\":\"User requested shopping todo for next Friday\"}}]}"
-          },
-          {
-            "id": "event-3",
-            "interaction": 1,
-            "source": "request.messages[3]",
-            "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:07:44.551Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"shopping\\\",\\\"due\\\":\\\"2026-10-30\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"6.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:07:44.589Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01La37qEuigvnQr959fPRoz4\",\"isError\":false}"
-          },
-          {
-            "id": "event-4",
-            "interaction": 1,
-            "source": "response.message",
-            "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Shopping todo added for next Friday (Oct 30)!\"}]}"
-          }
-        ]
-      },
-      "review": {
-        "schemaVersion": 1,
-        "judgments": [
-          {
-            "criterion": "task_fulfillment",
-            "verdict": "pass",
-            "explanation": "It created a \"Go shopping\" todo due next Friday (Oct 30) as requested.",
-            "evidenceIds": [
-              "event-2",
-              "event-3",
-              "event-4"
-            ]
-          },
-          {
-            "criterion": "claims_grounded_in_results",
-            "verdict": "pass",
-            "explanation": "The confirmation matches the successful createTodo result showing the todo was created with due date 2026-10-30.",
-            "evidenceIds": [
-              "event-3",
-              "event-4"
-            ]
-          },
-          {
-            "criterion": "instruction_compliance",
-            "verdict": "pass",
-            "explanation": "It followed the user request to add a todo for next Friday without adding conflicting constraints.",
-            "evidenceIds": [
-              "event-1",
-              "event-2",
-              "event-4"
-            ]
-          },
-          {
-            "criterion": "error_recovery",
-            "verdict": "not_applicable",
-            "explanation": "No tool error occurred in the recording.",
-            "evidenceIds": [
-              "event-3"
-            ]
-          },
-          {
-            "criterion": "communication_quality",
-            "verdict": "pass",
-            "explanation": "The final message clearly confirms the todo was added and specifies the interpreted date.",
+            "explanation": "The response is clear but adds emojis and extra enthusiasm that may be unnecessary for a terse confirmation.",
             "evidenceIds": [
               "event-4"
             ]
@@ -387,7 +380,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/multi-step-create-list.json",
-        "sha256": "358293a30840d54b5dcc4abc72dcf3f8ff0cf917ef2899b5a06c60ecd32c65d3",
+        "sha256": "08c7fd2f7db73e6aa5954a41abf5c6d3d9d962640f551ed059366f77bc15a7c8",
         "scenarioId": "multi-step-create-list",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -396,35 +389,35 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:00.631Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:28:51.822Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_015RbFyur2UTcEtRcSG8v72a\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"context\":\"work\",\"tags\":[\"gtd:next\"],\"due\":\"2026-10-23\"}},{\"type\":\"toolCall\",\"id\":\"toolu_01JGgTa5uTmia38hGcDbVLA3\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\",\"completed\":false}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01S5cGJUBdA3YYVN3m8ob8Tt\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"context\":\"work\",\"due\":\"2026-10-23T23:59:59.999Z\",\"tags\":[\"gtd:next\"],\"message\":\"Created code review task\"}},{\"type\":\"toolCall\",\"id\":\"toolu_01NcTqN3QX4FrachWW56Rjwb\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\",\"completed\":false}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:08:06.042Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"6.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:06.081Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_015RbFyur2UTcEtRcSG8v72a\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:28:58.073Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:28:58.115Z\\\",\\\"execution_time\\\":\\\"6.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01S5cGJUBdA3YYVN3m8ob8Tt\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "request.messages[4]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-10-23T07:08:06.042Z\\\",\\\"_rev\\\":\\\"2-bbb463fde3ccd761ad77b5d86da4e53f\\\",\\\"title\\\":\\\"Code review\\\",\\\"description\\\":\\\"\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-10-23T07:08:06.067Z\\\"]}],\\\"metadata\\\":{\\\"execution_time\\\":\\\"10.00ms\\\",\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:06.107Z\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"completed\\\",\\\"limit\\\"]},\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"toolu_01JGgTa5uTmia38hGcDbVLA3\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-10-23T14:28:58.073Z\\\",\\\"_rev\\\":\\\"2-6168579c2d5be46d9d4a58bc89762a5b\\\",\\\"title\\\":\\\"Code review\\\",\\\"description\\\":\\\"\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-10-23T14:28:58.100Z\\\"]}],\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false},\\\"metadata\\\":{\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T14:28:58.150Z\\\",\\\"execution_time\\\":\\\"10.00ms\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"completed\\\",\\\"limit\\\"]}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"toolu_01NcTqN3QX4FrachWW56Rjwb\",\"isError\":false}"
           },
           {
             "id": "event-5",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Created \\\"Code review\\\" for today!\\n\\n**Your work todos:**\\n• Code review (due today) `gtd:next`\\n\\nYou've got one clear next action ready to tackle! 💪\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Created \\\"Code review\\\" for today!\\n\\n**Your work todos:**\\n• Code review (due today) [gtd:next]\"}]}"
           }
         ]
       },
@@ -434,18 +427,16 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a work-context todo for code review and then displayed the current list of work todos containing that item.",
+            "explanation": "It created a work todo for code review and then displayed the list of work todos as requested.",
             "evidenceIds": [
-              "event-1",
               "event-2",
-              "event-4",
               "event-5"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s claims about creating and listing the work todo are supported by the successful createTodo and listTodos tool results.",
+            "explanation": "The confirmation and displayed list match the successful createTodo and listTodos tool results showing the new item.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -455,7 +446,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request by creating a work todo and listing all work todos without adding conflicting constraints.",
+            "explanation": "It followed the user's request and used the provided UTC date to set a reasonable due date without adding conflicting constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -474,10 +465,9 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response clearly confirms creation and presents the work todo list in an easy-to-read format consistent with the tool outputs.",
+            "explanation": "The final message is clear and succinctly reports the created task and current work todo list.",
             "evidenceIds": [
-              "event-5",
-              "event-4"
+              "event-5"
             ]
           }
         ]
@@ -487,7 +477,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/persistent-chat-history.json",
-        "sha256": "43a967ad0fad7c76bde1f5ff98f5ca85398e8c3630ac28f04d3d5e3ff4509d00",
+        "sha256": "12905303b17c3a56d779dac9a47df870834f7a82e91669bf3e47e4dbb5c4b1b3",
         "scenarioId": "persistent-chat-history",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -496,56 +486,28 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:26.521Z\\n\\nMy planning keyword for this test is deep-work.\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:16.391Z\\n\\nMy planning keyword for this test is deep-work.\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"I've got it! Storing \\\"deep-work\\\" as your planning keyword for the test.\"},{\"type\":\"toolCall\",\"id\":\"toolu_013BdKh3cHTttSbKdnieMu7K\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Planning keyword: deep-work\",\"description\":\"Test planning keyword: deep-work\",\"context\":\"memory\",\"tags\":[\"user:memory\"],\"due\":\"2026-10-23T23:59:59.999Z\",\"message\":\"User shared planning keyword for test\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Got it! Your planning keyword is **deep-work**. \\n\\nHow can I help you organize your productivity system today? Want to create some deep-work sessions, review what's next, or set up your GTD workflow?\"}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
-            "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:08:33.953Z\\\",\\\"title\\\":\\\"Planning keyword: deep-work\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"4.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:33.991Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_013BdKh3cHTttSbKdnieMu7K\",\"isError\":false}"
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:20.964Z\\n\\nWhat planning keyword did I mention?\"}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Saved! Your planning keyword \\\"deep-work\\\" is stored in memory.\"}]}"
-          },
-          {
-            "id": "event-5",
-            "interaction": 2,
-            "source": "request.messages[5]",
-            "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:36.077Z\\n\\nWhat planning keyword did I mention?\"}"
-          },
-          {
-            "id": "event-6",
-            "interaction": 2,
-            "source": "response.message",
-            "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01PC5fBrkvz7rC5bpjJ52c1H\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"memory\",\"tags\":[\"user:memory\"],\"completed\":false}}]}"
-          },
-          {
-            "id": "event-7",
-            "interaction": 3,
-            "source": "request.messages[7]",
-            "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-10-23T07:08:33.953Z\\\",\\\"_rev\\\":\\\"2-6b68bf5a932d1a19b8db1e6ed273ac01\\\",\\\"title\\\":\\\"Planning keyword: deep-work\\\",\\\"description\\\":\\\"Test planning keyword: deep-work\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"tags\\\":[\\\"user:memory\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-10-23T07:08:33.978Z\\\"]}],\\\"metadata\\\":{\\\"execution_time\\\":\\\"14.00ms\\\",\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:39.799Z\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"completed\\\",\\\"limit\\\",\\\"tags\\\"]},\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"toolu_01PC5fBrkvz7rC5bpjJ52c1H\",\"isError\":false}"
-          },
-          {
-            "id": "event-8",
-            "interaction": 3,
-            "source": "response.message",
-            "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Your planning keyword for the test is **deep-work**! 🎯\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Your planning keyword is **deep-work**.\"}]}"
           }
         ]
       },
@@ -555,49 +517,45 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant saved the user's planning keyword and later correctly answered that it was deep-work.",
+            "explanation": "The assistant correctly identified the user's mentioned planning keyword as deep-work when asked.",
             "evidenceIds": [
-              "event-2",
-              "event-8"
+              "event-3",
+              "event-4"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "Its confirmation of saving and later recall are supported by a successful createTodo and listTodos showing the deep-work item.",
+            "explanation": "The assistant’s claim about the keyword directly matches the user-provided text in the conversation.",
             "evidenceIds": [
-              "event-3",
-              "event-7",
-              "event-4",
-              "event-8"
+              "event-1",
+              "event-4"
             ]
           },
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user's requests without adding conflicting constraints, using a reasonable memory todo to persist the keyword.",
+            "explanation": "The assistant followed the user’s request by answering only the keyword without adding conflicting constraints or extra tasks.",
             "evidenceIds": [
-              "event-2",
-              "event-6",
-              "event-8"
+              "event-3",
+              "event-4"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred in the recording.",
+            "explanation": "No tool errors or failures occurred in the recording.",
             "evidenceIds": [
-              "event-3",
-              "event-7"
+              "event-1",
+              "event-4"
             ]
           },
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear and directly stated the stored keyword and the recalled keyword when asked.",
+            "explanation": "The response was clear and concise, directly answering the user's question.",
             "evidenceIds": [
-              "event-4",
-              "event-8"
+              "event-4"
             ]
           }
         ]
@@ -607,7 +565,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/status-message-pattern.json",
-        "sha256": "4d17a02d4f1265562bd6228a66aad4e1e984b9bdb1ff9fbdc0c9ba3b6a1888db",
+        "sha256": "f20677e2af5a52f5b4b8a90e9de1c60c5f0b0faf6a79d32551273db4df141f44",
         "scenarioId": "status-message-pattern",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -616,56 +574,56 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:44.432Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:27.819Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01ArASB5C8fABXTqP6mxuW1M\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"context\":\"work\",\"due\":\"2026-10-23T23:59:59.999Z\",\"tags\":[\"gtd:next\"]}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01QUcctDesdzRpwDzHgj17Zm\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"context\":\"work\",\"due\":\"2026-10-23T23:59:59.999Z\",\"tags\":[\"gtd:next\"]}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:08:48.537Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"5.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:48.576Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01ArASB5C8fABXTqP6mxuW1M\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:29:34.838Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:29:34.879Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"toolu_01QUcctDesdzRpwDzHgj17Zm\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Created work todo \\\"Test task for recap\\\" for today!\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"✅ Created \\\"Test task for recap\\\" in your work context - ready to tackle today!\"}]}"
           },
           {
             "id": "event-5",
             "interaction": 2,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:50.816Z\\n\\nshow me what I completed today\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:37.329Z\\n\\nshow me what I completed today\"}"
           },
           {
             "id": "event-6",
             "interaction": 2,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01GMZFsHdcJZiywfcKr1Sf8p\",\"name\":\"listTodos\",\"arguments\":{\"completed\":true,\"completedFrom\":\"2026-10-23T00:00:00.000Z\",\"completedTo\":\"2026-10-23T23:59:59.999Z\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"toolu_01RUQFbvErE2ceRBmQe1Jesy\",\"name\":\"listTodos\",\"arguments\":{\"completed\":true,\"completedFrom\":\"2026-10-23T00:00:00.000Z\",\"completedTo\":\"2026-10-23T23:59:59.999Z\"}}]}"
           },
           {
             "id": "event-7",
             "interaction": 3,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 0 matching todos\\\",\\\"data\\\":[],\\\"metadata\\\":{\\\"execution_time\\\":\\\"14.00ms\\\",\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T07:08:54.411Z\\\",\\\"filters_applied\\\":[\\\"completed\\\",\\\"completedFrom\\\",\\\"completedTo\\\",\\\"limit\\\"]},\\\"pagination\\\":{\\\"count\\\":0,\\\"limit\\\":50,\\\"has_more\\\":false}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"toolu_01GMZFsHdcJZiywfcKr1Sf8p\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 0 matching todos\\\",\\\"data\\\":[],\\\"pagination\\\":{\\\"count\\\":0,\\\"limit\\\":50,\\\"has_more\\\":false},\\\"metadata\\\":{\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T14:29:40.704Z\\\",\\\"execution_time\\\":\\\"13.00ms\\\",\\\"filters_applied\\\":[\\\"completed\\\",\\\"completedFrom\\\",\\\"completedTo\\\",\\\"limit\\\"]}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"toolu_01RUQFbvErE2ceRBmQe1Jesy\",\"isError\":false}"
           },
           {
             "id": "event-8",
             "interaction": 3,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"No completions yet today! Fresh start - time to crush some tasks! 💪\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Nothing completed yet today! Let's get some wins on the board 💪 What are you working on?\"}]}"
           }
         ]
       },
@@ -675,7 +633,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created the requested work todo and later reported there were no completed todos today, matching the user’s requests.",
+            "explanation": "It created the requested work todo and later listed completed todos for today, correctly reporting none found.",
             "evidenceIds": [
               "event-2",
               "event-4",
@@ -686,7 +644,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s creation and “no completions” statements align with tool results showing successful creation and zero completed todos found.",
+            "explanation": "Creation and “none completed” statements match the tool results showing successful create and zero completed todos.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -697,18 +655,17 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s instructions without adding conflicting constraints, using reasonable defaults for due date and tags.",
+            "explanation": "It followed the user requests and used reasonable defaults (today due date, work context) without adding conflicting constraints.",
             "evidenceIds": [
-              "event-1",
               "event-2",
-              "event-5",
-              "event-6"
+              "event-6",
+              "event-8"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred, so no recovery behavior was needed.",
+            "explanation": "No tool errors occurred in the recording, so no recovery behavior was needed.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -717,7 +674,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear and directly answered the user, confirming creation and plainly stating that no tasks were completed today.",
+            "explanation": "Responses were clear and concise, confirming creation and summarizing that no completed items were found today.",
             "evidenceIds": [
               "event-4",
               "event-8"
@@ -730,7 +687,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/ambiguous-input.json",
-        "sha256": "23cf269ef03a0c50c4f608c6c2e9e515f587d727bca90bd19998b2c6f107462a",
+        "sha256": "f6448f5f6be94b126ca1526eecb58d5af8d7f879668cc9a73b534566e1c5ff1a",
         "scenarioId": "ambiguous-input",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -739,14 +696,14 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:41.371Z\\n\\nadd todo\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:31:30.744Z\\n\\nadd todo\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"What’s the todo **title** and when is it **due**? (e.g., “Pay rent” + “tomorrow” / “2026-10-25”)\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_049379a2cd0c3c05016adb0783979c87d2ab0c37fe4da4b127\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"What’s the todo *title*, and when is it due (e.g., **today/tomorrow/2026-10-30**)? If you tell me the context too (work/errands/home), I’ll file it perfectly.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0f2d9be79985a16e016adb6fc50c4087d2bd723de6b85f71b8\\\"}\"}]}"
           }
         ]
       },
@@ -756,7 +713,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant appropriately asked for the missing todo title and due date needed to proceed with an ambiguous \"add todo\" request.",
+            "explanation": "The assistant requested the missing todo title, due date, and optional context needed to add a todo after the user’s ambiguous request.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -765,7 +722,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant made no claims of creating a todo or completing actions, only requested clarifying details.",
+            "explanation": "It made no claims that a todo was created or saved, only asked for details.",
             "evidenceIds": [
               "event-2"
             ]
@@ -773,7 +730,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the user's request context by seeking necessary specifics without inventing details or adding constraints.",
+            "explanation": "It followed the user request by seeking required specifics rather than inventing a todo, date, or context.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -782,7 +739,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool calls or errors occurred in the recorded conversation.",
+            "explanation": "No tool use or errors occurred in the conversation.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -791,7 +748,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The question was clear and actionable, providing examples of acceptable due date formats and required fields.",
+            "explanation": "The response was clear and specific about what information was needed, giving examples for due dates and contexts.",
             "evidenceIds": [
               "event-2"
             ]
@@ -803,7 +760,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/complete-todo-workflow.json",
-        "sha256": "3006b36dbc5ca9a5a9a8678e3c550ffed2a3bb1573939984773611e359cc756d",
+        "sha256": "bcc2365b88cb39f56cacf0ddd4582592d26e6dfba8c6465d5f817cc90e553c7b",
         "scenarioId": "complete-todo-workflow",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -812,84 +769,84 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:14.821Z\\n\\ncreate todo called integration test task\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:31:06.790Z\\n\\ncreate todo called integration test task\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_1o7jdzyMVf0hSUmM6ZlCjwLJ|fc_05a0c7dbf033389e016adb076b0ef887d28c976902050cef22\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Integration test task\",\"description\":\"\",\"context\":\"work\",\"due\":\"2026-10-23\",\"tags\":[\"gtd:next\"],\"message\":\"Created per user request\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_PTP5D1s2W1932yNfjYQkptgf|fc_0c8ad7401aa5976c016adb6fae591c87d28f74014ff41f3b52\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Integration test task\",\"description\":\"\",\"context\":\"private\",\"due\":\"2026-10-23\",\"tags\":[\"gtd:next\"],\"message\":\"Captured as a clear next action\"}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:06:19.504Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"5.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:19.545Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_1o7jdzyMVf0hSUmM6ZlCjwLJ|fc_05a0c7dbf033389e016adb076b0ef887d28c976902050cef22\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:31:10.776Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"context\\\":\\\"private\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:10.824Z\\\",\\\"execution_time\\\":\\\"8.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_PTP5D1s2W1932yNfjYQkptgf|fc_0c8ad7401aa5976c016adb6fae591c87d28f74014ff41f3b52\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Locked in: **Integration test task** (context: *work*, due **2026-10-23**, tagged **gtd:next**).\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_05a0c7dbf033389e016adb076ca01887d289f8a66f82e995a8\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Created **Integration test task** (due **2026-10-23**) and tagged it **gtd:next**—ready to execute.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0c8ad7401aa5976c016adb6fb1998087d2a4bf621d757ca214\\\"}\"}]}"
           },
           {
             "id": "event-5",
             "interaction": 2,
             "source": "request.messages[5]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:21.440Z\\n\\nmark the integration test task as done\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:31:14.526Z\\n\\nmark the integration test task as done\"}"
           },
           {
             "id": "event-6",
             "interaction": 2,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_MQfOqQtfAZKKB1fd5MswS14Y|fc_05a0c7dbf033389e016adb0771cfac87d280922cd5855301bc\",\"name\":\"searchTodos\",\"arguments\":{\"query\":\"title:\\\"Integration test task\\\" completed:false\",\"includeCompleted\":false,\"limit\":20}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_HkHB1liLCrYKQkDf0X6GwzOB|fc_0c8ad7401aa5976c016adb6fb536f087d2a6980b66fc6f5f0c\",\"name\":\"searchTodos\",\"arguments\":{\"query\":\"title:\\\"Integration test task\\\" completed:false\",\"includeCompleted\":false,\"limit\":20}}]}"
           },
           {
             "id": "event-7",
             "interaction": 3,
             "source": "request.messages[7]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Search failed\\\",\\\"error\\\":\\\"verification_exception\\\\n\\\\tRoot causes:\\\\n\\\\t\\\\tverification_exception: Found 1 problem\\\\nline 1:1: Unknown index [eddo_user_testuser_1792739174705]\\\",\\\"recovery_suggestions\\\":[\\\"Check if Elasticsearch is running\\\",\\\"Verify the search query syntax\\\",\\\"Use listTodos tool as fallback\\\"],\\\"metadata\\\":{\\\"operation\\\":\\\"search\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:26.125Z\\\",\\\"error_type\\\":\\\"database_error\\\"}}\"}],\"toolName\":\"searchTodos\",\"toolCallId\":\"call_MQfOqQtfAZKKB1fd5MswS14Y|fc_05a0c7dbf033389e016adb0771cfac87d280922cd5855301bc\",\"isError\":true}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Search failed\\\",\\\"error\\\":\\\"Operation failed; inspect state before retrying mutations.\\\",\\\"metadata\\\":{\\\"operation\\\":\\\"searchTodos\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:17.581Z\\\"}}\"}],\"toolName\":\"searchTodos\",\"toolCallId\":\"call_HkHB1liLCrYKQkDf0X6GwzOB|fc_0c8ad7401aa5976c016adb6fb536f087d2a6980b66fc6f5f0c\",\"isError\":true}"
           },
           {
             "id": "event-8",
             "interaction": 3,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_3jEEMZR5cHjWnM6x0dP3GAMY|fc_05a0c7dbf033389e016adb07756d1487d2be2d4f0396c3f230\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\",\"completed\":false,\"limit\":50}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_Yxn3PYsBHo8RA4naDjyX93rJ|fc_0c8ad7401aa5976c016adb6fb893f487d28b466b435be5dd87\",\"name\":\"listTodos\",\"arguments\":{\"completed\":false,\"dateFrom\":\"2026-10-23\",\"dateTo\":\"2026-10-23\",\"limit\":50}}]}"
           },
           {
             "id": "event-9",
             "interaction": 4,
             "source": "request.messages[9]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-10-23T07:06:19.504Z\\\",\\\"_rev\\\":\\\"2-1da22a43f726f4977791cb3c4f0b5c08\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"description\\\":\\\"\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-10-23T07:06:19.533Z\\\"]}],\\\"metadata\\\":{\\\"execution_time\\\":\\\"15.00ms\\\",\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:29.715Z\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"completed\\\",\\\"limit\\\"]},\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"call_3jEEMZR5cHjWnM6x0dP3GAMY|fc_05a0c7dbf033389e016adb07756d1487d2be2d4f0396c3f230\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-10-23T14:31:10.776Z\\\",\\\"_rev\\\":\\\"2-0e02413df6604cffec6b1a3ab113f775\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"description\\\":\\\"\\\",\\\"context\\\":\\\"private\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-10-23T14:31:10.807Z\\\"]}],\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false},\\\"metadata\\\":{\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:20.986Z\\\",\\\"execution_time\\\":\\\"12.00ms\\\",\\\"filters_applied\\\":[\\\"completed\\\",\\\"dateFrom\\\",\\\"dateTo\\\",\\\"limit\\\"]}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"call_Yxn3PYsBHo8RA4naDjyX93rJ|fc_0c8ad7401aa5976c016adb6fb893f487d28b466b435be5dd87\",\"isError\":false}"
           },
           {
             "id": "event-10",
             "interaction": 4,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_IwlcgxhqFXjNM6hpoRxuiPFh|fc_05a0c7dbf033389e016adb07770ee887d2a17586275e8bca75\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-10-23T07:06:19.504Z\",\"completed\":true,\"message\":\"Marked done per user request\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_eEj8M3eazVuMfJPTRUPNKmvv|fc_0c8ad7401aa5976c016adb6fb9f46087d29ca348e903d0a1be\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-10-23T14:31:10.776Z\",\"completed\":true,\"message\":\"Marked done per user request\"}}]}"
           },
           {
             "id": "event-11",
             "interaction": 5,
             "source": "request.messages[11]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:06:19.504Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"status\\\":\\\"completed\\\",\\\"completed_at\\\":\\\"2026-10-23T07:06:31.950Z\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"4.00ms\\\",\\\"operation\\\":\\\"toggle_completion\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:31.983Z\\\"}}\"}],\"toolName\":\"toggleTodoCompletion\",\"toolCallId\":\"call_IwlcgxhqFXjNM6hpoRxuiPFh|fc_05a0c7dbf033389e016adb07770ee887d2a17586275e8bca75\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:31:10.776Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"status\\\":\\\"completed\\\",\\\"completed_at\\\":\\\"2026-10-23T14:31:22.476Z\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"toggle_completion\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:22.511Z\\\",\\\"execution_time\\\":\\\"6.00ms\\\"}}\"}],\"toolName\":\"toggleTodoCompletion\",\"toolCallId\":\"call_eEj8M3eazVuMfJPTRUPNKmvv|fc_0c8ad7401aa5976c016adb6fb9f46087d29ca348e903d0a1be\",\"isError\":false}"
           },
           {
             "id": "event-12",
             "interaction": 5,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Done — **Integration test task** is marked **completed**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_05a0c7dbf033389e016adb0779257887d2969e51c99970b0fe\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Done—**Integration test task** is marked complete.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0c8ad7401aa5976c016adb6fbbaef887d2bfbc6d2f3f3884c6\\\"}\"}]}"
           }
         ]
       },
@@ -899,7 +856,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a todo titled \"Integration test task\" and then marked that same todo as completed as requested.",
+            "explanation": "The assistant created the requested todo and then marked that same todo as done.",
             "evidenceIds": [
               "event-2",
               "event-11",
@@ -909,7 +866,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s confirmations of creation and completion are supported by successful tool results showing the todo ID and completed status.",
+            "explanation": "Its statements about creation and completion are supported by successful tool results confirming both operations.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -920,31 +877,29 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user requests without adding conflicting constraints, using reasonable defaults for context, due date, and tags.",
+            "explanation": "It followed the user's requests without adding conflicting constraints, using reasonable defaults for due date, context, and tags.",
             "evidenceIds": [
               "event-1",
               "event-2",
-              "event-4",
               "event-5",
-              "event-12"
+              "event-10"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "pass",
-            "explanation": "After searchTodos failed, it correctly fell back to listTodos and then completed the todo without claiming the failed search succeeded.",
+            "explanation": "After a search tool error, it switched to listing todos and successfully completed the task without claiming the failed search succeeded.",
             "evidenceIds": [
               "event-7",
               "event-8",
               "event-9",
-              "event-10",
-              "event-11"
+              "event-10"
             ]
           },
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were brief and clear, summarizing the todo details on creation and confirming completion after the action.",
+            "explanation": "Responses were concise and clearly confirmed what was created and that it was marked complete.",
             "evidenceIds": [
               "event-4",
               "event-12"
@@ -957,7 +912,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/create-todo-context-tags.json",
-        "sha256": "2c1429c7842ce273f3b7620456d5e4c3fc9cf38a7e46d4c3a2822f4c03401773",
+        "sha256": "f826b91efbbc904fe67206b44c924c0ad919a15cfb6323ff99fbd086b0ad262f",
         "scenarioId": "create-todo-context-tags",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -966,28 +921,28 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:05:50.594Z\\n\\ncreate work todo for quarterly report due next month with urgent tag\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:30:51.619Z\\n\\ncreate work todo for quarterly report due next month with urgent tag\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_7S3c4fWxybeKEJeTc0Yjc90H|fc_0a1fb9d206d7b8ae016adb0754327487d2b24539e2e2991fcf\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Quarterly report — draft & submit\",\"description\":\"Prepare and submit the quarterly report.\",\"context\":\"work\",\"due\":\"2026-11-30\",\"tags\":[\"gtd:project\",\"urgent\"]}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_aNVRTZipcOX8wMUJeXp0Ffv6|fc_0d14009467ebd274016adb6fa1431c87d29e3fa4ec6779ffaa\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Quarterly report\",\"description\":\"Prepare and submit the quarterly report. Marked urgent.\",\"context\":\"work\",\"due\":\"2026-11-23\",\"tags\":[\"gtd:project\",\"urgent\"],\"message\":\"Create work todo for quarterly report due next month with urgent tag\"}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:06:00.178Z\\\",\\\"title\\\":\\\"Quarterly report — draft & submit\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-30\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"6.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:00.218Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_7S3c4fWxybeKEJeTc0Yjc90H|fc_0a1fb9d206d7b8ae016adb0754327487d2b24539e2e2991fcf\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:30:57.697Z\\\",\\\"title\\\":\\\"Quarterly report\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-23\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:30:57.742Z\\\",\\\"execution_time\\\":\\\"6.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_aNVRTZipcOX8wMUJeXp0Ffv6|fc_0d14009467ebd274016adb6fa1431c87d29e3fa4ec6779ffaa\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Created: **Quarterly report — draft & submit** (context: *work*) due **2026-11-30**, tagged **urgent**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0a1fb9d206d7b8ae016adb075b3f9487d2a9e886726ded1cdb\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Created **work** todo: **Quarterly report** (due **2026-11-23**) with tags **urgent** + **gtd:project**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0d14009467ebd274016adb6fa28bf087d283021588952889ab\\\"}\"}]}"
           }
         ]
       },
@@ -997,7 +952,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a work todo for the quarterly report due next month and applied the urgent tag as requested.",
+            "explanation": "It created a work todo for “Quarterly report” with an urgent tag and a next-month due date (2026-11-23) as requested.",
             "evidenceIds": [
               "event-2",
               "event-3",
@@ -1007,7 +962,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s creation claim matches the tool result showing the todo was created with the stated fields.",
+            "explanation": "The assistant’s claim that the todo was created is supported by the successful createTodo tool result with an ID and due date.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -1016,95 +971,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s request without adding conflicting constraints, choosing a reasonable next-month due date.",
-            "evidenceIds": [
-              "event-1",
-              "event-2"
-            ]
-          },
-          {
-            "criterion": "error_recovery",
-            "verdict": "not_applicable",
-            "explanation": "No tool error occurred in the recording.",
-            "evidenceIds": [
-              "event-3"
-            ]
-          },
-          {
-            "criterion": "communication_quality",
-            "verdict": "pass",
-            "explanation": "The final message clearly summarized the created todo with context, due date, and tag information.",
-            "evidenceIds": [
-              "event-4"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "status": "completed",
-      "recording": {
-        "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/create-todo-natural-language.json",
-        "sha256": "2a49577e92d0912763cbefa9e5f749d79a9b6011ae85154cb6715e59a6f6a551",
-        "scenarioId": "create-todo-natural-language",
-        "subjectModel": "openai/gpt-5.2",
-        "events": [
-          {
-            "id": "event-1",
-            "interaction": 0,
-            "source": "request.messages[1]",
-            "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:05:42.406Z\\n\\nadd todo next friday to go shopping\"}"
-          },
-          {
-            "id": "event-2",
-            "interaction": 0,
-            "source": "response.message",
-            "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_6BGV6RSjnzk18vayRqOsrmrl|fc_0e2f37b018b90a4e016adb074bc51887d2a5e042526752a08c\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"description\":\"\",\"context\":\"errands\",\"due\":\"2026-11-06T23:59:59.999Z\",\"tags\":[\"gtd:next\"],\"message\":\"User requested: add todo next friday to go shopping\"}}]}"
-          },
-          {
-            "id": "event-3",
-            "interaction": 1,
-            "source": "request.messages[3]",
-            "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:05:48.218Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"errands\\\",\\\"due\\\":\\\"2026-11-06\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"7.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:05:48.258Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_6BGV6RSjnzk18vayRqOsrmrl|fc_0e2f37b018b90a4e016adb074bc51887d2a5e042526752a08c\",\"isError\":false}"
-          },
-          {
-            "id": "event-4",
-            "interaction": 1,
-            "source": "response.message",
-            "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Locked in: **Go shopping** (context: *errands*) due **2026-11-06** with **gtd:next**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0e2f37b018b90a4e016adb074dab7c87d290c7a252657878be\\\"}\"}]}"
-          }
-        ]
-      },
-      "review": {
-        "schemaVersion": 1,
-        "judgments": [
-          {
-            "criterion": "task_fulfillment",
-            "verdict": "pass",
-            "explanation": "Created a todo for “Go shopping” due next Friday (2026-11-06) with a reasonable errands context and tag, matching the user request.",
-            "evidenceIds": [
-              "event-2",
-              "event-3",
-              "event-4"
-            ]
-          },
-          {
-            "criterion": "claims_grounded_in_results",
-            "verdict": "pass",
-            "explanation": "The assistant’s confirmation aligns with the toolResult reporting successful creation and the returned due date and title.",
-            "evidenceIds": [
-              "event-3",
-              "event-4"
-            ]
-          },
-          {
-            "criterion": "instruction_compliance",
-            "verdict": "pass",
-            "explanation": "It followed the user’s natural-language instruction without adding conflicting constraints and used acceptable GTD defaults.",
+            "explanation": "It followed the user’s request for context/work, urgent tagging, and next-month due date without adding conflicting constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1122,7 +989,96 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The final message clearly summarizes the created todo with title, context, due date, and tag in a readable format.",
+            "explanation": "The final message clearly summarizes what was created, including context, title, due date, and tags.",
+            "evidenceIds": [
+              "event-4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/create-todo-natural-language.json",
+        "sha256": "1a6289e0838f65bf9e670100f548ab46dfcc314ad9aa816dc852e1a74c84d123",
+        "scenarioId": "create-todo-natural-language",
+        "subjectModel": "openai/gpt-5.2",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:30:42.726Z\\n\\nadd todo next friday to go shopping\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_zTDvnMhDKmnE2OuDzRYOPwuw|fc_0a3f6a0b0d13bea8016adb6f9892bc87d2bcd178223fe4dca4\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"description\":\"\",\"context\":\"errands\",\"due\":\"2026-11-06\",\"tags\":[\"gtd:next\"],\"message\":\"Created next action for next Friday\"}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:30:49.048Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"errands\\\",\\\"due\\\":\\\"2026-11-06\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:30:49.093Z\\\",\\\"execution_time\\\":\\\"7.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_zTDvnMhDKmnE2OuDzRYOPwuw|fc_0a3f6a0b0d13bea8016adb6f9892bc87d2bcd178223fe4dca4\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Locked in: **Go shopping** — due **next Friday (2026-11-06)** in **errands**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0a3f6a0b0d13bea8016adb6f9ae3e887d2900067f9c3e98857\\\"}\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "It created a todo for “Go shopping” due next Friday (2026-11-06) with an errands context as requested.",
+            "evidenceIds": [
+              "event-2",
+              "event-3",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "Its confirmation matches the successful createTodo tool result showing the same title, context, and due date.",
+            "evidenceIds": [
+              "event-3",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "It followed the user’s request to add a todo for next Friday without adding conflicting constraints.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred in the recording.",
+            "evidenceIds": [
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "The final message clearly summarizes the created todo with title, relative and absolute due date, and context.",
             "evidenceIds": [
               "event-4",
               "event-3"
@@ -1135,7 +1091,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/multi-step-create-list.json",
-        "sha256": "41e6fd3eee93594a9c6f2e606d812df2d355192db97e6bb903e300788593c6be",
+        "sha256": "88549493f4ff23b4b61a2119dcdabbf9a6d2c45ff83f685eb6f476aec7c76f39",
         "scenarioId": "multi-step-create-list",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1144,42 +1100,42 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:04.067Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:30:59.369Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_ejJ5NZm3XtN8VK7knPRH3gBS|fc_0a0b50a3f1ebc480016adb0760be2c87d29613fe61a33f69ce\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"description\":\"\",\"context\":\"work\",\"due\":\"2026-10-23T23:59:59.999Z\",\"tags\":[\"gtd:next\"],\"message\":\"Create work todo for code review\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_QT0A5lEU5RR4LSggkT1Bm40v|fc_043827e5202998c5016adb6fa668c487d2be1eefb611327067\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"description\":\"Review pending code changes and leave feedback.\",\"context\":\"work\",\"due\":\"2026-10-23\",\"tags\":[\"gtd:next\"],\"message\":\"User requested a work todo for code review\"}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:06:09.130Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"5.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:09.168Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_ejJ5NZm3XtN8VK7knPRH3gBS|fc_0a0b50a3f1ebc480016adb0760be2c87d29613fe61a33f69ce\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:31:02.834Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:02.877Z\\\",\\\"execution_time\\\":\\\"6.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_QT0A5lEU5RR4LSggkT1Bm40v|fc_043827e5202998c5016adb6fa668c487d2be1eefb611327067\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_S7uIeyWPHm56xFAJeMb8yVqM|fc_0a0b50a3f1ebc480016adb0762e92c87d291cef12f4d7ba3d5\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\",\"completed\":false,\"limit\":50}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_liXnFoEyyYuQrpjHPKwNCb9x|fc_043827e5202998c5016adb6fa8940087d29020d2c07047e0db\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\",\"limit\":50}}]}"
           },
           {
             "id": "event-5",
             "interaction": 2,
             "source": "request.messages[5]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-10-23T07:06:09.130Z\\\",\\\"_rev\\\":\\\"2-8d0974188b4ed71a2e2a570d6dcea618\\\",\\\"title\\\":\\\"Code review\\\",\\\"description\\\":\\\"\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-10-23T07:06:09.155Z\\\"]}],\\\"metadata\\\":{\\\"execution_time\\\":\\\"15.00ms\\\",\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:11.430Z\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"completed\\\",\\\"limit\\\"]},\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"call_S7uIeyWPHm56xFAJeMb8yVqM|fc_0a0b50a3f1ebc480016adb0762e92c87d291cef12f4d7ba3d5\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-10-23T14:31:02.834Z\\\",\\\"_rev\\\":\\\"2-1f9174d64d5cfa4dbd2c7455ced62c04\\\",\\\"title\\\":\\\"Code review\\\",\\\"description\\\":\\\"Review pending code changes and leave feedback.\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-10-23T14:31:02.864Z\\\"]}],\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false},\\\"metadata\\\":{\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:04.978Z\\\",\\\"execution_time\\\":\\\"12.00ms\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"limit\\\"]}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"call_liXnFoEyyYuQrpjHPKwNCb9x|fc_043827e5202998c5016adb6fa8940087d29020d2c07047e0db\",\"isError\":false}"
           },
           {
             "id": "event-6",
             "interaction": 2,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Created **work** todo: **Code review** (due **2026-10-23**).\\n\\nYour **work** todos:\\n- **Code review** — tags: `gtd:next` — due: 2026-10-23\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0a0b50a3f1ebc480016adb0765c72c87d2a82b47169bd9b0a3\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Created **work** todo: **Code review** (due **2026-10-23**).\\n\\nYour **work** todos:\\n- **Code review** — *gtd:next* (due 2026-10-23)\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_043827e5202998c5016adb6fa9a91c87d2b8f80908ca00fd6d\\\"}\"}]}"
           }
         ]
       },
@@ -1189,7 +1145,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created a work-context code review todo and then listed all work todos, showing the newly created item.",
+            "explanation": "It created a work-context code review todo and then listed all work todos as requested.",
             "evidenceIds": [
               "event-2",
               "event-4",
@@ -1199,7 +1155,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The reported creation and the listed work todos match the successful tool results showing one \"Code review\" item due 2026-10-23.",
+            "explanation": "The claims of creation and listing are supported by successful tool results showing one created and returned work todo.",
             "evidenceIds": [
               "event-3",
               "event-5",
@@ -1209,7 +1165,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user request without adding conflicting constraints, using reasonable defaults for due date and tags.",
+            "explanation": "It followed the user’s request and used reasonable defaults (due date today, gtd tag) without adding conflicting constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1228,7 +1184,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The final message is clear and organized, summarizing the created todo and listing the work todos with key fields.",
+            "explanation": "The final message clearly summarizes the created todo and presents the work todo list in an easy-to-scan format.",
             "evidenceIds": [
               "event-6"
             ]
@@ -1240,7 +1196,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/persistent-chat-history.json",
-        "sha256": "cf5af9f77e2bb25ee399815deef933e09235a6eb6db29f125ea070c1c7080a72",
+        "sha256": "8379b983cf3eaa19fcc85024ca95a947fb9d9f70c5614f3347b9d33be95da9dc",
         "scenarioId": "persistent-chat-history",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1249,42 +1205,28 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:33.899Z\\n\\nMy planning keyword for this test is deep-work.\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:31:24.586Z\\n\\nMy planning keyword for this test is deep-work.\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_48C3THSbEn7wU7uCM4Kk5mcE|fc_073646ad29d7e5cf016adb077da9a887d28345d1ec9d5f4945\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Planning keyword: deep-work\",\"description\":\"User's planning keyword for this test is **deep-work**.\",\"context\":\"memory\",\"due\":\"2026-10-23\",\"tags\":[\"user:memory\"],\"message\":\"Store user planning keyword as memory\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Got it—do you want me to *save “deep-work” as your planning keyword* in your system (as a memory), so I can reuse it automatically in future planning?\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_05e94fa4d74a22ac016adb6fc059a087d28527a91ed1694c3e\\\"}\"}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
-            "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:06:38.078Z\\\",\\\"title\\\":\\\"Planning keyword: deep-work\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"7.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:38.125Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_48C3THSbEn7wU7uCM4Kk5mcE|fc_073646ad29d7e5cf016adb077da9a887d28345d1ec9d5f4945\",\"isError\":false}"
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:31:28.885Z\\n\\nWhat planning keyword did I mention?\"}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Locked in: your planning keyword is **deep-work**—saved to memory for this test.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_073646ad29d7e5cf016adb077f152c87d2949c621a3a5f25fd\\\"}\"}]}"
-          },
-          {
-            "id": "event-5",
-            "interaction": 2,
-            "source": "request.messages[5]",
-            "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:39.779Z\\n\\nWhat planning keyword did I mention?\"}"
-          },
-          {
-            "id": "event-6",
-            "interaction": 2,
-            "source": "response.message",
-            "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"You mentioned the planning keyword **deep-work**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_073646ad29d7e5cf016adb0780d78887d28a5d60ccb65a931f\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"You mentioned **deep-work**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_05e94fa4d74a22ac016adb6fc232f087d2a13d59c265b1b486\\\"}\"}]}"
           }
         ]
       },
@@ -1294,46 +1236,44 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant stored the user's planning keyword as a todo and later correctly recalled that the keyword was deep-work.",
-            "evidenceIds": [
-              "event-1",
-              "event-2",
-              "event-6"
-            ]
-          },
-          {
-            "criterion": "claims_grounded_in_results",
-            "verdict": "pass",
-            "explanation": "Its claim that the keyword was saved is supported by the successful createTodo tool result.",
+            "explanation": "The assistant correctly answered that the planning keyword mentioned was “deep-work.”",
             "evidenceIds": [
               "event-3",
               "event-4"
             ]
           },
           {
-            "criterion": "instruction_compliance",
+            "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "It followed the user's requests without adding conflicting constraints, and answered the recall question accurately.",
+            "explanation": "Its claim that the user mentioned “deep-work” is directly supported by the earlier user message content.",
             "evidenceIds": [
               "event-1",
-              "event-6"
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "It followed the user’s request to identify the mentioned planning keyword without adding unrelated actions.",
+            "evidenceIds": [
+              "event-3",
+              "event-4"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred in the recording, so error recovery was not exercised.",
+            "explanation": "No tool errors or failures occurred in the recording.",
             "evidenceIds": [
-              "event-3"
+              "event-4"
             ]
           },
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear and directly addressed the user's intent to store and retrieve the planning keyword.",
+            "explanation": "The response was clear, concise, and directly addressed the user’s question.",
             "evidenceIds": [
-              "event-4",
-              "event-6"
+              "event-4"
             ]
           }
         ]
@@ -1343,7 +1283,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/status-message-pattern.json",
-        "sha256": "3b87401fd0f90fc324b1a954e2c63291fb1c0f94dd9c7bada094ebc7925da95e",
+        "sha256": "a39e2600158aa51806ef47143a0a89bd78eb0fe7571bd27adfb1c834f6d7eca7",
         "scenarioId": "status-message-pattern",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1352,56 +1292,56 @@
             "interaction": 0,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:44.142Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:31:33.697Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
           },
           {
             "id": "event-2",
             "interaction": 0,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_bJldIQeiONp7CgfUShjxP7Hk|fc_079a456123354d8f016adb07871c9c87d2835353ba8169ac8e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"description\":\"\",\"context\":\"work\",\"due\":\"2026-10-23T23:59:59.999Z\",\"tags\":[\"gtd:next\"],\"message\":\"User requested creation\"}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_lmJWOWk64iupIt7rUw7uag3S|fc_0070df2a58307c43016adb6fc8d3c487d2aff4397a174a57f8\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"description\":\"\",\"context\":\"work\",\"due\":\"2026-10-23\",\"tags\":[\"gtd:next\"],\"message\":\"Created per user request\"}}]}"
           },
           {
             "id": "event-3",
             "interaction": 1,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T07:06:47.494Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"execution_time\\\":\\\"6.00ms\\\",\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:47.530Z\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_bJldIQeiONp7CgfUShjxP7Hk|fc_079a456123354d8f016adb07871c9c87d2835353ba8169ac8e\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-10-23T14:31:37.276Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:37.319Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_lmJWOWk64iupIt7rUw7uag3S|fc_0070df2a58307c43016adb6fc8d3c487d2aff4397a174a57f8\",\"isError\":false}"
           },
           {
             "id": "event-4",
             "interaction": 1,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Created **work** todo: **“Test task for recap”** (due **2026-10-23**).\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_079a456123354d8f016adb078845e087d299a1c7fc4ac78d7d\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Created **“Test task for recap”** in **work** (due **2026-10-23**) and tagged **gtd:next**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_0070df2a58307c43016adb6fca085487d2b10f0c5ad4d8ba5b\\\"}\"}]}"
           },
           {
             "id": "event-5",
             "interaction": 2,
             "source": "request.messages[1]",
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:06:48.764Z\\n\\nshow me what I completed today\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:31:38.655Z\\n\\nshow me what I completed today\"}"
           },
           {
             "id": "event-6",
             "interaction": 2,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_tLaa0gclKp54tT4NwPcPszjS|fc_08d5312c017d408d016adb078ba25887d291deaeb0cfa7d39e\",\"name\":\"getRecapData\",\"arguments\":{}}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"call_lOwxCOaMLzaop97UazctcjI3|fc_064926552727c6ba016adb6fcd026887d2b9b53a82f52b99b9\",\"name\":\"getRecapData\",\"arguments\":{}}]}"
           },
           {
             "id": "event-7",
             "interaction": 3,
             "source": "request.messages[3]",
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"recap data for 2026-10-23\\\",\\\"data\\\":{\\\"completedToday\\\":[],\\\"upcomingNextActions\\\":[{\\\"_id\\\":\\\"2026-10-23T07:06:47.494Z\\\",\\\"link\\\":null,\\\"parentId\\\":null,\\\"id\\\":\\\"2026-10-23T07:06:47.494Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"completed\\\":null,\\\"tags\\\":[\\\"gtd:next\\\"],\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"trackedMinutes\\\":0,\\\"activeSessionCount\\\":0,\\\"fieldsTruncated\\\":false}],\\\"activeTimeTracking\\\":[],\\\"metadata\\\":{\\\"contractVersion\\\":2,\\\"itemsAreCompleteTodos\\\":false,\\\"detailTool\\\":\\\"getTodo\\\",\\\"date\\\":\\\"2026-10-23\\\",\\\"weekday\\\":\\\"Friday\\\",\\\"timeZone\\\":\\\"UTC\\\",\\\"dateStart\\\":\\\"2026-10-23\\\",\\\"dateEnd\\\":\\\"2026-10-23\\\",\\\"counts\\\":{\\\"completedToday\\\":0,\\\"upcomingNextActions\\\":1,\\\"activeTimeTracking\\\":0},\\\"selection\\\":{\\\"completedToday\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"upcomingNextActions\\\":{\\\"total\\\":1,\\\"returned\\\":1,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"activeTimeTracking\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false}},\\\"trackingScope\\\":\\\"trackedMinutes is cumulative across all stored sessions, not just today.\\\",\\\"countSemantics\\\":\\\"Exact when countExact=true; otherwise total is a lower bound. Queries are not a cross-section snapshot.\\\"}},\\\"metadata\\\":{\\\"execution_time\\\":\\\"25.00ms\\\",\\\"operation\\\":\\\"get_recap_data\\\",\\\"timestamp\\\":\\\"2026-10-23T07:06:52.547Z\\\"}}\"}],\"toolName\":\"getRecapData\",\"toolCallId\":\"call_tLaa0gclKp54tT4NwPcPszjS|fc_08d5312c017d408d016adb078ba25887d291deaeb0cfa7d39e\",\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"recap data for 2026-10-23\\\",\\\"data\\\":{\\\"completedToday\\\":[],\\\"upcomingNextActions\\\":[{\\\"_id\\\":\\\"2026-10-23T14:31:37.276Z\\\",\\\"link\\\":null,\\\"parentId\\\":null,\\\"id\\\":\\\"2026-10-23T14:31:37.276Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-10-23\\\",\\\"completed\\\":null,\\\"tags\\\":[\\\"gtd:next\\\"],\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"trackedMinutes\\\":0,\\\"activeSessionCount\\\":0,\\\"fieldsTruncated\\\":false}],\\\"activeTimeTracking\\\":[],\\\"metadata\\\":{\\\"contractVersion\\\":2,\\\"itemsAreCompleteTodos\\\":false,\\\"detailTool\\\":\\\"getTodo\\\",\\\"date\\\":\\\"2026-10-23\\\",\\\"weekday\\\":\\\"Friday\\\",\\\"timeZone\\\":\\\"UTC\\\",\\\"dateStart\\\":\\\"2026-10-23\\\",\\\"dateEnd\\\":\\\"2026-10-23\\\",\\\"counts\\\":{\\\"completedToday\\\":0,\\\"upcomingNextActions\\\":1,\\\"activeTimeTracking\\\":0},\\\"selection\\\":{\\\"completedToday\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"upcomingNextActions\\\":{\\\"total\\\":1,\\\"returned\\\":1,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"activeTimeTracking\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false}},\\\"trackingScope\\\":\\\"trackedMinutes is cumulative across all stored sessions, not just today.\\\",\\\"countSemantics\\\":\\\"Exact when countExact=true; otherwise total is a lower bound. Queries are not a cross-section snapshot.\\\"}},\\\"metadata\\\":{\\\"operation\\\":\\\"get_recap_data\\\",\\\"timestamp\\\":\\\"2026-10-23T14:31:41.378Z\\\",\\\"execution_time\\\":\\\"26.00ms\\\"}}\"}],\"toolName\":\"getRecapData\",\"toolCallId\":\"call_lOwxCOaMLzaop97UazctcjI3|fc_064926552727c6ba016adb6fcd026887d2b9b53a82f52b99b9\",\"isError\":false}"
           },
           {
             "id": "event-8",
             "interaction": 3,
             "source": "response.message",
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"You’ve completed **0** todos today (UTC).  \\nNext up: **Test task for recap** (work) — it’s due today and already tagged **gtd:next**.\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_08d5312c017d408d016adb078d746087d294bad6cec0944525\\\"}\"}]}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Completed today: **nothing logged yet (0)**.\\n\\nWant me to pull up your **next action** for today so you can knock out a quick win?\",\"textSignature\":\"{\\\"v\\\":1,\\\"id\\\":\\\"msg_064926552727c6ba016adb6fce302887d287d56c7d4d4c87bc\\\"}\"}]}"
           }
         ]
       },
@@ -1411,10 +1351,12 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "It created the requested work todo and later reported today’s completed count as requested.",
+            "explanation": "It created the requested work todo and later answered that nothing was completed today based on recap data.",
             "evidenceIds": [
+              "event-1",
               "event-2",
               "event-4",
+              "event-5",
               "event-6",
               "event-8"
             ]
@@ -1422,7 +1364,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant’s claims about todo creation and zero completed today match the tool results returned.",
+            "explanation": "The creation and recap claims match the tool results showing a successful todo create and an empty completedToday list.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -1433,7 +1375,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "It followed the user’s requests without adding conflicting constraints, using reasonable defaults for due date and tags.",
+            "explanation": "It followed the user requests without adding conflicting constraints, using reasonable defaults for due date and tag.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1454,7 +1396,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear, concise, and directly summarized the created todo and today’s completion status.",
+            "explanation": "Responses were clear and succinct, confirming creation details and reporting the completed-today count accurately.",
             "evidenceIds": [
               "event-4",
               "event-8"

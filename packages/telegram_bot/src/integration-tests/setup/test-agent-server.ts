@@ -8,7 +8,7 @@ import { projectDurableExchange } from '../../durable/projection.js';
 import { buildDurablePrompt } from '../../durable/prompt.js';
 import { openDurableRuntime, type DurableRuntime } from '../../durable/runtime.js';
 import { resolveDurableUser } from '../../durable/tools.js';
-import { setupMCPIntegration, type MCPClient } from '../../mcp/client.js';
+import { scopeMCPIntegration, setupMCPIntegration, type MCPClient } from '../../mcp/client.js';
 import {
   createCachedProvider,
   createCassetteManager,
@@ -105,7 +105,10 @@ interface ModelsAndCassettes {
 /** Opens the production Durable runtime against real MCP tools and real chat projection storage. */
 async function startRuntime(state: TestAgentState, cached: ModelsAndCassettes): Promise<void> {
   const user = state.user!;
-  const original = await setupMCPIntegration();
+  const original = await scopeMCPIntegration(
+    await setupMCPIntegration(),
+    await resolveDurableUser(user.username, user.telegram_id),
+  );
   state.mcp = {
     ...original,
     invoke: async (name, args, identity) => {

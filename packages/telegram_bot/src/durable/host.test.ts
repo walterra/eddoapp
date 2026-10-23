@@ -35,7 +35,10 @@ vi.mock('pi-durable-couchdb', () => ({ openCouchDbStorage: async () => ({ close:
 vi.mock('@earendil-works/pi-ai/providers/all', () => ({
   builtinModels: () => ({ getModel: () => true, getAuth: async () => true }),
 }));
-vi.mock('../mcp/client.js', () => ({ getMCPClient: () => ({ tools: [] }) }));
+vi.mock('../mcp/client.js', () => ({
+  getMCPClient: () => ({ tools: [] }),
+  scopeMCPIntegration: async () => ({ tools: [] }),
+}));
 vi.mock('../utils/config.js', () => ({
   appConfig: { BOT_PERSONA_ID: 'gtd_coach', LLM_MODEL: 'anthropic/configured-model' },
 }));

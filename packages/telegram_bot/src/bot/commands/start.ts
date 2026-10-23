@@ -100,7 +100,7 @@ export async function handleStatus(ctx: BotContext): Promise<void> {
   const agentStatus = getAgentStatus();
   const connectionInfo = getConnectionInfo();
 
-  const mcpStatusLine = `🔌 MCP Server: ${escapeMarkdown(connectionInfo.state)}`;
+  const mcpStatusLine = `🔌 MCP Dispatcher: ${escapeMarkdown(connectionInfo.state)}`;
   const mcpMetrics = buildMcpMetricsSection(connectionInfo.state, connectionInfo.metrics);
   const sessionSection = buildSessionSection(ctx.session);
   const agentSection = buildAgentSection(agentStatus);

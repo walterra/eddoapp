@@ -1,287 +1,130 @@
-/**
- * MCP Server with Per-Request Authentication
- * Implements proper stateless authentication following MCP best practices
- */
-
-// Note: OTEL auto-instrumentation is loaded via --import flag in package.json dev script
-// See: node --import @elastic/opentelemetry-node --import tsx src/mcp-server.ts
-
-// Configure global HTTP timeout (2 minutes for slow operations)
-import { Agent, setGlobalDispatcher } from 'undici';
-setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
-
 import {
-  type AttachmentDoc,
-  type TodoAlpha4,
   createUserRegistry,
   getCouchDbConfig,
   validateEnv,
+  type AttachmentDoc,
+  type TodoAlpha4,
 } from '@eddo/core-server';
 import { Client } from '@elastic/elasticsearch';
+import { serve, type ServerType } from '@hono/node-server';
+import { McpServer } from '@modelcontextprotocol/server';
 import { context, propagation } from '@opentelemetry/api';
 import { dotenvLoad } from 'dotenv-mono';
-import { FastMCP } from 'fastmcp';
 import nano from 'nano';
+import { Agent, setGlobalDispatcher } from 'undici';
 
 import { createMutationStoreFactory, parseMcpOperationId } from './auth/mutation_store.js';
 import { validateUserContext } from './auth/user-auth.js';
+import { createMcpHttpApp } from './http_app.js';
+import { SERVER_INSTRUCTIONS } from './server_instructions.js';
+import { createToolRegistry } from './tool_registry.js';
 import { attachMutationStore } from './tools/mutation_receipts.js';
 import { registerTools } from './tools/register-tools.js';
 import { storeTraceContext } from './tools/tool-wrapper.js';
 import type { ToolContext, UserSession } from './tools/types.js';
 import { logger } from './utils/logger.js';
 
-/**
- * Extracts trace context from request headers for distributed tracing
- */
-function extractTraceContext(
-  headers: Record<string, string | undefined>,
-): ReturnType<typeof context.active> {
-  const carrier: Record<string, string> = {};
-  for (const [key, value] of Object.entries(headers)) {
-    if (value) {
-      carrier[key.toLowerCase()] = value;
-    }
-  }
-  return propagation.extract(context.active(), carrier);
-}
-
-// Load environment variables
+setGlobalDispatcher(new Agent({ bodyTimeout: 120_000, headersTimeout: 120_000 }));
 dotenvLoad();
-
-// Validate environment
 const env = validateEnv(process.env);
-
-async function ensureUserRegistrySetup(): Promise<void> {
-  const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
-  await userRegistry.ensureDatabase();
-  await userRegistry.setupDesignDocuments();
-  logger.info('User registry design documents ensured');
-}
-
-// Initialize nano connection
-const couchDbConfig = getCouchDbConfig(env);
-const couch = nano(couchDbConfig.url);
+const couch = nano(getCouchDbConfig(env).url);
 const getMutationStore = createMutationStoreFactory(couch);
-
-// Initialize Elasticsearch client (optional - for search functionality)
-let esClient: Client | null = null;
 const esUrl = process.env.ELASTICSEARCH_URL;
-if (esUrl) {
-  try {
-    esClient = new Client({
+const esClient = esUrl
+  ? new Client({
       node: esUrl,
       tls: esUrl.startsWith('https')
         ? { rejectUnauthorized: process.env.ELASTICSEARCH_TLS_VERIFY !== 'false' }
         : undefined,
-    });
-    logger.info({ esUrl }, 'Elasticsearch client initialized');
-  } catch (error) {
-    logger.warn({ error, esUrl }, 'Failed to initialize Elasticsearch client - search disabled');
+    })
+  : null;
+
+/** Creates isolated authentication and delivery metadata for one HTTP request. */
+async function authenticateRequest(request: Request): Promise<UserSession> {
+  const headers = Object.fromEntries(request.headers.entries());
+  const identity = await validateUserContext(headers);
+  let operationId: string | undefined;
+  try {
+    operationId = parseMcpOperationId(headers['x-eddo-operation-id']);
+  } catch {
+    throw new Response(null, { status: 400, statusText: 'Invalid MCP operation ID' });
   }
-} else {
-  logger.info('ELASTICSEARCH_URL not set - search functionality disabled');
+  const session: UserSession = {
+    ...identity,
+    attachmentsDbName: identity.dbName.replace('_user_', '_attachments_'),
+    ...(operationId ? { operationId } : {}),
+  };
+  if (operationId) attachMutationStore(session, await getMutationStore(session.dbName));
+  storeTraceContext(session, propagation.extract(context.active(), headers));
+  return session;
 }
 
-/**
- * Gets the Elasticsearch client (or null if not configured)
- */
-function getEsClient(): Client | null {
-  return esClient;
+/** Creates transport-independent logging for domain handlers. */
+function createToolContext(session: UserSession): ToolContext {
+  return {
+    session,
+    log: {
+      debug: (message, data) => logger.debug({ data }, message),
+      info: (message, data) => logger.info({ data }, message),
+      warn: (message, data) => logger.warn({ data }, message),
+      error: (message, data) => logger.error({ data }, message),
+    },
+  };
 }
 
-/**
- * Server instructions for LLM consumption
- */
-const SERVER_INSTRUCTIONS = `Eddo Todo MCP Server with user registry authentication and GTD tag awareness. Pass Authorization: Bearer <api-key> or X-API-Key header for user-specific database access. Each user gets an isolated database.
+/** Creates a protocol server owned by one request, with shared database clients. */
+function createRequestServer(session: UserSession): McpServer {
+  const server = new McpServer(
+    { name: 'eddo-mcp-auth', version: '0.10.1' },
+    { instructions: SERVER_INSTRUCTIONS },
+  );
+  registerTools({
+    couch,
+    server: createToolRegistry(server, createToolContext(session)),
+    getUserDb: () => couch.db.use<TodoAlpha4>(session.dbName),
+    getAttachmentsDb: () => couch.db.use<AttachmentDoc>(session.attachmentsDbName),
+    ...(esClient ? { getEsClient: () => esClient } : {}),
+  });
+  return server;
+}
 
-GTD SYSTEM:
-- TAGS: gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar (for actionability/type)
-- CONTEXT: work, private, errands, etc. (for location/situation)
-- DUE FIELD: For gtd:calendar = exact appointment time, for others = deadline/target
-
-When creating todos, add appropriate GTD tags AND set proper context:
-- tags: ["gtd:next"] + context: "work" for work actionable items
-- tags: ["gtd:project"] + context: "private" for personal projects
-- tags: ["gtd:waiting"] + context: "work" for work dependencies
-- tags: ["gtd:calendar"] + context: "work" for appointments/meetings
-
-APPOINTMENT CREATION RULE: For gtd:calendar items, ALWAYS prefix title with time in HH:MM format:
-- "Doctor appointment at 3pm" → title: "15:00 Doctor appointment"
-- "Meeting tomorrow at 10:30" → title: "10:30 Meeting"
-
-For GTD queries like "what's next?", filter by gtd:next tags and optionally by context.`;
-
-// Create server with authentication
-const server = new FastMCP<UserSession>({
-  name: 'eddo-mcp-auth',
-  version: '1.0.0',
-  ping: { logLevel: 'info' },
-  instructions: SERVER_INSTRUCTIONS,
-  authenticate: async (request) => {
-    logger.debug('MCP authentication request');
-
-    // Extract trace context from incoming request for distributed tracing
-    const extractedContext = extractTraceContext(
-      request.headers as Record<string, string | undefined>,
-    );
-
-    const authHeader = request.headers['authorization'] || request.headers['Authorization'];
-    const apiKeyHeader = request.headers['x-api-key'] || request.headers['X-API-Key'];
-
-    if (!authHeader && !apiKeyHeader) {
-      logger.debug('MCP connection without auth headers (connection handshake)');
-      const session = {
-        userId: 'anonymous',
-        dbName: 'default',
-        attachmentsDbName: 'default_attachments',
-        username: 'anonymous',
-        timezone: 'UTC',
-      };
-      storeTraceContext(session, extractedContext);
-      return session;
-    }
-
-    const authResult = await validateUserContext(request.headers);
-    logger.info(
-      { userId: authResult.userId, username: authResult.username },
-      'MCP user authenticated',
-    );
-
-    // Build attachments database name (parallel to user db)
-    const attachmentsDbName = authResult.dbName.replace('_user_', '_attachments_');
-
-    const operationId = parseMcpOperationId(request.headers['x-eddo-operation-id']);
-    const session: UserSession = {
-      userId: authResult.userId,
-      dbName: authResult.dbName,
-      attachmentsDbName,
-      username: authResult.username,
-      timezone: authResult.timezone,
-      ...(operationId ? { operationId } : {}),
-    };
-    if (operationId) attachMutationStore(session, await getMutationStore(session.dbName));
-    storeTraceContext(session, extractedContext);
-    return session;
-  },
+export const mcpServer = createMcpHttpApp({
+  authenticate: authenticateRequest,
+  createServer: createRequestServer,
+  host: process.env.MCP_HOST || 'localhost',
+  allowedHosts: process.env.MCP_ALLOWED_HOSTS?.split(',')
+    .map((host) => host.trim())
+    .filter(Boolean),
 });
 
-/**
- * Gets the user's todo database from context
- */
-function getUserDb(context: ToolContext): nano.DocumentScope<TodoAlpha4> {
-  if (!context.session) {
-    throw new Error('No user session available');
-  }
+let httpServer: ServerType | undefined;
 
-  if (context.session.userId === 'anonymous') {
-    throw new Error(
-      'Tool calls require API key authentication (Authorization: Bearer <key> or X-API-Key)',
-    );
-  }
-
-  return couch.db.use<TodoAlpha4>(context.session.dbName);
-}
-
-/**
- * Gets the user's attachments database from context
- */
-function getAttachmentsDb(context: ToolContext): nano.DocumentScope<AttachmentDoc> {
-  if (!context.session) {
-    throw new Error('No user session available');
-  }
-
-  if (context.session.userId === 'anonymous') {
-    throw new Error(
-      'Tool calls require API key authentication (Authorization: Bearer <key> or X-API-Key)',
-    );
-  }
-
-  return couch.db.use<AttachmentDoc>(context.session.attachmentsDbName);
-}
-
-// Register all tools with tracing (including search if ES is available)
-registerTools({
-  couch,
-  getAttachmentsDb,
-  getEsClient,
-  getUserDb,
-  server,
-});
-
-// Export the server instance and control functions
-export const mcpServer = server;
-
-/**
- * Stops the MCP server
- */
+/** Stops accepting HTTP requests and waits for active requests to finish. */
 export async function stopMcpServer(): Promise<void> {
-  try {
-    await server.stop();
-    logger.info('MCP server stopped');
-  } catch (error) {
-    logger.error({ error }, 'Failed to stop MCP server');
-    throw error;
-  }
+  const server = httpServer;
+  if (!server) return;
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+  httpServer = undefined;
+  logger.info('MCP server stopped');
 }
 
-/**
- * Starts the MCP server on the specified port and host
- */
+/** Starts the standalone Hono MCP service after database setup. */
 export async function startMcpServer(port: number = 3001): Promise<void> {
+  if (httpServer) throw new Error('MCP server is already running');
   const host = process.env.MCP_HOST || 'localhost';
-
-  try {
-    logger.info({ port, host }, 'Initializing MCP server');
-
-    // Verify CouchDB server connection
-    const serverInfo = await couch.info();
-    logger.info({ couchdbVersion: serverInfo.version }, 'Connected to CouchDB');
-
-    await ensureUserRegistrySetup();
-
-    await server.start({
-      transportType: 'httpStream',
-      httpStream: { port, host },
-    });
-
-    const tools = [
-      'createTodo',
-      'listTodos',
-      'getTodo',
-      'updateTodo',
-      'toggleTodoCompletion',
-      'deleteTodo',
-      'startTimeTracking',
-      'stopTimeTracking',
-      'getActiveTimeTracking',
-      'getServerInfo',
-      'getUserInfo',
-      'getBriefingData',
-      'getRecapData',
-    ];
-
-    // Add search tool if ES is available
-    if (esClient) {
-      tools.push('searchTodos');
-    }
-
-    logger.info(
-      {
-        port,
-        endpoint: `http://localhost:${port}/mcp`,
-        tools,
-        searchEnabled: !!esClient,
-      },
-      'MCP server started',
-    );
-  } catch (error) {
-    logger.error({ error }, 'Failed to start MCP server');
-    throw error;
-  }
+  await couch.info();
+  const registry = createUserRegistry(env.COUCHDB_URL, env);
+  await registry.ensureDatabase();
+  await registry.setupDesignDocuments();
+  await new Promise<void>((resolve, reject) => {
+    httpServer = serve({ fetch: mcpServer.fetch, port, hostname: host }, () => resolve());
+    httpServer.once('error', reject);
+  });
+  logger.info({ port, host, searchEnabled: !!esClient }, 'MCP server started');
 }
 
-// Auto-start the server when this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   startMcpServer(env.MCP_SERVER_PORT).catch((error) => {
     logger.error({ error }, 'Failed to start MCP server');

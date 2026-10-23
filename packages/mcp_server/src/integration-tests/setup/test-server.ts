@@ -2,10 +2,10 @@
  * MCP Test Server Harness
  * Provides a reusable test environment for integration testing
  */
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 
 import { TestLock } from './test-lock.js';
+import { requireStructuredResult } from './tool_result.js';
 
 export interface MCPTestServerConfig {
   serverUrl?: string;
@@ -66,10 +66,13 @@ export class MCPTestServer {
     });
 
     // Create client
-    this.client = new Client({
-      name: this.config.clientName,
-      version: this.config.clientVersion,
-    });
+    this.client = new Client(
+      {
+        name: this.config.clientName,
+        version: this.config.clientVersion,
+      },
+      { versionNegotiation: { mode: { pin: '2026-07-28' } } },
+    );
 
     // Connect with timeout
     const connectPromise = this.client.connect(this.transport);
@@ -118,15 +121,12 @@ export class MCPTestServer {
       arguments: args,
     });
 
-    // Extract text content from response
-    if (result.content && Array.isArray(result.content) && result.content.length > 0) {
-      const textContent = result.content.find((c: { type: string }) => c.type === 'text');
-      if (textContent) {
-        return this.parseToolResponse(textContent.text, name);
-      }
+    const output = requireStructuredResult(result, name);
+    if (name === 'getServerInfo' && 'data' in output) {
+      const data = output.data;
+      if (data && typeof data === 'object' && 'markdown' in data) return data.markdown;
     }
-
-    return result;
+    return this.parseToolResponse(JSON.stringify(output), name);
   }
 
   private static readonly LIST_TOOLS = ['listTodos', 'getActiveTimeTracking'];

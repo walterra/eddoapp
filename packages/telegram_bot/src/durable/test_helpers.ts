@@ -1,6 +1,5 @@
 import { createModels } from '@earendil-works/pi-ai/models';
 import { fauxProvider } from '@earendil-works/pi-ai/providers/faux';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { CouchDbStorage, type CouchDatabase, type CouchDocument } from 'pi-durable-couchdb';
 import { vi } from 'vitest';
 import type { DurableRuntimeOptions } from './runtime.js';
@@ -43,7 +42,7 @@ export async function createRuntimeFixture(
   const options: DurableRuntimeOptions = {
     storage: await CouchDbStorage.open(database),
     models,
-    client: { client: {} as Client, tools: [], invoke: vi.fn(), close: vi.fn() },
+    client: { tools: [], invoke: vi.fn(), close: vi.fn() },
     username: 'alice',
     telegramId: 123,
     model: { provider: provider.provider.id, modelId: 'test' },

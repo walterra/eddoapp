@@ -11,7 +11,8 @@ packages/chat-agent/
 │   │   ├── SKILL.md        # Skill documentation (loaded into agent context)
 │   │   ├── eddo-todo.js    # CLI for todo operations
 │   │   ├── eddo-worktree.js
-│   │   ├── eddo.js
+│   │   ├── eddo.js         # Alias for the canonical CLI
+│   │   ├── mcp_client.js   # Shared SDK v2 client
 │   │   └── package.json
 │   ├── eddo-work/          # Structured work phases
 │   │   └── SKILL.md
@@ -100,7 +101,43 @@ The eddo-todo skill connects to the Eddo MCP server via:
 
 ```bash
 export EDDO_MCP_URL=http://host.docker.internal:3001/mcp
+export EDDO_MCP_API_KEY=<user-api-key>
 ```
+
+Both CLI entry points use the shared SDK v2 client, pinned to MCP revision `2026-07-28` without legacy fallback.
+The client consumes structured results. Tool failures exit nonzero before printing success and never automatically retry mutations.
+`eddo.js` delegates to `eddo-todo.js`, including calls from `eddo-worktree.js`.
+
+Run skill client and CLI tests from the repository root:
+
+```bash
+pnpm vitest:run packages/chat-agent/skills/eddo-todo
+```
+
+Tests include real SDK exchanges, symlink-installed CLI execution, and subprocesses against disposable test HTTP endpoints.
+
+### Skill Dependencies and Distribution
+
+Run `pnpm install --frozen-lockfile` from the repository root for workspace and setup-created symlink installations.
+Node resolves symlinked skill imports through their source directory and the chat-agent workspace dependencies.
+The setup installer creates links; it does not install dependencies.
+
+For an independently copied skill directory, install its committed lockfile from the repository root:
+
+```bash
+npm --prefix packages/chat-agent/skills/eddo-todo ci --omit=dev --ignore-scripts
+```
+
+Refresh the standalone lockfile after changing the skill dependency manifest:
+
+```bash
+npm --prefix packages/chat-agent/skills/eddo-todo install --package-lock-only --ignore-scripts
+```
+
+Keep the standalone SDK version aligned with the workspace dependency and `pnpm-lock.yaml`.
+The image installs this lockfile in an isolated build stage, then copies its runtime dependencies.
+See [container packaging and rollout](../../docker/pi-coding-agent/README.md#reproducible-todo-skill-packaging).
+Rebuild the image and recreate existing containers alongside the current-protocol MCP service.
 
 ### SearXNG (Web Search)
 
