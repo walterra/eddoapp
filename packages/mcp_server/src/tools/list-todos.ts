@@ -46,7 +46,13 @@ export const listTodosParameters = z.object({
     .string()
     .optional()
     .describe('End date filter for completion date in ISO format (inclusive)'),
-  limit: z.number().default(50).describe('Maximum number of todos to return (default: 50)'),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(500)
+    .default(50)
+    .describe('Maximum todos (default: 50, max: 500)'),
   tags: z
     .array(z.string())
     .optional()
