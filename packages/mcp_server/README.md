@@ -28,7 +28,21 @@ Uses JSON responses and closes each request handler after execution.
 Tool spans record error status without raw exception messages or credential-bearing error payloads.
 Malformed operation IDs return `400`; receipt stores remain scoped to the authenticated database.
 
-Preserves existing text tool responses during migration. Structured output contracts follow separately.
+## Tool contracts
+
+Every tool publishes a shared output-envelope schema and returns matching `structuredContent` and JSON text.
+The envelope preserves `summary`, domain `data`, `metadata`, and optional pagination.
+Domain payloads remain JSON values; the shared schema does not model every todo or report field.
+`getServerInfo` returns its documentation in `data.markdown`.
+
+Domain failures, thrown exceptions, and invalid handler responses return `isError: true` with a safe error envelope.
+Error envelopes never expose raw handler exceptions. Mutation failures instruct clients to inspect state before retrying.
+Receipts continue storing original domain responses; the transport constructs structured results after receipt execution.
+
+Read-only tools advertise read-only, idempotent, closed-world behavior.
+Mutation tools advertise conservative destructive behavior and no unconditional idempotency.
+Annotations guide clients; they do not replace server authorization or receipt protection.
+
 First-party clients still using SDK v1 require migration before deployment.
 
 ## Development

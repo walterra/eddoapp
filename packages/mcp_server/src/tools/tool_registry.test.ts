@@ -1,5 +1,5 @@
 import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { createToolRegistry } from '../tool_registry.js';
@@ -7,13 +7,26 @@ import type { ToolContext } from './types.js';
 
 const log = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
-async function callTool(context: ToolContext, legacy = false): Promise<Response> {
+type TestExecution = () => Promise<string>;
+
+async function callTool(
+  context: ToolContext,
+  legacy = false,
+  execute?: TestExecution,
+): Promise<Response> {
   const server = new McpServer({ name: 'test', version: '1.0.0' });
   createToolRegistry(server, context).addTool({
     name: 'identity',
     description: 'Returns the request identity',
     parameters: z.object({ value: z.string() }),
-    execute: async (args, request) => `${request.session?.userId}:${args.value}`,
+    execute:
+      execute ??
+      (async (args, request) =>
+        JSON.stringify({
+          summary: 'Identity',
+          data: `${request.session?.userId}:${args.value}`,
+          metadata: { operation: 'identity', timestamp: new Date().toISOString() },
+        })),
   });
   const handler = createMcpHandler(() => server, { legacy: 'reject' });
   return handler.fetch(
@@ -52,6 +65,40 @@ describe('SDK v2 tool registry', () => {
     const body = await response.text();
     expect(response.status, body).toBe(200);
     expect(body).toContain('undefined:hello');
+  });
+
+  it('publishes output schemas and read-only annotations', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    const register = vi.spyOn(server, 'registerTool');
+    createToolRegistry(server, { log }).addTool({
+      name: 'getTodo',
+      description: 'Gets a todo',
+      parameters: z.object({}),
+      execute: async () => '{}',
+    });
+    expect(register).toHaveBeenCalledWith(
+      'getTodo',
+      expect.objectContaining({
+        outputSchema: expect.any(Object),
+        annotations: expect.objectContaining({ readOnlyHint: true, idempotentHint: true }),
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('returns a safe tool error when execution throws', async () => {
+    const response = await callTool({ log }, false, async () => {
+      throw new Error('secret');
+    });
+    const body = await response.text();
+    expect(response.status).toBe(200);
+    expect(body).toContain('"isError":true');
+    expect(body).not.toContain('secret');
+  });
+
+  it('returns a tool error when output violates its schema', async () => {
+    const response = await callTool({ log }, false, async () => 'not JSON');
+    expect(await response.text()).toContain('"isError":true');
   });
 
   it('rejects legacy requests', async () => {
