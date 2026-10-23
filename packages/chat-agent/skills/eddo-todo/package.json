@@ -4,6 +4,6 @@
   "type": "module",
   "description": "Pi coding agent skill for Eddo todo management via MCP",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.1"
+    "@modelcontextprotocol/client": "^2.3.1"
   }
 }

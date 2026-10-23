@@ -11,7 +11,8 @@ packages/chat-agent/
 │   │   ├── SKILL.md        # Skill documentation (loaded into agent context)
 │   │   ├── eddo-todo.js    # CLI for todo operations
 │   │   ├── eddo-worktree.js
-│   │   ├── eddo.js
+│   │   ├── eddo.js         # Alias for the canonical CLI
+│   │   ├── mcp_client.js   # Shared SDK v2 client
 │   │   └── package.json
 │   ├── eddo-work/          # Structured work phases
 │   │   └── SKILL.md
@@ -100,7 +101,20 @@ The eddo-todo skill connects to the Eddo MCP server via:
 
 ```bash
 export EDDO_MCP_URL=http://host.docker.internal:3001/mcp
+export EDDO_MCP_API_KEY=<user-api-key>
 ```
+
+Both CLI entry points use the shared SDK v2 client, pinned to MCP revision `2026-07-28` without legacy fallback.
+The client consumes structured results. Tool failures exit nonzero before printing success and never automatically retry mutations.
+`eddo.js` delegates to `eddo-todo.js`, including calls from `eddo-worktree.js`.
+
+Run skill client and CLI tests from the repository root:
+
+```bash
+pnpm vitest:run packages/chat-agent/skills/eddo-todo
+```
+
+Tests include real SDK exchanges and CLI subprocesses against disposable test HTTP endpoints.
 
 ### SearXNG (Web Search)
 
