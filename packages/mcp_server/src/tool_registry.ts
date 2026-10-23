@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import type { z } from 'zod';
 
+import { toolAnnotations, toolFailure, toolOutputSchema, toolResult } from './tool_contract.js';
 import type { ToolContext } from './tools/types.js';
 
 interface ToolDefinition<TSchema extends z.ZodType> {
@@ -15,22 +16,27 @@ export interface ToolRegistry {
   addTool: <TSchema extends z.ZodType>(definition: ToolDefinition<TSchema>) => void;
 }
 
-/** Adapts existing text results to SDK content blocks. */
+/** Publishes validated output envelopes and safety hints for domain handlers. */
 export function createToolRegistry(server: McpServer, context: ToolContext): ToolRegistry {
   return {
     addTool: (definition) => {
       const inputSchema: z.ZodType = definition.parameters;
       server.registerTool(
         definition.name,
-        { description: definition.description, inputSchema },
-        async (args) => ({
-          content: [
-            {
-              type: 'text',
-              text: await definition.execute(definition.parameters.parse(args), context),
-            },
-          ],
-        }),
+        {
+          description: definition.description,
+          inputSchema,
+          outputSchema: toolOutputSchema,
+          annotations: toolAnnotations(definition.name),
+        },
+        async (args) => {
+          try {
+            const text = await definition.execute(definition.parameters.parse(args), context);
+            return toolResult(definition.name, text);
+          } catch {
+            return toolFailure(definition.name);
+          }
+        },
       );
     },
   };
