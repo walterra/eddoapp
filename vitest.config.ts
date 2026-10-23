@@ -75,7 +75,7 @@ export default defineConfig({
             'scripts/backup-scheduler.test.ts',
             'scripts/create-release-pr.test.js',
           ],
-          exclude: ['**/*.e2e.test.ts', '**/integration-tests/**'],
+          exclude: ['**/node_modules/**', '**/*.e2e.test.ts', '**/integration-tests/**'],
           testTimeout: 10000,
         },
       },

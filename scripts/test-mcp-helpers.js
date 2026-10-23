@@ -2,8 +2,7 @@
  * Helper functions for MCP test script
  * Extracted to reduce function complexity
  */
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 
 /**
  * Create MCP client with transport
@@ -26,9 +25,7 @@ export async function createMcpClient(serverUrl, headers) {
       version: '1.0.0',
     },
     {
-      capabilities: {
-        tools: {},
-      },
+      versionNegotiation: { mode: { pin: '2026-07-28' } },
     },
   );
 
@@ -70,6 +67,9 @@ export async function callToolAndLog(client, toolName, args) {
     arguments: args,
   });
 
+  if (result.isError)
+    throw new Error(`MCP tool failed: ${toolName}; inspect state before retrying`);
+  if (!result.structuredContent) throw new Error(`Missing structured result: ${toolName}`);
   console.log('✅ Tool call successful!');
   logToolResponse(result);
 }
@@ -82,7 +82,9 @@ function logToolResponse(result) {
   console.log('\n📄 Response:');
   console.log('='.repeat(80));
 
-  if (result.content && result.content.length > 0) {
+  if (result.structuredContent) {
+    console.log(JSON.stringify(result.structuredContent, null, 2));
+  } else if (result.content && result.content.length > 0) {
     result.content.forEach((content, index) => {
       if (content.type === 'text') {
         console.log(content.text);
