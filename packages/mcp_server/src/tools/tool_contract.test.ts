@@ -35,6 +35,19 @@ describe('structured tool contracts', () => {
     expect(toolOutputSchema.safeParse(response.structuredContent).success).toBe(true);
   });
 
+  it('preserves public domain error summaries while redacting exception details', () => {
+    const response = toolResult(
+      'getTodo',
+      JSON.stringify({
+        summary: 'Todo not found',
+        error: 'secret database URL',
+        metadata,
+      }),
+    );
+    expect(response.structuredContent).toMatchObject({ summary: 'Todo not found' });
+    expect(JSON.stringify(response)).not.toContain('secret database URL');
+  });
+
   it('wraps markdown documentation in a structured envelope', () => {
     const response = toolResult('getServerInfo', '# Documentation');
     expect(response.structuredContent).toMatchObject({ data: { markdown: '# Documentation' } });

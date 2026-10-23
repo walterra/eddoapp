@@ -5,6 +5,7 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 
 import { TestLock } from './test-lock.js';
+import { requireStructuredResult } from './tool_result.js';
 
 export interface MCPTestServerConfig {
   serverUrl?: string;
@@ -120,9 +121,7 @@ export class MCPTestServer {
       arguments: args,
     });
 
-    const output = result.structuredContent;
-    if (!output || typeof output !== 'object' || Array.isArray(output))
-      throw new Error(`Tool ${name} returned no structured result`);
+    const output = requireStructuredResult(result, name);
     if (name === 'getServerInfo' && 'data' in output) {
       const data = output.data;
       if (data && typeof data === 'object' && 'markdown' in data) return data.markdown;

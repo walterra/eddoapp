@@ -73,8 +73,8 @@ export async function waitForServerReady(
         method: 'GET',
         signal: AbortSignal.timeout(2000),
       });
-      // MCP endpoint returns 400 "No sessionId" for GET requests, but that means server is up
-      if (response.status === 400 || response.status === 405 || response.ok) {
+      // Protected endpoints reject unauthenticated readiness probes before protocol handling.
+      if (response.status === 401 || response.status === 405 || response.ok) {
         console.log(`✅ MCP server ready after ${attempt} attempts (status: ${response.status})`);
         return;
       }
@@ -94,9 +94,8 @@ export async function waitForServerReady(
  */
 export async function setupTestContainer(): Promise<ContainerSetup> {
   console.log('🐳 Starting CouchDB testcontainer...');
-  const { setupTestcontainer, teardownTestcontainer, loadTestcontainerConfig } = await import(
-    '../test/global-testcontainer-setup'
-  );
+  const { setupTestcontainer, teardownTestcontainer, loadTestcontainerConfig } =
+    await import('../test/global-testcontainer-setup');
   await setupTestcontainer();
 
   const testConfig = loadTestcontainerConfig();

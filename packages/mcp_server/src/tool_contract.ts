@@ -49,9 +49,9 @@ export function toolAnnotations(name: string): ToolAnnotations {
 }
 
 /** Creates a safe failure result without exposing database or transport exceptions. */
-export function toolFailure(name: string): CallToolResult {
+export function toolFailure(name: string, summary = 'Tool execution failed'): CallToolResult {
   return result({
-    summary: 'Tool execution failed',
+    summary,
     error: 'Operation failed; inspect state before retrying mutations.',
     metadata: { operation: name, timestamp: new Date().toISOString() },
   });
@@ -76,6 +76,6 @@ export function toolResult(name: string, text: string): CallToolResult {
   }
   const parsed: unknown = JSON.parse(text);
   const output = toolOutputSchema.parse(parsed);
-  if (output.error !== undefined) return toolFailure(name);
+  if (output.error !== undefined) return toolFailure(name, output.summary);
   return result(output);
 }

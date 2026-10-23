@@ -47,7 +47,7 @@ export async function invokeToolOnClient(
 ): Promise<CallToolResult> {
   const result = await client.callTool({ name: toolName, arguments: params });
   const output = result.structuredContent;
-  if (!output || typeof output !== 'object' || Array.isArray(output))
+  if (result.isError !== true && (!output || typeof output !== 'object' || Array.isArray(output)))
     throw new Error('MCP tool returned no structured result');
   logger.info('MCP tool request completed', { toolName, isError: result.isError === true });
   return result;
