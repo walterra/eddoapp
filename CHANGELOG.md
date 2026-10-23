@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0
+
+### Minor Changes
+
+- [#664](https://github.com/walterra/eddoapp/pull/664) [`369edd3`](https://github.com/walterra/eddoapp/commit/369edd31003b349a19362d28a7eadaf8c199d177) - Replace the Telegram assistant's SimpleAgent with Pi Durable for restart recovery and shared context across chats, briefings, and recaps.
+
 ## 0.10.1
 
 ### Patch Changes
