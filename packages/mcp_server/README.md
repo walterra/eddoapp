@@ -54,3 +54,21 @@ Run commands from the repository root:
 - Integration tests: `pnpm test:integration:mcp-server` (requires Docker and migrated test clients)
 
 The user starts development servers with `pnpm dev:mcp-server`.
+
+## Coordinated Rollout
+
+The root production web image does not package this standalone service.
+Build server artifacts and install workspace production dependencies for the MCP service separately.
+Start its package from the repository root with `pnpm --filter @eddo/mcp-server start`.
+
+1. Complete repository checks and disposable-database integration tests before release.
+2. Back up user databases, mutation-receipt databases, and complete Durable runtime journals.
+3. Stop the bot and chat containers; drain MCP writes before replacing the service.
+4. Deploy the current-protocol MCP build and configure its host allowlist for container access.
+5. Deploy the migrated bot and rebuild/recreate skill containers together.
+6. Verify authenticated discovery, reads, reports, and receipt-protected mutation replay.
+
+Run exactly one bot owner per runtime database set.
+Roll back server, bot, and distributed skills together; mixed protocol generations are unsupported.
+Inspect pending mutation receipts before retrying interrupted writes. Never delete receipts to force a retry.
+See [skill image packaging](../../docker/pi-coding-agent/README.md#reproducible-todo-skill-packaging).

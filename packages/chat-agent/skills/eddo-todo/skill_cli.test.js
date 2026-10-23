@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { execFile } from 'node:child_process';
+import { mkdtemp, rm, symlink } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -94,6 +97,19 @@ describe('shipped skill CLI entry points', () => {
       expect(calls).toEqual(['createTodo']);
     },
   );
+
+  it('resolves SDK dependencies through an installed skill symlink', async () => {
+    const temporary = await mkdtemp(join(tmpdir(), 'eddo-skill-link-'));
+    const linked = join(temporary, 'eddo-todo');
+    try {
+      await symlink(directory, linked, 'dir');
+      const { stdout } = await cli(join(linked, 'eddo-todo.js'), ['create', 'Example']);
+      expect(stdout).toContain('todo-1');
+      expect(calls).toEqual(['createTodo']);
+    } finally {
+      await rm(temporary, { recursive: true, force: true });
+    }
+  });
 
   it('preserves the delegated children command', async () => {
     const { stdout } = await cli('eddo.js', ['children', 'parent-id']);
