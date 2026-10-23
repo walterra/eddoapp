@@ -1,5 +1,4 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import nano from 'nano';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -22,7 +21,12 @@ async function create(
   const user = await getGlobalTestUser();
   const url =
     process.env.MCP_TEST_URL ?? `http://localhost:${process.env.MCP_SERVER_PORT || '3003'}/mcp`;
-  const client = new Client({ name: 'receipt-test', version: '1.0.0' });
+  const client = new Client(
+    { name: 'receipt-test', version: '1.0.0' },
+    {
+      versionNegotiation: { mode: { pin: '2026-07-28' } },
+    },
+  );
   await client.connect(
     new StreamableHTTPClientTransport(new URL(url), {
       requestInit: {
@@ -65,6 +69,6 @@ describe('authenticated receiver-side mutation receipts', () => {
     expect((await create(id, `Original ${randomUUID()}`)).isError).not.toBe(true);
     const result = await create(id, `Different ${randomUUID()}`);
     expect(result.isError).toBe(true);
-    expect(JSON.stringify(result.content)).toContain('different arguments');
+    expect(JSON.stringify(result.structuredContent)).toContain('inspect state before retrying');
   });
 });

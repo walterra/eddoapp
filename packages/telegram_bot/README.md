@@ -226,23 +226,18 @@ Once your bot is running, start a conversation:
 ### Key Components
 
 - **Bot Framework**: Grammy for Telegram API
-- **AI Processing**: Anthropic Claude for natural language understanding
-- **Agent Architecture**: Simple loop-based agent (replaced LangGraph for simplicity)
-- **MCP Client**: Uses official @modelcontextprotocol/sdk for server communication
-- **Tool Discovery**: Dynamic tool detection from MCP server
-- **Error Handling**: Graceful degradation and retry logic
+- **AI Processing**: Provider/model selected by `LLM_MODEL`
+- **Agent Architecture**: Pi Durable with persisted execution journals
+- **MCP Client**: Official `@modelcontextprotocol/client` v2 over HTTP
+- **Tool Discovery**: Authenticated, user-scoped catalogs when opening each runtime
+- **Error Handling**: Structured tool failures and mutation receipts; no automatic mutation retries
 
 ### Agent Architecture Details
 
-The bot implements a simple agent loop that prioritizes clarity and AI-driven decisions:
-
-1. **Receives user input** and creates conversation context
-2. **Consults Claude AI** with system prompt containing available tool descriptions
-3. **Parses tool calls** from AI responses using structured format (`TOOL_CALL: {...}`)
-4. **Executes MCP tools** when requested and feeds results back to AI
-5. **Returns final response** to user when AI decides no more tools are needed
-
-This architecture replaces complex workflow frameworks (like LangGraph) with a minimal loop that trusts the LLM to orchestrate its own workflow, following the principle that "agents are just for loops with LLM calls".
+Pi Durable owns model generation, native tool calls, conversation queues, compaction, and recovery.
+The host authenticates users, discovers MCP schemas, schedules reports, and delivers responses.
+Interactive requests and scheduled reports share the user's active conversation.
+Mutation calls carry persisted operation identities; ambiguous outcomes require state inspection before retrying.
 
 ## Configuration
 
@@ -261,13 +256,18 @@ This architecture replaces complex workflow frameworks (like LangGraph) with a m
 
 ### MCP Server Connection
 
-The bot connects to the MCP server using the official @modelcontextprotocol/sdk with HTTP streaming transport. The server requires:
+Uses official SDK v2 clients pinned to MCP revision `2026-07-28`, without legacy fallback.
+Set `MCP_SERVER_URL` to the full endpoint, normally `http://localhost:3001/mcp`.
+Every request authenticates with the user's registry API key.
 
-- No authentication (uses CouchDB auth internally)
-- Running on `http://localhost:3001/mcp`
-- FastMCP server with httpStream transport
+Startup creates a stateless dispatcher without anonymous discovery or background ping sessions.
+Opening a user's runtime discovers a private tool catalog using current credentials.
+Each invocation creates and closes its own authenticated client, preserving trace headers and mutation operation IDs.
+The dispatcher never caches another user's authenticated catalog or credentials.
+`/status` reports dispatcher readiness (`READY`), not a persistent server connection.
 
-The MCP client automatically discovers available tools on startup and provides them to the Claude AI for natural language tool selection.
+Tool results retain `structuredContent` and `isError`; model-facing output prefers structured data over text rendering.
+Transport failures and tool failures do not automatically retry mutations.
 
 ### User Authentication
 

@@ -56,11 +56,8 @@ function registerCommandHandlers(bot: Bot<BotContext>): void {
  */
 async function initializeMCP(): Promise<void> {
   logger.info('Initializing MCP integration...');
-  const mcpClient = await setupMCPIntegration();
-  logger.info('✅ MCP integration initialized successfully', {
-    toolsAvailable: mcpClient.tools.length,
-    toolNames: mcpClient.tools.map((t) => t.name),
-  });
+  await setupMCPIntegration();
+  logger.info('MCP dispatcher ready; tool catalogs are discovered per authenticated user');
 }
 
 /**

@@ -1,9 +1,4 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-
-import { appConfig } from '../utils/config.js';
-import { logger } from '../utils/logger.js';
-import { buildMCPClient, getSetupErrorMessage, logSetupError } from './client-helpers.js';
-import { ConnectionState, MCPConnectionManager } from './connection-manager.js';
+import { createUserClient, invokeToolOnClient } from './connection-manager-helpers.js';
 import type { MCPUserContext } from './user-context.js';
 
 export interface MCPTool {
@@ -14,7 +9,6 @@ export interface MCPTool {
 }
 
 export interface MCPClient {
-  client: Client;
   tools: MCPTool[];
   invoke: (
     toolName: string,
@@ -24,68 +18,56 @@ export interface MCPClient {
   close: () => Promise<void>;
 }
 
-let mcpClientInstance: MCPClient | null = null;
-let connectionManager: MCPConnectionManager | null = null;
+let instance: MCPClient | null = null;
 
-function clearInstance(): void {
-  connectionManager = null;
-  mcpClientInstance = null;
-}
-
-/**
- * Sets up MCP integration with the Eddo MCP server
- * Returns singleton instance to avoid multiple connections
- */
+/** Creates a stateless dispatcher without anonymous discovery or background sessions. */
 export async function setupMCPIntegration(): Promise<MCPClient> {
-  if (mcpClientInstance && connectionManager?.getState() === ConnectionState.CONNECTED) {
-    logger.info('Returning existing MCP client instance');
-    return mcpClientInstance;
-  }
-
-  logger.info('Setting up MCP integration with connection manager', {
-    serverUrl: appConfig.MCP_SERVER_URL,
-  });
-
-  try {
-    if (!connectionManager) {
-      connectionManager = new MCPConnectionManager();
-    }
-
-    await connectionManager.initialize();
-    mcpClientInstance = buildMCPClient(connectionManager, clearInstance);
-
-    logger.info('MCP integration setup complete', {
-      connectionState: connectionManager.getState(),
-      metrics: connectionManager.getMetrics(),
-    });
-
-    return mcpClientInstance;
-  } catch (error) {
-    logSetupError(error);
-    throw new Error(getSetupErrorMessage(error));
-  }
-}
-
-/**
- * Get the current MCP client instance if initialized
- */
-export function getMCPClient(): MCPClient | null {
-  return mcpClientInstance;
-}
-
-/**
- * Get connection metrics and state information
- */
-export function getConnectionInfo() {
-  if (!connectionManager) {
-    return {
-      state: ConnectionState.DISCONNECTED,
-      metrics: null,
-    };
-  }
-
-  return {
-    state: connectionManager.getState(),
-    metrics: connectionManager.getMetrics(),
+  if (instance) return instance;
+  instance = {
+    tools: [],
+    invoke: async (name, args, user) => {
+      if (!user?.mcpApiKey) throw new Error('User context is required for MCP tool invocation');
+      const client = await createUserClient(user);
+      try {
+        return await invokeToolOnClient(client, name, args);
+      } finally {
+        await client.close();
+      }
+    },
+    close: async () => {
+      instance = null;
+    },
   };
+  return instance;
+}
+
+/** Discovers a private catalog with current credentials without sharing it across users. */
+export async function scopeMCPIntegration(
+  dispatcher: MCPClient,
+  user: MCPUserContext,
+): Promise<MCPClient> {
+  const client = await createUserClient(user);
+  try {
+    const catalog = await client.listTools();
+    return {
+      ...dispatcher,
+      tools: catalog.tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description || 'No description available',
+        inputSchema: tool.inputSchema,
+      })),
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+/** Returns the initialized dispatcher, not an authenticated shared connection. */
+export function getMCPClient(): MCPClient | null {
+  return instance;
+}
+
+/** Reports dispatcher readiness; remote availability is checked by authenticated requests. */
+export function getConnectionInfo(): { state: string; metrics: null } {
+  return { state: instance ? 'READY' : 'DISCONNECTED', metrics: null };
 }

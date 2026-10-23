@@ -210,6 +210,9 @@ importers:
       '@floating-ui/react':
         specifier: ^0.27.20
         version: 0.27.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@modelcontextprotocol/client':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@modelcontextprotocol/sdk':
         specifier: 1.25.1
         version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(supports-color@7.2.0)(zod@4.4.3)
@@ -595,6 +598,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@modelcontextprotocol/client':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
         version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(supports-color@7.2.0)(zod@4.4.3)
@@ -708,6 +714,9 @@ importers:
       '@elastic/opentelemetry-node':
         specifier: ^1.8.0
         version: 1.8.0(@opentelemetry/api@1.9.0)(supports-color@7.2.0)
+      '@modelcontextprotocol/client':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
         version: 1.25.1(patch_hash=3b2605d61cf51bcc8964a88ef1ed70d87bf3df0cabfafe88a6b5feaa63fce7d3)(hono@4.12.27)(supports-color@7.2.0)(zod@4.4.3)
@@ -736,6 +745,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@modelcontextprotocol/server':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@testcontainers/couchdb':
         specifier: ^12.2.0
         version: 12.2.0(supports-color@7.2.0)
@@ -11738,11 +11750,11 @@ snapshots:
       eventsource-parser: 3.1.1
       jose: 6.1.3
       pkce-challenge: 5.0.1
-      zod: 4.6.5
+      zod: 4.4.3
 
   '@modelcontextprotocol/core@2.3.1':
     dependencies:
-      zod: 4.6.5
+      zod: 4.4.3
 
   '@modelcontextprotocol/hono@2.0.2(@modelcontextprotocol/server@2.3.1)(hono@4.12.27)':
     dependencies:
