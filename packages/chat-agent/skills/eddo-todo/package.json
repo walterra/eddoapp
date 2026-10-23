@@ -3,6 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Pi coding agent skill for Eddo todo management via MCP",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "SKILL.md",
+    "eddo-todo.js",
+    "eddo.js",
+    "eddo-worktree.js",
+    "mcp_client.js"
+  ],
   "dependencies": {
     "@modelcontextprotocol/client": "^2.3.1"
   }

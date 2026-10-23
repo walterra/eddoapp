@@ -114,7 +114,30 @@ Run skill client and CLI tests from the repository root:
 pnpm vitest:run packages/chat-agent/skills/eddo-todo
 ```
 
-Tests include real SDK exchanges and CLI subprocesses against disposable test HTTP endpoints.
+Tests include real SDK exchanges, symlink-installed CLI execution, and subprocesses against disposable test HTTP endpoints.
+
+### Skill Dependencies and Distribution
+
+Run `pnpm install --frozen-lockfile` from the repository root for workspace and setup-created symlink installations.
+Node resolves symlinked skill imports through their source directory and the chat-agent workspace dependencies.
+The setup installer creates links; it does not install dependencies.
+
+For an independently copied skill directory, install its committed lockfile from the repository root:
+
+```bash
+npm --prefix packages/chat-agent/skills/eddo-todo ci --omit=dev --ignore-scripts
+```
+
+Refresh the standalone lockfile after changing the skill dependency manifest:
+
+```bash
+npm --prefix packages/chat-agent/skills/eddo-todo install --package-lock-only --ignore-scripts
+```
+
+Keep the standalone SDK version aligned with the workspace dependency and `pnpm-lock.yaml`.
+The image installs this lockfile in an isolated build stage, then copies its runtime dependencies.
+See [container packaging and rollout](../../docker/pi-coding-agent/README.md#reproducible-todo-skill-packaging).
+Rebuild the image and recreate existing containers alongside the current-protocol MCP service.
 
 ### SearXNG (Web Search)
 

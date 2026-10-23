@@ -83,7 +83,7 @@ pnpm dev
 # Or start components individually
 pnpm dev:web-client    # React frontend (port 5173, dev only)
 pnpm dev:web-api       # API server (port 3000, main entry point)
-pnpm dev:mcp-server    # MCP server (port 3002)
+pnpm dev:mcp-server    # MCP server (port 3001)
 pnpm dev:telegram-bot  # Telegram bot
 ```
 
@@ -91,7 +91,10 @@ pnpm dev:telegram-bot  # Telegram bot
 
 - **Main Application**: http://localhost:3000/ (API server proxies to web client)
 - **Web Client Dev Server**: http://localhost:5173/ (Vite dev server, used internally)
-- **MCP Server**: http://localhost:3002/ (Model Context Protocol server)
+- **MCP Server**: http://localhost:3001/mcp (authenticated, current-protocol MCP service)
+
+See the [MCP service guide](packages/mcp_server/README.md) for protocol, limits, and rollout requirements.
+See [skill distribution](packages/chat-agent/README.md#skill-dependencies-and-distribution) for local links and container packaging.
 
 ### Build Commands
 
