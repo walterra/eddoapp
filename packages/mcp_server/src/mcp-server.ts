@@ -83,7 +83,7 @@ function createRequestServer(session: UserSession): McpServer {
     server: createToolRegistry(server, createToolContext(session)),
     getUserDb: () => couch.db.use<TodoAlpha4>(session.dbName),
     getAttachmentsDb: () => couch.db.use<AttachmentDoc>(session.attachmentsDbName),
-    ...(esClient ? { getEsClient: () => esClient } : {}),
+    getEsClient: () => esClient,
   });
   return server;
 }

@@ -9,6 +9,8 @@ Accepts MCP revision `2026-07-28`. Rejects legacy protocol requests; no initiali
 Requires `Authorization: Bearer <api-key>` or `X-API-Key` for every MCP request.
 Creates request-local identity, tracing context, tool registrations, and mutation-receipt bindings.
 Shares CouchDB and optional Elasticsearch clients across requests.
+Always exposes `searchTodos` to keep the tool catalog stable across environments.
+Without Elasticsearch, search returns a structured `Search unavailable` error instead of disappearing from discovery.
 Revalidates API keys and account status against the registry on every request; authentication results are not cached.
 Rejects conflicting API-key and bearer headers, malformed bearer headers, and credentials exceeding 512 characters.
 
