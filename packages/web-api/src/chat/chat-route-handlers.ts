@@ -30,7 +30,8 @@ export const promptSchema = z.object({
 
 /** Get username from JWT payload */
 export function getUsername(c: Context): string | null {
-  return c.get('jwtPayload')?.username ?? null;
+  const payload = z.object({ username: z.string() }).safeParse(c.get('jwtPayload'));
+  return payload.success ? payload.data.username : null;
 }
 
 /** Handle list sessions */
@@ -87,6 +88,7 @@ export async function handleGetSession(c: Context, chatService: ChatService) {
     if (!username) return c.json({ error: 'Authentication required' }, 401);
 
     const sessionId = c.req.param('id');
+    if (!sessionId) return c.json({ error: 'Session ID required' }, 400);
     span.setAttribute('user.name', username);
     span.setAttribute('session.id', sessionId);
 
@@ -110,6 +112,7 @@ export async function handleDeleteSession(c: Context, chatService: ChatService) 
     if (!username) return c.json({ error: 'Authentication required' }, 401);
 
     const sessionId = c.req.param('id');
+    if (!sessionId) return c.json({ error: 'Session ID required' }, 400);
     span.setAttribute('user.name', username);
     span.setAttribute('session.id', sessionId);
 
@@ -136,6 +139,7 @@ export async function handleSessionLifecycle(
     if (!username) return c.json({ error: 'Authentication required' }, 401);
 
     const sessionId = c.req.param('id');
+    if (!sessionId) return c.json({ error: 'Session ID required' }, 400);
     span.setAttribute('user.name', username);
     span.setAttribute('session.id', sessionId);
 
@@ -170,6 +174,7 @@ export async function handlePrompt(c: Context, chatService: ChatService) {
   if (!username) return c.json({ error: 'Authentication required' }, 401);
 
   const sessionId = c.req.param('id');
+  if (!sessionId) return c.json({ error: 'Session ID required' }, 400);
 
   let body: { message: string };
   try {
