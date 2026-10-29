@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+
+### Minor Changes
+
+- [#664](https://github.com/walterra/eddoapp/pull/664) [`369edd3`](https://github.com/walterra/eddoapp/commit/369edd31003b349a19362d28a7eadaf8c199d177) - Replace the Telegram assistant's SimpleAgent with Pi Durable for restart recovery and shared context across chats, briefings, and recaps.
+
+- [#669](https://github.com/walterra/eddoapp/pull/669) [`374a17a`](https://github.com/walterra/eddoapp/commit/374a17a0c8a91f3d3477b65915cbedbcfd7726b4) - Migrate MCP integrations to the current protocol with stronger authentication, structured tool results, and updated Telegram and coding-agent clients; legacy MCP clients are no longer supported.
+
 ## 0.10.1
 
 ### Patch Changes
