@@ -7,6 +7,8 @@ import type { EmailLogger } from './client.js';
 import { extractPlainText, extractSender } from './email-parser.js';
 import type { EmailItem, ImapConnectionConfig } from './types.js';
 
+type ImapOptions = NonNullable<ConstructorParameters<typeof ImapFlow>[0]>;
+
 const GMAIL_IMAP_HOST = 'imap.gmail.com';
 const GMAIL_IMAP_PORT = 993;
 
@@ -28,10 +30,7 @@ export interface ImapMessage {
 /**
  * Creates Gmail OAuth IMAP options
  */
-function createGmailImapOptions(
-  config: ImapConnectionConfig,
-  accessToken: string,
-): ConstructorParameters<typeof ImapFlow>[0] {
+function createGmailImapOptions(config: ImapConnectionConfig, accessToken: string): ImapOptions {
   return {
     host: GMAIL_IMAP_HOST,
     port: GMAIL_IMAP_PORT,
@@ -52,9 +51,7 @@ function createGmailImapOptions(
 /**
  * Creates plain IMAP options
  */
-function createPlainImapOptions(
-  config: ImapConnectionConfig,
-): ConstructorParameters<typeof ImapFlow>[0] {
+function createPlainImapOptions(config: ImapConnectionConfig): ImapOptions {
   return {
     host: config.imapHost || '',
     port: config.imapPort || 993,
@@ -70,10 +67,7 @@ function createPlainImapOptions(
 /**
  * Creates IMAP connection options based on sync config
  */
-export function createImapOptions(
-  config: ImapConnectionConfig,
-  accessToken?: string,
-): ConstructorParameters<typeof ImapFlow>[0] {
+export function createImapOptions(config: ImapConnectionConfig, accessToken?: string): ImapOptions {
   if (config.provider === 'gmail' && accessToken) {
     return createGmailImapOptions(config, accessToken);
   }
