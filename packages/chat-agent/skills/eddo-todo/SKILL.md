@@ -47,19 +47,25 @@ $EDDO create "Task" -c context -t gtd:next -M "$METADATA" -D "task description" 
 
 ## Setup
 
-**Prerequisite**: Eddo MCP server accessible from container (via Docker network)
+**Prerequisites**: Node.js 20+, current Eddo MCP server, and the user's `EDDO_MCP_API_KEY`.
+The CLI requires MCP revision `2026-07-28`; legacy servers are unsupported.
+Managed containers receive the endpoint and credentials from Eddo.
+Never print API keys or include them in task metadata or audit messages.
 
 ```bash
 # Inside Docker container:
 EDDO="/home/agent/.pi/agent/skills/eddo-todo/eddo-todo.js"
 
 # The MCP URL should be set via environment variable by the container orchestrator
-# Default: http://host.docker.internal:3001/mcp (to reach host's MCP server)
+# Container endpoint; the CLI's unconfigured default is http://localhost:3001/mcp
 export EDDO_MCP_URL=${EDDO_MCP_URL:-http://host.docker.internal:3001/mcp}
 
 # MCP API key (stored in user preferences)
 export EDDO_MCP_API_KEY=${EDDO_MCP_API_KEY:-""}
 ```
+
+Tool failures exit nonzero without printing success. Inspect task state before retrying a failed mutation.
+`eddo.js` aliases the same CLI; `eddo-work` and worktree helpers share its current-protocol client.
 
 ## Short Flags
 

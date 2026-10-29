@@ -113,16 +113,50 @@ Located at `/home/agent/.pi/agent/extensions/`:
 
 ### MCP Server Access
 
-The eddo-todo skill needs to reach the Eddo MCP server on the host:
+The todo skill uses SDK v2 and MCP revision `2026-07-28`, without legacy fallback.
+Every MCP request requires the user's API key from Eddo integration settings.
+
+For container access, configure the host's MCP service before starting it:
+
+```bash
+MCP_HOST=0.0.0.0
+MCP_ALLOWED_HOSTS=localhost,127.0.0.1,host.docker.internal
+```
+
+Restrict network access with a firewall; the hostname allowlist does not replace authentication.
+The web API injects the user's key and the host endpoint into managed chat containers.
+For a manual container, export `EDDO_MCP_API_KEY` locally and pass it by environment name:
 
 ```bash
 docker run -i --rm \
   -e EDDO_MCP_URL=http://host.docker.internal:3001/mcp \
+  -e EDDO_MCP_API_KEY \
   -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
   pi-coding-agent:latest
 ```
 
 **Note**: `host.docker.internal` works on Docker Desktop. For Linux, add `--add-host=host.docker.internal:host-gateway`.
+
+### Reproducible Todo Skill Packaging
+
+The `eddo-todo-skill` stage installs the committed standalone lockfile with `npm ci`.
+It copies the canonical CLI, alias, worktree helper, shared client, and skill instructions.
+It checks both CLI entry points without credentials or workspace dependencies.
+
+Run the isolated packaging check from the repository root:
+
+```bash
+docker build --target eddo-todo-skill -t eddo-mcp-skill-check:local -f docker/pi-coding-agent/Dockerfile .
+```
+
+Build the full image before deployment; the isolated stage does not verify Pi installation or extensions:
+
+```bash
+docker build -t pi-coding-agent:latest -f docker/pi-coding-agent/Dockerfile .
+```
+
+Recreate existing chat containers after rebuilding. Existing containers retain their copied skills and dependency tree.
+Deploy the new MCP server, Telegram client, and rebuilt skill containers together; legacy clients cannot connect.
 
 ## Security Notes
 

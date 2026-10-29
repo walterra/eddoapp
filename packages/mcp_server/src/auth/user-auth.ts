@@ -1,17 +1,12 @@
 import { createEnv, createTestUserRegistry, createUserRegistry } from '@eddo/core-server';
 import {
   createAuthError,
-  createCacheKey,
-  createNegativeCacheEntry,
-  createPositiveCacheEntry,
   extractHeader,
-  isCacheValid,
   logAuthError,
   logAuthSuccess,
   logHeaderMismatch,
   logUserInactive,
   logUserNotFound,
-  type ValidationCacheEntry,
 } from './user-auth-helpers.js';
 
 /**
@@ -22,36 +17,6 @@ export interface MCPAuthResult {
   dbName: string;
   username: string;
   timezone?: string;
-}
-
-const userValidationCache = new Map<string, ValidationCacheEntry>();
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
-
-// Clear expired cache entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [cacheKey, cache] of userValidationCache.entries()) {
-    if (now - cache.timestamp > CACHE_TTL_MS) {
-      userValidationCache.delete(cacheKey);
-    }
-  }
-}, 60 * 1000);
-
-/**
- * Check cached validation result
- */
-function checkCache(cacheKey: string): { hit: boolean; result?: MCPAuthResult } {
-  const cached = userValidationCache.get(cacheKey);
-  if (!isCacheValid(cached, CACHE_TTL_MS)) {
-    return { hit: false };
-  }
-
-  if (!cached!.valid) {
-    throw createAuthError(401, 'Invalid user (cached)');
-  }
-
-  console.log('User authentication cache hit', { username: cached!.user?.username });
-  return { hit: true, result: cached!.user };
 }
 
 /**
@@ -140,23 +105,18 @@ function maskApiKey(apiKey: string): string {
 }
 
 /** Lookup user and validate status */
-async function lookupAndValidateUserByApiKey(
-  apiKey: string,
-  cacheKey: string,
-): Promise<UserAuthRecord> {
+async function lookupAndValidateUserByApiKey(apiKey: string): Promise<UserAuthRecord> {
   const env = createEnv();
   const userRegistry = await getUserRegistry(env);
   const user = await userRegistry.findByMcpApiKey(apiKey);
 
   if (!user) {
     logUserNotFound(maskApiKey(apiKey), 'apiKey');
-    userValidationCache.set(cacheKey, createNegativeCacheEntry());
     throw createAuthError(401, 'Invalid API key');
   }
 
   if (user.status !== 'active') {
     logUserInactive(user.username, user.status);
-    userValidationCache.set(cacheKey, createNegativeCacheEntry());
     throw createAuthError(403, 'User account is not active');
   }
 
@@ -171,12 +131,8 @@ export async function validateUserContext(
 ): Promise<MCPAuthResult> {
   const { apiKey, databaseName, telegramId } = extractAuthHeaders(headers);
 
-  const cacheKey = createCacheKey(apiKey, telegramId, databaseName);
-  const cacheResult = checkCache(cacheKey);
-  if (cacheResult.hit) return cacheResult.result!;
-
   try {
-    const user = await lookupAndValidateUserByApiKey(apiKey, cacheKey);
+    const user = await lookupAndValidateUserByApiKey(apiKey);
     validateHeaderConsistency(user, databaseName, telegramId);
     validateApiKey(user.preferences, apiKey);
 
@@ -188,7 +144,6 @@ export async function validateUserContext(
     };
 
     logAuthSuccess(authResult);
-    userValidationCache.set(cacheKey, createPositiveCacheEntry(authResult));
     return authResult;
   } catch (error) {
     if (error instanceof Response) throw error;

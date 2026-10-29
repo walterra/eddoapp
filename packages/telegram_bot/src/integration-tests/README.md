@@ -57,6 +57,10 @@ System-message snapshots retain the first 200 characters plus an ellipsis; user/
 The model receives full system instructions, and request hashes use full normalized contents. Only stored system-message previews are shortened.
 Snapshots can contain private task data and tool results. Review cassette contents before committing.
 Token limits and reasoning effort participate in request hashes; changing generation settings requires matching native recordings.
+Discovered tool schemas and model-facing structured payloads also participate in transcript hashes.
+The MCP v2 migration changes these contracts; pre-migration recordings require paid re-recording for each subject model.
+Never rewrite stored hashes or weaken matching to reuse incompatible recordings.
+Obtain approval before running record/auto mode, then verify strict playback for every recorded model.
 Both modes expose terminal response streams; partial-stream/restart behavior is covered by the Harness recovery tests.
 
 Set `LLM_MODEL` and provider credentials for record/auto modes. Playback needs no provider credentials.

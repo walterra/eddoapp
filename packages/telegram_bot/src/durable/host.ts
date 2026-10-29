@@ -6,7 +6,7 @@ import { openCouchDbStorage } from 'pi-durable-couchdb';
 import { resolveConfiguredModel } from '../ai/llm-model-resolution.js';
 import { parseLlmSettings } from '../ai/llm-options.js';
 import type { BotContext } from '../bot/bot.js';
-import { getMCPClient } from '../mcp/client.js';
+import { getMCPClient, scopeMCPIntegration } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import { provisionDurableDatabase } from './couch.js';
@@ -51,9 +51,10 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
   if (!user?.telegram_id || user.status !== 'active')
     throw new Error('Durable user is inactive or unlinked');
   const telegramId = user.telegram_id;
-  await resolveDurableUser(username, telegramId);
-  const client = getMCPClient();
-  if (!client) throw new Error('MCP is not initialized');
+  const identity = await resolveDurableUser(username, telegramId);
+  const dispatcher = getMCPClient();
+  if (!dispatcher) throw new Error('MCP is not initialized');
+  const client = await scopeMCPIntegration(dispatcher, identity);
   const model = resolveConfiguredModel(appConfig.LLM_MODEL, models);
   if (!models.getModel(model.provider, model.modelId) || !(await models.getAuth(model.provider))) {
     throw new Error('Durable model is unknown or missing provider credentials');

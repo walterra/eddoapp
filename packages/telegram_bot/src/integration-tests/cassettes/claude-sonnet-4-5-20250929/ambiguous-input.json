@@ -1,11 +1,11 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-10-23T07:08:41.612Z",
-  "frozenTime": "2026-10-23T07:08:41.612Z",
+  "createdAt": "2026-10-23T14:29:24.969Z",
+  "frozenTime": "2026-10-23T14:29:24.969Z",
   "interactions": [
     {
-      "requestHash": "b2df9fd2c53bf4f1",
+      "requestHash": "d54774b4838ecc6b",
       "request": {
         "model": "anthropic/claude-sonnet-4-5-20250929",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -16,14 +16,14 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T07:08:41.635Z\\n\\nadd todo\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-10-23T14:29:24.996Z\\n\\nadd todo\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo but hasn't provided any details yet. I should ask them what they want to add in a brief, concise way since we're on Telegram.\",\"thinkingSignature\":\"ErgDCroBCBMYAipAj3vl6yxMZTZLZ9PS5eZKSBnuxRiY2faZyUwnyYswST4kBHBuFZQsN3lnfKL3InRMkKDMScjSioeolLVnmIOb5DIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAfuP7NYGEgxINvPKNMMMK6QKuiMaDOITj7nIA605vDdMSCIwiQGYLmLC2vBa46z285vV2kxjcgJC4Mtxve+1e9kNXP4GBwLnU/Ht2ytIxUy40vgwKqoBsLHo2/n4l+2LTqIKahtOlVuLLwi507pvbl/CXPz2k9dg1vyB5YCPpe7ZpAK19wZavhL8vGbn8iyaAco7nEEIj2ZS/Luq1/m5P2yDMBO17k53Y/pzctcvLmvY7aWI+1Ihrw422EU2EHWKL9AdHHvQ0GlmRUeowu0SSAh34b1WXXtRwSqDG1p9vbvIyl90XSZ6TrEa+THQiViLpO7Y3oRL8u4OsrT/TXk1bCEYAQ==\"},{\"type\":\"text\",\"text\":\"What would you like to add to your list? Give me the task details and I'll capture it for you! 📝\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":75,\"cacheRead\":6953,\"cacheWrite\":516,\"totalTokens\":7554,\"cost\":{\"input\":0.00003,\"output\":0.0011250000000000001,\"cacheRead\":0.0020859,\"cacheWrite\":0.003096,\"total\":0.0063368999999999995},\"cacheWrite1h\":516,\"reasoning\":43},\"stopReason\":\"stop\",\"timestamp\":1792739321646,\"responseId\":\"msg_011CgJkNLSo21ygKwrhYVkkc\",\"rawStopReason\":\"end_turn\",\"durationMs\":2618}}",
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo but hasn't provided any details. I should ask them what they want to add - need at least a title/description of the task to create it.\",\"thinkingSignature\":\"EsEDCroBCBMYAipAcLWYW3wS6K/LRDi6vhZ3jKdA6RsaavQtD1YhSscYHKSm/J0NBmchR72Q8LEYBZzzhKXu/5HVm4MAIN+yCn487zIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAcbe7dYGEgy6Yg5pZvVCyQin0v8aDMcCHP7uBcKGd6WN2SIw6uaZjRz179VNUptfhU9UKrcP+H/SWPt1CmsG0HK6IbBzKX7RcxBIpd8Btmk8T8ENKrMBkin+zqBW+6VVNunNJU0IaMUtNHLKeX9HUyN6GEsJDuAUgfXuKlp2iiZKrTy5BYrZawwC6itYOXEx9Gq3fdNuavHM33QMq2eahC6tZmNhSC8xP4zUZEcF+aJdaentRMd1HtU3GiZHf+GtYzqZmM4bxeECxM7uXtiayc1orci9eopDWlpaGNoz8RMAnu5XP4pdgyYSzhEOUCOZpCMi1eBFEz7EeXdhaLAY9CGOAiXxxR/4GOsYAQ==\"},{\"type\":\"text\",\"text\":\"What would you like to add to your todo list? Tell me the task and I'll capture it for you! 🎯\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":76,\"cacheRead\":7034,\"cacheWrite\":516,\"totalTokens\":7636,\"cost\":{\"input\":0.00003,\"output\":0.00114,\"cacheRead\":0.0021102,\"cacheWrite\":0.003096,\"total\":0.0063762},\"cacheWrite1h\":516,\"reasoning\":43},\"stopReason\":\"stop\",\"timestamp\":1792765765000,\"responseId\":\"msg_011CgKKybBdWJWLL3WcTTgWq\",\"rawStopReason\":\"end_turn\",\"durationMs\":2621}}",
       "metadata": {
-        "recordedAt": "2026-10-23T07:08:44.264Z",
-        "responseTimeMs": 2618
+        "recordedAt": "2026-10-23T14:29:27.622Z",
+        "responseTimeMs": 2622
       }
     }
   ]

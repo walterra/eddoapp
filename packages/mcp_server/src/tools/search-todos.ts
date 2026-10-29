@@ -21,7 +21,13 @@ Plain text is full-text searched on title and description.`;
 /** Zod schema for searchTodos parameters */
 export const searchTodosParameters = z.object({
   includeCompleted: z.boolean().default(true).describe('Include completed todos'),
-  limit: z.number().default(20).describe('Maximum results (default: 20, max: 100)'),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe('Maximum results (default: 20, max: 100)'),
   query: z.string().min(1).max(500).describe('Search query with optional syntax'),
 });
 

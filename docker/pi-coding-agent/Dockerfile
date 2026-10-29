@@ -4,7 +4,15 @@
 # Build: docker build -t pi-coding-agent:latest -f docker/pi-coding-agent/Dockerfile .
 # Run:   docker run -i --rm pi-coding-agent:latest
 
-FROM node:22-slim
+# Build the todo skill independently of workspace dependencies.
+FROM node:22-slim AS eddo-todo-skill
+WORKDIR /opt/eddo-todo
+COPY packages/chat-agent/skills/eddo-todo/package.json packages/chat-agent/skills/eddo-todo/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+COPY packages/chat-agent/skills/eddo-todo/eddo-todo.js packages/chat-agent/skills/eddo-todo/eddo.js packages/chat-agent/skills/eddo-todo/mcp_client.js packages/chat-agent/skills/eddo-todo/eddo-worktree.js packages/chat-agent/skills/eddo-todo/SKILL.md ./
+RUN node eddo-todo.js --help >/dev/null && node eddo.js --help >/dev/null
+
+FROM node:22-slim AS runtime
 
 # Install essential tools for coding agent
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -49,8 +57,7 @@ COPY --chown=agent:agent packages/chat-agent/extensions/ /home/agent/.pi/agent/e
 COPY --chown=agent:agent packages/chat-agent/AGENTS.md /home/agent/.pi/agent/AGENTS.md
 
 # Install skill dependencies
-WORKDIR /home/agent/.pi/agent/skills/eddo-todo
-RUN npm install --omit=dev
+COPY --from=eddo-todo-skill --chown=agent:agent /opt/eddo-todo/ /home/agent/.pi/agent/skills/eddo-todo/
 
 WORKDIR /home/agent/.pi/agent/skills/searxng-search
 RUN npm install --omit=dev

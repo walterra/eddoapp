@@ -1,118 +1,54 @@
-/**
- * Helper functions for MCP connection manager
- */
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {
+  Client,
+  StreamableHTTPClientTransport,
+  type CallToolResult,
+} from '@modelcontextprotocol/client';
 import { context, propagation } from '@opentelemetry/api';
 
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import { createMCPHeaders, type MCPUserContext } from './user-context.js';
 
-/**
- * Injects OpenTelemetry trace context into headers for distributed tracing
- * @param headers - Existing headers object
- * @returns Headers with trace context injected
- */
-function injectTraceContext(headers: Record<string, string>): Record<string, string> {
-  const carrier: Record<string, string> = { ...headers };
-  propagation.inject(context.active(), carrier);
-  return carrier;
-}
-
-/**
- * Creates headers for user-specific MCP requests
- * @param userContext - User context for the request
- * @returns Headers object
- */
+/** Creates credentials, operation identity, and tracing headers for one invocation. */
 export function createUserHeaders(userContext: MCPUserContext): Record<string, string> {
-  return createMCPHeaders(userContext);
+  const headers = createMCPHeaders(userContext);
+  propagation.inject(context.active(), headers);
+  return headers;
 }
 
-/**
- * Creates a user-specific MCP transport with trace context propagation
- * @param userContext - User context for the request
- * @returns Configured transport
- */
+/** Creates a user-specific HTTP transport without shared authentication state. */
 export function createUserTransport(userContext: MCPUserContext): StreamableHTTPClientTransport {
-  // Inject trace context for distributed tracing between telegram-bot and mcp-server
-  const headers = injectTraceContext(createUserHeaders(userContext));
-
   return new StreamableHTTPClientTransport(new URL(appConfig.MCP_SERVER_URL), {
-    requestInit: { headers },
+    requestInit: { headers: createUserHeaders(userContext) },
   });
 }
 
-/**
- * Creates and connects a user-specific MCP client
- * @param userContext - User context for the request
- * @returns Connected client
- */
+/** Connects only to the current protocol and closes failed connection attempts. */
 export async function createUserClient(userContext: MCPUserContext): Promise<Client> {
-  const transport = createUserTransport(userContext);
-  const client = new Client({
-    name: 'eddo-telegram-bot',
-    version: '1.0.0',
-  });
-
-  await client.connect(transport);
-  return client;
+  if (!userContext.mcpApiKey) throw new Error('MCP credentials are required');
+  const client = new Client(
+    { name: 'eddo-telegram-bot', version: '2.0.0' },
+    { versionNegotiation: { mode: { pin: '2026-07-28' } } },
+  );
+  try {
+    await client.connect(createUserTransport(userContext));
+    return client;
+  } catch (error) {
+    await client.close().catch(() => undefined);
+    throw error;
+  }
 }
 
-/**
- * Invokes a tool on a user-specific client
- * @param client - MCP client
- * @param toolName - Tool to invoke
- * @param params - Tool parameters
- * @returns Tool result
- */
+/** Preserves structured payloads and explicit tool failures without retrying mutations. */
 export async function invokeToolOnClient(
   client: Client,
   toolName: string,
   params: Record<string, unknown>,
-): Promise<unknown> {
-  const result = await client.callTool({
-    name: toolName,
-    arguments: params,
-  });
-
-  logger.info('MCP tool invoked successfully', {
-    toolName,
-    result: result.content,
-  });
-
-  return result.isError ? { content: result.content, isError: true } : result.content;
-}
-
-/**
- * Checks if an error is connection-related
- * @param error - Error to check
- * @returns True if connection error
- */
-export function isConnectionError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-
-  const message = error.message.toLowerCase();
-  return (
-    message.includes('connect') ||
-    message.includes('econnrefused') ||
-    message.includes('timeout') ||
-    message.includes('network') ||
-    message.includes('socket')
-  );
-}
-
-/**
- * Calculate exponential backoff delay
- * @param attempt - Current attempt number
- * @param baseDelayMs - Base delay in milliseconds
- * @param maxDelayMs - Maximum delay in milliseconds
- * @returns Delay in milliseconds
- */
-export function calculateReconnectDelay(
-  attempt: number,
-  baseDelayMs: number,
-  maxDelayMs: number,
-): number {
-  return Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+): Promise<CallToolResult> {
+  const result = await client.callTool({ name: toolName, arguments: params });
+  const output = result.structuredContent;
+  if (result.isError !== true && (!output || typeof output !== 'object' || Array.isArray(output)))
+    throw new Error('MCP tool returned no structured result');
+  logger.info('MCP tool request completed', { toolName, isError: result.isError === true });
+  return result;
 }

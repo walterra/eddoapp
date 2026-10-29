@@ -43,8 +43,17 @@ function parseText(text: string): unknown {
   }
 }
 
+interface StructuredResult {
+  structuredContent: unknown;
+}
+
+function isStructuredResult(result: unknown): result is StructuredResult {
+  return Boolean(result && typeof result === 'object' && 'structuredContent' in result);
+}
+
 /** Removes MCP transport wrappers before applying a model-facing output budget. */
 function unwrap(result: unknown): unknown {
+  if (isStructuredResult(result)) return result.structuredContent;
   if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content))
     return unwrap(result.content);
   if (Array.isArray(result) && result.every(isTextBlock)) {

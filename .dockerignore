@@ -1,8 +1,10 @@
 node_modules
+**/node_modules
+packages/chat-agent/skills/**/*.test.js
 dist
-.env
-.env.local
-.env.production
+.env*
+!.env.example
+.pi
 .git
 .gitignore
 README.md
