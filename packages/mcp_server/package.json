@@ -1,6 +1,6 @@
 {
   "name": "@eddo/mcp-server",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "private": true,
   "type": "module",
   "main": "dist/mcp-server.js",
