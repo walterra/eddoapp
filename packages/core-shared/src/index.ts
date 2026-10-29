@@ -13,6 +13,13 @@ export {
   type AssistantMessageChannelMetadata,
   type AssistantTelegramMetadata,
 } from './types/assistant-conversation';
+export {
+  type AssistantAccountIdentity,
+  type AssistantReportType,
+  type AssistantRequest,
+  type AssistantRequestReport,
+  type AssistantRequestSource,
+} from './types/assistant_request';
 export { buildAttachmentDocId, parseAttachmentDocId, type AttachmentDoc } from './types/attachment';
 export {
   createDefaultSessionStats,

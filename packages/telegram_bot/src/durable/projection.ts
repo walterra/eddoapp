@@ -7,14 +7,21 @@ import type {
   AssistantConversation,
   AssistantConversationMessageDoc,
   AssistantConversationRole,
+  AssistantRequest,
 } from '@eddo/core-shared';
 import { createHash } from 'node:crypto';
 import { couchRequest, createCouchEndpoint, type CouchEndpoint } from './couch.js';
+import { normalizeTelegramRequest, requestChannelMetadata } from './request_channel.js';
 import type { DurableRequestInput } from './state.js';
 
 interface ProjectionOptions {
   username: string;
   input: DurableRequestInput;
+  answer: string;
+}
+
+export interface AssistantProjectionOptions {
+  request: AssistantRequest;
   answer: string;
 }
 
@@ -73,9 +80,18 @@ async function refreshStats(
     throw new Error(`Assistant statistics projection failed: HTTP ${updated.status}`);
 }
 
-/** Projects a completed exchange into the existing application-facing chat database. */
+/** Preserves the projection callback used by existing Telegram tasks. */
 export async function projectDurableExchange(options: ProjectionOptions): Promise<void> {
-  const { username, input, answer } = options;
+  return projectAssistantExchange({
+    request: normalizeTelegramRequest(options.username, options.input),
+    answer: options.answer,
+  });
+}
+
+/** Projects channel-neutral exchanges using the authenticated account identity. */
+export async function projectAssistantExchange(options: AssistantProjectionOptions): Promise<void> {
+  const { request: input, answer } = options;
+  const username = input.account.username;
   const env = createEnv();
   const database = createAssistantConversationDatabase(env.COUCHDB_URL, env, username);
   const endpoint = createCouchEndpoint(env.COUCHDB_URL, getChatDatabaseName(env, username));
@@ -92,12 +108,10 @@ export async function projectDurableExchange(options: ProjectionOptions): Promis
       conversationId: input.conversationId,
       role,
       content: content[role],
-      channel: 'telegram',
+      channel: input.source.channel,
       createdAt: input.createdAt,
       sequence,
-      channelMetadata: {
-        telegram: { chatId: input.chatId, userId: input.telegramId, messageId: input.messageId },
-      },
+      channelMetadata: requestChannelMetadata(input.source),
     });
   }
   await refreshStats(

@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: proposed implementation; step 1 inspection complete. Runtime behavior remains unchanged.
+Status: step 2 channel-contract foundation implemented. Web runtime admission remains disabled.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -107,6 +107,17 @@ Pause after each checkpoint for user confirmation. Report changed files, checks,
 
 - [x] 1. Inspect sidebar integration and reusable assistant-ui components; record boundaries.
 - [ ] 2. Generalize Durable identity, channel contracts, and runtime/channel adapters with compatibility tests.
+  - [x] 2a. Add account-based request contracts, legacy Telegram normalization, and channel-neutral history projection.
+  - [ ] 2b. Generalize journal ownership and resumed authorization without weakening existing Telegram identity guards.
+  - [ ] 2c. Separate generation, delivery, and progress adapters; extract reusable server runtime functionality.
+
+Step 2a preserves persisted request inputs, task names, owner records, and Telegram projection behavior.
+Its shared request contract supports web-only account identity without placeholder Telegram identifiers.
+The existing Telegram projection callback delegates to the channel-neutral projection through a normalization adapter.
+No web request enters the runtime until ownership and authorization changes pass compatibility tests.
+
+Remaining checkpoints:
+
 - [ ] 3. Expose a single-owner assistant host with authenticated internal admission and status transport.
 - [ ] 4. Add authenticated web history, submission, status, and resumable live-update endpoints.
 - [ ] 5. Add the main-app assistant sidebar and dedicated assistant-ui runtime adapter.
