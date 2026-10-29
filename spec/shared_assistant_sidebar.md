@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: step 2 channel-contract foundation implemented. Web runtime admission remains disabled.
+Status: step 2 account authorization and ownership foundations implemented. Web runtime admission remains disabled.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -108,13 +108,19 @@ Pause after each checkpoint for user confirmation. Report changed files, checks,
 - [x] 1. Inspect sidebar integration and reusable assistant-ui components; record boundaries.
 - [ ] 2. Generalize Durable identity, channel contracts, and runtime/channel adapters with compatibility tests.
   - [x] 2a. Add account-based request contracts, legacy Telegram normalization, and channel-neutral history projection.
-  - [ ] 2b. Generalize journal ownership and resumed authorization without weakening existing Telegram identity guards.
+  - [x] 2b. Add account-based journal ownership and fresh authorization APIs while preserving existing Telegram identity guards.
   - [ ] 2c. Separate generation, delivery, and progress adapters; extract reusable server runtime functionality.
 
 Step 2a preserves persisted request inputs, task names, owner records, and Telegram projection behavior.
 Its shared request contract supports web-only account identity without placeholder Telegram identifiers.
 The existing Telegram projection callback delegates to the channel-neutral projection through a normalization adapter.
-No web request enters the runtime until ownership and authorization changes pass compatibility tests.
+Step 2b adds fresh account-registry authorization for channel-neutral requests and account-only MCP contexts.
+Each authorization call rechecks active status, current credentials, Telegram binding when applicable, and scheduled-report consent.
+The runtime owner record retains its existing document kind and version. Legacy Telegram pins remain mandatory when reopening those journals.
+New account-only owner records omit Telegram identifiers. Adding or removing an owner pin requires explicit migration; no automatic transfer exists.
+Real Harness reopen tests cover account-only owners and legacy owner records.
+The existing Telegram host still uses its current authorization path. Step 2c wires the new account API into shared runtime adapters.
+No web request enters the runtime before that integration.
 
 Remaining checkpoints:
 

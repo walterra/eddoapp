@@ -1,25 +1,30 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import { defineDoc, type Harness } from '@earendil-works/pi-durable';
+import type { AssistantAccountIdentity } from '@eddo/core-shared';
+
+type RuntimeOwnerRecord = {
+  username: string;
+  telegramId?: number;
+};
 
 const RuntimeOwner = defineDoc({
   kind: 'eddo.owner',
   version: 1,
   scope: 'session',
-  initial: (): { username: string; telegramId: number } => ({ username: '', telegramId: 0 }),
+  initial: (): RuntimeOwnerRecord => ({ username: '' }),
 });
 
-export interface RuntimeIdentity {
-  username: string;
-  telegramId: number;
+export interface RuntimeIdentity extends AssistantAccountIdentity {
+  telegramId?: number;
 }
 
-/** Prevents relinked accounts from resuming work or delivery for a previous Telegram identity. */
+/** Pins the account and any existing Telegram identity without silently transferring ownership. */
 export async function bindRuntimeOwner(harness: Harness, identity: RuntimeIdentity): Promise<void> {
   const owner = await harness.snapshot(RuntimeOwner, context);
   if (owner) {
     if (owner.username !== identity.username || owner.telegramId !== identity.telegramId) {
       throw new Error(
-        'Durable journal belongs to another Telegram identity; operator migration required',
+        'Durable journal belongs to another Telegram identity or account; operator migration required',
       );
     }
     return;
@@ -27,6 +32,6 @@ export async function bindRuntimeOwner(harness: Harness, identity: RuntimeIdenti
   await harness.commit(async (tx) => {
     const document = await tx.doc(RuntimeOwner);
     document.username = identity.username;
-    document.telegramId = identity.telegramId;
+    if (identity.telegramId !== undefined) document.telegramId = identity.telegramId;
   }, context);
 }
