@@ -34,7 +34,7 @@
     "@changesets/cli": "^2.31.0",
     "@changesets/get-github-info": "^0.8.0",
     "@cloudant/couchbackup": "^2.11.19",
-    "@commitlint/cli": "^20.4.1",
+    "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.0.2",
     "@eddo/core-client": "workspace:*",
     "@eddo/core-server": "workspace:*",
