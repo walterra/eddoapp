@@ -3,7 +3,25 @@ import type {
   AssistantRequest,
   AssistantRequestSource,
 } from '@eddo/core-shared';
-import type { DurableRequestInput } from './state.js';
+import type { DurableRequestInput, RuntimeRequestInput } from './state.js';
+
+/** Resolves legacy and channel-neutral inputs without changing their persisted shape. */
+export function assistantRequest(username: string, input: RuntimeRequestInput): AssistantRequest {
+  return 'account' in input ? input : normalizeTelegramRequest(username, input);
+}
+
+/** Identifies web requests before invoking Telegram transport or formatting. */
+export function isWebRequest(input: RuntimeRequestInput): boolean {
+  return 'source' in input && input.source.channel === 'web';
+}
+
+/** Resolves private Telegram destinations from either persisted request format. */
+export function telegramChatId(input: RuntimeRequestInput): number {
+  if (!('source' in input)) return input.chatId;
+  if (input.source.channel !== 'telegram')
+    throw new Error('Web requests have no Telegram destination');
+  return input.source.telegram.chatId;
+}
 
 /** Normalizes persisted Telegram inputs without rewriting journal records. */
 export function normalizeTelegramRequest(

@@ -46,7 +46,7 @@ vi.mock('../ai/llm-model-resolution.js', () => ({ resolveConfiguredModel: fixtur
 vi.mock('../utils/logger.js', () => ({ logger: { error: vi.fn() } }));
 vi.mock('./couch.js', () => ({ provisionDurableDatabase: fixture.provision }));
 vi.mock('./projection.js', () => ({ projectDurableExchange: vi.fn() }));
-vi.mock('./runtime.js', () => ({ openDurableRuntime: fixture.open }));
+vi.mock('./assistant_runtime.js', () => ({ openAssistantRuntime: fixture.open }));
 vi.mock('./tools.js', () => ({
   resolveDurableUser: fixture.authorize,
   authorizeDurableRequest: fixture.authorize,

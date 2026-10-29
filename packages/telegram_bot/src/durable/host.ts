@@ -9,16 +9,17 @@ import type { BotContext } from '../bot/bot.js';
 import { getMCPClient, scopeMCPIntegration } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
+import { openAssistantRuntime } from './assistant_runtime.js';
 import { provisionDurableDatabase } from './couch.js';
 import { loadLegacyArchive, loadLegacyHistory } from './legacy_history.js';
 import { loadMemoryContext } from './memory_context.js';
 import { projectDurableExchange } from './projection.js';
 import { buildDurablePrompt } from './prompt.js';
 import { printDurableReport } from './report_delivery.js';
-import { openDurableRuntime, type DurableRuntime, type DurableRuntimeOptions } from './runtime.js';
+import type { DurableRuntime, DurableRuntimeOptions } from './runtime.js';
 import type { DurableRequestInput, ReportType } from './state.js';
 import { sendTelegramText } from './telegram_send.js';
-import { authorizeDurableRequest, resolveDurableUser } from './tools.js';
+import { resolveDurableUser } from './tools.js';
 
 const runtimes = new Map<string, Promise<DurableRuntime>>();
 const models = builtinModels();
@@ -63,7 +64,7 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
   const storage = await openCouchDbStorage(endpoint);
   let projection = Promise.resolve();
   try {
-    return await openDurableRuntime({
+    return await openAssistantRuntime({
       storage,
       models,
       client,
@@ -75,7 +76,6 @@ async function openUserRuntime(username: string): Promise<DurableRuntime> {
       memoryContext: async () =>
         loadMemoryContext(client, await resolveDurableUser(username, telegramId)),
       ...legacyLoaders(username, telegramId),
-      authorize: (input) => authorizeDurableRequest(username, telegramId, input),
       send: (chatId, text, options) => sendTelegramText(bot!.api, chatId, text, options),
       progress: (text) => bot!.api.sendMessage(telegramId, text),
       print: (input, answer, reportType) => printDurableReport(username, input, answer, reportType),

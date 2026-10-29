@@ -11,12 +11,12 @@ import type {
 } from '@eddo/core-shared';
 import { createHash } from 'node:crypto';
 import { couchRequest, createCouchEndpoint, type CouchEndpoint } from './couch.js';
-import { normalizeTelegramRequest, requestChannelMetadata } from './request_channel.js';
-import type { DurableRequestInput } from './state.js';
+import { assistantRequest, requestChannelMetadata } from './request_channel.js';
+import type { RuntimeRequestInput } from './state.js';
 
 interface ProjectionOptions {
   username: string;
-  input: DurableRequestInput;
+  input: RuntimeRequestInput;
   answer: string;
 }
 
@@ -83,7 +83,7 @@ async function refreshStats(
 /** Preserves the projection callback used by existing Telegram tasks. */
 export async function projectDurableExchange(options: ProjectionOptions): Promise<void> {
   return projectAssistantExchange({
-    request: normalizeTelegramRequest(options.username, options.input),
+    request: assistantRequest(options.username, options.input),
     answer: options.answer,
   });
 }

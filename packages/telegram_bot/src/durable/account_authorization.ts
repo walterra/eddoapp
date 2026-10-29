@@ -9,7 +9,7 @@ import type { MCPUserContext } from '../mcp/user-context.js';
 
 export interface AssistantAuthorizationOptions {
   telegramId?: number;
-  report?: AssistantRequestReport;
+  report?: Pick<AssistantRequestReport, 'type'>;
 }
 
 /** Requires current scheduled-report consent and a Telegram delivery identity. */
@@ -51,14 +51,17 @@ export async function resolveAssistantAccount(
 export async function authorizeAssistantRequest(
   identity: AssistantAccountIdentity,
   request: AssistantRequest,
+  pinnedTelegramId?: number,
 ): Promise<MCPUserContext> {
   if (request.account.username !== identity.username)
     throw new Error('Assistant request does not match the journal account');
   const source = request.source;
+  if (request.report && source.channel !== 'telegram')
+    throw new Error('Scheduled reports require Telegram authorization');
   if (source.channel === 'telegram' && source.telegram.chatId !== source.telegram.userId)
     throw new Error('Assistant requires a private Telegram chat');
   return resolveAssistantAccount(identity, {
-    ...(source.channel === 'telegram' ? { telegramId: source.telegram.userId } : {}),
+    telegramId: source.channel === 'telegram' ? source.telegram.userId : pinnedTelegramId,
     ...(request.report ? { report: request.report } : {}),
   });
 }

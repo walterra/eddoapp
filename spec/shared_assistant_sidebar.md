@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: step 2 account authorization and ownership foundations implemented. Web runtime admission remains disabled.
+Status: step 2 shared runtime integration implemented. Public web admission remains disabled.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -52,7 +52,7 @@ Define authenticated internal admission and status transport before exposing bro
 Treat journal ownership, authorization, and migration compatibility as release blockers.
 Do not activate the unintegrated distributed-ownership foundation as part of this feature.
 
-Extract reusable runtime functionality into a shared server package during step 2.
+Extract reusable runtime functionality into a shared server package after verifying the in-place channel adapter integration.
 Keep Telegram formatting, typing, and transport delivery inside the Telegram adapter.
 Preserve persisted task names and checkpoint compatibility, or provide an explicit tested migration.
 Do not manufacture Telegram IDs for web-only accounts or silently transfer existing journal ownership.
@@ -109,7 +109,8 @@ Pause after each checkpoint for user confirmation. Report changed files, checks,
 - [ ] 2. Generalize Durable identity, channel contracts, and runtime/channel adapters with compatibility tests.
   - [x] 2a. Add account-based request contracts, legacy Telegram normalization, and channel-neutral history projection.
   - [x] 2b. Add account-based journal ownership and fresh authorization APIs while preserving existing Telegram identity guards.
-  - [ ] 2c. Separate generation, delivery, and progress adapters; extract reusable server runtime functionality.
+  - [x] 2c. Integrate account authorization, channel-aware delivery, and shared Harness admission with compatibility tests.
+  - [ ] 2d. Extract the verified shared runtime into a server package without importing Telegram host code.
 
 Step 2a preserves persisted request inputs, task names, owner records, and Telegram projection behavior.
 Its shared request contract supports web-only account identity without placeholder Telegram identifiers.
@@ -119,8 +120,17 @@ Each authorization call rechecks active status, current credentials, Telegram bi
 The runtime owner record retains its existing document kind and version. Legacy Telegram pins remain mandatory when reopening those journals.
 New account-only owner records omit Telegram identifiers. Adding or removing an owner pin requires explicit migration; no automatic transfer exists.
 Real Harness reopen tests cover account-only owners and legacy owner records.
-The existing Telegram host still uses its current authorization path. Step 2c wires the new account API into shared runtime adapters.
-No web request enters the runtime before that integration.
+Step 2c routes the existing Telegram host through `openAssistantRuntime`, retaining the same Harness and persisted task names.
+The shared runtime accepts legacy Telegram inputs and validated channel-neutral requests, with account authorization at admission and resumed phases.
+Tool entries persist channel-neutral request metadata for fresh authorization before MCP calls and archive reads.
+Legacy tool entries retain pinned Telegram authorization. Web tool runs suppress Telegram progress messages.
+Web replies bypass Telegram formatting and sending, then use the existing persisted printing and projection phases.
+Manual report printing remains injected and claimed before its external effect.
+Web requests use account-scoped identifiers and atomic payload-hash receipts; changed payloads cannot reuse accepted request IDs.
+Retries retain original work across admission timing and active-conversation changes.
+Scripted real-Harness tests cover web-only tools, cross-channel context, credential revocation, relinking rejection, and legacy delivery recovery.
+The shared runtime remains in the Telegram package until step 2d completes its workspace extraction.
+No public web endpoint or second journal owner exists yet.
 
 Remaining checkpoints:
 

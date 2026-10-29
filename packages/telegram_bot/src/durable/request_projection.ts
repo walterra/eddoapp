@@ -3,10 +3,10 @@ import type { RunningTask } from '@earendil-works/pi-durable';
 import { requestOutcome } from './request_failure.js';
 import type { RequestRuntime } from './request_generation.js';
 import type { RequestDependencies } from './request_task.js';
-import type { DurableRequestInput, RequestCheckpoint } from './state.js';
+import type { RequestCheckpoint, RuntimeRequestInput } from './state.js';
 
 type ProjectionTask = RunningTask<
-  DurableRequestInput,
+  RuntimeRequestInput,
   Extract<RequestCheckpoint, { phase: 'project' }>,
   string
 >;

@@ -1,4 +1,4 @@
-import type { DurableRequestInput, ReportType } from './state.js';
+import type { ReportType, RuntimeRequestInput } from './state.js';
 
 /** Computes calendar facts without asking a model to infer the weekday. */
 export function reportHeading(type: ReportType, date: string): string {
@@ -13,7 +13,7 @@ export function reportHeading(type: ReportType, date: string): string {
 }
 
 /** Uses the occurrence's local date, not the worker's timezone or the eventual delivery date. */
-export function inputReportHeading(input: DurableRequestInput): string {
+export function inputReportHeading(input: RuntimeRequestInput): string {
   const date =
     input.report?.occurrence.match(/(\d{4}-\d{2}-\d{2})(?::\d{2}:\d{2})?$/)?.[1] ??
     input.createdAt.slice(0, 10);
@@ -21,7 +21,7 @@ export function inputReportHeading(input: DurableRequestInput): string {
 }
 
 /** Replaces a model-supplied report heading while retaining the report body. */
-export function renderReportHeading(input: DurableRequestInput, body: string): string {
+export function renderReportHeading(input: RuntimeRequestInput, body: string): string {
   const clean = body
     .replace(/^(?:#{1,6}\s*)?DAILY (?:BRIEFING|RECAP)\b[^\n]*(?:\n[=-]{3,})?\s*/i, '')
     .trim();

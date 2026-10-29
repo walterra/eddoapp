@@ -7,9 +7,9 @@ import type {
   SubmissionRecord,
   TaskRuntime,
 } from '@earendil-works/pi-durable';
-import type { DurableRequestInput, RequestCheckpoint } from './state.js';
+import type { RequestCheckpoint, RuntimeRequestInput } from './state.js';
 
-export type RequestRuntime = TaskRuntime<DurableRequestInput, RequestCheckpoint, string, object>;
+export type RequestRuntime = TaskRuntime<RuntimeRequestInput, RequestCheckpoint, string, object>;
 
 export interface GenerationResult {
   answer: string;
@@ -20,7 +20,7 @@ export interface GenerationResult {
 
 /** Waits for this input without treating a failed native run as a successful answer. */
 export async function generateAnswer(
-  input: DurableRequestInput,
+  input: RuntimeRequestInput,
   runtime: RequestRuntime,
   context: Context,
 ): Promise<GenerationResult> {
@@ -39,6 +39,7 @@ export async function generateAnswer(
           receivedAt: input.createdAt,
           deadline: input.deadline,
           report: input.report?.type ?? null,
+          ...('account' in input ? { request: JSON.stringify(input) } : {}),
         },
       },
     },
@@ -76,7 +77,7 @@ async function waitForAnswer(
 
 /** Retains a committed answer when recovery starts after the admission deadline. */
 async function recoveredAnswer(
-  input: DurableRequestInput,
+  input: RuntimeRequestInput,
   runtime: RequestRuntime,
   context: Context,
 ): Promise<GenerationResult> {

@@ -3,7 +3,7 @@ import type { Message } from '@earendil-works/pi-ai';
 import type { ConversationId, EntryRecord, SubmissionDraft } from '@earendil-works/pi-durable';
 import type { PreparedReply } from './report_delivery.js';
 import type { GenerationResult, RequestRuntime } from './request_generation.js';
-import type { DurableRequestInput } from './state.js';
+import type { RuntimeRequestInput } from './state.js';
 
 type ContextSubmission = Extract<SubmissionDraft, { type: 'write' }>;
 export type ContextWriter = (
@@ -13,7 +13,7 @@ export type ContextWriter = (
 ) => Promise<void>;
 
 interface ReportContextOptions {
-  input: DurableRequestInput;
+  input: RuntimeRequestInput;
   generated: GenerationResult;
   reply: PreparedReply;
   writeContext?: ContextWriter;

@@ -1,4 +1,5 @@
 import { defineDoc, type ConversationId, type TaskId } from '@earendil-works/pi-durable';
+import type { AssistantRequest } from '@eddo/core-shared';
 import type { TelegramText } from './telegram_format.js';
 
 export const ConversationMap = defineDoc({
@@ -13,6 +14,13 @@ export const RequestMap = defineDoc({
   version: 1,
   scope: 'session',
   initial: (): { tasks: Record<string, TaskId<string>> } => ({ tasks: {} }),
+});
+
+export const RequestPayloads = defineDoc({
+  kind: 'eddo.request-payloads',
+  version: 1,
+  scope: 'session',
+  initial: (): { hashes: Record<string, string> } => ({ hashes: {} }),
 });
 
 export const RunBudget = defineDoc({
@@ -42,6 +50,8 @@ export interface DurableRequestInput {
   deadline: number;
   report?: DurableReport;
 }
+
+export type RuntimeRequestInput = DurableRequestInput | AssistantRequest;
 
 export type RequestCheckpoint =
   | { phase: 'generate'; attempt?: number }

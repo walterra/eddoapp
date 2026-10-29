@@ -5,31 +5,31 @@ import { prepareReply } from './report_delivery.js';
 import { deliverAnswer } from './request_delivery.js';
 import { generateAnswer, type RequestRuntime } from './request_generation.js';
 import { projectRequest } from './request_projection.js';
-import type { DurableRequestInput, ReportType, RequestCheckpoint } from './state.js';
+import type { ReportType, RequestCheckpoint, RuntimeRequestInput } from './state.js';
 import type { TelegramSendOptions } from './telegram_send.js';
 export { telegramChunk } from './request_delivery.js';
 
 export interface RequestDependencies {
-  authorize: (input: DurableRequestInput) => Promise<unknown>;
+  authorize: (input: RuntimeRequestInput) => Promise<unknown>;
   send: (chatId: number, text: string, options?: TelegramSendOptions) => Promise<unknown>;
-  project: (input: DurableRequestInput, answer: string) => Promise<void>;
-  print?: (input: DurableRequestInput, answer: string, reportType?: ReportType) => Promise<void>;
+  project: (input: RuntimeRequestInput, answer: string) => Promise<void>;
+  print?: (input: RuntimeRequestInput, answer: string, reportType?: ReportType) => Promise<void>;
   reportRetryDelayMs?: number;
   writeContext?: ContextWriter;
 }
 
 type GenerateTask = RunningTask<
-  DurableRequestInput,
+  RuntimeRequestInput,
   Extract<RequestCheckpoint, { phase: 'generate' }>,
   string
 >;
 type RetryTask = RunningTask<
-  DurableRequestInput,
+  RuntimeRequestInput,
   Extract<RequestCheckpoint, { phase: 'retry' }>,
   string
 >;
 type PrintTask = RunningTask<
-  DurableRequestInput,
+  RuntimeRequestInput,
   Extract<RequestCheckpoint, { phase: 'print' }>,
   string
 >;
@@ -136,8 +136,8 @@ async function printAnswer(
 /** Stores generation outcomes and delivery offsets; ambiguous Telegram sends may repeat. */
 export function createRequestTask(
   dependencies: RequestDependencies,
-): ReturnType<typeof defineTask<DurableRequestInput, RequestCheckpoint, string>> {
-  return defineTask<DurableRequestInput, RequestCheckpoint, string>({
+): ReturnType<typeof defineTask<RuntimeRequestInput, RequestCheckpoint, string>> {
+  return defineTask<RuntimeRequestInput, RequestCheckpoint, string>({
     name: 'eddo.telegram-request',
     version: 1,
     initial: () => ({ phase: 'generate' }),

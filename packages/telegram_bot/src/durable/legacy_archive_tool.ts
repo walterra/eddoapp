@@ -1,10 +1,12 @@
 import type { TSchema } from '@earendil-works/pi-ai';
 import { defineExtension, defineTool, section } from '@earendil-works/pi-durable';
-import type { AssistantConversationMessageDoc } from '@eddo/core-shared';
+import type { AssistantConversationMessageDoc, AssistantRequest } from '@eddo/core-shared';
 import { z } from 'zod';
+import type { MCPUserContext } from '../mcp/user-context.js';
 import { readLegacyArchive } from './legacy_archive.js';
+import type { ReportType } from './state.js';
 import { ConversationMap } from './state.js';
-import { consumeToolBudget, resolveDurableUser } from './tools.js';
+import { authorizeToolPermission, consumeToolBudget } from './tools.js';
 
 const ARCHIVE_PARAMETERS = {
   type: 'object',
@@ -28,7 +30,11 @@ const querySchema = z.object({
 
 export interface LegacyArchiveOptions {
   username: string;
-  telegramId: number;
+  telegramId?: number;
+  authorizeTool?: (
+    request: AssistantRequest | undefined,
+    report?: ReportType,
+  ) => Promise<MCPUserContext>;
   legacyArchive?: (conversationId: string) => Promise<readonly AssistantConversationMessageDoc[]>;
 }
 
@@ -65,7 +71,7 @@ export function createLegacyArchiveExtension(
               isError: true,
               control: { terminate: true },
             };
-          await resolveDurableUser(options.username, options.telegramId, permission.report);
+          await authorizeToolPermission(options, permission);
           const query = querySchema.parse(args);
           const externalId = await api.commit(async (tx) => {
             const mapping = await tx.doc(ConversationMap);

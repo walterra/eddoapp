@@ -2,14 +2,15 @@ import type { Context } from '@earendil-works/chord';
 import type { NextTaskState, RunningTask } from '@earendil-works/pi-durable';
 import type { MessageEntity } from 'grammy/types';
 import { deliveryDeadline, deliveryRetry, MAX_DELIVERY_FAILURES } from './delivery_policy.js';
+import { isWebRequest, telegramChatId } from './request_channel.js';
 import type { RequestRuntime } from './request_generation.js';
 import type { RequestDependencies } from './request_task.js';
-import type { DurableRequestInput, RequestCheckpoint } from './state.js';
+import type { RequestCheckpoint, RuntimeRequestInput } from './state.js';
 import { formatTelegramText, telegramChunkEntities } from './telegram_format.js';
 import type { TelegramSendOptions } from './telegram_send.js';
 
 type DeliveryCheckpoint = Extract<RequestCheckpoint, { phase: 'deliver' }>;
-type DeliveryTask = RunningTask<DurableRequestInput, DeliveryCheckpoint, string>;
+type DeliveryTask = RunningTask<RuntimeRequestInput, DeliveryCheckpoint, string>;
 
 /** Splits plain-text Telegram output without separating UTF-16 surrogate pairs. */
 export function telegramChunk(answer: string, offset: number): string {
@@ -62,7 +63,7 @@ async function prepareTelegramDelivery(
 
 /** Applies scheduled briefing preview suppression without changing other reply defaults. */
 function chunkSendOptions(
-  input: DurableRequestInput,
+  input: RuntimeRequestInput,
   entities: MessageEntity[],
 ): TelegramSendOptions | undefined {
   const disableLinkPreview = input.report?.type === 'briefing';
@@ -84,8 +85,8 @@ async function sendChunk(task: DeliveryTask, dependencies: RequestDependencies):
   );
   const options = chunkSendOptions(task.input, entities);
   if (chunk) {
-    if (options) await dependencies.send(task.input.chatId, chunk, options);
-    else await dependencies.send(task.input.chatId, chunk);
+    if (options) await dependencies.send(telegramChatId(task.input), chunk, options);
+    else await dependencies.send(telegramChatId(task.input), chunk);
   }
   return chunk.length;
 }
@@ -99,6 +100,10 @@ export async function deliverAnswer(
 ): Promise<void> {
   await dependencies.authorize(task.input);
   const checkpoint = task.state.checkpoint;
+  if (isWebRequest(task.input)) {
+    await runtime.commit(() => deliveryFinished(task), context);
+    return;
+  }
   if (Date.now() >= deliveryDeadline(task.input) || checkpoint.attempts >= MAX_DELIVERY_FAILURES) {
     await runtime.commit(
       () => failedDelivery('Telegram delivery deadline or retry limit reached.'),

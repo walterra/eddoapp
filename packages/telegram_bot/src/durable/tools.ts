@@ -7,12 +7,15 @@ import {
   type ToolExecutionApi,
   type ToolRegistration,
 } from '@earendil-works/pi-durable';
+import type { AssistantRequest } from '@eddo/core-shared';
 import type { MCPClient, MCPTool } from '../mcp/client.js';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
+import { authorizeAssistantRequest } from './account_authorization.js';
 import { mutationContext } from './mcp_operation.js';
 import { notifyProgress, type ProgressOptions } from './progress.js';
-import { RunBudget, type DurableRequestInput, type ReportType } from './state.js';
+import { parseAssistantRequest } from './request_schema.js';
+import { RunBudget, type ReportType, type RuntimeRequestInput } from './state.js';
 import { invokeMcpTool } from './tool_execution.js';
 
 const REPLAY_SAFE_TOOLS = new Set([
@@ -49,16 +52,21 @@ export async function resolveDurableUser(
 
 interface ToolBridgeOptions extends ProgressOptions {
   username: string;
-  telegramId: number;
+  telegramId?: number;
   client: MCPClient;
+  authorizeTool?: (
+    request: AssistantRequest | undefined,
+    report?: ReportType,
+  ) => Promise<MCPUserContext>;
 }
 
 /** Revalidates report preferences when request phases resume. */
 export function authorizeDurableRequest(
   username: string,
   telegramId: number,
-  input: DurableRequestInput,
+  input: RuntimeRequestInput,
 ): Promise<MCPUserContext> {
+  if ('account' in input) return authorizeAssistantRequest({ username }, input);
   return resolveDurableUser(username, telegramId, input.report?.type);
 }
 
@@ -77,6 +85,7 @@ interface ToolPermission {
   allowed: boolean;
   callNumber: number;
   report?: ReportType;
+  request?: AssistantRequest;
 }
 
 function reportType(entry: EntryRecord | undefined): ReportType | undefined {
@@ -100,8 +109,28 @@ export async function consumeToolBudget(
       budget.tools = 0;
     }
     budget.tools += 1;
-    return { allowed: budget.tools <= 50, report: reportType(entry), callNumber: budget.tools };
+    const data = entry?.data;
+    const encoded =
+      data && typeof data === 'object' && !Array.isArray(data) ? data.request : undefined;
+    const request =
+      typeof encoded === 'string' ? parseAssistantRequest(JSON.parse(encoded)) : undefined;
+    return {
+      allowed: budget.tools <= 50,
+      report: reportType(entry),
+      callNumber: budget.tools,
+      request,
+    };
   }, context);
+}
+
+/** Revalidates channel-neutral tool requests while retaining legacy Telegram recovery checks. */
+export async function authorizeToolPermission(
+  options: Pick<ToolBridgeOptions, 'username' | 'telegramId' | 'authorizeTool'>,
+  permission: ToolPermission,
+): Promise<MCPUserContext> {
+  if (options.authorizeTool) return options.authorizeTool(permission.request, permission.report);
+  if (options.telegramId === undefined) throw new Error('Assistant tool authorizer is required');
+  return resolveDurableUser(options.username, options.telegramId, permission.report);
 }
 
 /** Bridges a discovered MCP schema without enabling filesystem or shell tools. */
@@ -124,12 +153,9 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
           isError: true,
           control: { terminate: true },
         };
-      const user = await resolveDurableUser(
-        options.username,
-        options.telegramId,
-        permission.report,
-      );
-      if (!permission.report) await notifyProgress(options, permission.callNumber);
+      const user = await authorizeToolPermission(options, permission);
+      if (!permission.report && permission.request?.source.channel !== 'web')
+        await notifyProgress(options, permission.callNumber);
       const formatted = await invokeMcpTool(
         options.client,
         tool.name,

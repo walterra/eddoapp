@@ -1,8 +1,8 @@
 import { defineTask } from '@earendil-works/pi-durable';
-import type { DurableRequestInput } from './state.js';
+import type { RuntimeRequestInput } from './state.js';
 
 interface ProjectionInput {
-  request: DurableRequestInput;
+  request: RuntimeRequestInput;
   answer: string;
 }
 
@@ -11,8 +11,8 @@ interface ProjectionCheckpoint {
 }
 
 export interface ProjectionDependencies {
-  authorize: (input: DurableRequestInput) => Promise<unknown>;
-  project: (input: DurableRequestInput, answer: string) => Promise<void>;
+  authorize: (input: RuntimeRequestInput) => Promise<unknown>;
+  project: (input: RuntimeRequestInput, answer: string) => Promise<void>;
 }
 
 /** Retries application history independently of Telegram delivery and request completion. */

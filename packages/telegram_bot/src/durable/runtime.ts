@@ -5,10 +5,8 @@ import {
   defineExtension,
   Harness,
   section,
-  type Conversation,
   type ModelRef,
   type Storage,
-  type TaskId,
 } from '@earendil-works/pi-durable';
 import {
   modelThinkingLevel,
@@ -19,14 +17,14 @@ import { modelsWithOptions } from '../ai/models_with_options.js';
 import { modelsWithTelemetry } from '../ai/models_with_telemetry.js';
 import type { MCPClient } from '../mcp/client.js';
 import { createLegacyArchiveExtension, type LegacyArchiveOptions } from './legacy_archive_tool.js';
-import { ensureLegacyHistory } from './legacy_history.js';
 import { configureConversationModels } from './model_configuration.js';
 import { bindRuntimeOwner } from './ownership.js';
 import { createProjectionTask } from './projection_task.js';
 import type { ContextWriter } from './report_context.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
 import { waitForRequestResult } from './request_wait.js';
-import { ConversationMap, RequestMap, type DurableRequestInput } from './state.js';
+import { createRuntimeAdmission } from './runtime_admission.js';
+import type { RuntimeRequestInput } from './state.js';
 import { createMcpExtension } from './tools.js';
 
 export interface DurableRuntimeOptions extends RequestDependencies, LegacyArchiveOptions {
@@ -34,7 +32,7 @@ export interface DurableRuntimeOptions extends RequestDependencies, LegacyArchiv
   models: Models;
   client: MCPClient;
   username: string;
-  telegramId: number;
+  telegramId?: number;
   model: ModelRef;
   generation?: LlmGenerationSettings;
   instructions: string;
@@ -44,7 +42,7 @@ export interface DurableRuntimeOptions extends RequestDependencies, LegacyArchiv
   onReport: (error: unknown) => void;
 }
 
-interface ResolvedRuntimeOptions extends DurableRuntimeOptions {
+export interface ResolvedRuntimeOptions extends DurableRuntimeOptions {
   generation: LlmGenerationSettings;
   thinkingLevel: ModelThinkingLevel;
 }
@@ -57,36 +55,10 @@ function resolveRuntimeOptions(options: DurableRuntimeOptions): ResolvedRuntimeO
 }
 
 export interface DurableRuntime {
-  enqueue: (input: DurableRequestInput) => Promise<void>;
-  execute: (input: DurableRequestInput) => Promise<string>;
+  enqueue: (input: RuntimeRequestInput) => Promise<void>;
+  execute: (input: RuntimeRequestInput) => Promise<string>;
   close: () => Promise<void>;
   closed: Harness['closed'];
-}
-
-/** Finds or creates a native conversation for an existing Eddo chat identity. */
-async function getConversation(
-  harness: Harness,
-  options: ResolvedRuntimeOptions,
-  externalId: string,
-): Promise<Conversation> {
-  const mapping = await harness.snapshot(ConversationMap, context);
-  const existing = mapping?.conversations[externalId];
-  if (existing !== undefined) {
-    const conversation = await harness.conversation(existing, context);
-    if (!conversation) throw new Error('Durable conversation mapping is invalid');
-    return conversation;
-  }
-  // Admission is serialized by the runtime, so concurrent first messages cannot fork the mapping.
-  return harness.createConversation(
-    {
-      ownership: { kind: 'ownerless' },
-      agent: { model: options.model, thinkingLevel: options.thinkingLevel },
-      init: async (tx, conversation) => {
-        (await tx.doc(ConversationMap)).conversations[externalId] = conversation;
-      },
-    },
-    context,
-  );
 }
 
 /** Builds the native MCP tools and the persisted request task definition. */
@@ -123,7 +95,7 @@ async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> 
     options.storage,
     {
       models: modelsWithTelemetry(modelsWithOptions(options.models, options.generation), {
-        'user.id': String(options.telegramId),
+        'user.id': options.telegramId === undefined ? options.username : String(options.telegramId),
       }),
       registry: createRuntimeRegistry({ ...options, writeContext }),
       onReport: options.onReport,
@@ -148,33 +120,7 @@ async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> 
 export async function openDurableRuntime(options: DurableRuntimeOptions): Promise<DurableRuntime> {
   const configured = resolveRuntimeOptions(options);
   const harness = await createHarness(configured);
-  let admission = Promise.resolve();
-  const admit = async (input: DurableRequestInput): Promise<TaskId<string>> => {
-    if (input.telegramId !== options.telegramId || input.chatId !== options.telegramId) {
-      throw new Error('Durable request does not match the journal owner');
-    }
-    const previous = await harness.snapshot(RequestMap, context);
-    if (previous?.tasks[input.requestId] !== undefined) return previous.tasks[input.requestId];
-    const conversation = await getConversation(harness, configured, input.conversationId);
-    if (options.legacyHistory)
-      await ensureLegacyHistory(conversation, input.conversationId, options.legacyHistory);
-    return conversation.commit(async (tx) => {
-      const taskId = await tx.createTask(createRequestTask(options), input, {
-        ownership: { kind: 'conversation' },
-        background: true,
-      });
-      (await tx.doc(RequestMap)).tasks[input.requestId] = taskId;
-      return taskId;
-    }, context);
-  };
-  const submit = (input: DurableRequestInput): Promise<TaskId<string>> => {
-    const pending = admission.then(() => admit(input));
-    admission = pending.then(
-      () => undefined,
-      () => undefined,
-    );
-    return pending;
-  };
+  const submit = createRuntimeAdmission(harness, configured);
   harness.resume();
   return {
     closed: harness.closed,
