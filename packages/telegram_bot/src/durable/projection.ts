@@ -1,3 +1,5 @@
+import { assistantRequest, requestChannelMetadata } from '@eddo/assistant-server/request_channel';
+import type { RuntimeRequestInput } from '@eddo/assistant-server/state';
 import {
   createAssistantConversationDatabase,
   createEnv,
@@ -11,8 +13,6 @@ import type {
 } from '@eddo/core-shared';
 import { createHash } from 'node:crypto';
 import { couchRequest, createCouchEndpoint, type CouchEndpoint } from './couch.js';
-import { assistantRequest, requestChannelMetadata } from './request_channel.js';
-import type { RuntimeRequestInput } from './state.js';
 
 interface ProjectionOptions {
   username: string;

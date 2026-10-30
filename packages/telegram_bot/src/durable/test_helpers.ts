@@ -1,9 +1,9 @@
 import { createModels } from '@earendil-works/pi-ai/models';
 import { fauxProvider } from '@earendil-works/pi-ai/providers/faux';
+import type { DurableRequestInput } from '@eddo/assistant-server/state';
 import { CouchDbStorage, type CouchDatabase, type CouchDocument } from 'pi-durable-couchdb';
 import { vi } from 'vitest';
 import type { DurableRuntimeOptions } from './runtime.js';
-import type { DurableRequestInput } from './state.js';
 
 /** Keeps journal documents across Harness instances with revision-checked publication. */
 export function createJournalDatabase(): CouchDatabase {

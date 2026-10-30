@@ -12,6 +12,7 @@ This guide provides detailed technical information for developing Eddo, a GTD-in
 - **`packages/core-shared`**: Shared types, utilities, and data models
 - **`packages/core-server`**: Server-side database and configuration utilities
 - **`packages/core-client`**: Browser configuration
+- **`packages/assistant-server`**: [Shared Pi Durable runtime](packages/assistant-server/README.md) with host-injected channel adapters
 - **`packages/telegram_bot`**: Telegram assistant using Pi Durable and configurable model providers
 - **`packages/setup`**: Setup wizard and environment checks
 - **`packages/chat-agent`**: Bundled Pi skills and extensions

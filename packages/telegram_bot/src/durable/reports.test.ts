@@ -1,7 +1,8 @@
 import { fauxAssistantMessage, fauxToolCall } from '@earendil-works/pi-ai/providers/faux';
+import type { DurableRuntime } from '@eddo/assistant-server/runtime';
+import type { DurableRequestInput } from '@eddo/assistant-server/state';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { openDurableRuntime, type DurableRuntime } from './runtime.js';
-import type { DurableRequestInput } from './state.js';
+import { openDurableRuntime } from './runtime.js';
 import { createRuntimeFixture, createTestInput, deferred } from './test_helpers.js';
 
 vi.mock('../utils/user-lookup.js', () => ({

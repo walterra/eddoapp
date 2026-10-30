@@ -7,6 +7,8 @@ import {
   type ToolExecutionApi,
   type ToolRegistration,
 } from '@earendil-works/pi-durable';
+import { parseAssistantRequest } from '@eddo/assistant-server/request_schema';
+import { RunBudget, type ReportType, type RuntimeRequestInput } from '@eddo/assistant-server/state';
 import type { AssistantRequest } from '@eddo/core-shared';
 import type { MCPClient, MCPTool } from '../mcp/client.js';
 import type { MCPUserContext } from '../mcp/user-context.js';
@@ -14,8 +16,6 @@ import { lookupUserByTelegramId } from '../utils/user-lookup.js';
 import { authorizeAssistantRequest } from './account_authorization.js';
 import { mutationContext } from './mcp_operation.js';
 import { notifyProgress, type ProgressOptions } from './progress.js';
-import { parseAssistantRequest } from './request_schema.js';
-import { RunBudget, type ReportType, type RuntimeRequestInput } from './state.js';
 import { invokeMcpTool } from './tool_execution.js';
 
 const REPLAY_SAFE_TOOLS = new Set([

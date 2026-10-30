@@ -1,9 +1,10 @@
+import { assistantRequest } from '@eddo/assistant-server/request_channel';
+import type { DurableRuntime } from '@eddo/assistant-server/runtime';
+import type { ReportType } from '@eddo/assistant-server/state';
 import type { AssistantRequest } from '@eddo/core-shared';
 import { authorizeAssistantRequest, resolveAssistantAccount } from './account_authorization.js';
-import { assistantRequest } from './request_channel.js';
-import type { RequestDependencies } from './request_task.js';
-import { openDurableRuntime, type DurableRuntime, type DurableRuntimeOptions } from './runtime.js';
-import type { ReportType } from './state.js';
+import type { RequestDependencies } from './request_dependencies.js';
+import { openDurableRuntime, type DurableRuntimeOptions } from './runtime.js';
 
 /** Supplies account-based execution with channel-specific side effects injected by the host. */
 export interface AssistantRuntimeOptions extends Omit<

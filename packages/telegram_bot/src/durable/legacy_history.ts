@@ -1,5 +1,3 @@
-import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
-import type { Conversation } from '@earendil-works/pi-durable';
 import { createAssistantConversationDatabase, createEnv } from '@eddo/core-server';
 import type { AssistantConversationMessageDoc } from '@eddo/core-shared';
 import { selectLegacyMessages } from './legacy_archive.js';
@@ -53,31 +51,4 @@ export async function loadLegacyArchive(
 /** Builds a bounded preview while preserving full text in the retrievable archive. */
 export async function loadLegacyHistory(username: string, conversationId: string): Promise<string> {
   return formatLegacyHistory(await loadLegacyArchive(username, conversationId));
-}
-
-/** Imports once through a deduplicated passive write, including already-created native conversations. */
-export async function ensureLegacyHistory(
-  conversation: Conversation,
-  externalId: string,
-  load: (conversationId: string) => Promise<string>,
-): Promise<void> {
-  const requestId = `eddo:legacy-history:${externalId}`;
-  const previous = await conversation.commit(
-    (tx) => tx.submissionByRequest(conversation.id, requestId),
-    context,
-  );
-  if (previous) return;
-  const content = await load(externalId);
-  await conversation.submit(
-    {
-      type: 'write',
-      requestId,
-      entry: {
-        kind: 'eddo.legacy-history',
-        data: { externalId, hasHistory: Boolean(content) },
-        ...(content ? { model: [{ role: 'user' as const, content, timestamp: Date.now() }] } : {}),
-      },
-    },
-    context,
-  );
 }

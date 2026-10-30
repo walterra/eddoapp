@@ -1,7 +1,7 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import { createRegistry, defineDoc, Harness } from '@earendil-works/pi-durable';
+import { bindRuntimeOwner } from '@eddo/assistant-server/ownership';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { bindRuntimeOwner } from './ownership.js';
 import { createRuntimeFixture } from './test_helpers.js';
 
 const harnesses: Harness[] = [];

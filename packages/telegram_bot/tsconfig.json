@@ -18,6 +18,7 @@
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "tests"],
   "references": [
+    { "path": "../assistant-server" },
     {
       "path": "../core-shared"
     },

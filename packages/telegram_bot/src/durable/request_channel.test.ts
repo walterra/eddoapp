@@ -1,5 +1,8 @@
+import {
+  normalizeTelegramRequest,
+  requestChannelMetadata,
+} from '@eddo/assistant-server/request_channel';
 import { describe, expect, it } from 'vitest';
-import { normalizeTelegramRequest, requestChannelMetadata } from './request_channel.js';
 import { createTestInput } from './test_helpers.js';
 
 describe('assistant request channel boundary', () => {

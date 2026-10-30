@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/*.test.ts"],
+  "references": [
+    {
+      "path": "../core-shared"
+    }
+  ]
+}

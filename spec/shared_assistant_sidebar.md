@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: step 2 shared runtime integration implemented. Public web admission remains disabled.
+Status: step 2 complete; shared runtime extracted into `@eddo/assistant-server`. Public web admission remains disabled.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -106,11 +106,11 @@ Follow [Durable Telegram operations](durable_telegram_operations.md) for current
 Pause after each checkpoint for user confirmation. Report changed files, checks, and a suggested commit message; never commit automatically.
 
 - [x] 1. Inspect sidebar integration and reusable assistant-ui components; record boundaries.
-- [ ] 2. Generalize Durable identity, channel contracts, and runtime/channel adapters with compatibility tests.
+- [x] 2. Generalize Durable identity, channel contracts, and runtime/channel adapters with compatibility tests.
   - [x] 2a. Add account-based request contracts, legacy Telegram normalization, and channel-neutral history projection.
   - [x] 2b. Add account-based journal ownership and fresh authorization APIs while preserving existing Telegram identity guards.
   - [x] 2c. Integrate account authorization, channel-aware delivery, and shared Harness admission with compatibility tests.
-  - [ ] 2d. Extract the verified shared runtime into a server package without importing Telegram host code.
+  - [x] 2d. Extract the verified shared runtime into a server package without importing Telegram host code.
 
 Step 2a preserves persisted request inputs, task names, owner records, and Telegram projection behavior.
 Its shared request contract supports web-only account identity without placeholder Telegram identifiers.
@@ -129,7 +129,14 @@ Manual report printing remains injected and claimed before its external effect.
 Web requests use account-scoped identifiers and atomic payload-hash receipts; changed payloads cannot reuse accepted request IDs.
 Retries retain original work across admission timing and active-conversation changes.
 Scripted real-Harness tests cover web-only tools, cross-channel context, credential revocation, relinking rejection, and legacy delivery recovery.
-The shared runtime remains in the Telegram package until step 2d completes its workspace extraction.
+Step 2d moves Harness execution, state, admission, native legacy-context import, and model configuration into `@eddo/assistant-server`.
+The shared runtime accepts injected reply preparation, delivery, authorization, and tool extensions.
+Telegram formatting, retries, MCP transport, account-registry access, printer access, and polling remain in the host package.
+Consumers import shared symbols directly from `@eddo/assistant-server`; obsolete Telegram re-export modules are removed.
+The shared package retains a type-only `grammy` dependency for legacy checkpoint entities; it never imports Telegram application code.
+Standalone real-Harness tests exercise execution and journal reopening without importing a channel host.
+The package participates in workspace builds, default unit tests, and synchronized versioning.
+See the [assistant server guide](../packages/assistant-server/README.md) for its execution boundary.
 No public web endpoint or second journal owner exists yet.
 
 Remaining checkpoints:

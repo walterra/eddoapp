@@ -1,8 +1,9 @@
 import { fauxAssistantMessage, fauxToolCall } from '@earendil-works/pi-ai/providers/faux';
+import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import type { AssistantRequest } from '@eddo/core-shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { openAssistantRuntime } from './assistant_runtime.js';
-import { openDurableRuntime, type DurableRuntime } from './runtime.js';
+import { openDurableRuntime } from './runtime.js';
 import { createRuntimeFixture, createTestInput, deferred } from './test_helpers.js';
 
 const registry = vi.hoisted(() => ({ find: vi.fn() }));

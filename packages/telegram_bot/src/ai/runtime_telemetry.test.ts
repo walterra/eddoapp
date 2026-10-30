@@ -4,13 +4,13 @@ import {
   fauxProvider,
   fauxToolCall,
 } from '@earendil-works/pi-ai/providers/faux';
+import { modelsWithTelemetry } from '@eddo/assistant-server/models_with_telemetry';
 import type { Attributes, Span } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { openDurableRuntime } from '../durable/runtime.js';
 import { createRuntimeFixture, createTestInput, deferred } from '../durable/test_helpers.js';
 import { invokeMcpTool } from '../durable/tool_execution.js';
-import { modelsWithTelemetry } from './models_with_telemetry.js';
 
 interface RecordedSpan {
   name: string;

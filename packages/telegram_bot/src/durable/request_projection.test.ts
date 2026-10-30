@@ -1,10 +1,10 @@
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context';
 import type { NextTaskState } from '@earendil-works/pi-durable';
+import type { RequestRuntime } from '@eddo/assistant-server/request_generation';
+import { projectRequest } from '@eddo/assistant-server/request_projection';
+import type { RequestCheckpoint } from '@eddo/assistant-server/state';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { RequestRuntime } from './request_generation.js';
-import { projectRequest } from './request_projection.js';
-import type { RequestDependencies } from './request_task.js';
-import type { RequestCheckpoint } from './state.js';
+import type { RequestDependencies } from './request_dependencies.js';
 import { createTestInput } from './test_helpers.js';
 
 type ProjectionTask = Parameters<typeof projectRequest>[0];

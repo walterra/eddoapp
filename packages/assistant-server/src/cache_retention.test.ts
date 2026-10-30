@@ -1,6 +1,6 @@
 import { fauxProvider } from '@earendil-works/pi-ai/providers/faux';
 import { describe, expect, it } from 'vitest';
-import { boundedLlmOptions, parseLlmSettings } from './llm-options.js';
+import { boundedLlmOptions, parseLlmSettings } from './llm_options.js';
 
 const model = fauxProvider({ models: [{ id: 'test', maxTokens: 8192 }] }).getModel();
 

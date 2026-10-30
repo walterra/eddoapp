@@ -1,22 +1,32 @@
 import type { Context } from '@earendil-works/chord';
 import { defineTask, type RunningTask } from '@earendil-works/pi-durable';
+import type { PreparedReply } from './reply.js';
 import { correctReportContext, type ContextWriter } from './report_context.js';
-import { prepareReply } from './report_delivery.js';
-import { deliverAnswer } from './request_delivery.js';
 import { generateAnswer, type RequestRuntime } from './request_generation.js';
 import { projectRequest } from './request_projection.js';
 import type { ReportType, RequestCheckpoint, RuntimeRequestInput } from './state.js';
-import type { TelegramSendOptions } from './telegram_send.js';
-export { telegramChunk } from './request_delivery.js';
 
 export interface RequestDependencies {
   authorize: (input: RuntimeRequestInput) => Promise<unknown>;
-  send: (chatId: number, text: string, options?: TelegramSendOptions) => Promise<unknown>;
+  deliver: RequestDelivery;
+  prepareReply: (input: RuntimeRequestInput, answer: string) => PreparedReply;
   project: (input: RuntimeRequestInput, answer: string) => Promise<void>;
   print?: (input: RuntimeRequestInput, answer: string, reportType?: ReportType) => Promise<void>;
   reportRetryDelayMs?: number;
   writeContext?: ContextWriter;
 }
+
+export type RequestDeliveryTask = RunningTask<
+  RuntimeRequestInput,
+  Extract<RequestCheckpoint, { phase: 'deliver' }>,
+  string
+>;
+
+export type RequestDelivery = (
+  task: RequestDeliveryTask,
+  runtime: RequestRuntime,
+  context: Context,
+) => Promise<void>;
 
 type GenerateTask = RunningTask<
   RuntimeRequestInput,
@@ -60,7 +70,7 @@ async function generateReply(
     return;
   }
   if (result.failure) runtime.report(new Error(result.failure));
-  const reply = prepareReply(task.input, result.answer);
+  const reply = dependencies.prepareReply(task.input, result.answer);
   await correctReportContext(
     { input: task.input, generated: result, reply, writeContext: dependencies.writeContext },
     runtime,
@@ -144,7 +154,7 @@ export function createRequestTask(
     phases: {
       generate: (task, runtime, context) => generateReply(task, runtime, context, dependencies),
       retry: (task, runtime, context) => retryGeneration(task, runtime, context),
-      deliver: (task, runtime, context) => deliverAnswer(task, runtime, context, dependencies),
+      deliver: (task, runtime, context) => dependencies.deliver(task, runtime, context),
       print: (task, runtime, context) => printAnswer(task, runtime, context, dependencies),
       project: (task, runtime, context) => projectRequest(task, runtime, context, dependencies),
     },

@@ -1,4 +1,4 @@
-import type { RuntimeRequestInput } from './state.js';
+import type { RuntimeRequestInput } from '@eddo/assistant-server/state';
 
 export const MAX_DELIVERY_FAILURES = 5;
 const RETRY_DELAY_MS = 30_000;

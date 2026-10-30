@@ -1,17 +1,13 @@
+import { renderReportHeading } from '@eddo/assistant-server/report_heading';
+import { assistantRequest } from '@eddo/assistant-server/request_channel';
+import type { ReportType, RuntimeRequestInput } from '@eddo/assistant-server/state';
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { UserRegistryEntry } from '@eddo/core-shared';
 import { BRIEFING_CONTENT_MARKER, RECAP_CONTENT_MARKER } from '../constants/briefing.js';
 import { printIfEnabled } from '../scheduler/helpers/printer.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
-import { renderReportHeading } from './report_heading.js';
-import { assistantRequest } from './request_channel.js';
-import type { ReportType, RuntimeRequestInput } from './state.js';
 
-export interface PreparedReply {
-  answer: string;
-  printable: boolean;
-  reportType?: ReportType;
-}
+import type { PreparedReply } from '@eddo/assistant-server/reply';
 
 /** Removes report transport markers while retaining the native answer in the conversation. */
 export function prepareReply(input: RuntimeRequestInput, answer: string): PreparedReply {

@@ -1,11 +1,11 @@
 import type { Context } from '@earendil-works/chord';
 import type { NextTaskState, RunningTask } from '@earendil-works/pi-durable';
+import { isWebRequest, telegramChatId } from '@eddo/assistant-server/request_channel';
+import type { RequestRuntime } from '@eddo/assistant-server/request_generation';
+import type { RequestCheckpoint, RuntimeRequestInput } from '@eddo/assistant-server/state';
 import type { MessageEntity } from 'grammy/types';
 import { deliveryDeadline, deliveryRetry, MAX_DELIVERY_FAILURES } from './delivery_policy.js';
-import { isWebRequest, telegramChatId } from './request_channel.js';
-import type { RequestRuntime } from './request_generation.js';
-import type { RequestDependencies } from './request_task.js';
-import type { RequestCheckpoint, RuntimeRequestInput } from './state.js';
+import type { RequestDependencies } from './request_dependencies.js';
 import { formatTelegramText, telegramChunkEntities } from './telegram_format.js';
 import type { TelegramSendOptions } from './telegram_send.js';
 

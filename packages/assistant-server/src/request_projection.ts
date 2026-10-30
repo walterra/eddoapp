@@ -16,7 +16,7 @@ export async function projectRequest(
   task: ProjectionTask,
   runtime: RequestRuntime,
   context: Context,
-  dependencies: RequestDependencies,
+  dependencies: Pick<RequestDependencies, 'authorize' | 'project'>,
 ): Promise<void> {
   await dependencies.authorize(task.input);
   const checkpoint = task.state.checkpoint;

@@ -1,7 +1,7 @@
 import type { Context } from '@earendil-works/chord';
 import type { Message } from '@earendil-works/pi-ai';
 import type { ConversationId, EntryRecord, SubmissionDraft } from '@earendil-works/pi-durable';
-import type { PreparedReply } from './report_delivery.js';
+import type { PreparedReply } from './reply.js';
 import type { GenerationResult, RequestRuntime } from './request_generation.js';
 import type { RuntimeRequestInput } from './state.js';
 

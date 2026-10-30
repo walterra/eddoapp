@@ -10,6 +10,7 @@
   "fixed": [
     [
       "eddo-app",
+      "@eddo/assistant-server",
       "@eddo/core-client",
       "@eddo/core-server",
       "@eddo/core-shared",

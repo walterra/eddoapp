@@ -1,6 +1,6 @@
 import { defineDoc, type ConversationId, type TaskId } from '@earendil-works/pi-durable';
 import type { AssistantRequest } from '@eddo/core-shared';
-import type { TelegramText } from './telegram_format.js';
+import type { TelegramText } from './delivery_state.js';
 
 export const ConversationMap = defineDoc({
   kind: 'eddo.conversations',

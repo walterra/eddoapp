@@ -1,10 +1,12 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import { builtinModels } from '@earendil-works/pi-ai/providers/all';
+import { parseLlmSettings } from '@eddo/assistant-server/llm_options';
+import type { DurableRuntime } from '@eddo/assistant-server/runtime';
+import type { DurableRequestInput, ReportType } from '@eddo/assistant-server/state';
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { Bot } from 'grammy';
 import { openCouchDbStorage } from 'pi-durable-couchdb';
 import { resolveConfiguredModel } from '../ai/llm-model-resolution.js';
-import { parseLlmSettings } from '../ai/llm-options.js';
 import type { BotContext } from '../bot/bot.js';
 import { getMCPClient, scopeMCPIntegration } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
@@ -16,8 +18,7 @@ import { loadMemoryContext } from './memory_context.js';
 import { projectDurableExchange } from './projection.js';
 import { buildDurablePrompt } from './prompt.js';
 import { printDurableReport } from './report_delivery.js';
-import type { DurableRuntime, DurableRuntimeOptions } from './runtime.js';
-import type { DurableRequestInput, ReportType } from './state.js';
+import type { DurableRuntimeOptions } from './runtime.js';
 import { sendTelegramText } from './telegram_send.js';
 import { resolveDurableUser } from './tools.js';
 

@@ -1,5 +1,5 @@
 import type { Models } from '@earendil-works/pi-ai';
-import { boundedLlmOptions, type LlmGenerationSettings } from './llm-options.js';
+import { boundedLlmOptions, type LlmGenerationSettings } from './llm_options.js';
 
 /** Applies output limits at Durable's streamSimple boundary, including automatic compaction. */
 export function modelsWithOptions(models: Models, settings: LlmGenerationSettings): Models {

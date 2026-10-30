@@ -3,6 +3,7 @@
 ## Supported execution boundary
 
 Use Pi Durable as the sole Telegram execution authority. Keep application chat projections separate from execution journals.
+The [shared assistant runtime](../packages/assistant-server/README.md) owns Harness execution; the Telegram host supplies channel adapters.
 
 | Capability         | Supported behavior                                                                                     |
 | ------------------ | ------------------------------------------------------------------------------------------------------ |

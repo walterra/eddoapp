@@ -1,11 +1,10 @@
 import type { TSchema } from '@earendil-works/pi-ai';
 import { defineExtension, defineTool, section } from '@earendil-works/pi-durable';
+import { ConversationMap, type ReportType } from '@eddo/assistant-server/state';
 import type { AssistantConversationMessageDoc, AssistantRequest } from '@eddo/core-shared';
 import { z } from 'zod';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { readLegacyArchive } from './legacy_archive.js';
-import type { ReportType } from './state.js';
-import { ConversationMap } from './state.js';
 import { authorizeToolPermission, consumeToolBudget } from './tools.js';
 
 const ARCHIVE_PARAMETERS = {
