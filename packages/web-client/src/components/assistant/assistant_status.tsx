@@ -102,13 +102,41 @@ function PendingNotice({ state, session }: PendingNoticeProps) {
   );
 }
 
+interface SharedNoticeProps {
+  state: AssistantSnapshot;
+}
+function SharedNotice({ state }: SharedNoticeProps) {
+  const requests = (state.sharedRequests ?? []).filter(
+    (request) => request.requestId !== state.pending?.receipt?.requestId,
+  );
+  if (!requests.length && !state.sharedHasMore) return null;
+  const phases = [...new Set(requests.map((request) => states[request.status]))].join(' · ');
+  const earlier = requests.filter(
+    (request) => request.conversationId !== state.conversation?._id,
+  ).length;
+  return (
+    <div role="status">
+      {requests.length > 0 && (
+        <p>
+          {requests.length} shared request{requests.length === 1 ? '' : 's'} in progress.
+        </p>
+      )}
+      {requests.length > 0 && <p>{phases}</p>}
+      {earlier > 0 && <p>{earlier} in an earlier conversation.</p>}
+      {state.sharedHasMore && <p>Checking additional shared work…</p>}
+    </div>
+  );
+}
+
 /** Distinguishes unknown admission from failure without offering mutation replay after terminal outcomes. */
 export function AssistantStatus({ state, session, onSignIn }: AssistantStatusProps) {
-  if (!state.error && !state.pending) return null;
+  if (!state.error && !state.pending && !state.sharedRequests?.length && !state.sharedHasMore)
+    return null;
   return (
     <div className="space-y-2 px-3 py-2 text-xs text-neutral-600 dark:text-neutral-300">
       {state.error && <ErrorNotice error={state.error} onSignIn={onSignIn} session={session} />}
       {state.pending && <PendingNotice session={session} state={state} />}
+      <SharedNotice state={state} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import type { AssistantConversationMessageDoc, AssistantRequest } from '@eddo/core-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { projectAssistantExchange } from './projection.js';
+import { projectAcceptedMessage, projectAssistantExchange } from './projection.js';
 
 const fixture = vi.hoisted(() => ({ database: vi.fn(), databaseName: vi.fn() }));
 vi.mock('@eddo/core-server', () => ({
@@ -46,6 +46,23 @@ function installTransport(): Map<string, AssistantConversationMessageDoc> {
 }
 
 describe('channel-neutral assistant projection', () => {
+  it('reconciles admission, retries, and completion without duplicate message identities or statistics', async () => {
+    const messages = installTransport();
+    const request = createWebRequest();
+    await projectAcceptedMessage(request);
+    await projectAcceptedMessage(request);
+    expect([...messages.values()]).toHaveLength(1);
+    await projectAssistantExchange({ request, answer: 'Done' });
+    await projectAssistantExchange({ request, answer: 'Done' });
+    expect([...messages.values()].map((message) => [message.role, message.sequence])).toEqual([
+      ['user', 1],
+      ['assistant', 2],
+    ]);
+    await expect(projectAcceptedMessage({ ...request, text: 'Different payload' })).rejects.toThrow(
+      'conflicts',
+    );
+    expect(messages.size).toBe(2);
+  });
   it('routes web history by account without Telegram identifiers', async () => {
     const messages = installTransport();
     const request = createWebRequest();

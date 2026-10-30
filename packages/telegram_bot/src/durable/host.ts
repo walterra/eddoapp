@@ -6,7 +6,7 @@ import { parseLlmSettings } from '@eddo/assistant-server/llm_options';
 import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import type { DurableRequestInput, ReportType } from '@eddo/assistant-server/state';
 import { createEnv, createUserRegistry } from '@eddo/core-server';
-import type { AssistantRequestStatus } from '@eddo/core-shared';
+import type { AssistantPendingRequests, AssistantRequestStatus } from '@eddo/core-shared';
 import type { Bot } from 'grammy';
 import type { BotContext } from '../bot/bot.js';
 import { logger } from '../utils/logger.js';
@@ -102,6 +102,12 @@ async function activeConversationId(username: string): Promise<string> {
   await database.ensureDatabase();
   await database.setupDesignDocuments();
   return (await database.getOrCreateActive())._id;
+}
+
+export async function getWebAssistantPendingRequests(
+  username: string,
+): Promise<AssistantPendingRequests> {
+  return webOperations.pending({ username });
 }
 
 const webOperations = createWebHostOperations({

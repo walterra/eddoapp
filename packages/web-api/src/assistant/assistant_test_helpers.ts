@@ -20,7 +20,11 @@ export const emptyHistory: AssistantHistoryPage = {
 export function assistantServiceFixture(): AssistantService {
   return {
     authorize: vi.fn().mockResolvedValue(undefined),
-    host: { admit: vi.fn().mockResolvedValue(receipt), status: vi.fn().mockResolvedValue(receipt) },
+    host: {
+      pending: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
+      admit: vi.fn().mockResolvedValue(receipt),
+      status: vi.fn().mockResolvedValue(receipt),
+    },
     store: {
       history: vi.fn().mockResolvedValue(emptyHistory),
       watermark: vi.fn().mockResolvedValue('0'),

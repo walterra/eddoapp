@@ -1,6 +1,7 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import type { Conversation, Harness, TaskId } from '@earendil-works/pi-durable';
 import { ensureLegacyHistory } from './legacy_context.js';
+import { PendingRequests } from './pending_requests.js';
 import { assistantRequest } from './request_channel.js';
 import { AssistantRequestConflictError, requestPayloadHash } from './request_identity.js';
 import { parseAssistantRequest } from './request_schema.js';
@@ -76,6 +77,7 @@ async function admit(
       background: true,
     });
     (await tx.doc(RequestMap)).tasks[input.requestId] = taskId;
+    (await tx.doc(PendingRequests)).ids[input.requestId] = true;
     if (hash) (await tx.doc(RequestPayloads)).hashes[input.requestId] = hash;
     return taskId;
   }, context);

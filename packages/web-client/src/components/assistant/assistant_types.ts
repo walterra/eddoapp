@@ -45,6 +45,8 @@ export interface AssistantSnapshot {
   submitting: boolean;
   connection: AssistantConnection;
   pending: AssistantPendingRequest | null;
+  sharedRequests?: AssistantRequestStatus[];
+  sharedHasMore?: boolean;
   error: AssistantErrorCode | null;
 }
 export interface AssistantServerEvent {

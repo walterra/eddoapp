@@ -1,4 +1,4 @@
-import type { AssistantRequestStatus } from '@eddo/core-shared';
+import type { AssistantPendingRequests, AssistantRequestStatus } from '@eddo/core-shared';
 import { z } from 'zod';
 
 export const MAX_INTERNAL_BODY_BYTES = 32_768;
@@ -22,11 +22,15 @@ export const internalStatusSchema = z
   })
   .strict();
 
+export const internalPendingSchema = z.object({ username }).strict();
+export type InternalPendingQuery = z.infer<typeof internalPendingSchema>;
+
 export type InternalAdmission = z.infer<typeof internalAdmissionSchema>;
 export type InternalStatusQuery = z.infer<typeof internalStatusSchema>;
 export type InternalErrorCode = 'forbidden' | 'unavailable' | 'request_conflict';
 
 export interface InternalAssistantOperations {
+  pending: (input: InternalPendingQuery) => Promise<AssistantPendingRequests>;
   admit: (input: InternalAdmission) => Promise<AssistantRequestStatus>;
   status: (input: InternalStatusQuery) => Promise<AssistantRequestStatus | null>;
 }

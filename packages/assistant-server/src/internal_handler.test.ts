@@ -18,6 +18,7 @@ function fixture() {
   };
   const options = {
     token,
+    pending: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
     admit: vi.fn().mockResolvedValue(status),
     status: vi.fn().mockResolvedValue(status),
   };
@@ -33,6 +34,19 @@ function request(path = 'admit', body: unknown = input, secret = token): Request
 }
 
 describe('internal assistant transport', () => {
+  it('bounds pending discovery to an authenticated account-only query', async () => {
+    const test = fixture();
+    expect((await test.handler(request('pending', { username: 'alice' }, 'wrong'))).status).toBe(
+      401,
+    );
+    expect(test.options.pending).not.toHaveBeenCalled();
+    expect(
+      (await test.handler(request('pending', { username: 'alice', requestId: 'foreign' }))).status,
+    ).toBe(400);
+    const response = await test.handler(request('pending', { username: 'alice' }));
+    expect(await response.json()).toEqual({ requests: [], hasMore: false });
+    expect(test.options.pending).toHaveBeenCalledExactlyOnceWith({ username: 'alice' });
+  });
   it.each(['', 'wrong-token'])(
     'rejects unauthorized requests before admission: %s',
     async (secret) => {

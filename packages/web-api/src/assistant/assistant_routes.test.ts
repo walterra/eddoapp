@@ -31,6 +31,16 @@ async function fixture() {
 }
 
 describe('authenticated assistant routes', () => {
+  it('discovers pending work only for the JWT account without admitting requests', async () => {
+    const test = await fixture();
+    const page = { requests: [receipt], hasMore: false };
+    vi.mocked(test.service.host.pending).mockResolvedValue(page);
+    const response = await test.app.request('/api/assistant/requests', { headers: test.headers });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(page);
+    expect(test.service.host.pending).toHaveBeenCalledWith('alice', expect.any(AbortSignal));
+    expect(test.service.host.admit).not.toHaveBeenCalled();
+  });
   it('rejects missing JWTs and query-token authentication', async () => {
     const test = await fixture();
     const missing = await test.app.request('/api/assistant/conversation');

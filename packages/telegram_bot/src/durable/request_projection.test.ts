@@ -1,5 +1,5 @@
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context';
-import type { NextTaskState } from '@earendil-works/pi-durable';
+import type { NextTaskState, Tx } from '@earendil-works/pi-durable';
 import type { RequestRuntime } from '@eddo/assistant-server/request_generation';
 import { projectRequest } from '@eddo/assistant-server/request_projection';
 import type { RequestCheckpoint } from '@eddo/assistant-server/state';
@@ -19,8 +19,10 @@ function fixture(overrides: Partial<ProjectionCheckpoint> = {}) {
     signal: new AbortController().signal,
     report: vi.fn(),
     sleep: vi.fn().mockResolvedValue(undefined),
-    commit: async (update: () => ProjectionState) => {
-      states.push(update());
+    commit: async (update: Parameters<RequestRuntime['commit']>[0]) => {
+      const tx = { doc: vi.fn().mockResolvedValue({ ids: {} }) } as unknown as Tx;
+      const state = await update(tx, task);
+      if (state) states.push(state);
     },
   } as unknown as RequestRuntime;
   const dependencies: RequestDependencies = {

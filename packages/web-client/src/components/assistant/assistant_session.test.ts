@@ -23,6 +23,24 @@ async function ready(username = 'alice') {
 }
 
 describe('shared assistant browser session', () => {
+  it('recovers shared activity without local storage or submitting a replacement request', async () => {
+    const test = await ready();
+    test.streams[0].onEvent({
+      event: 'pending-requests',
+      data: { requests: [test.receipt], hasMore: false },
+    });
+    expect(test.session.getSnapshot().sharedRequests).toEqual([test.receipt]);
+    expect(test.session.getSnapshot().pending).toBeNull();
+    vi.mocked(test.client.history).mockResolvedValue({
+      ...historyPage(),
+      messages: [projectedMessage('user', 1), projectedMessage('assistant', 2)],
+    });
+    test.streams[0].onEvent({ event: 'pending-requests', data: { requests: [], hasMore: false } });
+    await vi.waitFor(() => expect(test.session.getSnapshot().messages).toHaveLength(2));
+    expect(test.store.read()).toBeNull();
+    expect(test.uuid).not.toHaveBeenCalled();
+    expect(test.client.admit).not.toHaveBeenCalled();
+  });
   it('persists the UUID before admission and never starts sandbox lifecycle operations', async () => {
     const test = await ready();
     vi.mocked(test.client.admit).mockImplementation(async (pending) => {

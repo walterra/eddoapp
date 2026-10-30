@@ -29,12 +29,30 @@ async function access(
   signal.throwIfAborted();
 }
 
+async function pendingStatuses(
+  service: AssistantService,
+  identity: AssistantIdentity,
+  options: AssistantStreamOptions,
+  sink: AssistantEventSink,
+): Promise<void> {
+  try {
+    const pending = await service.host.pending(identity.username, options.signal);
+    await access(service, identity, options.signal);
+    await sink.send('pending-requests', pending);
+  } catch (error) {
+    if (!(error instanceof AssistantApiError) || error.status !== 503) throw error;
+    await access(service, identity, options.signal);
+    await sink.send('unavailable', { error: 'unavailable' });
+  }
+}
+
 async function statuses(
   service: AssistantService,
   identity: AssistantIdentity,
   options: AssistantStreamOptions,
   sink: AssistantEventSink,
 ): Promise<void> {
+  await pendingStatuses(service, identity, options, sink);
   for (const requestId of options.requestIds) {
     try {
       const status = await service.host.status(identity.username, requestId, options.signal);

@@ -2,6 +2,8 @@ import type { Context } from '@earendil-works/chord';
 import { defineTask, type RunningTask } from '@earendil-works/pi-durable';
 import type { PreparedReply } from './reply.js';
 import { correctReportContext, type ContextWriter } from './report_context.js';
+import { projectAcceptedRequest } from './request_admission_projection.js';
+import { commitRequestState } from './request_commit.js';
 import { generateAnswer, type RequestRuntime } from './request_generation.js';
 import { projectRequest } from './request_projection.js';
 import type { ReportType, RequestCheckpoint, RuntimeRequestInput } from './state.js';
@@ -11,6 +13,7 @@ export interface RequestDependencies {
   deliver: RequestDelivery;
   prepareReply: (input: RuntimeRequestInput, answer: string) => PreparedReply;
   project: (input: RuntimeRequestInput, answer: string) => Promise<void>;
+  projectAccepted?: (input: RuntimeRequestInput) => Promise<void>;
   print?: (input: RuntimeRequestInput, answer: string, reportType?: ReportType) => Promise<void>;
   reportRetryDelayMs?: number;
   writeContext?: ContextWriter;
@@ -44,6 +47,21 @@ type PrintTask = RunningTask<
   string
 >;
 
+async function generateRequest(
+  task: GenerateTask,
+  runtime: RequestRuntime,
+  context: Context,
+  dependencies: RequestDependencies,
+): Promise<void> {
+  if (task.state.checkpoint.retryAt) await runtime.sleep(task.state.checkpoint.retryAt, context);
+  await dependencies.authorize(task.input);
+  if (dependencies.projectAccepted && !task.state.checkpoint.accepted) {
+    await projectAcceptedRequest(task, runtime, context, dependencies.projectAccepted);
+    return;
+  }
+  await generateReply(task, runtime, context, dependencies);
+}
+
 /** Retries only read-only scheduled generation, with stable attempt IDs and a bounded retry count. */
 async function generateReply(
   task: GenerateTask,
@@ -51,7 +69,6 @@ async function generateReply(
   context: Context,
   dependencies: RequestDependencies,
 ): Promise<void> {
-  await dependencies.authorize(task.input);
   const attempt = task.state.checkpoint.attempt ?? 0;
   const input = attempt
     ? { ...task.input, requestId: `${task.input.requestId}:retry:${attempt}` }
@@ -152,14 +169,18 @@ export function createRequestTask(
     version: 1,
     initial: () => ({ phase: 'generate' }),
     phases: {
-      generate: (task, runtime, context) => generateReply(task, runtime, context, dependencies),
+      generate: (task, runtime, context) => generateRequest(task, runtime, context, dependencies),
       retry: (task, runtime, context) => retryGeneration(task, runtime, context),
       deliver: (task, runtime, context) => dependencies.deliver(task, runtime, context),
       print: (task, runtime, context) => printAnswer(task, runtime, context, dependencies),
       project: (task, runtime, context) => projectRequest(task, runtime, context, dependencies),
     },
     abort: async (_task, runtime, context) => {
-      await runtime.commit(() => ({ status: 'terminal', outcome: { status: 'aborted' } }), context);
+      await commitRequestState(
+        runtime,
+        () => ({ status: 'terminal', outcome: { status: 'aborted' } }),
+        context,
+      );
     },
   });
 }

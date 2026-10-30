@@ -59,6 +59,14 @@ export function createWebHostOperations(
   dependencies: WebHostDependencies,
 ): InternalAssistantOperations {
   return {
+    pending: async (input) => {
+      try {
+        await resolveAssistantAccount({ username: input.username });
+        return await (await dependencies.runtime(input.username)).getPendingRequests();
+      } catch (error) {
+        return serviceError(error);
+      }
+    },
     admit: async (input) => {
       try {
         return await admit(dependencies, input);

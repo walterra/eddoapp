@@ -1,10 +1,12 @@
 import type { Context } from '@earendil-works/chord';
 import type { NextTaskState, RunningTask } from '@earendil-works/pi-durable';
 import { isWebRequest, telegramChatId } from '@eddo/assistant-server/request_channel';
+import { commitRequestState } from '@eddo/assistant-server/request_commit';
 import type { RequestRuntime } from '@eddo/assistant-server/request_generation';
 import type { RequestCheckpoint, RuntimeRequestInput } from '@eddo/assistant-server/state';
 import type { MessageEntity } from 'grammy/types';
 import { deliveryDeadline, deliveryRetry, MAX_DELIVERY_FAILURES } from './delivery_policy.js';
+import { projectReplyBeforeDelivery } from './reply_projection.js';
 import type { RequestDependencies } from './request_dependencies.js';
 import { formatTelegramText, telegramChunkEntities } from './telegram_format.js';
 import type { TelegramSendOptions } from './telegram_send.js';
@@ -35,7 +37,8 @@ async function recordSendFailure(
   const checkpoint = task.state.checkpoint;
   const attempts = checkpoint.attempts + 1;
   const retry = deliveryRetry(error, attempts, deliveryDeadline(task.input));
-  await runtime.commit(
+  await commitRequestState(
+    runtime,
     () =>
       retry.failure
         ? failedDelivery(retry.failure)
@@ -104,8 +107,10 @@ export async function deliverAnswer(
     await runtime.commit(() => deliveryFinished(task), context);
     return;
   }
+  if (await projectReplyBeforeDelivery(task, runtime, context, dependencies)) return;
   if (Date.now() >= deliveryDeadline(task.input) || checkpoint.attempts >= MAX_DELIVERY_FAILURES) {
-    await runtime.commit(
+    await commitRequestState(
+      runtime,
       () => failedDelivery('Telegram delivery deadline or retry limit reached.'),
       context,
     );

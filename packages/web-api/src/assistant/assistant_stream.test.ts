@@ -27,6 +27,38 @@ function fixture() {
 }
 
 describe('durable assistant SSE replay', () => {
+  it('discovers other-channel work without browser-supplied IDs and revalidates before publishing it', async () => {
+    const test = fixture();
+    const page = {
+      requests: [
+        { requestId: 'telegram:bot:1', conversationId: 'active', status: 'working' as const },
+      ],
+      hasMore: false,
+    };
+    vi.mocked(test.service.host.pending).mockResolvedValue(page);
+    vi.mocked(test.service.store.changes).mockResolvedValue({ changes: [], lastSequence: '12' });
+    await runAssistantStream(
+      test.service,
+      test.identity,
+      { ...test.options, requestIds: [] },
+      test.sink,
+    );
+    expect(test.sent).toContainEqual({ event: 'pending-requests', data: page, id: undefined });
+    expect(test.service.host.status).not.toHaveBeenCalled();
+    test.controller = new AbortController();
+    test.sent.length = 0;
+    vi.mocked(test.service.host.pending).mockImplementationOnce(async () => {
+      vi.mocked(test.service.authorize).mockRejectedValue(new AssistantApiError(403, 'forbidden'));
+      return page;
+    });
+    await runAssistantStream(
+      test.service,
+      test.identity,
+      { ...test.options, signal: test.controller.signal },
+      test.sink,
+    );
+    expect(test.sent.some((event) => event.event === 'pending-requests')).toBe(false);
+  });
   it('resumes persisted changes and refreshes tracked request status without admitting work', async () => {
     const test = fixture();
     vi.mocked(test.service.store.changes).mockResolvedValueOnce({

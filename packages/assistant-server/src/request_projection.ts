@@ -1,5 +1,6 @@
 import type { Context } from '@earendil-works/chord';
 import type { RunningTask } from '@earendil-works/pi-durable';
+import { commitRequestState } from './request_commit.js';
 import { requestOutcome } from './request_failure.js';
 import type { RequestRuntime } from './request_generation.js';
 import type { RequestDependencies } from './request_task.js';
@@ -18,9 +19,9 @@ export async function projectRequest(
   context: Context,
   dependencies: Pick<RequestDependencies, 'authorize' | 'project'>,
 ): Promise<void> {
-  await dependencies.authorize(task.input);
   const checkpoint = task.state.checkpoint;
   if (checkpoint.retryAt) await runtime.sleep(checkpoint.retryAt, context);
+  await dependencies.authorize(task.input);
   try {
     await dependencies.project(task.input, checkpoint.answer);
   } catch (error) {
@@ -35,7 +36,8 @@ export async function projectRequest(
     );
     return;
   }
-  await runtime.commit(
+  await commitRequestState(
+    runtime,
     () => ({
       status: 'terminal',
       outcome: requestOutcome(checkpoint.answer, checkpoint.failure),

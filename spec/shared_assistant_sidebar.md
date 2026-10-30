@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: step 4 complete; authenticated browser APIs provide projection history, host admission, durable status, and resumable SSE. Sidebar UI remains unimplemented.
+Status: step 6 complete; the sidebar shares history and pending lifecycle across channels. Cross-channel release verification remains.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -12,7 +12,7 @@ Keep sandbox/container coding chats independent and unchanged. Reuse their assis
 Provide one active assistant conversation per account. Preserve existing Telegram `/new` behavior and conversation mappings.
 Reflect active-conversation changes in the sidebar. Exclude new conversation-management controls from this scope.
 
-## Inspection findings
+## Initial inspection findings (before implementation)
 
 | Existing source                                                     | Responsibility                                              | Integration decision                                                                    |
 | ------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -156,7 +156,14 @@ The browser persists one unresolved UUID before admission and reconciles optimis
 Retry checks durable status first and never replaces an ambiguous request's identity or automatically replays terminal mutations.
 Sandbox cancellation remains the thread default; the shared assistant explicitly disables that capability.
 See the [sidebar runtime guide](../packages/web-client/src/components/assistant/README.md) for browser storage, lifecycle, and tests.
-Admission-time history projection and cross-channel pending enumeration remain step 6.
+Step 6 adds durable accepted-message projection before generation and serializes all history writes through one account writer.
+Retries verify stable message identities and repair statistics without repeating generation or tools.
+Telegram answers enter shared history before transport; delivery failures do not suppress generated replies.
+Scheduled reports retain read-only execution, delivery retry policies, and printing gates.
+An additive pending index tracks accepted requests atomically and backfills existing task mappings before recovery resumes.
+Authenticated discovery and SSE publish bounded account-owned lifecycle snapshots without exposing prompts or tool arguments.
+The sidebar recovers other-browser and Telegram activity without local storage or replacement admission.
+Legacy task names, versions, owner pins, and delivery offsets remain unchanged.
 Live visual review requires an operator-started development server; neither port 3000 nor 5173 was available.
 Quality checks, unit tests, and the workspace build passed.
 Durable integration passed on rerun; the unchanged replay test initially encountered CouchDB change-order variability.
@@ -167,5 +174,5 @@ Remaining checkpoints:
 - [x] 3. Expose a single-owner assistant host with authenticated internal admission and status transport.
 - [x] 4. Add authenticated web history, submission, status, and resumable live-update endpoints.
 - [x] 5. Add the main-app assistant sidebar and dedicated assistant-ui runtime adapter.
-- [ ] 6. Complete channel-aware delivery, progress routing, and idempotent history reconciliation.
+- [x] 6. Complete channel-aware delivery, progress routing, and idempotent history reconciliation.
 - [ ] 7. Run cross-channel/recovery verification and update operational documentation.

@@ -11,11 +11,11 @@ import { getMCPClient, scopeMCPIntegration } from '../mcp/client.js';
 import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 import { resolveAssistantAccount } from './account_authorization.js';
-import { openAssistantRuntime, type AssistantRuntimeOptions } from './assistant_runtime.js';
+import { openAssistantRuntime } from './assistant_runtime.js';
 import { provisionDurableDatabase } from './couch.js';
+import { createHostProjection } from './host_projection.js';
 import { loadLegacyArchive, loadLegacyHistory } from './legacy_history.js';
 import { loadMemoryContext } from './memory_context.js';
-import { projectDurableExchange } from './projection.js';
 import { buildDurablePrompt } from './prompt.js';
 import { printDurableReport } from './report_delivery.js';
 import type { DurableRuntimeOptions } from './runtime.js';
@@ -44,16 +44,6 @@ function legacyLoaders(
       await resolveAssistantAccount({ username }, { telegramId });
       return loadLegacyHistory(username, conversationId);
     },
-  };
-}
-
-/** Serializes application history across every conversation owned by this runtime. */
-function hostProjection(username: string): AssistantRuntimeOptions['project'] {
-  let projection = Promise.resolve();
-  return (input, answer) => {
-    const pending = projection.then(() => projectDurableExchange({ username, input, answer }));
-    projection = pending.catch(() => undefined);
-    return pending;
   };
 }
 
@@ -98,7 +88,7 @@ export async function openUserRuntime(
           ? (text) => bot.api.sendMessage(telegramId, text)
           : undefined,
       print: (input, answer, reportType) => printDurableReport(username, input, answer, reportType),
-      project: hostProjection(username),
+      ...createHostProjection(username),
       onReport: (error) => logger.error('Durable runtime reported an error', { username, error }),
     });
   } catch (error) {

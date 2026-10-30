@@ -2,6 +2,7 @@ import type {
   AssistantHistoryChange,
   AssistantHistoryPage,
   AssistantMessageSubmission,
+  AssistantPendingRequests,
   AssistantRequestStatus,
 } from '@eddo/core-shared';
 
@@ -23,6 +24,7 @@ export interface AssistantProjectionStore {
   changes: (username: string, since: string, signal: AbortSignal) => Promise<AssistantChangesBatch>;
 }
 export interface AssistantHostClient {
+  pending: (username: string, signal?: AbortSignal) => Promise<AssistantPendingRequests>;
   admit: (username: string, input: AssistantMessageSubmission) => Promise<AssistantRequestStatus>;
   status: (
     username: string,

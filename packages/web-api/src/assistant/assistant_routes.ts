@@ -124,6 +124,11 @@ export function createAssistantRoutes(
       202,
     );
   });
+  app.get('/requests', async (context) =>
+    context.json(
+      await service.host.pending(context.get('assistantIdentity').username, context.req.raw.signal),
+    ),
+  );
   app.get('/requests/:requestId', async (context) => {
     const username = context.get('assistantIdentity').username;
     const result = await service.host.status(

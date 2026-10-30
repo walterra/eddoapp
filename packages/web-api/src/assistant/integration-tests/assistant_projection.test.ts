@@ -68,7 +68,11 @@ describe('assistant web projection against disposable CouchDB', () => {
       createAssistantRoutes({
         store,
         authorize: async () => {},
-        host: { admit: vi.fn(), status: vi.fn() },
+        host: {
+          pending: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
+          admit: vi.fn(),
+          status: vi.fn(),
+        },
       }),
     );
     const token = await sign(

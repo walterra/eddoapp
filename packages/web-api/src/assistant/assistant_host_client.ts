@@ -1,6 +1,8 @@
 import type { AssistantRequestStatus } from '@eddo/core-shared';
 import { z } from 'zod';
 import { AssistantApiError } from './assistant_errors';
+import { readHostPendingRequests } from './assistant_pending_client';
+import { receiptSchema } from './assistant_receipts';
 import type { AssistantHostClient } from './assistant_types';
 import { boundedJson } from './bounded_json';
 
@@ -9,19 +11,6 @@ export interface AssistantHostOptions {
   token?: string;
   fetch?: typeof fetch;
 }
-const receiptSchema = z.object({
-  requestId: z.string().min(1).max(256),
-  conversationId: z.string().min(1).max(256),
-  status: z.enum([
-    'queued',
-    'working',
-    'delivering',
-    'projecting',
-    'completed',
-    'failed',
-    'aborted',
-  ]),
-});
 
 function hostFailure(status: number): never {
   if (status === 403) throw new AssistantApiError(403, 'forbidden');
@@ -85,6 +74,7 @@ export function createAssistantHostClient(options: AssistantHostOptions): Assist
   z.number().int().min(1).max(65535).parse(options.port);
   z.string().min(32).optional().parse(options.token);
   return {
+    pending: (username, signal) => readHostPendingRequests(options, username, signal),
     admit: async (username, input) => {
       const result = await callHost(options, {
         path: 'admit',

@@ -13,6 +13,10 @@ export const receiptSchema = z.object({
     'aborted',
   ]),
 });
+export const sharedRequestsSchema = z.object({
+  requests: z.array(receiptSchema).max(100),
+  hasMore: z.boolean(),
+});
 const conversation = z.object({
   _id: z.string(),
   _rev: z.string().optional(),

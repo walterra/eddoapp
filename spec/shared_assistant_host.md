@@ -100,6 +100,20 @@ Native queued submissions report `queued`, including behind another channel's ge
 Unknown requests return `404`; cross-account request identifiers return `403`.
 Status reads do not admit messages, repeat tools, or return private journal records.
 
+### Discover account-owned pending work
+
+`POST /internal/assistant/pending` with `{ "username": "alice" }` and the same service authentication.
+
+Fresh account authorization precedes runtime access.
+Returns `{ requests, hasMore }`, with at most 100 lifecycle receipts across channels and conversations.
+Prompts, replies, tool arguments, and provider diagnostics never enter these receipts.
+
+Admission records pending identity in the same journal transaction as the existing task and deduplication mapping.
+Normal terminal checkpoints remove that identity atomically. Discovery prunes native faulted outcomes left in the index.
+Startup backfills the additive index from existing request/task mappings before recovery resumes.
+Task names, versions, Telegram ownership pins, and legacy checkpoint fields remain unchanged.
+The web API and sidebar never enumerate journal storage directly or automatically replay discovered requests.
+
 ### Failure statuses
 
 - `400`: malformed JSON, invalid fields, or unsupported content type.

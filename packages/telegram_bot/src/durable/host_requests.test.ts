@@ -28,6 +28,7 @@ function fixture() {
     execute: vi.fn(),
     close: vi.fn(),
     closed: Promise.resolve({ reason: 'closed' }),
+    getPendingRequests: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
     getRequestStatus: vi.fn().mockResolvedValue(receipt),
   };
   const dependencies = {
@@ -43,6 +44,18 @@ beforeEach(() => {
 });
 
 describe('web admission into the existing assistant owner', () => {
+  it('discovers channel-neutral pending work only after fresh account authorization', async () => {
+    const test = fixture();
+    const page = { requests: [{ ...test.receipt, requestId: 'telegram:bot:1' }], hasMore: false };
+    vi.mocked(test.runtime.getPendingRequests).mockResolvedValue(page);
+    expect(await test.operations.pending({ username: 'alice' })).toEqual(page);
+    expect(test.dependencies.runtime).toHaveBeenCalledWith('alice');
+    authorization.mockRejectedValue(new AssistantAuthorizationError('revoked'));
+    await expect(test.operations.pending({ username: 'alice' })).rejects.toMatchObject({
+      status: 403,
+    });
+    expect(test.runtime.getPendingRequests).toHaveBeenCalledOnce();
+  });
   it('resolves routing and timing on the server and returns original deduplicated identity', async () => {
     const test = fixture();
     expect(await test.operations.admit(input)).toEqual(test.receipt);

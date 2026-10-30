@@ -82,6 +82,16 @@ afterEach(() => {
 });
 
 describe('shared assistant sidebar', () => {
+  it('renders recovered shared activity without exposing cancellation or needing a local submission', () => {
+    fixture.state!.sharedRequests = [
+      { requestId: 'telegram:bot:1', conversationId: 'active', status: 'working' },
+    ];
+    render(<AssistantSidebar onClose={vi.fn()} />);
+    expect(screen.getByText('1 shared request in progress.')).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Assistant response pending' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Stop generation' })).toBeNull();
+    expect(fixture.session?.send).not.toHaveBeenCalled();
+  });
   it('renders the shared transcript and Markdown using assistant-ui without sandbox controls', async () => {
     render(<AssistantSidebar onClose={vi.fn()} />);
     expect(screen.getByRole('complementary', { name: 'Assistant' })).toBeTruthy();

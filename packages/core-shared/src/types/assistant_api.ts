@@ -2,6 +2,7 @@ import type {
   AssistantConversation,
   AssistantConversationMessageDoc,
 } from './assistant-conversation';
+import type { AssistantRequestStatus } from './assistant_request';
 
 /** Returns the latest history page and a durable live-update checkpoint. */
 export interface AssistantHistoryPage {
@@ -9,6 +10,12 @@ export interface AssistantHistoryPage {
   messages: AssistantConversationMessageDoc[];
   nextCursor: string | null;
   changeCursor: string;
+}
+
+/** Lists bounded account-owned work across channels without exposing prompts or tool arguments. */
+export interface AssistantPendingRequests {
+  requests: AssistantRequestStatus[];
+  hasMore: boolean;
 }
 
 /** Invalidates projected history without exposing unrelated chat documents. */

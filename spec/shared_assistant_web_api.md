@@ -72,6 +72,16 @@ Status comes from the existing host, including after recovery.
 Cross-account or malformed identifiers return `403`; unknown requests return `404`.
 Backend diagnostics, tool arguments, and execution-journal records never enter the response.
 
+### Discover pending work across channels
+
+`GET /api/assistant/requests`
+
+Returns `{ requests, hasMore }` for the authenticated account, including Telegram and other browser submissions.
+Each entry contains only the durable request ID, conversation ID, and current status.
+The owner returns at most 100 entries and prunes settled or faulted index entries.
+`hasMore` indicates additional entries remain; discovery repeats through SSE rather than automatically admitting replacement work.
+This endpoint never accepts a client-selected account or opens a journal in web-api.
+
 ### Stream resumable updates
 
 `GET /api/assistant/stream?cursor=<optional-change-cursor>&requestIds=<optional-comma-separated-durable-ids>`
@@ -80,15 +90,16 @@ Send the JWT in the Authorization header.
 Resume with either the `cursor` query parameter or `Last-Event-ID`; conflicting values return `400`.
 Track at most ten account-scoped request IDs per stream.
 
-| SSE event         | Behavior                                                                           |
-| ----------------- | ---------------------------------------------------------------------------------- |
-| `reset`           | Refetch the latest conversation/history page; establishes a new durable checkpoint |
-| `history-change`  | Invalidates history using an assistant document ID; contains no message body       |
-| `checkpoint`      | Advances the durable CouchDB resume cursor, including across empty batches         |
-| `request-status`  | Refreshes a tracked request from persisted host state                              |
-| `request-missing` | Reports an unknown tracked request without admitting replacement work              |
-| `unavailable`     | Reports a temporarily unavailable host while projection updates continue           |
-| `error`           | Reports a bounded authorization or availability error before ending the stream     |
+| SSE event          | Behavior                                                                           |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| `reset`            | Refetch the latest conversation/history page; establishes a new durable checkpoint |
+| `history-change`   | Invalidates history using an assistant document ID; contains no message body       |
+| `checkpoint`       | Advances the durable CouchDB resume cursor, including across empty batches         |
+| `pending-requests` | Refreshes bounded account-owned pending work across channels without supplied IDs  |
+| `request-status`   | Refreshes a tracked request from persisted host state                              |
+| `request-missing`  | Reports an unknown tracked request without admitting replacement work              |
+| `unavailable`      | Reports a temporarily unavailable host while projection updates continue           |
+| `error`            | Reports a bounded authorization or availability error before ending the stream     |
 
 History events replay from the account's persisted CouchDB changes feed, not an in-memory buffer.
 CouchDB filters assistant document versions; sandbox documents and raw message bodies never enter the event stream.
@@ -101,8 +112,11 @@ Reconnect with the last checkpoint and a current JWT after a normal stream closu
 Slow readers apply backpressure through awaited SSE writes; no background event queue accumulates.
 
 This endpoint provides invalidations and lifecycle snapshots, not token streaming.
-Accepted user messages currently enter application history with completed exchange projection.
-Admission-time message projection and pending-request reconciliation remain in implementation step 6.
+Accepted user messages enter history through a durable projection checkpoint before generation starts.
+Projection outages retry that checkpoint without running a model or repeating tool effects.
+Pending snapshots recover activity even without a browser-local UUID; they never authorize client-side replay.
+Telegram replies enter shared history before transport delivery; failed sends do not hide an already-generated answer.
+Scheduled reports retain their existing Telegram delivery and printing gates.
 
 ## Limits and failures
 

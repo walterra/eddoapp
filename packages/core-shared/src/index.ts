@@ -17,6 +17,7 @@ export {
   type AssistantHistoryChange,
   type AssistantHistoryPage,
   type AssistantMessageSubmission,
+  type AssistantPendingRequests,
 } from './types/assistant_api';
 export {
   type AssistantAccountIdentity,

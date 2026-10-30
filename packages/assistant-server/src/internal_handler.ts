@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import {
   internalAdmissionSchema,
   InternalAssistantError,
+  internalPendingSchema,
   internalStatusSchema,
   MAX_INTERNAL_BODY_BYTES,
   type InternalAssistantOperations,
@@ -71,6 +72,11 @@ async function dispatch(
   path: string,
   input: unknown,
 ): Promise<Response> {
+  if (path.endsWith('/pending')) {
+    const parsed = internalPendingSchema.safeParse(input);
+    if (!parsed.success) return json({ error: 'invalid_request' }, 400);
+    return json(await options.pending(parsed.data));
+  }
   if (path.endsWith('/admit')) {
     const parsed = internalAdmissionSchema.safeParse(input);
     if (!parsed.success) return json({ error: 'invalid_request' }, 400);
@@ -91,7 +97,13 @@ export function createInternalAssistantHandler(
   return async (request) => {
     if (!authorized(request, options.token)) return json({ error: 'unauthorized' }, 401);
     const path = new URL(request.url).pathname;
-    if (path !== '/internal/assistant/admit' && path !== '/internal/assistant/status')
+    if (
+      ![
+        '/internal/assistant/admit',
+        '/internal/assistant/status',
+        '/internal/assistant/pending',
+      ].includes(path)
+    )
       return json({ error: 'not_found' }, 404);
     if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
     try {

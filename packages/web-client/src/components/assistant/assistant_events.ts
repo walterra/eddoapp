@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { AssistantHistoryController } from './assistant_history_controller';
-import { receiptSchema } from './assistant_schemas';
+import { receiptSchema, sharedRequestsSchema } from './assistant_schemas';
 import { isTerminalAssistantRequest, type AssistantStateCore } from './assistant_state';
 import { AssistantClientError, type AssistantServerEvent } from './assistant_types';
 
@@ -14,6 +14,21 @@ function receipt(
   if (result.requestId === core.pendingId() && isTerminalAssistantRequest(result.status))
     history.invalidate();
 }
+function sharedRequests(
+  core: AssistantStateCore,
+  history: AssistantHistoryController,
+  data: unknown,
+): void {
+  const page = sharedRequestsSchema.parse(data);
+  const previous = core.get().sharedRequests ?? [];
+  core.update({ sharedRequests: page.requests, sharedHasMore: page.hasMore });
+  for (const request of page.requests) core.accept(request);
+  if (
+    previous.some((request) => !page.requests.some((next) => next.requestId === request.requestId))
+  )
+    history.invalidate();
+}
+
 function failure(data: unknown): never {
   const result = z.object({ error: z.string() }).parse(data);
   throw new AssistantClientError(
@@ -31,6 +46,9 @@ export function createAssistantEventHandler(
       case 'history-change':
       case 'reset':
         history.invalidate();
+        return;
+      case 'pending-requests':
+        sharedRequests(core, history, event.data);
         return;
       case 'request-status':
         receipt(core, history, event.data);

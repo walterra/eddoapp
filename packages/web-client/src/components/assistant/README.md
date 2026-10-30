@@ -54,7 +54,11 @@ Late admission responses cannot resurrect cleared records or regress a newer dur
 
 Optimistic text reconciles by exact projection ID, never by matching message content.
 Earlier-conversation requests remain tracked without being inserted into the new active thread.
-Server-side admission-time projection and cross-channel pending-request enumeration remain implementation step 6.
+Durable admission projection saves user text before generation.
+The stream discovers pending work from Telegram and other browsers, even without local recovery records.
+Recovered activity updates the running indicator without submitting messages or creating replacement UUIDs.
+Earlier-conversation work remains visible as separate status, never inserted into the active thread.
+At most 100 discovery entries arrive per snapshot; additional entries trigger an explicit checking notice.
 Unsubmitted composer drafts remain in memory and do not survive closing the sidebar.
 
 ## Verification

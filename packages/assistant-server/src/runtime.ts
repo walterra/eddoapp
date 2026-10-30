@@ -8,12 +8,13 @@ import {
   type ModelRef,
   type Storage,
 } from '@earendil-works/pi-durable';
-import type { AssistantRequestStatus } from '@eddo/core-shared';
+import type { AssistantPendingRequests, AssistantRequestStatus } from '@eddo/core-shared';
 import { modelThinkingLevel, parseLlmSettings, type LlmGenerationSettings } from './llm_options.js';
 import { configureConversationModels } from './model_configuration.js';
 import { modelsWithOptions } from './models_with_options.js';
 import { modelsWithTelemetry } from './models_with_telemetry.js';
 import { bindRuntimeOwner } from './ownership.js';
+import { getPendingRequests, initializePendingRequests } from './pending_requests.js';
 import { createProjectionTask } from './projection_task.js';
 import type { ContextWriter } from './report_context.js';
 import { getRequestStatus } from './request_status.js';
@@ -52,6 +53,7 @@ function resolveRuntimeOptions(options: DurableRuntimeOptions): ResolvedRuntimeO
 export interface DurableRuntime {
   enqueue: (input: RuntimeRequestInput) => Promise<void>;
   execute: (input: RuntimeRequestInput) => Promise<string>;
+  getPendingRequests: () => Promise<AssistantPendingRequests>;
   getRequestStatus: (requestId: string) => Promise<AssistantRequestStatus | null>;
   close: () => Promise<void>;
   closed: Harness['closed'];
@@ -104,6 +106,7 @@ async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> 
   try {
     await bindRuntimeOwner(harness, options);
     await configureConversationModels(harness, options.model, options.thinkingLevel);
+    await initializePendingRequests(harness);
     return harness;
   } catch (error) {
     await harness.close(context);
@@ -120,6 +123,7 @@ export async function openDurableRuntime(options: DurableRuntimeOptions): Promis
   return {
     closed: harness.closed,
     getRequestStatus: (requestId) => getRequestStatus(harness, requestId),
+    getPendingRequests: () => getPendingRequests(harness),
     close: () => harness.close(context),
     enqueue: async (input) => {
       await submit(input);

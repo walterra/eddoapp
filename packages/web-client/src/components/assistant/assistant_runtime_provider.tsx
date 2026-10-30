@@ -51,6 +51,14 @@ export function assistantThreadMessages(
 }
 
 /** Adapts server projections to assistant-ui without sandbox RPC, provider keys, or cancellation capabilities. */
+function sharedRunning(state: AssistantSnapshot): boolean {
+  return (state.sharedRequests ?? []).some(
+    (request) =>
+      request.conversationId === state.conversation?._id &&
+      !isTerminalAssistantRequest(request.status),
+  );
+}
+
 export function AssistantThreadRuntime({
   state,
   session,
@@ -79,6 +87,7 @@ export function AssistantThreadRuntime({
     onNew,
     convertMessage: (message) => message,
     isRunning:
+      sharedRunning(state) ||
       state.submitting ||
       Boolean(state.pending && !isTerminalAssistantRequest(state.pending.receipt?.status)),
     isSendDisabled:

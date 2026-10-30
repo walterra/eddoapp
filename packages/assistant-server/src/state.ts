@@ -54,7 +54,7 @@ export interface DurableRequestInput {
 export type RuntimeRequestInput = DurableRequestInput | AssistantRequest;
 
 export type RequestCheckpoint =
-  | { phase: 'generate'; attempt?: number }
+  | { phase: 'generate'; attempt?: number; accepted?: boolean; retryAt?: number }
   | { phase: 'retry'; attempt: number; notBefore: number }
   | {
       phase: 'deliver';

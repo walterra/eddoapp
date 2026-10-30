@@ -20,7 +20,13 @@ it('serves authenticated admission on an ephemeral loopback listener', async () 
     status: 'queued' as const,
   };
   const admit = vi.fn().mockResolvedValue(receipt);
-  const server = await startInternalAssistantServer({ port: 0, token, admit, status: vi.fn() });
+  const server = await startInternalAssistantServer({
+    port: 0,
+    token,
+    admit,
+    status: vi.fn(),
+    pending: vi.fn(),
+  });
   servers.push(server);
   const response = await fetch(`http://127.0.0.1:${server.port}/internal/assistant/admit`, {
     method: 'POST',
@@ -35,7 +41,13 @@ it('serves authenticated admission on an ephemeral loopback listener', async () 
 describe('internal listener configuration', () => {
   it('rejects an absent secret before binding a listener', async () => {
     await expect(
-      startInternalAssistantServer({ port: 0, token: '', admit: vi.fn(), status: vi.fn() }),
+      startInternalAssistantServer({
+        port: 0,
+        token: '',
+        admit: vi.fn(),
+        status: vi.fn(),
+        pending: vi.fn(),
+      }),
     ).rejects.toThrow('32');
   });
 });
