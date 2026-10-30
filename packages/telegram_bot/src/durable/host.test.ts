@@ -12,6 +12,7 @@ const fixture = vi.hoisted(() => ({
   provision: vi.fn(),
   users: vi.fn(),
   selection: vi.fn(),
+  status: vi.fn(),
 }));
 vi.mock('@eddo/core-server', () => ({
   createEnv: () => ({ COUCHDB_URL: 'http://unused' }),
@@ -21,8 +22,9 @@ vi.mock('@eddo/core-server', () => ({
     list: fixture.users,
     findByUsername: async (username: string) => ({
       username,
-      telegram_id: username === 'bob' ? 456 : 123,
+      telegram_id: username === 'unlinked' ? undefined : username === 'bob' ? 456 : 123,
       status: 'active',
+      preferences: { mcpApiKey: 'secret' },
     }),
   }),
   createAssistantConversationDatabase: () => ({
@@ -53,8 +55,10 @@ vi.mock('./tools.js', () => ({
 }));
 
 import {
+  admitWebAssistantMessage,
   enqueueDurableReport,
   executeDurableMessage,
+  getWebAssistantRequestStatus,
   startDurableHost,
   stopDurableHost,
 } from './host.js';
@@ -84,6 +88,11 @@ beforeEach(() => {
   fixture.authorize.mockResolvedValue({ username: 'alice' });
   fixture.execute.mockResolvedValue('Done');
   fixture.enqueue.mockResolvedValue(undefined);
+  fixture.status.mockImplementation(async (requestId: string) => ({
+    requestId,
+    conversationId: 'active_chat',
+    status: 'queued',
+  }));
   const closed = new Promise<void>((resolve) => {
     finish = resolve;
   });
@@ -95,6 +104,7 @@ beforeEach(() => {
     enqueue: fixture.enqueue,
     close: fixture.close,
     closed,
+    getRequestStatus: fixture.status,
   });
 });
 afterEach(async () => {
@@ -113,7 +123,7 @@ describe('durable host ownership and supervision', () => {
     expect(fixture.open).not.toHaveBeenCalled();
   });
 
-  it('recovers all active linked users without an enrollment flag and uses LLM_MODEL', async () => {
+  it('recovers eligible linked and web-only accounts and uses LLM_MODEL', async () => {
     fixture.users.mockResolvedValue([
       {
         username: 'alice',
@@ -137,7 +147,10 @@ describe('durable host ownership and supervision', () => {
       { username: 'missing-key', status: 'active', telegram_id: 456, preferences: {} },
     ]);
     await startDurableHost(bot);
-    expect(fixture.open).toHaveBeenCalledTimes(2);
+    expect(fixture.open).toHaveBeenCalledTimes(3);
+    expect(fixture.open).toHaveBeenCalledWith(
+      expect.objectContaining({ username: 'unlinked', telegramId: undefined }),
+    );
     expect(fixture.selection).toHaveBeenCalledWith(
       'anthropic/configured-model',
       expect.any(Object),
@@ -145,6 +158,46 @@ describe('durable host ownership and supervision', () => {
     expect(fixture.open).toHaveBeenCalledWith(
       expect.objectContaining({ model: { provider: 'anthropic', modelId: 'configured-model' } }),
     );
+  });
+
+  it('starts without Telegram and admits web-only accounts into one cached runtime', async () => {
+    fixture.users.mockResolvedValue([
+      { username: 'unlinked', status: 'active', preferences: { mcpApiKey: 'secret' } },
+    ]);
+    await startDurableHost();
+    const input = {
+      username: 'unlinked',
+      requestId: '70f72756-993e-4cae-8108-f6b723391ae1',
+      text: 'Hello',
+    };
+    await admitWebAssistantMessage(input);
+    await getWebAssistantRequestStatus({
+      username: 'unlinked',
+      requestId: `web:unlinked:${input.requestId}`,
+    });
+    expect(fixture.open).toHaveBeenCalledOnce();
+    expect(fixture.open).toHaveBeenCalledWith(
+      expect.objectContaining({ username: 'unlinked', telegramId: undefined }),
+    );
+    expect(fixture.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({ source: { channel: 'web' }, conversationId: 'active_chat' }),
+    );
+    expect(fixture.execute).not.toHaveBeenCalled();
+  });
+
+  it('shares the same cached owner for web and Telegram and rejects duplicate host starts', async () => {
+    const opening = startDurableHost(bot);
+    await expect(startDurableHost(bot)).rejects.toThrow('already running');
+    await opening;
+    await admitWebAssistantMessage({
+      username: 'alice',
+      requestId: '70f72756-993e-4cae-8108-f6b723391ae1',
+      text: 'Hello',
+    });
+    await executeDurableMessage('Follow up', context());
+    expect(fixture.open).toHaveBeenCalledOnce();
+    await expect(startDurableHost(bot)).rejects.toThrow('already running');
+    expect(fixture.open).toHaveBeenCalledOnce();
   });
 
   it('admits scheduled reports into the same active conversation without awaiting delivery', async () => {

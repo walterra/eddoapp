@@ -1,103 +1,32 @@
-import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
-import { builtinModels } from '@earendil-works/pi-ai/providers/all';
+import type {
+  InternalAdmission,
+  InternalStatusQuery,
+} from '@eddo/assistant-server/internal_protocol';
 import { parseLlmSettings } from '@eddo/assistant-server/llm_options';
 import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import type { DurableRequestInput, ReportType } from '@eddo/assistant-server/state';
 import { createEnv, createUserRegistry } from '@eddo/core-server';
+import type { AssistantRequestStatus } from '@eddo/core-shared';
 import type { Bot } from 'grammy';
-import { openCouchDbStorage } from 'pi-durable-couchdb';
-import { resolveConfiguredModel } from '../ai/llm-model-resolution.js';
 import type { BotContext } from '../bot/bot.js';
-import { getMCPClient, scopeMCPIntegration } from '../mcp/client.js';
-import { appConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
-import { openAssistantRuntime } from './assistant_runtime.js';
-import { provisionDurableDatabase } from './couch.js';
-import { loadLegacyArchive, loadLegacyHistory } from './legacy_history.js';
-import { loadMemoryContext } from './memory_context.js';
-import { projectDurableExchange } from './projection.js';
-import { buildDurablePrompt } from './prompt.js';
-import { printDurableReport } from './report_delivery.js';
-import type { DurableRuntimeOptions } from './runtime.js';
-import { sendTelegramText } from './telegram_send.js';
+import { createWebHostOperations } from './host_requests.js';
+import { openUserRuntime, validateHostModel } from './host_runtime.js';
 import { resolveDurableUser } from './tools.js';
 
 const runtimes = new Map<string, Promise<DurableRuntime>>();
-const models = builtinModels();
 let bot: Bot<BotContext> | undefined;
 let timer: ReturnType<typeof setInterval> | undefined;
-let stopping = false;
-
-/** Revalidates identity before loading either the preview or complete original archive. */
-function legacyLoaders(
-  username: string,
-  telegramId: number,
-): Pick<DurableRuntimeOptions, 'legacyArchive' | 'legacyHistory'> {
-  return {
-    legacyArchive: async (conversationId) => {
-      await resolveDurableUser(username, telegramId);
-      return loadLegacyArchive(username, conversationId);
-    },
-    legacyHistory: async (conversationId) => {
-      await resolveDurableUser(username, telegramId);
-      return loadLegacyHistory(username, conversationId);
-    },
-  };
-}
-
-/** Opens a user's private runtime using current registry identity and server credentials. */
-async function openUserRuntime(username: string): Promise<DurableRuntime> {
-  if (!bot || stopping) throw new Error('Durable host is not running');
-  const env = createEnv();
-  const user = await createUserRegistry(env.COUCHDB_URL, env).findByUsername(username);
-  if (!user?.telegram_id || user.status !== 'active')
-    throw new Error('Durable user is inactive or unlinked');
-  const telegramId = user.telegram_id;
-  const identity = await resolveDurableUser(username, telegramId);
-  const dispatcher = getMCPClient();
-  if (!dispatcher) throw new Error('MCP is not initialized');
-  const client = await scopeMCPIntegration(dispatcher, identity);
-  const model = resolveConfiguredModel(appConfig.LLM_MODEL, models);
-  if (!models.getModel(model.provider, model.modelId) || !(await models.getAuth(model.provider))) {
-    throw new Error('Durable model is unknown or missing provider credentials');
-  }
-  const endpoint = await provisionDurableDatabase(username);
-  const storage = await openCouchDbStorage(endpoint);
-  let projection = Promise.resolve();
-  try {
-    return await openAssistantRuntime({
-      storage,
-      models,
-      client,
-      username,
-      telegramId,
-      model,
-      generation: parseLlmSettings(),
-      instructions: buildDurablePrompt(appConfig.BOT_PERSONA_ID),
-      memoryContext: async () =>
-        loadMemoryContext(client, await resolveDurableUser(username, telegramId)),
-      ...legacyLoaders(username, telegramId),
-      send: (chatId, text, options) => sendTelegramText(bot!.api, chatId, text, options),
-      progress: (text) => bot!.api.sendMessage(telegramId, text),
-      print: (input, answer, reportType) => printDurableReport(username, input, answer, reportType),
-      project: (input, answer) => {
-        const pending = projection.then(() => projectDurableExchange({ username, input, answer }));
-        projection = pending.catch(() => undefined);
-        return pending;
-      },
-      onReport: (error) => logger.error('Durable runtime reported an error', { username, error }),
-    });
-  } catch (error) {
-    await storage.close(context);
-    throw error;
-  }
-}
+let stopping = true;
+let started = false;
+let starting = false;
 
 /** Shares one opening attempt and evicts closed/failed handles before recovery. */
 function getRuntime(username: string): Promise<DurableRuntime> {
+  if (!started || stopping) return Promise.reject(new Error('Durable host is not running'));
   const existing = runtimes.get(username);
   if (existing) return existing;
-  const pending = openUserRuntime(username);
+  const pending = openUserRuntime(username, bot);
   runtimes.set(username, pending);
   void pending
     .then((runtime) =>
@@ -112,19 +41,26 @@ function getRuntime(username: string): Promise<DurableRuntime> {
   return pending;
 }
 
-/** Recovers every active linked user's journal without waiting for a Telegram update. */
-export async function startDurableHost(instance: Bot<BotContext>): Promise<void> {
-  parseLlmSettings();
-  bot = instance;
+/** Recovers eligible accounts independently of Telegram polling or linking. */
+export async function startDurableHost(instance?: Bot<BotContext>): Promise<void> {
+  if (started || starting) throw new Error('Durable host is already running');
+  starting = true;
   stopping = false;
-  const model = resolveConfiguredModel(appConfig.LLM_MODEL, models);
-  if (!(await models.getAuth(model.provider)))
-    throw new Error(`LLM credentials are required for provider "${model.provider}"`);
-  await recoverUsers();
-  timer = setInterval(() => {
-    void recoverUsers();
-  }, 30_000);
-  timer.unref();
+  try {
+    parseLlmSettings();
+    await validateHostModel();
+    if (stopping) throw new Error('Durable host startup was interrupted');
+    bot = instance;
+    started = true;
+    await recoverUsers();
+    if (stopping) throw new Error('Durable host startup was interrupted');
+    timer = setInterval(() => {
+      void recoverUsers();
+    }, 30_000);
+    timer.unref();
+  } finally {
+    starting = false;
+  }
 }
 
 /** Retries registry/storage outages without creating a second owner for an open journal. */
@@ -134,9 +70,7 @@ async function recoverUsers(): Promise<void> {
     const users = await createUserRegistry(env.COUCHDB_URL, env).list();
     await Promise.allSettled(
       users
-        .filter(
-          (user) => user.status === 'active' && user.telegram_id && user.preferences?.mcpApiKey,
-        )
+        .filter((user) => user.status === 'active' && user.preferences?.mcpApiKey)
         .map((user) => getRuntime(user.username)),
     );
   } catch (error) {
@@ -153,6 +87,8 @@ export async function stopDurableHost(): Promise<void> {
     opened.map((result) => (result.status === 'fulfilled' ? result.value.close() : undefined)),
   );
   runtimes.clear();
+  started = false;
+  bot = undefined;
 }
 
 /** Resolves the same active Eddo conversation for interactive and scheduled inputs. */
@@ -168,6 +104,25 @@ async function activeConversationId(username: string): Promise<string> {
   return (await database.getOrCreateActive())._id;
 }
 
+const webOperations = createWebHostOperations({
+  runtime: getRuntime,
+  conversationId: activeConversationId,
+});
+
+/** Admits authenticated internal web requests through the same owner as Telegram. */
+export function admitWebAssistantMessage(
+  input: InternalAdmission,
+): Promise<AssistantRequestStatus> {
+  return webOperations.admit(input);
+}
+
+/** Reads durable status without creating a second journal reader or execution owner. */
+export function getWebAssistantRequestStatus(
+  input: InternalStatusQuery,
+): Promise<AssistantRequestStatus | null> {
+  return webOperations.status(input);
+}
+
 export interface ScheduledReportRequest {
   username: string;
   telegramId: number;
@@ -179,6 +134,7 @@ export interface ScheduledReportRequest {
 
 /** Durably admits a report without blocking the scheduler on queued generation or delivery. */
 export async function enqueueDurableReport(request: ScheduledReportRequest): Promise<void> {
+  if (!bot) throw new Error('Telegram report adapter is unavailable');
   await resolveDurableUser(request.username, request.telegramId);
   const runtime = await getRuntime(request.username);
   const now = new Date();
@@ -197,6 +153,7 @@ export async function enqueueDurableReport(request: ScheduledReportRequest): Pro
 
 /** Admits private Telegram updates with a bot-scoped stable deduplication key. */
 export async function executeDurableMessage(text: string, ctx: BotContext): Promise<string> {
+  if (!bot) throw new Error('Telegram message adapter is unavailable');
   const username = ctx.session.user?.username;
   if (!username || !ctx.from || !ctx.chat || !ctx.message || ctx.chat.type !== 'private') {
     throw new Error('Durable requires a linked private Telegram chat');

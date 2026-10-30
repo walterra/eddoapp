@@ -8,6 +8,7 @@ import {
   type ModelRef,
   type Storage,
 } from '@earendil-works/pi-durable';
+import type { AssistantRequestStatus } from '@eddo/core-shared';
 import { modelThinkingLevel, parseLlmSettings, type LlmGenerationSettings } from './llm_options.js';
 import { configureConversationModels } from './model_configuration.js';
 import { modelsWithOptions } from './models_with_options.js';
@@ -15,6 +16,7 @@ import { modelsWithTelemetry } from './models_with_telemetry.js';
 import { bindRuntimeOwner } from './ownership.js';
 import { createProjectionTask } from './projection_task.js';
 import type { ContextWriter } from './report_context.js';
+import { getRequestStatus } from './request_status.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
 import { waitForRequestResult } from './request_wait.js';
 import { createRuntimeAdmission } from './runtime_admission.js';
@@ -50,6 +52,7 @@ function resolveRuntimeOptions(options: DurableRuntimeOptions): ResolvedRuntimeO
 export interface DurableRuntime {
   enqueue: (input: RuntimeRequestInput) => Promise<void>;
   execute: (input: RuntimeRequestInput) => Promise<string>;
+  getRequestStatus: (requestId: string) => Promise<AssistantRequestStatus | null>;
   close: () => Promise<void>;
   closed: Harness['closed'];
 }
@@ -116,6 +119,7 @@ export async function openDurableRuntime(options: DurableRuntimeOptions): Promis
   harness.resume();
   return {
     closed: harness.closed,
+    getRequestStatus: (requestId) => getRequestStatus(harness, requestId),
     close: () => harness.close(context),
     enqueue: async (input) => {
       await submit(input);

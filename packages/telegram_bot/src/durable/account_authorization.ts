@@ -7,6 +7,11 @@ import type {
 } from '@eddo/core-shared';
 import type { MCPUserContext } from '../mcp/user-context.js';
 
+/** Identifies authorization failures without conflating registry outages with revoked access. */
+export class AssistantAuthorizationError extends Error {
+  readonly name = 'AssistantAuthorizationError';
+}
+
 export interface AssistantAuthorizationOptions {
   telegramId?: number;
   report?: Pick<AssistantRequestReport, 'type'>;
@@ -21,7 +26,9 @@ function authorizeReport(
   const enabled =
     options.report.type === 'briefing' ? preferences.dailyBriefing : preferences.dailyRecap;
   if (options.telegramId === undefined || !enabled)
-    throw new Error('Scheduled report is disabled or missing Telegram authorization');
+    throw new AssistantAuthorizationError(
+      'Scheduled report is disabled or missing Telegram authorization',
+    );
 }
 
 /** Revalidates account status, channel binding, and current MCP credentials without cached sessions. */
@@ -36,9 +43,13 @@ export async function resolveAssistantAccount(
     user.status !== 'active' ||
     !user.preferences.mcpApiKey
   )
-    throw new Error('Assistant account is inactive or missing MCP credentials');
+    throw new AssistantAuthorizationError(
+      'Assistant account is inactive or missing MCP credentials',
+    );
   if (options.telegramId !== undefined && user.telegram_id !== options.telegramId)
-    throw new Error('Assistant Telegram identity changed; authorization denied');
+    throw new AssistantAuthorizationError(
+      'Assistant Telegram identity changed; authorization denied',
+    );
   authorizeReport(user.preferences, options);
   return {
     username: user.username,
@@ -54,12 +65,12 @@ export async function authorizeAssistantRequest(
   pinnedTelegramId?: number,
 ): Promise<MCPUserContext> {
   if (request.account.username !== identity.username)
-    throw new Error('Assistant request does not match the journal account');
+    throw new AssistantAuthorizationError('Assistant request does not match the journal account');
   const source = request.source;
   if (request.report && source.channel !== 'telegram')
-    throw new Error('Scheduled reports require Telegram authorization');
+    throw new AssistantAuthorizationError('Scheduled reports require Telegram authorization');
   if (source.channel === 'telegram' && source.telegram.chatId !== source.telegram.userId)
-    throw new Error('Assistant requires a private Telegram chat');
+    throw new AssistantAuthorizationError('Assistant requires a private Telegram chat');
   return resolveAssistantAccount(identity, {
     telegramId: source.channel === 'telegram' ? source.telegram.userId : pinnedTelegramId,
     ...(request.report ? { report: request.report } : {}),

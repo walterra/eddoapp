@@ -14,7 +14,16 @@ import { handleNewConversation } from './bot/commands/new.js';
 import { handleRss } from './bot/commands/rss.js';
 import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
-import { startDurableHost, stopDurableHost } from './durable/host.js';
+import {
+  admitWebAssistantMessage,
+  getWebAssistantRequestStatus,
+  startDurableHost,
+  stopDurableHost,
+} from './durable/host.js';
+import {
+  startInternalAssistantServer,
+  type InternalAssistantServer,
+} from './durable/internal_server.js';
 import { getMCPClient, setupMCPIntegration } from './mcp/client.js';
 import { createDailyBriefingScheduler } from './scheduler/daily-briefing.js';
 import { appConfig } from './utils/config.js';
@@ -22,6 +31,7 @@ import { logger } from './utils/logger.js';
 
 // Global references for cleanup
 let globalScheduler: ReturnType<typeof createDailyBriefingScheduler> | null = null;
+let internalServer: InternalAssistantServer | undefined;
 
 import { Bot } from 'grammy';
 
@@ -74,6 +84,27 @@ function initializeScheduler(): void {
   logger.info('✅ Daily briefing scheduler started', { checkInterval: '60s' });
 }
 
+/** Creates Telegram transport only when configured; shared execution does not require polling. */
+function configuredBot(): Bot<BotContext> | undefined {
+  if (!appConfig.TELEGRAM_BOT_TOKEN) return undefined;
+  const bot = createBot();
+  registerCommandHandlers(bot);
+  bot.catch((err) => logger.error('Bot error occurred', { error: err.error, context: err.ctx }));
+  return bot;
+}
+
+/** Starts authenticated internal transport on the existing owner process. */
+async function initializeInternalTransport(): Promise<void> {
+  if (!appConfig.ASSISTANT_INTERNAL_TOKEN) return;
+  internalServer = await startInternalAssistantServer({
+    token: appConfig.ASSISTANT_INTERNAL_TOKEN,
+    port: appConfig.ASSISTANT_INTERNAL_PORT,
+    admit: admitWebAssistantMessage,
+    status: getWebAssistantRequestStatus,
+  });
+  logger.info('Internal assistant transport listening on loopback', { port: internalServer.port });
+}
+
 /**
  * Main application entry point
  */
@@ -86,21 +117,19 @@ async function main(): Promise<void> {
   try {
     await initializeMCP();
 
-    const bot = createBot();
-    registerCommandHandlers(bot);
-
-    bot.catch((err) => {
-      logger.error('Bot error occurred', { error: err.error, context: err.ctx });
-    });
-
+    const bot = configuredBot();
     await startDurableHost(bot);
-    initializeScheduler();
+    await initializeInternalTransport();
+    if (bot) {
+      initializeScheduler();
+      logger.info('Starting bot polling...');
+      bot.start();
+    }
 
-    logger.info('Starting bot polling...');
-    bot.start();
-
-    logger.info('🎩 Eddo Bot is now running and ready to serve!');
-    logger.info('📡 Connect your Telegram bot and start chatting!');
+    logger.info('Shared assistant host is ready', {
+      telegram: Boolean(bot),
+      internalTransport: Boolean(internalServer),
+    });
   } catch (error) {
     logger.error('Failed to start bot', { error });
     process.exit(1);
@@ -118,6 +147,7 @@ async function handleShutdown(signal: string): Promise<void> {
     logger.info('Daily briefing scheduler stopped');
   }
 
+  await internalServer?.close();
   await stopDurableHost();
 
   const mcpClient = getMCPClient();

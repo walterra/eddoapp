@@ -19,6 +19,8 @@ export {
   type AssistantRequest,
   type AssistantRequestReport,
   type AssistantRequestSource,
+  type AssistantRequestState,
+  type AssistantRequestStatus,
 } from './types/assistant_request';
 export { buildAttachmentDocId, parseAttachmentDocId, type AttachmentDoc } from './types/attachment';
 export {

@@ -4,6 +4,7 @@
 
 Use Pi Durable as the sole Telegram execution authority. Keep application chat projections separate from execution journals.
 The [shared assistant runtime](../packages/assistant-server/README.md) owns Harness execution; the Telegram host supplies channel adapters.
+The same process exposes optional [authenticated internal admission and status](shared_assistant_host.md), without another execution owner.
 
 | Capability         | Supported behavior                                                                                     |
 | ------------------ | ------------------------------------------------------------------------------------------------------ |
@@ -125,7 +126,7 @@ Snapshots, bounded-memory storage, safe journal retention, and distributed owner
 
 ## Admission and execution limits
 
-Startup recovers active users linked to Telegram with MCP credentials. Failed runtimes reopen on a 30-second recovery cycle.
+Startup recovers active accounts with MCP credentials, including accounts without Telegram links. Failed runtimes reopen on a 30-second recovery cycle.
 Duplicate Telegram updates reuse stored requests, including after restart or `/new`.
 Scheduled occurrences use stable request IDs; admission returns before generation or delivery completes.
 Pre-migration reservation receipts remain read-only duplicate safeguards. New reports create no legacy reservations.

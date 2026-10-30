@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: step 2 complete; shared runtime extracted into `@eddo/assistant-server`. Public web admission remains disabled.
+Status: step 3 complete; authenticated internal admission and status share the existing owner. Browser-facing routes remain unimplemented.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -137,11 +137,16 @@ The shared package retains a type-only `grammy` dependency for legacy checkpoint
 Standalone real-Harness tests exercise execution and journal reopening without importing a channel host.
 The package participates in workspace builds, default unit tests, and synchronized versioning.
 See the [assistant server guide](../packages/assistant-server/README.md) for its execution boundary.
-No public web endpoint or second journal owner exists yet.
+Step 3 adds loopback-only, service-authenticated admission and persisted request-status endpoints in the existing owner process.
+The host derives active conversations and execution timing; clients supply only account assertions, submission UUIDs, and message text.
+Recovery includes web-only accounts. Telegram polling and report scheduling require the optional Telegram token.
+Status survives reopening and distinguishes native queued work without exposing provider diagnostics.
+See the [internal host contract](shared_assistant_host.md) for token handling, limits, errors, and deployment restrictions.
+No browser-facing endpoint or second journal owner exists yet.
 
 Remaining checkpoints:
 
-- [ ] 3. Expose a single-owner assistant host with authenticated internal admission and status transport.
+- [x] 3. Expose a single-owner assistant host with authenticated internal admission and status transport.
 - [ ] 4. Add authenticated web history, submission, status, and resumable live-update endpoints.
 - [ ] 5. Add the main-app assistant sidebar and dedicated assistant-ui runtime adapter.
 - [ ] 6. Complete channel-aware delivery, progress routing, and idempotent history reconciliation.

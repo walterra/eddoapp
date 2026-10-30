@@ -72,6 +72,11 @@ describe('real CouchDB durable Telegram execution', () => {
     expect(await recovered.execute({ ...report, conversationId: 'new-after-report' })).toBe(
       'DAILY BRIEFING - Tuesday, October 20, 2026\n\nAPI migration is the priority.',
     );
+    expect(await recovered.getRequestStatus(report.requestId)).toEqual({
+      requestId: report.requestId,
+      conversationId: report.conversationId,
+      status: 'completed',
+    });
     expect(fixture.provider.state.callCount).toBe(2);
     expect(fixture.options.print).toHaveBeenCalledOnce();
     expect(fixture.options.send).toHaveBeenCalledTimes(2);

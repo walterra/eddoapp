@@ -239,13 +239,21 @@ The host authenticates users, discovers MCP schemas, schedules reports, and deli
 Interactive requests and scheduled reports share the user's active conversation.
 Mutation calls carry persisted operation identities; ambiguous outcomes require state inspection before retrying.
 
+## Shared Assistant Host
+
+This process also owns authenticated internal web admission and persisted request status.
+Set `ASSISTANT_INTERNAL_TOKEN` to enable loopback transport on port `3003`.
+Omit `TELEGRAM_BOT_TOKEN` for web-only hosting without Telegram polling or scheduled reports.
+Keep one process per database set; never start a separate web execution owner.
+See the [internal host contract](../../spec/shared_assistant_host.md) for configuration, security, protocol, and recovery restrictions.
+
 ## Configuration
 
 ### Environment Variables
 
 | Variable                | Description                                                          | Default                      |
 | ----------------------- | -------------------------------------------------------------------- | ---------------------------- |
-| `TELEGRAM_BOT_TOKEN`    | Bot token from @BotFather                                            | Required                     |
+| `TELEGRAM_BOT_TOKEN`    | Bot token from @BotFather; optional for internal-only hosting        | Required for Telegram        |
 | `ANTHROPIC_API_KEY`     | Anthropic API key (optional if using OAuth)                          | Optional                     |
 | `ANTHROPIC_OAUTH_TOKEN` | Anthropic OAuth token                                                | Optional                     |
 | `OPENAI_API_KEY`        | OpenAI API key                                                       | Optional                     |
@@ -465,16 +473,16 @@ Create and manage your bot:
 
 ### Environment Variables
 
-| Variable                | Required | Description                                           | Example                      |
-| ----------------------- | -------- | ----------------------------------------------------- | ---------------------------- |
-| `TELEGRAM_BOT_TOKEN`    | ✅       | From BotFather                                        | `123456789:ABC...`           |
-| `ANTHROPIC_API_KEY`     | ⚪       | Anthropic API key                                     | `sk-ant-api03-...`           |
-| `ANTHROPIC_OAUTH_TOKEN` | ⚪       | Anthropic OAuth token                                 | `...`                        |
-| `OPENAI_API_KEY`        | ⚪       | OpenAI API key                                        | `sk-...`                     |
-| `LLM_MODEL`             | ⚪       | Model id (provider must match configured credentials) | `claude-sonnet-4-5-20250929` |
-| `MCP_SERVER_URL`        | ✅       | MCP endpoint                                          | `http://localhost:3001/mcp`  |
-| `NODE_ENV`              | ⚪       | Environment                                           | `development`                |
-| `LOG_LEVEL`             | ⚪       | Logging level                                         | `info`                       |
+| Variable                | Required      | Description                                           | Example                      |
+| ----------------------- | ------------- | ----------------------------------------------------- | ---------------------------- |
+| `TELEGRAM_BOT_TOKEN`    | Telegram only | From BotFather                                        | `123456789:ABC...`           |
+| `ANTHROPIC_API_KEY`     | ⚪            | Anthropic API key                                     | `sk-ant-api03-...`           |
+| `ANTHROPIC_OAUTH_TOKEN` | ⚪            | Anthropic OAuth token                                 | `...`                        |
+| `OPENAI_API_KEY`        | ⚪            | OpenAI API key                                        | `sk-...`                     |
+| `LLM_MODEL`             | ⚪            | Model id (provider must match configured credentials) | `claude-sonnet-4-5-20250929` |
+| `MCP_SERVER_URL`        | ✅            | MCP endpoint                                          | `http://localhost:3001/mcp`  |
+| `NODE_ENV`              | ⚪            | Environment                                           | `development`                |
+| `LOG_LEVEL`             | ⚪            | Logging level                                         | `info`                       |
 
 ### Service Dependencies
 

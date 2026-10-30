@@ -18,6 +18,22 @@ export interface AssistantRequestReport {
   occurrence: string;
 }
 
+export type AssistantRequestState =
+  | 'queued'
+  | 'working'
+  | 'delivering'
+  | 'projecting'
+  | 'completed'
+  | 'failed'
+  | 'aborted';
+
+/** Exposes persisted request state without leaking journal internals or provider diagnostics. */
+export interface AssistantRequestStatus {
+  requestId: string;
+  conversationId: string;
+  status: AssistantRequestState;
+}
+
 /** Carries server-resolved identity and conversation routing into the assistant host. */
 export interface AssistantRequest {
   account: AssistantAccountIdentity;

@@ -21,7 +21,7 @@ describe('Config Module', () => {
     vi.clearAllMocks();
     // Reset process.env to clean state
     Object.keys(process.env).forEach((key) => {
-      if (key.startsWith('TELEGRAM_')) {
+      if (key.startsWith('TELEGRAM_') || key.startsWith('ASSISTANT_INTERNAL_')) {
         delete process.env[key];
       }
     });
@@ -35,6 +35,16 @@ describe('Config Module', () => {
       const { appConfig } = await import('./config');
 
       expect(appConfig.TELEGRAM_BOT_TOKEN).toBe('mock-token');
+    });
+
+    it('loads web-only host configuration without a Telegram token', async () => {
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      process.env.ASSISTANT_INTERNAL_TOKEN = 'web-only-host-secret-at-least-32-characters';
+      vi.resetModules();
+      const { appConfig } = await import('./config');
+      expect(appConfig.TELEGRAM_BOT_TOKEN).toBeUndefined();
+      expect(appConfig.ASSISTANT_INTERNAL_PORT).toBe(3003);
+      expect(appConfig.ASSISTANT_INTERNAL_TOKEN).toBe(process.env.ASSISTANT_INTERNAL_TOKEN);
     });
 
     it('should set default values for optional environment variables', async () => {

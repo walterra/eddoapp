@@ -20,6 +20,8 @@ Hosts inject:
 `openDurableRuntime` opens and resumes a journal; it does not authenticate an HTTP request.
 Keep it behind an authenticated host. Never open another owner for the same journal.
 The package provides no ownership election, fencing, HTTP listener, scheduler, or background database discovery.
+Its authenticated request handler delegates to host-injected admission and status operations; the host owns the network listener.
+See the [internal host contract](../../spec/shared_assistant_host.md) for protocol and deployment restrictions.
 
 ## Channel adapters
 
