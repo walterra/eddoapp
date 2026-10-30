@@ -8,7 +8,10 @@ export default defineConfig({
   test: {
     name: 'telegram-durable-integration',
     environment: 'node',
-    include: ['packages/telegram_bot/src/integration-tests/durable/**/*.test.ts'],
+    include: [
+      'packages/telegram_bot/src/integration-tests/durable/**/*.test.ts',
+      'packages/web-api/src/assistant/integration-tests/**/*.test.ts',
+    ],
     hookTimeout: 120_000,
     testTimeout: 60_000,
     fileParallelism: false,

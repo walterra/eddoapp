@@ -17,6 +17,9 @@ import { logger as honoLogger } from 'hono/logger';
 import nano from 'nano';
 import path from 'path';
 
+import { assistantHttpBoundary } from './assistant/assistant_access';
+import { createAssistantRoutes } from './assistant/assistant_routes';
+import { createAssistantService } from './assistant/assistant_service';
 import { createChatRoutes, createChatService } from './chat';
 import { config } from './config';
 import {
@@ -54,7 +57,7 @@ app.use(
   '*',
   cors({
     origin: config.corsOrigin,
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Last-Event-ID'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   }),
 );
@@ -71,6 +74,8 @@ app.route('/api/email', emailRoutes);
 // Authenticate browser senders before granting access to the collector's shared credential.
 app.use('/api/telemetry/*', jwt({ secret: config.jwtSecret, alg: 'HS256' }));
 app.route('/api/telemetry', telemetryRoutes);
+
+app.use('/api/assistant/*', assistantHttpBoundary());
 
 // Protected API routes (JWT required)
 // Custom middleware that supports both header and query param tokens (for SSE/EventSource)
@@ -95,6 +100,7 @@ app.route('/api/graphviz', graphvizLayoutRoutes);
 
 // Chat service and routes
 const env = createEnv();
+app.route('/api/assistant', createAssistantRoutes(createAssistantService(env)));
 const chatService = createChatService({ env, couchUrl: env.COUCHDB_URL });
 const chatRoutes = createChatRoutes(chatService);
 app.route('/api/chat', chatRoutes);

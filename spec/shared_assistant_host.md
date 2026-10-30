@@ -2,7 +2,7 @@
 
 Runs internal web admission, Telegram requests, and scheduled reports through one per-account runtime cache.
 The existing Telegram process remains the sole journal owner. No additional assistant process starts.
-Browser-facing routes and SSE remain separate implementation steps.
+The [authenticated web API](shared_assistant_web_api.md) forwards browser requests to this host and streams projection invalidations.
 
 ## Configuration
 
@@ -21,7 +21,7 @@ Generate an independent service secret with `openssl rand -hex 32` and store it 
 Never expose this secret through Vite variables, browser bundles, URLs, or logs.
 The service secret authorizes account assertions from a trusted backend; it is not an end-user credential.
 The web API must authenticate the user and derive the account before forwarding requests.
-Public web routes do not exist yet.
+Public web routes authenticate application JWTs and derive the account before calling these internal endpoints.
 
 The operator starts the existing process with `pnpm dev:telegram-bot` from the repository root.
 Startup binds HTTP to `127.0.0.1` only. The initial transport supports callers on the same host/network namespace.

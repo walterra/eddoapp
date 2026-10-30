@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: step 3 complete; authenticated internal admission and status share the existing owner. Browser-facing routes remain unimplemented.
+Status: step 4 complete; authenticated browser APIs provide projection history, host admission, durable status, and resumable SSE. Sidebar UI remains unimplemented.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -142,12 +142,18 @@ The host derives active conversations and execution timing; clients supply only 
 Recovery includes web-only accounts. Telegram polling and report scheduling require the optional Telegram token.
 Status survives reopening and distinguishes native queued work without exposing provider diagnostics.
 See the [internal host contract](shared_assistant_host.md) for token handling, limits, errors, and deployment restrictions.
-No browser-facing endpoint or second journal owner exists yet.
+Step 4 adds JWT-authenticated `/api/assistant` history, submission, status, and SSE routes.
+The web API remains read-only against chat projections and never imports or opens the execution runtime.
+Projection changes replay from account-scoped CouchDB checkpoints; tracked request statuses refresh from the existing host.
+Streams revalidate authorization, expire with JWTs, and cancel read-only polling on disconnect without cancelling accepted work.
+Requests and streams have bounded per-account limits. Sandbox chats remain unchanged.
+See the [web API contract](shared_assistant_web_api.md) for pagination, reconnects, errors, and configuration.
+Sidebar UI and admission-time history reconciliation remain unimplemented.
 
 Remaining checkpoints:
 
 - [x] 3. Expose a single-owner assistant host with authenticated internal admission and status transport.
-- [ ] 4. Add authenticated web history, submission, status, and resumable live-update endpoints.
+- [x] 4. Add authenticated web history, submission, status, and resumable live-update endpoints.
 - [ ] 5. Add the main-app assistant sidebar and dedicated assistant-ui runtime adapter.
 - [ ] 6. Complete channel-aware delivery, progress routing, and idempotent history reconciliation.
 - [ ] 7. Run cross-channel/recovery verification and update operational documentation.

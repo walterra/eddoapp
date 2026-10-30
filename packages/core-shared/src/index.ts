@@ -14,6 +14,11 @@ export {
   type AssistantTelegramMetadata,
 } from './types/assistant-conversation';
 export {
+  type AssistantHistoryChange,
+  type AssistantHistoryPage,
+  type AssistantMessageSubmission,
+} from './types/assistant_api';
+export {
   type AssistantAccountIdentity,
   type AssistantReportType,
   type AssistantRequest,
