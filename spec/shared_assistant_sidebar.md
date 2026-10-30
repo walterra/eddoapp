@@ -148,12 +148,24 @@ Projection changes replay from account-scoped CouchDB checkpoints; tracked reque
 Streams revalidate authorization, expire with JWTs, and cancel read-only polling on disconnect without cancelling accepted work.
 Requests and streams have bounded per-account limits. Sandbox chats remain unchanged.
 See the [web API contract](shared_assistant_web_api.md) for pagination, reconnects, errors, and configuration.
-Sidebar UI and admission-time history reconciliation remain unimplemented.
+Step 5 adds the independent main-header Assistant toggle and a lazy-loaded, account-scoped sidebar.
+A dedicated assistant-ui external-store adapter reuses thread/Markdown presentation without sandbox execution or provider-key controls.
+Wide screens use an inline panel; smaller screens use a native modal dialog with focus restoration.
+Closing the sidebar cancels reads, never accepted work. Authenticated streaming fetch resumes processed cursors with bounded reconnects.
+The browser persists one unresolved UUID before admission and reconciles optimistic text by exact projection identity.
+Retry checks durable status first and never replaces an ambiguous request's identity or automatically replays terminal mutations.
+Sandbox cancellation remains the thread default; the shared assistant explicitly disables that capability.
+See the [sidebar runtime guide](../packages/web-client/src/components/assistant/README.md) for browser storage, lifecycle, and tests.
+Admission-time history projection and cross-channel pending enumeration remain step 6.
+Live visual review requires an operator-started development server; neither port 3000 nor 5173 was available.
+Quality checks, unit tests, and the workspace build passed.
+Durable integration passed on rerun; the unchanged replay test initially encountered CouchDB change-order variability.
+No test or server workaround was applied. Follow up during step 7 verification.
 
 Remaining checkpoints:
 
 - [x] 3. Expose a single-owner assistant host with authenticated internal admission and status transport.
 - [x] 4. Add authenticated web history, submission, status, and resumable live-update endpoints.
-- [ ] 5. Add the main-app assistant sidebar and dedicated assistant-ui runtime adapter.
+- [x] 5. Add the main-app assistant sidebar and dedicated assistant-ui runtime adapter.
 - [ ] 6. Complete channel-aware delivery, progress routing, and idempotent history reconciliation.
 - [ ] 7. Run cross-channel/recovery verification and update operational documentation.

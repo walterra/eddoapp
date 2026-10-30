@@ -175,6 +175,10 @@ export {
 // Utils
 export { areTodosEqual } from './utils/are_todos_equal';
 export {
+  assistantProjectionIds,
+  type AssistantProjectionIds,
+} from './utils/assistant_message_identity';
+export {
   ALLOWED_ATTACHMENT_TYPES,
   MAX_ATTACHMENT_SIZE,
   buildAttachmentKey,

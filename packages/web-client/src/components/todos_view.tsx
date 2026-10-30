@@ -6,9 +6,11 @@ import {
   HiOutlineChat,
   HiOutlineClipboardList,
   HiOutlineLogout,
+  HiOutlineSparkles,
   HiOutlineUser,
 } from 'react-icons/hi';
 
+import type { AssistantSidebarState } from '../hooks/use_assistant_sidebar';
 import type { useDatabaseHealth } from '../hooks/use_database_health';
 import { AuditSidebar } from './audit_sidebar';
 import { HealthIndicatorPopover } from './health_indicator_popover';
@@ -16,6 +18,9 @@ import { SearchPopover } from './search_popover';
 
 // Lazy load ChatSidebar - it's heavy due to @assistant-ui dependencies
 const ChatSidebar = lazy(() => import('./chat').then((m) => ({ default: m.ChatSidebar })));
+const AssistantSidebar = lazy(() =>
+  import('./assistant/assistant_sidebar').then((m) => ({ default: m.AssistantSidebar })),
+);
 
 /** Activity sidebar state interface */
 export interface ActivitySidebarState {
@@ -47,9 +52,13 @@ const IconButton: FC<{
   label: string;
   title: string;
   isActive?: boolean;
+  controls?: string;
+  expanded?: boolean;
   children: ReactNode;
-}> = ({ onClick, label, title, isActive = false, children }) => (
+}> = ({ onClick, label, title, isActive = false, controls, expanded, children }) => (
   <button
+    aria-controls={controls}
+    aria-expanded={expanded}
     aria-label={label}
     className={`flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-400 ${
       isActive
@@ -74,8 +83,34 @@ interface HeaderProps {
   showAuditSidebar: boolean;
   onToggleAuditSidebar: () => void;
   showChatSidebar: boolean;
+  assistantSidebar: AssistantSidebarState;
   onSelectTodo: (todoId: string) => void;
 }
+
+const AssistantToggle: FC<AssistantSidebarState> = ({ isOpen, toggle }) => (
+  <IconButton
+    controls="shared-assistant-sidebar"
+    expanded={isOpen}
+    isActive={isOpen}
+    label={isOpen ? 'Hide assistant' : 'Show assistant'}
+    onClick={toggle}
+    title="Assistant — shared with Telegram"
+  >
+    <HiOutlineSparkles aria-hidden="true" className="h-5 w-5" />
+  </IconButton>
+);
+
+type AccountActionsProps = Pick<HeaderProps, 'onLogout' | 'onShowProfile'>;
+const AccountActions: FC<AccountActionsProps> = ({ onLogout, onShowProfile }) => (
+  <>
+    <IconButton label="Profile" onClick={onShowProfile} title="Profile">
+      <HiOutlineUser className="h-5 w-5" />
+    </IconButton>
+    <IconButton label="Logout" onClick={onLogout} title="Logout">
+      <HiOutlineLogout className="h-5 w-5" />
+    </IconButton>
+  </>
+);
 
 /** Header with navigation buttons */
 const Header: FC<HeaderProps> = ({
@@ -88,18 +123,20 @@ const Header: FC<HeaderProps> = ({
   showAuditSidebar,
   onToggleAuditSidebar,
   showChatSidebar,
+  assistantSidebar,
   onSelectTodo,
 }) => (
-  <div className="mb-2 flex items-center justify-between">
+  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
     <div>
       <h1 className="sr-only">Eddo</h1>
       <EddoLogo />
     </div>
-    <div className="flex items-center space-x-1">
+    <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-1">
       {isAuthenticated && (
         <>
           <SearchPopover onSelectTodo={onSelectTodo} />
           <HealthIndicatorPopover databaseName={databaseName} healthCheck={healthCheck} />
+          <AssistantToggle {...assistantSidebar} />
           <IconButton
             isActive={showChatSidebar}
             label={showChatSidebar ? 'Hide chat sidebar' : 'Show chat'}
@@ -116,12 +153,7 @@ const Header: FC<HeaderProps> = ({
           >
             <HiOutlineClipboardList className="h-5 w-5" />
           </IconButton>
-          <IconButton label="Profile" onClick={onShowProfile} title="Profile">
-            <HiOutlineUser className="h-5 w-5" />
-          </IconButton>
-          <IconButton label="Logout" onClick={onLogout} title="Logout">
-            <HiOutlineLogout className="h-5 w-5" />
-          </IconButton>
+          <AccountActions onLogout={onLogout} onShowProfile={onShowProfile} />
         </>
       )}
     </div>
@@ -136,6 +168,7 @@ export interface TodosViewProps {
   onShowChat: () => void;
   onShowProfile: () => void;
   activitySidebar: ActivitySidebarState;
+  assistantSidebar: AssistantSidebarState;
   chatSidebar: ChatSidebarState;
   onExpandChat: () => void;
   databaseName: string;
@@ -159,6 +192,40 @@ const MainContent: FC<{
   </main>
 );
 
+type TodoSidebarsProps = Pick<
+  TodosViewProps,
+  'activitySidebar' | 'assistantSidebar' | 'chatSidebar' | 'isAuthenticated' | 'onExpandChat'
+>;
+const TodoSidebars: FC<TodoSidebarsProps> = ({
+  activitySidebar,
+  assistantSidebar,
+  chatSidebar,
+  isAuthenticated,
+  onExpandChat,
+}) => (
+  <>
+    {isAuthenticated && activitySidebar.isOpen && (
+      <AuditSidebar isOpen={activitySidebar.isOpen} onToggle={activitySidebar.setOpen} />
+    )}
+    {isAuthenticated && assistantSidebar.isOpen && (
+      <Suspense fallback={null}>
+        <AssistantSidebar onClose={assistantSidebar.close} />
+      </Suspense>
+    )}
+    {isAuthenticated && (
+      <Suspense fallback={null}>
+        <ChatSidebar
+          isOpen={chatSidebar.isOpen}
+          onClose={chatSidebar.close}
+          onExpand={onExpandChat}
+          onSelectSession={chatSidebar.setSession}
+          selectedSessionId={chatSidebar.selectedSessionId}
+        />
+      </Suspense>
+    )}
+  </>
+);
+
 /** Todos view wrapper */
 export const TodosView: FC<TodosViewProps> = (props) => {
   const {
@@ -168,6 +235,7 @@ export const TodosView: FC<TodosViewProps> = (props) => {
     onShowChat,
     onShowProfile,
     activitySidebar,
+    assistantSidebar,
     chatSidebar,
     onExpandChat,
     databaseName,
@@ -185,6 +253,7 @@ export const TodosView: FC<TodosViewProps> = (props) => {
     showAuditSidebar: activitySidebar.isOpen,
     onToggleAuditSidebar: activitySidebar.toggle,
     showChatSidebar: chatSidebar.isOpen,
+    assistantSidebar,
     onSelectTodo,
   };
 
@@ -192,20 +261,13 @@ export const TodosView: FC<TodosViewProps> = (props) => {
     <div className="flex h-screen w-full flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1">
         <MainContent headerProps={headerProps}>{children}</MainContent>
-        {isAuthenticated && activitySidebar.isOpen && (
-          <AuditSidebar isOpen={activitySidebar.isOpen} onToggle={activitySidebar.setOpen} />
-        )}
-        {isAuthenticated && (
-          <Suspense fallback={null}>
-            <ChatSidebar
-              isOpen={chatSidebar.isOpen}
-              onClose={chatSidebar.close}
-              onExpand={onExpandChat}
-              onSelectSession={chatSidebar.setSession}
-              selectedSessionId={chatSidebar.selectedSessionId}
-            />
-          </Suspense>
-        )}
+        <TodoSidebars
+          activitySidebar={activitySidebar}
+          assistantSidebar={assistantSidebar}
+          chatSidebar={chatSidebar}
+          isAuthenticated={isAuthenticated}
+          onExpandChat={onExpandChat}
+        />
       </div>
     </div>
   );
