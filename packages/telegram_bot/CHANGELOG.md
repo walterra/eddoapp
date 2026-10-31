@@ -1,5 +1,16 @@
 # @eddo/telegram-bot
 
+## 0.12.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @eddo/assistant-server@0.12.0
+  - @eddo/core-server@0.12.0
+  - @eddo/core-shared@0.12.0
+  - @eddo/printer-service@0.12.0
+  - @eddo/web-api@0.12.0
+
 ## 0.11.0
 
 ### Patch Changes
