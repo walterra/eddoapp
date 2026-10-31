@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0
+
+### Minor Changes
+
+- [#679](https://github.com/walterra/eddoapp/pull/679) [`60acd16`](https://github.com/walterra/eddoapp/commit/60acd1648b25e9813fd5067e7d61a55bf37a403e) - Add a docked web assistant sidebar sharing conversation history and durable recovery with Telegram.
+
 ## 0.11.0
 
 ### Minor Changes
