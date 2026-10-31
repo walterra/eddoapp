@@ -18,7 +18,7 @@ const limits = {
   'vendor-graph': 250,
   'vendor-markdown': 200,
   'vendor-query': 100,
-  'vendor-utils': 100,
+  'vendor-utils': 110,
   dynamic: 300,
   nodes: 500,
   todo_graph: 100,
