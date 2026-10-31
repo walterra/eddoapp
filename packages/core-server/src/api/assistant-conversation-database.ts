@@ -15,9 +15,7 @@ import { getChatDatabaseName } from '../utils/database-names';
 import { setupAssistantConversationDesignDocuments } from './assistant-conversation-design-docs';
 
 type AssistantConversationDocument =
-  | AssistantConversation
-  | AssistantConversationMessageDoc
-  | AssistantConversationState;
+  AssistantConversation | AssistantConversationMessageDoc | AssistantConversationState;
 
 interface AssistantConversationContext {
   db: nano.DocumentScope<AssistantConversationDocument>;

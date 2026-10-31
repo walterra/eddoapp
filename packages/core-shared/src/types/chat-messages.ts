@@ -133,11 +133,7 @@ export interface CustomMessage {
 
 /** Union of all message types */
 export type ChatMessage =
-  | UserMessage
-  | AssistantMessage
-  | ToolResultMessage
-  | BashExecutionMessage
-  | CustomMessage;
+  UserMessage | AssistantMessage | ToolResultMessage | BashExecutionMessage | CustomMessage;
 
 /** Type guard for user messages */
 export function isUserMessage(message: ChatMessage): message is UserMessage {

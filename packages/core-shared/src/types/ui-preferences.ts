@@ -16,9 +16,4 @@ export type TimeTrackingStatus = 'all' | 'tracking' | 'not-tracking';
 
 /** Time range filter type */
 export type TimeRangeType =
-  | 'current-day'
-  | 'current-week'
-  | 'current-month'
-  | 'current-year'
-  | 'all-time'
-  | 'custom';
+  'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';

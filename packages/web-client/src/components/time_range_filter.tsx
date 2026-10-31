@@ -10,12 +10,7 @@ import {
 } from '../styles/interactive';
 
 export type TimeRangeType =
-  | 'current-day'
-  | 'current-week'
-  | 'current-month'
-  | 'current-year'
-  | 'all-time'
-  | 'custom';
+  'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';
 
 export interface TimeRange {
   type: TimeRangeType;

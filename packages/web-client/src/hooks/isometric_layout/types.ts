@@ -27,12 +27,7 @@ export interface TodoNodeData {
 
 /** Road tile variant types */
 export type RoadVariant =
-  | 'cross'
-  | 'corner-nw'
-  | 'corner-ne'
-  | 'corner-sw'
-  | 'corner-se'
-  | 'straight';
+  'cross' | 'corner-nw' | 'corner-ne' | 'corner-sw' | 'corner-se' | 'straight';
 
 /** Grid position for walking character navigation */
 export interface GridPosition {
