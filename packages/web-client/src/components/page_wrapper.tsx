@@ -3,6 +3,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useState, type FC } from 'react';
 
+import { useAssistantSidebar } from '../hooks/use_assistant_sidebar';
 import { useDatabaseHealth } from '../hooks/use_database_health';
 import { useProfile } from '../hooks/use_profile';
 import { useTodoFlyoutContext } from '../hooks/use_todo_flyout';
@@ -145,6 +146,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   const [currentView, setCurrentView] = useState<AppView>('todos');
   const activitySidebar = useActivitySidebar();
   const chatSidebar = useChatSidebar();
+  const assistantSidebar = useAssistantSidebar();
   const { openTodoById } = useTodoFlyoutContext();
   const databaseName = rawDb.name;
   const chatNav = useChatNavigation(chatSidebar, setCurrentView);
@@ -176,6 +178,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({ children, logout, isAuthenti
   return (
     <TodosView
       activitySidebar={activitySidebar}
+      assistantSidebar={assistantSidebar}
       chatSidebar={chatSidebar}
       databaseName={databaseName}
       healthCheck={healthCheck}

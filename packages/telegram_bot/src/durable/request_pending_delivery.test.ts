@@ -1,6 +1,6 @@
 import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
+import { isPendingDurableRequest } from '@eddo/assistant-server/request_wait';
 import { describe, expect, it, vi } from 'vitest';
-import { isPendingDurableRequest } from './request_wait.js';
 import { openDurableRuntime } from './runtime.js';
 import { createRuntimeFixture, createTestInput, deferred } from './test_helpers.js';
 

@@ -1,10 +1,17 @@
 # Build & Deployment
 
+## Shared assistant deployment
+
+The Assistant sidebar requires web-api, CouchDB, MCP, and exactly one assistant owner in addition to the browser bundle.
+Follow [shared assistant operations](shared-assistant-operations.md) for configuration, stop-first deployment, recovery, and rollback restrictions.
+Static client hosting alone does not provide authenticated assistant execution.
+
 ## Building for Production
 
 The application uses Vite for building the production bundle:
 
 1. **Create a production build**:
+
    ```bash
    pnpm build
    ```
@@ -16,6 +23,7 @@ The application uses Vite for building the production bundle:
    - Generates production-ready files in the `dist` directory
 
 2. **Preview the production build**:
+
    ```bash
    npx vite preview
    ```
@@ -24,7 +32,7 @@ The application uses Vite for building the production bundle:
 
 ## Deployment Process
 
-Since this is a client-side application with local browser storage, it can be deployed to any static web hosting:
+The browser bundle supports static hosting. Authenticated integrations, including the shared assistant, still require their backend services:
 
 1. **Static Hosting Options**:
    - GitHub Pages

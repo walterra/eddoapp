@@ -1,5 +1,9 @@
+import {
+  inputReportHeading,
+  renderReportHeading,
+  reportHeading,
+} from '@eddo/assistant-server/report_heading';
 import { describe, expect, it } from 'vitest';
-import { inputReportHeading, renderReportHeading, reportHeading } from './report_heading.js';
 import { createTestInput } from './test_helpers.js';
 
 describe('deterministic report calendar facts', () => {

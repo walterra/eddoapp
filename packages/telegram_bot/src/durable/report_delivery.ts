@@ -1,17 +1,16 @@
+import { renderReportHeading } from '@eddo/assistant-server/report_heading';
+import { assistantRequest } from '@eddo/assistant-server/request_channel';
+import type { ReportType, RuntimeRequestInput } from '@eddo/assistant-server/state';
+import { createEnv, createUserRegistry } from '@eddo/core-server';
+import type { UserRegistryEntry } from '@eddo/core-shared';
 import { BRIEFING_CONTENT_MARKER, RECAP_CONTENT_MARKER } from '../constants/briefing.js';
 import { printIfEnabled } from '../scheduler/helpers/printer.js';
 import { lookupUserByTelegramId } from '../utils/user-lookup.js';
-import { renderReportHeading } from './report_heading.js';
-import type { DurableRequestInput, ReportType } from './state.js';
 
-export interface PreparedReply {
-  answer: string;
-  printable: boolean;
-  reportType?: ReportType;
-}
+import type { PreparedReply } from '@eddo/assistant-server/reply';
 
 /** Removes report transport markers while retaining the native answer in the conversation. */
-export function prepareReply(input: DurableRequestInput, answer: string): PreparedReply {
+export function prepareReply(input: RuntimeRequestInput, answer: string): PreparedReply {
   const reportType = input.report?.type ?? detectReportType(answer);
   if (!reportType) return { answer, printable: false };
   const marker = reportType === 'briefing' ? BRIEFING_CONTENT_MARKER : RECAP_CONTENT_MARKER;
@@ -42,16 +41,27 @@ function detectReportType(answer: string): ReportType | undefined {
   return undefined;
 }
 
+/** Resolves web report printing preferences without requiring Telegram linking. */
+async function lookupPrintingAccount(username: string): Promise<UserRegistryEntry | null> {
+  const env = createEnv();
+  const user = await createUserRegistry(env.COUCHDB_URL, env).findByUsername(username);
+  return user?.status === 'active' ? user : null;
+}
+
 /** Resolves current preferences before a best-effort, non-replayed printer attempt. */
 export async function printDurableReport(
   username: string,
-  input: DurableRequestInput,
+  input: RuntimeRequestInput,
   answer: string,
   manualReportType?: ReportType,
 ): Promise<void> {
   const type = input.report?.type ?? manualReportType;
   if (!type) return;
-  const user = await lookupUserByTelegramId(input.telegramId);
+  const request = assistantRequest(username, input);
+  const user =
+    request.source.channel === 'telegram'
+      ? await lookupUserByTelegramId(request.source.telegram.userId)
+      : await lookupPrintingAccount(username);
   if (user?.username !== username)
     throw new Error('Report printer identity is no longer authorized');
   const enabled =

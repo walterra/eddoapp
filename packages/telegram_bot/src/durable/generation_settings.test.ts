@@ -1,7 +1,8 @@
 import type { SimpleStreamOptions } from '@earendil-works/pi-ai';
 import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
+import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { openDurableRuntime, type DurableRuntime } from './runtime.js';
+import { openDurableRuntime } from './runtime.js';
 import { createRuntimeFixture, createTestInput } from './test_helpers.js';
 
 vi.mock('../utils/user-lookup.js', () => ({ lookupUserByTelegramId: vi.fn() }));

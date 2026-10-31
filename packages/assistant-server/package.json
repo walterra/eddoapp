@@ -1,0 +1,30 @@
+{
+  "name": "@eddo/assistant-server",
+  "version": "0.11.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./*": "./dist/*.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@earendil-works/chord": "1.3.0",
+    "@earendil-works/pi-ai": "1.3.0",
+    "@earendil-works/pi-durable": "1.3.0",
+    "@eddo/core-instrumentation": "workspace:*",
+    "@eddo/core-shared": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
+    "grammy": "^1.46.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "pi-durable-couchdb": "0.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  }
+}

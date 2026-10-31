@@ -1,4 +1,4 @@
-import type { DurableRequestInput } from './state.js';
+import type { RuntimeRequestInput } from '@eddo/assistant-server/state';
 
 export const MAX_DELIVERY_FAILURES = 5;
 const RETRY_DELAY_MS = 30_000;
@@ -10,7 +10,7 @@ export interface DeliveryRetry {
 }
 
 /** Bounds report delivery to its local day and interactive delivery to one additional hour. */
-export function deliveryDeadline(input: DurableRequestInput): number {
+export function deliveryDeadline(input: RuntimeRequestInput): number {
   return input.deadline + (input.report ? 0 : INTERACTIVE_DELIVERY_GRACE_MS);
 }
 

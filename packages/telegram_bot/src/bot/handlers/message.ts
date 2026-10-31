@@ -1,5 +1,5 @@
-import { isDeliveredRequestFailure } from '../../durable/request_failure.js';
-import { isPendingDurableRequest } from '../../durable/request_wait.js';
+import { isDeliveredRequestFailure } from '@eddo/assistant-server/request_failure';
+import { isPendingDurableRequest } from '@eddo/assistant-server/request_wait';
 import { executeAgentMessage } from '../../durable/routing.js';
 import { logger, SpanAttributes, withSpan } from '../../utils/logger.js';
 import type { BotContext } from '../bot.js';

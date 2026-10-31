@@ -1,8 +1,8 @@
 import type { TaskId } from '@earendil-works/pi-durable';
+import { waitForRequestResult } from '@eddo/assistant-server/request_wait';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BotContext } from '../bot/bot.js';
 import { handleMessage } from '../bot/handlers/message.js';
-import { waitForRequestResult } from './request_wait.js';
 
 const mocks = vi.hoisted(() => ({
   execute: vi.fn(),

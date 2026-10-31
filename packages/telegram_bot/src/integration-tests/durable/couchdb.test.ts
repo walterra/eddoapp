@@ -1,10 +1,11 @@
 import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
+import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import { CouchDBContainer, type StartedCouchDBContainer } from '@testcontainers/couchdb';
 import { randomUUID } from 'node:crypto';
 import { openCouchDbStorage } from 'pi-durable-couchdb';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { couchRequest, type CouchEndpoint } from '../../durable/couch.js';
-import { openDurableRuntime, type DurableRuntime } from '../../durable/runtime.js';
+import { openDurableRuntime } from '../../durable/runtime.js';
 import { createRuntimeFixture, createTestInput, deferred } from '../../durable/test_helpers.js';
 
 vi.mock('../../utils/user-lookup.js', () => ({ lookupUserByTelegramId: vi.fn() }));
@@ -71,6 +72,11 @@ describe('real CouchDB durable Telegram execution', () => {
     expect(await recovered.execute({ ...report, conversationId: 'new-after-report' })).toBe(
       'DAILY BRIEFING - Tuesday, October 20, 2026\n\nAPI migration is the priority.',
     );
+    expect(await recovered.getRequestStatus(report.requestId)).toEqual({
+      requestId: report.requestId,
+      conversationId: report.conversationId,
+      status: 'completed',
+    });
     expect(fixture.provider.state.callCount).toBe(2);
     expect(fixture.options.print).toHaveBeenCalledOnce();
     expect(fixture.options.send).toHaveBeenCalledTimes(2);

@@ -1,6 +1,6 @@
 import { fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
+import { isDeliveredRequestFailure } from '@eddo/assistant-server/request_failure';
 import { describe, expect, it, vi } from 'vitest';
-import { isDeliveredRequestFailure } from './request_failure.js';
 import { openDurableRuntime } from './runtime.js';
 import { createRuntimeFixture, createTestInput } from './test_helpers.js';
 

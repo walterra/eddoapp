@@ -3,6 +3,8 @@
 ## Supported execution boundary
 
 Use Pi Durable as the sole Telegram execution authority. Keep application chat projections separate from execution journals.
+The [shared assistant runtime](../packages/assistant-server/README.md) owns Harness execution; the Telegram host supplies channel adapters.
+The same process exposes optional [authenticated internal admission and status](shared_assistant_host.md), without another execution owner.
 
 | Capability         | Supported behavior                                                                                     |
 | ------------------ | ------------------------------------------------------------------------------------------------------ |
@@ -77,17 +79,17 @@ Do not assume restoring chat history restores native execution state.
 
 ## Interrupted or failed work
 
-| Symptom                             | Action                                                                                             |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Model generation failed             | Inspect its failed outcome and delivered notice; do not treat notice delivery as execution success |
-| Scheduled model error               | Allow at most two additional read-only attempts within the occurrence deadline                     |
-| Interactive mutation interrupted    | Inspect current todo state before submitting another mutation                                      |
-| Telegram send ambiguous             | Check Telegram and delivery receipts; a retry can duplicate the affected chunk                     |
-| Print ambiguous                     | Check the printer; automatic recovery does not repeat the claimed attempt                          |
-| Projection unavailable              | Restore the chat database; history retries do not block replies, but request completion waits      |
-| Telegram delivery unavailable       | Restore connectivity before expiry; delivery stops after five failed sends or permanent API errors |
-| Journal publication failed          | Allow the failed runtime to close and recovery to reopen it; do not reuse failed handles           |
-| Relinked Telegram identity rejected | Keep execution blocked pending an approved ownership migration                                     |
+| Symptom                             | Action                                                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Model generation failed             | Inspect its failed outcome and delivered notice; do not treat notice delivery as execution success                |
+| Scheduled model error               | Allow at most two additional read-only attempts within the occurrence deadline                                    |
+| Interactive mutation interrupted    | Inspect current todo state before submitting another mutation                                                     |
+| Telegram send ambiguous             | Check Telegram and delivery receipts; a retry can duplicate the affected chunk                                    |
+| Print ambiguous                     | Check the printer; automatic recovery does not repeat the claimed attempt                                         |
+| Projection unavailable              | Restore the chat database; accepted-text projection gates generation and reply projection gates Telegram delivery |
+| Telegram delivery unavailable       | Restore connectivity before expiry; delivery stops after five failed sends or permanent API errors                |
+| Journal publication failed          | Allow the failed runtime to close and recovery to reopen it; do not reuse failed handles                          |
+| Relinked Telegram identity rejected | Keep execution blocked pending an approved ownership migration                                                    |
 
 Delivery backoff persists across restarts and honors Telegram rate-limit delays, with a minimum of 30 seconds.
 Scheduled delivery expires at the occurrence's local day boundary. Interactive delivery expires one hour after its generation deadline.
@@ -124,7 +126,7 @@ Snapshots, bounded-memory storage, safe journal retention, and distributed owner
 
 ## Admission and execution limits
 
-Startup recovers active users linked to Telegram with MCP credentials. Failed runtimes reopen on a 30-second recovery cycle.
+Startup recovers active accounts with MCP credentials, including accounts without Telegram links. Failed runtimes reopen on a 30-second recovery cycle.
 Duplicate Telegram updates reuse stored requests, including after restart or `/new`.
 Scheduled occurrences use stable request IDs; admission returns before generation or delivery completes.
 Pre-migration reservation receipts remain read-only duplicate safeguards. New reports create no legacy reservations.
@@ -149,9 +151,14 @@ Failed generation and expired inputs retain failed outcomes after delivery of th
 
 Interactive requests and scheduled reports share the active conversation queue and native automatic compaction.
 `/new` selects a separate conversation and isolates earlier archives.
-Replies deliver before application-facing chat history persists. Successful request completion guarantees persisted history.
-History writes use stable IDs and a persisted request phase with 30-second retry checkpoints.
-Projection failures delay request completion without repeating committed Telegram sends or report printing.
+Accepted user text persists before generation. Generated replies enter shared history before Telegram delivery, including scheduled reports.
+Report printing still requires committed Telegram delivery receipts. Web-origin work never triggers Telegram transport or progress.
+History writes verify stable IDs, repair statistics, and persist 30-second retry checkpoints.
+Projection failures retry writes without repeating generation, tool effects, committed Telegram sends, or printing.
+Successful request completion guarantees persisted history.
+An account-owned pending index supports authenticated browser recovery without opening another execution owner.
+Startup backfills legacy pending task mappings; terminal checkpoints remove index entries atomically.
+See the [host protocol](shared_assistant_host.md) and [browser API](shared_assistant_web_api.md) for bounded lifecycle discovery.
 The caller's wait remains bounded; durable history recovery continues after the caller stops waiting.
 Legacy background projection tasks remain registered so existing journals can recover.
 

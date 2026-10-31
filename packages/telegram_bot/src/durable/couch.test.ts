@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createCouchEndpoint, getDurableDatabaseName } from './couch.js';
-import { telegramChunk } from './request_task.js';
+import { telegramChunk } from './request_delivery.js';
 
 describe('durable storage and transport', () => {
   it('removes and decodes CouchDB URL credentials', () => {

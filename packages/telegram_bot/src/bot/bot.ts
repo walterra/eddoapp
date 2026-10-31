@@ -27,6 +27,7 @@ function createInitialSession(): SessionData {
  * Creates the Telegram bot instance with session support
  */
 export function createBot(): Bot<BotContext> {
+  if (!appConfig.TELEGRAM_BOT_TOKEN) throw new Error('Telegram bot token is not configured');
   const bot = new Bot<BotContext>(appConfig.TELEGRAM_BOT_TOKEN);
 
   bot.use(privateChatMiddleware);

@@ -13,6 +13,21 @@ export {
   type AssistantMessageChannelMetadata,
   type AssistantTelegramMetadata,
 } from './types/assistant-conversation';
+export {
+  type AssistantHistoryChange,
+  type AssistantHistoryPage,
+  type AssistantMessageSubmission,
+  type AssistantPendingRequests,
+} from './types/assistant_api';
+export {
+  type AssistantAccountIdentity,
+  type AssistantReportType,
+  type AssistantRequest,
+  type AssistantRequestReport,
+  type AssistantRequestSource,
+  type AssistantRequestState,
+  type AssistantRequestStatus,
+} from './types/assistant_request';
 export { buildAttachmentDocId, parseAttachmentDocId, type AttachmentDoc } from './types/attachment';
 export {
   createDefaultSessionStats,
@@ -160,6 +175,10 @@ export {
 
 // Utils
 export { areTodosEqual } from './utils/are_todos_equal';
+export {
+  assistantProjectionIds,
+  type AssistantProjectionIds,
+} from './utils/assistant_message_identity';
 export {
   ALLOWED_ATTACHMENT_TYPES,
   MAX_ATTACHMENT_SIZE,

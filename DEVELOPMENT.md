@@ -12,6 +12,7 @@ This guide provides detailed technical information for developing Eddo, a GTD-in
 - **`packages/core-shared`**: Shared types, utilities, and data models
 - **`packages/core-server`**: Server-side database and configuration utilities
 - **`packages/core-client`**: Browser configuration
+- **`packages/assistant-server`**: [Shared Pi Durable runtime](packages/assistant-server/README.md) with host-injected channel adapters
 - **`packages/telegram_bot`**: Telegram assistant using Pi Durable and configurable model providers
 - **`packages/setup`**: Setup wizard and environment checks
 - **`packages/chat-agent`**: Bundled Pi skills and extensions
@@ -114,7 +115,7 @@ pnpm build:telegram-bot # Build telegram bot only
 pnpm test              # Run unit tests
 pnpm test:unit         # Run unit tests explicitly
 pnpm test:integration:mcp-server # MCP integration tests with disposable CouchDB
-pnpm test:integration:durable    # Durable recovery tests; no model API calls
+pnpm test:integration:durable    # Durable recovery and assistant web projection tests; no model API calls
 pnpm test:e2e          # Run end-to-end tests (auto-starts CouchDB container)
 pnpm test:all          # Run full test suite with linting
 pnpm test:ci           # CI test suite
@@ -204,6 +205,9 @@ Features:
 - Shared interactive/report conversations with durable recovery
 
 See [Telegram operations](spec/durable_telegram_operations.md) for deployment, replay policies, report contracts, telemetry, and capacity limits.
+See [shared assistant hosting](spec/shared_assistant_host.md) for internal transport, web-only startup, and single-owner restrictions.
+See the [assistant web API](spec/shared_assistant_web_api.md) for authenticated history, submission, status, and SSE reconnects.
+See [shared assistant operations](docs/shared-assistant-operations.md) for coordinated deployment, rollback restrictions, and browser acceptance.
 See [agent integration tests](packages/telegram_bot/src/integration-tests/README.md) for recording and playback workflows.
 Recording calls a model provider and incurs API charges; playback runs without provider credentials.
 

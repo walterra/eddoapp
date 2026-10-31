@@ -1,10 +1,7 @@
 import type { MessageEntity } from 'grammy/types';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 
-export interface TelegramText {
-  text: string;
-  entities: MessageEntity[];
-}
+import type { TelegramText } from '@eddo/assistant-server/delivery_state';
 
 interface MarkdownNode {
   type: string;

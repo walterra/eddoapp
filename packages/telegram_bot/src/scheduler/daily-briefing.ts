@@ -1,3 +1,4 @@
+import type { ReportType } from '@eddo/assistant-server/state';
 import {
   createEnv,
   createUserRegistry,
@@ -5,7 +6,6 @@ import {
   formatTimeInTimeZone,
   normalizeTimeZone,
 } from '@eddo/core-server';
-import type { ReportType } from '../durable/state.js';
 import { logger, withSpan } from '../utils/logger.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 import {

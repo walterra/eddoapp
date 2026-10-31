@@ -1,7 +1,7 @@
+import { deliveredRequestFailure } from '@eddo/assistant-server/request_failure';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BotContext } from '../bot/bot.js';
 import { handleMessage } from '../bot/handlers/message.js';
-import { deliveredRequestFailure } from './request_failure.js';
 
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), fatal: vi.fn(), success: vi.fn() }));
 vi.mock('./routing.js', () => ({ executeAgentMessage: mocks.execute }));

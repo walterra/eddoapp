@@ -7,7 +7,7 @@ import { getUserContextForMCP } from '../utils/user-lookup.js';
  */
 export interface MCPUserContext {
   username: string;
-  telegramId: number;
+  telegramId?: number;
   mcpApiKey: string;
   operationId?: string;
 }
@@ -111,7 +111,7 @@ export function validateUserContextForMCP(
     return false;
   }
 
-  const required = ['username', 'telegramId', 'mcpApiKey'];
+  const required = ['username', 'mcpApiKey'];
   for (const field of required) {
     if (!userContext[field as keyof MCPUserContext]) {
       logger.warn('Incomplete user context for MCP operations', {

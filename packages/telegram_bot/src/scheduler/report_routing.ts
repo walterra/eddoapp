@@ -1,11 +1,11 @@
+import { reportHeading } from '@eddo/assistant-server/report_heading';
+import type { ReportType } from '@eddo/assistant-server/state';
 import {
   formatDateInTimeZone,
   getUtcRangeForTimeZoneDate,
   normalizeTimeZone,
 } from '@eddo/core-server';
 import { DAILY_BRIEFING_REQUEST_MESSAGE, getRecapRequestMessage } from '../constants/briefing.js';
-import { reportHeading } from '../durable/report_heading.js';
-import type { ReportType } from '../durable/state.js';
 import type { TelegramUser } from '../utils/user-lookup.js';
 import { hasReportReservation } from './report-reservation.js';
 

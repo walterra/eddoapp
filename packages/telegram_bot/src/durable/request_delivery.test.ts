@@ -1,10 +1,10 @@
 import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context';
-import type { NextTaskState } from '@earendil-works/pi-durable';
+import type { NextTaskState, Tx } from '@earendil-works/pi-durable';
+import type { RequestRuntime } from '@eddo/assistant-server/request_generation';
+import type { RequestCheckpoint } from '@eddo/assistant-server/state';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deliverAnswer } from './request_delivery.js';
-import type { RequestRuntime } from './request_generation.js';
-import type { RequestDependencies } from './request_task.js';
-import type { RequestCheckpoint } from './state.js';
+import type { RequestDependencies } from './request_dependencies.js';
 import { createTestInput } from './test_helpers.js';
 
 type DeliveryTask = Parameters<typeof deliverAnswer>[0];
@@ -30,8 +30,10 @@ function fixture(overrides: Partial<DeliveryCheckpoint> = {}) {
     signal: new AbortController().signal,
     report: vi.fn(),
     sleep,
-    commit: async (update: () => DeliveryState) => {
-      states.push(update());
+    commit: async (update: Parameters<RequestRuntime['commit']>[0]) => {
+      const tx = { doc: vi.fn().mockResolvedValue({ ids: {} }) } as unknown as Tx;
+      const state = await update(tx, task);
+      if (state) states.push(state);
     },
   } as unknown as RequestRuntime;
   const dependencies: RequestDependencies = {

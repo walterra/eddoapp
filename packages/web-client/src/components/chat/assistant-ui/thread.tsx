@@ -10,7 +10,7 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from '@assistant-ui/react';
-import { ArrowUpIcon, Square } from 'lucide-react';
+import { ArrowUpIcon, LoaderCircle, Square } from 'lucide-react';
 import type { FC } from 'react';
 import { createContext, useContext } from 'react';
 
@@ -33,10 +33,16 @@ function useReasoningVisibility(): ReasoningVisibilityContextValue {
 /** Props for Thread */
 export interface ThreadProps {
   showReasoning: boolean;
+  allowCancellation?: boolean;
+  maxMessageLength?: number;
 }
 
 /** Main Thread component */
-export const Thread: FC<ThreadProps> = ({ showReasoning }) => {
+export const Thread: FC<ThreadProps> = ({
+  showReasoning,
+  allowCancellation = true,
+  maxMessageLength,
+}) => {
   return (
     <ImageLightboxProvider>
       <ReasoningVisibilityContext.Provider value={{ showReasoning }}>
@@ -55,7 +61,7 @@ export const Thread: FC<ThreadProps> = ({ showReasoning }) => {
           </ThreadPrimitive.Viewport>
 
           <div className="border-t border-neutral-200 p-3 dark:border-neutral-700">
-            <Composer />
+            <Composer allowCancellation={allowCancellation} maxMessageLength={maxMessageLength} />
           </div>
         </ThreadPrimitive.Root>
       </ReasoningVisibilityContext.Provider>
@@ -80,12 +86,18 @@ const ThreadWelcome: FC = () => {
 };
 
 /** Message composer */
-const Composer: FC = () => {
+interface ComposerProps {
+  allowCancellation: boolean;
+  maxMessageLength?: number;
+}
+const Composer: FC<ComposerProps> = ({ allowCancellation, maxMessageLength }) => {
   return (
     <ComposerPrimitive.Root className="flex items-end gap-2">
       <ComposerPrimitive.Input
+        aria-label="Message"
         autoFocus
-        className="focus:border-primary-500 focus:ring-primary-500 flex-1 resize-none rounded-lg border border-neutral-300 bg-white p-3 text-sm outline-none focus:ring-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+        className="focus:border-primary-500 focus:ring-primary-500 min-w-0 flex-1 resize-none rounded-lg border border-neutral-300 bg-white p-3 text-sm outline-none focus:ring-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+        maxLength={maxMessageLength}
         placeholder="Type a message..."
         rows={1}
       />
@@ -93,6 +105,7 @@ const Composer: FC = () => {
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <button
+            aria-label="Send message"
             className="bg-primary-600 hover:bg-primary-700 flex h-10 w-10 items-center justify-center rounded-lg text-white disabled:opacity-50"
             type="submit"
           >
@@ -102,14 +115,25 @@ const Composer: FC = () => {
       </ThreadPrimitive.If>
 
       <ThreadPrimitive.If running>
-        <ComposerPrimitive.Cancel asChild>
-          <button
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 text-white hover:bg-red-700"
-            type="button"
+        {allowCancellation ? (
+          <ComposerPrimitive.Cancel asChild>
+            <button
+              aria-label="Stop generation"
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 text-white hover:bg-red-700"
+              type="button"
+            >
+              <Square className="h-4 w-4" />
+            </button>
+          </ComposerPrimitive.Cancel>
+        ) : (
+          <span
+            aria-label="Assistant response pending"
+            className="flex h-10 w-10 items-center justify-center text-neutral-500"
+            role="status"
           >
-            <Square className="h-4 w-4" />
-          </button>
-        </ComposerPrimitive.Cancel>
+            <LoaderCircle aria-hidden="true" className="h-5 w-5 animate-spin" />
+          </span>
+        )}
       </ThreadPrimitive.If>
     </ComposerPrimitive.Root>
   );

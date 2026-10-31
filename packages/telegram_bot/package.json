@@ -22,6 +22,7 @@
     "@earendil-works/chord": "1.3.0",
     "@earendil-works/pi-ai": "1.3.0",
     "@earendil-works/pi-durable": "1.3.0",
+    "@eddo/assistant-server": "workspace:*",
     "@eddo/core-instrumentation": "workspace:*",
     "@eddo/core-server": "workspace:*",
     "@eddo/core-shared": "workspace:*",

@@ -1,12 +1,13 @@
 import { createModels, type Models } from '@earendil-works/pi-ai/models';
 import { builtinModels } from '@earendil-works/pi-ai/providers/all';
 import { MemoryStorage, type ModelRef } from '@earendil-works/pi-durable';
+import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import { fileURLToPath } from 'node:url';
 import { vi } from 'vitest';
 import { resolveConfiguredModel } from '../../ai/llm-model-resolution.js';
 import { projectDurableExchange } from '../../durable/projection.js';
 import { buildDurablePrompt } from '../../durable/prompt.js';
-import { openDurableRuntime, type DurableRuntime } from '../../durable/runtime.js';
+import { openDurableRuntime } from '../../durable/runtime.js';
 import { resolveDurableUser } from '../../durable/tools.js';
 import { scopeMCPIntegration, setupMCPIntegration, type MCPClient } from '../../mcp/client.js';
 import {
