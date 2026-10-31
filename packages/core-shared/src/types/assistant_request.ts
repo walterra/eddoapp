@@ -7,8 +7,7 @@ export interface AssistantAccountIdentity {
 
 /** Routes replies to the originating channel without requiring a Telegram link. */
 export type AssistantRequestSource =
-  | { channel: 'web' }
-  | { channel: 'telegram'; telegram: AssistantTelegramMetadata };
+  { channel: 'web' } | { channel: 'telegram'; telegram: AssistantTelegramMetadata };
 
 export type AssistantReportType = 'briefing' | 'recap';
 
@@ -19,13 +18,7 @@ export interface AssistantRequestReport {
 }
 
 export type AssistantRequestState =
-  | 'queued'
-  | 'working'
-  | 'delivering'
-  | 'projecting'
-  | 'completed'
-  | 'failed'
-  | 'aborted';
+  'queued' | 'working' | 'delivering' | 'projecting' | 'completed' | 'failed' | 'aborted';
 
 /** Exposes persisted request state without leaking journal internals or provider diagnostics. */
 export interface AssistantRequestStatus {
