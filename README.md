@@ -24,6 +24,7 @@ Manage todos through the web app, a Telegram assistant, or the Model Context Pro
 - **Task relationships** — Explore subtasks and blocking dependencies in a graph.
 - **Time tracking** — Start and pause timers, review summaries, and filter active tasks.
 - **Offline-first web app** — Work with local storage and sync changes through CouchDB.
+- **Shared assistant** — Continue the same conversation in the web sidebar and Telegram, with durable history and recovery.
 - **Telegram assistant** — Manage tasks in natural language with a configurable AI provider and model.
 - **Scheduled reports** — Receive daily briefings and recaps in your timezone.
 - **External sources** — Import GitHub issues, RSS items, and emails into todos.
@@ -159,6 +160,7 @@ See the [disaster recovery guide](docs/07_disaster-recovery.md) for full-server 
 - [Development guide](DEVELOPMENT.md) — Package structure, commands, testing, and contribution workflow.
 - [Architecture](docs/03_architecture.md) — Storage and application design.
 - [Deployment](docs/05_deployment.md) — Deployment guidance.
+- [Shared assistant operations](docs/shared-assistant-operations.md) — Web/Telegram setup, deployment, recovery, and acceptance checks.
 - [Telegram operations](spec/durable_telegram_operations.md) — Single-owner deployment and durable recovery.
 - [Disaster recovery](docs/07_disaster-recovery.md) — Backup and restore procedures.
 - [Benchmarks](scripts/benchmarks/README.md) — Isolated synthetic workloads and performance reports.

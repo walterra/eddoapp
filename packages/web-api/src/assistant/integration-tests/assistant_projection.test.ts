@@ -54,7 +54,23 @@ describe('assistant web projection against disposable CouchDB', () => {
     const first = await store.changes(username, since, new AbortController().signal);
     const replay = await store.changes(username, since, new AbortController().signal);
     expect(first.changes.some((change) => change.change.documentId === message._id)).toBe(true);
-    expect(replay).toEqual(first);
+    // CouchDB shard order and intermediate sequence tokens can differ across replay reads.
+    const invalidations = (batch: typeof first) =>
+      batch.changes
+        .map((entry) => entry.change)
+        .sort((left, right) => left.documentId.localeCompare(right.documentId));
+    expect(invalidations(replay)).toEqual(invalidations(first));
+    expect(replay.lastSequence).toBe(first.lastSequence);
+    const resumed = await store.changes(
+      username,
+      first.changes[0].sequence,
+      new AbortController().signal,
+    );
+    const observed = new Set([
+      first.changes[0].change.documentId,
+      ...resumed.changes.map((entry) => entry.change.documentId),
+    ]);
+    for (const entry of first.changes) expect(observed.has(entry.change.documentId)).toBe(true);
     expect(JSON.stringify(first)).not.toContain('Private reply');
   });
 

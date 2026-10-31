@@ -13,7 +13,6 @@ import {
 import type { AssistantSession, AssistantSnapshot } from './assistant_types';
 
 const fixture = vi.hoisted(() => ({
-  desktop: true,
   state: null as AssistantSnapshot | null,
   session: null as AssistantSession | null,
   logout: vi.fn(),
@@ -21,13 +20,11 @@ const fixture = vi.hoisted(() => ({
 vi.mock('../../hooks/use_auth', () => ({
   useAuth: () => ({ authToken: { username: 'alice', token: 'jwt' }, logout: fixture.logout }),
 }));
-vi.mock('../../hooks/use_media_query', () => ({ useMediaQuery: () => fixture.desktop }));
 vi.mock('./use_assistant_session', () => ({
   useAssistantSession: () => ({ state: fixture.state, session: fixture.session }),
 }));
 
 beforeEach(() => {
-  fixture.desktop = true;
   fixture.state = {
     ...historyPage(),
     messages: [
@@ -63,18 +60,6 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', TestObserver);
   vi.stubGlobal('IntersectionObserver', TestObserver);
   Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value: vi.fn() });
-  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
-    configurable: true,
-    value: function showModal(this: HTMLDialogElement) {
-      this.open = true;
-    },
-  });
-  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
-    configurable: true,
-    value: function close(this: HTMLDialogElement) {
-      this.open = false;
-    },
-  });
 });
 afterEach(() => {
   cleanup();
@@ -154,16 +139,17 @@ describe('shared assistant sidebar', () => {
     }
   });
 
-  it('uses a mobile dialog, handles Escape, and restores focus after closing', async () => {
-    fixture.desktop = false;
+  it('stays docked on narrow screens, handles Escape, and restores focus after closing', async () => {
+    vi.stubGlobal('innerWidth', 375);
     const trigger = document.createElement('button');
     trigger.textContent = 'Assistant trigger';
     document.body.append(trigger);
     trigger.focus();
     const onClose = vi.fn();
     const view = render(<AssistantSidebar onClose={onClose} />);
-    const dialog = screen.getByRole('dialog', { name: 'Assistant' });
-    fireEvent(dialog, new Event('cancel', { cancelable: true }));
+    const sidebar = screen.getByRole('complementary', { name: 'Assistant' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.keyDown(sidebar, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
     view.unmount();
     expect(document.activeElement).toBe(trigger);

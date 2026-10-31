@@ -207,6 +207,7 @@ Features:
 See [Telegram operations](spec/durable_telegram_operations.md) for deployment, replay policies, report contracts, telemetry, and capacity limits.
 See [shared assistant hosting](spec/shared_assistant_host.md) for internal transport, web-only startup, and single-owner restrictions.
 See the [assistant web API](spec/shared_assistant_web_api.md) for authenticated history, submission, status, and SSE reconnects.
+See [shared assistant operations](docs/shared-assistant-operations.md) for coordinated deployment, rollback restrictions, and browser acceptance.
 See [agent integration tests](packages/telegram_bot/src/integration-tests/README.md) for recording and playback workflows.
 Recording calls a model provider and incurs API charges; playback runs without provider credentials.
 

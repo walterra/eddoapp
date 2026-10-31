@@ -20,7 +20,7 @@ Hosts inject:
 `openDurableRuntime` opens and resumes a journal; it does not authenticate an HTTP request.
 Keep it behind an authenticated host. Never open another owner for the same journal.
 The package provides no ownership election, fencing, HTTP listener, scheduler, or background database discovery.
-Its authenticated request handler delegates to host-injected admission and status operations; the host owns the network listener.
+Its authenticated request handler delegates to host-injected admission, status, and pending-discovery operations; the host owns the listener.
 See the [internal host contract](../../spec/shared_assistant_host.md) for protocol and deployment restrictions.
 
 ## Channel adapters
@@ -35,7 +35,15 @@ The runtime never calls Telegram or creates a sandbox container.
 
 Delivery adapters receive the persisted delivery task, runtime, and context.
 They advance checkpoints through the Harness instead of maintaining a second execution loop.
-Printing and history projection retain their persisted phases after delivery.
+Printing and final history reconciliation retain their persisted phases after delivery.
+An optional `projectAccepted` callback persists accepted user text before generation through an additive generation checkpoint.
+Projection retries never repeat model or tool effects. Authorization runs again after persisted backoff.
+The production host serializes accepted-message and answer projection through one account writer.
+Telegram answers enter history before transport; printing still requires the existing delivery receipt.
+
+`getPendingRequests` returns bounded lifecycle receipts from an additive journal index, including other channels and conversations.
+Startup seeds existing pending identities before recovery resumes. Terminal commits remove entries atomically.
+Discovery also prunes native faults. It never admits requests or exposes journal contents.
 Adapters must revalidate authorization before external side effects.
 
 ## Build and verification

@@ -1,6 +1,6 @@
 # Shared assistant sidebar
 
-Status: step 6 complete; the sidebar shares history and pending lifecycle across channels. Cross-channel release verification remains.
+Status: automated verification and operational documentation complete; authenticated live browser acceptance remains pending.
 
 Source: [GitHub issue #336](https://github.com/walterra/eddoapp/issues/336).
 
@@ -150,7 +150,8 @@ Requests and streams have bounded per-account limits. Sandbox chats remain uncha
 See the [web API contract](shared_assistant_web_api.md) for pagination, reconnects, errors, and configuration.
 Step 5 adds the independent main-header Assistant toggle and a lazy-loaded, account-scoped sidebar.
 A dedicated assistant-ui external-store adapter reuses thread/Markdown presentation without sandbox execution or provider-key controls.
-Wide screens use an inline panel; smaller screens use a native modal dialog with focus restoration.
+All screens use an inline sidebar capped at 480px and 45vw, with focus restoration on dismissal.
+The assistant never creates a modal, backdrop, or focus trap; todo editing remains available beside the conversation.
 Closing the sidebar cancels reads, never accepted work. Authenticated streaming fetch resumes processed cursors with bounded reconnects.
 The browser persists one unresolved UUID before admission and reconciles optimistic text by exact projection identity.
 Retry checks durable status first and never replaces an ambiguous request's identity or automatically replays terminal mutations.
@@ -167,7 +168,24 @@ Legacy task names, versions, owner pins, and delivery offsets remain unchanged.
 Live visual review requires an operator-started development server; neither port 3000 nor 5173 was available.
 Quality checks, unit tests, and the workspace build passed.
 Durable integration passed on rerun; the unchanged replay test initially encountered CouchDB change-order variability.
-No test or server workaround was applied. Follow up during step 7 verification.
+Step 7 replaces the invalid cross-shard ordering assertion with invalidation-set, final-cursor, and partial-resume checks.
+No production replay workaround or blanket test retries were added.
+The release integration suite verifies real JWT routes, internal payloads, current registry credentials, and native disposable CouchDB journals.
+It covers channel/report continuity, projection recovery without mutation replay, revoked web-only access, credential rotation, and `/new` isolation.
+Model responses and external transport/tool effects remain scripted; no paid provider calls occur.
+See [shared assistant operations](../docs/shared-assistant-operations.md) for deployment, rollback restrictions, troubleshooting, and browser acceptance.
+Automated checks do not establish live browser, external-service, or distributed-failover acceptance.
+
+Step 7 automated evidence:
+
+- `pnpm check:commit`: passed.
+- `pnpm test:unit`: 1,576 passed, 2 skipped.
+- `pnpm test:integration:durable`: 13 passed in three consecutive disposable-container runs.
+- `pnpm build`: passed with existing bundle-size warnings.
+- `git diff --check`: passed.
+- Initial live browser acceptance: no development server responded on port 3000 or 5173.
+- Docked-layout follow-up: 1,579 unit tests passed; quality checks and build passed.
+- The development app is now reachable; the isolated browser requires login before authenticated acceptance.
 
 Remaining checkpoints:
 
@@ -175,4 +193,7 @@ Remaining checkpoints:
 - [x] 4. Add authenticated web history, submission, status, and resumable live-update endpoints.
 - [x] 5. Add the main-app assistant sidebar and dedicated assistant-ui runtime adapter.
 - [x] 6. Complete channel-aware delivery, progress routing, and idempotent history reconciliation.
-- [ ] 7. Run cross-channel/recovery verification and update operational documentation.
+- [ ] 7. Complete release verification and operational handoff.
+  - [x] 7a. Verify cross-channel recovery, authorization, and stable cursor replay with scripted providers and disposable CouchDB.
+  - [x] 7b. Document coordinated deployment, rollback constraints, and troubleshooting.
+  - [ ] 7c. Complete live desktop/mobile browser acceptance against an operator-started deployment.

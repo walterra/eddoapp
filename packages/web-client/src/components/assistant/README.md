@@ -8,8 +8,9 @@ Sandbox/container chats keep their existing runtime, sessions, controls, and pro
 The main header provides a separate Assistant toggle. Visibility starts closed and resets when the authenticated account changes.
 Opening or closing Assistant never changes activity-log or sandbox visibility preferences.
 
-Wide viewports use a 480px inline sidebar. Smaller viewports use a native modal dialog, full-width below 640px.
-The dialog supplies browser-native focus containment; Escape and the close control dismiss it.
+All viewports use a docked sidebar, like container chats, without an overlay, backdrop, or focus trap.
+Width is capped at 480px and 45% of the viewport, leaving room for editable todo content.
+Escape within the sidebar and the close control dismiss it.
 Closing restores focus to the previous control and cancels read-only subscriptions, not accepted execution.
 
 The sidebar reuses the existing thread, Markdown, copy actions, and composer primitives.
@@ -71,7 +72,7 @@ pnpm test:unit
 pnpm check:commit
 ```
 
-Tests cover actual assistant-ui rendering, preserved sandbox cancellation, modal dismissal/focus restoration, pending recovery, reconnects, and account isolation.
+Tests cover actual assistant-ui rendering, preserved sandbox cancellation, docked layout, dismissal/focus restoration, pending recovery, reconnects, and account isolation.
 Live browser review requires the operator's running web development server; the agent does not start it.
 
 See the [web API contract](../../../../../spec/shared_assistant_web_api.md) and [implementation scope](../../../../../spec/shared_assistant_sidebar.md).

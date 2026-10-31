@@ -96,7 +96,7 @@ const Composer: FC<ComposerProps> = ({ allowCancellation, maxMessageLength }) =>
       <ComposerPrimitive.Input
         aria-label="Message"
         autoFocus
-        className="focus:border-primary-500 focus:ring-primary-500 flex-1 resize-none rounded-lg border border-neutral-300 bg-white p-3 text-sm outline-none focus:ring-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+        className="focus:border-primary-500 focus:ring-primary-500 min-w-0 flex-1 resize-none rounded-lg border border-neutral-300 bg-white p-3 text-sm outline-none focus:ring-1 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
         maxLength={maxMessageLength}
         placeholder="Type a message..."
         rows={1}

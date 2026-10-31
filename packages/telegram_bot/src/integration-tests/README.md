@@ -13,6 +13,11 @@ The shared `test/integration-global-setup.ts` provisions CouchDB before worker s
 No local `.env` file is required. Storage tests retain separate CouchDB 3.5 containers for journal isolation.
 Shared global teardown stops the configuration container after the suite.
 Covers journal recovery, pending Telegram delivery, shared chat/report context, occurrence deduplication, and printing state.
+The shared-assistant release suite connects real JWT routes, internal payload serialization, registry authorization, projections, and native CouchDB journals.
+It verifies channel continuity, interrupted projection recovery, credential rotation/revocation, `/new` retry identity, and account isolation.
+Model, Telegram, printing, and external MCP effects use scripted/test adapters; no live provider or Telegram account is required.
+CouchDB replay checks compare invalidation sets and cursor coverage, not unstable cross-shard event order.
+See [shared assistant operations](../../../../docs/shared-assistant-operations.md) for deployment and manual browser acceptance.
 
 ## Qualitative recording review
 
