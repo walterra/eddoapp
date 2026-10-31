@@ -29,12 +29,7 @@ export type FilterPresetDateMode = 'relative' | 'fixed';
 
 /** Time range type for filter presets */
 export type FilterPresetTimeRangeType =
-  | 'current-day'
-  | 'current-week'
-  | 'current-month'
-  | 'current-year'
-  | 'all-time'
-  | 'custom';
+  'current-day' | 'current-week' | 'current-month' | 'current-year' | 'all-time' | 'custom';
 
 /** Time range configuration for filter presets */
 export interface FilterPresetTimeRange {

@@ -6,7 +6,7 @@ import { defineConfig, loadEnv } from 'vite';
  * Bundle splitting configuration for vendor dependencies.
  * Groups related packages to optimize caching and parallel loading.
  */
-const manualChunks = {
+const vendorChunks = {
   'vendor-react': ['react', 'react-dom'],
   'vendor-pouchdb': ['pouchdb-browser', 'pouchdb-find'],
   'vendor-ui': ['flowbite-react'],
@@ -40,7 +40,12 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         input: resolve(__dirname, 'index.html'),
-        output: { manualChunks },
+        output: {
+          manualChunks: (moduleId) =>
+            Object.entries(vendorChunks).find(([, packages]) =>
+              packages.some((packageName) => moduleId.includes(`/node_modules/${packageName}/`)),
+            )?.[0],
+        },
       },
     },
     resolve: {

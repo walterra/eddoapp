@@ -7,10 +7,7 @@ import path from 'path';
 
 /** Installation status for a skill or extension */
 export type InstallStatus =
-  | 'not_installed'
-  | 'linked_correct'
-  | 'linked_different'
-  | 'exists_directory';
+  'not_installed' | 'linked_correct' | 'linked_different' | 'exists_directory';
 
 export interface SkillInfo {
   name: string;

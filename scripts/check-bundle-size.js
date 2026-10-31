@@ -8,7 +8,8 @@ const TOTAL_LIMIT_KB = 3500;
 
 const limits = {
   index: 1100,
-  'vendor-react': 50,
+  // Includes the React DOM renderer alongside React in the production bundle.
+  'vendor-react': 200,
   'vendor-pouchdb': 200,
   'vendor-ui': 100,
   'vendor-flowbite': 500,

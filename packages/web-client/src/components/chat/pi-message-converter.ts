@@ -72,12 +72,10 @@ function extractTextContent(content: string | PiContentBlock[]): string {
 function extractImages(content: PiContentBlock[]): ImagePart[] {
   return content
     .filter((c): c is PiImageContent => c.type === 'image')
-    .map(
-      (img): ImagePart => ({
-        type: 'image',
-        image: `data:${img.mimeType};base64,${img.data}`,
-      }),
-    );
+    .map((img): ImagePart => ({
+      type: 'image',
+      image: `data:${img.mimeType};base64,${img.data}`,
+    }));
 }
 
 /** Image content part */

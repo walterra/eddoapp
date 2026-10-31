@@ -4,20 +4,20 @@ This document tracks ES|QL language features, commands, and functions across Ela
 
 ## Version Timeline Overview
 
-| Version | Release  | Status       | Key Additions                         |
+| Version | Release | Status | Key Additions |
 | ------- | -------- | ------------ | ------------------------------------- | ---------- |
-| 8.11    | Nov 2023 | Tech Preview | Initial ES                            | QL release |
-| 8.12    | Jan 2024 | Tech Preview | Spatial types, PROFILE                |
-| 8.13    | Mar 2024 | Tech Preview | Async queries, cross-cluster ENRICH   |
-| 8.14    | May 2024 | **GA**       | Spatial functions, regex optimization |
-| 8.15    | Aug 2024 | GA           | Type casting (`::`), Arrow output     |
-| 8.16    | Oct 2024 | GA           | New math/string functions             |
-| 8.17    | Dec 2024 | GA           | MATCH, QSTR full-text functions       |
-| 8.18    | Feb 2025 | GA           | LOOKUP JOIN (preview), scoring, KQL   |
-| 8.19    | Apr 2025 | GA           | MATCH_PHRASE, FORK                    |
-| 9.0     | Feb 2025 | GA           | Released with 8.18 features           |
-| 9.1     | Jun 2025 | GA           | Full-text functions GA, INLINE STATS  |
-| 9.2     | Oct 2025 | GA           | Multi-field joins, TS command, FUSE   |
+| 8.11 | Nov 2023 | Tech Preview | Initial ES | QL release |
+| 8.12 | Jan 2024 | Tech Preview | Spatial types, PROFILE |
+| 8.13 | Mar 2024 | Tech Preview | Async queries, cross-cluster ENRICH |
+| 8.14 | May 2024 | **GA** | Spatial functions, regex optimization |
+| 8.15 | Aug 2024 | GA | Type casting (`::`), Arrow output |
+| 8.16 | Oct 2024 | GA | New math/string functions |
+| 8.17 | Dec 2024 | GA | MATCH, QSTR full-text functions |
+| 8.18 | Feb 2025 | GA | LOOKUP JOIN (preview), scoring, KQL |
+| 8.19 | Apr 2025 | GA | MATCH_PHRASE, FORK |
+| 9.0 | Feb 2025 | GA | Released with 8.18 features |
+| 9.1 | Jun 2025 | GA | Full-text functions GA, INLINE STATS |
+| 9.2 | Oct 2025 | GA | Multi-field joins, TS command, FUSE |
 
 ## Feature Availability by Version
 

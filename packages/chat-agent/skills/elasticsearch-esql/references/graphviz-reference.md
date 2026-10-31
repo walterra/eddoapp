@@ -672,17 +672,18 @@ digraph G {
 ```
 
 **Light palette:**
-| Element | Color |
-|---------|-------|
-| Background | `#ffffff` |
-| Node fill | `#f5f5f5` / `#fafafa` |
-| Node border | `#d4d4d4` |
-| Primary text | `#171717` |
-| Secondary text | `#525252` |
-| Muted text | `#737373` |
-| Edges | `#a3a3a3` |
-| Error fill | `#fef2f2` |
-| Error border | `#dc2626` |
+
+| Element        | Color                 |
+| -------------- | --------------------- |
+| Background     | `#ffffff`             |
+| Node fill      | `#f5f5f5` / `#fafafa` |
+| Node border    | `#d4d4d4`             |
+| Primary text   | `#171717`             |
+| Secondary text | `#525252`             |
+| Muted text     | `#737373`             |
+| Edges          | `#a3a3a3`             |
+| Error fill     | `#fef2f2`             |
+| Error border   | `#dc2626`             |
 
 ### Dark Theme
 
@@ -716,18 +717,19 @@ digraph G {
 ```
 
 **Dark palette:**
-| Element | Color |
-|---------|-------|
-| Background | `#0a0a0a` |
-| Node fill | `#171717` / `#1c1c1c` |
-| Node border | `#404040` |
-| Primary text | `#e5e5e5` |
-| Secondary text | `#a3a3a3` |
-| Muted text | `#737373` |
-| Edges | `#525252` |
-| Error fill | `#1f1315` |
-| Error border | `#dc2626` |
-| Error text | `#f87171` (lighter for contrast) |
+
+| Element        | Color                            |
+| -------------- | -------------------------------- |
+| Background     | `#0a0a0a`                        |
+| Node fill      | `#171717` / `#1c1c1c`            |
+| Node border    | `#404040`                        |
+| Primary text   | `#e5e5e5`                        |
+| Secondary text | `#a3a3a3`                        |
+| Muted text     | `#737373`                        |
+| Edges          | `#525252`                        |
+| Error fill     | `#1f1315`                        |
+| Error border   | `#dc2626`                        |
+| Error text     | `#f87171` (lighter for contrast) |
 
 ## Edge Label Strategy
 

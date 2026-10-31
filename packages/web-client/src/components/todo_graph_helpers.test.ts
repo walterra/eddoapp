@@ -86,11 +86,9 @@ describe('createAllNodes', () => {
       const parentNode = nodes.find((n) => n.id === 'parent');
       const childNode = nodes.find((n) => n.id === 'child');
       const parentData = parentNode?.data as
-        | { childCount?: number; blockedByCount?: number }
-        | undefined;
+        { childCount?: number; blockedByCount?: number } | undefined;
       const childData = childNode?.data as
-        | { childCount?: number; blockedByCount?: number }
-        | undefined;
+        { childCount?: number; blockedByCount?: number } | undefined;
 
       expect(parentData?.childCount).toBe(1);
       expect(parentData?.blockedByCount).toBe(0);
