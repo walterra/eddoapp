@@ -187,7 +187,7 @@ async function stopRuntime(state: TestAgentState, cassettes: CassetteManager): P
     await state.runtime?.close();
     cassettes.assertConsumed();
   } finally {
-    cassettes.ejectCassette();
+    await cassettes.ejectCassette();
     await state.mcp?.close();
     state.runtime = null;
   }
@@ -214,10 +214,10 @@ export function createTestAgentServer(config: TestAgentServerConfig = {}) {
       await startRuntime(state, cached);
     },
     stop: (): Promise<void> => stopRuntime(state, cached.cassettes),
-    loadCassette: (name: string): void => {
+    loadCassette: async (name: string): Promise<void> => {
       state.testName = name;
       state.sequence = 0;
-      cached.cassettes.loadCassette(name);
+      await cached.cassettes.loadCassette(name);
     },
     getVcrMode: () => cached.cassettes.getMode(),
     getLlmRequests: () => state.requests,

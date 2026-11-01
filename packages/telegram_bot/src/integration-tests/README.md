@@ -118,6 +118,7 @@ Only `Date` is frozen during replay; network timers and the Durable scheduler co
 
 Native cassettes replace legacy recordings in `cassettes/<model>/`; no separate runtime namespace exists.
 Anthropic models retain unqualified directory names, such as `claude-sonnet-4-5-20250929`. Other providers use sanitized provider/model names, such as `openai_gpt-5_2`.
+The shared cassette writer applies repository Prettier configuration before saving recordings in record and auto modes.
 Record mode replaces the selected model's recordings. Git retains prior text-protocol versions; incompatible response formats fail validation.
 CI always runs behavioral playback. The standalone playback command fails if no model recordings exist.
 

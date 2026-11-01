@@ -92,13 +92,13 @@ interface CassetteContext {
   cassettesDir: string;
   namespace: string;
   time: TimeHelpers;
-  saveCassette: () => void;
+  saveCassette: () => Promise<void>;
 }
 
 /** Load or create cassette for test */
-function doLoadCassette(ctx: CassetteContext, testName: string): void {
+async function doLoadCassette(ctx: CassetteContext, testName: string): Promise<void> {
   const { state, mode, cassettesDir, namespace, time, saveCassette } = ctx;
-  if (state.cassette && state.modified && state.path) saveCassette();
+  if (state.cassette && state.modified && state.path) await saveCassette();
   time.unfreeze();
 
   state.path = getCassettePath({ cassettesDir, testName, namespace });
@@ -177,9 +177,9 @@ export function createCassetteManager(
   const time = createTimeHelpers(timeController);
   if (!existsSync(cassettesDir)) mkdirSync(cassettesDir, { recursive: true });
 
-  const saveCassette = (): void => {
+  const saveCassette = async (): Promise<void> => {
     if (mode === 'playback' || !state.cassette || !state.path) return;
-    saveCassetteToFile(state.path, state.cassette);
+    await saveCassetteToFile(state.path, state.cassette);
     state.modified = false;
   };
 
@@ -189,8 +189,8 @@ export function createCassetteManager(
     loadCassette: (testName: string) => doLoadCassette(ctx, testName),
     handleInteraction: (m: string, s: string, msgs: Message[], r: () => Promise<string>) =>
       handleInteractionImpl(ctx, { model: m, systemPrompt: s, messages: msgs, realCall: r }),
-    ejectCassette: (): void => {
-      if (state.cassette && state.modified && state.path) saveCassette();
+    ejectCassette: async (): Promise<void> => {
+      if (state.cassette && state.modified && state.path) await saveCassette();
       time.unfreeze();
       Object.assign(state, { cassette: null, path: null, index: 0, modified: false });
     },

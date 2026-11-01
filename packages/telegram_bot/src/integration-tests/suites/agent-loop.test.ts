@@ -95,7 +95,7 @@ describe('Agent Loop E2E Integration', () => {
   describe('Core Todo Operations', () => {
     it('should create todo with natural language date parsing', async () => {
       // Set up cassette for this test
-      agentServer.loadCassette('create-todo-natural-language');
+      await agentServer.loadCassette('create-todo-natural-language');
 
       const input = 'add todo next friday to go shopping';
 
@@ -128,7 +128,7 @@ describe('Agent Loop E2E Integration', () => {
     });
 
     it('should create todo with context and tags', async () => {
-      agentServer.loadCassette('create-todo-context-tags');
+      await agentServer.loadCassette('create-todo-context-tags');
 
       const input = 'create work todo for quarterly report due next month with urgent tag';
 
@@ -164,7 +164,7 @@ describe('Agent Loop E2E Integration', () => {
     });
 
     it('should handle multi-step operations (create then list)', async () => {
-      agentServer.loadCassette('multi-step-create-list');
+      await agentServer.loadCassette('multi-step-create-list');
 
       const input = 'create a work todo for code review, then show me all my work todos';
 
@@ -199,7 +199,7 @@ describe('Agent Loop E2E Integration', () => {
     it.skipIf(process.env.VCR_MODE === 'playback')(
       'should complete todo workflow (create and mark done)',
       async () => {
-        agentServer.loadCassette('complete-todo-workflow');
+        await agentServer.loadCassette('complete-todo-workflow');
 
         // First create a todo
         const createInput = 'create todo called integration test task';
@@ -243,7 +243,7 @@ describe('Agent Loop E2E Integration', () => {
 
   describe('Persistent Chat History', () => {
     it('persists assistant conversation history across real messages', async () => {
-      agentServer.loadCassette('persistent-chat-history');
+      await agentServer.loadCassette('persistent-chat-history');
 
       const context = agentServer.createMockContext();
       const username = context.session?.user?.username;
@@ -298,7 +298,7 @@ describe('Agent Loop E2E Integration', () => {
 
   describe('Edge Cases', () => {
     it('should handle ambiguous input gracefully', async () => {
-      agentServer.loadCassette('ambiguous-input');
+      await agentServer.loadCassette('ambiguous-input');
 
       const input = 'add todo';
 
@@ -329,7 +329,7 @@ describe('Agent Loop E2E Integration', () => {
 
   describe('Native Tool Feedback', () => {
     it('delivers the final recap after native tools without leaking text tool protocols', async () => {
-      agentServer.loadCassette('status-message-pattern');
+      await agentServer.loadCassette('status-message-pattern');
 
       // First create some todos to have data for the recap
       const setupInput = 'create a work todo called "Test task for recap"';
