@@ -41,11 +41,55 @@ Domain failures, thrown exceptions, and invalid handler responses return `isErro
 Error envelopes never expose raw handler exceptions. Mutation failures instruct clients to inspect state before retrying.
 Receipts continue storing original domain responses; the transport constructs structured results after receipt execution.
 
-Read-only tools advertise read-only, idempotent, closed-world behavior.
+Read-only tools advertise read-only, idempotent behavior. `fetchUrl` advertises open-world access; other reads remain closed-world.
 Mutation tools advertise conservative destructive behavior and no unconditional idempotency.
 Annotations guide clients; they do not replace server authorization or receipt protection.
 
 First-party clients still using SDK v1 require migration before deployment.
+
+## Chat URL capture
+
+Chat saves public URLs through `fetchUrl`, then passes `urlCaptureRef` to `createTodo`.
+The server appends extracted Markdown verbatim to the todo description after any user notes.
+The submitted URL remains in `link`; explicit user titles, contexts, tags, and dates remain unchanged.
+URL-only saves default to `read-later`, `gtd:someday`, and today's date.
+Questions containing URLs do not trigger todo creation.
+Extraction failures fall back to saving the link with a domain/path title.
+
+Stores provenance in namespaced todo metadata:
+
+- `web:sourceUrl`, `web:fetchedAt`, `web:provider`, and `web:truncated`.
+- `web:title`, `web:resolvedUrl`, `web:description`, `web:publishedAt`, and `web:author` when Reader supplies them.
+
+Reader responses vary by page and deployment. Missing metadata stays absent.
+Page text, titles, and metadata remain untrusted content, not agent instructions.
+
+### Reader configuration
+
+Set these variables on the MCP server:
+
+| Variable                 | Default             | Purpose                                       |
+| ------------------------ | ------------------- | --------------------------------------------- |
+| `JINA_READER_URL`        | `https://r.jina.ai` | Hosted or self-hosted Reader endpoint         |
+| `JINA_API_KEY`           | unset               | Optional Reader authentication                |
+| `JINA_MAX_CONTENT_BYTES` | `200000`            | Markdown byte limit, between 1024 and 1000000 |
+
+Hosted Reader receives submitted URLs. Never submit private links, credentials, or signed URLs.
+Validation rejects private/reserved addresses, credentials, unusual source ports, and obvious secret query parameters.
+Secret detection is heuristic; it cannot identify every confidential URL.
+No source cookies or authentication headers are forwarded.
+The configured Reader must enforce redirect and DNS-rebinding protections and restrict private-network egress.
+Eddo checks initial DNS results and reported final URLs; it cannot inspect Reader's intermediate requests.
+Use a trusted Reader deployment. See [Jina Reader documentation](https://jina.ai/reader/).
+
+DNS validation times out after five seconds. Reader HTTP requests time out after 30 seconds.
+Upstream JSON responses cannot exceed 4 MB.
+Oversized Markdown receives an explicit truncation marker and `web:truncated=true`.
+Tool output includes only a 2000-character preview, not the entire stored document.
+Captures remain account-scoped for one hour, with at most 100 entries per process.
+References expire on restart or eviction; fetch again before retrying creation.
+Extraction retries are allowed in interactive Durable sessions, but scheduled reports cannot fetch URLs.
+No HTML, image assets, or authenticated browser state are archived.
 
 ## Development
 

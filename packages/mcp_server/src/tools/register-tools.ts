@@ -71,6 +71,7 @@ import {
   uploadAttachmentDescription,
   uploadAttachmentParameters,
 } from './index.js';
+import { registerUrlTools } from './register_url_tools.js';
 import { wrapToolExecution } from './tool-wrapper.js';
 import type { ToolContext } from './types.js';
 
@@ -300,6 +301,7 @@ export interface RegisterToolsOptions {
 export function registerTools(options: RegisterToolsOptions): void {
   const { couch, getAttachmentsDb, getEsClient, getUserDb, server } = options;
 
+  registerUrlTools(server);
   registerTodoTools(server, getUserDb, couch);
   registerNoteTools(server, getUserDb);
   registerAttachmentTools(server, getAttachmentsDb);
