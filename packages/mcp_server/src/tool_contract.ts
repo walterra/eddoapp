@@ -25,6 +25,7 @@ export const toolOutputSchema = z.object({
 type ToolOutput = z.infer<typeof toolOutputSchema>;
 
 const readTools = new Set([
+  'fetchUrl',
   'listTodos',
   'getTodo',
   'getActiveTimeTracking',
@@ -44,7 +45,7 @@ export function toolAnnotations(name: string): ToolAnnotations {
     readOnlyHint,
     destructiveHint: !readOnlyHint,
     idempotentHint: readOnlyHint,
-    openWorldHint: false,
+    openWorldHint: name === 'fetchUrl',
   };
 }
 

@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { CouchServer, GetUserDb, ToolContext } from './types.js';
+import { enrichTodoArgs } from './url_capture_enrichment.js';
 
 /** Tool description for LLM consumption */
 export const createTodoDescription = `Create a new todo item in the authenticated user's database with GTD tag support.
@@ -45,6 +46,13 @@ GTD TAG GUIDELINES (for calling LLM):
 
 /** Zod schema for createTodo parameters */
 export const createTodoParameters = z.object({
+  urlCaptureRef: z
+    .string()
+    .uuid()
+    .optional()
+    .describe(
+      'Reference from fetchUrl. Stores captured Markdown verbatim in description after any user notes, original URL in link, and web metadata. References expire after one hour or server restart; fetch again if unavailable.',
+    ),
   title: z
     .string()
     .describe(
@@ -220,7 +228,7 @@ export async function executeCreateTodo(
     title: args.title,
   });
 
-  const newTodo = buildTodoDocument(args, context.session?.timezone);
+  const newTodo = buildTodoDocument(enrichTodoArgs(args, context), context.session?.timezone);
 
   try {
     const startTime = Date.now();

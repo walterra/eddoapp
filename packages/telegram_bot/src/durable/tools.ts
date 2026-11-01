@@ -31,6 +31,11 @@ const REPLAY_SAFE_TOOLS = new Set([
   'getRecapData',
 ]);
 
+/** Permits extraction retries without granting scheduled reports external fetching. */
+function isReplaySafe(name: string): boolean {
+  return name === 'fetchUrl' || REPLAY_SAFE_TOOLS.has(name);
+}
+
 /** Revalidates identity and credentials for every resumed action. */
 export async function resolveDurableUser(
   username: string,
@@ -139,7 +144,7 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
     name: tool.name,
     description: tool.description,
     parameters: tool.inputSchema as TSchema,
-    replay: REPLAY_SAFE_TOOLS.has(tool.name) ? 'safe' : undefined,
+    replay: isReplaySafe(tool.name) ? 'safe' : undefined,
     execute: async (args, api, context) => {
       const permission = await consumeToolBudget(api, context);
       if (!permission.allowed || (permission.report && !REPLAY_SAFE_TOOLS.has(tool.name)))
@@ -160,7 +165,7 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
         options.client,
         tool.name,
         args as Record<string, unknown>,
-        REPLAY_SAFE_TOOLS.has(tool.name) ? user : await mutationContext(user, api, context),
+        isReplaySafe(tool.name) ? user : await mutationContext(user, api, context),
       );
       return { output: [{ type: 'text', text: formatted.text }], isError: formatted.isError };
     },
