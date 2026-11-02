@@ -823,8 +823,8 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       dockerode:
-        specifier: ^4.0.10
-        version: 4.0.12(supports-color@7.2.0)
+        specifier: ^5.0.1
+        version: 5.0.1(supports-color@7.2.0)
       feedsmith:
         specifier: ^2.9.0
         version: 2.9.6
