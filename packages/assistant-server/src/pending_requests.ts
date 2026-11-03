@@ -2,7 +2,7 @@ import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import { defineDoc, type Harness } from '@earendil-works/pi-durable';
 import type { AssistantPendingRequests, AssistantRequestStatus } from '@eddo/core-shared';
 import { getRequestStatus } from './request_status.js';
-import { RequestMap } from './state.js';
+import { RequestCancellations, RequestMap } from './state.js';
 
 type PendingRequestIndex = {
   initialized: boolean;
@@ -44,7 +44,17 @@ function terminal(status: string): boolean {
 
 /** Returns bounded account-owned lifecycle snapshots and prunes settled index entries. */
 export async function getPendingRequests(harness: Harness): Promise<AssistantPendingRequests> {
-  const ids = Object.keys((await harness.snapshot(PendingRequests, context))?.ids ?? {});
+  const cancellations = Object.entries(
+    (await harness.snapshot(RequestCancellations, context))?.requests ?? {},
+  )
+    .filter(([, value]) => !value.confirmed)
+    .map(([id]) => id);
+  const ids = [
+    ...new Set([
+      ...Object.keys((await harness.snapshot(PendingRequests, context))?.ids ?? {}),
+      ...cancellations,
+    ]),
+  ];
   const batch = ids.slice(0, 100);
   const statuses = await Promise.all(batch.map((id) => getRequestStatus(harness, id)));
   const requests = statuses.filter(

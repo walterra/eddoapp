@@ -72,6 +72,20 @@ Status comes from the existing host, including after recovery.
 Cross-account or malformed identifiers return `403`; unknown requests return `404`.
 Backend diagnostics, tool arguments, and execution-journal records never enter the response.
 
+### Cancel a browser request
+
+`POST /api/assistant/requests/<encoded-durable-request-id>/cancel`
+
+Uses the same JWT and account-scoped `web:<username>:<uuid>` identifier as status reads.
+Returns `200` with a terminal lifecycle receipt after the owner settles cancellation.
+Already completed or failed requests retain their existing outcome.
+Unknown identities receive a persisted cancellation fence; later admission returns `aborted` without executing the message.
+Queued cancellation withdraws only that input. Active cancellation stops its native run and request task.
+Unrelated queued requests remain accepted and continue; cancellation never withdraws the entire conversation.
+Completed tool actions and already-started external effects cannot be undone.
+Transport failures leave cancellation unconfirmed. Retry cancellation with the same durable identifier, not message admission.
+Sidebar dismissal and browser disconnection never invoke this endpoint.
+
 ### Discover pending work across channels
 
 `GET /api/assistant/requests`
@@ -122,7 +136,7 @@ Scheduled reports retain their existing Telegram delivery and printing gates.
 
 Limits apply per web-api process:
 
-- Ten submissions per account per minute.
+- Ten write requests per account per minute, including submissions and cancellations.
 - 120 read requests per account per minute.
 - Two concurrent streams per account and 100 streams globally.
 - Bounded rate-limit accounting for at most 10,000 account keys.

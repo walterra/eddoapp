@@ -44,6 +44,7 @@ beforeEach(() => {
   fixture.session = {
     send: vi.fn().mockResolvedValue(undefined),
     retry: vi.fn(),
+    cancel: vi.fn().mockResolvedValue(undefined),
     refresh: vi.fn(),
     loadOlder: vi.fn(),
     dismiss: vi.fn(),
@@ -95,25 +96,33 @@ describe('shared assistant sidebar', () => {
     );
   });
 
-  it('shows durable working state without offering unsupported cancellation', async () => {
-    fixture.state!.pending = {
-      username: 'alice',
-      submissionId,
-      text: 'Hello',
-      createdAt: '2026-10-29T00:00:00.000Z',
-      conversationId: 'active',
-      projectionIds,
-      receipt: {
-        requestId: `web:alice:${submissionId}`,
+  it.each([undefined, 'working'] as const)(
+    'offers owner cancellation for %s admission without sandbox Stop controls',
+    async (status) => {
+      fixture.state!.pending = {
+        username: 'alice',
+        submissionId,
+        text: 'Hello',
+        createdAt: '2026-10-29T00:00:00.000Z',
         conversationId: 'active',
-        status: 'working',
-      },
-    };
-    render(<AssistantSidebar onClose={vi.fn()} />);
-    expect(await screen.findByText('Working')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Stop generation' })).toBeNull();
-    expect(screen.getByRole('status', { name: 'Assistant response pending' })).toBeTruthy();
-  });
+        projectionIds,
+        receipt: status
+          ? {
+              requestId: `web:alice:${submissionId}`,
+              conversationId: 'active',
+              status,
+            }
+          : undefined,
+      };
+      render(<AssistantSidebar onClose={vi.fn()} />);
+      expect(await screen.findByText(status ? 'Working' : 'Awaiting confirmation')).toBeTruthy();
+      expect(screen.getByText(/Cancelling cannot undo completed tool actions/)).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel request' }));
+      await waitFor(() => expect(fixture.session?.cancel).toHaveBeenCalledOnce());
+      expect(screen.queryByRole('button', { name: 'Stop generation' })).toBeNull();
+      expect(screen.getByRole('status', { name: 'Assistant response pending' })).toBeTruthy();
+    },
+  );
 
   it('preserves cancellation for sandbox threads by default', async () => {
     const gate = deferred<void>();

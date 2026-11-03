@@ -20,6 +20,7 @@ function fixture() {
     token,
     pending: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
     admit: vi.fn().mockResolvedValue(status),
+    cancel: vi.fn().mockResolvedValue({ ...status, status: 'aborted' }),
     status: vi.fn().mockResolvedValue(status),
   };
   return { options, handler: createInternalAssistantHandler(options), status };
@@ -34,6 +35,20 @@ function request(path = 'admit', body: unknown = input, secret = token): Request
 }
 
 describe('internal assistant transport', () => {
+  it('authenticates and validates cancellation without admission or client-selected routing', async () => {
+    const test = fixture();
+    const body = { username: 'alice', requestId: test.status.requestId };
+    expect((await test.handler(request('cancel', body, 'wrong'))).status).toBe(401);
+    expect(
+      (await test.handler(request('cancel', { ...body, conversationId: 'foreign' }))).status,
+    ).toBe(400);
+    expect(test.options.cancel).not.toHaveBeenCalled();
+    const response = await test.handler(request('cancel', body));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ...test.status, status: 'aborted' });
+    expect(test.options.cancel).toHaveBeenCalledExactlyOnceWith(body);
+    expect(test.options.admit).not.toHaveBeenCalled();
+  });
   it('bounds pending discovery to an authenticated account-only query', async () => {
     const test = fixture();
     expect((await test.handler(request('pending', { username: 'alice' }, 'wrong'))).status).toBe(

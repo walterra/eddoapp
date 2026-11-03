@@ -99,6 +99,14 @@ export function createAssistantBrowserClient(
         }),
         `web:${options.username}:${pending.submissionId}`,
       ),
+    cancel: async (id) =>
+      receipt(
+        await fetchAssistant(options, `/requests/${encodeURIComponent(id)}/cancel`, {
+          method: 'POST',
+          signal: AbortSignal.timeout(30_000),
+        }),
+        id,
+      ),
     status: async (id, signal) => {
       const response = await fetchAssistant(options, `/requests/${encodeURIComponent(id)}`, {
         signal,

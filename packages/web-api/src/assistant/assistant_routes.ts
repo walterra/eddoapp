@@ -124,6 +124,12 @@ export function createAssistantRoutes(
       await service.host.pending(context.get('assistantIdentity').username, context.req.raw.signal),
     ),
   );
+  app.post('/requests/:requestId/cancel', async (context) => {
+    const username = context.get('assistantIdentity').username;
+    return context.json(
+      await service.host.cancel(username, requestId(username, context.req.param('requestId'))),
+    );
+  });
   app.get('/requests/:requestId', async (context) => {
     const username = context.get('assistantIdentity').username;
     const result = await service.host.status(

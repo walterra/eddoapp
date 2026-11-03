@@ -155,7 +155,9 @@ The assistant never creates a modal, backdrop, or focus trap; todo editing remai
 Closing the sidebar cancels reads, never accepted work. Authenticated streaming fetch resumes processed cursors with bounded reconnects.
 The browser persists one unresolved UUID before admission and reconciles optimistic text by exact projection identity.
 Retry checks durable status first and never replaces an ambiguous request's identity or automatically replays terminal mutations.
-Sandbox cancellation remains the thread default; the shared assistant explicitly disables that capability.
+Sandbox cancellation remains the thread default; the shared assistant disables sandbox Stop controls.
+Its pending notice offers owner-backed cancellation, including fenced cancellation of unconfirmed submissions.
+Cancellation intent survives reloads; retries repeat cancellation rather than message admission.
 See the [sidebar runtime guide](../packages/web-client/src/components/assistant/README.md) for browser storage, lifecycle, and tests.
 Step 6 adds durable accepted-message projection before generation and serializes all history writes through one account writer.
 Retries verify stable message identities and repair statistics without repeating generation or tools.

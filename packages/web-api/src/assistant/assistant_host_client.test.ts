@@ -6,6 +6,27 @@ import { durableRequestId, receipt, submissionId } from './assistant_test_helper
 const token = 'server-only-assistant-secret-at-least-32-characters';
 
 describe('assistant loopback client', () => {
+  it('forwards cancellation without browser disconnect signals and validates identity', async () => {
+    const transport = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ ...receipt, status: 'aborted' }));
+    const client = createAssistantHostClient({ port: 3003, token, fetch: transport });
+    expect((await client.cancel('alice', durableRequestId)).status).toBe('aborted');
+    expect(transport).toHaveBeenCalledWith(
+      'http://127.0.0.1:3003/internal/assistant/cancel',
+      expect.objectContaining({
+        method: 'POST',
+        signal: expect.any(AbortSignal),
+        body: JSON.stringify({ username: 'alice', requestId: durableRequestId }),
+      }),
+    );
+    transport.mockResolvedValueOnce(Response.json({ ...receipt, requestId: 'web:bob:foreign' }));
+    await expect(client.cancel('alice', durableRequestId)).rejects.toMatchObject({ status: 503 });
+    transport.mockResolvedValueOnce(
+      Response.json({ error: 'private diagnostics' }, { status: 404 }),
+    );
+    await expect(client.cancel('alice', durableRequestId)).rejects.toMatchObject({ status: 503 });
+  });
   it('uses only server credentials and explicitly binds account identity', async () => {
     const transport = vi.fn<typeof fetch>().mockResolvedValue(Response.json(receipt));
     const client = createAssistantHostClient({ port: 3003, token, fetch: transport });

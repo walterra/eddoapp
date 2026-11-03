@@ -67,6 +67,7 @@ export const pendingSchema = createProjectedParser(
       assistant: str({ pattern: '^assistant_message_durable_[a-f0-9]{64}_assistant$' }),
     }),
     receipt: opt(receiptDefinition),
+    cancelRequested: opt(bool()),
   }),
   {
     validate: (value) => [

@@ -50,12 +50,31 @@ export function assistantThreadMessages(
   return result;
 }
 
-/** Adapts server projections to assistant-ui without sandbox RPC, provider keys, or cancellation capabilities. */
+/** Adapts server projections to assistant-ui without sandbox RPC, provider keys, or direct execution access. */
 function sharedRunning(state: AssistantSnapshot): boolean {
   return (state.sharedRequests ?? []).some(
     (request) =>
       request.conversationId === state.conversation?._id &&
       !isTerminalAssistantRequest(request.status),
+  );
+}
+
+function isRunning(state: AssistantSnapshot): boolean {
+  return (
+    sharedRunning(state) ||
+    state.submitting ||
+    Boolean(state.cancelling) ||
+    Boolean(state.pending && !isTerminalAssistantRequest(state.pending.receipt?.status))
+  );
+}
+function isSendDisabled(state: AssistantSnapshot): boolean {
+  return (
+    state.loading ||
+    state.connection !== 'connected' ||
+    Boolean(state.pending) ||
+    Boolean(state.cancelling) ||
+    state.error === 'storage' ||
+    state.error === 'unsupported'
   );
 }
 
@@ -86,16 +105,8 @@ export function AssistantThreadRuntime({
     messages,
     onNew,
     convertMessage: (message) => message,
-    isRunning:
-      sharedRunning(state) ||
-      state.submitting ||
-      Boolean(state.pending && !isTerminalAssistantRequest(state.pending.receipt?.status)),
-    isSendDisabled:
-      state.loading ||
-      state.connection !== 'connected' ||
-      Boolean(state.pending) ||
-      state.error === 'storage' ||
-      state.error === 'unsupported',
+    isRunning: isRunning(state),
+    isSendDisabled: isSendDisabled(state),
     isDisabled: state.connection === 'blocked',
   });
   return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;

@@ -1,13 +1,21 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import type { Conversation, Harness, TaskId } from '@earendil-works/pi-durable';
+import type { AssistantRequestStatus } from '@eddo/core-shared';
 import { ensureLegacyHistory } from './legacy_context.js';
 import { PendingRequests } from './pending_requests.js';
+import { cancelRequest } from './request_cancellation.js';
 import { assistantRequest } from './request_channel.js';
 import { AssistantRequestConflictError, requestPayloadHash } from './request_identity.js';
 import { parseAssistantRequest } from './request_schema.js';
 import { createRequestTask } from './request_task.js';
 import type { ResolvedRuntimeOptions } from './runtime.js';
-import { ConversationMap, RequestMap, RequestPayloads, type RuntimeRequestInput } from './state.js';
+import {
+  ConversationMap,
+  RequestCancellations,
+  RequestMap,
+  RequestPayloads,
+  type RuntimeRequestInput,
+} from './state.js';
 
 /** Finds or creates the native conversation without forking concurrent first submissions. */
 async function getConversation(
@@ -50,24 +58,34 @@ function validateOwner(options: ResolvedRuntimeOptions, input: RuntimeRequestInp
     throw new Error('Durable request does not match the journal owner');
 }
 
+/** Retains accepted payload conflicts, including after cancellation. */
+async function existingRequest(
+  harness: Harness,
+  input: RuntimeRequestInput,
+  hash: string | undefined,
+): Promise<TaskId<string> | undefined> {
+  const previous = (await harness.snapshot(RequestMap, context))?.tasks[input.requestId];
+  if (previous === undefined) return;
+  const payloads = await harness.snapshot(RequestPayloads, context);
+  if (hash && payloads?.hashes[input.requestId] !== hash)
+    throw new AssistantRequestConflictError(
+      'Assistant request identity was reused with a different payload',
+    );
+  return previous;
+}
+
 /** Admits one request while retaining legacy deduplication across active-conversation changes. */
 async function admit(
   harness: Harness,
   options: ResolvedRuntimeOptions,
   input: RuntimeRequestInput,
-): Promise<TaskId<string>> {
+): Promise<TaskId<string> | undefined> {
   validateOwner(options, input);
   if ('account' in input) await options.authorize(input);
-  const previous = await harness.snapshot(RequestMap, context);
   const hash = 'account' in input ? requestPayloadHash(input) : undefined;
-  if (previous?.tasks[input.requestId] !== undefined) {
-    const payloads = await harness.snapshot(RequestPayloads, context);
-    if (hash && payloads?.hashes[input.requestId] !== hash)
-      throw new AssistantRequestConflictError(
-        'Assistant request identity was reused with a different payload',
-      );
-    return previous.tasks[input.requestId];
-  }
+  const previous = await existingRequest(harness, input, hash);
+  if (previous !== undefined) return previous;
+  if ((await harness.snapshot(RequestCancellations, context))?.requests[input.requestId]) return;
   const conversation = await getConversation(harness, options, input.conversationId);
   if (options.legacyHistory)
     await ensureLegacyHistory(conversation, input.conversationId, options.legacyHistory);
@@ -83,18 +101,32 @@ async function admit(
   }, context);
 }
 
-/** Serializes admission without blocking on generation, delivery, or earlier admission failures. */
+export interface RuntimeAdmission {
+  submit: (input: RuntimeRequestInput) => Promise<TaskId<string> | undefined>;
+  cancel: (requestId: string, conversationId: string) => Promise<AssistantRequestStatus>;
+}
+
+/** Serializes admission and cancellation to fence late submissions without a second execution owner. */
 export function createRuntimeAdmission(
   harness: Harness,
   options: ResolvedRuntimeOptions,
-): (input: RuntimeRequestInput) => Promise<TaskId<string>> {
+): RuntimeAdmission {
   let admission = Promise.resolve();
-  return (input) => {
-    const pending = admission.then(() => admit(harness, options, input));
+  const serialize = <T>(action: () => Promise<T>): Promise<T> => {
+    const pending = admission.then(action);
     admission = pending.then(
       () => undefined,
       () => undefined,
     );
     return pending;
+  };
+  return {
+    submit: (input) => serialize(() => admit(harness, options, input)),
+    cancel: (requestId, conversationId) =>
+      serialize(() => {
+        if (!requestId.startsWith(`web:${options.username}:`))
+          throw new Error('Cancellation identity is not account-scoped');
+        return cancelRequest(harness, requestId, conversationId);
+      }),
   };
 }

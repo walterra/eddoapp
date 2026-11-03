@@ -15,8 +15,9 @@ Closing restores focus to the previous control and cancels read-only subscriptio
 
 The sidebar reuses the existing thread, Markdown, copy actions, and composer primitives.
 A separate `useExternalStoreRuntime` adapter supplies server messages and optimistic user text.
-It exposes no container lifecycle, model credentials, reasoning blocks, or unsupported cancellation action.
-Sandbox threads retain cancellation by default.
+It exposes no container lifecycle, model credentials, or reasoning blocks.
+The pending notice offers **Cancel request** through the existing server owner, including unconfirmed submissions.
+Sandbox Stop controls remain separate and retain their existing behavior.
 
 ## Browser session
 
@@ -52,6 +53,14 @@ Explicit retry first queries durable status, then resends the same UUID only whe
 An admitted request missing from status never automatically resubmits.
 Terminal failures never trigger automatic mutation replay; the UI directs users to inspect task state.
 Late admission responses cannot resurrect cleared records or regress a newer durable status.
+
+Cancellation persists `cancelRequested` in the existing pending record before contacting the owner.
+The UI retains the UUID and blocks new sends until a terminal cancellation receipt arrives.
+Failed cancellation survives reloads and exposes **Retry cancellation**; retry never resubmits the original message.
+Confirmed cancellation clears the local notice and re-enables the composer when no other blocking state remains.
+Late admission responses cannot overwrite a newer submission's busy state.
+Cancellation stops future work, not completed tool actions or already-started external effects.
+Closing the sidebar only stops reads and never implicitly cancels execution.
 
 Optimistic text reconciles by exact projection ID, never by matching message content.
 Earlier-conversation requests remain tracked without being inserted into the new active thread.

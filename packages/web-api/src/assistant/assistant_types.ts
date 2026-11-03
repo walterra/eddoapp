@@ -26,6 +26,7 @@ export interface AssistantProjectionStore {
 export interface AssistantHostClient {
   pending: (username: string, signal?: AbortSignal) => Promise<AssistantPendingRequests>;
   admit: (username: string, input: AssistantMessageSubmission) => Promise<AssistantRequestStatus>;
+  cancel: (username: string, requestId: string) => Promise<AssistantRequestStatus>;
   status: (
     username: string,
     requestId: string,

@@ -87,6 +87,7 @@ describe('assistant web projection against disposable CouchDB', () => {
         host: {
           pending: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
           admit: vi.fn(),
+          cancel: vi.fn(),
           status: vi.fn(),
         },
       }),

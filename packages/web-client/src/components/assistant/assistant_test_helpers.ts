@@ -61,6 +61,7 @@ export function sessionFixture(username = 'alice') {
   const client: AssistantBrowserClient = {
     history: vi.fn().mockResolvedValue(historyPage(username)),
     admit: vi.fn().mockResolvedValue(receipt),
+    cancel: vi.fn().mockResolvedValue({ ...receipt, status: 'aborted' }),
     status: vi.fn().mockResolvedValue(receipt),
     stream: vi.fn<AssistantBrowserClient['stream']>().mockImplementation(async (request) => {
       streams.push(request);

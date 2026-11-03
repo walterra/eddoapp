@@ -84,6 +84,7 @@ async function dispatch(
   }
   const parsed = internalStatusSchema.safeParse(input);
   if (!parsed.success) return json({ error: 'invalid_request' }, 400);
+  if (path.endsWith('/cancel')) return json(await options.cancel(parsed.data));
   const result = await options.status(parsed.data);
   return result ? json(result) : json({ error: 'not_found' }, 404);
 }
@@ -102,6 +103,7 @@ export function createInternalAssistantHandler(
         '/internal/assistant/admit',
         '/internal/assistant/status',
         '/internal/assistant/pending',
+        '/internal/assistant/cancel',
       ].includes(path)
     )
       return json({ error: 'not_found' }, 404);

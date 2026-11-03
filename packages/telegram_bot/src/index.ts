@@ -16,6 +16,7 @@ import { handleHelp, handleStart, handleStatus } from './bot/commands/start.js';
 import { handleMessage } from './bot/handlers/message.js';
 import {
   admitWebAssistantMessage,
+  cancelWebAssistantRequest,
   getWebAssistantPendingRequests,
   getWebAssistantRequestStatus,
   startDurableHost,
@@ -102,6 +103,7 @@ async function initializeInternalTransport(): Promise<void> {
     port: appConfig.ASSISTANT_INTERNAL_PORT,
     admit: admitWebAssistantMessage,
     status: getWebAssistantRequestStatus,
+    cancel: cancelWebAssistantRequest,
     pending: ({ username }) => getWebAssistantPendingRequests(username),
   });
   logger.info('Internal assistant transport listening on loopback', { port: internalServer.port });

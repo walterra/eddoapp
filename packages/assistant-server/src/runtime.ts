@@ -17,11 +17,12 @@ import { bindRuntimeOwner } from './ownership.js';
 import { getPendingRequests, initializePendingRequests } from './pending_requests.js';
 import { createProjectionTask } from './projection_task.js';
 import type { ContextWriter } from './report_context.js';
+import { prepareCancellations } from './request_cancellation.js';
 import { getRequestStatus } from './request_status.js';
 import { createRequestTask, type RequestDependencies } from './request_task.js';
 import { waitForRequestResult } from './request_wait.js';
 import { createRuntimeAdmission } from './runtime_admission.js';
-import type { RuntimeRequestInput } from './state.js';
+import { RequestCancellations, type RuntimeRequestInput } from './state.js';
 
 export interface DurableRuntimeOptions extends RequestDependencies {
   storage: Storage;
@@ -54,6 +55,7 @@ export interface DurableRuntime {
   enqueue: (input: RuntimeRequestInput) => Promise<void>;
   execute: (input: RuntimeRequestInput) => Promise<string>;
   getPendingRequests: () => Promise<AssistantPendingRequests>;
+  cancelRequest: (requestId: string, conversationId: string) => Promise<AssistantRequestStatus>;
   getRequestStatus: (requestId: string) => Promise<AssistantRequestStatus | null>;
   close: () => Promise<void>;
   closed: Harness['closed'];
@@ -107,6 +109,7 @@ async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> 
     await bindRuntimeOwner(harness, options);
     await configureConversationModels(harness, options.model, options.thinkingLevel);
     await initializePendingRequests(harness);
+    await prepareCancellations(harness);
     return harness;
   } catch (error) {
     await harness.close(context);
@@ -118,18 +121,27 @@ async function createHarness(options: ResolvedRuntimeOptions): Promise<Harness> 
 export async function openDurableRuntime(options: DurableRuntimeOptions): Promise<DurableRuntime> {
   const configured = resolveRuntimeOptions(options);
   const harness = await createHarness(configured);
-  const submit = createRuntimeAdmission(harness, configured);
+  const admission = createRuntimeAdmission(harness, configured);
+  const cancellations = Object.entries(
+    (await harness.snapshot(RequestCancellations, context))?.requests ?? {},
+  );
   harness.resume();
+  for (const [requestId, cancellation] of cancellations) {
+    if (!cancellation.confirmed)
+      void admission.cancel(requestId, cancellation.conversationId).catch(options.onReport);
+  }
   return {
     closed: harness.closed,
     getRequestStatus: (requestId) => getRequestStatus(harness, requestId),
     getPendingRequests: () => getPendingRequests(harness),
+    cancelRequest: admission.cancel,
     close: () => harness.close(context),
     enqueue: async (input) => {
-      await submit(input);
+      await admission.submit(input);
     },
     execute: async (input) => {
-      const taskId = await submit(input);
+      const taskId = await admission.submit(input);
+      if (taskId === undefined) throw new Error('Assistant request was cancelled');
       return waitForRequestResult(harness, taskId, { requestId: input.requestId });
     },
   };

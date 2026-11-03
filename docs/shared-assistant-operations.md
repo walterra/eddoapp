@@ -149,6 +149,9 @@ Complete these checks against an operator-started deployment and a dedicated tes
 - Close or reload during accepted work; confirm one logical message and one mutation, without generating a replacement UUID.
 - Open a second browser session without pending local state; confirm shared activity appears.
 - Disconnect and reconnect the stream; verify missed history without duplicate messages.
+- Use Cancel request during queued or active web work; verify other accepted requests continue.
+- Cancel an unconfirmed submission; verify late admission never executes it, including after owner restart.
+- Interrupt cancellation transport and reload; verify Retry cancellation never resubmits the original message.
 - Use Telegram `/new`; verify the active thread changes and earlier pending work stays separate.
 - Switch accounts and sign out; confirm no other account's history or activity appears.
 - Confirm web-origin requests never emit Telegram replies, typing, or tool-progress notices.
@@ -173,6 +176,10 @@ Do not send mutation prompts to a production account for smoke testing.
 | Mutation failed or outcome unknown      | Inspect current todo, audit, and mutation-receipt state before repeating the operation.                                    |
 
 Closing the sidebar cancels read transports, never accepted work.
+Use **Cancel request** to stop the locally tracked web request through its existing owner.
+Unconfirmed submissions receive a persisted cancellation fence; deleting localStorage does not provide cancellation.
+Keep the pending identity until the owner confirms a terminal outcome; retry failed cancellation with **Retry cancellation**.
+Cancellation cannot undo completed tool actions or external effects already in flight.
 SSE resumes history invalidations and refreshes pending snapshots; it does not replay tool execution or stream private reasoning.
 History and lifecycle snapshots are separate: a pending-count change alone does not prove a mutation's outcome.
 
@@ -184,7 +191,9 @@ Do not clear these records to resolve an unknown admission outcome.
 
 Stop all owners and preserve the current databases before considering an older binary.
 Do not assume unchanged task names or versions establish checkpoint compatibility.
-The accepted-projection checkpoint and pending index are additive, but older owners do not maintain that index.
+The accepted-projection checkpoint, pending index, and cancellation fences are additive.
+Older owners ignore cancellation fences and can resume work that this version stops.
+Do not roll back cancelled journals without a reviewed compatibility procedure.
 Rollback and re-upgrade require a reviewed pending-index reconciliation procedure; no automatic downgrade workflow exists.
 Prefer rolling forward with the same owner implementation while repairing transport or projection access.
 Never restore only chat history or selected journal records to roll back execution.

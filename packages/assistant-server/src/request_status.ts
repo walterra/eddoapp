@@ -1,7 +1,7 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import type { Harness, Tx } from '@earendil-works/pi-durable';
 import type { AssistantRequestState, AssistantRequestStatus } from '@eddo/core-shared';
-import { RequestMap } from './state.js';
+import { RequestCancellations, RequestMap, type RequestCancellation } from './state.js';
 
 type PersistedTask = NonNullable<Awaited<ReturnType<Tx['task']>>>;
 
@@ -42,6 +42,35 @@ function requestState(task: PersistedTask, queued: boolean): AssistantRequestSta
   return state.status === 'pending' ? 'queued' : 'working';
 }
 
+function conversationId(input: unknown): string {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    Array.isArray(input) ||
+    !('conversationId' in input) ||
+    typeof input.conversationId !== 'string'
+  )
+    throw new Error('Durable request identity is invalid');
+  return input.conversationId;
+}
+function cancellationReceipt(
+  requestId: string,
+  cancellation?: RequestCancellation,
+): AssistantRequestStatus | null {
+  if (!cancellation) return null;
+  return {
+    requestId,
+    conversationId: cancellation.conversationId,
+    status: cancellation.confirmed ? 'aborted' : 'working',
+  };
+}
+function visibleState(
+  status: AssistantRequestState,
+  cancellation?: RequestCancellation,
+): AssistantRequestState {
+  return status === 'aborted' && cancellation && !cancellation.confirmed ? 'working' : status;
+}
+
 /** Reads request identity and lifecycle from the existing owner, including after recovery. */
 export async function getRequestStatus(
   harness: Harness,
@@ -49,7 +78,10 @@ export async function getRequestStatus(
 ): Promise<AssistantRequestStatus | null> {
   const mapping = await harness.snapshot(RequestMap, context);
   const id = mapping?.tasks[requestId];
-  if (id === undefined) return null;
+  const cancellation = (await harness.snapshot(RequestCancellations, context))?.requests?.[
+    requestId
+  ];
+  if (id === undefined) return cancellationReceipt(requestId, cancellation);
   const { task, queued } = await harness.commit(async (tx) => {
     const task = await tx.task(id);
     const submission = task
@@ -58,13 +90,10 @@ export async function getRequestStatus(
     return { task, queued: submission?.status === 'queued' };
   }, context);
   if (!task) throw new Error('Durable request mapping is invalid');
-  const input = task.input;
-  if (
-    !input ||
-    typeof input !== 'object' ||
-    Array.isArray(input) ||
-    typeof input.conversationId !== 'string'
-  )
-    throw new Error('Durable request identity is invalid');
-  return { requestId, conversationId: input.conversationId, status: requestState(task, queued) };
+  const status = requestState(task, queued);
+  return {
+    requestId,
+    conversationId: conversationId(task.input),
+    status: visibleState(status, cancellation),
+  };
 }
