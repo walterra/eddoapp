@@ -47,7 +47,12 @@ export function createSchemaParser<T>(
   const parse = (input: unknown): T => {
     const value = options.normalize ? options.normalize(input) : input;
     if (!validator.check(value)) {
-      throw new SchemaValidationError(validator.errors(value).map(toIssue));
+      const issues = validator.errors(value).map(toIssue);
+      throw new SchemaValidationError(
+        issues.length > 0
+          ? issues
+          : [{ path: '', code: 'invalid_value', message: 'invalid value' }],
+      );
     }
     const issues = options.validate?.(value) ?? [];
     if (issues.length > 0) throw new SchemaValidationError(issues);
@@ -76,11 +81,9 @@ export function projectProperties(value: unknown, keys: readonly string[]): unkn
 export {
   arr,
   bool,
-  int,
   lit,
   map,
   nullable,
-  num,
   obj,
   oneOf,
   opt,
@@ -88,3 +91,4 @@ export {
   union,
 } from '@earendil-works/pi-schema';
 export type { Schema, Static } from '@earendil-works/pi-schema';
+export { int, num } from './number_schema';

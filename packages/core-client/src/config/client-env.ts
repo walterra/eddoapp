@@ -1,18 +1,19 @@
-import { z } from 'zod';
+import { createFieldNormalizer } from '@eddo/core-shared/validation/field_normalization';
+import { createSchemaParser, obj, oneOf } from '@eddo/core-shared/validation/schema_parser';
 
 /**
  * Client-side environment configuration schema
  * Only includes variables that should be exposed to the browser
  */
-export const clientEnvSchema = z.object({
-  // Node environment
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+const clientEnvDefinition = obj({ NODE_ENV: oneOf(['development', 'production', 'test']) });
+export const clientEnvSchema = createSchemaParser(clientEnvDefinition, {
+  normalize: createFieldNormalizer({ fields: ['NODE_ENV'], defaults: { NODE_ENV: 'development' } }),
 });
 
 /**
  * Type definition for client-side environment configuration
  */
-export type ClientEnv = z.infer<typeof clientEnvSchema>;
+export type ClientEnv = ReturnType<typeof clientEnvSchema.parse>;
 
 /**
  * Validate and parse client-side environment configuration

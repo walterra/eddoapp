@@ -1,18 +1,31 @@
+import { utcDateTimeSchema } from '@eddo/core-shared/validation/compatibility';
+import { createObjectProjection } from '@eddo/core-shared/validation/object_projection';
+import {
+  createSchemaParser,
+  lit,
+  obj,
+  oneOf,
+  opt,
+  str,
+  type Static,
+} from '@eddo/core-shared/validation/schema_parser';
 import { createHash } from 'node:crypto';
-import { z } from 'zod';
 import type { UserSession } from './types.js';
 
-const ReceiptSchema = z.object({
-  _id: z.string(),
-  _rev: z.string().optional(),
-  version: z.literal('mcp_operation_alpha1'),
-  requestHash: z.string(),
-  status: z.enum(['pending', 'completed']),
-  responseJson: z.string().optional(),
-  createdAt: z.string().datetime(),
-  completedAt: z.string().datetime().optional(),
+const receiptDefinition = obj({
+  _id: str(),
+  _rev: opt(str()),
+  version: lit('mcp_operation_alpha1'),
+  requestHash: str(),
+  status: oneOf(['pending', 'completed']),
+  responseJson: opt(str()),
+  createdAt: utcDateTimeSchema(),
+  completedAt: opt(utcDateTimeSchema()),
 });
-export type MutationReceipt = z.infer<typeof ReceiptSchema>;
+const ReceiptSchema = createSchemaParser(receiptDefinition, {
+  normalize: createObjectProjection(receiptDefinition),
+});
+export type MutationReceipt = Static<typeof receiptDefinition>;
 
 export interface MutationReceiptStore {
   get: (id: string) => Promise<MutationReceipt | undefined>;

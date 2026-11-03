@@ -1,11 +1,18 @@
-import { z } from 'zod';
+import { validateTextLength } from '@eddo/core-shared/validation/compatibility';
+import { obj, str, type Static } from '@eddo/core-shared/validation/schema_parser';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { readUrl } from './jina_reader.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { ToolContext } from './types.js';
 import { cachedCapture, resolveCapture, storeCapture } from './url_capture_store.js';
 
-export const fetchUrlParameters = z.object({ url: z.string().min(1).max(8192) });
+export const fetchUrlParameters = createToolParameters(
+  obj({ url: str({ minLength: 1, maxLength: 8192 }) }),
+  {
+    validate: (value) => validateTextLength(value.url, 8192, '/url'),
+  },
+);
 export const fetchUrlDescription = `Fetch a public URL through Jina Reader for saving in a todo.
 Returns a user-scoped urlCaptureRef, title, metadata and bounded preview. Pass urlCaptureRef
 to createTodo to store the extracted Markdown verbatim without copying it through the model.
@@ -15,7 +22,7 @@ On failure, save the original URL with a domain/path title if the user requested
 
 /** Returns a bounded preview while retaining the Markdown server-side for todo creation. */
 export async function executeFetchUrl(
-  args: z.infer<typeof fetchUrlParameters>,
+  args: Static<typeof fetchUrlParameters.schema>,
   context: ToolContext,
 ): Promise<string> {
   const owner = context.session?.dbName;

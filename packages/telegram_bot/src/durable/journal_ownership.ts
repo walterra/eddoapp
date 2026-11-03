@@ -1,15 +1,25 @@
+import { createObjectProjection } from '@eddo/core-shared/validation/object_projection';
+import {
+  createSchemaParser,
+  int,
+  obj,
+  str,
+  type Static,
+} from '@eddo/core-shared/validation/schema_parser';
 import { randomUUID } from 'node:crypto';
 import type { CouchDatabase, CouchDocument } from 'pi-durable-couchdb';
-import { z } from 'zod';
 
 const HEAD = 'pi:head';
 const OWNER = 'eddoOwnership';
 
-const OwnershipSchema = z.object({
-  token: z.string().min(1),
-  epoch: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+const ownershipDefinition = obj({
+  token: str({ minLength: 1 }),
+  epoch: int({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
 });
-type OwnershipRecord = z.infer<typeof OwnershipSchema>;
+const OwnershipSchema = createSchemaParser(ownershipDefinition, {
+  normalize: createObjectProjection(ownershipDefinition),
+});
+type OwnershipRecord = Static<typeof ownershipDefinition>;
 
 export interface JournalOwnership {
   database: CouchDatabase;

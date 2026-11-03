@@ -28,6 +28,21 @@ The parser configures pi-schema's format checks explicitly.
 `projectProperties` selects own fields without mutating input.
 It preserves non-object values so structural validation rejects them.
 
+`createObjectProjection` projects nested inline object schemas, array items, and union branches.
+It requires inline schemas and never supplies defaults or coerces values.
+Use it only at boundaries that intentionally strip undeclared fields.
+
+`createFieldNormalizer` projects named fields and supplies cloned defaults for undefined values.
+Its conversions apply only to explicitly configured fields.
+`coerceNumber` preserves JavaScript numeric conversion; structural validation rejects failed conversions.
+
+`toStandardSchema` preserves parser methods and adds Standard Schema validation and JSON Schema publication.
+It supports draft 2020-12 publication and decodes JSON Pointer paths into Standard Schema segments.
+The MCP SDK validates arguments before executing registered handlers.
+Publication overrides distinguish accepted inputs from normalized outputs.
+MCP derives open input schemas from strip-on-parse object schemas.
+Preserve serialized schema and result key order: native VCR request hashes depend on those bytes.
+
 ## Compatibility
 
 JSON Schema string bounds count Unicode code points.
@@ -38,35 +53,52 @@ Minimum lengths above one require separate compatibility checks.
 The standard UUID format accepts UUID-shaped hexadecimal strings.
 Use `uuidSchema` to preserve existing RFC version and variant constraints.
 
-Format checks do not guarantee parity with existing email, URL, or timestamp rules.
+`utcDateTimeSchema` preserves UTC-only timestamp constraints, including mandatory seconds and calendar validation.
+Format checks do not guarantee parity with existing email or URL rules.
 Add boundary-specific fixtures before migrating those formats.
+
+Application `num` rejects non-finite numbers; `int` also rejects integers outside JavaScript's exact representation range.
+Native pi-schema number checks accept non-finite JavaScript values without explicit bounds.
+Use the application builders at migrated boundaries.
 
 ## Migration state
 
 Completed:
 
 - Shared parser, structured errors, explicit normalization and domain-validation hooks.
-- Strict internal assistant admission, status, and pending schemas.
-- UUID and UTF-16 compatibility coverage.
+- All assistant-server validation, including requests and generation controls.
+- Shared server and client environment parsing with explicit defaults and conversions.
+- Direct Zod dependency removal from core-shared, core-server, core-client, and assistant-server.
+- Transport-independent MCP registry using Standard Schema and pi-schema output contracts.
+- Get, delete, user-info, briefing, recap, and URL-fetch tool argument schemas.
+- Mutation receipt and journal ownership metadata validation.
+- UUID, timestamp, UTF-16, finite-number, and safe-integer compatibility coverage.
 
 Remaining:
 
 - Characterize and migrate all other Zod boundaries.
-- Implement MCP Standard Schema validation and JSON Schema publication adapters.
-- Migrate environment defaults, coercion, object projection, refinements, and transformations.
+- Migrate remaining MCP tool arguments, including input defaults and custom refinements.
+- Migrate bot, printer, and model configuration, including defaults and transformations.
 - Replace Zod-specific error handling and schema-derived types.
 - Remove direct dependencies and bundler references after all callers migrate.
 - Audit transitive dependencies separately and add an import/dependency guard.
-- Run full integration, playback, end-to-end, and bundle verification.
+- Run final end-to-end and browser bundle comparisons after all boundaries migrate.
 
-The installed MCP SDK accepts Standard Schema with JSON Schema publication.
-Its current application registry remains Zod-specific until that adapter migrates.
+Current verification covers unit tests, production builds, MCP integration, Durable integration, and all recorded-model playback sets.
+
+The MCP registry accepts both migrated pi-schema adapters and remaining Zod Standard Schema implementations.
+This transitional compatibility allows incremental migration without a second transport implementation.
 
 ## Checks
 
 Run from the repository root:
 
 ```bash
-pnpm vitest:run packages/core-shared/src/validation packages/assistant-server/src/internal_protocol.test.ts packages/assistant-server/src/internal_handler.test.ts
+pnpm test:unit
+pnpm vitest:run packages/core-client/src/config/client-env.test.ts
+pnpm test:integration:mcp-server
+pnpm test:integration:durable
+pnpm test:integration:agent-loop:playback
+pnpm build
 pnpm check:commit
 ```
