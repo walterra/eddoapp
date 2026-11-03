@@ -1,6 +1,7 @@
+import { obj, str } from '@eddo/core-shared/validation/schema_parser';
 import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { describe, expect, it, vi } from 'vitest';
-import { z } from 'zod';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { createToolRegistry } from '../tool_registry.js';
 import type { ToolContext } from './types.js';
@@ -18,7 +19,7 @@ async function callTool(
   createToolRegistry(server, context).addTool({
     name: 'identity',
     description: 'Returns the request identity',
-    parameters: z.object({ value: z.string() }),
+    parameters: createToolParameters(obj({ value: str() })),
     execute:
       execute ??
       (async (args, request) =>
@@ -73,7 +74,7 @@ describe('SDK v2 tool registry', () => {
     createToolRegistry(server, { log }).addTool({
       name: 'getTodo',
       description: 'Gets a todo',
-      parameters: z.object({}),
+      parameters: createToolParameters(obj({})),
       execute: async () => '{}',
     });
     expect(register).toHaveBeenCalledWith(

@@ -1,7 +1,9 @@
 /**
  * Server Info Tool - Get comprehensive server information and documentation
  */
-import { z } from 'zod';
+import { obj, oneOf } from '@eddo/core-shared/validation/schema_parser';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import type { GetUserDb, ToolContext } from './types.js';
 
@@ -9,15 +11,17 @@ import type { GetUserDb, ToolContext } from './types.js';
 export const getServerInfoDescription =
   'Get comprehensive information about the Eddo MCP server with authentication, including data model, available tools, and usage examples';
 
-/** Zod schema for getServerInfo parameters */
-export const getServerInfoParameters = z.object({
-  section: z
-    .enum(['overview', 'datamodel', 'examples', 'tagstats', 'memories', 'all'])
-    .default('all')
-    .describe('Specific section of documentation to retrieve'),
-});
+/** Validates and publishes getServerInfo parameters. */
+export const getServerInfoParameters = createToolParameters(
+  obj({
+    section: toolField(
+      oneOf(['overview', 'datamodel', 'examples', 'tagstats', 'memories', 'all']),
+      { default: 'all', description: 'Specific section of documentation to retrieve' },
+    ),
+  }),
+);
 
-export type GetServerInfoArgs = z.infer<typeof getServerInfoParameters>;
+export type GetServerInfoArgs = ReturnType<typeof getServerInfoParameters.parse>;
 
 /**
  * Fetches tag statistics from the database

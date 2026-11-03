@@ -2,8 +2,9 @@ import type { Model } from '@earendil-works/pi-ai';
 import { stream, streamSimple } from '@earendil-works/pi-ai/api/openai-completions';
 import { createProvider, type Models, type Provider } from '@earendil-works/pi-ai/models';
 import { builtinModels } from '@earendil-works/pi-ai/providers/all';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import { map, obj, unknown as unknownSchema } from '@eddo/core-shared/validation/schema_parser';
 import { readFileSync } from 'node:fs';
-import { z } from 'zod';
 
 import { resolveCustomApiKey } from './custom_model_auth.js';
 import { customProviderSchema, type CustomProviderConfig } from './custom_model_schema.js';
@@ -13,12 +14,12 @@ export interface ConfiguredModelsOptions {
   configPath?: string;
 }
 
+const providerFileSchema = createProjectedParser(obj({ providers: map(unknownSchema()) }));
+
 /** Reads trusted configuration without exposing malformed JSON or credential values in errors. */
 function readProviderFile(path: string): Record<string, unknown> {
   try {
-    return z
-      .object({ providers: z.record(z.string(), z.unknown()) })
-      .parse(JSON.parse(readFileSync(path, 'utf8'))).providers;
+    return providerFileSchema.parse(JSON.parse(readFileSync(path, 'utf8'))).providers;
   } catch {
     throw new Error(
       'Cannot read custom models configuration; verify EDDO_MODELS_FILE contains valid provider JSON',

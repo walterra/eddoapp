@@ -8,7 +8,9 @@ import {
   type AttachmentDoc,
   type AttachmentType,
 } from '@eddo/core-shared';
-import { z } from 'zod';
+import { obj, oneOf, opt, str } from '@eddo/core-shared/validation/schema_parser';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetAttachmentsDb, ToolContext } from './types.js';
@@ -53,18 +55,24 @@ function validateUploadArgs(params: UploadValidationParams, operation: string): 
 
 export const uploadAttachmentDescription = `Upload an attachment to a todo. Attachments are stored in a separate database, decoupled from todo documents. Attachments can be added to the description (type: 'desc') or to a specific note (type: 'note'). Supported types: JPEG, PNG, GIF, WebP images and PDF documents. Maximum size: 5MB. The attachment can be referenced in markdown as ![alt](attachment:desc/filename.png).`;
 
-export const uploadAttachmentParameters = z.object({
-  todoId: z.string().describe('The unique identifier of the todo'),
-  filename: z.string().describe('The filename for the attachment (e.g., screenshot.png)'),
-  base64Data: z.string().describe('The file content encoded as base64'),
-  contentType: z.string().describe('The MIME type (e.g., image/png, image/jpeg, application/pdf)'),
-  type: z
-    .enum(['desc', 'note'])
-    .describe("Attachment location: 'desc' for description, 'note' for a specific note"),
-  noteId: z.string().optional().describe("Required if type is 'note': the note ID to attach to"),
-});
+export const uploadAttachmentParameters = createToolParameters(
+  obj({
+    todoId: str({ description: 'The unique identifier of the todo' }),
+    filename: str({ description: 'The filename for the attachment (e.g., screenshot.png)' }),
+    base64Data: str({ description: 'The file content encoded as base64' }),
+    contentType: str({
+      description: 'The MIME type (e.g., image/png, image/jpeg, application/pdf)',
+    }),
+    type: oneOf(['desc', 'note'], {
+      description: "Attachment location: 'desc' for description, 'note' for a specific note",
+    }),
+    noteId: opt(
+      toolField(str(), { description: "Required if type is 'note': the note ID to attach to" }),
+    ),
+  }),
+);
 
-export type UploadAttachmentArgs = z.infer<typeof uploadAttachmentParameters>;
+export type UploadAttachmentArgs = ReturnType<typeof uploadAttachmentParameters.parse>;
 
 /** Creates attachment document with optional existing revision */
 async function createAttachmentDoc(
@@ -156,11 +164,13 @@ export async function executeUploadAttachment(
 
 export const getAttachmentDescription = `Get an attachment as base64 encoded data. Use the docId returned from listAttachments or uploadAttachment.`;
 
-export const getAttachmentParameters = z.object({
-  docId: z.string().describe("The attachment document ID (e.g., 'todoId/desc/screenshot.png')"),
-});
+export const getAttachmentParameters = createToolParameters(
+  obj({
+    docId: str({ description: "The attachment document ID (e.g., 'todoId/desc/screenshot.png')" }),
+  }),
+);
 
-export type GetAttachmentArgs = z.infer<typeof getAttachmentParameters>;
+export type GetAttachmentArgs = ReturnType<typeof getAttachmentParameters.parse>;
 
 /** Gets an attachment as base64 */
 export async function executeGetAttachment(
@@ -216,13 +226,15 @@ export async function executeGetAttachment(
 
 export const deleteAttachmentDescription = `Delete an attachment from a todo.`;
 
-export const deleteAttachmentParameters = z.object({
-  docId: z
-    .string()
-    .describe("The attachment document ID to delete (e.g., 'todoId/desc/screenshot.png')"),
-});
+export const deleteAttachmentParameters = createToolParameters(
+  obj({
+    docId: str({
+      description: "The attachment document ID to delete (e.g., 'todoId/desc/screenshot.png')",
+    }),
+  }),
+);
 
-export type DeleteAttachmentArgs = z.infer<typeof deleteAttachmentParameters>;
+export type DeleteAttachmentArgs = ReturnType<typeof deleteAttachmentParameters.parse>;
 
 /** Deletes an attachment document */
 export async function executeDeleteAttachment(
@@ -266,11 +278,13 @@ export async function executeDeleteAttachment(
 
 export const listAttachmentsDescription = `List all attachments for a todo. Returns attachment document IDs, content types, and sizes.`;
 
-export const listAttachmentsParameters = z.object({
-  todoId: z.string().describe('The unique identifier of the todo'),
-});
+export const listAttachmentsParameters = createToolParameters(
+  obj({
+    todoId: str({ description: 'The unique identifier of the todo' }),
+  }),
+);
 
-export type ListAttachmentsArgs = z.infer<typeof listAttachmentsParameters>;
+export type ListAttachmentsArgs = ReturnType<typeof listAttachmentsParameters.parse>;
 
 /** Builds attachment info from document */
 function buildAttachmentInfo(doc: AttachmentDoc) {

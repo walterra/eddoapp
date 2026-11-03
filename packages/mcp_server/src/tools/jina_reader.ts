@@ -1,22 +1,36 @@
-import { z } from 'zod';
+import { validateAbsoluteUrl } from '@eddo/core-shared/validation/compatibility';
+import {
+  coerceNumber,
+  createFieldNormalizer,
+} from '@eddo/core-shared/validation/field_normalization';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import { arr, int, obj, opt, str, union } from '@eddo/core-shared/validation/schema_parser';
 
 import { validatePublicUrl } from './public_url.js';
 import type { UrlCapture } from './url_capture_store.js';
 
-const readerData = z.object({
-  title: z.string().optional(),
-  url: z.string().optional(),
-  content: z.string().min(1),
-  description: z.string().optional(),
-  publishedTime: z.string().optional(),
-  author: z.union([z.string(), z.array(z.string())]).optional(),
-});
-const readerResponse = z.object({ data: readerData });
-const configSchema = z.object({
-  base: z.url().default('https://r.jina.ai'),
-  key: z.string().optional(),
-  maxBytes: z.coerce.number().int().min(1024).max(1_000_000).default(200_000),
-});
+const readerData = createProjectedParser(
+  obj({
+    title: opt(str()),
+    url: opt(str()),
+    content: str({ minLength: 1 }),
+    description: opt(str()),
+    publishedTime: opt(str()),
+    author: opt(union([str(), arr(str())])),
+  }),
+);
+const readerResponse = createProjectedParser(obj({ data: readerData.schema }));
+const configSchema = createProjectedParser(
+  obj({ base: str(), key: opt(str()), maxBytes: int({ minimum: 1024, maximum: 1_000_000 }) }),
+  {
+    normalize: createFieldNormalizer({
+      fields: ['base', 'key', 'maxBytes'],
+      defaults: { base: 'https://r.jina.ai', maxBytes: 200_000 },
+      conversions: { maxBytes: coerceNumber },
+    }),
+    validate: (value) => validateAbsoluteUrl(value.base, '/base'),
+  },
+);
 
 interface ReaderConfig {
   base: string;
@@ -58,7 +72,7 @@ async function boundedBody(response: Response): Promise<string> {
 
 /** Maps supported Reader metadata without retaining arbitrary upstream fields. */
 function captureData(
-  data: z.infer<typeof readerData>,
+  data: ReturnType<typeof readerData.parse>,
   sourceUrl: string,
   maxBytes: number,
 ): UrlCapture {

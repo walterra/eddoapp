@@ -8,11 +8,13 @@ import {
   getAuditDatabaseName,
   type AuditLogAlpha1,
 } from '@eddo/core-server';
+import { SchemaValidationError } from '@eddo/core-shared/validation/schema_parser';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import jwt from 'jsonwebtoken';
 import nano, { type DocumentScope } from 'nano';
-import { z } from 'zod';
+import { validationDetails } from '../utils/validation_details';
+import { createAuditEntrySchema, listBySourceQuerySchema, listQuerySchema } from './audit_schemas';
 
 import { logger, withSpan } from '../utils/logger';
 import { type SSEStream } from './users-sse';
@@ -22,38 +24,6 @@ const auditLogApp = new Hono();
 // Initialize environment
 const env = createEnv();
 const couchConnection = nano(env.COUCHDB_URL);
-
-/** Query schema for listing audit entries */
-const listQuerySchema = z.object({
-  limit: z.coerce.number().min(1).max(100).default(50),
-  startAfter: z.string().optional(),
-  /** Comma-separated list of entity IDs to filter by */
-  entityIds: z.string().optional(),
-  /** Comma-separated list of audit entry IDs to fetch directly */
-  ids: z.string().optional(),
-});
-
-/** Query schema for listing entries by source */
-const listBySourceQuerySchema = z.object({
-  limitPerSource: z.coerce.number().min(1).max(50).default(20),
-});
-
-/** Schema for creating audit log entries */
-const createAuditEntrySchema = z.object({
-  action: z.enum([
-    'create',
-    'update',
-    'delete',
-    'complete',
-    'uncomplete',
-    'time_tracking_start',
-    'time_tracking_stop',
-  ]),
-  entityId: z.string(),
-  before: z.record(z.string(), z.unknown()).optional(),
-  after: z.record(z.string(), z.unknown()).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
 
 /**
  * GET /api/audit-log
@@ -98,7 +68,7 @@ auditLogApp.get('/', async (c) => {
 
       return c.json(result);
     } catch (error) {
-      if (error instanceof z.ZodError) {
+      if (error instanceof SchemaValidationError) {
         return c.json({ error: 'Invalid query parameters' }, 400);
       }
 
@@ -147,7 +117,7 @@ auditLogApp.get('/by-source', async (c) => {
 
         return c.json({ entriesBySource });
       } catch (error) {
-        if (error instanceof z.ZodError) {
+        if (error instanceof SchemaValidationError) {
           return c.json({ error: 'Invalid query parameters' }, 400);
         }
 
@@ -206,8 +176,8 @@ auditLogApp.post('/', async (c) => {
 
       return c.json({ success: true, entry });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return c.json({ error: 'Invalid request body', details: error.issues }, 400);
+      if (error instanceof SchemaValidationError) {
+        return c.json({ error: 'Invalid request body', details: validationDetails(error) }, 400);
       }
 
       logger.error({ error, username }, 'Failed to create audit log entry');

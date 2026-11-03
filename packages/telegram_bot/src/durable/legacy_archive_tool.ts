@@ -1,7 +1,9 @@
 import { defineExtension, defineTool, section } from '@earendil-works/pi-durable';
 import { ConversationMap, type ReportType } from '@eddo/assistant-server/state';
 import type { AssistantConversationMessageDoc, AssistantRequest } from '@eddo/core-shared';
-import { z } from 'zod';
+import { validateTextLength } from '@eddo/core-shared/validation/compatibility';
+import { createFieldNormalizer } from '@eddo/core-shared/validation/field_normalization';
+import { createSchemaParser, int, obj, opt, str } from '@eddo/core-shared/validation/schema_parser';
 import type { MCPUserContext } from '../mcp/user-context.js';
 import { readLegacyArchive } from './legacy_archive.js';
 import { authorizeToolPermission, consumeToolBudget } from './tools.js';
@@ -20,11 +22,21 @@ const ARCHIVE_PARAMETERS = {
   additionalProperties: false,
 };
 
-const querySchema = z.object({
-  query: z.string().max(200).optional(),
-  messageOffset: z.number().int().nonnegative().default(0),
-  characterOffset: z.number().int().nonnegative().default(0),
-});
+const querySchema = createSchemaParser(
+  obj({
+    query: opt(str({ maxLength: 200 })),
+    messageOffset: int({ minimum: 0 }),
+    characterOffset: int({ minimum: 0 }),
+  }),
+  {
+    normalize: createFieldNormalizer({
+      fields: ['query', 'messageOffset', 'characterOffset'],
+      defaults: { messageOffset: 0, characterOffset: 0 },
+    }),
+    validate: (value) =>
+      value.query === undefined ? [] : validateTextLength(value.query, 200, '/query'),
+  },
+);
 
 export interface LegacyArchiveOptions {
   username: string;

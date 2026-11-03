@@ -244,9 +244,6 @@ importers:
       react-icons:
         specifier: ^5.6.0
         version: 5.7.0(react@19.2.7)
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.6.0
@@ -439,13 +436,13 @@ importers:
     dependencies:
       '@earendil-works/chord':
         specifier: 1.5.0
-        version: 1.5.0(esbuild@0.28.2)(ws@8.22.0)
+        version: 1.5.0(esbuild@0.28.2)
       '@earendil-works/pi-ai':
         specifier: 1.5.0
-        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)
+        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)
       '@earendil-works/pi-durable':
         specifier: 1.5.0
-        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)
+        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)
       '@eddo/core-instrumentation':
         specifier: workspace:*
         version: link:../core-instrumentation
@@ -458,19 +455,16 @@ importers:
       grammy:
         specifier: ^1.46.0
         version: 1.46.0(supports-color@7.2.0)
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       pi-durable-couchdb:
         specifier: 0.0.2
-        version: 0.0.2(@earendil-works/chord@1.5.0(esbuild@0.28.2)(ws@8.22.0))(@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3))
+        version: 0.0.2(@earendil-works/chord@1.5.0(esbuild@0.28.2))(@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3))
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/chat-agent:
     dependencies:
@@ -490,16 +484,13 @@ importers:
       pouchdb-browser:
         specifier: ^9.0.0
         version: 9.0.0
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/core-instrumentation:
     dependencies:
@@ -546,28 +537,28 @@ importers:
       pouchdb-browser:
         specifier: ^9.0.0
         version: 9.0.0
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/core-shared:
     dependencies:
+      '@earendil-works/pi-schema':
+        specifier: 1.5.0
+        version: 1.5.0
+      '@standard-schema/spec':
+        specifier: ^1.1.0
+        version: 1.1.0
       date-fns:
         specifier: ^4.1.0
         version: 4.4.0
       lodash-es:
         specifier: ^4.18.1
         version: 4.18.1
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@types/lodash-es':
         specifier: ^4.17.6
@@ -577,7 +568,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/mcp_server:
     dependencies:
@@ -623,9 +614,6 @@ importers:
       undici:
         specifier: ^8.4.0
         version: 8.12.3
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@modelcontextprotocol/client':
         specifier: ^2.3.1
@@ -644,7 +632,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/printer_service:
     dependencies:
@@ -666,9 +654,6 @@ importers:
       winston:
         specifier: ^3.19.0
         version: 3.19.0
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@types/node':
         specifier: ^25.9.3
@@ -684,7 +669,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/setup:
     dependencies:
@@ -715,13 +700,13 @@ importers:
     dependencies:
       '@earendil-works/chord':
         specifier: 1.5.0
-        version: 1.5.0(esbuild@0.28.2)(ws@8.22.0)
+        version: 1.5.0(esbuild@0.28.2)
       '@earendil-works/pi-ai':
         specifier: 1.5.0
-        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)
+        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)
       '@earendil-works/pi-durable':
         specifier: 1.5.0
-        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)
+        version: 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)
       '@eddo/assistant-server':
         specifier: workspace:*
         version: link:../assistant-server
@@ -763,13 +748,10 @@ importers:
         version: 11.0.7
       pi-durable-couchdb:
         specifier: 0.0.2
-        version: 0.0.2(@earendil-works/chord@1.5.0(esbuild@0.28.2)(ws@8.22.0))(@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3))
+        version: 0.0.2(@earendil-works/chord@1.5.0(esbuild@0.28.2))(@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3))
       undici:
         specifier: ^8.4.0
         version: 8.12.3
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@modelcontextprotocol/server':
         specifier: ^2.3.1
@@ -794,10 +776,10 @@ importers:
         version: 5.9.3
       vite-tsconfig-paths:
         specifier: ^6.1.1
-        version: 6.1.1(supports-color@7.2.0)(typescript@5.9.3)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 6.1.1(supports-color@7.2.0)(typescript@5.9.3)(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/web-api:
     dependencies:
@@ -849,12 +831,12 @@ importers:
       pino:
         specifier: ^10.3.1
         version: 10.4.0
+      tsx:
+        specifier: ^4.21.0
+        version: 4.23.15
       undici:
         specifier: ^8.4.0
         version: 8.12.3
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@elastic/elasticsearch':
         specifier: ^9.5.1
@@ -883,9 +865,6 @@ importers:
       html-to-text:
         specifier: ^9.0.5
         version: 9.0.5
-      tsx:
-        specifier: ^4.21.0
-        version: 4.23.15
       turndown:
         specifier: ^7.2.4
         version: 7.2.4
@@ -897,7 +876,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.9
-        version: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/web-client:
     dependencies:
@@ -988,9 +967,6 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1(supports-color@7.2.0)
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@opentelemetry/api':
         specifier: ^1.9.0
@@ -10496,15 +10472,14 @@ snapshots:
       enabled: 2.0.0
       kuler: 2.0.0
 
-  '@earendil-works/chord@1.5.0(esbuild@0.28.2)(ws@8.22.0)':
+  '@earendil-works/chord@1.5.0(esbuild@0.28.2)':
     dependencies:
       '@earendil-works/pi-schema': 1.5.0
       '@earendil-works/pi-telemetry': 1.5.0
     optionalDependencies:
       esbuild: 0.28.2
-      ws: 8.22.0
 
-  '@earendil-works/pi-ai@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)':
+  '@earendil-works/pi-ai@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)':
     dependencies:
       '@anthropic-ai/sdk': 0.129.0(zod@4.4.3)
       '@aws-sdk/client-bedrock-runtime': 3.1127.0
@@ -10514,7 +10489,7 @@ snapshots:
       '@smithy/node-http-handler': 4.12.1
       http-proxy-agent: 9.1.0(supports-color@7.2.0)
       https-proxy-agent: 9.1.0(supports-color@7.2.0)
-      openai: 7.19.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)
+      openai: 7.19.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(zod@4.4.3)
       partial-json: 0.1.7
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -10533,10 +10508,10 @@ snapshots:
     dependencies:
       quickjs-wasi: 3.6.2
 
-  '@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)':
+  '@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)':
     dependencies:
-      '@earendil-works/chord': 1.5.0(esbuild@0.28.2)(ws@8.22.0)
-      '@earendil-works/pi-ai': 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)
+      '@earendil-works/chord': 1.5.0(esbuild@0.28.2)
+      '@earendil-works/pi-ai': 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)
       '@earendil-works/pi-codemode': 1.5.0
       '@earendil-works/pi-schema': 1.5.0
       '@earendil-works/pi-telemetry': 1.5.0
@@ -17944,12 +17919,11 @@ snapshots:
     dependencies:
       mimic-function: 5.0.1
 
-  openai@7.19.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3):
+  openai@7.19.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(undici@8.12.3)(zod@4.4.3):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.91
       '@smithy/signature-v4': 5.7.5
       undici: 8.12.3
-      ws: 8.22.0
       zod: 4.4.3
 
   optionator@0.9.4:
@@ -18214,10 +18188,10 @@ snapshots:
       postgres-date: 1.0.7
       postgres-interval: 1.2.0
 
-  pi-durable-couchdb@0.0.2(@earendil-works/chord@1.5.0(esbuild@0.28.2)(ws@8.22.0))(@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)):
+  pi-durable-couchdb@0.0.2(@earendil-works/chord@1.5.0(esbuild@0.28.2))(@earendil-works/pi-durable@1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)):
     dependencies:
-      '@earendil-works/chord': 1.5.0(esbuild@0.28.2)(ws@8.22.0)
-      '@earendil-works/pi-durable': 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(ws@8.22.0)(zod@4.4.3)
+      '@earendil-works/chord': 1.5.0(esbuild@0.28.2)
+      '@earendil-works/pi-durable': 1.5.0(@aws-sdk/credential-provider-node@3.972.91)(@smithy/signature-v4@5.7.5)(esbuild@0.28.2)(supports-color@7.2.0)(undici@8.12.3)(zod@4.4.3)
 
   picocolors@1.1.1: {}
 
@@ -19833,12 +19807,12 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-tsconfig-paths@6.1.1(supports-color@7.2.0)(typescript@5.9.3)(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
+  vite-tsconfig-paths@6.1.1(supports-color@7.2.0)(typescript@5.9.3)(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       debug: 4.4.3(supports-color@7.2.0)
       globrex: 0.1.2
       tsconfck: 3.1.6(typescript@5.9.3)
-      vite: 8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -19933,10 +19907,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
+  vitest@4.1.12(@opentelemetry/api@1.9.1)(@types/node@25.9.9)(@vitest/coverage-v8@4.1.12)(jsdom@28.1.0(supports-color@7.2.0))(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@vitest/expect': 4.1.12
-      '@vitest/mocker': 4.1.12(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      '@vitest/mocker': 4.1.12(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       '@vitest/pretty-format': 4.1.12
       '@vitest/runner': 4.1.12
       '@vitest/snapshot': 4.1.12
@@ -19953,7 +19927,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+      vite: 8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1

@@ -1,15 +1,39 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import readline from 'node:readline';
-import { z } from 'zod';
+import { createFieldNormalizer } from '../packages/core-shared/src/validation/field_normalization.js';
+import {
+  bool,
+  createSchemaParser,
+  lit,
+  map,
+  obj,
+  oneOf,
+  opt,
+  str,
+} from '../packages/core-shared/src/validation/schema_parser.js';
 
-export const backupHeaderSchema = z.object({
-  name: z.literal('@cloudant/couchbackup'),
-  version: z.string(),
-  mode: z.enum(['full', 'shallow']),
-  attachments: z.boolean().default(false),
-});
-export type BackupHeader = z.infer<typeof backupHeaderSchema>;
+export const backupHeaderSchema = createSchemaParser(
+  obj({
+    name: lit('@cloudant/couchbackup'),
+    version: str(),
+    mode: oneOf(['full', 'shallow']),
+    attachments: bool(),
+  }),
+  {
+    normalize: createFieldNormalizer({
+      fields: ['name', 'version', 'mode', 'attachments'],
+      defaults: { attachments: false },
+    }),
+  },
+);
+const documentSchema = createSchemaParser(
+  obj({ _id: str({ minLength: 1 }), _rev: opt(str()) }, { open: true }),
+);
+const attachmentsSchema = createSchemaParser(
+  map(obj({ data: str(), digest: opt(str()) }, { open: true })),
+);
+export type BackupHeader = ReturnType<typeof backupHeaderSchema.parse>;
 export interface BackupDocument extends Record<string, unknown> {
   _id: string;
   _rev?: string;
@@ -27,9 +51,8 @@ export type DocumentVisitor = (document: BackupDocument) => void | Promise<void>
 async function visitBatch(value: unknown, visit: DocumentVisitor): Promise<void> {
   if (!Array.isArray(value)) throw new Error('Backup records must be document arrays');
   const documents: unknown[] = value;
-  const schema = z.object({ _id: z.string().min(1), _rev: z.string().optional() }).passthrough();
   for (const document of documents) {
-    const parsed = schema.safeParse(document);
+    const parsed = documentSchema.safeParse(document);
     if (!parsed.success) throw new Error('Document missing _id or invalid _rev');
     await visit(parsed.data);
   }
@@ -88,9 +111,7 @@ function inspectAttachments(
   decodedDigests: Readonly<Record<string, string>>,
 ): void {
   if (!document._attachments) return;
-  const attachments = z
-    .record(z.string(), z.object({ data: z.string(), digest: z.string().optional() }).passthrough())
-    .safeParse(document._attachments);
+  const attachments = attachmentsSchema.safeParse(document._attachments);
   if (!attachments.success) {
     result.errors.push(`${document._id}: attachment body missing or invalid`);
     return;

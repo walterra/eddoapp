@@ -2,7 +2,8 @@
  * Note Management Tools - Add, update, and delete notes on todos
  */
 import type { TodoAlpha4, TodoNote } from '@eddo/core-server';
-import { z } from 'zod';
+import { obj, str } from '@eddo/core-shared/validation/schema_parser';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
@@ -90,12 +91,14 @@ async function logAndRespond(options: AuditAndRespondOptions): Promise<string> {
 
 export const addNoteDescription = `Add a note to an existing todo. Notes function as a work diary for tracking progress, decisions, and context. Content supports markdown formatting.`;
 
-export const addNoteParameters = z.object({
-  todoId: z.string().describe('The unique identifier of the todo to add a note to'),
-  content: z.string().describe('The note content (supports markdown formatting)'),
-});
+export const addNoteParameters = createToolParameters(
+  obj({
+    todoId: str({ description: 'The unique identifier of the todo to add a note to' }),
+    content: str({ description: 'The note content (supports markdown formatting)' }),
+  }),
+);
 
-export type AddNoteArgs = z.infer<typeof addNoteParameters>;
+export type AddNoteArgs = ReturnType<typeof addNoteParameters.parse>;
 
 /** Adds a new note to a todo */
 export async function executeAddNote(
@@ -144,13 +147,15 @@ export async function executeAddNote(
 
 export const updateNoteDescription = `Update an existing note on a todo. Use this to edit note content.`;
 
-export const updateNoteParameters = z.object({
-  todoId: z.string().describe('The unique identifier of the todo containing the note'),
-  noteId: z.string().describe('The unique identifier of the note to update'),
-  content: z.string().describe('The updated note content (supports markdown formatting)'),
-});
+export const updateNoteParameters = createToolParameters(
+  obj({
+    todoId: str({ description: 'The unique identifier of the todo containing the note' }),
+    noteId: str({ description: 'The unique identifier of the note to update' }),
+    content: str({ description: 'The updated note content (supports markdown formatting)' }),
+  }),
+);
 
-export type UpdateNoteArgs = z.infer<typeof updateNoteParameters>;
+export type UpdateNoteArgs = ReturnType<typeof updateNoteParameters.parse>;
 
 /** Updates an existing note on a todo */
 export async function executeUpdateNote(
@@ -208,12 +213,14 @@ export async function executeUpdateNote(
 
 export const deleteNoteDescription = `Delete a note from a todo.`;
 
-export const deleteNoteParameters = z.object({
-  todoId: z.string().describe('The unique identifier of the todo containing the note'),
-  noteId: z.string().describe('The unique identifier of the note to delete'),
-});
+export const deleteNoteParameters = createToolParameters(
+  obj({
+    todoId: str({ description: 'The unique identifier of the todo containing the note' }),
+    noteId: str({ description: 'The unique identifier of the note to delete' }),
+  }),
+);
 
-export type DeleteNoteArgs = z.infer<typeof deleteNoteParameters>;
+export type DeleteNoteArgs = ReturnType<typeof deleteNoteParameters.parse>;
 
 /** Deletes a note from a todo */
 export async function executeDeleteNote(

@@ -1,63 +1,77 @@
-import { z } from 'zod';
+import {
+  receiptDefinition,
+  validateReceipt,
+} from '@eddo/core-shared/validation/assistant_receipts';
+import {
+  utcDateTimeSchema,
+  uuidSchema,
+  validateTextLength,
+} from '@eddo/core-shared/validation/compatibility';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import {
+  arr,
+  bool,
+  lit,
+  nullable,
+  num,
+  obj,
+  oneOf,
+  opt,
+  str,
+} from '@eddo/core-shared/validation/schema_parser';
 
-export const receiptSchema = z.object({
-  requestId: z.string().min(1).max(256),
-  conversationId: z.string().min(1).max(256),
-  status: z.enum([
-    'queued',
-    'working',
-    'delivering',
-    'projecting',
-    'completed',
-    'failed',
-    'aborted',
-  ]),
+export {
+  receiptSchema,
+  sharedRequestsSchema,
+} from '@eddo/core-shared/validation/assistant_receipts';
+
+const conversation = obj({
+  _id: str(),
+  _rev: opt(str()),
+  version: lit('assistant_conversation_alpha1'),
+  username: str(),
+  active: bool(),
+  title: opt(str()),
+  createdAt: str(),
+  updatedAt: str(),
+  stats: obj({ messageCount: num(), userMessageCount: num(), assistantMessageCount: num() }),
 });
-export const sharedRequestsSchema = z.object({
-  requests: z.array(receiptSchema).max(100),
-  hasMore: z.boolean(),
+const message = obj({
+  _id: str(),
+  _rev: opt(str()),
+  version: lit('assistant_conversation_message_alpha1'),
+  conversationId: str(),
+  role: oneOf(['user', 'assistant']),
+  content: str(),
+  channel: oneOf(['web', 'telegram']),
+  createdAt: str(),
+  sequence: num(),
 });
-const conversation = z.object({
-  _id: z.string(),
-  _rev: z.string().optional(),
-  version: z.literal('assistant_conversation_alpha1'),
-  username: z.string(),
-  active: z.boolean(),
-  title: z.string().optional(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  stats: z.object({
-    messageCount: z.number(),
-    userMessageCount: z.number(),
-    assistantMessageCount: z.number(),
+export const historySchema = createProjectedParser(
+  obj({
+    conversation: nullable(conversation),
+    messages: arr(message),
+    nextCursor: nullable(str()),
+    changeCursor: str(),
   }),
-});
-const message = z.object({
-  _id: z.string(),
-  _rev: z.string().optional(),
-  version: z.literal('assistant_conversation_message_alpha1'),
-  conversationId: z.string(),
-  role: z.enum(['user', 'assistant']),
-  content: z.string(),
-  channel: z.enum(['web', 'telegram']),
-  createdAt: z.string(),
-  sequence: z.number(),
-});
-export const historySchema = z.object({
-  conversation: conversation.nullable(),
-  messages: z.array(message),
-  nextCursor: z.string().nullable(),
-  changeCursor: z.string(),
-});
-export const pendingSchema = z.object({
-  username: z.string(),
-  submissionId: z.uuid(),
-  text: z.string().min(1).max(8000),
-  createdAt: z.iso.datetime(),
-  conversationId: z.string().nullable(),
-  projectionIds: z.object({
-    user: z.string().regex(/^assistant_message_durable_[a-f0-9]{64}_user$/),
-    assistant: z.string().regex(/^assistant_message_durable_[a-f0-9]{64}_assistant$/),
+);
+export const pendingSchema = createProjectedParser(
+  obj({
+    username: str(),
+    submissionId: uuidSchema(),
+    text: str({ minLength: 1, maxLength: 8000 }),
+    createdAt: utcDateTimeSchema(),
+    conversationId: nullable(str()),
+    projectionIds: obj({
+      user: str({ pattern: '^assistant_message_durable_[a-f0-9]{64}_user$' }),
+      assistant: str({ pattern: '^assistant_message_durable_[a-f0-9]{64}_assistant$' }),
+    }),
+    receipt: opt(receiptDefinition),
   }),
-  receipt: receiptSchema.optional(),
-});
+  {
+    validate: (value) => [
+      ...validateTextLength(value.text, 8000, '/text'),
+      ...(value.receipt ? validateReceipt(value.receipt, '/receipt') : []),
+    ],
+  },
+);

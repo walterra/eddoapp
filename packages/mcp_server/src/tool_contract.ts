@@ -1,28 +1,69 @@
+import { jsonValueSchema } from '@eddo/core-shared/validation/json_value';
+import { createObjectProjection } from '@eddo/core-shared/validation/object_projection';
+import {
+  arr,
+  bool,
+  createSchemaParser,
+  int,
+  obj,
+  opt,
+  projectProperties,
+  str,
+  type Static,
+} from '@eddo/core-shared/validation/schema_parser';
+import { toStandardSchema } from '@eddo/core-shared/validation/standard_schema';
 import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/server';
-import { z } from 'zod';
 
-const metadataSchema = z.looseObject({
-  operation: z.string(),
-  timestamp: z.string(),
+const metadataSchema = obj({ operation: str(), timestamp: str() }, { open: true });
+const paginationSchema = obj({
+  count: int({ minimum: 0 }),
+  limit: int({ minimum: 1 }),
+  has_more: bool(),
 });
+const projectPagination = createObjectProjection(paginationSchema);
 
 /** Validates the shared response envelope without narrowing existing domain payloads. */
-export const toolOutputSchema = z.object({
-  summary: z.string(),
-  data: z.json().optional(),
-  error: z.string().optional(),
-  recovery_suggestions: z.array(z.string()).optional(),
-  pagination: z
-    .object({
-      count: z.number().int().nonnegative(),
-      limit: z.number().int().positive(),
-      has_more: z.boolean(),
-    })
-    .optional(),
+const outputDefinition = obj({
+  summary: str(),
+  data: opt(jsonValueSchema),
+  error: opt(str()),
+  recovery_suggestions: opt(arr(str())),
+  pagination: opt(paginationSchema),
   metadata: metadataSchema,
 });
+const outputParser = createSchemaParser(outputDefinition, {
+  normalize: normalizeOutput,
+});
+export const toolOutputSchema = toStandardSchema(outputParser);
+type ToolOutput = Static<typeof outputDefinition>;
 
-type ToolOutput = z.infer<typeof toolOutputSchema>;
+/** Projects envelope fields while retaining arbitrary JSON data and open metadata. */
+function normalizeOutput(value: unknown): unknown {
+  const projected = projectProperties(value, [
+    'summary',
+    'data',
+    'error',
+    'recovery_suggestions',
+    'pagination',
+    'metadata',
+  ]);
+  if (typeof projected !== 'object' || projected === null || Array.isArray(projected))
+    return projected;
+  const output = { ...projected, metadata: normalizeMetadata(Reflect.get(projected, 'metadata')) };
+  if (!Object.hasOwn(projected, 'pagination')) return output;
+  return { ...output, pagination: projectPagination(Reflect.get(projected, 'pagination')) };
+}
+
+/** Preserves declared-field ordering before open metadata for native transcript compatibility. */
+function normalizeMetadata(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const declared = Object.fromEntries(
+    ['operation', 'timestamp']
+      .filter((key) => Object.hasOwn(value, key))
+      .map((key) => [key, Reflect.get(value, key)]),
+  );
+  return { ...declared, ...value };
+}
 
 const readTools = new Set([
   'fetchUrl',
@@ -76,7 +117,7 @@ export function toolResult(name: string, text: string): CallToolResult {
     });
   }
   const parsed: unknown = JSON.parse(text);
-  const output = toolOutputSchema.parse(parsed);
+  const output = outputParser.parse(parsed);
   if (output.error !== undefined) return toolFailure(name, output.summary);
   return result(output);
 }

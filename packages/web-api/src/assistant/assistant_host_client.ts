@@ -1,5 +1,6 @@
 import type { AssistantRequestStatus } from '@eddo/core-shared';
-import { z } from 'zod';
+import { validateMinimumTextLength } from '@eddo/core-shared/validation/compatibility';
+import { createSchemaParser, int, obj, opt, str } from '@eddo/core-shared/validation/schema_parser';
 import { AssistantApiError } from './assistant_errors';
 import { readHostPendingRequests } from './assistant_pending_client';
 import { receiptSchema } from './assistant_receipts';
@@ -11,6 +12,14 @@ export interface AssistantHostOptions {
   token?: string;
   fetch?: typeof fetch;
 }
+
+const hostOptionsSchema = createSchemaParser(
+  obj({ port: int({ minimum: 1, maximum: 65535 }), token: opt(str()) }),
+  {
+    validate: (value) =>
+      value.token === undefined ? [] : validateMinimumTextLength(value.token, 32, '/token'),
+  },
+);
 
 function hostFailure(status: number): never {
   if (status === 403) throw new AssistantApiError(403, 'forbidden');
@@ -71,8 +80,7 @@ async function callHost(
 
 /** Uses loopback service credentials; only read-only status calls accept browser cancellation. */
 export function createAssistantHostClient(options: AssistantHostOptions): AssistantHostClient {
-  z.number().int().min(1).max(65535).parse(options.port);
-  z.string().min(32).optional().parse(options.token);
+  hostOptionsSchema.parse({ port: options.port, token: options.token });
   return {
     pending: (username, signal) => readHostPendingRequests(options, username, signal),
     admit: async (username, input) => {

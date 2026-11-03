@@ -30,6 +30,19 @@ The application uses Vite for building the production bundle:
 
    This command serves the production build locally for testing before deployment.
 
+## Web API runtime
+
+The web API uses ESM in development and compiled output.
+Start the compiled API from the repository root:
+
+```bash
+pnpm --filter @eddo/web-api start
+```
+
+The start scripts preload `tsx` to resolve extensionless imports in the API and workspace packages.
+Keep `tsx` in production dependencies; invoking `node dist/index.js` without the loader is unsupported.
+The `start:otel` script loads telemetry instrumentation before the `tsx` loader.
+
 ## Deployment Process
 
 The browser bundle supports static hosting. Authenticated integrations, including the shared assistant, still require their backend services:

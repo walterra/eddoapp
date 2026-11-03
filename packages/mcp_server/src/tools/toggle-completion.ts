@@ -3,7 +3,9 @@
  */
 import type { TodoAlpha4 } from '@eddo/core-server';
 import { getRepeatTodo } from '@eddo/core-server';
-import { z } from 'zod';
+import { bool, obj, opt, str } from '@eddo/core-shared/validation/schema_parser';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
@@ -16,21 +18,23 @@ Usage examples:
 - Mark as completed: {"id": "2025-06-19T10:30:00.000Z", "completed": true}
 - Mark as incomplete: {"id": "2025-06-19T10:30:00.000Z", "completed": false}`;
 
-/** Zod schema for toggleTodoCompletion parameters */
-export const toggleCompletionParameters = z.object({
-  id: z
-    .string()
-    .describe('The unique identifier of the todo to toggle (ISO timestamp of creation)'),
-  completed: z.boolean().describe('true to mark as completed, false to mark as incomplete'),
-  message: z
-    .string()
-    .optional()
-    .describe(
-      'Optional human-readable audit message describing why this was completed/uncompleted (short, like a git commit message).',
+/** Validates and publishes toggleTodoCompletion parameters. */
+export const toggleCompletionParameters = createToolParameters(
+  obj({
+    id: str({
+      description: 'The unique identifier of the todo to toggle (ISO timestamp of creation)',
+    }),
+    completed: bool({ description: 'true to mark as completed, false to mark as incomplete' }),
+    message: opt(
+      toolField(str(), {
+        description:
+          'Optional human-readable audit message describing why this was completed/uncompleted (short, like a git commit message).',
+      }),
     ),
-});
+  }),
+);
 
-export type ToggleCompletionArgs = z.infer<typeof toggleCompletionParameters>;
+export type ToggleCompletionArgs = ReturnType<typeof toggleCompletionParameters.parse>;
 
 /**
  * Handles completing a repeating todo by creating the next occurrence

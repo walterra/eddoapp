@@ -15,10 +15,10 @@ import {
 } from './assistant_types';
 import { boundedJson } from './bounded_json';
 import {
-  changesSchema,
   conversationSchema,
   messageSchema,
-  sequenceSchema,
+  parseChanges,
+  parseSequence,
 } from './projection_schemas';
 
 interface HistoryPageOptions {
@@ -116,7 +116,7 @@ function page(
 async function watermark(env: Env, username: string): Promise<string> {
   try {
     const info = await nano(env.COUCHDB_URL).db.get(getChatDatabaseName(env, username));
-    return sequenceSchema.parse(info.update_seq);
+    return parseSequence(info.update_seq);
   } catch (error) {
     if (missing(error)) return '0';
     throw error;
@@ -172,7 +172,7 @@ async function changes(
     void response.body?.cancel();
     throw new AssistantApiError(503, 'unavailable');
   }
-  const batch = changesSchema.parse(await boundedJson(response, 262_144));
+  const batch = parseChanges(await boundedJson(response, 262_144));
   return {
     lastSequence: batch.last_seq,
     changes: batch.results

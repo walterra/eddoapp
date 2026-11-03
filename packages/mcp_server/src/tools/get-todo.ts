@@ -2,7 +2,8 @@
  * Get Todo Tool - Fetch a single todo by ID
  */
 import type { TodoAlpha4 } from '@eddo/core-server';
-import { z } from 'zod';
+import { obj, str, type Static } from '@eddo/core-shared/validation/schema_parser';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import type { GetUserDb, ToolContext } from './types.js';
@@ -11,12 +12,14 @@ import type { GetUserDb, ToolContext } from './types.js';
 export const getTodoDescription =
   'Get a single todo by its ID with full details including description';
 
-/** Zod schema for getTodo parameters */
-export const getTodoParameters = z.object({
-  id: z.string().describe('The unique identifier of the todo (ISO timestamp of creation)'),
-});
+/** Validates and publishes tool parameters. */
+export const getTodoParameters = createToolParameters(
+  obj({
+    id: str({ description: 'The unique identifier of the todo (ISO timestamp of creation)' }),
+  }),
+);
 
-export type GetTodoArgs = z.infer<typeof getTodoParameters>;
+export type GetTodoArgs = Static<typeof getTodoParameters.schema>;
 
 /**
  * Execute handler for getTodo tool

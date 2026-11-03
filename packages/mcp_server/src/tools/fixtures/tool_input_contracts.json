@@ -1,0 +1,542 @@
+{
+  "createTodoParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "urlCaptureRef": {
+        "description": "Reference from fetchUrl. Stores captured Markdown verbatim in description after any user notes, original URL in link, and web metadata. References expire after one hour or server restart; fetch again if unavailable.",
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      },
+      "title": {
+        "type": "string",
+        "description": "The main title/name of the todo item (required). For gtd:calendar items, use scheduledTime or prefix with time in HH:MM format, e.g., \"15:00 Doctor appointment\"."
+      },
+      "description": {
+        "default": "",
+        "description": "Detailed description or notes for the todo. Can include markdown formatting",
+        "type": "string"
+      },
+      "context": {
+        "default": "private",
+        "description": "GTD context category for organizing todos (e.g. \"work\", \"private\", \"errands\", \"shopping\", \"calls\")",
+        "type": "string"
+      },
+      "due": {
+        "description": "Due date in YYYY-MM-DD format. Defaults to the current day if not provided.",
+        "type": "string"
+      },
+      "scheduledTime": {
+        "default": null,
+        "description": "Optional scheduled local time in HH:mm format.",
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "scheduledTimeZone": {
+        "default": null,
+        "description": "Optional IANA timezone for scheduled time interpretation.",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "tags": {
+        "default": [],
+        "description": "Array of tags for categorization. Should include appropriate GTD tags (gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar) based on item type.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "repeat": {
+        "default": null,
+        "description": "Number of days to repeat this todo. Set to null (default) for no repeat. gtd:calendar repeats from original due date, gtd:habit repeats from completion date",
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "link": {
+        "default": null,
+        "description": "Optional URL or reference link related to this todo. Can be used for documentation, tickets, or external resources",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "externalId": {
+        "default": null,
+        "description": "Optional external system ID for syncing (e.g., \"github:owner/repo/issues/123\"). Used for deduplication during periodic imports.",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "parentId": {
+        "default": null,
+        "description": "Optional parent todo ID for creating subtasks. References the _id of an existing todo to create a parent-child relationship.",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "blockedBy": {
+        "description": "Optional array of todo IDs that must complete before this task becomes actionable. Use with gtd:blocked tag for internal task dependencies. Distinct from gtd:waiting which is for external blocks.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "metadata": {
+        "description": "Optional key-value metadata for extensibility. Values can be strings or arrays of strings. Use namespaced keys (e.g., \"agent:worktree\", \"github:labels\": [\"bug\", \"priority\"]).",
+        "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      "message": {
+        "description": "Optional human-readable audit message describing why this todo was created (short, like a git commit message).",
+        "type": "string"
+      }
+    },
+    "required": ["title"]
+  },
+  "updateTodoParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the todo to update (ISO timestamp of creation)"
+      },
+      "title": {
+        "description": "Updated title/name of the todo item",
+        "type": "string"
+      },
+      "description": {
+        "description": "Updated description or notes",
+        "type": "string"
+      },
+      "context": {
+        "description": "Updated GTD context category",
+        "type": "string"
+      },
+      "due": {
+        "description": "Updated due date in YYYY-MM-DD format",
+        "type": "string"
+      },
+      "scheduledTime": {
+        "description": "Updated scheduled local time in HH:mm format.",
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "scheduledTimeZone": {
+        "description": "Updated IANA timezone for scheduled time interpretation.",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "tags": {
+        "description": "Updated array of tags",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "repeat": {
+        "description": "Updated repeat interval in days (null to disable). gtd:calendar repeats from due date, gtd:habit repeats from completion date",
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "link": {
+        "description": "Updated URL or reference link (null to remove)",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "externalId": {
+        "description": "Updated external system ID for syncing (e.g., \"github:owner/repo/issues/123\"). Used for deduplication during periodic imports. Set to null to remove.",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "parentId": {
+        "description": "Updated parent todo ID (null to remove parent, making it a root todo)",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "blockedBy": {
+        "description": "Updated array of todo IDs that block this task. Use with gtd:blocked tag. Set to null or empty array to remove all blockers.",
+        "anyOf": [
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "metadata": {
+        "description": "Key-value metadata for extensibility. Values can be strings or arrays of strings. Use namespaced keys (e.g., \"agent:worktree\", \"github:labels\": [\"bug\", \"priority\"]). Replaces entire metadata object when provided.",
+        "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      "message": {
+        "description": "Optional human-readable audit message describing why this update was made (short, like a git commit message).",
+        "type": "string"
+      }
+    },
+    "required": ["id"]
+  },
+  "getActiveTimeTrackingParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {},
+    "description": "No parameters required - returns all todos with active time tracking"
+  },
+  "startTimeTrackingParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the todo to start time tracking for (ISO timestamp of creation)"
+      },
+      "message": {
+        "description": "Optional human-readable audit message describing why time tracking was started (short, like a git commit message).",
+        "type": "string"
+      }
+    },
+    "required": ["id"]
+  },
+  "stopTimeTrackingParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the todo to stop time tracking for (ISO timestamp of creation)"
+      },
+      "message": {
+        "description": "Optional human-readable audit message describing why time tracking was stopped (short, like a git commit message).",
+        "type": "string"
+      }
+    },
+    "required": ["id"]
+  },
+  "deleteAttachmentParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "docId": {
+        "type": "string",
+        "description": "The attachment document ID to delete (e.g., 'todoId/desc/screenshot.png')"
+      }
+    },
+    "required": ["docId"]
+  },
+  "getAttachmentParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "docId": {
+        "type": "string",
+        "description": "The attachment document ID (e.g., 'todoId/desc/screenshot.png')"
+      }
+    },
+    "required": ["docId"]
+  },
+  "listAttachmentsParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "todoId": {
+        "type": "string",
+        "description": "The unique identifier of the todo"
+      }
+    },
+    "required": ["todoId"]
+  },
+  "uploadAttachmentParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "todoId": {
+        "type": "string",
+        "description": "The unique identifier of the todo"
+      },
+      "filename": {
+        "type": "string",
+        "description": "The filename for the attachment (e.g., screenshot.png)"
+      },
+      "base64Data": {
+        "type": "string",
+        "description": "The file content encoded as base64"
+      },
+      "contentType": {
+        "type": "string",
+        "description": "The MIME type (e.g., image/png, image/jpeg, application/pdf)"
+      },
+      "type": {
+        "type": "string",
+        "enum": ["desc", "note"],
+        "description": "Attachment location: 'desc' for description, 'note' for a specific note"
+      },
+      "noteId": {
+        "description": "Required if type is 'note': the note ID to attach to",
+        "type": "string"
+      }
+    },
+    "required": ["todoId", "filename", "base64Data", "contentType", "type"]
+  },
+  "listTodosParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "context": {
+        "description": "Filter todos by GTD context (e.g. \"work\", \"private\")",
+        "type": "string"
+      },
+      "completed": {
+        "description": "Filter by completion status: true for completed, false for incomplete, undefined for all",
+        "type": "boolean"
+      },
+      "dateFrom": {
+        "description": "Start date filter for due date in ISO format (inclusive)",
+        "type": "string"
+      },
+      "dateTo": {
+        "description": "End date filter for due date in ISO format (inclusive)",
+        "type": "string"
+      },
+      "completedFrom": {
+        "description": "Start date filter for completion date in ISO format (inclusive)",
+        "type": "string"
+      },
+      "completedTo": {
+        "description": "End date filter for completion date in ISO format (inclusive)",
+        "type": "string"
+      },
+      "limit": {
+        "default": 50,
+        "description": "Maximum todos (default: 50, max: 500)",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 500
+      },
+      "tags": {
+        "description": "Filter by specific tags (e.g., [\"gtd:next\"] for next actions)",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "externalId": {
+        "description": "Filter by exact external system ID (e.g., \"github:owner/repo/issues/123\")",
+        "type": "string"
+      },
+      "parentId": {
+        "description": "Filter by parent todo ID to list subtasks. Use \"_ROOT_\" or null equivalent to list only root-level todos.",
+        "type": "string"
+      }
+    }
+  },
+  "toggleCompletionParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the todo to toggle (ISO timestamp of creation)"
+      },
+      "completed": {
+        "type": "boolean",
+        "description": "true to mark as completed, false to mark as incomplete"
+      },
+      "message": {
+        "description": "Optional human-readable audit message describing why this was completed/uncompleted (short, like a git commit message).",
+        "type": "string"
+      }
+    },
+    "required": ["id", "completed"]
+  },
+  "addNoteParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "todoId": {
+        "type": "string",
+        "description": "The unique identifier of the todo to add a note to"
+      },
+      "content": {
+        "type": "string",
+        "description": "The note content (supports markdown formatting)"
+      }
+    },
+    "required": ["todoId", "content"]
+  },
+  "deleteNoteParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "todoId": {
+        "type": "string",
+        "description": "The unique identifier of the todo containing the note"
+      },
+      "noteId": {
+        "type": "string",
+        "description": "The unique identifier of the note to delete"
+      }
+    },
+    "required": ["todoId", "noteId"]
+  },
+  "updateNoteParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "todoId": {
+        "type": "string",
+        "description": "The unique identifier of the todo containing the note"
+      },
+      "noteId": {
+        "type": "string",
+        "description": "The unique identifier of the note to update"
+      },
+      "content": {
+        "type": "string",
+        "description": "The updated note content (supports markdown formatting)"
+      }
+    },
+    "required": ["todoId", "noteId", "content"]
+  },
+  "searchTodosParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "includeCompleted": {
+        "default": true,
+        "description": "Include completed todos",
+        "type": "boolean"
+      },
+      "limit": {
+        "default": 20,
+        "description": "Maximum results (default: 20, max: 100)",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "query": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500,
+        "description": "Search query with optional syntax"
+      }
+    },
+    "required": ["query"]
+  },
+  "getServerInfoParameters": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "section": {
+        "default": "all",
+        "description": "Specific section of documentation to retrieve",
+        "type": "string",
+        "enum": ["overview", "datamodel", "examples", "tagstats", "memories", "all"]
+      }
+    }
+  }
+}

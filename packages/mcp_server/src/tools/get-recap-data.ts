@@ -1,4 +1,5 @@
-import { z } from 'zod';
+import { obj, type Static } from '@eddo/core-shared/validation/schema_parser';
+import { createToolParameters } from '../tool_parameters.js';
 import { getTimezoneDateRange, type DateRange } from './date-range.js';
 import type { ReportQuery } from './report_payload.js';
 import { reportResponse } from './report_response.js';
@@ -10,10 +11,15 @@ Includes date, weekday, timezone, total counts, returned counts, and explicit tr
 Items include title, context, due/completed timestamps, trackedMinutes and activeSessionCount, without descriptions or internal revisions.
 Counts with countExact=false are lower bounds. Use this instead of multiple listTodos calls; never interpret tool failure as an empty day.`;
 
-export const getRecapDataParameters = z
-  .object({})
-  .describe('Returns recap data for the current date in the user timezone');
-export type GetRecapDataArgs = z.infer<typeof getRecapDataParameters>;
+export const getRecapDataParameters = createToolParameters(
+  obj(
+    {},
+    {
+      description: 'Returns recap data for the current date in the user timezone',
+    },
+  ),
+);
+export type GetRecapDataArgs = Static<typeof getRecapDataParameters.schema>;
 
 export function recapQueries(range: DateRange): ReportQuery[] {
   const options = { use_index: 'version-completed-due-index' };

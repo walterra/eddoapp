@@ -1,21 +1,51 @@
 import fs from 'node:fs';
-import { z } from 'zod';
+import { createFieldNormalizer } from '../packages/core-shared/src/validation/field_normalization.js';
+import {
+  arr,
+  createSchemaParser,
+  int,
+  lit,
+  map,
+  num,
+  obj,
+  str,
+  union,
+  unknown as unknownSchema,
+} from '../packages/core-shared/src/validation/schema_parser.js';
 import { verifySourceAttachments } from './backup_attachments.js';
 import { hashBackup, inspectBackup, type BackupInspection } from './backup_inspection.js';
 import type { DatabaseSnapshot } from './backup_transport.js';
 
-const metadataSchema = z.object({
-  format: z.literal(1),
-  database: z.string(),
-  createdAt: z.string(),
-  sha256: z.string().regex(/^[a-f0-9]{64}$/),
-  documentCount: z.number().int().nonnegative(),
-  updateSequence: z.union([z.string(), z.number()]),
-  revisions: z.array(z.string()),
-  security: z.record(z.string(), z.unknown()),
-  decodedAttachmentDigests: z.record(z.string(), z.string()).default({}),
-});
-export type BackupMetadata = z.infer<typeof metadataSchema>;
+const metadataSchema = createSchemaParser(
+  obj({
+    format: lit(1),
+    database: str(),
+    createdAt: str(),
+    sha256: str({ pattern: '^[a-f0-9]{64}$' }),
+    documentCount: int({ minimum: 0 }),
+    updateSequence: union([str(), num()]),
+    revisions: arr(str()),
+    security: map(unknownSchema()),
+    decodedAttachmentDigests: map(str()),
+  }),
+  {
+    normalize: createFieldNormalizer({
+      fields: [
+        'format',
+        'database',
+        'createdAt',
+        'sha256',
+        'documentCount',
+        'updateSequence',
+        'revisions',
+        'security',
+        'decodedAttachmentDigests',
+      ],
+      defaults: { decodedAttachmentDigests: {} },
+    }),
+  },
+);
+export type BackupMetadata = ReturnType<typeof metadataSchema.parse>;
 
 /** Returns the archive's security and integrity sidecar path. */
 export function metadataPath(file: string): string {

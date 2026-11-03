@@ -18,8 +18,7 @@
     "hono": "^4.12.27",
     "nano": "^11.0.4",
     "pino": "^10.3.1",
-    "undici": "^8.4.0",
-    "zod": "^4.6.7"
+    "undici": "^8.4.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.3.1",

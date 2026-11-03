@@ -1,8 +1,10 @@
 /**
  * List Todos Tool - Query todos with optional filters
  */
+import { arr, bool, int, obj, opt, str } from '@eddo/core-shared/validation/schema_parser';
 import type { MangoQuery, MangoSelector } from 'nano';
-import { z } from 'zod';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import {
   createEmptyDatabaseResponse,
@@ -24,52 +26,58 @@ GTD-AWARE QUERY HANDLING:
 - "What's my schedule?" → filter by gtd:calendar tags
 - "What did I complete today?" → use completedFrom/completedTo with today's date range`;
 
-/** Zod schema for listTodos parameters */
-export const listTodosParameters = z.object({
-  context: z.string().optional().describe('Filter todos by GTD context (e.g. "work", "private")'),
-  completed: z
-    .boolean()
-    .optional()
-    .describe(
-      'Filter by completion status: true for completed, false for incomplete, undefined for all',
+/** Validates and publishes listTodos parameters. */
+export const listTodosParameters = createToolParameters(
+  obj({
+    context: opt(
+      toolField(str(), { description: 'Filter todos by GTD context (e.g. "work", "private")' }),
     ),
-  dateFrom: z
-    .string()
-    .optional()
-    .describe('Start date filter for due date in ISO format (inclusive)'),
-  dateTo: z.string().optional().describe('End date filter for due date in ISO format (inclusive)'),
-  completedFrom: z
-    .string()
-    .optional()
-    .describe('Start date filter for completion date in ISO format (inclusive)'),
-  completedTo: z
-    .string()
-    .optional()
-    .describe('End date filter for completion date in ISO format (inclusive)'),
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(500)
-    .default(50)
-    .describe('Maximum todos (default: 50, max: 500)'),
-  tags: z
-    .array(z.string())
-    .optional()
-    .describe('Filter by specific tags (e.g., ["gtd:next"] for next actions)'),
-  externalId: z
-    .string()
-    .optional()
-    .describe('Filter by exact external system ID (e.g., "github:owner/repo/issues/123")'),
-  parentId: z
-    .string()
-    .optional()
-    .describe(
-      'Filter by parent todo ID to list subtasks. Use "_ROOT_" or null equivalent to list only root-level todos.',
+    completed: opt(
+      toolField(bool(), {
+        description:
+          'Filter by completion status: true for completed, false for incomplete, undefined for all',
+      }),
     ),
-});
+    dateFrom: opt(
+      toolField(str(), { description: 'Start date filter for due date in ISO format (inclusive)' }),
+    ),
+    dateTo: opt(
+      toolField(str(), { description: 'End date filter for due date in ISO format (inclusive)' }),
+    ),
+    completedFrom: opt(
+      toolField(str(), {
+        description: 'Start date filter for completion date in ISO format (inclusive)',
+      }),
+    ),
+    completedTo: opt(
+      toolField(str(), {
+        description: 'End date filter for completion date in ISO format (inclusive)',
+      }),
+    ),
+    limit: toolField(int({ minimum: 1, maximum: 500 }), {
+      default: 50,
+      description: 'Maximum todos (default: 50, max: 500)',
+    }),
+    tags: opt(
+      toolField(arr(str()), {
+        description: 'Filter by specific tags (e.g., ["gtd:next"] for next actions)',
+      }),
+    ),
+    externalId: opt(
+      toolField(str(), {
+        description: 'Filter by exact external system ID (e.g., "github:owner/repo/issues/123")',
+      }),
+    ),
+    parentId: opt(
+      toolField(str(), {
+        description:
+          'Filter by parent todo ID to list subtasks. Use "_ROOT_" or null equivalent to list only root-level todos.',
+      }),
+    ),
+  }),
+);
 
-export type ListTodosArgs = z.infer<typeof listTodosParameters>;
+export type ListTodosArgs = ReturnType<typeof listTodosParameters.parse>;
 
 /**
  * Builds a date range selector for a field.

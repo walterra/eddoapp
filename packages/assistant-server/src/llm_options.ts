@@ -4,27 +4,25 @@ import type {
   ModelThinkingLevel,
   ModelsSimpleStreamOptions,
 } from '@earendil-works/pi-ai';
-import { z } from 'zod';
+import {
+  createSchemaParser,
+  int,
+  obj,
+  oneOf,
+  str,
+} from '@eddo/core-shared/validation/schema_parser';
 
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_REASONING: ModelThinkingLevel = 'low';
 const REASONING_LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
 
-const generationSchema = z.object({
-  LLM_MAX_TOKENS: z
-    .string()
-    .trim()
-    .regex(/^[1-9]\d*$/, 'LLM_MAX_TOKENS must be a positive integer')
-    .default(String(DEFAULT_MAX_TOKENS))
-    .transform(Number)
-    .pipe(z.number().int().positive()),
-  LLM_REASONING_EFFORT: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .pipe(z.enum(REASONING_LEVELS))
-    .default(DEFAULT_REASONING),
-});
+const generationSchema = createSchemaParser(
+  obj({
+    LLM_MAX_TOKENS: str({ pattern: '^[1-9]\\d*$' }),
+    LLM_REASONING_EFFORT: oneOf(REASONING_LEVELS),
+  }),
+);
+const tokenLimit = createSchemaParser(int({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }));
 
 export interface LlmGenerationSettings {
   maxTokens: number;
@@ -35,8 +33,16 @@ export interface LlmGenerationSettings {
 export function parseLlmSettings(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): LlmGenerationSettings {
-  const parsed = generationSchema.parse(environment);
-  return { maxTokens: parsed.LLM_MAX_TOKENS, thinkingLevel: parsed.LLM_REASONING_EFFORT };
+  const parsed = generationSchema.parse({
+    LLM_MAX_TOKENS: (environment.LLM_MAX_TOKENS ?? String(DEFAULT_MAX_TOKENS)).trim(),
+    LLM_REASONING_EFFORT: (environment.LLM_REASONING_EFFORT ?? DEFAULT_REASONING)
+      .trim()
+      .toLowerCase(),
+  });
+  return {
+    maxTokens: tokenLimit.parse(Number(parsed.LLM_MAX_TOKENS)),
+    thinkingLevel: parsed.LLM_REASONING_EFFORT,
+  };
 }
 
 /** Disables reasoning for models that do not advertise support. */

@@ -2,9 +2,11 @@
  * Graphviz layout API route.
  * Renders DOT server-side and returns node positions for client-side React Flow rendering.
  */
+import { validateTextLength } from '@eddo/core-shared/validation/compatibility';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import { obj, str } from '@eddo/core-shared/validation/schema_parser';
 import type { Viz } from '@viz-js/viz';
 import { Hono } from 'hono';
-import { z } from 'zod';
 
 import { logger, withSpan } from '../utils/logger';
 import { extractUserFromToken } from './users-helpers';
@@ -13,9 +15,10 @@ const graphvizLayoutApp = new Hono();
 const DOT_MAX_LENGTH = 200_000;
 const LAYOUT_TIMEOUT_MS = 5_000;
 
-const requestSchema = z.object({
-  dot: z.string().min(1).max(DOT_MAX_LENGTH),
-});
+const requestSchema = createProjectedParser(
+  obj({ dot: str({ minLength: 1, maxLength: DOT_MAX_LENGTH }) }),
+  { validate: (value) => validateTextLength(value.dot, DOT_MAX_LENGTH, '/dot') },
+);
 
 let vizInstancePromise: Promise<Viz> | null = null;
 

@@ -2,7 +2,8 @@
  * Delete Todo Tool - Permanently deletes a todo
  */
 import type { TodoAlpha4 } from '@eddo/core-server';
-import { z } from 'zod';
+import { obj, opt, str, type Static } from '@eddo/core-shared/validation/schema_parser';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { logMcpAudit } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
@@ -11,20 +12,22 @@ import type { GetUserDb, ToolContext } from './types.js';
 /** Tool description for LLM consumption */
 export const deleteTodoDescription = 'Delete a todo permanently';
 
-/** Zod schema for deleteTodo parameters */
-export const deleteTodoParameters = z.object({
-  id: z
-    .string()
-    .describe('The unique identifier of the todo to delete (ISO timestamp of creation)'),
-  message: z
-    .string()
-    .optional()
-    .describe(
-      'Optional human-readable audit message describing why this todo was deleted (short, like a git commit message).',
-    ),
-});
+/** Validates and publishes tool parameters. */
+export const deleteTodoParameters = createToolParameters(
+  obj({
+    id: str({
+      description: 'The unique identifier of the todo to delete (ISO timestamp of creation)',
+    }),
+    message: opt({
+      // Preserve published key order because native VCR requests hash serialized schemas.
+      description:
+        'Optional human-readable audit message describing why this todo was deleted (short, like a git commit message).',
+      ...str(),
+    }),
+  }),
+);
 
-export type DeleteTodoArgs = z.infer<typeof deleteTodoParameters>;
+export type DeleteTodoArgs = Static<typeof deleteTodoParameters.schema>;
 
 /**
  * Execute handler for deleteTodo tool

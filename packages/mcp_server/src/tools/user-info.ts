@@ -1,15 +1,16 @@
 /**
  * User Info Tool - Get current authenticated user information
  */
-import { z } from 'zod';
+import { obj } from '@eddo/core-shared/validation/schema_parser';
+import { createToolParameters } from '../tool_parameters.js';
 
 import type { ToolContext } from './types.js';
 
 /** Tool description for LLM consumption */
 export const getUserInfoDescription = 'Get current authenticated user information';
 
-/** Zod schema for getUserInfo parameters */
-export const getUserInfoParameters = z.object({});
+/** Validates and publishes tool parameters. */
+export const getUserInfoParameters = createToolParameters(obj({}));
 
 /**
  * Execute handler for getUserInfo tool

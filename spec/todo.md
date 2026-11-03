@@ -47,7 +47,7 @@
 - Verify index selection logic for completion date ranges - [#342](https://github.com/walterra/eddoapp/issues/342)
 - Update help text to explain automatic recap scheduling - [#343](https://github.com/walterra/eddoapp/issues/343)
 - Add validation that completedFrom < completedTo in MCP tool - [#344](https://github.com/walterra/eddoapp/issues/344)
-- Add Zod datetime validation for date parameters in MCP tool - [#346](https://github.com/walterra/eddoapp/issues/346)
+- Add datetime validation for date parameters in MCP tool - [#346](https://github.com/walterra/eddoapp/issues/346)
 
 ## Testing
 

@@ -5,9 +5,12 @@
  * Search returns IDs + scores, then fetches full docs from CouchDB (source of truth).
  */
 import type { TodoAlpha4 } from '@eddo/core-server';
+import { validateTextLength } from '@eddo/core-shared/validation/compatibility';
+import { bool, int, obj, str } from '@eddo/core-shared/validation/schema_parser';
 import type { Client } from '@elastic/elasticsearch';
 import type nano from 'nano';
-import { z } from 'zod';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
 import { buildEsqlQuery, parseSearchQuery, type ParsedQuery } from './search-query-utils.js';
@@ -18,20 +21,20 @@ export const searchTodosDescription = `Search todos using full-text search with 
 Supports query syntax: tag:value, context:value, completed:true/false, due:today/week/overdue.
 Plain text is full-text searched on title and description.`;
 
-/** Zod schema for searchTodos parameters */
-export const searchTodosParameters = z.object({
-  includeCompleted: z.boolean().default(true).describe('Include completed todos'),
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .default(20)
-    .describe('Maximum results (default: 20, max: 100)'),
-  query: z.string().min(1).max(500).describe('Search query with optional syntax'),
-});
+/** Validates and publishes searchTodos parameters. */
+export const searchTodosParameters = createToolParameters(
+  obj({
+    includeCompleted: toolField(bool(), { default: true, description: 'Include completed todos' }),
+    limit: toolField(int({ minimum: 1, maximum: 100 }), {
+      default: 20,
+      description: 'Maximum results (default: 20, max: 100)',
+    }),
+    query: str({ minLength: 1, maxLength: 500, description: 'Search query with optional syntax' }),
+  }),
+  { validate: (value) => validateTextLength(value.query, 500, '/query') },
+);
 
-export type SearchTodosArgs = z.infer<typeof searchTodosParameters>;
+export type SearchTodosArgs = ReturnType<typeof searchTodosParameters.parse>;
 
 /** Search hit from ES (minimal - just ID and score) */
 interface SearchHit {

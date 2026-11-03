@@ -1,64 +1,115 @@
-import { z } from 'zod';
+import {
+  coerceNumber,
+  createFieldNormalizer,
+} from '@eddo/core-shared/validation/field_normalization';
+import {
+  createSchemaParser,
+  num,
+  obj,
+  oneOf,
+  opt,
+  str,
+} from '@eddo/core-shared/validation/schema_parser';
 
 /**
  * Environment configuration schema with validation and defaults
  */
-export const envSchema = z.object({
+const envFields = {
   // Node environment
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: oneOf(['development', 'production', 'test']),
 
   // Logging
-  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  LOG_LEVEL: oneOf(['error', 'warn', 'info', 'debug']),
 
   // CouchDB Configuration
-  COUCHDB_URL: z.string(),
-  COUCHDB_DB_NAME: z.string().default('todos-dev'),
-  COUCHDB_API_KEY: z.string().optional(),
+  COUCHDB_URL: str(),
+  COUCHDB_DB_NAME: str(),
+  COUCHDB_API_KEY: opt(str()),
 
   // Database Naming Configuration
-  DATABASE_PREFIX: z.string().default('eddo'),
-  DATABASE_TEST_PREFIX: z.string().default('eddo_test'),
+  DATABASE_PREFIX: str(),
+  DATABASE_TEST_PREFIX: str(),
 
   // MCP Server Configuration
-  MCP_SERVER_URL: z.string().default('http://localhost:3001/mcp'),
-  MCP_SERVER_PORT: z.coerce.number().default(3001),
+  MCP_SERVER_URL: str(),
+  MCP_SERVER_PORT: num(),
 
   // Telegram Bot Configuration
-  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_BOT_TOKEN: opt(str()),
 
   // Anthropic API Configuration
-  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: opt(str()),
 
   // Bot Configuration
-  BOT_PERSONA_ID: z.enum(['butler', 'gtd_coach', 'zen_master']).default('butler'),
-  LLM_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
+  BOT_PERSONA_ID: oneOf(['butler', 'gtd_coach', 'zen_master']),
+  LLM_MODEL: str(),
 
   // Claude Code SDK Configuration
-  CLAUDE_CODE_WORKING_DIR: z.string().default('./bot_workspace'),
-  CLAUDE_CODE_SESSION_TIMEOUT: z.coerce.number().default(3600),
+  CLAUDE_CODE_WORKING_DIR: str(),
+  CLAUDE_CODE_SESSION_TIMEOUT: num(),
 
   // Web Client Configuration (Vite environment variables)
 
   // Web API Configuration
-  PORT: z.coerce.number().default(3000),
-  JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters').optional(),
-  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  PORT: num(),
+  JWT_SECRET: opt(str()),
+  CORS_ORIGIN: str(),
 
   // Google OAuth Configuration (for email sync)
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GOOGLE_REDIRECT_URI: z.string().default('http://localhost:3000/api/email/oauth/callback'),
+  GOOGLE_CLIENT_ID: opt(str()),
+  GOOGLE_CLIENT_SECRET: opt(str()),
+  GOOGLE_REDIRECT_URI: str(),
 
   // OpenTelemetry Configuration (for RUM proxy)
-  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().default('http://localhost:4318'),
-  OTEL_API_KEY: z.string().optional(),
-  OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
+  OTEL_EXPORTER_OTLP_ENDPOINT: str(),
+  OTEL_API_KEY: opt(str()),
+  OTEL_EXPORTER_OTLP_HEADERS: opt(str()),
+};
+const envDefinition = obj(envFields);
+const normalizeEnvironment = createFieldNormalizer({
+  fields: Object.keys(envFields),
+  defaults: {
+    NODE_ENV: 'development',
+    LOG_LEVEL: 'info',
+    COUCHDB_DB_NAME: 'todos-dev',
+    DATABASE_PREFIX: 'eddo',
+    DATABASE_TEST_PREFIX: 'eddo_test',
+    MCP_SERVER_URL: 'http://localhost:3001/mcp',
+    MCP_SERVER_PORT: 3001,
+    BOT_PERSONA_ID: 'butler',
+    LLM_MODEL: 'claude-sonnet-4-5-20250929',
+    CLAUDE_CODE_WORKING_DIR: './bot_workspace',
+    CLAUDE_CODE_SESSION_TIMEOUT: 3600,
+    PORT: 3000,
+    CORS_ORIGIN: 'http://localhost:5173',
+    GOOGLE_REDIRECT_URI: 'http://localhost:3000/api/email/oauth/callback',
+    OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
+  },
+  conversions: {
+    MCP_SERVER_PORT: coerceNumber,
+    CLAUDE_CODE_SESSION_TIMEOUT: coerceNumber,
+    PORT: coerceNumber,
+  },
+});
+
+export const envSchema = createSchemaParser(envDefinition, {
+  normalize: normalizeEnvironment,
+  validate: (value) =>
+    value.JWT_SECRET !== undefined && value.JWT_SECRET.length < 32
+      ? [
+          {
+            path: '/JWT_SECRET',
+            code: 'minLength',
+            message: 'JWT secret must be at least 32 characters',
+          },
+        ]
+      : [],
 });
 
 /**
  * Type definition for the environment configuration
  */
-export type Env = z.infer<typeof envSchema>;
+export type Env = ReturnType<typeof envSchema.parse>;
 
 /**
  * Validate and parse environment configuration

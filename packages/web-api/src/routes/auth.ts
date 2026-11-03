@@ -2,7 +2,7 @@ import { createEnv, createUserRegistry } from '@eddo/core-server';
 import { createDefaultUserPreferences } from '@eddo/core-shared';
 import { Hono } from 'hono';
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
+import { linkTelegramSchema, loginSchema, registerSchema } from './auth_schemas';
 
 import { config } from '../config';
 import { generateSecureToken, hashPassword, verifyPassword } from '../utils/crypto.js';
@@ -23,25 +23,6 @@ const userRegistry = createUserRegistry(env.COUCHDB_URL, env);
 
 const TOKEN_EXPIRATION_SHORT = 1 * 60 * 60;
 const TOKEN_EXPIRATION_LONG = 30 * 24 * 60 * 60;
-
-const loginSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
-  rememberMe: z.boolean().optional().default(false),
-});
-
-const registerSchema = z.object({
-  username: z.string().min(3).max(20),
-  email: z.string().email(),
-  password: z.string().min(8),
-  telegramId: z.number().optional(),
-  rememberMe: z.boolean().optional().default(false),
-});
-
-const linkTelegramSchema = z.object({
-  linkCode: z.string().min(1),
-  telegramId: z.number(),
-});
 
 interface JwtTokenPayload {
   userId: string;

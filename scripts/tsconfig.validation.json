@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "references": [],
+  "include": ["check_no_zod.ts", "no_zod_policy.ts"]
+}

@@ -19,8 +19,7 @@
     "@eddo/core-instrumentation": "workspace:*",
     "@eddo/core-shared": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
-    "grammy": "^1.46.0",
-    "zod": "4.6.7"
+    "grammy": "^1.46.0"
   },
   "devDependencies": {
     "pi-durable-couchdb": "0.0.2",
