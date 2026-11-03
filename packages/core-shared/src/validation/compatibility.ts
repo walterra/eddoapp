@@ -16,6 +16,16 @@ export function utcDateTimeSchema(): Schema<string> {
   });
 }
 
+/** Validates absolute URLs without retaining rejected values in diagnostics. */
+export function validateAbsoluteUrl(value: string, path: string): SchemaIssue[] {
+  try {
+    new URL(value);
+    return [];
+  } catch {
+    return [{ path, code: 'format', message: 'expected a valid URL' }];
+  }
+}
+
 /** Preserves UTF-16 minimum lengths for validated string fields. */
 export function validateMinimumTextLength(
   value: string,

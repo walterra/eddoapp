@@ -69,6 +69,7 @@ export default defineConfig({
             'packages/mcp_server/src/**/*.test.ts',
             'packages/chat-agent/skills/**/*.test.js',
             'packages/telegram_bot/src/**/*.test.ts',
+            'packages/printer_service/src/**/*.test.ts',
             'packages/setup/src/**/*.test.ts',
             'scripts/benchmarks/*.test.ts',
             'scripts/integration_process_cleanup.test.ts',

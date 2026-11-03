@@ -17,8 +17,7 @@
     "commander": "^15.0.0",
     "dotenv-mono": "^1.5.1",
     "node-thermal-printer": "^4.6.0",
-    "winston": "^3.19.0",
-    "zod": "^4.6.7"
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

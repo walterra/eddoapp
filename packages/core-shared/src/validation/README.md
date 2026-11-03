@@ -70,13 +70,16 @@ Completed:
 - Shared parser, structured errors, explicit normalization and domain-validation hooks.
 - All assistant-server validation, including requests and generation controls.
 - Shared server and client environment parsing with explicit defaults and conversions.
-- Direct Zod dependency removal from core-shared, core-server, core-client, assistant-server, and web-client.
+- Direct Zod dependency removal from core-shared, core-server, core-client, assistant-server, web-client, telegram-bot, and printer-service.
 - Web assistant authentication, routes, cursors, receipts, projection reads, and host transport configuration.
 - Browser assistant payloads and persisted pending state, with shared lifecycle receipt contracts.
 - Recording evaluation schemas, JSON Schema publication, and native VCR response validation.
 - Transport-independent MCP registry using Standard Schema and pi-schema output contracts.
 - Get, delete, user-info, briefing, recap, and URL-fetch tool argument schemas.
 - Mutation receipt and journal ownership metadata validation.
+- Bot and printer configuration with pure parsers, explicit defaults, and legacy string-boolean conversion.
+- Custom provider/model configuration and credential-free portable VCR model metadata.
+- Legacy archive query arguments and offset defaults.
 - UUID, timestamp, UTF-16, finite-number, and safe-integer compatibility coverage.
 
 Remaining:
@@ -84,13 +87,14 @@ Remaining:
 - Characterize and migrate all other Zod boundaries.
 - Migrate remaining MCP tool arguments, including input defaults and custom refinements.
 - Migrate remaining web API routes and their validation error handling.
-- Migrate bot, printer, and model configuration, including defaults and transformations.
+- Migrate MCP Reader configuration, including endpoint checks and response projection.
 - Replace Zod-specific error handling and schema-derived types.
 - Remove direct dependencies and bundler references after all callers migrate.
 - Audit transitive dependencies separately and add an import/dependency guard.
 - Run final end-to-end and browser bundle comparisons after all boundaries migrate.
 
-Current verification covers unit tests, production builds, MCP integration, Durable integration, and all recorded-model playback sets.
+Verification commands cover unit tests, production builds, MCP integration, Durable integration, and all recorded-model playback sets.
+The root unit suite includes the pure bot and printer configuration parsers.
 
 The MCP registry accepts both migrated pi-schema adapters and remaining Zod Standard Schema implementations.
 This transitional compatibility allows incremental migration without a second transport implementation.
