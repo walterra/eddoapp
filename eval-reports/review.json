@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "completed",
-  "createdAt": "2026-11-01T11:37:39.662Z",
+  "createdAt": "2026-11-03T00:05:51.825Z",
   "reviewerModel": "anthropic/claude-sonnet-4-5-20250929",
   "rubricVersion": "2",
   "rubricSha256": "d0957930ec49879de7446b8e68593fb40ad5cce7f3169523c961f2961e94bef7",
@@ -10,7 +10,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/ambiguous-input.json",
-        "sha256": "3b973d5baa2d9a729014b5102678e51229035b7785b8c53efb02cdaad76455d4",
+        "sha256": "aa4403a28b7d48abbc28e8a21e6900cf6c7d5b0d1536fdbe4e312a972fb2f8ee",
         "scenarioId": "ambiguous-input",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -36,7 +36,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant correctly identified that the user's request 'add todo' lacked the necessary task details and asked for clarification.",
+            "explanation": "The assistant correctly identified missing information (task title) and asked the user to provide it before creating the todo.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -45,7 +45,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "not_applicable",
-            "explanation": "The assistant made no claims about completed actions, only asked for information needed to proceed with the task.",
+            "explanation": "No tool was invoked and no action completion was claimed, so there are no results to evaluate against claims.",
             "evidenceIds": [
               "event-2"
             ]
@@ -53,7 +53,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant appropriately handled the ambiguous input by requesting the missing task title before proceeding.",
+            "explanation": "The user provided insufficient information, and the assistant appropriately requested the missing required task details.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -62,7 +62,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred; the assistant only requested clarification for the incomplete user input.",
+            "explanation": "No tool errors occurred as no tools were called; the assistant only requested missing information.",
             "evidenceIds": [
               "event-2"
             ]
@@ -70,7 +70,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response was clear, friendly, and appropriately asked for the necessary information to complete the task.",
+            "explanation": "The response was clear, friendly, and directly addressed the missing information needed to complete the request.",
             "evidenceIds": [
               "event-2"
             ]
@@ -82,7 +82,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/complete-todo-workflow.json",
-        "sha256": "bcc8194a5d296313678ec6c45785302f81b2be9e07f046d6ee242862c3dfdd07",
+        "sha256": "5977e5049d3491b77fa0aaedf792a7cacd6db7eab1f8a2c43aeff71f2ac39c67",
         "scenarioId": "complete-todo-workflow",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -150,22 +150,20 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant created the todo with the requested title and later marked it as done using the correct ID from the creation response.",
+            "explanation": "The assistant created a todo with the requested title and later marked it as complete using the correct ID from the creation result.",
             "evidenceIds": [
               "event-1",
               "event-2",
               "event-3",
-              "event-4",
               "event-5",
               "event-6",
-              "event-7",
-              "event-8"
+              "event-7"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant claimed creation and completion success only after receiving successful tool results confirming these operations.",
+            "explanation": "Both success claims are directly supported by tool results showing successful creation and completion of the integration test task.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -176,7 +174,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed all user instructions to create the specified todo and then mark it as done without violating any constraints.",
+            "explanation": "The assistant followed user instructions to create and complete the todo without violating any explicit constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -187,7 +185,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during this workflow, so error recovery was not needed.",
+            "explanation": "No tool errors occurred during this workflow.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -196,7 +194,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The assistant provided clear, friendly confirmations with emojis that matched the actions taken and were appropriate for the task context.",
+            "explanation": "Messages were clear, relevant, and accurately reflected the completed actions with appropriate enthusiasm.",
             "evidenceIds": [
               "event-4",
               "event-8"
@@ -209,7 +207,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/create-todo-context-tags.json",
-        "sha256": "952d4911fe636ed25894d78cd8c093789cdc6be444458ccc7922369f54a867d1",
+        "sha256": "9eae6cafd3a2275f4f48c9f521d3c93cf7d30d5fc2b70fe962c6116b6543731f",
         "scenarioId": "create-todo-context-tags",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -249,7 +247,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant created a work todo for the quarterly report with urgent tag and due date next month (December 1st) as requested.",
+            "explanation": "The assistant created a work todo for the quarterly report with due date next month (Dec 1st 2026) and the urgent tag as requested.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -259,7 +257,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The success confirmation is supported by the tool result showing the todo was created successfully with the correct details.",
+            "explanation": "The success message about locking in the December 1st deadline with urgent priority accurately reflects the successful tool result.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -268,7 +266,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed all explicit constraints: work context, urgent tag, and due date in next month from the November current date.",
+            "explanation": "All explicit user constraints were followed: work context, quarterly report subject, next month due date, and urgent tag.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -277,7 +275,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during this interaction.",
+            "explanation": "No errors occurred during the interaction.",
             "evidenceIds": [
               "event-3"
             ]
@@ -285,7 +283,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response clearly confirmed the task creation with relevant details (December 1st, urgent priority) in a friendly, enthusiastic tone.",
+            "explanation": "The response was clear, enthusiastic, and accurately confirmed the created todo with its deadline and priority level.",
             "evidenceIds": [
               "event-4"
             ]
@@ -297,7 +295,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/create-todo-natural-language.json",
-        "sha256": "5512d1618c0d7cc78ac39191dafc5959958a02c354a0df2a5c5f873351cf5f22",
+        "sha256": "d33797c83897f717139fc517bf1c8b969c50a2388588db0f3148ec57adc35702",
         "scenarioId": "create-todo-natural-language",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -337,7 +335,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant successfully created a todo for \"go shopping\" on next Friday (Nov 13, 2026) as requested by the user.",
+            "explanation": "The assistant correctly created a todo for 'go shopping' scheduled for next Friday (2026-11-13) as requested by the user.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -347,7 +345,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant's claim that the todo was added is supported by the successful tool result showing the created todo.",
+            "explanation": "The success message claims the todo was added with correct details, which is supported by the successful tool result showing todo created.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -356,7 +354,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the user's instruction to add a todo for next Friday to go shopping without violating any explicit constraints.",
+            "explanation": "The assistant followed the user's request to add a todo for next Friday to go shopping without violating any explicit constraints.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -365,7 +363,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during the interaction.",
+            "explanation": "No errors occurred during the interaction; the tool call succeeded on the first attempt.",
             "evidenceIds": [
               "event-3"
             ]
@@ -373,7 +371,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response was clear, friendly, and accurately communicated the action taken with relevant details.",
+            "explanation": "The response was clear, friendly, and accurately summarized the action taken with the correct date and context details.",
             "evidenceIds": [
               "event-4"
             ]
@@ -385,7 +383,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/multi-step-create-list.json",
-        "sha256": "9dd068a4e6f39608d95c93902c32e4d81c48974d5ed3ec91ffd1e195694bae04",
+        "sha256": "8b094c1b0e506ffbe0aa0aeb57769a989291eb3685f244eca6532721bada415c",
         "scenarioId": "multi-step-create-list",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -444,7 +442,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The claim that the code review todo was created and the display of work todos are both supported by successful tool results.",
+            "explanation": "The assistant correctly reported the todo was created and accurately displayed the work todo from the successful tool results.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -454,17 +452,17 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the explicit request to create a work todo for code review and show all work todos with appropriate context filtering.",
+            "explanation": "The assistant followed the user's explicit constraint to create a work todo and show all work todos without violating any stated requirements.",
             "evidenceIds": [
               "event-1",
               "event-2",
-              "event-4"
+              "event-5"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during this interaction.",
+            "explanation": "No tool errors occurred during the interaction.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -473,7 +471,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response was clear, friendly, and accurately summarized the actions taken and the current work todo list.",
+            "explanation": "The response was clear, relevant, and accurately reflected the actions taken with appropriate formatting and friendly tone.",
             "evidenceIds": [
               "event-5"
             ]
@@ -485,7 +483,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/persistent-chat-history.json",
-        "sha256": "45a7eba36226086b9ce668c52856c542063741b05b211afcd7ae2a73026ff35f",
+        "sha256": "4414887f4b59d2b3414b30fac891b49ed7c15cd611b81fdf32241d56423bd800",
         "scenarioId": "persistent-chat-history",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -553,7 +551,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant stored the planning keyword 'deep-work' in event-2 and successfully retrieved it when asked in event-8.",
+            "explanation": "The assistant saved the planning keyword 'deep-work' and successfully retrieved it when asked, completing both tasks.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -568,7 +566,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant's claims are supported by tool results: creation confirmed in event-3 and retrieval confirmed in event-7.",
+            "explanation": "The assistant's claims that the keyword was saved and retrieved are supported by successful tool results in events 3 and 7.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -579,19 +577,18 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the user's requests to remember and retrieve the planning keyword without violating any constraints.",
+            "explanation": "The assistant followed the user's implicit requirement to remember and recall the planning keyword without adding unwanted constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
               "event-5",
-              "event-6",
-              "event-8"
+              "event-6"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during this conversation; all tool results returned successfully.",
+            "explanation": "No tool errors occurred during this conversation; all tool results show successful operations.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -600,9 +597,8 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The assistant provided clear, relevant responses with emojis that matched the actions taken throughout the conversation.",
+            "explanation": "The assistant provided clear, relevant responses with appropriate emojis that confirmed the keyword was saved and retrieved.",
             "evidenceIds": [
-              "event-2",
               "event-4",
               "event-8"
             ]
@@ -614,7 +610,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/claude-sonnet-4-5-20250929/status-message-pattern.json",
-        "sha256": "3ce81da1250ecfb8abdefb6bdf3a1e18d27e5a3406255c2b8bae0a955d4d672b",
+        "sha256": "7b79c8f1f081354273176fe35544113e2e25854ec2376165eb0b6dd6d8e84b05",
         "scenarioId": "status-message-pattern",
         "subjectModel": "anthropic/claude-sonnet-4-5-20250929",
         "events": [
@@ -682,7 +678,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant created the work todo as requested and successfully listed completed todos for today when asked to show what was completed.",
+            "explanation": "The assistant created the work todo as requested and successfully queried for completed tasks today, accurately reporting the empty results.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -697,7 +693,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The success claim in event-4 matches the successful creation result in event-3, and the no-completions statement in event-8 matches the empty list in event-7.",
+            "explanation": "The assistant's claim of successful creation is supported by the tool result, and the claim of no completions matches the empty data array.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -708,7 +704,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant created a work context todo as specified and correctly interpreted \"today\" for the completion query without violating any constraints.",
+            "explanation": "The assistant followed both explicit instructions: creating a work todo with the specified title and showing completed tasks for today.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -719,7 +715,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during the interaction; all tool calls returned successful results.",
+            "explanation": "No tool errors occurred during this interaction.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -728,7 +724,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The responses were clear, relevant, and appropriately friendly with emojis that enhanced rather than obscured the message.",
+            "explanation": "Both responses were clear, relevant, and accurately reflected the actions taken with appropriate friendly tone.",
             "evidenceIds": [
               "event-4",
               "event-8"
@@ -741,7 +737,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/ambiguous-input.json",
-        "sha256": "6f880477eb26bc91e0e00c0c5f8399bd4cbe55713ab8f19f9cd56be41acdb8b0",
+        "sha256": "ba0aae98b6bdce7b6abf08d53f3784ecbe8d43d03ed29e548def806e6940eed7",
         "scenarioId": "ambiguous-input",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -767,7 +763,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant correctly identified missing required information and asked the user for the todo title, due date, and context before proceeding.",
+            "explanation": "The assistant correctly identified that the user's request lacked essential details and asked for the missing title, due date, and context information.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -776,7 +772,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "not_applicable",
-            "explanation": "The assistant made no claims about actions taken or tool results, only asked clarifying questions.",
+            "explanation": "The assistant made no claims about successfully completing actions, only asked clarifying questions.",
             "evidenceIds": [
               "event-2"
             ]
@@ -784,7 +780,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The user provided ambiguous input without constraints, and the assistant appropriately asked for missing details.",
+            "explanation": "No explicit constraints were provided by the user, and asking for clarification is appropriate for the ambiguous input.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -793,7 +789,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred since no tools were invoked.",
+            "explanation": "No tool errors occurred during this interaction.",
             "evidenceIds": [
               "event-2"
             ]
@@ -801,7 +797,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response was clear, relevant, and provided helpful examples for the user to understand what information was needed.",
+            "explanation": "The response was clear, polite, and appropriately requested all necessary missing information with helpful examples.",
             "evidenceIds": [
               "event-2"
             ]
@@ -813,7 +809,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/complete-todo-workflow.json",
-        "sha256": "78c84b87f5af057575a68115ae4b73aced7daddcc04e3205391ccc4f4ff34ff7",
+        "sha256": "3c272f5f60b4c09c5d3b1e68ff7655aadb3875919c83076b8b49c5a1abfa6da5",
         "scenarioId": "complete-todo-workflow",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -909,7 +905,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant successfully created a todo called 'integration test task' and then marked it as done when requested.",
+            "explanation": "The assistant created the todo 'integration test task' and then successfully marked it as done per user requests.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -924,7 +920,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "Both confirmation messages accurately reflect successful tool results for creating and completing the todo.",
+            "explanation": "Both confirmation messages accurately reflect the successful tool results showing todo creation and completion.",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -935,7 +931,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the user's explicit instructions to create and then mark the specific task as done.",
+            "explanation": "The assistant followed user instructions to create and mark the task as done without violating any explicit constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -946,7 +942,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "pass",
-            "explanation": "When searchTodos failed, the assistant successfully recovered by using listTodos to find the task instead.",
+            "explanation": "When searchTodos failed, the assistant recovered by using listTodos to find the task and proceeded successfully.",
             "evidenceIds": [
               "event-6",
               "event-7",
@@ -958,7 +954,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The assistant provided clear, concise confirmations with relevant details about the created and completed todo.",
+            "explanation": "Messages were clear, concise, and accurately conveyed the status of both the creation and completion operations.",
             "evidenceIds": [
               "event-4",
               "event-12"
@@ -971,7 +967,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/create-todo-context-tags.json",
-        "sha256": "9440b77bb5d7b050fd693a826e8bd53bce66863529021f46a81a7eddff6d7b2b",
+        "sha256": "3f3a28406361e83665a45bb33b8bd5782dd1c369d9dacb460eecbce484cce3c1",
         "scenarioId": "create-todo-context-tags",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1011,7 +1007,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant created a work context todo for quarterly report with urgent tag and due date in next month as requested.",
+            "explanation": "The assistant created a work todo for quarterly report with the urgent tag and a due date in the next month (December 2026) as requested.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1022,7 +1018,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The success message accurately reflects the tool result showing todo created with work context, 2026-12-31 due date, and tags.",
+            "explanation": "The assistant accurately reported the todo creation details matching the tool result data (title, context, due date, and tags).",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -1031,16 +1027,17 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "All user constraints were followed: work context, quarterly report title, next month due date, and urgent tag were applied.",
+            "explanation": "The assistant followed all explicit constraints: work context, urgent tag, and next month due date with no conflicting choices.",
             "evidenceIds": [
               "event-1",
-              "event-2"
+              "event-2",
+              "event-4"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during this interaction.",
+            "explanation": "No tool errors occurred during the interaction.",
             "evidenceIds": [
               "event-3"
             ]
@@ -1048,7 +1045,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response clearly confirmed the todo creation with all relevant details in a concise, readable format.",
+            "explanation": "The response clearly summarized the created todo with all relevant details in a well-formatted and consistent manner.",
             "evidenceIds": [
               "event-4"
             ]
@@ -1060,7 +1057,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/create-todo-natural-language.json",
-        "sha256": "bad3c7fe6a64ceb6455e1afb0eea38c94b91a9f5ee00054c1646c55cfeca9255",
+        "sha256": "ab47ece73b0acea960089beb18de7cc5a0219f24261d1081ad2870f1aab372c6",
         "scenarioId": "create-todo-natural-language",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1100,7 +1097,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant successfully created a todo for shopping with the correct due date (2026-11-06, next Friday from 2026-11-01) as requested by the user.",
+            "explanation": "The assistant successfully created a todo for shopping with the correct due date (next Friday, 2026-11-06) as requested by the user.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1111,7 +1108,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant's final message accurately reflects the tool result showing the todo was created with title, context, due date, and tags.",
+            "explanation": "The assistant's confirmation accurately reflects the tool result showing the todo was created with title, context, due date, and tags.",
             "evidenceIds": [
               "event-3",
               "event-4"
@@ -1120,7 +1117,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the user's request to add a todo for shopping next Friday without violating any explicit constraints.",
+            "explanation": "The assistant followed the user's instruction to add a todo for next Friday without violating any explicit constraints.",
             "evidenceIds": [
               "event-1",
               "event-2"
@@ -1129,7 +1126,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No errors occurred during the interaction, so error recovery was not needed.",
+            "explanation": "No tool errors occurred during the interaction.",
             "evidenceIds": [
               "event-3"
             ]
@@ -1137,7 +1134,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The response clearly confirmed the todo creation with all relevant details in a friendly, well-formatted manner.",
+            "explanation": "The response clearly confirmed the todo creation with all relevant details in a concise, well-formatted message.",
             "evidenceIds": [
               "event-4"
             ]
@@ -1149,7 +1146,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/multi-step-create-list.json",
-        "sha256": "fd594c6c42c3792d442ea8498566e39872288029cfa8bffe9a2b8ba1674a764e",
+        "sha256": "997cd64b90b8730b665857a5854160b1a8ce4e640727e028ad8cf59751442406",
         "scenarioId": "multi-step-create-list",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1203,7 +1200,7 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant created a work todo for code review and showed all work todos as requested by the user.",
+            "explanation": "The assistant created a work todo for 'Code review' and then listed all work todos, completing both requested tasks.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1216,7 +1213,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant's claims about creating the todo and listing work todos are supported by the successful tool results.",
+            "explanation": "The final message accurately reflects the successful creation result and the list result showing one work todo.",
             "evidenceIds": [
               "event-3",
               "event-5",
@@ -1226,7 +1223,7 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the user's request to create a work todo for code review and show all work todos without violating constraints.",
+            "explanation": "The assistant followed the user's request to create a work todo for code review and show all work todos without violating any constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1246,7 +1243,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The final message clearly confirmed the created todo and listed the work todos with relevant details in a readable format.",
+            "explanation": "The response is clear, well-formatted, and accurately summarizes both the creation and listing actions performed.",
             "evidenceIds": [
               "event-6"
             ]
@@ -1258,7 +1255,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/persistent-chat-history.json",
-        "sha256": "4ae9bd41896ee5f18ee334b922aecadf9963f9a9521689834ee898372e0428c8",
+        "sha256": "799852cd55c8af50d8d6c71eea87472e721bb4e31c8dc78dff7a72eb9c9b0cad",
         "scenarioId": "persistent-chat-history",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1312,36 +1309,40 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant stored the planning keyword 'deep-work' using a todo and successfully recalled it when asked in a later interaction.",
+            "explanation": "The assistant correctly stored the planning keyword 'deep-work' and successfully recalled it when asked, fulfilling both user requests.",
             "evidenceIds": [
+              "event-1",
               "event-2",
               "event-3",
               "event-4",
+              "event-5",
               "event-6"
             ]
           },
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant's confirmation that the keyword was 'locked in' is supported by the successful todo creation result in event-3.",
+            "explanation": "The assistant's confirmation that the keyword was 'locked in' is supported by the successful createTodo result, and the recall is grounded in chat history.",
             "evidenceIds": [
               "event-3",
-              "event-4"
+              "event-4",
+              "event-6"
             ]
           },
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "No explicit constraints were given; the assistant appropriately used a memory-context todo to persist information across interactions.",
+            "explanation": "The assistant appropriately stored the planning keyword using reasonable GTD defaults and answered the recall question directly without violating constraints.",
             "evidenceIds": [
               "event-2",
-              "event-3"
+              "event-4",
+              "event-6"
             ]
           },
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during this conversation; all operations completed successfully.",
+            "explanation": "No tool errors occurred during this conversation.",
             "evidenceIds": [
               "event-3"
             ]
@@ -1349,7 +1350,7 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "Responses were clear, concise, and accurately reflected both the storage and recall of the planning keyword.",
+            "explanation": "Both responses were clear, concise, and directly addressed the user's statements with appropriate confirmation and recall.",
             "evidenceIds": [
               "event-4",
               "event-6"
@@ -1362,7 +1363,7 @@
       "status": "completed",
       "recording": {
         "path": "packages/telegram_bot/src/integration-tests/cassettes/openai_gpt-5_2/status-message-pattern.json",
-        "sha256": "91971712f52234d9b8ab6569767466db6cfb66ace17acad480c378a6ca09d354",
+        "sha256": "44a05e1416c825308f57c39da89bd091cef82a7d061e1fe14e7e1a9879efd15f",
         "scenarioId": "status-message-pattern",
         "subjectModel": "openai/gpt-5.2",
         "events": [
@@ -1430,12 +1431,12 @@
           {
             "criterion": "task_fulfillment",
             "verdict": "pass",
-            "explanation": "The assistant created the requested work todo and then successfully showed completed tasks for today, answering both user requests completely.",
+            "explanation": "The assistant created the requested work todo and then successfully retrieved and reported the completion data for today as requested.",
             "evidenceIds": [
-              "event-1",
               "event-2",
+              "event-3",
               "event-4",
-              "event-5",
+              "event-6",
               "event-7",
               "event-8"
             ]
@@ -1443,7 +1444,7 @@
           {
             "criterion": "claims_grounded_in_results",
             "verdict": "pass",
-            "explanation": "The assistant's claims about creating the todo and finding zero completions today match the successful tool results returned.",
+            "explanation": "All claims match tool results: todo created with correct details (event-3) and zero completions today accurately reported (event-7).",
             "evidenceIds": [
               "event-3",
               "event-4",
@@ -1454,7 +1455,207 @@
           {
             "criterion": "instruction_compliance",
             "verdict": "pass",
-            "explanation": "The assistant followed the user's instructions to create a work todo with the specified title and to show completed tasks for today.",
+            "explanation": "The assistant followed all explicit constraints: created a work todo with the specified title and showed completed items for today.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-4",
+              "event-5",
+              "event-8"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred during the interaction; both tool calls completed successfully.",
+            "evidenceIds": [
+              "event-3",
+              "event-7"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "Messages were clear, accurately summarized tool actions and results, and directly answered user questions with appropriate formatting.",
+            "evidenceIds": [
+              "event-4",
+              "event-8"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/qwen38_qwen3_8-27b/ambiguous-input.json",
+        "sha256": "120f241cf687e3980ef480a3eb69094023ce410a96003f3bdfdb81cb89b539ae",
+        "scenarioId": "ambiguous-input",
+        "subjectModel": "qwen38/qwen3.8-27b",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:44.602Z\\n\\nadd todo\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\nWhat would you like to capture? Give me the task and I'll get it organized! 🚀\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "The assistant correctly recognized the ambiguous input and asked for the missing task details rather than creating an incomplete or invalid todo.",
+            "evidenceIds": [
+              "event-1",
+              "event-2"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "not_applicable",
+            "explanation": "The assistant made no claims about successfully completing actions; it only asked a clarifying question.",
+            "evidenceIds": [
+              "event-2"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "The user provided no explicit constraints, and the assistant's request for clarification is appropriate for the ambiguous input.",
+            "evidenceIds": [
+              "event-1",
+              "event-2"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred; the assistant simply asked for clarification before attempting any tool calls.",
+            "evidenceIds": [
+              "event-2"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "The response was clear, friendly, and appropriately requested the missing task information needed to fulfill the user's intent.",
+            "evidenceIds": [
+              "event-2"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/qwen38_qwen3_8-27b/complete-todo-workflow.json",
+        "sha256": "fb01475f5ffe2e10ff34f4dc40f23da765e2d3e333944f251517e75a8aa8dee3",
+        "scenarioId": "complete-todo-workflow",
+        "subjectModel": "qwen38/qwen3.8-27b",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:27.257Z\\n\\ncreate todo called integration test task\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_0aa3e1bfe8954af49d9f0800\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Integration test task\",\"context\":\"work\",\"tags\":[\"gtd:next\"],\"due\":\"2026-11-03\",\"message\":\"Created integration test task\"}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:30.879Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:30.914Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_0aa3e1bfe8954af49d9f0800\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n✅ Done! **\\\"Integration test task\\\"** is in your work queue, tagged as a next action, due today. Ready to tackle it whenever you are! 🚀\"}]}"
+          },
+          {
+            "id": "event-5",
+            "interaction": 2,
+            "source": "request.messages[5]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:32.695Z\\n\\nmark the integration test task as done\"}"
+          },
+          {
+            "id": "event-6",
+            "interaction": 2,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_8165f851ff46464693a39768\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-11-03T00:00:30.879Z\",\"completed\":true,\"message\":\"Marked integration test task as done\"}}]}"
+          },
+          {
+            "id": "event-7",
+            "interaction": 3,
+            "source": "request.messages[7]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:30.879Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"status\\\":\\\"completed\\\",\\\"completed_at\\\":\\\"2026-11-03T00:00:35.651Z\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"toggle_completion\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:35.684Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"toggleTodoCompletion\",\"toolCallId\":\"call_8165f851ff46464693a39768\",\"isError\":false}"
+          },
+          {
+            "id": "event-8",
+            "interaction": 3,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n✅ **Integration test task** — marked as done! 🎉 Nice one!\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "The assistant successfully created a todo titled 'Integration test task' and then marked it as complete when requested.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3",
+              "event-4",
+              "event-5",
+              "event-6",
+              "event-7",
+              "event-8"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "Both success confirmations are supported by tool results showing the todo was created and then completed successfully.",
+            "evidenceIds": [
+              "event-3",
+              "event-4",
+              "event-7",
+              "event-8"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "The assistant followed both explicit instructions to create the task and mark it as done without violating any stated constraints.",
             "evidenceIds": [
               "event-1",
               "event-2",
@@ -1465,7 +1666,7 @@
           {
             "criterion": "error_recovery",
             "verdict": "not_applicable",
-            "explanation": "No tool errors occurred during this conversation; all tool calls returned successful results.",
+            "explanation": "No tool errors occurred during this workflow; both tool calls completed successfully.",
             "evidenceIds": [
               "event-3",
               "event-7"
@@ -1474,7 +1675,525 @@
           {
             "criterion": "communication_quality",
             "verdict": "pass",
-            "explanation": "The assistant provided clear, concise responses with relevant formatting that accurately reflected the actions taken and data retrieved.",
+            "explanation": "The responses were clear, friendly, and accurately reflected the completed actions with appropriate confirmation messages.",
+            "evidenceIds": [
+              "event-4",
+              "event-8"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/qwen38_qwen3_8-27b/create-todo-context-tags.json",
+        "sha256": "b313521fed10982ed8418dea3cd2eef91d0f797f0cb8bba9dff85d64d9ef6494",
+        "scenarioId": "create-todo-context-tags",
+        "subjectModel": "qwen38/qwen3.8-27b",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:09.900Z\\n\\ncreate work todo for quarterly report due next month with urgent tag\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b4f62178651d4107b58bafb4\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Quarterly Report\",\"context\":\"work\",\"due\":\"2026-12-31T23:59:59.999Z\",\"tags\":[\"urgent\",\"gtd:next\"],\"description\":\"Prepare and submit the quarterly report.\",\"message\":\"Created quarterly report work todo due end of December\"}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:16.421Z\\\",\\\"title\\\":\\\"Quarterly Report\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-12-31\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:16.451Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_b4f62178651d4107b58bafb4\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\nDone! 📋 **\\\"Quarterly Report\\\"** is locked in for your work context, due **Dec 31** with an **urgent** tag.\\n\\nWhen you're ready to dive in, just say the word and I'll start the timer on it. 💪\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "The assistant created a work context todo for quarterly report with urgent tag and due date in next month (December 2026) as requested.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "The success confirmation matches the tool result showing todo created with title, work context, and Dec 31 due date.",
+            "evidenceIds": [
+              "event-3",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "All explicit user constraints were followed: work context, quarterly report topic, next month due date, and urgent tag.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred during the interaction.",
+            "evidenceIds": [
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "The response was clear, friendly, and accurately summarized the created todo with relevant details from the tool result.",
+            "evidenceIds": [
+              "event-4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/qwen38_qwen3_8-27b/create-todo-natural-language.json",
+        "sha256": "8834b6b3d6811659aa8868ccbe33cd38b5e679a1fc7afcb0e955bd5381e444ea",
+        "scenarioId": "create-todo-natural-language",
+        "subjectModel": "qwen38/qwen3.8-27b",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:02.394Z\\n\\nadd todo next friday to go shopping\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b785cca713db4103a4a2295b\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-11-13\",\"context\":\"errands\",\"tags\":[\"gtd:next\"],\"message\":\"Added shopping todo for next Friday\"}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:06.647Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"errands\\\",\\\"due\\\":\\\"2026-11-13\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:06.677Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_b785cca713db4103a4a2295b\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\nDone! 🛒 **\\\"Go shopping\\\"** is set for next Friday, Nov 13. Filing it under **errands** so it's easy to grab when you're out and about. Nice and clear — exactly the kind of thing that slips your mind if you don't capture it!\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "The assistant successfully created a todo for 'go shopping' with due date next Friday (2026-11-13), correctly calculated from the current date 2026-11-03.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "The assistant's confirmation that the todo was created matches the successful tool result showing the todo was created with id and timestamp.",
+            "evidenceIds": [
+              "event-3",
+              "event-4"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "The assistant followed the natural language instruction to add a todo for next friday about shopping, with no explicit constraints to violate.",
+            "evidenceIds": [
+              "event-1",
+              "event-2"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred during the interaction; the createTodo call succeeded without issues.",
+            "evidenceIds": [
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "The response was clear, friendly, and accurately communicated the action taken with relevant details (date, context) from the tool result.",
+            "evidenceIds": [
+              "event-4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/qwen38_qwen3_8-27b/multi-step-create-list.json",
+        "sha256": "5499d31f7c92e3f966d23ba16a3de02ddf9f05e48e2bf62b701d687fe242f62b",
+        "scenarioId": "multi-step-create-list",
+        "subjectModel": "qwen38/qwen3.8-27b",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:19.387Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_bb1e2dc489364f1b9e658ccc\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created work todo for code review\"}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:23.931Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:23.965Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_bb1e2dc489364f1b9e658ccc\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_447089d8fd354531864b8b16\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\"}}]}"
+          },
+          {
+            "id": "event-5",
+            "interaction": 2,
+            "source": "request.messages[5]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-11-03T00:00:23.931Z\\\",\\\"_rev\\\":\\\"2-454990f8512aa61d1ffb09f1056e1fae\\\",\\\"title\\\":\\\"Code review\\\",\\\"description\\\":\\\"\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-11-03T00:00:23.954Z\\\"]}],\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false},\\\"metadata\\\":{\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:25.004Z\\\",\\\"execution_time\\\":\\\"13.00ms\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"limit\\\"]}}\"}],\"toolName\":\"listTodos\",\"toolCallId\":\"call_447089d8fd354531864b8b16\",\"isError\":false}"
+          },
+          {
+            "id": "event-6",
+            "interaction": 2,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n✅ Created! Here's your work queue:\\n\\n- **Code review** — due today 🎯\\n\\nOne clean actionable item. Ready to crush it when you are!\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "The assistant created a work todo for code review and then listed all work todos as requested by the user.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3",
+              "event-4",
+              "event-5",
+              "event-6"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "The assistant's claim that the todo was created is supported by the successful tool result, and the displayed work todo matches the returned data.",
+            "evidenceIds": [
+              "event-3",
+              "event-5",
+              "event-6"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "The assistant followed the user's request to create a work todo for code review and show all work todos without violating any constraints.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-4",
+              "event-6"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred during the interaction; both tool calls completed successfully.",
+            "evidenceIds": [
+              "event-3",
+              "event-5"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "The final message clearly confirms the todo creation and presents the work todo list in a friendly, well-formatted manner.",
+            "evidenceIds": [
+              "event-6"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/qwen38_qwen3_8-27b/persistent-chat-history.json",
+        "sha256": "b8cd5c7f49083101c79be7b2f1e66bd535f7d415cfde8af44a564e7e32a5d0cb",
+        "scenarioId": "persistent-chat-history",
+        "subjectModel": "qwen38/qwen3.8-27b",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:36.962Z\\n\\nMy planning keyword for this test is deep-work.\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_fc87600956ed43588cf010f1\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Remember: Planning keyword is \\\"deep-work\\\"\",\"description\":\"User's planning keyword for this test is: **deep-work**\",\"context\":\"memory\",\"tags\":[\"user:memory\"],\"due\":\"2026-11-03\"}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:40.695Z\\\",\\\"title\\\":\\\"Remember: Planning keyword is \\\\\\\"deep-work\\\\\\\"\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:40.734Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_fc87600956ed43588cf010f1\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\nGot it — planning keyword **deep-work** is saved to memory. ✅\"}]}"
+          },
+          {
+            "id": "event-5",
+            "interaction": 2,
+            "source": "request.messages[5]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:42.603Z\\n\\nWhat planning keyword did I mention?\"}"
+          },
+          {
+            "id": "event-6",
+            "interaction": 2,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\nYour planning keyword is **deep-work** 💪\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "The assistant stored the planning keyword 'deep-work' in memory and successfully retrieved it when asked, fulfilling both user requests.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3",
+              "event-4",
+              "event-5",
+              "event-6"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "The assistant claimed the keyword was saved after receiving a successful creation result, and the retrieval was based on prior conversation context.",
+            "evidenceIds": [
+              "event-3",
+              "event-4",
+              "event-6"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "The assistant appropriately used memory context and tags without violating any explicit user constraints.",
+            "evidenceIds": [
+              "event-2",
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred during the interaction.",
+            "evidenceIds": [
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "Responses were clear, concise, and directly addressed both the initial statement and the follow-up question about the planning keyword.",
+            "evidenceIds": [
+              "event-4",
+              "event-6"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "status": "completed",
+      "recording": {
+        "path": "packages/telegram_bot/src/integration-tests/cassettes/qwen38_qwen3_8-27b/status-message-pattern.json",
+        "sha256": "86d28380d1ca8410011d40c96f0e655c2b52a531adf0e7113167fcc6f54dc2e1",
+        "scenarioId": "status-message-pattern",
+        "subjectModel": "qwen38/qwen3.8-27b",
+        "events": [
+          {
+            "id": "event-1",
+            "interaction": 0,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:46.646Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
+          },
+          {
+            "id": "event-2",
+            "interaction": 0,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b3b00c81c09747aebc9d801e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created work todo \\\"Test task for recap\\\"\"}}]}"
+          },
+          {
+            "id": "event-3",
+            "interaction": 1,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:50.272Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:50.312Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"toolName\":\"createTodo\",\"toolCallId\":\"call_b3b00c81c09747aebc9d801e\",\"isError\":false}"
+          },
+          {
+            "id": "event-4",
+            "interaction": 1,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\nDone! Created **\\\"Test task for recap\\\"** in your *work* context, due today. 🎯\"}]}"
+          },
+          {
+            "id": "event-5",
+            "interaction": 2,
+            "source": "request.messages[1]",
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:51.786Z\\n\\nshow me what I completed today\"}"
+          },
+          {
+            "id": "event-6",
+            "interaction": 2,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_ddb82118bfc14c4f9621742c\",\"name\":\"getRecapData\",\"arguments\":{}}]}"
+          },
+          {
+            "id": "event-7",
+            "interaction": 3,
+            "source": "request.messages[3]",
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"recap data for 2026-11-03\\\",\\\"data\\\":{\\\"completedToday\\\":[],\\\"upcomingNextActions\\\":[{\\\"_id\\\":\\\"2026-11-03T00:00:50.272Z\\\",\\\"link\\\":null,\\\"parentId\\\":null,\\\"id\\\":\\\"2026-11-03T00:00:50.272Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\",\\\"completed\\\":null,\\\"tags\\\":[\\\"gtd:next\\\"],\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"trackedMinutes\\\":0,\\\"activeSessionCount\\\":0,\\\"fieldsTruncated\\\":false}],\\\"activeTimeTracking\\\":[],\\\"metadata\\\":{\\\"contractVersion\\\":2,\\\"itemsAreCompleteTodos\\\":false,\\\"detailTool\\\":\\\"getTodo\\\",\\\"date\\\":\\\"2026-11-03\\\",\\\"weekday\\\":\\\"Tuesday\\\",\\\"timeZone\\\":\\\"UTC\\\",\\\"dateStart\\\":\\\"2026-11-03\\\",\\\"dateEnd\\\":\\\"2026-11-03\\\",\\\"counts\\\":{\\\"completedToday\\\":0,\\\"upcomingNextActions\\\":1,\\\"activeTimeTracking\\\":0},\\\"selection\\\":{\\\"completedToday\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"upcomingNextActions\\\":{\\\"total\\\":1,\\\"returned\\\":1,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"activeTimeTracking\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false}},\\\"trackingScope\\\":\\\"trackedMinutes is cumulative across all stored sessions, not just today.\\\",\\\"countSemantics\\\":\\\"Exact when countExact=true; otherwise total is a lower bound. Queries are not a cross-section snapshot.\\\"}},\\\"metadata\\\":{\\\"operation\\\":\\\"get_recap_data\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:55.271Z\\\",\\\"execution_time\\\":\\\"27.00ms\\\"}}\"}],\"toolName\":\"getRecapData\",\"toolCallId\":\"call_ddb82118bfc14c4f9621742c\",\"isError\":false}"
+          },
+          {
+            "id": "event-8",
+            "interaction": 3,
+            "source": "response.message",
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\\n\\nNothing completed today yet — fresh slate, Tuesday! 💪\\n\\nYou've got 1 next action up: **Test task for recap** (work context). Ready to knock it out?\"}]}"
+          }
+        ]
+      },
+      "review": {
+        "schemaVersion": 1,
+        "judgments": [
+          {
+            "criterion": "task_fulfillment",
+            "verdict": "pass",
+            "explanation": "The assistant created a work todo as requested in event-1 and retrieved completed tasks for today as requested in event-5, both successfully.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3",
+              "event-5",
+              "event-6",
+              "event-7"
+            ]
+          },
+          {
+            "criterion": "claims_grounded_in_results",
+            "verdict": "pass",
+            "explanation": "The assistant's claims about creating the todo and showing zero completed items match the successful tool results in events 3 and 7.",
+            "evidenceIds": [
+              "event-3",
+              "event-4",
+              "event-7",
+              "event-8"
+            ]
+          },
+          {
+            "criterion": "instruction_compliance",
+            "verdict": "pass",
+            "explanation": "The assistant correctly set work context as specified and used appropriate defaults for due date and tags without violating any user constraints.",
+            "evidenceIds": [
+              "event-1",
+              "event-2",
+              "event-3"
+            ]
+          },
+          {
+            "criterion": "error_recovery",
+            "verdict": "not_applicable",
+            "explanation": "No tool errors occurred during the conversation; all tool results indicate successful operations.",
+            "evidenceIds": [
+              "event-3",
+              "event-7"
+            ]
+          },
+          {
+            "criterion": "communication_quality",
+            "verdict": "pass",
+            "explanation": "The responses are clear, friendly, and accurately describe the actions taken and results obtained from the tools.",
             "evidenceIds": [
               "event-4",
               "event-8"

@@ -1,5 +1,4 @@
 import { createModels, type Models } from '@earendil-works/pi-ai/models';
-import { builtinModels } from '@earendil-works/pi-ai/providers/all';
 import { MemoryStorage, type ModelRef } from '@earendil-works/pi-durable';
 import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +9,7 @@ import { buildDurablePrompt } from '../../durable/prompt.js';
 import { openDurableRuntime } from '../../durable/runtime.js';
 import { resolveDurableUser } from '../../durable/tools.js';
 import { scopeMCPIntegration, setupMCPIntegration, type MCPClient } from '../../mcp/client.js';
+import { recordingModels } from '../vcr/custom_models.js';
 import {
   createCachedProvider,
   createCassetteManager,
@@ -64,9 +64,22 @@ interface AgentExecutionResult {
   context: MockTelegramContext;
 }
 
+/** Loads explicit custom providers without changing injected scripted model collections. */
+function sourceModels(config: TestAgentServerConfig): Models {
+  return (
+    config.sourceModels ??
+    recordingModels({
+      modelName: config.llmModel || process.env.LLM_MODEL || 'claude-sonnet-4-5-20250929',
+      cassettesDir: config.cassettesDir ?? fileURLToPath(new URL('../cassettes', import.meta.url)),
+      mode: config.vcrMode || (process.env.VCR_MODE as RecordMode) || 'auto',
+      configPath: process.env.EDDO_MODELS_FILE,
+    })
+  );
+}
+
 /** Builds a native model collection whose only generation boundary is the cassette adapter. */
 function cachedModels(config: TestAgentServerConfig, state: TestAgentState): ModelsAndCassettes {
-  const source = config.sourceModels ?? builtinModels();
+  const source = sourceModels(config);
   const model = resolveConfiguredModel(
     config.llmModel || process.env.LLM_MODEL || 'claude-sonnet-4-5-20250929',
     source,
@@ -174,7 +187,7 @@ async function stopRuntime(state: TestAgentState, cassettes: CassetteManager): P
     await state.runtime?.close();
     cassettes.assertConsumed();
   } finally {
-    cassettes.ejectCassette();
+    await cassettes.ejectCassette();
     await state.mcp?.close();
     state.runtime = null;
   }
@@ -201,10 +214,10 @@ export function createTestAgentServer(config: TestAgentServerConfig = {}) {
       await startRuntime(state, cached);
     },
     stop: (): Promise<void> => stopRuntime(state, cached.cassettes),
-    loadCassette: (name: string): void => {
+    loadCassette: async (name: string): Promise<void> => {
       state.testName = name;
       state.sequence = 0;
-      cached.cassettes.loadCassette(name);
+      await cached.cassettes.loadCassette(name);
     },
     getVcrMode: () => cached.cassettes.getMode(),
     getLlmRequests: () => state.requests,

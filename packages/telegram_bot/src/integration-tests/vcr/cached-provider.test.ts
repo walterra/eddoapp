@@ -50,7 +50,7 @@ describe('native provider VCR boundary', () => {
   it('records and replays complete native tool calls without accessing the source model', async () => {
     const path = directory();
     const record = manager(path, 'record');
-    record.loadCassette('native-tool');
+    await record.loadCassette('native-tool');
     const first = fixture(record);
     first.provider.setResponses([
       fauxAssistantMessage(
@@ -63,9 +63,9 @@ describe('native provider VCR boundary', () => {
       ),
     ]);
     const recorded = await first.models.streamSimple(first.model, input).result();
-    record.ejectCassette();
+    await record.ejectCassette();
     const replay = manager(path, 'playback');
-    replay.loadCassette('native-tool');
+    await replay.loadCassette('native-tool');
     const second = fixture(replay);
     const source = vi.spyOn(second.source, 'streamSimple').mockImplementation(() => {
       throw new Error('Network must not run in playback');
@@ -79,17 +79,17 @@ describe('native provider VCR boundary', () => {
     expect(source).not.toHaveBeenCalled();
     expect(credentials).not.toHaveBeenCalled();
     replay.assertConsumed();
-    replay.ejectCassette();
+    await replay.ejectCassette();
   });
 
   it('fails closed on a mismatched request and leaves the cassette file unchanged', async () => {
     const path = directory();
     const record = manager(path, 'record');
-    record.loadCassette('mismatch');
+    await record.loadCassette('mismatch');
     const first = fixture(record);
     first.provider.setResponses([fauxAssistantMessage('Recorded answer')]);
     await first.models.streamSimple(first.model, input).result();
-    record.ejectCassette();
+    await record.ejectCassette();
     const filename = getCassettePath({
       cassettesDir: path,
       namespace: 'native-test',
@@ -97,7 +97,7 @@ describe('native provider VCR boundary', () => {
     });
     const before = readFileSync(filename, 'utf8');
     const replay = manager(path, 'playback');
-    replay.loadCassette('mismatch');
+    await replay.loadCassette('mismatch');
     const second = fixture(replay);
     const source = vi.spyOn(second.source, 'streamSimple');
     const result = await second.models
@@ -109,7 +109,7 @@ describe('native provider VCR boundary', () => {
     expect(result.errorMessage).toContain('No matching interaction');
     expect(source).not.toHaveBeenCalled();
     expect(() => replay.assertConsumed()).toThrow('Unconsumed');
-    replay.ejectCassette();
+    await replay.ejectCassette();
     expect(readFileSync(filename, 'utf8')).toBe(before);
   });
 
@@ -127,27 +127,27 @@ describe('native provider VCR boundary', () => {
   ])('rejects a recording made with a different $name', async ({ recorded, replayed }) => {
     const path = directory();
     const record = manager(path, 'record');
-    record.loadCassette('generation-options');
+    await record.loadCassette('generation-options');
     const first = fixture(record);
     first.provider.setResponses([fauxAssistantMessage('Recorded')]);
     await first.models.streamSimple(first.model, input, recorded).result();
-    record.ejectCassette();
+    await record.ejectCassette();
     const replay = manager(path, 'playback');
-    replay.loadCassette('generation-options');
+    await replay.loadCassette('generation-options');
     const second = fixture(replay);
     const source = vi.spyOn(second.source, 'streamSimple');
     const result = await second.models.streamSimple(second.model, input, replayed).result();
     expect(result.stopReason).toBe('error');
     expect(result.errorMessage).toContain('No matching interaction');
     expect(source).not.toHaveBeenCalled();
-    replay.ejectCassette();
+    await replay.ejectCassette();
   });
 
-  it('does not silently create missing playback recordings', () => {
+  it('does not silently create missing playback recordings', async () => {
     const path = directory();
     const replay = manager(path, 'playback');
-    expect(() => replay.loadCassette('missing')).toThrow('Cassette not found');
-    replay.ejectCassette();
+    await expect(replay.loadCassette('missing')).rejects.toThrow('Cassette not found');
+    await replay.ejectCassette();
     expect(
       existsSync(
         getCassettePath({ cassettesDir: path, namespace: 'native-test', testName: 'missing' }),
@@ -158,11 +158,11 @@ describe('native provider VCR boundary', () => {
   it('rejects old text-protocol responses instead of converting them into native tool calls', async () => {
     const path = directory();
     const record = manager(path, 'record');
-    record.loadCassette('old-format');
+    await record.loadCassette('old-format');
     const first = fixture(record);
     first.provider.setResponses([fauxAssistantMessage('Native')]);
     await first.models.streamSimple(first.model, input).result();
-    record.ejectCassette();
+    await record.ejectCassette();
     const filename = getCassettePath({
       cassettesDir: path,
       namespace: 'native-test',
@@ -172,19 +172,19 @@ describe('native provider VCR boundary', () => {
     cassette.interactions[0].response = 'TOOL_CALL: {"name":"createTodo"}';
     writeFileSync(filename, JSON.stringify(cassette));
     const replay = manager(path, 'playback');
-    replay.loadCassette('old-format');
+    await replay.loadCassette('old-format');
     const second = fixture(replay);
     const result = await second.models.streamSimple(second.model, input).result();
     expect(result.stopReason).toBe('error');
     expect(result.errorMessage).toContain('re-record');
-    replay.ejectCassette();
+    await replay.ejectCassette();
   });
 
   it('runs the actual Durable Harness through record and playback with native tools', async () => {
     const path = directory();
     const run = async (mode: 'record' | 'playback'): Promise<void> => {
       const cassettes = manager(path, mode);
-      cassettes.loadCassette('harness');
+      await cassettes.loadCassette('harness');
       const runtimeFixture = await createRuntimeFixture();
       runtimeFixture.options.client.tools = [
         {
@@ -217,7 +217,7 @@ describe('native provider VCR boundary', () => {
         cassettes.assertConsumed();
       } finally {
         await runtime.close();
-        cassettes.ejectCassette();
+        await cassettes.ejectCassette();
       }
     };
     await run('record');

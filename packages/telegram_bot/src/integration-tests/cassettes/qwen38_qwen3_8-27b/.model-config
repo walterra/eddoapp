@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "provider": "qwen38",
+  "config": {
+    "name": "Qwen3.8-27B DFlash2 (GX10)",
+    "api": "openai-completions",
+    "baseUrl": "http://192.168.1.169:30001/v1",
+    "compat": {
+      "supportsStore": false,
+      "supportsDeveloperRole": false,
+      "supportsReasoningEffort": true,
+      "supportsUsageInStreaming": true,
+      "supportsStrictMode": false,
+      "requiresReasoningContentOnAssistantMessages": true,
+      "maxTokensField": "max_tokens",
+      "thinkingFormat": "openai"
+    },
+    "models": [
+      {
+        "id": "qwen3.8-27b",
+        "name": "Qwen3.8-27B NVFP4 + DFlash2 (GX10 SGLang)",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "contextWindow": 262144,
+        "maxTokens": 64000,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": "low",
+          "low": "low",
+          "medium": "medium",
+          "high": "xhigh",
+          "xhigh": "xhigh",
+          "max": "xhigh"
+        }
+      }
+    ]
+  }
+}

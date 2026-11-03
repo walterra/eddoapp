@@ -4,6 +4,7 @@
 import { createHash } from 'crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
+import { format, resolveConfig } from 'prettier';
 
 import type { Cassette, LLMInteraction } from './cassette-manager.js';
 
@@ -126,16 +127,16 @@ export function createNewCassette(testName: string): Cassette {
   };
 }
 
-/**
- * Save cassette to file
- */
-export function saveCassetteToFile(cassettePath: string, cassette: Cassette): void {
+/** Saves cassette JSON using repository formatting without changing recorded values. */
+export async function saveCassetteToFile(cassettePath: string, cassette: Cassette): Promise<void> {
+  const config = await resolveConfig(import.meta.filename);
+  const content = await format(JSON.stringify(cassette), { ...config, filepath: cassettePath });
   const dir = dirname(cassettePath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
 
-  writeFileSync(cassettePath, JSON.stringify(cassette, null, 2));
+  writeFileSync(cassettePath, content);
   if (process.env.VCR_DEBUG) {
     console.log(`📼 Saved cassette: ${cassettePath}`);
   }

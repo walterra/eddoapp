@@ -40,7 +40,7 @@ describe('Durable VCR MCP smoke', () => {
         });
         try {
           await server.start();
-          server.loadCassette('real-mcp-round-trip');
+          await server.loadCassette('real-mcp-round-trip');
           const result = await server.executeAgent('Create a work shopping todo for Friday.');
           expect(result.success, result.message).toBe(true);
           expect(result.context.toolResults?.map((tool) => tool.toolName)).toContain('createTodo');

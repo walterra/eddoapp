@@ -69,12 +69,57 @@ Obtain approval before running record/auto mode, then verify strict playback for
 Both modes expose terminal response streams; partial-stream/restart behavior is covered by the Harness recovery tests.
 
 Set `LLM_MODEL` and provider credentials for record/auto modes. Playback needs no provider credentials.
+
+### Custom OpenAI-compatible recording models
+
+Set `EDDO_MODELS_FILE` to an explicitly trusted Pi `models.json` file.
+The VCR harness loads only the provider selected by `LLM_MODEL=provider/model`.
+Custom loading currently supports `openai-completions`; it does not load Pi extensions or OAuth credentials.
+Production Durable chat uses the same provider loader; see [owner configuration](../../../../docs/shared-assistant-operations.md#custom-models-on-the-assistant-owner).
+Recording-reviewer model loading remains unchanged.
+
+Run from the repository root with Docker available:
+
+```bash
+EDDO_MODELS_FILE="$HOME/.pi/agent/models.json" \
+LLM_MODEL=qwen38/qwen3.8-27b \
+pnpm test:integration:agent-loop:record
+```
+
+The provider supplies `baseUrl`, `api`, optional `name`, `apiKey`, `compat`, and `models`.
+Models support `id`, `name`, `reasoning`, `input`, `contextWindow`, `maxTokens`, `cost`, `thinkingLevelMap`, and `compat`.
+Model compatibility settings override matching provider settings.
+Supported compatibility fields:
+
+- `supportsStore`, `supportsDeveloperRole`, `supportsReasoningEffort`, `supportsUsageInStreaming`, and `supportsStrictMode`.
+- `requiresReasoningContentOnAssistantMessages` and `maxTokensField`.
+- `thinkingFormat`: `openai`, `qwen`, `qwen-chat-template`, `chat-template`, or `deepseek`.
+
+Unsupported fields fail validation rather than silently changing request behavior.
+API keys accept literals, `$VARIABLE`, `${VARIABLE}`, or Pi's `!command` syntax.
+Credential commands execute only when live generation starts, with a ten-second timeout.
+Only load trusted configuration: credential commands execute with the test process's permissions.
+
+Record and auto modes write a credential-free `.model-config` sidecar beside the selected model's cassettes.
+Review and commit that sidecar together with the recordings.
+It retains the endpoint, model capabilities, reasoning mappings, and compatibility settings.
+It excludes API keys, credential commands, authentication headers, and unrelated providers.
+Review endpoint paths for confidential information before committing.
+
+```bash
+pnpm test:integration:agent-loop:playback
+```
+
+Playback loads custom models from their sidecars and ignores `EDDO_MODELS_FILE`.
+It requires neither GX10 access nor local credential files.
+Re-recording requires the trusted configuration again; the sidecar cannot authorize live requests.
 The wrapper only resolves real credentials when a recording is required. Missing/mismatched playback fails without a source-model call.
 Only `Date` is frozen during replay; network timers and the Durable scheduler continue running.
 `VCR_DEBUG=1` prints hash diagnostics.
 
 Native cassettes replace legacy recordings in `cassettes/<model>/`; no separate runtime namespace exists.
 Anthropic models retain unqualified directory names, such as `claude-sonnet-4-5-20250929`. Other providers use sanitized provider/model names, such as `openai_gpt-5_2`.
+The shared cassette writer applies repository Prettier configuration before saving recordings in record and auto modes.
 Record mode replaces the selected model's recordings. Git retains prior text-protocol versions; incompatible response formats fail validation.
 CI always runs behavioral playback. The standalone playback command fails if no model recordings exist.
 
