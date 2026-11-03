@@ -79,10 +79,17 @@ async function runPlaybackForAllModels(): Promise<void> {
   }
 
   console.log(`📼 Found ${models.length} VCR model cassette set(s): ${models.join(', ')}`);
+  const results = [];
   for (const model of models) {
     const exitCode = await runPlaybackForModel(model);
-    if (exitCode !== 0) process.exit(exitCode);
+    results.push({ model, exitCode });
   }
+
+  console.log('\n📼 VCR playback summary:');
+  for (const { model, exitCode } of results) {
+    console.log(`  ${exitCode === 0 ? 'PASS' : 'FAIL'} ${model} (exit code: ${exitCode})`);
+  }
+  if (results.some(({ exitCode }) => exitCode !== 0)) process.exitCode = 1;
 }
 
 runPlaybackForAllModels().catch((error) => {

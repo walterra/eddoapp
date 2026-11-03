@@ -122,6 +122,7 @@ Anthropic models retain unqualified directory names, such as `claude-sonnet-4-5-
 The shared cassette writer applies repository Prettier configuration before saving recordings in record and auto modes.
 Record mode replaces the selected model's recordings. Git retains prior text-protocol versions; incompatible response formats fail validation.
 CI always runs behavioral playback. The standalone playback command fails if no model recordings exist.
+Playback runs every recorded model, prints per-model results, and exits nonzero if any model fails.
 
 The completion workflow remains skipped in playback because recorded tool arguments can reference IDs created by a different database run.
 All other scenarios verify live test database state rather than exact answer phrasing. Test shutdown verifies that every recorded interaction was consumed.
