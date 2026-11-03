@@ -4,7 +4,7 @@ import { resolveCustomApiKey } from './custom_model_auth.js';
 
 afterEach(() => vi.unstubAllEnvs());
 
-describe('custom recording credentials', () => {
+describe('custom model credentials', () => {
   it('resolves environment interpolation and literals', async () => {
     vi.stubEnv('LOCAL_MODEL_KEY', 'test-key');
     expect(await resolveCustomApiKey('${LOCAL_MODEL_KEY}')).toBe('test-key');

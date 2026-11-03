@@ -1,10 +1,10 @@
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
-import { builtinModels } from '@earendil-works/pi-ai/providers/all';
 import { parseLlmSettings } from '@eddo/assistant-server/llm_options';
 import type { DurableRuntime } from '@eddo/assistant-server/runtime';
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { Bot } from 'grammy';
 import { openCouchDbStorage } from 'pi-durable-couchdb';
+import { configuredModels } from '../ai/custom_models.js';
 import { resolveConfiguredModel } from '../ai/llm-model-resolution.js';
 import type { BotContext } from '../bot/bot.js';
 import { getMCPClient, scopeMCPIntegration } from '../mcp/client.js';
@@ -21,7 +21,10 @@ import { printDurableReport } from './report_delivery.js';
 import type { DurableRuntimeOptions } from './runtime.js';
 import { sendTelegramText } from './telegram_send.js';
 
-const models = builtinModels();
+const models = configuredModels({
+  modelName: appConfig.LLM_MODEL,
+  configPath: appConfig.EDDO_MODELS_FILE,
+});
 
 /** Validates provider credentials before starting recovery or internal admission. */
 export async function validateHostModel(): Promise<void> {

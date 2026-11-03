@@ -42,6 +42,83 @@ pnpm dev:telegram-bot    # Sole assistant owner; separate terminal
 Do not start a second owner when the existing supervisor already runs one.
 The coding agent does not start, restart, or stop these development services.
 
+## Custom models on the assistant owner
+
+Set these server-only variables to select a trusted Pi-compatible provider configuration:
+
+```bash
+EDDO_MODELS_FILE=/absolute/path/to/models.json
+LLM_MODEL=qwen38/qwen3.8-27b
+LLM_MAX_TOKENS=4096
+LLM_REASONING_EFFORT=low
+```
+
+The shared loader supports OpenAI Chat Completions providers with `api: "openai-completions"`.
+It loads only the selected provider and model; unrelated Pi providers and extensions remain unloaded.
+Without `EDDO_MODELS_FILE`, built-in provider behavior remains unchanged.
+Web chat, Telegram chat, and scheduled reports use the same configured model collection.
+
+For GX10, reuse the trusted Pi configuration containing the Qwen endpoint and compatibility settings.
+Alternatively, provision a server-owned configuration:
+
+```json
+{
+  "providers": {
+    "qwen38": {
+      "api": "openai-completions",
+      "baseUrl": "http://192.168.1.169:30001/v1",
+      "apiKey": "$QWEN_API_KEY",
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": true,
+        "supportsUsageInStreaming": true,
+        "maxTokensField": "max_tokens",
+        "supportsStrictMode": false,
+        "thinkingFormat": "openai",
+        "requiresReasoningContentOnAssistantMessages": true
+      },
+      "models": [
+        {
+          "id": "qwen3.8-27b",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 262144,
+          "maxTokens": 64000,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "low",
+            "low": "low",
+            "medium": "medium",
+            "high": "xhigh",
+            "xhigh": "xhigh",
+            "max": "xhigh"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Supply `QWEN_API_KEY` through the owner's secret environment; do not commit its value.
+The configured model limits describe endpoint capabilities; `LLM_MAX_TOKENS` controls the requested answer budget.
+Unknown configuration fields fail validation rather than silently changing request behavior.
+See the [supported schema](../packages/telegram_bot/src/ai/custom_model_schema.ts) for accepted fields.
+
+Only load trusted, operator-controlled files.
+API keys support literals, environment interpolation, and Pi's `!command` credential syntax.
+Commands execute with owner permissions and a ten-second timeout.
+Credential validation runs before journal recovery and repeats when opening user runtimes and sending model requests.
+The configuration file loads at process startup; credential expressions resolve again when authentication runs.
+
+Containers require read-only configuration and credential mounts with container-visible paths.
+The owner must reach the configured endpoint; never expose model credentials to the browser.
+Production does not read or write VCR sidecars and does not depend on recording helpers.
+
+Stop the existing owner before restarting it with these settings.
+Follow the deployment sequence below; never run two owners against the same journals.
+
 ## Deploy and restart
 
 1. Run `pnpm check:commit`, `pnpm test:unit`, and `pnpm test:integration:durable`.

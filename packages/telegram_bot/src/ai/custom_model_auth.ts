@@ -3,9 +3,9 @@ import { promisify } from 'node:util';
 
 const execute = promisify(exec);
 
-/** Resolves explicitly trusted Pi credential expressions only when generation starts. */
+/** Resolves trusted Pi credential expressions during credential validation or live requests. */
 export async function resolveCustomApiKey(expression: string | undefined): Promise<string> {
-  if (!expression) throw new Error('Custom provider requires apiKey for recording');
+  if (!expression) throw new Error('Custom provider requires apiKey');
   if (expression.startsWith('!')) {
     try {
       const result = await execute(expression.slice(1), { timeout: 10000, maxBuffer: 65536 });

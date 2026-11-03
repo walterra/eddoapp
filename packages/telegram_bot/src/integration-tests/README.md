@@ -75,7 +75,8 @@ Set `LLM_MODEL` and provider credentials for record/auto modes. Playback needs n
 Set `EDDO_MODELS_FILE` to an explicitly trusted Pi `models.json` file.
 The VCR harness loads only the provider selected by `LLM_MODEL=provider/model`.
 Custom loading currently supports `openai-completions`; it does not load Pi extensions or OAuth credentials.
-Production bot configuration and recording-reviewer model loading remain unchanged.
+Production Durable chat uses the same provider loader; see [owner configuration](../../../../docs/shared-assistant-operations.md#custom-models-on-the-assistant-owner).
+Recording-reviewer model loading remains unchanged.
 
 Run from the repository root with Docker available:
 

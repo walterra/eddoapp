@@ -9,6 +9,7 @@ dotenvLoad();
 const TelegramConfigSchema = z
   .object({
     TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
+    EDDO_MODELS_FILE: z.string().trim().min(1).optional(),
     ASSISTANT_INTERNAL_TOKEN: z.string().min(32).optional(),
     ASSISTANT_INTERNAL_PORT: z.coerce.number().int().min(1).max(65535).default(3003),
     WEB_API_BASE_URL: z

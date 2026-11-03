@@ -1,20 +1,13 @@
-import type { Model } from '@earendil-works/pi-ai';
-import { stream, streamSimple } from '@earendil-works/pi-ai/api/openai-completions';
-import { createProvider, type Models } from '@earendil-works/pi-ai/models';
+import type { Models } from '@earendil-works/pi-ai/models';
 import { builtinModels } from '@earendil-works/pi-ai/providers/all';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { z } from 'zod';
+import type { CustomProviderConfig } from '../../ai/custom_model_schema.js';
+import { createCustomProvider, loadCustomProvider } from '../../ai/custom_models.js';
 
 import { getCassettePath } from './cassette-helpers.js';
 import type { RecordMode } from './cassette-types.js';
-import { resolveCustomApiKey } from './custom_model_auth.js';
-import {
-  customProviderSchema,
-  portableModelSchema,
-  type CustomProviderConfig,
-  type PortableModelConfig,
-} from './custom_model_schema.js';
+import { portableModelSchema, type PortableModelConfig } from './custom_model_schema.js';
 
 interface RecordingModelsOptions {
   modelName: string;
@@ -37,23 +30,6 @@ function portablePath(options: RecordingModelsOptions): string {
   );
 }
 
-/** Loads only the explicitly selected provider, ignoring unrelated personal configuration. */
-function selectedConfig(options: RecordingModelsOptions): CustomProviderConfig | undefined {
-  if (!options.configPath) return undefined;
-  const file = z
-    .object({ providers: z.record(z.string(), z.unknown()) })
-    .parse(JSON.parse(readFileSync(options.configPath, 'utf8')));
-  const provider = options.modelName.slice(0, options.modelName.indexOf('/'));
-  const selected = file.providers[provider];
-  if (!selected) return undefined;
-  const result = customProviderSchema.safeParse(selected);
-  if (!result.success)
-    throw new Error(
-      'Unsupported custom provider configuration; use OpenAI Chat Completions and documented compatibility fields',
-    );
-  return result.data;
-}
-
 /** Removes credentials and unrelated models before publishing portable metadata. */
 function portableConfig(
   options: RecordingModelsOptions,
@@ -72,23 +48,11 @@ function portableConfig(
   });
 }
 
-/** Builds native Pi API models with provider and model compatibility settings preserved. */
-function modelDeclarations(portable: PortableModelConfig): Model<'openai-completions'>[] {
-  return portable.config.models.map((model) => ({
-    ...model,
-    name: model.name ?? model.id,
-    provider: portable.provider,
-    api: portable.config.api,
-    baseUrl: portable.config.baseUrl,
-    compat: { ...portable.config.compat, ...model.compat },
-  }));
-}
-
 /** Registers custom recording models while keeping playback independent of keys and local files. */
 export function recordingModels(options: RecordingModelsOptions): Models {
   const models = builtinModels();
   const path = portablePath(options);
-  const config = options.mode === 'playback' ? undefined : selectedConfig(options);
+  const config = options.mode === 'playback' ? undefined : loadCustomProvider(options);
   const portable = config
     ? portableConfig(options, config)
     : existsSync(path)
@@ -99,19 +63,7 @@ export function recordingModels(options: RecordingModelsOptions): Models {
   if (expected !== options.modelName || portable.config.models.length !== 1)
     throw new Error('Portable model configuration does not match the selected model');
   models.setProvider(
-    createProvider({
-      id: portable.provider,
-      name: portable.config.name,
-      baseUrl: portable.config.baseUrl,
-      models: modelDeclarations(portable),
-      auth: {
-        apiKey: {
-          name: 'Custom recording provider',
-          resolve: async () => ({ auth: { apiKey: await resolveCustomApiKey(config?.apiKey) } }),
-        },
-      },
-      api: { stream, streamSimple },
-    }),
+    createCustomProvider(portable.provider, { ...portable.config, apiKey: config?.apiKey }),
   );
   if (config) {
     mkdirSync(dirname(path), { recursive: true });
