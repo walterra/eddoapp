@@ -14,6 +14,8 @@ import {
   waitForServerReady,
 } from './integration-test-helpers.js';
 
+import { registerRunnerCleanup } from './integration_process_cleanup.js';
+
 const DEFAULT_TEST_DB = 'eddo_test';
 
 /**
@@ -45,6 +47,16 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
   let serverProcess: ServerProcess | undefined;
   let containerSetup: ContainerSetup | undefined;
   let testExitCode = 0;
+  const cleanup = registerRunnerCleanup(async () => {
+    if (serverProcess) {
+      await stopMcpServer(serverProcess);
+    }
+
+    if (containerSetup) {
+      console.log('🐳 Stopping CouchDB testcontainer...');
+      await containerSetup.teardown();
+    }
+  });
 
   try {
     // Keep MCP's test registry and the production user lookup on the same disposable namespace.
@@ -61,24 +73,22 @@ async function runTelegramBotIntegrationTests(): Promise<void> {
 
     console.log(`🧪 Running telegram-bot integration tests against ${serverProcess.url}...`);
 
-    testExitCode = await runTestProcess('@eddo/telegram-bot', 'test:integration', {
-      COUCHDB_URL: containerSetup.url,
-      MCP_SERVER_URL: serverProcess.url,
-      MCP_SERVER_PORT: serverProcess.port.toString(),
-      NODE_ENV: 'test',
-      COUCHDB_DB_NAME: DEFAULT_TEST_DB,
-      DATABASE_TEST_PREFIX: DEFAULT_TEST_DB,
-      COUCHDB_API_KEY: '',
-    }, process.argv.slice(2).filter((argument) => argument !== '--'));
+    testExitCode = await runTestProcess(
+      '@eddo/telegram-bot',
+      'test:integration',
+      {
+        COUCHDB_URL: containerSetup.url,
+        MCP_SERVER_URL: serverProcess.url,
+        MCP_SERVER_PORT: serverProcess.port.toString(),
+        NODE_ENV: 'test',
+        COUCHDB_DB_NAME: DEFAULT_TEST_DB,
+        DATABASE_TEST_PREFIX: DEFAULT_TEST_DB,
+        COUCHDB_API_KEY: '',
+      },
+      process.argv.slice(2).filter((argument) => argument !== '--'),
+    );
   } finally {
-    if (serverProcess) {
-      await stopMcpServer(serverProcess);
-    }
-
-    if (containerSetup) {
-      console.log('🐳 Stopping CouchDB testcontainer...');
-      await containerSetup.teardown();
-    }
+    await cleanup();
   }
 
   process.exit(testExitCode);
