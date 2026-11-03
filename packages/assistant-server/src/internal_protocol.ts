@@ -41,6 +41,7 @@ export interface InternalAssistantOperations {
   pending: (input: InternalPendingQuery) => Promise<AssistantPendingRequests>;
   admit: (input: InternalAdmission) => Promise<AssistantRequestStatus>;
   status: (input: InternalStatusQuery) => Promise<AssistantRequestStatus | null>;
+  cancel: (input: InternalStatusQuery) => Promise<AssistantRequestStatus>;
 }
 
 /** Carries a bounded service error without forwarding provider or infrastructure diagnostics. */

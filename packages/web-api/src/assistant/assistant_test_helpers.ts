@@ -23,6 +23,7 @@ export function assistantServiceFixture(): AssistantService {
     host: {
       pending: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
       admit: vi.fn().mockResolvedValue(receipt),
+      cancel: vi.fn().mockResolvedValue({ ...receipt, status: 'aborted' }),
       status: vi.fn().mockResolvedValue(receipt),
     },
     store: {

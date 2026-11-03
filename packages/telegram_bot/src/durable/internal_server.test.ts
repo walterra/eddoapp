@@ -25,6 +25,7 @@ it('serves authenticated admission on an ephemeral loopback listener', async () 
     token,
     admit,
     status: vi.fn(),
+    cancel: vi.fn(),
     pending: vi.fn(),
   });
   servers.push(server);
@@ -46,6 +47,7 @@ describe('internal listener configuration', () => {
         token: '',
         admit: vi.fn(),
         status: vi.fn(),
+        cancel: vi.fn(),
         pending: vi.fn(),
       }),
     ).rejects.toThrow('32');

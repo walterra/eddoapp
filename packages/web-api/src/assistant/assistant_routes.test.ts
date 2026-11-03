@@ -31,6 +31,40 @@ async function fixture() {
 }
 
 describe('authenticated assistant routes', () => {
+  it('forwards explicit cancellation only for the JWT account without replaying admission', async () => {
+    const test = await fixture();
+    const response = await test.app.request(
+      `/api/assistant/requests/${encodeURIComponent(durableRequestId)}/cancel`,
+      { method: 'POST', headers: test.headers },
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ...receipt, status: 'aborted' });
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(test.service.host.cancel).toHaveBeenCalledExactlyOnceWith('alice', durableRequestId);
+    expect(test.service.host.admit).not.toHaveBeenCalled();
+  });
+  it.each([`web:bob:${submissionId}`, 'telegram:123:1', 'web:alice:not-a-uuid'])(
+    'rejects foreign or invalid cancellation IDs: %s',
+    async (id) => {
+      const test = await fixture();
+      const response = await test.app.request(
+        `/api/assistant/requests/${encodeURIComponent(id)}/cancel`,
+        { method: 'POST', headers: test.headers },
+      );
+      expect(response.status).toBe(403);
+      expect(test.service.host.cancel).not.toHaveBeenCalled();
+    },
+  );
+  it('rejects missing and revoked cancellation authorization', async () => {
+    const test = await fixture();
+    const path = `/api/assistant/requests/${encodeURIComponent(durableRequestId)}/cancel`;
+    expect((await test.app.request(path, { method: 'POST' })).status).toBe(401);
+    vi.mocked(test.service.authorize).mockRejectedValue(new AssistantApiError(403, 'forbidden'));
+    expect((await test.app.request(path, { method: 'POST', headers: test.headers })).status).toBe(
+      403,
+    );
+    expect(test.service.host.cancel).not.toHaveBeenCalled();
+  });
   it('discovers pending work only for the JWT account without admitting requests', async () => {
     const test = await fixture();
     const page = { requests: [receipt], hasMore: false };

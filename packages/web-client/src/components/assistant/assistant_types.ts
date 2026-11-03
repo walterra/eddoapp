@@ -34,6 +34,7 @@ export interface AssistantPendingRequest {
   conversationId: string | null;
   projectionIds: AssistantProjectionIds;
   receipt?: AssistantRequestStatus;
+  cancelRequested?: boolean;
 }
 export type AssistantConnection = 'connecting' | 'connected' | 'reconnecting' | 'blocked';
 export interface AssistantSnapshot {
@@ -43,6 +44,7 @@ export interface AssistantSnapshot {
   loading: boolean;
   loadingOlder: boolean;
   submitting: boolean;
+  cancelling?: boolean;
   connection: AssistantConnection;
   pending: AssistantPendingRequest | null;
   sharedRequests?: AssistantRequestStatus[];
@@ -65,6 +67,7 @@ export interface AssistantBrowserClient {
   history: (cursor?: string, signal?: AbortSignal) => Promise<AssistantHistoryPage>;
   admit: (pending: AssistantPendingRequest) => Promise<AssistantRequestStatus>;
   status: (requestId: string, signal?: AbortSignal) => Promise<AssistantRequestStatus | null>;
+  cancel: (requestId: string) => Promise<AssistantRequestStatus>;
   stream: (request: AssistantStreamRequest) => Promise<void>;
 }
 export interface AssistantPendingStore {
@@ -86,6 +89,7 @@ export interface AssistantSession {
   stop: () => void;
   send: (text: string) => Promise<void>;
   retry: () => Promise<void>;
+  cancel: () => Promise<void>;
   refresh: () => Promise<void>;
   loadOlder: () => Promise<void>;
   dismiss: () => void;

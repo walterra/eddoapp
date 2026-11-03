@@ -122,6 +122,13 @@ export function admitWebAssistantMessage(
   return webOperations.admit(input);
 }
 
+/** Cancels through the existing owner without creating another Harness or replaying admission. */
+export function cancelWebAssistantRequest(
+  input: InternalStatusQuery,
+): Promise<AssistantRequestStatus> {
+  return webOperations.cancel(input);
+}
+
 /** Reads durable status without creating a second journal reader or execution owner. */
 export function getWebAssistantRequestStatus(
   input: InternalStatusQuery,

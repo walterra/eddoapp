@@ -29,6 +29,7 @@ function fixture() {
     close: vi.fn(),
     closed: Promise.resolve({ kind: 'closed' }),
     getPendingRequests: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
+    cancelRequest: vi.fn().mockResolvedValue({ ...receipt, status: 'aborted' }),
     getRequestStatus: vi.fn().mockResolvedValue(receipt),
   };
   const dependencies = {
@@ -44,6 +45,27 @@ beforeEach(() => {
 });
 
 describe('web admission into the existing assistant owner', () => {
+  it('cancels through the existing owner using original routing without replaying admission', async () => {
+    const test = fixture();
+    const query = { username: 'alice', requestId: test.receipt.requestId };
+    expect((await test.operations.cancel(query)).status).toBe('aborted');
+    expect(test.runtime.cancelRequest).toHaveBeenCalledExactlyOnceWith(query.requestId, 'original');
+    expect(test.dependencies.conversationId).not.toHaveBeenCalled();
+    expect(test.runtime.enqueue).not.toHaveBeenCalled();
+  });
+  it('resolves missing cancellation routing on the server and rejects revoked or foreign identities', async () => {
+    const test = fixture();
+    const query = { username: 'alice', requestId: test.receipt.requestId };
+    vi.mocked(test.runtime.getRequestStatus).mockResolvedValue(null);
+    await test.operations.cancel(query);
+    expect(test.runtime.cancelRequest).toHaveBeenCalledWith(query.requestId, 'active');
+    await expect(
+      test.operations.cancel({ ...query, requestId: 'web:bob:foreign' }),
+    ).rejects.toMatchObject({ status: 403 });
+    authorization.mockRejectedValue(new AssistantAuthorizationError('revoked'));
+    await expect(test.operations.cancel(query)).rejects.toMatchObject({ status: 403 });
+    expect(test.runtime.cancelRequest).toHaveBeenCalledOnce();
+  });
   it('discovers channel-neutral pending work only after fresh account authorization', async () => {
     const test = fixture();
     const page = { requests: [{ ...test.receipt, requestId: 'telegram:bot:1' }], hasMore: false };

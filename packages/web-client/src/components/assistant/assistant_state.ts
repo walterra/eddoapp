@@ -118,6 +118,7 @@ export function createAssistantState(options: AssistantStateOptions): AssistantS
       loading: true,
       loadingOlder: false,
       submitting: false,
+      cancelling: false,
       connection: 'connecting',
       pending: null,
       error: null,

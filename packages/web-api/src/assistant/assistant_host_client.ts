@@ -29,7 +29,7 @@ function hostFailure(status: number): never {
 }
 
 interface HostCall {
-  path: 'admit' | 'status';
+  path: 'admit' | 'status' | 'cancel';
   body: unknown;
   expectedId: string;
   signal?: AbortSignal;
@@ -88,6 +88,15 @@ export function createAssistantHostClient(options: AssistantHostOptions): Assist
         path: 'admit',
         body: { username, requestId: input.requestId, text: input.text },
         expectedId: `web:${username}:${input.requestId}`,
+      });
+      if (!result) throw new AssistantApiError(503, 'unavailable');
+      return result;
+    },
+    cancel: async (username, requestId) => {
+      const result = await callHost(options, {
+        path: 'cancel',
+        body: { username, requestId },
+        expectedId: requestId,
       });
       if (!result) throw new AssistantApiError(503, 'unavailable');
       return result;

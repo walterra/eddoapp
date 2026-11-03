@@ -36,7 +36,7 @@ Never open journals inside web-api or start another host on a different port aga
 Recovery includes active accounts with current MCP credentials, including accounts without Telegram links.
 Concurrent channel requests share one opening promise and the existing native conversation queue.
 Failed or closed handles leave the cache; the 30-second recovery cycle retries opening.
-Admission and status reject requests after host shutdown begins.
+Admission, status, and cancellation reject requests after host shutdown begins.
 Shutdown closes internal transport before closing journals and MCP dispatch.
 
 Web-only accounts require no fabricated Telegram identifiers.
@@ -99,6 +99,26 @@ States include `queued`, `working`, `delivering`, `projecting`, `completed`, `fa
 Native queued submissions report `queued`, including behind another channel's generation.
 Unknown requests return `404`; cross-account request identifiers return `403`.
 Status reads do not admit messages, repeat tools, or return private journal records.
+
+### Cancel one web request
+
+`POST /internal/assistant/cancel` uses the status query body and the same service authentication.
+Fresh account authorization precedes access; identifiers must belong to the account's web namespace.
+The existing runtime serializes cancellation with admission and persists an additive identity fence before aborting.
+An unknown identity returns an `aborted` receipt without creating a model submission or request task.
+Late admission cannot bypass the fence. Accepted payload conflicts retain their existing `409` behavior.
+
+Queued cancellation withdraws the matching native submission.
+Active cancellation aborts the request task and the native run that exclusively owns its input.
+A shared-input native run fails closed rather than stopping another request.
+Native abort handlers settle before cancellation acknowledgment; unfinished cancellation remains `working` in status and pending discovery.
+An idempotent cancellation audit write contributes no model text and advances other already-accepted inbox inputs after abort.
+The host never aborts the whole conversation, withdraws unrelated queued work, or reverses completed external effects.
+Completed and failed requests retain their terminal outcome.
+
+Startup marks unfinished cancellation targets before recovered task execution resumes, then finishes their persisted cancellation checkpoints.
+Cancelled identities remain fenced across owner restart and active-conversation changes.
+Retry ambiguous cancellation through this endpoint, never by replaying admission.
 
 ### Discover account-owned pending work
 

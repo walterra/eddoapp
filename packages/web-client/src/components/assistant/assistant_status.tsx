@@ -24,7 +24,7 @@ const states: Record<AssistantRequestState, string> = {
   aborted: 'Request stopped',
 };
 const button =
-  'rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-primary-300 dark:hover:bg-neutral-700';
+  'rounded px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-wait disabled:opacity-50 dark:text-primary-300 dark:hover:bg-neutral-700';
 interface AssistantStatusProps {
   state: AssistantSnapshot;
   session: AssistantSession;
@@ -60,29 +60,60 @@ function description(state: AssistantSnapshot): string {
     return 'Review task state before repeating mutations.';
   if (isTerminalAssistantRequest(status))
     return 'Refresh or load earlier messages to locate this reply.';
-  return 'Accepted work continues when this sidebar closes.';
+  if (state.pending?.cancelRequested)
+    return 'Retry cancellation to confirm it. Do not resend the message.';
+  return 'Closing this sidebar does not stop work. Cancelling cannot undo completed tool actions.';
 }
 function label(state: AssistantSnapshot): string {
-  if (state.submitting) return 'Sending…';
+  if (state.cancelling) return 'Cancelling…';
   const status = state.pending?.receipt?.status;
+  if (status && isTerminalAssistantRequest(status)) return states[status];
+  if (state.pending?.cancelRequested) return 'Cancellation pending';
+  if (state.submitting) return 'Sending…';
   return status ? states[status] : 'Awaiting confirmation';
+}
+function CancelAction({ state, session }: PendingNoticeProps) {
+  return (
+    <button
+      className={button}
+      disabled={state.cancelling}
+      onClick={() => void session.cancel()}
+      type="button"
+    >
+      {state.cancelling
+        ? 'Cancelling…'
+        : state.pending?.cancelRequested
+          ? 'Retry cancellation'
+          : 'Cancel request'}
+    </button>
+  );
 }
 function PendingActions({ state, session }: PendingNoticeProps) {
   if (isTerminalAssistantRequest(state.pending?.receipt?.status))
     return (
-      <button className={button} onClick={session.dismiss} type="button">
+      <button
+        className={button}
+        disabled={state.cancelling}
+        onClick={session.dismiss}
+        type="button"
+      >
         Dismiss notice
       </button>
     );
   return (
-    <button
-      className={button}
-      disabled={state.submitting}
-      onClick={() => void session.retry()}
-      type="button"
-    >
-      {state.pending?.receipt ? 'Check status' : 'Check / retry same request'}
-    </button>
+    <div className="flex items-center gap-1">
+      {!state.pending?.cancelRequested && (
+        <button
+          className={button}
+          disabled={state.submitting || state.cancelling}
+          onClick={() => void session.retry()}
+          type="button"
+        >
+          {state.pending?.receipt ? 'Check status' : 'Check / retry same request'}
+        </button>
+      )}
+      <CancelAction session={session} state={state} />
+    </div>
   );
 }
 function PendingNotice({ state, session }: PendingNoticeProps) {

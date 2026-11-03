@@ -54,6 +54,22 @@ async function status(
   return (await dependencies.runtime(input.username)).getRequestStatus(input.requestId);
 }
 
+/** Authorizes cancellation before reaching the sole owner's persisted admission fence. */
+async function cancel(
+  dependencies: WebHostDependencies,
+  input: InternalStatusQuery,
+): Promise<AssistantRequestStatus> {
+  await resolveAssistantAccount({ username: input.username });
+  if (!input.requestId.startsWith(`web:${input.username}:`))
+    throw new InternalAssistantError(403, 'forbidden');
+  const runtime = await dependencies.runtime(input.username);
+  const previous = await runtime.getRequestStatus(input.requestId);
+  return runtime.cancelRequest(
+    input.requestId,
+    previous?.conversationId ?? (await dependencies.conversationId(input.username)),
+  );
+}
+
 /** Shares the existing runtime cache for web admission and status without another execution owner. */
 export function createWebHostOperations(
   dependencies: WebHostDependencies,
@@ -70,6 +86,13 @@ export function createWebHostOperations(
     admit: async (input) => {
       try {
         return await admit(dependencies, input);
+      } catch (error) {
+        return serviceError(error);
+      }
+    },
+    cancel: async (input) => {
+      try {
+        return await cancel(dependencies, input);
       } catch (error) {
         return serviceError(error);
       }

@@ -18,6 +18,20 @@ export const RequestMap = defineDoc({
   initial: (): { tasks: Record<string, TaskId<string>> } => ({ tasks: {} }),
 });
 
+export type RequestCancellation = {
+  conversationId: string;
+  confirmed: boolean;
+};
+
+/** Fences cancelled identities against late admissions and resumes unfinished aborts after recovery. */
+export const RequestCancellations = defineDoc({
+  kind: 'eddo.request-cancellations',
+  checkpointWhen: () => true,
+  version: 1,
+  scope: 'session',
+  initial: (): { requests: Record<string, RequestCancellation> } => ({ requests: {} }),
+});
+
 export const RequestPayloads = defineDoc({
   kind: 'eddo.request-payloads',
   checkpointWhen: () => true,

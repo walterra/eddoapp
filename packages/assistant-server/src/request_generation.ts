@@ -58,7 +58,8 @@ async function waitForAnswer(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Math.max(0, deadline - Date.now()));
   try {
-    const settled = await submission.wait(withAbortSignal(controller.signal, context));
+    const signal = AbortSignal.any([controller.signal, runtime.signal]);
+    const settled = await submission.wait(withAbortSignal(signal, context));
     if (settled.status !== 'done' || settled.type !== 'input')
       return {
         answer:
@@ -113,7 +114,7 @@ async function finishExpiredSubmission(
   context: Context,
 ): Promise<GenerationResult> {
   await submission.abort(context);
-  const settled = await submission.wait(context);
+  const settled = await submission.wait(withAbortSignal(runtime.signal, context));
   if (settled.type === 'input' && settled.status === 'done')
     return answerText(await runtime.entry(settled.answer, context));
   return {
