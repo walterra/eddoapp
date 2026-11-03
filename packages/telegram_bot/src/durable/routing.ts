@@ -40,7 +40,7 @@ export async function executeAgentMessage(text: string, ctx: BotContext): Promis
 /** Returns runtime identity without opening a journal or admitting work. */
 export function getAgentStatus(): DurableAgentStatus {
   return {
-    version: '1.3.0',
+    version: '1.5.0',
     workflowType: 'Pi Durable',
     model: appConfig.LLM_MODEL,
     uptime: process.uptime(),

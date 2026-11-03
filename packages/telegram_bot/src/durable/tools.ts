@@ -1,5 +1,5 @@
 import type { Context } from '@earendil-works/chord';
-import type { TSchema } from '@earendil-works/pi-ai';
+
 import {
   defineExtension,
   defineTool,
@@ -143,7 +143,7 @@ function bridgeTool(tool: MCPTool, options: ToolBridgeOptions): ToolRegistration
   return defineTool({
     name: tool.name,
     description: tool.description,
-    parameters: tool.inputSchema as TSchema,
+    parameters: tool.inputSchema,
     replay: isReplaySafe(tool.name) ? 'safe' : undefined,
     execute: async (args, api, context) => {
       const permission = await consumeToolBudget(api, context);

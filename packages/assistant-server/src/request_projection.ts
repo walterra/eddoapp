@@ -20,7 +20,10 @@ export async function projectRequest(
   dependencies: Pick<RequestDependencies, 'authorize' | 'project'>,
 ): Promise<void> {
   const checkpoint = task.state.checkpoint;
-  if (checkpoint.retryAt) await runtime.sleep(checkpoint.retryAt, context);
+  if (checkpoint.retryAt && checkpoint.retryAt > Date.now()) {
+    await runtime.sleepUntil(checkpoint.retryAt, checkpoint, context);
+    return;
+  }
   await dependencies.authorize(task.input);
   try {
     await dependencies.project(task.input, checkpoint.answer);

@@ -120,7 +120,10 @@ describe('reports in the interactive Durable conversation', () => {
     expect(fixture.options.print).toHaveBeenCalledOnce();
     expect(fixture.options.send).toHaveBeenCalledOnce();
     expect(fixture.options.onReport).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'printer offline' }),
+      expect.objectContaining({
+        kind: 'task_error',
+        error: expect.objectContaining({ message: 'printer offline' }),
+      }),
     );
   });
 

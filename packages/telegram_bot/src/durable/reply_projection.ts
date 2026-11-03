@@ -12,7 +12,10 @@ export async function projectReplyBeforeDelivery(
 ): Promise<boolean> {
   const checkpoint = task.state.checkpoint;
   if (!dependencies.projectAccepted || checkpoint.projected) return false;
-  if (checkpoint.retryAt) await runtime.sleep(checkpoint.retryAt, context);
+  if (checkpoint.retryAt && checkpoint.retryAt > Date.now()) {
+    await runtime.sleepUntil(checkpoint.retryAt, checkpoint, context);
+    return true;
+  }
   await dependencies.authorize(task.input);
   try {
     await dependencies.project(task.input, checkpoint.answer);

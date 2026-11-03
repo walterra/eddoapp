@@ -8,6 +8,7 @@ type MutationIdentity = {
 };
 const MutationNamespace = defineDoc({
   kind: 'eddo.mutation-namespace',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'session',
   initial: (): MutationIdentity => ({ id: randomUUID() }),

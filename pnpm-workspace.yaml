@@ -38,4 +38,4 @@ allowBuilds:
   unrs-resolver: true
 
 minimumReleaseAgeExclude:
-  - pi-durable-couchdb@0.0.1
+  - pi-durable-couchdb@0.0.2

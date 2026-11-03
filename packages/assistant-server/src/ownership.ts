@@ -9,6 +9,7 @@ type RuntimeOwnerRecord = {
 
 const RuntimeOwner = defineDoc({
   kind: 'eddo.owner',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'session',
   initial: (): RuntimeOwnerRecord => ({ username: '' }),

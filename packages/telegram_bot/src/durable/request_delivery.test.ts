@@ -29,7 +29,7 @@ function fixture(overrides: Partial<DeliveryCheckpoint> = {}) {
   const runtime = {
     signal: new AbortController().signal,
     report: vi.fn(),
-    sleep,
+    sleepUntil: sleep,
     commit: async (update: Parameters<RequestRuntime['commit']>[0]) => {
       const tx = { doc: vi.fn().mockResolvedValue({ ids: {} }) } as unknown as Tx;
       const state = await update(tx, task);
@@ -80,12 +80,9 @@ describe('bounded delivery checkpoints', () => {
     vi.spyOn(Date, 'now').mockReturnValue(10_000);
     const test = fixture({ retryAt: 30_000, attempts: 1 });
     await deliverAnswer(test.task, test.runtime, BACKGROUND_CONTEXT, test.dependencies);
-    expect(test.sleep).toHaveBeenCalledWith(30_000, BACKGROUND_CONTEXT);
+    expect(test.sleep).toHaveBeenCalledWith(30_000, test.task.state.checkpoint, BACKGROUND_CONTEXT);
     expect(test.dependencies.send).not.toHaveBeenCalled();
-    expect(test.states[0]).toMatchObject({
-      status: 'running',
-      checkpoint: { attempts: 1, retryAt: undefined },
-    });
+    expect(test.states).toEqual([]);
   });
 
   it('terminates the fifth failed send', async () => {

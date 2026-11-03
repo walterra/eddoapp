@@ -1,4 +1,4 @@
-import type { Model, Models, TSchema } from '@earendil-works/pi-ai';
+import type { Model, Models } from '@earendil-works/pi-ai';
 import { REVIEW_JSON_SCHEMA, validateReview, type Recording, type Review } from './schema.js';
 
 export const RUBRIC_VERSION = '2';
@@ -39,7 +39,7 @@ export async function reviewRecording(
           {
             name: 'submit_review',
             description: 'Submit the structured qualitative review. This tool performs no actions.',
-            parameters: REVIEW_JSON_SCHEMA as TSchema,
+            parameters: REVIEW_JSON_SCHEMA,
           },
         ],
       },

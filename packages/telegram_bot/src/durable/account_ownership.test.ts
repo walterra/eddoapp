@@ -27,6 +27,7 @@ async function open(storage: Parameters<typeof Harness.open>[0]): Promise<Harnes
 
 const LegacyOwner = defineDoc({
   kind: 'eddo.owner',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'session',
   initial: () => ({ username: '', telegramId: 0 }),

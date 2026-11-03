@@ -4,6 +4,7 @@ import type { TelegramText } from './delivery_state.js';
 
 export const ConversationMap = defineDoc({
   kind: 'eddo.conversations',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'session',
   initial: (): { conversations: Record<string, ConversationId> } => ({ conversations: {} }),
@@ -11,6 +12,7 @@ export const ConversationMap = defineDoc({
 
 export const RequestMap = defineDoc({
   kind: 'eddo.requests',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'session',
   initial: (): { tasks: Record<string, TaskId<string>> } => ({ tasks: {} }),
@@ -18,6 +20,7 @@ export const RequestMap = defineDoc({
 
 export const RequestPayloads = defineDoc({
   kind: 'eddo.request-payloads',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'session',
   initial: (): { hashes: Record<string, string> } => ({ hashes: {} }),
@@ -25,6 +28,7 @@ export const RequestPayloads = defineDoc({
 
 export const RunBudget = defineDoc({
   kind: 'eddo.budget',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'conversation',
   history: 'latest',

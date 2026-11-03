@@ -24,7 +24,7 @@ Do not promote an independently writable replica while another owner can remain 
 
 ## Runtime configuration
 
-All linked private chats, scheduled briefings, and recaps use Pi Durable 1.3.0 with `pi-durable-couchdb` 0.0.1.
+All linked private chats, scheduled briefings, and recaps use Pi Durable 1.5.0 with `pi-durable-couchdb` 0.0.2.
 No feature flag or alternate execution path exists.
 
 - `LLM_MODEL` selects a registered catalog model. Unqualified Claude IDs resolve to Anthropic; ambiguous IDs require a provider prefix.

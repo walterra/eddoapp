@@ -1,4 +1,3 @@
-import type { TSchema } from '@earendil-works/pi-ai';
 import { defineExtension, defineTool, section } from '@earendil-works/pi-durable';
 import { ConversationMap, type ReportType } from '@eddo/assistant-server/state';
 import type { AssistantConversationMessageDoc, AssistantRequest } from '@eddo/core-shared';
@@ -19,7 +18,7 @@ const ARCHIVE_PARAMETERS = {
     characterOffset: { type: 'integer', minimum: 0, default: 0 },
   },
   additionalProperties: false,
-} as TSchema;
+};
 
 const querySchema = z.object({
   query: z.string().max(200).optional(),

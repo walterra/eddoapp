@@ -31,7 +31,7 @@ export function createProjectionTask(
         } catch (error) {
           if (runtime.signal.aborted) throw error;
           runtime.report(error);
-          await runtime.sleep(Date.now() + 30_000, context);
+          await runtime.sleepUntil(Date.now() + 30_000, task.state.checkpoint, context);
           return;
         }
         await runtime.commit(
