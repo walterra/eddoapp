@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-11-03T11:25:22.908Z",
-  "frozenTime": "2026-11-03T11:25:22.908Z",
+  "createdAt": "2026-11-03T22:25:24.520Z",
+  "frozenTime": "2026-11-03T22:25:24.520Z",
   "interactions": [
     {
       "requestHash": "41790df9be97376f",
@@ -16,12 +16,12 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:25:22.933Z\\n\\nadd todo\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T22:25:24.546Z\\n\\nadd todo\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo, but they haven't provided any details about what the todo should be. I should ask them for the necessary information - at minimum the title of the todo. I should be brief and concise since this is a Telegram chat.\",\"thinkingSignature\":\"EpEECroBCBMYAipAUauF4jcjNpXJwh7zyXCCDZ9DUNiXL4VEfXXzNZJyO+g9xTZ0Ylb02NnHx7ZNqWYlM9zYcHObiAhzbQVlF/a3XzIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAaWJp9cGEgwWaz2fJZGwgRhILZ8aDC1SvSZajwY3DdRfYSIwghgQ8VzQf6k0qPT8W4IygAH5p1EaqvCEUCJm3XayhC3yPSD4dSOflLNB/thAy8GxKoMClz5nfgSYVmB8v+twpJcIz4PHEDViF3/S0dyjSccvUSscfEW0OzpoNR90NMBXBCqF1INKFfk3sPTYqYiDuosEOzdTMV4Ik49vgCgtpnNCGtj4EVhqQPRsRzF1OSlj2qqayytcjGLnnP2XRfKAA9aW0ra6EVtzJsO35ujybnLylV+95kaIolj+RaW2n9SDTEyld+N65FieQvX2gh7mO3LQKEv0xMLiK0YinK0pYnAVnGcyFatE5JYR3Yvberqf4pm3ZMilcTFGJKf+MTdkgsRvyJfVVvMDckehSJUeF8QW7lTNMMAaQDpXMNalT0Qn66AGLfNHNIGLbQjqWxAxqk+vkefA2xgB\"},{\"type\":\"text\",\"text\":\"What would you like the todo to be? Give me the task title and any details (due date, context, etc.).\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":90,\"cacheRead\":7579,\"cacheWrite\":516,\"totalTokens\":8195,\"cost\":{\"input\":0.00003,\"output\":0.00135,\"cacheRead\":0.0022737,\"cacheWrite\":0.003096,\"total\":0.0067497,\"totalFromProvider\":false},\"cacheWrite1h\":516,\"reasoning\":59},\"stopReason\":\"stop\",\"timestamp\":1793705122938,\"responseId\":\"msg_011CgfuqhxUwqgKkJ4sYejJ1\",\"rawStopReason\":\"end_turn\",\"durationMs\":2790}}",
-      "metadata": { "recordedAt": "2026-11-03T11:25:25.727Z", "responseTimeMs": 2790 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user just said \\\"add todo\\\" without providing any details. I need to ask them what todo they want to add - I need at least a title to create a todo.\\n\\nI should keep my response brief and concise as per my Telegram chat communication style.\",\"thinkingSignature\":\"Eo4ECroBCBMYAipAlXJD7Ar7DHmYfAljS/Hymd4/bhJesVEavEgDL/6VGG/gqNPWFsZ+3xpldCQhLGC+dTTyeaeuj04+3em/fIX7dTIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGVmNTk1YjgyLWU5OTctNGQxMi1hNTc4LWUyYTY4OGQ3MDUwMJoBHAoaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5MjmoAda+qdcGEgxFkXKBp3RSkSBlQwEaDLLRHRceX6QdrviN/SIwufzu75z7AdVrNm9p47Qg2GZxaWr2+xdkDuFXF1pvq5NSsXHUD27c7aASHajX3kJWKoACCcEV0xWI0izgQg2ZSczJZPNbib92JrIwVSHAzTrg2p8PhkbLSNmA5yaX+9uLabaVjXtD98r/+mwpPsXs0qCy2vsn+EgiBFuaK7bG8tYbPWl6tvlFJmOfk4/i53i4576B4BGRyHBpLDN8Zsc1dQqLS/GURLjb4i6dcHRSQtxE36Xacu571O+FfVrhJibGit/VGTtJDMX52j5fFMx/MGdDWNe1UxQqZdNHXvkK4kXYEMjkDdJHKhAIfRRdkQeVQglea+6KrHHda7c19UfuSBAxUS/gEDMjSpq2d33cxqpfFwj7BRjjBGpwtRGfGEtvf/yP+PKYqYydiLhKcjucMbcv2BgB\"},{\"type\":\"text\",\"text\":\"What task do you want to add? Give me a title and any details (due date, context, description).\"}],\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"claude-sonnet-4-5-20250929\",\"usage\":{\"input\":10,\"output\":89,\"cacheRead\":7579,\"cacheWrite\":516,\"totalTokens\":8194,\"cost\":{\"input\":0.00003,\"output\":0.001335,\"cacheRead\":0.0022737,\"cacheWrite\":0.003096,\"total\":0.0067347,\"totalFromProvider\":false},\"cacheWrite1h\":516,\"reasoning\":60},\"stopReason\":\"stop\",\"timestamp\":1793744724553,\"responseId\":\"msg_011CggnAugXoEKrUG4QoZwSf\",\"rawStopReason\":\"end_turn\",\"durationMs\":3094}}",
+      "metadata": { "recordedAt": "2026-11-03T22:25:27.648Z", "responseTimeMs": 3095 }
     }
   ]
 }

@@ -23,16 +23,17 @@ export async function reportResponse(
   const started = Date.now();
   const db = getUserDb(context);
   context.log.info(`Getting ${options.type} data for user`, { userId: context.session?.userId });
-  const sections: Record<string, ReportSection> = {};
-  await Promise.all(
+  const entries = await Promise.all(
     options.queries.map(async (query) => {
       context.log.debug('Executing report section query', {
         name: query.name,
         query: JSON.stringify(query.query),
       });
-      sections[query.name] = await queryReportSection(db, query, started);
+      return [query.name, await queryReportSection(db, query, started)] as const;
     }),
   );
+  // Promise.all preserves query order regardless of database completion order.
+  const sections: Record<string, ReportSection> = Object.fromEntries(entries);
   sections.activeTimeTracking = await activeReportSection(db, started);
   const data = buildReportData(options, sections);
   context.log.info(`${options.type} data retrieved successfully`, {
