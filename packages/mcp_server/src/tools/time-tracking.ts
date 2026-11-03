@@ -2,7 +2,9 @@
  * Time Tracking Tools - Start, stop, and query time tracking
  */
 import type { TodoAlpha4 } from '@eddo/core-server';
-import { z } from 'zod';
+import { obj, opt, str } from '@eddo/core-shared/validation/schema_parser';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
@@ -13,22 +15,23 @@ import type { GetUserDb, ToolContext, ToolResponse } from './types.js';
 /** Tool description for startTimeTracking */
 export const startTimeTrackingDescription = 'Start tracking time for a todo';
 
-/** Zod schema for startTimeTracking parameters */
-export const startTimeTrackingParameters = z.object({
-  id: z
-    .string()
-    .describe(
-      'The unique identifier of the todo to start time tracking for (ISO timestamp of creation)',
+/** Validates and publishes startTimeTracking parameters. */
+export const startTimeTrackingParameters = createToolParameters(
+  obj({
+    id: str({
+      description:
+        'The unique identifier of the todo to start time tracking for (ISO timestamp of creation)',
+    }),
+    message: opt(
+      toolField(str(), {
+        description:
+          'Optional human-readable audit message describing why time tracking was started (short, like a git commit message).',
+      }),
     ),
-  message: z
-    .string()
-    .optional()
-    .describe(
-      'Optional human-readable audit message describing why time tracking was started (short, like a git commit message).',
-    ),
-});
+  }),
+);
 
-export type StartTimeTrackingArgs = z.infer<typeof startTimeTrackingParameters>;
+export type StartTimeTrackingArgs = ReturnType<typeof startTimeTrackingParameters.parse>;
 
 /** Build success response for start time tracking */
 function buildStartResponse(todo: TodoAlpha4, startedAt: string, executionTime: number): string {
@@ -94,22 +97,23 @@ export async function executeStartTimeTracking(
 /** Tool description for stopTimeTracking */
 export const stopTimeTrackingDescription = 'Stop tracking time for a todo';
 
-/** Zod schema for stopTimeTracking parameters */
-export const stopTimeTrackingParameters = z.object({
-  id: z
-    .string()
-    .describe(
-      'The unique identifier of the todo to stop time tracking for (ISO timestamp of creation)',
+/** Validates and publishes stopTimeTracking parameters. */
+export const stopTimeTrackingParameters = createToolParameters(
+  obj({
+    id: str({
+      description:
+        'The unique identifier of the todo to stop time tracking for (ISO timestamp of creation)',
+    }),
+    message: opt(
+      toolField(str(), {
+        description:
+          'Optional human-readable audit message describing why time tracking was stopped (short, like a git commit message).',
+      }),
     ),
-  message: z
-    .string()
-    .optional()
-    .describe(
-      'Optional human-readable audit message describing why time tracking was stopped (short, like a git commit message).',
-    ),
-});
+  }),
+);
 
-export type StopTimeTrackingArgs = z.infer<typeof stopTimeTrackingParameters>;
+export type StopTimeTrackingArgs = ReturnType<typeof stopTimeTrackingParameters.parse>;
 
 /**
  * Formats duration in milliseconds to human-readable string
@@ -243,10 +247,10 @@ export async function executeStopTimeTracking(
 /** Tool description for getActiveTimeTracking */
 export const getActiveTimeTrackingDescription = 'Get todos with active time tracking';
 
-/** Zod schema for getActiveTimeTracking parameters */
-export const getActiveTimeTrackingParameters = z
-  .object({})
-  .describe('No parameters required - returns all todos with active time tracking');
+/** Validates and publishes getActiveTimeTracking parameters. */
+export const getActiveTimeTrackingParameters = createToolParameters(
+  obj({}, { description: 'No parameters required - returns all todos with active time tracking' }),
+);
 
 /**
  * Deduplicates todos from view results

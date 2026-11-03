@@ -8,7 +8,19 @@ import {
   normalizeTimeZone,
   type TodoAlpha4,
 } from '@eddo/core-server';
-import { z } from 'zod';
+import { uuidSchema } from '@eddo/core-shared/validation/compatibility';
+import {
+  arr,
+  map,
+  nullable,
+  num,
+  obj,
+  opt,
+  str,
+  union,
+} from '@eddo/core-shared/validation/schema_parser';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
@@ -44,101 +56,94 @@ GTD TAG GUIDELINES (for calling LLM):
 - ALWAYS use context "memory" - never "private" or any other context!
 - ALWAYS use due date as TODAY'S date in YYYY-MM-DD format - NEVER use future dates!`;
 
-/** Zod schema for createTodo parameters */
-export const createTodoParameters = z.object({
-  urlCaptureRef: z
-    .string()
-    .uuid()
-    .optional()
-    .describe(
-      'Reference from fetchUrl. Stores captured Markdown verbatim in description after any user notes, original URL in link, and web metadata. References expire after one hour or server restart; fetch again if unavailable.',
+/** Validates and publishes createTodo parameters. */
+export const createTodoParameters = createToolParameters(
+  obj({
+    urlCaptureRef: opt(
+      toolField(uuidSchema(), {
+        description:
+          'Reference from fetchUrl. Stores captured Markdown verbatim in description after any user notes, original URL in link, and web metadata. References expire after one hour or server restart; fetch again if unavailable.',
+      }),
     ),
-  title: z
-    .string()
-    .describe(
-      'The main title/name of the todo item (required). For gtd:calendar items, use scheduledTime or prefix with time in HH:MM format, e.g., "15:00 Doctor appointment".',
+    title: str({
+      description:
+        'The main title/name of the todo item (required). For gtd:calendar items, use scheduledTime or prefix with time in HH:MM format, e.g., "15:00 Doctor appointment".',
+    }),
+    description: toolField(str(), {
+      default: '',
+      description: 'Detailed description or notes for the todo. Can include markdown formatting',
+    }),
+    context: toolField(str(), {
+      default: 'private',
+      description:
+        'GTD context category for organizing todos (e.g. "work", "private", "errands", "shopping", "calls")',
+    }),
+    due: opt(
+      toolField(str(), {
+        description: 'Due date in YYYY-MM-DD format. Defaults to the current day if not provided.',
+      }),
     ),
-  description: z
-    .string()
-    .default('')
-    .describe('Detailed description or notes for the todo. Can include markdown formatting'),
-  context: z
-    .string()
-    .default('private')
-    .describe(
-      'GTD context category for organizing todos (e.g. "work", "private", "errands", "shopping", "calls")',
+    scheduledTime: toolField(nullable(str({ pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' })), {
+      default: null,
+      description: 'Optional scheduled local time in HH:mm format.',
+    }),
+    scheduledTimeZone: toolField(nullable(str()), {
+      default: null,
+      description: 'Optional IANA timezone for scheduled time interpretation.',
+    }),
+    tags: toolField(arr(str()), {
+      default: [],
+      description:
+        'Array of tags for categorization. Should include appropriate GTD tags (gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar) based on item type.',
+    }),
+    repeat: toolField(nullable(num()), {
+      default: null,
+      description:
+        'Number of days to repeat this todo. Set to null (default) for no repeat. gtd:calendar repeats from original due date, gtd:habit repeats from completion date',
+    }),
+    link: toolField(nullable(str()), {
+      default: null,
+      description:
+        'Optional URL or reference link related to this todo. Can be used for documentation, tickets, or external resources',
+    }),
+    externalId: toolField(nullable(str()), {
+      default: null,
+      description:
+        'Optional external system ID for syncing (e.g., "github:owner/repo/issues/123"). Used for deduplication during periodic imports.',
+    }),
+    parentId: toolField(nullable(str()), {
+      default: null,
+      description:
+        'Optional parent todo ID for creating subtasks. References the _id of an existing todo to create a parent-child relationship.',
+    }),
+    blockedBy: opt(
+      toolField(arr(str()), {
+        description:
+          'Optional array of todo IDs that must complete before this task becomes actionable. Use with gtd:blocked tag for internal task dependencies. Distinct from gtd:waiting which is for external blocks.',
+      }),
     ),
-  due: z
-    .string()
-    .optional()
-    .describe('Due date in YYYY-MM-DD format. Defaults to the current day if not provided.'),
-  scheduledTime: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-    .nullable()
-    .default(null)
-    .describe('Optional scheduled local time in HH:mm format.'),
-  scheduledTimeZone: z
-    .string()
-    .refine(isValidTimeZone, 'Invalid IANA timezone')
-    .nullable()
-    .default(null)
-    .describe('Optional IANA timezone for scheduled time interpretation.'),
-  tags: z
-    .array(z.string())
-    .default([])
-    .describe(
-      'Array of tags for categorization. Should include appropriate GTD tags (gtd:next, gtd:project, gtd:waiting, gtd:someday, gtd:calendar) based on item type.',
+    metadata: opt(
+      toolField(map(union([str(), arr(str())])), {
+        description:
+          'Optional key-value metadata for extensibility. Values can be strings or arrays of strings. Use namespaced keys (e.g., "agent:worktree", "github:labels": ["bug", "priority"]).',
+      }),
     ),
-  repeat: z
-    .number()
-    .nullable()
-    .default(null)
-    .describe(
-      'Number of days to repeat this todo. Set to null (default) for no repeat. gtd:calendar repeats from original due date, gtd:habit repeats from completion date',
+    message: opt(
+      toolField(str(), {
+        description:
+          'Optional human-readable audit message describing why this todo was created (short, like a git commit message).',
+      }),
     ),
-  link: z
-    .string()
-    .nullable()
-    .default(null)
-    .describe(
-      'Optional URL or reference link related to this todo. Can be used for documentation, tickets, or external resources',
-    ),
-  externalId: z
-    .string()
-    .nullable()
-    .default(null)
-    .describe(
-      'Optional external system ID for syncing (e.g., "github:owner/repo/issues/123"). Used for deduplication during periodic imports.',
-    ),
-  parentId: z
-    .string()
-    .nullable()
-    .default(null)
-    .describe(
-      'Optional parent todo ID for creating subtasks. References the _id of an existing todo to create a parent-child relationship.',
-    ),
-  blockedBy: z
-    .array(z.string())
-    .optional()
-    .describe(
-      'Optional array of todo IDs that must complete before this task becomes actionable. Use with gtd:blocked tag for internal task dependencies. Distinct from gtd:waiting which is for external blocks.',
-    ),
-  metadata: z
-    .record(z.string(), z.union([z.string(), z.array(z.string())]))
-    .optional()
-    .describe(
-      'Optional key-value metadata for extensibility. Values can be strings or arrays of strings. Use namespaced keys (e.g., "agent:worktree", "github:labels": ["bug", "priority"]).',
-    ),
-  message: z
-    .string()
-    .optional()
-    .describe(
-      'Optional human-readable audit message describing why this todo was created (short, like a git commit message).',
-    ),
-});
+  }),
+  {
+    validate: (value) =>
+      value.scheduledTimeZone === null || isValidTimeZone(value.scheduledTimeZone)
+        ? []
+        : [{ path: '/scheduledTimeZone', code: 'custom', message: 'Invalid IANA timezone' }],
+  },
+);
 
-export type CreateTodoArgs = z.infer<typeof createTodoParameters>;
+export type CreateTodoArgs = ReturnType<typeof createTodoParameters.parse>;
 
 /**
  * Ensures the user's database exists, creating it if necessary

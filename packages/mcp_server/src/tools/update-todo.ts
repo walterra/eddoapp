@@ -2,7 +2,18 @@
  * Update Todo Tool - Updates an existing todo
  */
 import { isValidTimeZone, normalizeTimeZone, type TodoAlpha4 } from '@eddo/core-server';
-import { z } from 'zod';
+import {
+  arr,
+  map,
+  nullable,
+  num,
+  obj,
+  opt,
+  str,
+  union,
+} from '@eddo/core-shared/validation/schema_parser';
+import { toolField } from '../tool_field.js';
+import { createToolParameters } from '../tool_parameters.js';
 
 import { logMcpAudit, pushAuditIdToTodo } from './audit-helper.js';
 import { createErrorResponse, createSuccessResponse } from './response-helpers.js';
@@ -13,70 +24,77 @@ export const updateTodoDescription = `Update an existing todo CouchDB style. Bef
 
 IMPORTANT: Pass update fields directly as parameters, NOT wrapped in nested objects.`;
 
-/** Zod schema for updateTodo parameters */
-export const updateTodoParameters = z.object({
-  id: z
-    .string()
-    .describe('The unique identifier of the todo to update (ISO timestamp of creation)'),
-  title: z.string().optional().describe('Updated title/name of the todo item'),
-  description: z.string().optional().describe('Updated description or notes'),
-  context: z.string().optional().describe('Updated GTD context category'),
-  due: z.string().optional().describe('Updated due date in YYYY-MM-DD format'),
-  scheduledTime: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-    .nullable()
-    .optional()
-    .describe('Updated scheduled local time in HH:mm format.'),
-  scheduledTimeZone: z
-    .string()
-    .refine(isValidTimeZone, 'Invalid IANA timezone')
-    .nullable()
-    .optional()
-    .describe('Updated IANA timezone for scheduled time interpretation.'),
-  tags: z.array(z.string()).optional().describe('Updated array of tags'),
-  repeat: z
-    .number()
-    .nullable()
-    .optional()
-    .describe(
-      'Updated repeat interval in days (null to disable). gtd:calendar repeats from due date, gtd:habit repeats from completion date',
+/** Validates and publishes updateTodo parameters. */
+export const updateTodoParameters = createToolParameters(
+  obj({
+    id: str({
+      description: 'The unique identifier of the todo to update (ISO timestamp of creation)',
+    }),
+    title: opt(toolField(str(), { description: 'Updated title/name of the todo item' })),
+    description: opt(toolField(str(), { description: 'Updated description or notes' })),
+    context: opt(toolField(str(), { description: 'Updated GTD context category' })),
+    due: opt(toolField(str(), { description: 'Updated due date in YYYY-MM-DD format' })),
+    scheduledTime: opt(
+      toolField(nullable(str({ pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' })), {
+        description: 'Updated scheduled local time in HH:mm format.',
+      }),
     ),
-  link: z.string().nullable().optional().describe('Updated URL or reference link (null to remove)'),
-  externalId: z
-    .string()
-    .nullable()
-    .optional()
-    .describe(
-      'Updated external system ID for syncing (e.g., "github:owner/repo/issues/123"). Used for deduplication during periodic imports. Set to null to remove.',
+    scheduledTimeZone: opt(
+      toolField(nullable(str()), {
+        description: 'Updated IANA timezone for scheduled time interpretation.',
+      }),
     ),
-  parentId: z
-    .string()
-    .nullable()
-    .optional()
-    .describe('Updated parent todo ID (null to remove parent, making it a root todo)'),
-  blockedBy: z
-    .array(z.string())
-    .nullable()
-    .optional()
-    .describe(
-      'Updated array of todo IDs that block this task. Use with gtd:blocked tag. Set to null or empty array to remove all blockers.',
+    tags: opt(toolField(arr(str()), { description: 'Updated array of tags' })),
+    repeat: opt(
+      toolField(nullable(num()), {
+        description:
+          'Updated repeat interval in days (null to disable). gtd:calendar repeats from due date, gtd:habit repeats from completion date',
+      }),
     ),
-  metadata: z
-    .record(z.string(), z.union([z.string(), z.array(z.string())]))
-    .optional()
-    .describe(
-      'Key-value metadata for extensibility. Values can be strings or arrays of strings. Use namespaced keys (e.g., "agent:worktree", "github:labels": ["bug", "priority"]). Replaces entire metadata object when provided.',
+    link: opt(
+      toolField(nullable(str()), { description: 'Updated URL or reference link (null to remove)' }),
     ),
-  message: z
-    .string()
-    .optional()
-    .describe(
-      'Optional human-readable audit message describing why this update was made (short, like a git commit message).',
+    externalId: opt(
+      toolField(nullable(str()), {
+        description:
+          'Updated external system ID for syncing (e.g., "github:owner/repo/issues/123"). Used for deduplication during periodic imports. Set to null to remove.',
+      }),
     ),
-});
+    parentId: opt(
+      toolField(nullable(str()), {
+        description: 'Updated parent todo ID (null to remove parent, making it a root todo)',
+      }),
+    ),
+    blockedBy: opt(
+      toolField(nullable(arr(str())), {
+        description:
+          'Updated array of todo IDs that block this task. Use with gtd:blocked tag. Set to null or empty array to remove all blockers.',
+      }),
+    ),
+    metadata: opt(
+      toolField(map(union([str(), arr(str())])), {
+        description:
+          'Key-value metadata for extensibility. Values can be strings or arrays of strings. Use namespaced keys (e.g., "agent:worktree", "github:labels": ["bug", "priority"]). Replaces entire metadata object when provided.',
+      }),
+    ),
+    message: opt(
+      toolField(str(), {
+        description:
+          'Optional human-readable audit message describing why this update was made (short, like a git commit message).',
+      }),
+    ),
+  }),
+  {
+    validate: (value) =>
+      value.scheduledTimeZone === undefined ||
+      value.scheduledTimeZone === null ||
+      isValidTimeZone(value.scheduledTimeZone)
+        ? []
+        : [{ path: '/scheduledTimeZone', code: 'custom', message: 'Invalid IANA timezone' }],
+  },
+);
 
-export type UpdateTodoArgs = z.infer<typeof updateTodoParameters>;
+export type UpdateTodoArgs = ReturnType<typeof updateTodoParameters.parse>;
 
 /** Helper to pick value: use arg if defined, otherwise keep existing */
 function pickValue<T>(argValue: T | undefined, existingValue: T): T {

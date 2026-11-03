@@ -73,6 +73,7 @@ export default defineConfig({
             'packages/setup/src/**/*.test.ts',
             'scripts/benchmarks/*.test.ts',
             'scripts/integration_process_cleanup.test.ts',
+            'scripts/no_zod_policy.test.ts',
             'scripts/backup-interactive.test.ts',
             'scripts/backup_*.test.ts',
             'scripts/backup-retention.test.ts',

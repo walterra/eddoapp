@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSchemaParser, obj, str } from './schema_parser';
+import { createSchemaParser, obj, oneOf, str } from './schema_parser';
 import { toStandardSchema } from './standard_schema';
 
 describe('Standard Schema adapter', () => {
@@ -23,6 +23,13 @@ describe('Standard Schema adapter', () => {
       path: ['a/b~c'],
       message: expect.any(String),
     });
+  });
+
+  it('preserves the existing MCP invalid-option diagnostic', async () => {
+    const choices = toStandardSchema(createSchemaParser(oneOf(['overview', 'all'])));
+    const result = await choices['~standard'].validate('unsupported');
+    expect(result.issues?.[0].message).toContain('Invalid option');
+    expect(result.issues?.[0].message).not.toContain('unsupported');
   });
 
   it('rejects unsupported publication targets', () => {

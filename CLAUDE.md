@@ -26,6 +26,7 @@ CRITICAL: Run `pnpm check:commit` to verify code before requesting a commit.
 - Lint: `pnpm lint`
 - Format check: `pnpm lint:format`
 - Commit check (required before commit): `pnpm check:commit`
+- Validation dependency policy: `pnpm check:no-zod` (blocks direct Zod imports and dependencies; excludes upstream transitive dependencies)
 - Format fix: `pnpm format`
 - Unit tests (default): `pnpm test`
 - Unit tests only: `pnpm test:unit`

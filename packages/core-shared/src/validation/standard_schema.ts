@@ -48,7 +48,7 @@ export function toStandardSchema<T>(
           : {
               issues: result.error.issues.map((issue) => ({
                 path: pointerSegments(issue.path),
-                message: issue.message,
+                message: issue.code === 'enum' ? `Invalid option: ${issue.message}` : issue.message,
               })),
             };
       },

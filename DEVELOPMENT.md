@@ -132,8 +132,12 @@ pnpm lint:format       # Prettier format check
 pnpm format            # Prettier formatting
 pnpm tsc:check         # TypeScript type checking
 pnpm knip              # Check unused dependencies
-pnpm check:commit      # TypeScript, ESLint, and formatting checks
+pnpm check:no-zod      # Reject direct Zod imports and dependencies
+pnpm check:commit      # TypeScript, dependency policy, ESLint, and formatting checks
 ```
+
+The unit suite and commit checks enforce the direct-dependency validation policy.
+See [Boundary validation](packages/core-shared/src/validation/README.md) for pi-schema contracts and transitive dependency scope.
 
 ## Data Model
 
