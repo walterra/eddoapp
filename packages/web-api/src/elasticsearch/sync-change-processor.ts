@@ -65,7 +65,6 @@ export async function processTodoChange(
         });
         span.setAttribute('es.action', 'index');
       }
-      state.lastSeq = change.seq;
     },
   );
 }
@@ -106,7 +105,6 @@ export async function processAuditChange(
         });
         span.setAttribute('es.action', 'index');
       }
-      state.lastSeq = change.seq;
     },
   );
 }

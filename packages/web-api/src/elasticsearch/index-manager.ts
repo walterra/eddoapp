@@ -153,6 +153,16 @@ async function getMapping(client: Client, indexName: string): Promise<IndexOpera
 async function initializeTemplates(client: Client): Promise<IndexOperationResult> {
   const todoResult = await createTodoTemplate(client);
   const auditResult = await createAuditTemplate(client);
+  if (await client.indices.exists({ index: 'eddo_audit_*' })) {
+    await client.indices.putMapping({
+      index: 'eddo_audit_*',
+      properties: {
+        before: AUDIT_INDEX_MAPPING.properties.before,
+        after: AUDIT_INDEX_MAPPING.properties.after,
+        metadata: AUDIT_INDEX_MAPPING.properties.metadata,
+      },
+    });
+  }
 
   return {
     details: { auditTemplate: auditResult, todoTemplate: todoResult },

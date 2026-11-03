@@ -19,12 +19,12 @@ export interface ChangesListenerConfig {
   state: DatabaseSyncState;
 }
 
-/** Interval for persisting lastSeq to ES (5 minutes) */
-const LAST_SEQ_PERSIST_INTERVAL_MS = 5 * 60 * 1000;
+/** Delay before retrying an unacknowledged batch. */
+const RETRY_DELAY_MS = 5000;
 
 /** Starts the changes feed listener for a database. */
 export function startChangesListener(config: ChangesListenerConfig): void {
-  const { batchProcessor, getCouchDb, indexMigration, logger, state } = config;
+  const { batchProcessor, getCouchDb, logger, state } = config;
   const db = getCouchDb().use(state.dbName);
 
   const processChange =
@@ -39,18 +39,8 @@ export function startChangesListener(config: ChangesListenerConfig): void {
   });
   state.changesEmitter = changesEmitter;
 
-  // Setup lastSeq persistence for user databases
-  if (state.dbType === 'user') {
-    setupLastSeqPersistence(state, indexMigration, logger);
-  }
-
-  changesEmitter.on('change', async (change: ChangeEvent) => {
-    if (state.isRunning) await processChange(change);
-  });
-
-  changesEmitter.on('batch', async (changes: ChangeEvent[]) => {
-    if (!state.isRunning) return;
-    for (const change of changes) await processChange(change);
+  changesEmitter.on('batch', (changes: ChangeEvent[]) => {
+    void acknowledgeBatch(config, changes, processChange, () => db.changesReader.resume());
   });
 
   changesEmitter.on('error', (error: Error) => {
@@ -68,44 +58,30 @@ export function startChangesListener(config: ChangesListenerConfig): void {
   );
 }
 
-/** Sets up periodic lastSeq persistence for user databases. */
-function setupLastSeqPersistence(
-  state: DatabaseSyncState,
-  indexMigration: IndexMigration,
-  logger: Logger,
-): void {
-  let lastPersistedSeq = state.lastSeq;
-
-  const persistTimer = setInterval(async () => {
-    if (state.lastSeq !== lastPersistedSeq && state.isRunning) {
-      try {
-        await indexMigration.updateLastSeq(state.esIndexName, state.lastSeq);
-        lastPersistedSeq = state.lastSeq;
-        logger.debug({ dbName: state.dbName, lastSeq: state.lastSeq }, 'Persisted lastSeq');
-      } catch (error) {
-        logger.error({ dbName: state.dbName, error }, 'Failed to persist lastSeq');
+/** Resumes the reader only after indexing and checkpoint persistence succeed. */
+async function acknowledgeBatch(
+  config: ChangesListenerConfig,
+  changes: ChangeEvent[],
+  processChange: (change: ChangeEvent) => Promise<void>,
+  resume: () => void,
+): Promise<void> {
+  const { batchProcessor, indexMigration, logger, state } = config;
+  const acknowledgedSeq = state.lastSeq;
+  while (state.isRunning) {
+    try {
+      for (const change of changes) await processChange(change);
+      await batchProcessor.flushBatch();
+      const lastSeq = changes.at(-1)?.seq ?? acknowledgedSeq;
+      if (state.dbType === 'user') {
+        await indexMigration.updateLastSeq(state.esIndexName, lastSeq);
       }
+      state.lastSeq = lastSeq;
+      if (state.isRunning) resume();
+      return;
+    } catch (error) {
+      state.lastSeq = acknowledgedSeq;
+      logger.error({ dbName: state.dbName, error }, 'Sync batch failed; reader paused for retry');
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
     }
-  }, LAST_SEQ_PERSIST_INTERVAL_MS);
-
-  // Store timer reference for cleanup
-  const originalIsRunning = state.isRunning;
-  let isRunning = originalIsRunning;
-
-  Object.defineProperty(state, 'isRunning', {
-    configurable: true,
-    get: () => isRunning,
-    set: (value: boolean) => {
-      isRunning = value;
-      if (!value) {
-        clearInterval(persistTimer);
-        // Persist final lastSeq on shutdown
-        if (state.lastSeq !== lastPersistedSeq) {
-          indexMigration.updateLastSeq(state.esIndexName, state.lastSeq).catch((err) => {
-            logger.error({ dbName: state.dbName, error: err }, 'Failed to persist final lastSeq');
-          });
-        }
-      }
-    },
-  });
+  }
 }
