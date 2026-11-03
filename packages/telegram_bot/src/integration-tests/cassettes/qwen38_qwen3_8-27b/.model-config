@@ -3,23 +3,32 @@
   "provider": "qwen38",
   "config": {
     "name": "Qwen3.8-27B DFlash2 (GX10)",
-    "api": "openai-completions",
     "baseUrl": "http://192.168.1.169:30001/v1",
+    "api": "openai-completions",
     "compat": {
       "supportsStore": false,
       "supportsDeveloperRole": false,
       "supportsReasoningEffort": true,
       "supportsUsageInStreaming": true,
-      "supportsStrictMode": false,
-      "requiresReasoningContentOnAssistantMessages": true,
       "maxTokensField": "max_tokens",
-      "thinkingFormat": "openai"
+      "supportsStrictMode": false,
+      "thinkingFormat": "openai",
+      "requiresReasoningContentOnAssistantMessages": true
     },
     "models": [
       {
         "id": "qwen3.8-27b",
         "name": "Qwen3.8-27B NVFP4 + DFlash2 (GX10 SGLang)",
         "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": "low",
+          "low": "low",
+          "medium": "medium",
+          "high": "xhigh",
+          "xhigh": "xhigh",
+          "max": "xhigh"
+        },
         "input": [
           "text",
           "image"
@@ -31,15 +40,6 @@
           "output": 0,
           "cacheRead": 0,
           "cacheWrite": 0
-        },
-        "thinkingLevelMap": {
-          "off": null,
-          "minimal": "low",
-          "low": "low",
-          "medium": "medium",
-          "high": "xhigh",
-          "xhigh": "xhigh",
-          "max": "xhigh"
         }
       }
     ]
