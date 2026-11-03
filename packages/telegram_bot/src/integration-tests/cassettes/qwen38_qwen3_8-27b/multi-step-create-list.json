@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "testName": "multi-step-create-list",
+  "createdAt": "2026-11-03T00:00:19.360Z",
+  "frozenTime": "2026-11-03T00:00:19.360Z",
+  "interactions": [
+    {
+      "requestHash": "84cb659814644cdc",
+      "request": {
+        "model": "qwen38/qwen3.8-27b",
+        "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
+        "messages": [
+          {
+            "role": "system",
+            "content": "{\"role\":\"system\",\"content\":\"\",\"sections\":{\"eddo\":\"You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help ..."
+          },
+          {
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:19.387Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
+          }
+        ]
+      },
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to:\\n1. Create a work todo for \\\"code review\\\"\\n2. Then show all work todos\\n\\nLet me create the todo first. I need a due date - since no specific date was mentioned, I'll use \\\"soon\\\" which means end of current day. Current date is 2026-11-03, so due date would be 2026-11-03T23:59:59.999Z.\\n\\nContext: \\\"work\\\" (explicitly stated)\\nTags: \\\"gtd:next\\\" since it's a clear, actionable item\\nTitle: \\\"Code review\\\"\\n\\nLet me create it and then list work todos.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_bb1e2dc489364f1b9e658ccc\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created work todo for code review\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8118,\"output\":246,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8364,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664019404,\"responseId\":\"2afcd9166567470fb6d39c8b03e0be75\",\"rawStopReason\":\"tool_calls\",\"durationMs\":4462}}",
+      "metadata": { "recordedAt": "2026-11-03T00:00:23.867Z", "responseTimeMs": 4471 }
+    },
+    {
+      "requestHash": "62aef1a8312bbe5c",
+      "request": {
+        "model": "qwen38/qwen3.8-27b",
+        "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
+        "messages": [
+          {
+            "role": "system",
+            "content": "{\"role\":\"system\",\"content\":\"\",\"sections\":{\"eddo\":\"You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help ..."
+          },
+          {
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:19.387Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
+          },
+          {
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to:\\n1. Create a work todo for \\\"code review\\\"\\n2. Then show all work todos\\n\\nLet me create the todo first. I need a due date - since no specific date was mentioned, I'll use \\\"soon\\\" which means end of current day. Current date is 2026-11-03, so due date would be 2026-11-03T23:59:59.999Z.\\n\\nContext: \\\"work\\\" (explicitly stated)\\nTags: \\\"gtd:next\\\" since it's a clear, actionable item\\nTitle: \\\"Code review\\\"\\n\\nLet me create it and then list work todos.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_bb1e2dc489364f1b9e658ccc\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created work todo for code review\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+          },
+          {
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_bb1e2dc489364f1b9e658ccc\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:23.931Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:23.965Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
+          }
+        ]
+      },
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Good, the todo was created. Now I need to list all work todos.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_447089d8fd354531864b8b16\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8479,\"output\":44,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8523,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664023994,\"responseId\":\"3f44bc4dd49f45f4b0d57724bd5073e9\",\"rawStopReason\":\"tool_calls\",\"durationMs\":966}}",
+      "metadata": { "recordedAt": "2026-11-03T00:00:24.959Z", "responseTimeMs": 980 }
+    },
+    {
+      "requestHash": "56744d37dd06308e",
+      "request": {
+        "model": "qwen38/qwen3.8-27b",
+        "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
+        "messages": [
+          {
+            "role": "system",
+            "content": "{\"role\":\"system\",\"content\":\"\",\"sections\":{\"eddo\":\"You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help ..."
+          },
+          {
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:19.387Z\\n\\ncreate a work todo for code review, then show me all my work todos\"}"
+          },
+          {
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to:\\n1. Create a work todo for \\\"code review\\\"\\n2. Then show all work todos\\n\\nLet me create the todo first. I need a due date - since no specific date was mentioned, I'll use \\\"soon\\\" which means end of current day. Current date is 2026-11-03, so due date would be 2026-11-03T23:59:59.999Z.\\n\\nContext: \\\"work\\\" (explicitly stated)\\nTags: \\\"gtd:next\\\" since it's a clear, actionable item\\nTitle: \\\"Code review\\\"\\n\\nLet me create it and then list work todos.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_bb1e2dc489364f1b9e658ccc\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Code review\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created work todo for code review\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+          },
+          {
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_bb1e2dc489364f1b9e658ccc\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:23.931Z\\\",\\\"title\\\":\\\"Code review\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:23.965Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
+          },
+          {
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Good, the todo was created. Now I need to list all work todos.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_447089d8fd354531864b8b16\",\"name\":\"listTodos\",\"arguments\":{\"context\":\"work\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+          },
+          {
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_447089d8fd354531864b8b16\",\"toolName\":\"listTodos\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Found 1 matching todos\\\",\\\"data\\\":[{\\\"_id\\\":\\\"2026-11-03T00:00:23.931Z\\\",\\\"_rev\\\":\\\"2-454990f8512aa61d1ffb09f1056e1fae\\\",\\\"title\\\":\\\"Code review\\\",\\\"description\\\":\\\"\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\",\\\"tags\\\":[\\\"gtd:next\\\"],\\\"completed\\\":null,\\\"active\\\":{},\\\"repeat\\\":null,\\\"externalId\\\":null,\\\"link\\\":null,\\\"parentId\\\":null,\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"version\\\":\\\"alpha4\\\",\\\"auditLog\\\":[\\\"2026-11-03T00:00:23.954Z\\\"]}],\\\"pagination\\\":{\\\"count\\\":1,\\\"limit\\\":50,\\\"has_more\\\":false},\\\"metadata\\\":{\\\"operation\\\":\\\"list\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:25.004Z\\\",\\\"execution_time\\\":\\\"13.00ms\\\",\\\"filters_applied\\\":[\\\"context\\\",\\\"limit\\\"]}}\"}],\"isError\":false}"
+          }
+        ]
+      },
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Done. Let me give a concise response showing the created todo and the list.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n✅ Created! Here's your work queue:\\n\\n- **Code review** — due today 🎯\\n\\nOne clean actionable item. Ready to crush it when you are!\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8779,\"output\":55,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8834,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664025027,\"responseId\":\"7e8bdc3ec77246568e44e33583c805bf\",\"rawStopReason\":\"stop\",\"durationMs\":1972}}",
+      "metadata": { "recordedAt": "2026-11-03T00:00:26.999Z", "responseTimeMs": 1986 }
+    }
+  ]
+}

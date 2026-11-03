@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "testName": "create-todo-context-tags",
+  "createdAt": "2026-11-03T00:00:09.872Z",
+  "frozenTime": "2026-11-03T00:00:09.872Z",
+  "interactions": [
+    {
+      "requestHash": "a66e75dffd6cc70c",
+      "request": {
+        "model": "qwen38/qwen3.8-27b",
+        "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
+        "messages": [
+          {
+            "role": "system",
+            "content": "{\"role\":\"system\",\"content\":\"\",\"sections\":{\"eddo\":\"You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help ..."
+          },
+          {
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:09.900Z\\n\\ncreate work todo for quarterly report due next month with urgent tag\"}"
+          }
+        ]
+      },
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a work todo for a quarterly report due next month with an urgent tag.\\n\\nCurrent date: 2026-11-03\\n\\\"Next month\\\" → November is the current month, so next month is December 2026. I'll set the due date to the end of December 2026: 2026-12-31T23:59:59.999Z\\n\\nWait, let me reconsider. \\\"Due next month\\\" - current month is November 2026. Next month would be December 2026. I'll use the end of December: 2026-12-31.\\n\\nContext: \\\"work\\\" (as specified)\\nTags: \\\"urgent\\\" (as specified), plus \\\"gtd:next\\\" since it's a clear actionable item\\nDue: 2026-12-31T23:59:59.999Z\\n\\nLet me create this.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b4f62178651d4107b58bafb4\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Quarterly Report\",\"context\":\"work\",\"due\":\"2026-12-31T23:59:59.999Z\",\"tags\":[\"urgent\",\"gtd:next\"],\"description\":\"Prepare and submit the quarterly report.\",\"message\":\"Created quarterly report work todo due end of December\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8115,\"output\":355,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8470,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664009910,\"responseId\":\"42fa5a813afa42a7be8646a52ffbe255\",\"rawStopReason\":\"tool_calls\",\"durationMs\":6448}}",
+      "metadata": { "recordedAt": "2026-11-03T00:00:16.358Z", "responseTimeMs": 6453 }
+    },
+    {
+      "requestHash": "ed5503229978b8d5",
+      "request": {
+        "model": "qwen38/qwen3.8-27b",
+        "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
+        "messages": [
+          {
+            "role": "system",
+            "content": "{\"role\":\"system\",\"content\":\"\",\"sections\":{\"eddo\":\"You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help ..."
+          },
+          {
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:09.900Z\\n\\ncreate work todo for quarterly report due next month with urgent tag\"}"
+          },
+          {
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a work todo for a quarterly report due next month with an urgent tag.\\n\\nCurrent date: 2026-11-03\\n\\\"Next month\\\" → November is the current month, so next month is December 2026. I'll set the due date to the end of December 2026: 2026-12-31T23:59:59.999Z\\n\\nWait, let me reconsider. \\\"Due next month\\\" - current month is November 2026. Next month would be December 2026. I'll use the end of December: 2026-12-31.\\n\\nContext: \\\"work\\\" (as specified)\\nTags: \\\"urgent\\\" (as specified), plus \\\"gtd:next\\\" since it's a clear actionable item\\nDue: 2026-12-31T23:59:59.999Z\\n\\nLet me create this.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b4f62178651d4107b58bafb4\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Quarterly Report\",\"context\":\"work\",\"due\":\"2026-12-31T23:59:59.999Z\",\"tags\":[\"urgent\",\"gtd:next\"],\"description\":\"Prepare and submit the quarterly report.\",\"message\":\"Created quarterly report work todo due end of December\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+          },
+          {
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_b4f62178651d4107b58bafb4\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:16.421Z\\\",\\\"title\\\":\\\"Quarterly Report\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-12-31\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:16.451Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
+          }
+        ]
+      },
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The todo was created successfully. Let me give a brief, motivational confirmation.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! 📋 **\\\"Quarterly Report\\\"** is locked in for your work context, due **Dec 31** with an **urgent** tag.\\n\\nWhen you're ready to dive in, just say the word and I'll start the timer on it. 💪\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8586,\"output\":75,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8661,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664016470,\"responseId\":\"4000d960592e48329c5f7647aa6d5081\",\"rawStopReason\":\"stop\",\"durationMs\":2666}}",
+      "metadata": { "recordedAt": "2026-11-03T00:00:19.136Z", "responseTimeMs": 2674 }
+    }
+  ]
+}

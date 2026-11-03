@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "testName": "create-todo-natural-language",
+  "createdAt": "2026-11-03T00:00:02.365Z",
+  "frozenTime": "2026-11-03T00:00:02.365Z",
+  "interactions": [
+    {
+      "requestHash": "8fd549d90f3f76c8",
+      "request": {
+        "model": "qwen38/qwen3.8-27b",
+        "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
+        "messages": [
+          {
+            "role": "system",
+            "content": "{\"role\":\"system\",\"content\":\"\",\"sections\":{\"eddo\":\"You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help ..."
+          },
+          {
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:02.394Z\\n\\nadd todo next friday to go shopping\"}"
+          }
+        ]
+      },
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo for \\\"go shopping\\\" with a due date of next Friday.\\n\\nCurrent date: 2026-11-03 (Monday)\\n- This Friday = 2026-11-06\\n- Next Friday = 2026-11-13\\n\\nSo I need to set the due date to 2026-11-13.\\n\\nContext: shopping → \\\"errands\\\" seems fitting\\nTags: gtd:next (it's a clear actionable item)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b785cca713db4103a4a2295b\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-11-13\",\"context\":\"errands\",\"tags\":[\"gtd:next\"],\"message\":\"Added shopping todo for next Friday\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8110,\"output\":213,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8323,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664002416,\"responseId\":\"af9fc83cd2db4501b89242fa792a98fe\",\"rawStopReason\":\"tool_calls\",\"durationMs\":4160}}",
+      "metadata": { "recordedAt": "2026-11-03T00:00:06.576Z", "responseTimeMs": 4172 }
+    },
+    {
+      "requestHash": "dcc670763e82c9cf",
+      "request": {
+        "model": "qwen38/qwen3.8-27b",
+        "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
+        "messages": [
+          {
+            "role": "system",
+            "content": "{\"role\":\"system\",\"content\":\"\",\"sections\":{\"eddo\":\"You are Coach Maya, an energetic and motivational GTD (Getting Things Done) productivity coach working with the Eddo todo management system. You help ..."
+          },
+          {
+            "role": "user",
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:02.394Z\\n\\nadd todo next friday to go shopping\"}"
+          },
+          {
+            "role": "assistant",
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo for \\\"go shopping\\\" with a due date of next Friday.\\n\\nCurrent date: 2026-11-03 (Monday)\\n- This Friday = 2026-11-06\\n- Next Friday = 2026-11-13\\n\\nSo I need to set the due date to 2026-11-13.\\n\\nContext: shopping → \\\"errands\\\" seems fitting\\nTags: gtd:next (it's a clear actionable item)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b785cca713db4103a4a2295b\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-11-13\",\"context\":\"errands\",\"tags\":[\"gtd:next\"],\"message\":\"Added shopping todo for next Friday\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+          },
+          {
+            "role": "toolResult",
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_b785cca713db4103a4a2295b\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:06.647Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"errands\\\",\\\"due\\\":\\\"2026-11-13\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:06.677Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
+          }
+        ]
+      },
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Todo created successfully. Let me confirm concisely.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! 🛒 **\\\"Go shopping\\\"** is set for next Friday, Nov 13. Filing it under **errands** so it's easy to grab when you're out and about. Nice and clear — exactly the kind of thing that slips your mind if you don't capture it!\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8439,\"output\":76,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8515,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664006703,\"responseId\":\"93c3dacf0d23485a8dd050489eccef41\",\"rawStopReason\":\"stop\",\"durationMs\":2779}}",
+      "metadata": { "recordedAt": "2026-11-03T00:00:09.482Z", "responseTimeMs": 2787 }
+    }
+  ]
+}
