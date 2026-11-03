@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.12.0
+
+### Minor Changes
+
+- [#684](https://github.com/walterra/eddoapp/pull/684) [`44dc3d1`](https://github.com/walterra/eddoapp/commit/44dc3d1c6d9d0270697bbd3e7372e83c4911cb24) - Save URLs shared in chat with extracted page titles, Markdown content, and metadata through Jina Reader.
+
+- [#694](https://github.com/walterra/eddoapp/pull/694) [`0b58723`](https://github.com/walterra/eddoapp/commit/0b587238052c6047b79bb722821daa7afded75e9) - Support local and custom OpenAI-compatible models in shared assistant chat and VCR recording, with automatic recording formatting.
+
+- [#679](https://github.com/walterra/eddoapp/pull/679) [`60acd16`](https://github.com/walterra/eddoapp/commit/60acd1648b25e9813fd5067e7d61a55bf37a403e) - Add a docked web assistant sidebar sharing conversation history and durable recovery with Telegram.
+
+### Patch Changes
+
+- [#700](https://github.com/walterra/eddoapp/pull/700) [`f7e48a4`](https://github.com/walterra/eddoapp/commit/f7e48a4c2fc133e64610a03035856605ee70042e) - Fix stalled Elasticsearch syncing so recent todos appear in search, retry failed indexing batches, and prevent oversized audit records from failing indexing.
+
+- [#697](https://github.com/walterra/eddoapp/pull/697) [`f947b8c`](https://github.com/walterra/eddoapp/commit/f947b8c85765319d5ea8ff0a5866e17d95c5c735) - Replace direct Zod dependencies with Pi Schema while preserving validation behavior and MCP compatibility.
+
+- [#695](https://github.com/walterra/eddoapp/pull/695) [`4756137`](https://github.com/walterra/eddoapp/commit/475613740f4eaf42fb9654c35beb0922d9b8a920) - Upgrade the assistant runtime to Pi 1.5.0 with compatible CouchDB persistence.
+
 ## 0.11.0
 
 ### Minor Changes
