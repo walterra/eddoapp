@@ -136,6 +136,9 @@ pnpm check:no-zod      # Reject direct Zod imports and dependencies
 pnpm check:commit      # TypeScript, dependency policy, ESLint, and formatting checks
 ```
 
+The web API uses ESM to load import-only dependencies such as pi-schema.
+See [Web API runtime](docs/05_deployment.md#web-api-runtime) for compiled startup and loader requirements.
+
 The unit suite and commit checks enforce the direct-dependency validation policy.
 See [Boundary validation](packages/core-shared/src/validation/README.md) for pi-schema contracts and transitive dependency scope.
 
