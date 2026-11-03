@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "persistent-chat-history",
-  "createdAt": "2026-11-03T00:00:36.923Z",
-  "frozenTime": "2026-11-03T00:00:36.923Z",
+  "createdAt": "2026-11-03T11:29:07.749Z",
+  "frozenTime": "2026-11-03T11:29:07.749Z",
   "interactions": [
     {
       "requestHash": "38b65ef5e753c2f6",
@@ -16,15 +16,15 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:36.962Z\\n\\nMy planning keyword for this test is deep-work.\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:07.777Z\\n\\nMy planning keyword for this test is deep-work.\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is telling me their planning keyword is \\\"deep-work\\\". This seems like a memory request - they want me to remember this information. Let me create a memory todo for this.\\n\\n- Tags: [\\\"user:memory\\\"]\\n- Title: Brief summary about remembering the planning keyword\\n- Description: Full details\\n- Context: \\\"memory\\\"\\n- Due: Today's date 2026-11-03\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_fc87600956ed43588cf010f1\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Remember: Planning keyword is \\\"deep-work\\\"\",\"description\":\"User's planning keyword for this test is: **deep-work**\",\"context\":\"memory\",\"tags\":[\"user:memory\"],\"due\":\"2026-11-03\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8113,\"output\":196,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8309,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664036980,\"responseId\":\"921e4dc1595f46839f19389255a37215\",\"rawStopReason\":\"tool_calls\",\"durationMs\":3653}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:40.634Z", "responseTimeMs": 3665 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to remember their planning keyword \\\"deep-work\\\" for this test. This is a memory request, so I should:\\n- Use context \\\"memory\\\"\\n- Use due date as today's date (2026-11-03)\\n- Use tags [\\\"user:memory\\\"]\\n- Keep it concise\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_72eafc009ca04598a29c7ee3\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Planning keyword: deep-work\",\"description\":\"User's planning keyword for this test is \\\"deep-work\\\".\",\"context\":\"memory\",\"due\":\"2026-11-03\",\"tags\":[\"user:memory\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8113,\"output\":172,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8285,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"toolUse\",\"timestamp\":1793705347789,\"responseId\":\"d9a6b3bafbae464b8dbb4b281b61dc7a\",\"rawStopReason\":\"tool_calls\",\"durationMs\":3037}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:10.827Z", "responseTimeMs": 3044 }
     },
     {
-      "requestHash": "5ae583473012dd45",
+      "requestHash": "6ed43ffce8b4c078",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -35,23 +35,23 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:36.962Z\\n\\nMy planning keyword for this test is deep-work.\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:07.777Z\\n\\nMy planning keyword for this test is deep-work.\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is telling me their planning keyword is \\\"deep-work\\\". This seems like a memory request - they want me to remember this information. Let me create a memory todo for this.\\n\\n- Tags: [\\\"user:memory\\\"]\\n- Title: Brief summary about remembering the planning keyword\\n- Description: Full details\\n- Context: \\\"memory\\\"\\n- Due: Today's date 2026-11-03\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_fc87600956ed43588cf010f1\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Remember: Planning keyword is \\\"deep-work\\\"\",\"description\":\"User's planning keyword for this test is: **deep-work**\",\"context\":\"memory\",\"tags\":[\"user:memory\"],\"due\":\"2026-11-03\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to remember their planning keyword \\\"deep-work\\\" for this test. This is a memory request, so I should:\\n- Use context \\\"memory\\\"\\n- Use due date as today's date (2026-11-03)\\n- Use tags [\\\"user:memory\\\"]\\n- Keep it concise\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_72eafc009ca04598a29c7ee3\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Planning keyword: deep-work\",\"description\":\"User's planning keyword for this test is \\\"deep-work\\\".\",\"context\":\"memory\",\"due\":\"2026-11-03\",\"tags\":[\"user:memory\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_fc87600956ed43588cf010f1\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:40.695Z\\\",\\\"title\\\":\\\"Remember: Planning keyword is \\\\\\\"deep-work\\\\\\\"\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:40.734Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_72eafc009ca04598a29c7ee3\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:29:10.872Z\\\",\\\"title\\\":\\\"Planning keyword: deep-work\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:10.902Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user said \\\"My planning keyword for this test is deep-work.\\\" This is a memory request - they want me to remember their planning keyword. I should create a todo with the memory context.\\n\\nLet me create this as a memory item.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nGot it — planning keyword **deep-work** is saved to memory. ✅\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8431,\"output\":68,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8499,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664040762,\"responseId\":\"f2f21a949399430cb9886e2d514d5d11\",\"rawStopReason\":\"stop\",\"durationMs\":1765}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:42.527Z", "responseTimeMs": 1779 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The tool call succeeded. Now I need to provide a brief, encouraging response confirming that I've noted the keyword.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nGot it! \\\"Deep-work\\\" is locked in. Ready to crush it? 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8403,\"output\":46,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8449,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705350918,\"responseId\":\"80813c93ba704294851c8575857b3cd5\",\"rawStopReason\":\"stop\",\"durationMs\":1997}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:12.916Z", "responseTimeMs": 2004 }
     },
     {
-      "requestHash": "ab5fcd45084183db",
+      "requestHash": "0bfa86737be9280c",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -62,28 +62,28 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:36.962Z\\n\\nMy planning keyword for this test is deep-work.\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:07.777Z\\n\\nMy planning keyword for this test is deep-work.\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is telling me their planning keyword is \\\"deep-work\\\". This seems like a memory request - they want me to remember this information. Let me create a memory todo for this.\\n\\n- Tags: [\\\"user:memory\\\"]\\n- Title: Brief summary about remembering the planning keyword\\n- Description: Full details\\n- Context: \\\"memory\\\"\\n- Due: Today's date 2026-11-03\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_fc87600956ed43588cf010f1\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Remember: Planning keyword is \\\"deep-work\\\"\",\"description\":\"User's planning keyword for this test is: **deep-work**\",\"context\":\"memory\",\"tags\":[\"user:memory\"],\"due\":\"2026-11-03\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to remember their planning keyword \\\"deep-work\\\" for this test. This is a memory request, so I should:\\n- Use context \\\"memory\\\"\\n- Use due date as today's date (2026-11-03)\\n- Use tags [\\\"user:memory\\\"]\\n- Keep it concise\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_72eafc009ca04598a29c7ee3\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Planning keyword: deep-work\",\"description\":\"User's planning keyword for this test is \\\"deep-work\\\".\",\"context\":\"memory\",\"due\":\"2026-11-03\",\"tags\":[\"user:memory\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_fc87600956ed43588cf010f1\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:40.695Z\\\",\\\"title\\\":\\\"Remember: Planning keyword is \\\\\\\"deep-work\\\\\\\"\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:40.734Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_72eafc009ca04598a29c7ee3\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:29:10.872Z\\\",\\\"title\\\":\\\"Planning keyword: deep-work\\\",\\\"context\\\":\\\"memory\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:10.902Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user said \\\"My planning keyword for this test is deep-work.\\\" This is a memory request - they want me to remember their planning keyword. I should create a todo with the memory context.\\n\\nLet me create this as a memory item.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nGot it — planning keyword **deep-work** is saved to memory. ✅\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"stop\",\"rawStopReason\":\"stop\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The tool call succeeded. Now I need to provide a brief, encouraging response confirming that I've noted the keyword.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nGot it! \\\"Deep-work\\\" is locked in. Ready to crush it? 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"stop\",\"rawStopReason\":\"stop\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:42.603Z\\n\\nWhat planning keyword did I mention?\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:12.969Z\\n\\nWhat planning keyword did I mention?\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is asking what planning keyword they mentioned. I just saved it to memory in the previous turn. The keyword was \\\"deep-work\\\". I can simply answer from the conversation context.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nYour planning keyword is **deep-work** 💪\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8548,\"output\":51,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8599,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664042616,\"responseId\":\"fcde8aab9819446c880c1a3adb54143f\",\"rawStopReason\":\"stop\",\"durationMs\":1752}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:44.368Z", "responseTimeMs": 1759 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is asking what planning keyword they mentioned. Looking back at the conversation, they said \\\"My planning keyword for this test is deep-work.\\\" So the answer is \\\"deep-work\\\".\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nYour planning keyword is **deep-work**.\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8498,\"output\":49,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8547,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705352985,\"responseId\":\"2c93611bcc2846ef9a54f72a9c1e1c9c\",\"rawStopReason\":\"stop\",\"durationMs\":1177}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:14.162Z", "responseTimeMs": 1187 }
     }
   ]
 }

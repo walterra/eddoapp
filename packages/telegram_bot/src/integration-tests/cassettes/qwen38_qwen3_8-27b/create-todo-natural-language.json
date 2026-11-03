@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "create-todo-natural-language",
-  "createdAt": "2026-11-03T00:00:02.365Z",
-  "frozenTime": "2026-11-03T00:00:02.365Z",
+  "createdAt": "2026-11-03T11:28:32.543Z",
+  "frozenTime": "2026-11-03T11:28:32.543Z",
   "interactions": [
     {
       "requestHash": "8fd549d90f3f76c8",
@@ -16,15 +16,15 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:02.394Z\\n\\nadd todo next friday to go shopping\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:28:32.597Z\\n\\nadd todo next friday to go shopping\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo for \\\"go shopping\\\" with a due date of next Friday.\\n\\nCurrent date: 2026-11-03 (Monday)\\n- This Friday = 2026-11-06\\n- Next Friday = 2026-11-13\\n\\nSo I need to set the due date to 2026-11-13.\\n\\nContext: shopping → \\\"errands\\\" seems fitting\\nTags: gtd:next (it's a clear actionable item)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b785cca713db4103a4a2295b\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-11-13\",\"context\":\"errands\",\"tags\":[\"gtd:next\"],\"message\":\"Added shopping todo for next Friday\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8110,\"output\":213,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8323,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664002416,\"responseId\":\"af9fc83cd2db4501b89242fa792a98fe\",\"rawStopReason\":\"tool_calls\",\"durationMs\":4160}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:06.576Z", "responseTimeMs": 4172 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo for next Friday to go shopping.\\n\\nCurrent date: 2026-11-03 (Tuesday)\\n\\\"Next Friday\\\" → the Friday after this coming Friday. This coming Friday is 2026-11-06. Next Friday would be 2026-11-13.\\n\\nDue date: 2026-11-13T23:59:59.999Z\\n\\nContext: shopping → \\\"errands\\\" or \\\"shopping\\\"\\nTags: gtd:next (it's a clear, actionable item)\\n\\nLet me create this todo.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_878a88d6ba5c43c4aabdfeab\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-11-13\",\"context\":\"errands\",\"tags\":[\"gtd:next\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8110,\"output\":221,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8331,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"toolUse\",\"timestamp\":1793705312630,\"responseId\":\"ede1558b421e48528d1005b1b67fe311\",\"rawStopReason\":\"tool_calls\",\"durationMs\":4269}}",
+      "metadata": { "recordedAt": "2026-11-03T11:28:36.899Z", "responseTimeMs": 4281 }
     },
     {
-      "requestHash": "dcc670763e82c9cf",
+      "requestHash": "ec568590b8c2844e",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -35,20 +35,20 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:02.394Z\\n\\nadd todo next friday to go shopping\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:28:32.597Z\\n\\nadd todo next friday to go shopping\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo for \\\"go shopping\\\" with a due date of next Friday.\\n\\nCurrent date: 2026-11-03 (Monday)\\n- This Friday = 2026-11-06\\n- Next Friday = 2026-11-13\\n\\nSo I need to set the due date to 2026-11-13.\\n\\nContext: shopping → \\\"errands\\\" seems fitting\\nTags: gtd:next (it's a clear actionable item)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b785cca713db4103a4a2295b\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-11-13\",\"context\":\"errands\",\"tags\":[\"gtd:next\"],\"message\":\"Added shopping todo for next Friday\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to add a todo for next Friday to go shopping.\\n\\nCurrent date: 2026-11-03 (Tuesday)\\n\\\"Next Friday\\\" → the Friday after this coming Friday. This coming Friday is 2026-11-06. Next Friday would be 2026-11-13.\\n\\nDue date: 2026-11-13T23:59:59.999Z\\n\\nContext: shopping → \\\"errands\\\" or \\\"shopping\\\"\\nTags: gtd:next (it's a clear, actionable item)\\n\\nLet me create this todo.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_878a88d6ba5c43c4aabdfeab\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Go shopping\",\"due\":\"2026-11-13\",\"context\":\"errands\",\"tags\":[\"gtd:next\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_b785cca713db4103a4a2295b\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:06.647Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"errands\\\",\\\"due\\\":\\\"2026-11-13\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:06.677Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_878a88d6ba5c43c4aabdfeab\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:28:36.963Z\\\",\\\"title\\\":\\\"Go shopping\\\",\\\"context\\\":\\\"errands\\\",\\\"due\\\":\\\"2026-11-13\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T11:28:36.999Z\\\",\\\"execution_time\\\":\\\"6.00ms\\\"}}\"}],\"isError\":false}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Todo created successfully. Let me confirm concisely.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! 🛒 **\\\"Go shopping\\\"** is set for next Friday, Nov 13. Filing it under **errands** so it's easy to grab when you're out and about. Nice and clear — exactly the kind of thing that slips your mind if you don't capture it!\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8439,\"output\":76,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8515,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664006703,\"responseId\":\"93c3dacf0d23485a8dd050489eccef41\",\"rawStopReason\":\"stop\",\"durationMs\":2779}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:09.482Z", "responseTimeMs": 2787 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The todo was created successfully. Now I need to give a brief, encouraging response.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! 🛍️ \\\"Go shopping\\\" is set for next Friday (Nov 13) under **errands**. Have a great weekend!\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8447,\"output\":52,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8499,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705317018,\"responseId\":\"f23e0e19ed87475a8cd1a9698c81bb86\",\"rawStopReason\":\"stop\",\"durationMs\":1339}}",
+      "metadata": { "recordedAt": "2026-11-03T11:28:38.357Z", "responseTimeMs": 1346 }
     }
   ]
 }
