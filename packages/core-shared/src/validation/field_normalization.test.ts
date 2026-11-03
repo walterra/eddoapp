@@ -51,6 +51,17 @@ describe('field normalization', () => {
     },
   );
 
+  it('retains unknown fields for boundaries that reject them after normalization', () => {
+    const normalizeStrict = createFieldNormalizer({
+      fields: ['port'],
+      defaults: { port: 3000 },
+      conversions: { port: coerceNumber },
+      preserveUnknown: true,
+    });
+    expect(normalizeStrict({ port: '4000', unknown: true })).toEqual({ port: 4000, unknown: true });
+    expect(normalizeStrict({ unknown: true })).toEqual({ port: 3000, unknown: true });
+  });
+
   it('preserves failed conversion as a non-finite value for structural rejection', () => {
     expect(coerceNumber(Symbol('private'))).toBeNaN();
     expect(coerceNumber('invalid')).toBeNaN();

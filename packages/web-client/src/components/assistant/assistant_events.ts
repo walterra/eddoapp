@@ -1,8 +1,12 @@
-import { z } from 'zod';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import { obj, str } from '@eddo/core-shared/validation/schema_parser';
 import type { AssistantHistoryController } from './assistant_history_controller';
 import { receiptSchema, sharedRequestsSchema } from './assistant_schemas';
 import { isTerminalAssistantRequest, type AssistantStateCore } from './assistant_state';
 import { AssistantClientError, type AssistantServerEvent } from './assistant_types';
+
+const errorSchema = createProjectedParser(obj({ error: str() }));
+const missingSchema = createProjectedParser(obj({ requestId: str() }));
 
 function receipt(
   core: AssistantStateCore,
@@ -30,7 +34,7 @@ function sharedRequests(
 }
 
 function failure(data: unknown): never {
-  const result = z.object({ error: z.string() }).parse(data);
+  const result = errorSchema.parse(data);
   throw new AssistantClientError(
     result.error === 'unauthorized' || result.error === 'forbidden' ? result.error : 'unavailable',
   );
@@ -54,7 +58,7 @@ export function createAssistantEventHandler(
         receipt(core, history, event.data);
         return;
       case 'request-missing':
-        if (z.object({ requestId: z.string() }).parse(event.data).requestId === core.pendingId())
+        if (missingSchema.parse(event.data).requestId === core.pendingId())
           core.update({ error: 'unavailable' });
         return;
       case 'unavailable':

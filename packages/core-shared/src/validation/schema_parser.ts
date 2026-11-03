@@ -88,7 +88,9 @@ export {
   oneOf,
   opt,
   str,
+  tuple,
   union,
+  unknown,
 } from '@earendil-works/pi-schema';
 export type { Schema, Static } from '@earendil-works/pi-schema';
 export { int, num } from './number_schema';

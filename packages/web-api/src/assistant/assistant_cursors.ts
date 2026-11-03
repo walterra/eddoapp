@@ -1,15 +1,27 @@
-import { z } from 'zod';
+import { validateTextLength } from '@eddo/core-shared/validation/compatibility';
+import {
+  createSchemaParser,
+  lit,
+  num,
+  obj,
+  str,
+  tuple,
+} from '@eddo/core-shared/validation/schema_parser';
 import { AssistantApiError } from './assistant_errors';
 
-const envelope = z.object({ version: z.literal(1), username: z.string().min(1) });
-const changeSchema = envelope.extend({ sequence: z.string().min(1).max(2048) }).strict();
-const historySchema = envelope
-  .extend({
-    conversationId: z.string().min(1),
-    key: z.tuple([z.number().nonnegative(), z.string(), z.string().min(1)]),
-  })
-  .strict();
-export type AssistantHistoryKey = z.infer<typeof historySchema>['key'];
+const envelope = { version: lit(1), username: str({ minLength: 1 }) };
+const changeSchema = createSchemaParser(
+  obj({ ...envelope, sequence: str({ minLength: 1, maxLength: 2048 }) }),
+  { validate: (value) => validateTextLength(value.sequence, 2048, '/sequence') },
+);
+const historySchema = createSchemaParser(
+  obj({
+    ...envelope,
+    conversationId: str({ minLength: 1 }),
+    key: tuple([num({ minimum: 0 }), str(), str({ minLength: 1 })]),
+  }),
+);
+export type AssistantHistoryKey = ReturnType<typeof historySchema.parse>['key'];
 
 function decode(cursor: string): unknown {
   try {

@@ -1,4 +1,12 @@
-import { z } from 'zod';
+import { validateTextLength } from '@eddo/core-shared/validation/compatibility';
+import {
+  arr,
+  createSchemaParser,
+  lit,
+  obj,
+  oneOf,
+  str,
+} from '@eddo/core-shared/validation/schema_parser';
 
 export const CRITERIA = [
   'task_fulfillment',
@@ -8,20 +16,31 @@ export const CRITERIA = [
   'communication_quality',
 ] as const;
 
-export const judgmentSchema = z.strictObject({
-  criterion: z.enum(CRITERIA),
-  verdict: z.enum(['pass', 'partial', 'fail', 'not_applicable', 'insufficient_evidence']),
-  explanation: z.string().min(1).max(1500),
-  evidenceIds: z.array(z.string().min(1)).max(30),
+const judgmentDefinition = obj({
+  criterion: oneOf(CRITERIA),
+  verdict: oneOf(['pass', 'partial', 'fail', 'not_applicable', 'insufficient_evidence']),
+  explanation: str({ minLength: 1, maxLength: 1500 }),
+  evidenceIds: arr(str({ minLength: 1 }), { maxItems: 30 }),
+});
+export const judgmentSchema = createSchemaParser(judgmentDefinition, {
+  validate: (value) => validateTextLength(value.explanation, 1500, '/explanation'),
+});
+const reviewDefinition = obj({
+  schemaVersion: lit(1),
+  judgments: arr(judgmentDefinition, { minItems: CRITERIA.length, maxItems: CRITERIA.length }),
+});
+export const reviewSchema = createSchemaParser(reviewDefinition, {
+  validate: (value) =>
+    value.judgments.flatMap((judgment, index) =>
+      validateTextLength(judgment.explanation, 1500, `/judgments/${index}/explanation`),
+    ),
 });
 
-export const reviewSchema = z.strictObject({
-  schemaVersion: z.literal(1),
-  judgments: z.array(judgmentSchema).length(CRITERIA.length),
-});
-
-export const REVIEW_JSON_SCHEMA = z.toJSONSchema(reviewSchema);
-export type Review = z.infer<typeof reviewSchema>;
+export const REVIEW_JSON_SCHEMA: Record<string, unknown> = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  ...reviewDefinition,
+};
+export type Review = ReturnType<typeof reviewSchema.parse>;
 
 export interface EvidenceEvent {
   id: string;

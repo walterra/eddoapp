@@ -1,31 +1,26 @@
 import type { AssistantMessageSubmission } from '@eddo/core-shared';
 import { Hono, type Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { z } from 'zod';
 import { assistantAccess, type AssistantRouteEnv } from './assistant_access';
 import { readChangeCursor } from './assistant_cursors';
 import { AssistantApiError } from './assistant_errors';
 import { createAssistantLimits, type AssistantLimits } from './assistant_limits';
+import {
+  historySchema,
+  requestIdentifierSchema,
+  streamSchema,
+  submissionSchema,
+} from './assistant_route_schemas';
 import { runAssistantStream } from './assistant_stream';
 import type { AssistantService } from './assistant_types';
 import { boundedJson } from './bounded_json';
 
-const historySchema = z
-  .object({
-    limit: z.coerce.number().int().min(1).max(50).default(30),
-    cursor: z.string().max(4096).optional(),
-  })
-  .strict();
-const submissionSchema = z
-  .object({ requestId: z.uuid(), text: z.string().trim().min(1).max(8000) })
-  .strict();
-const streamSchema = z
-  .object({ cursor: z.string().max(4096).optional(), requestIds: z.string().max(3000).optional() })
-  .strict();
-
 function requestId(username: string, value: string): string {
   const prefix = `web:${username}:`;
-  if (!value.startsWith(prefix) || !z.uuid().safeParse(value.slice(prefix.length)).success)
+  if (
+    !value.startsWith(prefix) ||
+    !requestIdentifierSchema.safeParse(value.slice(prefix.length)).success
+  )
     throw new AssistantApiError(403, 'forbidden');
   return value;
 }

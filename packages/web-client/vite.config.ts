@@ -16,7 +16,7 @@ const vendorChunks = {
   'vendor-graph': ['@xyflow/react', 'd3-force', 'd3-array'],
   'vendor-markdown': ['react-markdown', 'remark-gfm'],
   'vendor-query': ['@tanstack/react-query', '@tanstack/react-table', '@tanstack/react-virtual'],
-  'vendor-utils': ['date-fns', 'zod', 'lodash-es'],
+  'vendor-utils': ['date-fns', 'lodash-es'],
 };
 
 export default defineConfig(({ mode }) => {

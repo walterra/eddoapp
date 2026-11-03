@@ -10,7 +10,8 @@ import {
   type SimpleStreamOptions,
   type TranscriptContext,
 } from '@earendil-works/pi-ai';
-import { z } from 'zod';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import { lit, obj, unknown as unknownSchema } from '@eddo/core-shared/validation/schema_parser';
 import type { CassetteManager } from './cassette-manager.js';
 
 export interface LlmRequestSnapshot {
@@ -30,23 +31,28 @@ interface ProviderRequest {
 }
 
 const VOLATILE_FIELDS = new Set(['timestamp', 'durationMs', 'usage', 'responseId']);
-const responseSchema = z.object({
-  format: z.literal('pi-durable-assistant-v1'),
-  message: z.custom<AssistantMessage>((value) => {
-    if (!value || typeof value !== 'object') return false;
-    const message = value as Partial<AssistantMessage>;
-    return (
-      message.role === 'assistant' &&
-      Array.isArray(message.content) &&
-      typeof message.stopReason === 'string' &&
-      typeof message.model === 'string' &&
-      typeof message.provider === 'string' &&
-      typeof message.api === 'string' &&
-      typeof message.timestamp === 'number' &&
-      Boolean(message.usage)
-    );
+const responseSchema = createProjectedParser(
+  obj({
+    format: lit('pi-durable-assistant-v1'),
+    message: unknownSchema(),
   }),
-});
+);
+
+/** Preserves native message extensions while checking the recorded response envelope. */
+function isNativeAssistantMessage(value: unknown): value is AssistantMessage {
+  if (!value || typeof value !== 'object') return false;
+  const message = value as Partial<AssistantMessage>;
+  return (
+    message.role === 'assistant' &&
+    Array.isArray(message.content) &&
+    typeof message.stopReason === 'string' &&
+    typeof message.model === 'string' &&
+    typeof message.provider === 'string' &&
+    typeof message.api === 'string' &&
+    typeof message.timestamp === 'number' &&
+    Boolean(message.usage)
+  );
+}
 
 /** Hashes native message/tool schemas without provider accounting or wall-clock noise. */
 function requestMessages(context: TranscriptContext): LlmRequestSnapshot['messages'] {
@@ -88,7 +94,9 @@ async function recordedResponse(
 
 function decodeResponse(serialized: string): AssistantMessage {
   try {
-    return responseSchema.parse(JSON.parse(serialized)).message;
+    const { message } = responseSchema.parse(JSON.parse(serialized));
+    if (!isNativeAssistantMessage(message)) throw new Error('Invalid native response');
+    return message;
   } catch {
     throw new Error(
       'Cassette is not a native Durable assistant response; re-record it with the Durable VCR harness.',

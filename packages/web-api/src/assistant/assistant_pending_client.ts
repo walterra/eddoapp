@@ -1,11 +1,8 @@
 import type { AssistantPendingRequests } from '@eddo/core-shared';
-import { z } from 'zod';
+import { sharedRequestsSchema as pendingSchema } from '@eddo/core-shared/validation/assistant_receipts';
 import { AssistantApiError } from './assistant_errors';
 import type { AssistantHostOptions } from './assistant_host_client';
-import { receiptSchema } from './assistant_receipts';
 import { boundedJson } from './bounded_json';
-
-const pendingSchema = z.object({ requests: z.array(receiptSchema).max(100), hasMore: z.boolean() });
 
 async function pendingResponse(
   response: Response,

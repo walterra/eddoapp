@@ -16,6 +16,17 @@ export function utcDateTimeSchema(): Schema<string> {
   });
 }
 
+/** Preserves UTF-16 minimum lengths for validated string fields. */
+export function validateMinimumTextLength(
+  value: string,
+  minimum: number,
+  path: string,
+): SchemaIssue[] {
+  return value.length >= minimum
+    ? []
+    : [{ path, code: 'minLength', message: `expected at least ${minimum} UTF-16 code units` }];
+}
+
 /** Preserves existing UTF-16 length limits instead of JSON Schema code-point limits. */
 export function validateTextLength(value: string, maximum: number, path: string): SchemaIssue[] {
   return value.length <= maximum

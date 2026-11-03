@@ -34,6 +34,8 @@ Use it only at boundaries that intentionally strip undeclared fields.
 
 `createFieldNormalizer` projects named fields and supplies cloned defaults for undefined values.
 Its conversions apply only to explicitly configured fields.
+Set `preserveUnknown` when strict boundaries reject undeclared fields after normalization.
+`createProjectedParser` combines structural parsing with recursive field projection.
 `coerceNumber` preserves JavaScript numeric conversion; structural validation rejects failed conversions.
 
 `toStandardSchema` preserves parser methods and adds Standard Schema validation and JSON Schema publication.
@@ -68,7 +70,10 @@ Completed:
 - Shared parser, structured errors, explicit normalization and domain-validation hooks.
 - All assistant-server validation, including requests and generation controls.
 - Shared server and client environment parsing with explicit defaults and conversions.
-- Direct Zod dependency removal from core-shared, core-server, core-client, and assistant-server.
+- Direct Zod dependency removal from core-shared, core-server, core-client, assistant-server, and web-client.
+- Web assistant authentication, routes, cursors, receipts, projection reads, and host transport configuration.
+- Browser assistant payloads and persisted pending state, with shared lifecycle receipt contracts.
+- Recording evaluation schemas, JSON Schema publication, and native VCR response validation.
 - Transport-independent MCP registry using Standard Schema and pi-schema output contracts.
 - Get, delete, user-info, briefing, recap, and URL-fetch tool argument schemas.
 - Mutation receipt and journal ownership metadata validation.
@@ -78,6 +83,7 @@ Remaining:
 
 - Characterize and migrate all other Zod boundaries.
 - Migrate remaining MCP tool arguments, including input defaults and custom refinements.
+- Migrate remaining web API routes and their validation error handling.
 - Migrate bot, printer, and model configuration, including defaults and transformations.
 - Replace Zod-specific error handling and schema-derived types.
 - Remove direct dependencies and bundler references after all callers migrate.

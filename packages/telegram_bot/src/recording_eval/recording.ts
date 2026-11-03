@@ -1,32 +1,47 @@
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import {
+  arr,
+  bool,
+  lit,
+  obj,
+  oneOf,
+  opt,
+  str,
+  unknown as unknownSchema,
+} from '@eddo/core-shared/validation/schema_parser';
 import { createHash } from 'node:crypto';
-import { z } from 'zod';
 import type { EvidenceEvent, Recording } from './schema.js';
 
-const messageSchema = z.object({
-  role: z.enum(['system', 'user', 'assistant', 'toolResult']),
-  content: z.unknown(),
-  toolName: z.string().optional(),
-  toolCallId: z.string().optional(),
-  isError: z.boolean().optional(),
+const messageDefinition = obj({
+  role: oneOf(['system', 'user', 'assistant', 'toolResult']),
+  content: unknownSchema(),
+  toolName: opt(str()),
+  toolCallId: opt(str()),
+  isError: opt(bool()),
 });
-const cassetteSchema = z.object({
-  testName: z.string(),
-  interactions: z
-    .array(
-      z.object({
-        request: z.object({
-          model: z.string(),
-          messages: z.array(z.object({ role: z.string(), content: z.string() })),
+const messageSchema = createProjectedParser(messageDefinition);
+const blockSchema = createProjectedParser(obj({ type: str() }));
+const cassetteSchema = createProjectedParser(
+  obj({
+    testName: str(),
+    interactions: arr(
+      obj({
+        request: obj({
+          model: str(),
+          messages: arr(obj({ role: str(), content: str() })),
         }),
-        response: z.string(),
+        response: str(),
       }),
-    )
-    .min(1),
-});
-const responseSchema = z.object({
-  format: z.literal('pi-durable-assistant-v1'),
-  message: messageSchema,
-});
+      { minItems: 1 },
+    ),
+  }),
+);
+const responseSchema = createProjectedParser(
+  obj({
+    format: lit('pi-durable-assistant-v1'),
+    message: messageDefinition,
+  }),
+);
 
 /** Removes private reasoning and provider accounting from review input. */
 function visibleMessage(value: unknown): string | undefined {
@@ -34,7 +49,7 @@ function visibleMessage(value: unknown): string | undefined {
   if (message.role === 'system') return undefined;
   const content = Array.isArray(message.content)
     ? message.content.filter((block: unknown) => {
-        const type = z.object({ type: z.string() }).parse(block).type;
+        const type = blockSchema.parse(block).type;
         return ['text', 'toolCall', 'image'].includes(type);
       })
     : message.content;

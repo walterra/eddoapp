@@ -2,6 +2,7 @@ export type FieldConversion = (value: unknown) => unknown;
 
 export interface FieldNormalization {
   readonly fields: readonly string[];
+  readonly preserveUnknown?: boolean;
   readonly defaults?: Readonly<Record<string, unknown>>;
   readonly conversions?: Readonly<Record<string, FieldConversion>>;
 }
@@ -25,7 +26,8 @@ export function createFieldNormalizer(options: FieldNormalization): FieldConvers
       if (!present && selected === undefined) return [];
       return [[key, convert ? convert(selected) : selected]];
     });
-    return Object.fromEntries(entries);
+    const normalized = Object.fromEntries(entries);
+    return options.preserveUnknown ? { ...value, ...normalized } : normalized;
   };
 }
 

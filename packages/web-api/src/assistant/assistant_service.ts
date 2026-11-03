@@ -1,14 +1,36 @@
 import { createUserRegistry, type Env } from '@eddo/core-server';
-import { z } from 'zod';
+import { validateMinimumTextLength } from '@eddo/core-shared/validation/compatibility';
+import {
+  coerceNumber,
+  createFieldNormalizer,
+} from '@eddo/core-shared/validation/field_normalization';
+import { createSchemaParser, int, obj, opt, str } from '@eddo/core-shared/validation/schema_parser';
 import { AssistantApiError } from './assistant_errors';
 import { createAssistantHostClient } from './assistant_host_client';
 import { createAssistantProjectionStore } from './assistant_projection_store';
 import type { AssistantService } from './assistant_types';
 
-const hostConfiguration = z.object({
-  ASSISTANT_INTERNAL_TOKEN: z.string().min(32).optional(),
-  ASSISTANT_INTERNAL_PORT: z.coerce.number().int().min(1).max(65535).default(3003),
-});
+const hostConfiguration = createSchemaParser(
+  obj({
+    ASSISTANT_INTERNAL_TOKEN: opt(str()),
+    ASSISTANT_INTERNAL_PORT: int({ minimum: 1, maximum: 65535 }),
+  }),
+  {
+    normalize: createFieldNormalizer({
+      fields: ['ASSISTANT_INTERNAL_TOKEN', 'ASSISTANT_INTERNAL_PORT'],
+      defaults: { ASSISTANT_INTERNAL_PORT: 3003 },
+      conversions: { ASSISTANT_INTERNAL_PORT: coerceNumber },
+    }),
+    validate: (value) =>
+      value.ASSISTANT_INTERNAL_TOKEN === undefined
+        ? []
+        : validateMinimumTextLength(
+            value.ASSISTANT_INTERNAL_TOKEN,
+            32,
+            '/ASSISTANT_INTERNAL_TOKEN',
+          ),
+  },
+);
 
 /** Composes projection reads and loopback transport; web-api never provisions or opens execution journals. */
 export function createAssistantService(

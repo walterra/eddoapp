@@ -1,5 +1,7 @@
+import { validateTextLength } from '@eddo/core-shared/validation/compatibility';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import { num, obj, str } from '@eddo/core-shared/validation/schema_parser';
 import type { MiddlewareHandler } from 'hono';
-import { z } from 'zod';
 import { AssistantApiError } from './assistant_errors';
 import type { AssistantLimits } from './assistant_limits';
 import type { AssistantIdentity, AssistantService } from './assistant_types';
@@ -11,7 +13,10 @@ interface AssistantRouteVariables {
 export interface AssistantRouteEnv {
   Variables: AssistantRouteVariables;
 }
-const claimsSchema = z.object({ username: z.string().min(1).max(128), exp: z.number().positive() });
+const claimsSchema = createProjectedParser(
+  obj({ username: str({ minLength: 1, maxLength: 128 }), exp: num({ exclusiveMinimum: 0 }) }),
+  { validate: (value) => validateTextLength(value.username, 128, '/username') },
+);
 
 /** Applies assistant response policy before the application's shared JWT middleware. */
 export function assistantHttpBoundary(): MiddlewareHandler {
