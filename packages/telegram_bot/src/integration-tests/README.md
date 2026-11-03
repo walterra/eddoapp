@@ -55,7 +55,8 @@ pnpm test:integration:agent-loop:record   # real provider calls; incurs API char
 pnpm test:integration:agent-loop:playback # strict offline model playback for every native recorded model
 ```
 
-The runner starts an isolated CouchDB container and MCP server. Tests exercise the production Durable Harness, real MCP tools, and chat projections.
+The runner starts an isolated CouchDB container and MCP server.
+Runner cleanup stops the MCP process group, escalates after two seconds, and handles SIGINT and SIGTERM. Tests exercise the production Durable Harness, real MCP tools, and chat projections.
 They retain the create, date parsing, context/tag, multi-step, persistent-history, ambiguous-input, and recap scenarios.
 The provider adapter records complete native assistant messages, including structured tool calls, rather than translating text protocols.
 System-message snapshots retain the first 200 characters plus an ellipsis; user/tool messages and assistant responses remain complete.

@@ -12,6 +12,8 @@ import {
   stopMcpServer,
 } from './integration-test-helpers.js';
 
+import { registerRunnerCleanup } from './integration_process_cleanup.js';
+
 const DEFAULT_TEST_DB = 'todos-dev';
 const DEFAULT_MCP_PORT = 3003;
 
@@ -19,6 +21,16 @@ async function runIntegrationTests(): Promise<void> {
   let serverProcess: ServerProcess | undefined;
   let containerSetup: ContainerSetup | undefined;
   let testExitCode = 0;
+  const cleanup = registerRunnerCleanup(async () => {
+    if (serverProcess) {
+      await stopMcpServer(serverProcess);
+    }
+
+    if (containerSetup) {
+      console.log('🐳 Stopping CouchDB testcontainer...');
+      await containerSetup.teardown();
+    }
+  });
 
   try {
     containerSetup = await setupTestContainer();
@@ -31,14 +43,7 @@ async function runIntegrationTests(): Promise<void> {
 
     testExitCode = await runVitestProcess('packages/mcp_server/src/integration-tests');
   } finally {
-    if (serverProcess) {
-      await stopMcpServer(serverProcess);
-    }
-
-    if (containerSetup) {
-      console.log('🐳 Stopping CouchDB testcontainer...');
-      await containerSetup.teardown();
-    }
+    await cleanup();
   }
 
   process.exit(testExitCode);

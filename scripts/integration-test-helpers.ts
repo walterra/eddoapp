@@ -5,6 +5,7 @@
 import { type ChildProcess, spawn } from 'child_process';
 import { createServer } from 'http';
 import { setTimeout } from 'timers/promises';
+import { stopProcessTree } from './integration_process_cleanup.js';
 
 /** Result of testcontainer setup */
 export interface ContainerSetup {
@@ -153,6 +154,7 @@ export function startMcpServer(couchUrl: string, port: number, prefix?: string):
       NODE_ENV: 'test',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
   });
 
   const result: ServerProcess = {
@@ -198,13 +200,7 @@ export function startMcpServer(couchUrl: string, port: number, prefix?: string):
  */
 export async function stopMcpServer(server: ServerProcess): Promise<void> {
   console.log('🛑 Stopping MCP test server...');
-  server.process.kill('SIGTERM');
-
-  await setTimeout(500);
-
-  if (!server.process.killed) {
-    server.process.kill('SIGKILL');
-  }
+  await stopProcessTree(server.process);
 }
 
 /**
