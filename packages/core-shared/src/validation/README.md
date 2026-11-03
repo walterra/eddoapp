@@ -70,7 +70,7 @@ Completed:
 - Shared parser, structured errors, explicit normalization and domain-validation hooks.
 - All assistant-server validation, including requests and generation controls.
 - Shared server and client environment parsing with explicit defaults and conversions.
-- Direct Zod dependency removal from core-shared, core-server, core-client, assistant-server, web-client, telegram-bot, and printer-service.
+- Direct Zod dependency removal from the root package and all application packages except mcp-server.
 - Web assistant authentication, routes, cursors, receipts, projection reads, and host transport configuration.
 - Browser assistant payloads and persisted pending state, with shared lifecycle receipt contracts.
 - Recording evaluation schemas, JSON Schema publication, and native VCR response validation.
@@ -80,15 +80,19 @@ Completed:
 - Bot and printer configuration with pure parsers, explicit defaults, and legacy string-boolean conversion.
 - Custom provider/model configuration and credential-free portable VCR model metadata.
 - Legacy archive query arguments and offset defaults.
+- General web API authentication, users, search, audit, chat, and Graphviz request validation.
+- MCP Reader configuration and response projection.
+- Backup archive, attachment, metadata, transport, and restore validation.
+
+Backup scripts import shared validation source to remain runnable through tsx before an application build.
+HTTP validation details retain array paths, category codes, and safe messages without validator-specific metadata.
+
 - UUID, timestamp, UTF-16, finite-number, and safe-integer compatibility coverage.
 
 Remaining:
 
 - Characterize and migrate all other Zod boundaries.
 - Migrate remaining MCP tool arguments, including input defaults and custom refinements.
-- Migrate remaining web API routes and their validation error handling.
-- Migrate MCP Reader configuration, including endpoint checks and response projection.
-- Replace Zod-specific error handling and schema-derived types.
 - Remove direct dependencies and bundler references after all callers migrate.
 - Audit transitive dependencies separately and add an import/dependency guard.
 - Run final end-to-end and browser bundle comparisons after all boundaries migrate.
@@ -108,6 +112,7 @@ pnpm test:unit
 pnpm vitest:run packages/core-client/src/config/client-env.test.ts
 pnpm test:integration:mcp-server
 pnpm test:integration:durable
+pnpm test:integration:backup
 pnpm test:integration:agent-loop:playback
 pnpm build
 pnpm check:commit

@@ -16,6 +16,13 @@ export function utcDateTimeSchema(): Schema<string> {
   });
 }
 
+/** Preserves the existing practical ASCII email contract rather than broad RFC format acceptance. */
+export function emailSchema(): Schema<string> {
+  const pattern =
+    /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+.-]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/;
+  return str({ pattern: pattern.source });
+}
+
 /** Validates absolute URLs without retaining rejected values in diagnostics. */
 export function validateAbsoluteUrl(value: string, path: string): SchemaIssue[] {
   try {

@@ -2,35 +2,20 @@
  * Route handlers for chat API endpoints.
  */
 
+import { SchemaValidationError } from '@eddo/core-shared/validation/schema_parser';
 import type { Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { z } from 'zod';
+import { createSessionSchema, promptSchema, usernameClaimsSchema } from './chat_request_schemas';
+export { createSessionSchema, promptSchema } from './chat_request_schemas';
 
 import type { RpcEvent } from '../docker';
 import { logger, withSpan } from '../utils/logger';
+import { validationDetails } from '../utils/validation_details';
 import type { ChatService } from './chat-service';
-
-/** Create session request schema */
-export const createSessionSchema = z.object({
-  name: z.string().optional(),
-  repository: z
-    .object({
-      slug: z.string(),
-      gitUrl: z.string().url(),
-      defaultBranch: z.string().default('main'),
-      ref: z.string().optional(),
-    })
-    .optional(),
-});
-
-/** Prompt request schema */
-export const promptSchema = z.object({
-  message: z.string().min(1),
-});
 
 /** Get username from JWT payload */
 export function getUsername(c: Context): string | null {
-  const payload = z.object({ username: z.string() }).safeParse(c.get('jwtPayload'));
+  const payload = usernameClaimsSchema.safeParse(c.get('jwtPayload'));
   return payload.success ? payload.data.username : null;
 }
 
@@ -72,8 +57,8 @@ export async function handleCreateSession(c: Context, chatService: ChatService) 
 
       return c.json({ session }, 201);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return c.json({ error: 'Invalid request', details: error.issues }, 400);
+      if (error instanceof SchemaValidationError) {
+        return c.json({ error: 'Invalid request', details: validationDetails(error) }, 400);
       }
       logger.error({ error }, 'Failed to create session');
       return c.json({ error: 'Failed to create session' }, 500);
@@ -180,8 +165,8 @@ export async function handlePrompt(c: Context, chatService: ChatService) {
   try {
     body = promptSchema.parse(await c.req.json());
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return c.json({ error: 'Invalid request', details: error.issues }, 400);
+    if (error instanceof SchemaValidationError) {
+      return c.json({ error: 'Invalid request', details: validationDetails(error) }, 400);
     }
     return c.json({ error: 'Invalid request body' }, 400);
   }

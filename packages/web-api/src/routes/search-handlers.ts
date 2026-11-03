@@ -2,13 +2,22 @@
  * Search route handlers for ES|QL search operations.
  */
 
+import { SchemaValidationError } from '@eddo/core-shared/validation/schema_parser';
 import type { Context as HonoContext } from 'hono';
-import { z } from 'zod';
+import {
+  searchAuditSchema,
+  searchTodosSchema,
+  suggestSchema,
+  type SearchAuditParams,
+  type SuggestParams,
+} from './search_schemas';
+export { searchAuditSchema, searchTodosSchema, suggestSchema } from './search_schemas';
 
 import { createEnv, createUserRegistry } from '@eddo/core-server';
 import type { Client } from '@elastic/elasticsearch';
 
 import { logger, withSpan } from '../utils/logger';
+import { validationDetails } from '../utils/validation_details';
 import { generateWhereConditions, parseSearchQuery } from './search-query-parser';
 import { extractUserFromToken } from './users-helpers';
 
@@ -56,15 +65,6 @@ function addApiParamConditions(
     }
   }
 }
-
-/** Request schema for searching todos. */
-export const searchTodosSchema = z.object({
-  context: z.string().optional(),
-  includeCompleted: z.boolean().default(true),
-  limit: z.number().int().min(1).max(100).default(20),
-  query: z.string().min(1).max(500),
-  tags: z.array(z.string()).optional(),
-});
 
 /** Returns the user's timezone preference for search date filters. */
 async function getUserTimeZone(username: string): Promise<string | undefined> {
@@ -134,27 +134,6 @@ function buildTodoQuery(
   return query;
 }
 
-/** Request schema for searching audit logs. */
-export const searchAuditSchema = z.object({
-  action: z
-    .enum([
-      'create',
-      'update',
-      'delete',
-      'complete',
-      'uncomplete',
-      'time_tracking_start',
-      'time_tracking_stop',
-    ])
-    .optional(),
-  entityId: z.string().optional(),
-  fromDate: z.string().optional(),
-  limit: z.number().int().min(1).max(100).default(50),
-  query: z.string().optional(),
-  source: z.enum(['web', 'mcp', 'telegram', 'github-sync', 'rss-sync', 'email-sync']).optional(),
-  toDate: z.string().optional(),
-});
-
 /** Handles audit search requests. */
 export async function handleAuditSearch(c: HonoContext, esClient: Client): Promise<Response> {
   return withSpan('search_audit', { 'search.type': 'audit' }, async (span) => {
@@ -192,7 +171,7 @@ export async function handleAuditSearch(c: HonoContext, esClient: Client): Promi
 }
 
 /** Builds ES|QL query for audit search. */
-function buildAuditQuery(indexName: string, params: z.infer<typeof searchAuditSchema>): string {
+function buildAuditQuery(indexName: string, params: SearchAuditParams): string {
   const conditions: string[] = [];
 
   if (params.query) {
@@ -225,13 +204,6 @@ function buildAuditQuery(indexName: string, params: z.infer<typeof searchAuditSc
 
   return query;
 }
-
-/** Request schema for suggestions. */
-export const suggestSchema = z.object({
-  field: z.enum(['title', 'context', 'tags']).default('title'),
-  limit: z.number().int().min(1).max(20).default(10),
-  prefix: z.string().min(1).max(100),
-});
 
 /** Handles suggest requests. */
 export async function handleSuggest(c: HonoContext, esClient: Client): Promise<Response> {
@@ -272,7 +244,7 @@ export async function handleSuggest(c: HonoContext, esClient: Client): Promise<R
 }
 
 /** Builds ES|QL query for suggestions. */
-function buildSuggestQuery(indexName: string, params: z.infer<typeof suggestSchema>): string {
+function buildSuggestQuery(indexName: string, params: SuggestParams): string {
   const escapedPrefix = escapeEsqlString(params.prefix.toLowerCase());
 
   if (params.field === 'tags') {
@@ -311,8 +283,8 @@ function handleSearchError(
   logger.error({ error }, message);
   span.setAttribute('search.error', true);
 
-  if (error instanceof z.ZodError) {
-    return c.json({ details: error.issues, error: 'Invalid search parameters' }, 400);
+  if (error instanceof SchemaValidationError) {
+    return c.json({ details: validationDetails(error), error: 'Invalid search parameters' }, 400);
   }
 
   return c.json({ error: 'Search failed' }, 500);

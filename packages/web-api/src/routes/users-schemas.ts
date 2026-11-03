@@ -1,113 +1,108 @@
-/**
- * Zod validation schemas for user routes
- */
+/** Validates user route payloads and projects supported preference fields. */
 import { isValidTimeZone } from '@eddo/core-shared';
-import { z } from 'zod';
+import { emailSchema, validateMinimumTextLength } from '@eddo/core-shared/validation/compatibility';
+import { createProjectedParser } from '@eddo/core-shared/validation/projected_parser';
+import {
+  arr,
+  bool,
+  int,
+  nullable,
+  obj,
+  oneOf,
+  opt,
+  str,
+} from '@eddo/core-shared/validation/schema_parser';
 
-export const updateProfileSchema = z.object({
-  email: z.string().email().optional(),
-  currentPassword: z.string().optional(),
-  newPassword: z.string().min(8).optional(),
+export const updateProfileSchema = createProjectedParser(
+  obj({ email: opt(emailSchema()), currentPassword: opt(str()), newPassword: opt(str()) }),
+  {
+    validate: (value) =>
+      value.newPassword === undefined
+        ? []
+        : validateMinimumTextLength(value.newPassword, 8, '/newPassword'),
+  },
+);
+export const changePasswordSchema = createProjectedParser(
+  obj({ currentPassword: str({ minLength: 1 }), newPassword: str() }),
+  { validate: (value) => validateMinimumTextLength(value.newPassword, 8, '/newPassword') },
+);
+export const linkTelegramSchema = createProjectedParser(obj({ telegramId: int({ minimum: 1 }) }));
+const timeRange = obj({
+  type: oneOf([
+    'current-day',
+    'current-week',
+    'current-month',
+    'current-year',
+    'all-time',
+    'custom',
+  ]),
+  startDate: opt(str()),
+  endDate: opt(str()),
+});
+const status = oneOf(['all', 'completed', 'incomplete']);
+const tracking = oneOf(['all', 'tracking', 'not-tracking']);
+const scheduledTime = str({ pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$' });
+const filterPreset = obj({
+  id: str(),
+  name: str(),
+  selectedTags: arr(str()),
+  selectedContexts: arr(str()),
+  selectedStatus: status,
+  selectedTimeTracking: opt(tracking),
+  selectedTimeRange: timeRange,
+  dateMode: oneOf(['relative', 'fixed']),
+  savedDate: opt(str()),
+  createdAt: str(),
 });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8),
-});
-
-export const linkTelegramSchema = z.object({
-  telegramId: z.number().int().positive(),
-});
-
-export const updatePreferencesSchema = z.object({
-  dailyBriefing: z.boolean().optional(),
-  briefingTime: z
-    .string()
-    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .optional(),
-  printBriefing: z.boolean().optional(),
-  dailyRecap: z.boolean().optional(),
-  recapTime: z
-    .string()
-    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
-    .optional(),
-  printRecap: z.boolean().optional(),
-  timezone: z.string().refine(isValidTimeZone, 'Invalid IANA timezone').optional(),
-  theme: z.enum(['system', 'light', 'dark']).optional(),
-  viewMode: z.enum(['kanban', 'table', 'graph']).optional(),
-  tableColumns: z.array(z.string()).optional(),
-  activitySidebarOpen: z.boolean().optional(),
-  selectedTags: z.array(z.string()).optional(),
-  selectedContexts: z.array(z.string()).optional(),
-  selectedStatus: z.enum(['all', 'completed', 'incomplete']).optional(),
-  selectedTimeTracking: z.enum(['all', 'tracking', 'not-tracking']).optional(),
-  selectedTimeRange: z
-    .object({
-      type: z.enum([
-        'current-day',
-        'current-week',
-        'current-month',
-        'current-year',
-        'all-time',
-        'custom',
-      ]),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-    })
-    .optional(),
-  currentDate: z.string().optional(),
-  githubSync: z.boolean().optional(),
-  githubToken: z.string().nullable().optional(),
-  githubSyncInterval: z.number().int().positive().optional(),
-  githubSyncTags: z.array(z.string()).optional(),
-  rssSync: z.boolean().optional(),
-  rssFeeds: z
-    .array(
-      z.object({
-        url: z.string(),
-        feedUrl: z.string(),
-        title: z.string().optional(),
-        enabled: z.boolean(),
-        addedAt: z.string(),
-      }),
-    )
-    .optional(),
-  rssSyncInterval: z.number().int().positive().optional(),
-  rssSyncTags: z.array(z.string()).optional(),
-  filterPresets: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        selectedTags: z.array(z.string()),
-        selectedContexts: z.array(z.string()),
-        selectedStatus: z.enum(['all', 'completed', 'incomplete']),
-        selectedTimeTracking: z.enum(['all', 'tracking', 'not-tracking']).optional(),
-        selectedTimeRange: z.object({
-          type: z.enum([
-            'current-day',
-            'current-week',
-            'current-month',
-            'current-year',
-            'all-time',
-            'custom',
-          ]),
-          startDate: z.string().optional(),
-          endDate: z.string().optional(),
+export const updatePreferencesSchema = createProjectedParser(
+  obj({
+    dailyBriefing: opt(bool()),
+    briefingTime: opt(scheduledTime),
+    printBriefing: opt(bool()),
+    dailyRecap: opt(bool()),
+    recapTime: opt(scheduledTime),
+    printRecap: opt(bool()),
+    timezone: opt(str()),
+    theme: opt(oneOf(['system', 'light', 'dark'])),
+    viewMode: opt(oneOf(['kanban', 'table', 'graph'])),
+    tableColumns: opt(arr(str())),
+    activitySidebarOpen: opt(bool()),
+    selectedTags: opt(arr(str())),
+    selectedContexts: opt(arr(str())),
+    selectedStatus: opt(status),
+    selectedTimeTracking: opt(tracking),
+    selectedTimeRange: opt(timeRange),
+    currentDate: opt(str()),
+    githubSync: opt(bool()),
+    githubToken: opt(nullable(str())),
+    githubSyncInterval: opt(int({ minimum: 1 })),
+    githubSyncTags: opt(arr(str())),
+    rssSync: opt(bool()),
+    rssFeeds: opt(
+      arr(
+        obj({
+          url: str(),
+          feedUrl: str(),
+          title: opt(str()),
+          enabled: bool(),
+          addedAt: str(),
         }),
-        dateMode: z.enum(['relative', 'fixed']),
-        savedDate: z.string().optional(),
-        createdAt: z.string(),
-      }),
-    )
-    .optional(),
-  aiProviderKeys: z
-    .object({
-      anthropicApiKey: z.string().optional(),
-      openaiApiKey: z.string().optional(),
-      geminiApiKey: z.string().optional(),
-    })
-    .optional(),
-  mcpApiKey: z.string().nullable().optional(),
-  mcpApiKeySetAt: z.string().optional(),
-});
+      ),
+    ),
+    rssSyncInterval: opt(int({ minimum: 1 })),
+    rssSyncTags: opt(arr(str())),
+    filterPresets: opt(arr(filterPreset)),
+    aiProviderKeys: opt(
+      obj({ anthropicApiKey: opt(str()), openaiApiKey: opt(str()), geminiApiKey: opt(str()) }),
+    ),
+    mcpApiKey: opt(nullable(str())),
+    mcpApiKeySetAt: opt(str()),
+  }),
+  {
+    validate: (value) =>
+      value.timezone === undefined || isValidTimeZone(value.timezone)
+        ? []
+        : [{ path: '/timezone', code: 'custom', message: 'Invalid IANA timezone' }],
+  },
+);

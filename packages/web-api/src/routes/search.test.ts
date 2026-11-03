@@ -1,42 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
-
-/** Schema for searchTodos validation. */
-const searchTodosSchema = z.object({
-  query: z.string().min(1).max(500),
-  limit: z.number().int().min(1).max(100).default(20),
-  includeCompleted: z.boolean().default(true),
-  context: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-});
-
-/** Schema for audit search validation. */
-const searchAuditSchema = z.object({
-  query: z.string().optional(),
-  action: z
-    .enum([
-      'create',
-      'update',
-      'delete',
-      'complete',
-      'uncomplete',
-      'time_tracking_start',
-      'time_tracking_stop',
-    ])
-    .optional(),
-  source: z.enum(['web', 'mcp', 'telegram', 'github-sync', 'rss-sync', 'email-sync']).optional(),
-  entityId: z.string().optional(),
-  fromDate: z.string().optional(),
-  toDate: z.string().optional(),
-  limit: z.number().int().min(1).max(100).default(50),
-});
-
-/** Schema for suggest endpoint validation. */
-const suggestSchema = z.object({
-  prefix: z.string().min(1).max(100),
-  field: z.enum(['title', 'context', 'tags']).default('title'),
-  limit: z.number().int().min(1).max(20).default(10),
-});
+import { searchAuditSchema, searchTodosSchema, suggestSchema } from './search_schemas';
 
 /** Escapes special characters in ES|QL string literals. */
 const escapeEsqlString = (str: string): string => {

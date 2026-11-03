@@ -1,10 +1,9 @@
 import couchbackup from '@cloudant/couchbackup';
 import fs from 'node:fs';
-import { z } from 'zod';
 import { createRestoreOptions, type RestoreOptions } from './backup-utils.js';
 import { readBackupHeader } from './backup_inspection.js';
 import { readBackupMetadata, validateBackupArchive } from './backup_metadata.js';
-import { couchRequest } from './backup_transport.js';
+import { couchRequest, inventorySchema } from './backup_transport.js';
 
 /** Restores a prevalidated archive into an already prepared database. */
 export async function restoreBackupArchive(
@@ -40,9 +39,7 @@ async function restoreSecurityAndVerify(file: string, databaseUrl: string): Prom
     );
     return;
   }
-  const inventory = z
-    .object({ rows: z.array(z.object({ id: z.string(), value: z.object({ rev: z.string() }) })) })
-    .parse(await couchRequest(databaseUrl, '/_all_docs'));
+  const inventory = inventorySchema.parse(await couchRequest(databaseUrl, '/_all_docs'));
   const revisions = new Set(inventory.rows.map((row) => `${row.id}@${row.value.rev}`));
   if (
     revisions.size !== metadata.documentCount ||

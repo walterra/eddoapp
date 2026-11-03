@@ -1,12 +1,18 @@
 import { createHash } from 'node:crypto';
-import { z } from 'zod';
+import { createProjectedParser } from '../packages/core-shared/src/validation/projected_parser.js';
+import {
+  createSchemaParser,
+  map,
+  obj,
+  str,
+} from '../packages/core-shared/src/validation/schema_parser.js';
 import { visitBackup, type BackupDocument } from './backup_inspection.js';
 import { couchRequest } from './backup_transport.js';
 
-const attachmentsSchema = z.record(
-  z.string(),
-  z.object({ data: z.string(), digest: z.string() }).passthrough(),
+const attachmentsSchema = createSchemaParser(
+  map(obj({ data: str(), digest: str() }, { open: true })),
 );
+const sourceSchema = createProjectedParser(obj({ _attachments: attachmentsSchema.schema }));
 export type DecodedAttachmentDigests = Record<string, string>;
 
 /** Checks one document's decoded attachment bytes against its immutable source revision. */
@@ -16,9 +22,7 @@ async function verifyDocumentAttachments(
   digests: DecodedAttachmentDigests,
 ): Promise<void> {
   const suffix = `/${encodeURIComponent(document._id)}?rev=${encodeURIComponent(document._rev ?? '')}&attachments=true`;
-  const source = z
-    .object({ _attachments: attachmentsSchema })
-    .parse(await couchRequest(databaseUrl, suffix));
+  const source = sourceSchema.parse(await couchRequest(databaseUrl, suffix));
   const archived = attachmentsSchema.parse(document._attachments);
   if (Object.keys(source._attachments).length !== Object.keys(archived).length)
     throw new Error('Source attachment count mismatch');

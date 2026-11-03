@@ -1,14 +1,25 @@
-import { z } from 'zod';
+import { createProjectedParser } from '../packages/core-shared/src/validation/projected_parser.js';
+import {
+  arr,
+  createSchemaParser,
+  map,
+  num,
+  obj,
+  str,
+  union,
+  unknown as unknownSchema,
+} from '../packages/core-shared/src/validation/schema_parser.js';
 
-const databaseInfoSchema = z.object({
-  doc_count: z.number(),
-  update_seq: z.union([z.string(), z.number()]),
-});
-const inventorySchema = z.object({
-  rows: z.array(z.object({ id: z.string(), value: z.object({ rev: z.string() }) })),
-});
-export type DatabaseInfo = z.infer<typeof databaseInfoSchema>;
-export type DatabaseInventory = z.infer<typeof inventorySchema>;
+const databaseInfoSchema = createProjectedParser(
+  obj({ doc_count: num(), update_seq: union([str(), num()]) }),
+);
+export const inventorySchema = createProjectedParser(
+  obj({ rows: arr(obj({ id: str(), value: obj({ rev: str() }) })) }),
+);
+const databaseListSchema = createSchemaParser(arr(str()));
+const securitySchema = createSchemaParser(map(unknownSchema()));
+export type DatabaseInfo = ReturnType<typeof databaseInfoSchema.parse>;
+export type DatabaseInventory = ReturnType<typeof inventorySchema.parse>;
 
 export interface DatabaseSnapshot {
   info: DatabaseInfo;
@@ -57,7 +68,7 @@ export async function discoverBackupDatabases(
 ): Promise<string[]> {
   const url = new URL(serverUrl);
   url.pathname = '/';
-  const databases = z.array(z.string()).parse(await couchRequest(url.toString(), '/_all_dbs'));
+  const databases = databaseListSchema.parse(await couchRequest(url.toString(), '/_all_dbs'));
   return databases.filter((database) => includeSystem || !database.startsWith('_'));
 }
 
@@ -65,8 +76,6 @@ export async function discoverBackupDatabases(
 export async function snapshotDatabase(databaseUrl: string): Promise<DatabaseSnapshot> {
   const info = databaseInfoSchema.parse(await couchRequest(databaseUrl));
   const inventory = inventorySchema.parse(await couchRequest(databaseUrl, '/_all_docs'));
-  const security = z
-    .record(z.string(), z.unknown())
-    .parse(await couchRequest(databaseUrl, '/_security'));
+  const security = securitySchema.parse(await couchRequest(databaseUrl, '/_security'));
   return { info, inventory, security };
 }

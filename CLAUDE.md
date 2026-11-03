@@ -579,7 +579,7 @@ Technical writer for documentation and JSDoc comments, direct factual statements
 - Prettier formatting with 2-space indent and 100-char line width
 - Single quotes, trailing commas
 - Semantic versioning with Changesets following conventional commits
-- Configuration validation using Zod schemas with descriptive error messages
+- Configuration validation using shared pi-schema boundary parsers with descriptive error messages
 - Meaningful variable names following domain language (no abbreviations except widely known acronyms)
 - Pure functions with no side effects marked with readonly parameters
 - Defensive programming with input validation at boundaries

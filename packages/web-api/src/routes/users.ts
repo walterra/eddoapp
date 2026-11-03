@@ -4,11 +4,11 @@ import {
   getUserRegistryDatabaseConfig,
   type UserRegistryEntryAlpha2,
 } from '@eddo/core-server';
+import { SchemaValidationError } from '@eddo/core-shared/validation/schema_parser';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import jwt from 'jsonwebtoken';
 import nano from 'nano';
-import { z } from 'zod';
 
 import { getEmailScheduler, getGithubScheduler, getRssScheduler } from '../index';
 import { logger, withSpan } from '../utils/logger';
@@ -178,7 +178,7 @@ usersApp.post('/telegram-link', async (c) => {
     return c.json({ success: true, message: 'Telegram account linked successfully', telegramId });
   } catch (error) {
     logger.error({ error }, 'Telegram link error');
-    if (error instanceof z.ZodError) {
+    if (error instanceof SchemaValidationError) {
       return c.json({ error: 'Invalid Telegram ID format' }, 400);
     }
     return c.json({ error: 'Failed to link Telegram account' }, 500);
@@ -232,7 +232,8 @@ usersApp.put('/preferences', async (c) => {
     return c.json({ success: true, preferences: createSafePreferences(updatedUser) });
   } catch (error) {
     logger.error({ error }, 'Preferences update error');
-    if (error instanceof z.ZodError) return c.json({ error: 'Invalid preferences format' }, 400);
+    if (error instanceof SchemaValidationError)
+      return c.json({ error: 'Invalid preferences format' }, 400);
     return c.json({ error: 'Failed to update preferences' }, 500);
   }
 });
