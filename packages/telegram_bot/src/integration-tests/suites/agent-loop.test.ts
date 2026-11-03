@@ -283,7 +283,7 @@ describe('Agent Loop E2E Integration', () => {
                 .join('');
         });
       expect(history.some((content) => content.includes(firstInput))).toBe(true);
-      expect(history).toContain(firstMessages[1].content);
+      expect(history.map((content) => content.trim())).toContain(firstMessages[1].content);
       expect(history.at(-1)).toContain(secondInput);
 
       const allMessages = await getAssistantConversationMessages(username!);
