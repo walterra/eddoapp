@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "ambiguous-input",
-  "createdAt": "2026-11-03T00:00:44.569Z",
-  "frozenTime": "2026-11-03T00:00:44.569Z",
+  "createdAt": "2026-11-03T11:29:14.354Z",
+  "frozenTime": "2026-11-03T11:29:14.354Z",
   "interactions": [
     {
       "requestHash": "ba33a0d401dca6de",
@@ -16,12 +16,12 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:44.602Z\\n\\nadd todo\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:14.380Z\\n\\nadd todo\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user said \\\"add todo\\\" but didn't specify what todo to add. I need to ask them what they'd like to add.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nWhat would you like to capture? Give me the task and I'll get it organized! 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8105,\"output\":53,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8158,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664044621,\"responseId\":\"d1fa00deabc4438e986f59717aa7b986\",\"rawStopReason\":\"stop\",\"durationMs\":1804}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:46.425Z", "responseTimeMs": 1815 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user said \\\"add todo\\\" but didn't specify what todo to add. I need to ask them what they'd like to add.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nWhat's the task? Give me the details and I'll get it captured and organized! 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8105,\"output\":53,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8158,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705354391,\"responseId\":\"767533c88b264c37835560b5e1eb6d29\",\"rawStopReason\":\"stop\",\"durationMs\":1596}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:15.986Z", "responseTimeMs": 1602 }
     }
   ]
 }

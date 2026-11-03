@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "status-message-pattern",
-  "createdAt": "2026-11-03T00:00:46.619Z",
-  "frozenTime": "2026-11-03T00:00:46.619Z",
+  "createdAt": "2026-11-03T11:29:16.164Z",
+  "frozenTime": "2026-11-03T11:29:16.164Z",
   "interactions": [
     {
       "requestHash": "68fab41f4277b3b7",
@@ -16,15 +16,15 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:46.646Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:16.190Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to create a work todo called \\\"Test task for recap\\\". Let me parse this:\\n- Title: \\\"Test task for recap\\\"\\n- Context: work (explicitly stated)\\n- No due date specified, so I'll default to today (2026-11-03)\\n- It's a simple task, so gtd:next seems appropriate since it's actionable\\n\\nLet me create this todo.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b3b00c81c09747aebc9d801e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created work todo \\\"Test task for recap\\\"\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8114,\"output\":191,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8305,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664046667,\"responseId\":\"9d20761706ec4b06981773ef63d75b43\",\"rawStopReason\":\"tool_calls\",\"durationMs\":3534}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:50.200Z", "responseTimeMs": 3546 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a work todo called \\\"Test task for recap\\\". I need to create it with:\\n- title: \\\"Test task for recap\\\"\\n- context: \\\"work\\\"\\n- due: today's date (2026-11-03) - CRITICAL: NEVER create todos without due dates\\n- tags: Since it's a simple actionable task, gtd:next seems appropriate\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_51cc21a160dd4ee3b7197376\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created test task for recap\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8114,\"output\":181,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8295,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"toolUse\",\"timestamp\":1793705356200,\"responseId\":\"7ae7e9e8ffe24aaebf0d7577ec876d40\",\"rawStopReason\":\"tool_calls\",\"durationMs\":3519}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:19.720Z", "responseTimeMs": 3526 }
     },
     {
-      "requestHash": "9ff7929426b7bb96",
+      "requestHash": "20e748ed279b37c8",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -35,20 +35,20 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:46.646Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:16.190Z\\n\\ncreate a work todo called \\\"Test task for recap\\\"\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants me to create a work todo called \\\"Test task for recap\\\". Let me parse this:\\n- Title: \\\"Test task for recap\\\"\\n- Context: work (explicitly stated)\\n- No due date specified, so I'll default to today (2026-11-03)\\n- It's a simple task, so gtd:next seems appropriate since it's actionable\\n\\nLet me create this todo.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_b3b00c81c09747aebc9d801e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created work todo \\\"Test task for recap\\\"\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a work todo called \\\"Test task for recap\\\". I need to create it with:\\n- title: \\\"Test task for recap\\\"\\n- context: \\\"work\\\"\\n- due: today's date (2026-11-03) - CRITICAL: NEVER create todos without due dates\\n- tags: Since it's a simple actionable task, gtd:next seems appropriate\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_51cc21a160dd4ee3b7197376\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Test task for recap\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"],\"message\":\"Created test task for recap\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_b3b00c81c09747aebc9d801e\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:50.272Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:50.312Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_51cc21a160dd4ee3b7197376\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:29:19.764Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:19.796Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The todo was created successfully. Let me give a brief confirmation.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! Created **\\\"Test task for recap\\\"** in your *work* context, due today. 🎯\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8422,\"output\":39,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8461,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664050335,\"responseId\":\"279c11f7e50f41c381f5a7b6fd369109\",\"rawStopReason\":\"stop\",\"durationMs\":1364}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:51.700Z", "responseTimeMs": 1376 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The todo was created successfully. Let me give a concise confirmation.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! \\\"Test task for recap\\\" is live in your work context, due today. 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8412,\"output\":38,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8450,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705359809,\"responseId\":\"2502f05b2f93490f9b693eaa7a192782\",\"rawStopReason\":\"stop\",\"durationMs\":1313}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:21.122Z", "responseTimeMs": 1319 }
     },
     {
       "requestHash": "7290ebbc76c84e96",
@@ -62,15 +62,15 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:51.786Z\\n\\nshow me what I completed today\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:21.201Z\\n\\nshow me what I completed today\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to see what they completed today. I should use the getRecapData tool which gives recent completions, or I could use listTodos with completedFrom/completedTo set to today's date. Let me use getRecapData as it's the most efficient single call for this purpose.\\n\\nActually, looking more carefully, getRecapData returns \\\"up to 10 recent completions\\\" - that's exactly what's needed here.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_ddb82118bfc14c4f9621742c\",\"name\":\"getRecapData\",\"arguments\":{}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8109,\"output\":112,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8221,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664051813,\"responseId\":\"74477ab1e63140d2ac7107a9fa4c15c2\",\"rawStopReason\":\"tool_calls\",\"durationMs\":3366}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:55.179Z", "responseTimeMs": 3382 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to see what they completed today. I should use getRecapData which returns recent completions, or I can use listTodos with completed filter and completedFrom/completedTo for today.\\n\\nLet me use getRecapData since it's specifically designed for this - it returns up to 10 recent completions.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_d7b74f5915f74fffbe218f4c\",\"name\":\"getRecapData\",\"arguments\":{}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8109,\"output\":87,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8196,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"toolUse\",\"timestamp\":1793705361220,\"responseId\":\"e81dbc45451042e1a1d6520942eb23d2\",\"rawStopReason\":\"tool_calls\",\"durationMs\":2203}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:23.423Z", "responseTimeMs": 2212 }
     },
     {
-      "requestHash": "c7d043d1dc0a6e49",
+      "requestHash": "bc380240befca8e8",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -81,20 +81,20 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:51.786Z\\n\\nshow me what I completed today\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:21.201Z\\n\\nshow me what I completed today\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to see what they completed today. I should use the getRecapData tool which gives recent completions, or I could use listTodos with completedFrom/completedTo set to today's date. Let me use getRecapData as it's the most efficient single call for this purpose.\\n\\nActually, looking more carefully, getRecapData returns \\\"up to 10 recent completions\\\" - that's exactly what's needed here.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_ddb82118bfc14c4f9621742c\",\"name\":\"getRecapData\",\"arguments\":{}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to see what they completed today. I should use getRecapData which returns recent completions, or I can use listTodos with completed filter and completedFrom/completedTo for today.\\n\\nLet me use getRecapData since it's specifically designed for this - it returns up to 10 recent completions.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_d7b74f5915f74fffbe218f4c\",\"name\":\"getRecapData\",\"arguments\":{}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_ddb82118bfc14c4f9621742c\",\"toolName\":\"getRecapData\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"recap data for 2026-11-03\\\",\\\"data\\\":{\\\"completedToday\\\":[],\\\"upcomingNextActions\\\":[{\\\"_id\\\":\\\"2026-11-03T00:00:50.272Z\\\",\\\"link\\\":null,\\\"parentId\\\":null,\\\"id\\\":\\\"2026-11-03T00:00:50.272Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\",\\\"completed\\\":null,\\\"tags\\\":[\\\"gtd:next\\\"],\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"trackedMinutes\\\":0,\\\"activeSessionCount\\\":0,\\\"fieldsTruncated\\\":false}],\\\"activeTimeTracking\\\":[],\\\"metadata\\\":{\\\"contractVersion\\\":2,\\\"itemsAreCompleteTodos\\\":false,\\\"detailTool\\\":\\\"getTodo\\\",\\\"date\\\":\\\"2026-11-03\\\",\\\"weekday\\\":\\\"Tuesday\\\",\\\"timeZone\\\":\\\"UTC\\\",\\\"dateStart\\\":\\\"2026-11-03\\\",\\\"dateEnd\\\":\\\"2026-11-03\\\",\\\"counts\\\":{\\\"completedToday\\\":0,\\\"upcomingNextActions\\\":1,\\\"activeTimeTracking\\\":0},\\\"selection\\\":{\\\"completedToday\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"upcomingNextActions\\\":{\\\"total\\\":1,\\\"returned\\\":1,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"activeTimeTracking\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false}},\\\"trackingScope\\\":\\\"trackedMinutes is cumulative across all stored sessions, not just today.\\\",\\\"countSemantics\\\":\\\"Exact when countExact=true; otherwise total is a lower bound. Queries are not a cross-section snapshot.\\\"}},\\\"metadata\\\":{\\\"operation\\\":\\\"get_recap_data\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:55.271Z\\\",\\\"execution_time\\\":\\\"27.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_d7b74f5915f74fffbe218f4c\",\"toolName\":\"getRecapData\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"recap data for 2026-11-03\\\",\\\"data\\\":{\\\"completedToday\\\":[],\\\"upcomingNextActions\\\":[{\\\"_id\\\":\\\"2026-11-03T11:29:19.764Z\\\",\\\"link\\\":null,\\\"parentId\\\":null,\\\"id\\\":\\\"2026-11-03T11:29:19.764Z\\\",\\\"title\\\":\\\"Test task for recap\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\",\\\"completed\\\":null,\\\"tags\\\":[\\\"gtd:next\\\"],\\\"scheduledTime\\\":null,\\\"scheduledTimeZone\\\":null,\\\"trackedMinutes\\\":0,\\\"activeSessionCount\\\":0,\\\"fieldsTruncated\\\":false}],\\\"activeTimeTracking\\\":[],\\\"metadata\\\":{\\\"contractVersion\\\":2,\\\"itemsAreCompleteTodos\\\":false,\\\"detailTool\\\":\\\"getTodo\\\",\\\"date\\\":\\\"2026-11-03\\\",\\\"weekday\\\":\\\"Tuesday\\\",\\\"timeZone\\\":\\\"UTC\\\",\\\"dateStart\\\":\\\"2026-11-03\\\",\\\"dateEnd\\\":\\\"2026-11-03\\\",\\\"counts\\\":{\\\"completedToday\\\":0,\\\"upcomingNextActions\\\":1,\\\"activeTimeTracking\\\":0},\\\"selection\\\":{\\\"completedToday\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"upcomingNextActions\\\":{\\\"total\\\":1,\\\"returned\\\":1,\\\"countExact\\\":true,\\\"truncated\\\":false},\\\"activeTimeTracking\\\":{\\\"total\\\":0,\\\"returned\\\":0,\\\"countExact\\\":true,\\\"truncated\\\":false}},\\\"trackingScope\\\":\\\"trackedMinutes is cumulative across all stored sessions, not just today.\\\",\\\"countSemantics\\\":\\\"Exact when countExact=true; otherwise total is a lower bound. Queries are not a cross-section snapshot.\\\"}},\\\"metadata\\\":{\\\"operation\\\":\\\"get_recap_data\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:23.484Z\\\",\\\"execution_time\\\":\\\"26.00ms\\\"}}\"}],\"isError\":false}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The recap shows 0 completed items today. Let me give a concise, motivating response.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nNothing completed today yet — fresh slate, Tuesday! 💪\\n\\nYou've got 1 next action up: **Test task for recap** (work context). Ready to knock it out?\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8645,\"output\":60,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8705,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664055282,\"responseId\":\"f8522c3f36374228bc076ea432f6b939\",\"rawStopReason\":\"stop\",\"durationMs\":2129}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:57.411Z", "responseTimeMs": 2137 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The recap shows no items completed today. I should let the user know that clearly and concisely.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nNo items completed today yet — clean slate! \\n\\nYou do have 1 next action pending: **Test task for recap** (work context, due today). \\n\\nWant me to start the timer on it so you can knock it out? 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8620,\"output\":76,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8696,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705363493,\"responseId\":\"f7f7653cd2c143a09e6774b3fa65697e\",\"rawStopReason\":\"stop\",\"durationMs\":2799}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:26.292Z", "responseTimeMs": 2805 }
     }
   ]
 }

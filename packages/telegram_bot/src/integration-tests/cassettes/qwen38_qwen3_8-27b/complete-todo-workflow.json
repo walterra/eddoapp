@@ -1,8 +1,8 @@
 {
   "version": 1,
   "testName": "complete-todo-workflow",
-  "createdAt": "2026-11-03T00:00:27.229Z",
-  "frozenTime": "2026-11-03T00:00:27.229Z",
+  "createdAt": "2026-11-03T11:28:57.568Z",
+  "frozenTime": "2026-11-03T11:28:57.568Z",
   "interactions": [
     {
       "requestHash": "f5d4303a081821bb",
@@ -16,15 +16,15 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:27.257Z\\n\\ncreate todo called integration test task\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:28:57.599Z\\n\\ncreate todo called integration test task\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". Let me parse this:\\n- Title: \\\"integration test task\\\"\\n- No specific due date mentioned, so I'll use today's date (end of current day)\\n- Context: \\\"integration test\\\" suggests a work context\\n- Tags: This is a clear, actionable item, so gtd:next seems appropriate\\n- Due: 2026-11-03 (today)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_0aa3e1bfe8954af49d9f0800\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Integration test task\",\"context\":\"work\",\"tags\":[\"gtd:next\"],\"due\":\"2026-11-03\",\"message\":\"Created integration test task\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8109,\"output\":190,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8299,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664027278,\"responseId\":\"98b48d2437364fecb6b50bbb677bc518\",\"rawStopReason\":\"tool_calls\",\"durationMs\":3536}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:30.815Z", "responseTimeMs": 3549 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". No due date, context, or tags specified. I need to:\\n- Use a due date (today since no specific date given - \\\"soon\\\" equivalent)\\n- Infer a fitting context - \\\"integration test task\\\" sounds like a work task\\n- Use appropriate GTD tag - gtd:next since it's a clear, actionable item\\n\\nLet me create it with:\\n- title: \\\"integration test task\\\"\\n- due: 2026-11-03 (today)\\n- context: work (it's a work-related task)\\n- tags: [\\\"gtd:next\\\"]\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_879902540a324f25ae9a0c9e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"integration test task\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8109,\"output\":219,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8328,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"toolUse\",\"timestamp\":1793705337620,\"responseId\":\"8d1769ec69f64ef4ad8a974554547e94\",\"rawStopReason\":\"tool_calls\",\"durationMs\":4716}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:02.336Z", "responseTimeMs": 4728 }
     },
     {
-      "requestHash": "5205b2cb5cef0eb5",
+      "requestHash": "e637f5314b0575b5",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -35,23 +35,23 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:27.257Z\\n\\ncreate todo called integration test task\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:28:57.599Z\\n\\ncreate todo called integration test task\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". Let me parse this:\\n- Title: \\\"integration test task\\\"\\n- No specific due date mentioned, so I'll use today's date (end of current day)\\n- Context: \\\"integration test\\\" suggests a work context\\n- Tags: This is a clear, actionable item, so gtd:next seems appropriate\\n- Due: 2026-11-03 (today)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_0aa3e1bfe8954af49d9f0800\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Integration test task\",\"context\":\"work\",\"tags\":[\"gtd:next\"],\"due\":\"2026-11-03\",\"message\":\"Created integration test task\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". No due date, context, or tags specified. I need to:\\n- Use a due date (today since no specific date given - \\\"soon\\\" equivalent)\\n- Infer a fitting context - \\\"integration test task\\\" sounds like a work task\\n- Use appropriate GTD tag - gtd:next since it's a clear, actionable item\\n\\nLet me create it with:\\n- title: \\\"integration test task\\\"\\n- due: 2026-11-03 (today)\\n- context: work (it's a work-related task)\\n- tags: [\\\"gtd:next\\\"]\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_879902540a324f25ae9a0c9e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"integration test task\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_0aa3e1bfe8954af49d9f0800\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:30.879Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:30.914Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_879902540a324f25ae9a0c9e\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:29:02.557Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:02.599Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Done. Let me keep it brief.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n✅ Done! **\\\"Integration test task\\\"** is in your work queue, tagged as a next action, due today. Ready to tackle it whenever you are! 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8415,\"output\":46,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8461,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664030945,\"responseId\":\"14373b179c5849dca622425017c9dcb9\",\"rawStopReason\":\"stop\",\"durationMs\":1671}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:32.617Z", "responseTimeMs": 1686 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The todo was created successfully. I should give a brief, motivational confirmation.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! \\\"integration test task\\\" is in your work context and ready to tackle. 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8444,\"output\":39,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8483,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705342627,\"responseId\":\"a37b8f269ca94dd395a7042b476e9a51\",\"rawStopReason\":\"stop\",\"durationMs\":1143}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:03.770Z", "responseTimeMs": 1157 }
     },
     {
-      "requestHash": "27bc354765ae8fa1",
+      "requestHash": "79d7d5950d30afee",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -62,31 +62,31 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:27.257Z\\n\\ncreate todo called integration test task\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:28:57.599Z\\n\\ncreate todo called integration test task\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". Let me parse this:\\n- Title: \\\"integration test task\\\"\\n- No specific due date mentioned, so I'll use today's date (end of current day)\\n- Context: \\\"integration test\\\" suggests a work context\\n- Tags: This is a clear, actionable item, so gtd:next seems appropriate\\n- Due: 2026-11-03 (today)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_0aa3e1bfe8954af49d9f0800\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Integration test task\",\"context\":\"work\",\"tags\":[\"gtd:next\"],\"due\":\"2026-11-03\",\"message\":\"Created integration test task\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". No due date, context, or tags specified. I need to:\\n- Use a due date (today since no specific date given - \\\"soon\\\" equivalent)\\n- Infer a fitting context - \\\"integration test task\\\" sounds like a work task\\n- Use appropriate GTD tag - gtd:next since it's a clear, actionable item\\n\\nLet me create it with:\\n- title: \\\"integration test task\\\"\\n- due: 2026-11-03 (today)\\n- context: work (it's a work-related task)\\n- tags: [\\\"gtd:next\\\"]\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_879902540a324f25ae9a0c9e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"integration test task\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_0aa3e1bfe8954af49d9f0800\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:30.879Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:30.914Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_879902540a324f25ae9a0c9e\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:29:02.557Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:02.599Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Done. Let me keep it brief.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n✅ Done! **\\\"Integration test task\\\"** is in your work queue, tagged as a next action, due today. Ready to tackle it whenever you are! 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"stop\",\"rawStopReason\":\"stop\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The todo was created successfully. I should give a brief, motivational confirmation.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! \\\"integration test task\\\" is in your work context and ready to tackle. 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"stop\",\"rawStopReason\":\"stop\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:32.695Z\\n\\nmark the integration test task as done\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:03.816Z\\n\\nmark the integration test task as done\"}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to mark the \\\"integration test task\\\" as completed. I need to find its ID first. From the previous turn, I created it and got the ID: \\\"2026-11-03T00:00:30.879Z\\\". I can use that directly to toggle completion.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_8165f851ff46464693a39768\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-11-03T00:00:30.879Z\",\"completed\":true,\"message\":\"Marked integration test task as done\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8510,\"output\":152,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8662,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"toolUse\",\"timestamp\":1793664032722,\"responseId\":\"f32d5179d20d48198db16d1c4527e910\",\"rawStopReason\":\"tool_calls\",\"durationMs\":2781}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:35.503Z", "responseTimeMs": 2797 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"I need to mark the \\\"integration test task\\\" as complete. I just created it and have the ID from the previous response: \\\"2026-11-03T11:29:02.557Z\\\". I'll use toggleTodoCompletion with that ID and completed: true.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_210da98720f748ffb5e20d7c\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-11-03T11:29:02.557Z\",\"completed\":true}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8532,\"output\":131,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8663,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"toolUse\",\"timestamp\":1793705343827,\"responseId\":\"378d2b6e9390458695066f1bfc923103\",\"rawStopReason\":\"tool_calls\",\"durationMs\":2520}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:06.347Z", "responseTimeMs": 2527 }
     },
     {
-      "requestHash": "5d982ba071bb2533",
+      "requestHash": "d990e2933c76ba7f",
       "request": {
         "model": "qwen38/qwen3.8-27b",
         "systemPrompt": "Pi Durable native transcript v1; system messages include tool schemas.\nGeneration options: {\"maxTokens\":4096,\"reasoning\":\"low\"}",
@@ -97,36 +97,36 @@
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:27.257Z\\n\\ncreate todo called integration test task\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:28:57.599Z\\n\\ncreate todo called integration test task\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". Let me parse this:\\n- Title: \\\"integration test task\\\"\\n- No specific due date mentioned, so I'll use today's date (end of current day)\\n- Context: \\\"integration test\\\" suggests a work context\\n- Tags: This is a clear, actionable item, so gtd:next seems appropriate\\n- Due: 2026-11-03 (today)\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_0aa3e1bfe8954af49d9f0800\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"Integration test task\",\"context\":\"work\",\"tags\":[\"gtd:next\"],\"due\":\"2026-11-03\",\"message\":\"Created integration test task\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to create a todo called \\\"integration test task\\\". No due date, context, or tags specified. I need to:\\n- Use a due date (today since no specific date given - \\\"soon\\\" equivalent)\\n- Infer a fitting context - \\\"integration test task\\\" sounds like a work task\\n- Use appropriate GTD tag - gtd:next since it's a clear, actionable item\\n\\nLet me create it with:\\n- title: \\\"integration test task\\\"\\n- due: 2026-11-03 (today)\\n- context: work (it's a work-related task)\\n- tags: [\\\"gtd:next\\\"]\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_879902540a324f25ae9a0c9e\",\"name\":\"createTodo\",\"arguments\":{\"title\":\"integration test task\",\"context\":\"work\",\"due\":\"2026-11-03\",\"tags\":[\"gtd:next\"]}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_0aa3e1bfe8954af49d9f0800\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:30.879Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:30.914Z\\\",\\\"execution_time\\\":\\\"4.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_879902540a324f25ae9a0c9e\",\"toolName\":\"createTodo\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo created successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:29:02.557Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"context\\\":\\\"work\\\",\\\"due\\\":\\\"2026-11-03\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"create\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:02.599Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Done. Let me keep it brief.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n✅ Done! **\\\"Integration test task\\\"** is in your work queue, tagged as a next action, due today. Ready to tackle it whenever you are! 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"stop\",\"rawStopReason\":\"stop\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The todo was created successfully. I should give a brief, motivational confirmation.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\nDone! \\\"integration test task\\\" is in your work context and ready to tackle. 🚀\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"stop\",\"rawStopReason\":\"stop\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "user",
-            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T00:00:32.695Z\\n\\nmark the integration test task as done\"}"
+            "content": "{\"role\":\"user\",\"content\":\"Current UTC date/time: 2026-11-03T11:29:03.816Z\\n\\nmark the integration test task as done\"}"
           },
           {
             "role": "assistant",
-            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user wants to mark the \\\"integration test task\\\" as completed. I need to find its ID first. From the previous turn, I created it and got the ID: \\\"2026-11-03T00:00:30.879Z\\\". I can use that directly to toggle completion.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_8165f851ff46464693a39768\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-11-03T00:00:30.879Z\",\"completed\":true,\"message\":\"Marked integration test task as done\"}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\"}"
+            "content": "{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"I need to mark the \\\"integration test task\\\" as complete. I just created it and have the ID from the previous response: \\\"2026-11-03T11:29:02.557Z\\\". I'll use toggleTodoCompletion with that ID and completed: true.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n\"},{\"type\":\"toolCall\",\"id\":\"call_210da98720f748ffb5e20d7c\",\"name\":\"toggleTodoCompletion\",\"arguments\":{\"id\":\"2026-11-03T11:29:02.557Z\",\"completed\":true}}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"stopReason\":\"toolUse\",\"rawStopReason\":\"tool_calls\",\"thinkingLevel\":\"low\"}"
           },
           {
             "role": "toolResult",
-            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_8165f851ff46464693a39768\",\"toolName\":\"toggleTodoCompletion\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T00:00:30.879Z\\\",\\\"title\\\":\\\"Integration test task\\\",\\\"status\\\":\\\"completed\\\",\\\"completed_at\\\":\\\"2026-11-03T00:00:35.651Z\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"toggle_completion\\\",\\\"timestamp\\\":\\\"2026-11-03T00:00:35.684Z\\\",\\\"execution_time\\\":\\\"5.00ms\\\"}}\"}],\"isError\":false}"
+            "content": "{\"role\":\"toolResult\",\"toolCallId\":\"call_210da98720f748ffb5e20d7c\",\"toolName\":\"toggleTodoCompletion\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"summary\\\":\\\"Todo completed successfully\\\",\\\"data\\\":{\\\"id\\\":\\\"2026-11-03T11:29:02.557Z\\\",\\\"title\\\":\\\"integration test task\\\",\\\"status\\\":\\\"completed\\\",\\\"completed_at\\\":\\\"2026-11-03T11:29:06.382Z\\\"},\\\"metadata\\\":{\\\"operation\\\":\\\"toggle_completion\\\",\\\"timestamp\\\":\\\"2026-11-03T11:29:06.405Z\\\",\\\"execution_time\\\":\\\"3.00ms\\\"}}\"}],\"isError\":false}"
           }
         ]
       },
-      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"It's done.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n✅ **Integration test task** — marked as done! 🎉 Nice one!\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8794,\"output\":25,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8819,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":1793664035710,\"responseId\":\"08703f0221d147c1aeba2a00ab786f37\",\"rawStopReason\":\"stop\",\"durationMs\":985}}",
-      "metadata": { "recordedAt": "2026-11-03T00:00:36.695Z", "responseTimeMs": 1000 }
+      "response": "{\"format\":\"pi-durable-assistant-v1\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Marked as complete. Give a short, punchy motivational confirmation.\\n\",\"thinkingSignature\":\"reasoning_content\"},{\"type\":\"text\",\"text\":\"\\n\\n✅ Integration test task marked done. Clean sweep!\"}],\"api\":\"openai-completions\",\"provider\":\"qwen38\",\"model\":\"qwen3.8-27b\",\"usage\":{\"input\":8795,\"output\":28,\"cacheRead\":0,\"cacheWrite\":0,\"reasoning\":0,\"totalTokens\":8823,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0,\"totalFromProvider\":false}},\"stopReason\":\"stop\",\"timestamp\":1793705346422,\"responseId\":\"4c711ff1718a4c3888dc394fdfa125ae\",\"rawStopReason\":\"stop\",\"durationMs\":1157}}",
+      "metadata": { "recordedAt": "2026-11-03T11:29:07.579Z", "responseTimeMs": 1164 }
     }
   ]
 }

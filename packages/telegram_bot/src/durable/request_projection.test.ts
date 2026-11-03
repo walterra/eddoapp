@@ -18,7 +18,7 @@ function fixture(overrides: Partial<ProjectionCheckpoint> = {}) {
   const runtime = {
     signal: new AbortController().signal,
     report: vi.fn(),
-    sleep: vi.fn().mockResolvedValue(undefined),
+    sleepUntil: vi.fn().mockResolvedValue(undefined),
     commit: async (update: Parameters<RequestRuntime['commit']>[0]) => {
       const tx = { doc: vi.fn().mockResolvedValue({ ids: {} }) } as unknown as Tx;
       const state = await update(tx, task);
@@ -48,14 +48,14 @@ describe('persisted history completion', () => {
       },
     ]);
     expect(test.runtime.report).toHaveBeenCalledOnce();
-    expect(test.runtime.sleep).not.toHaveBeenCalled();
+    expect(test.runtime.sleepUntil).not.toHaveBeenCalled();
     expect(test.dependencies.send).not.toHaveBeenCalled();
   });
 
   it('resumes persisted backoff and completes only after projection succeeds', async () => {
     const test = fixture({ retryAt: 31_000 });
     await projectRequest(test.task, test.runtime, BACKGROUND_CONTEXT, test.dependencies);
-    expect(test.runtime.sleep).toHaveBeenCalledWith(31_000, BACKGROUND_CONTEXT);
+    expect(test.runtime.sleepUntil).not.toHaveBeenCalled();
     expect(test.dependencies.project).toHaveBeenCalledWith(test.task.input, 'Saved');
     expect(test.states).toEqual([
       {

@@ -53,7 +53,11 @@ async function generateRequest(
   context: Context,
   dependencies: RequestDependencies,
 ): Promise<void> {
-  if (task.state.checkpoint.retryAt) await runtime.sleep(task.state.checkpoint.retryAt, context);
+  const checkpoint = task.state.checkpoint;
+  if (checkpoint.retryAt && checkpoint.retryAt > Date.now()) {
+    await runtime.sleepUntil(checkpoint.retryAt, checkpoint, context);
+    return;
+  }
   await dependencies.authorize(task.input);
   if (dependencies.projectAccepted && !task.state.checkpoint.accepted) {
     await projectAcceptedRequest(task, runtime, context, dependencies.projectAccepted);
@@ -117,7 +121,10 @@ async function retryGeneration(
   runtime: RequestRuntime,
   context: Context,
 ): Promise<void> {
-  await runtime.sleep(task.state.checkpoint.notBefore, context);
+  if (task.state.checkpoint.notBefore > Date.now()) {
+    await runtime.sleepUntil(task.state.checkpoint.notBefore, task.state.checkpoint, context);
+    return;
+  }
   await runtime.commit(
     () => ({
       status: 'running',

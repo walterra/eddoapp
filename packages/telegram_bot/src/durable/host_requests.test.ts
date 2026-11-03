@@ -27,7 +27,7 @@ function fixture() {
     enqueue: vi.fn().mockResolvedValue(undefined),
     execute: vi.fn(),
     close: vi.fn(),
-    closed: Promise.resolve({ reason: 'closed' }),
+    closed: Promise.resolve({ kind: 'closed' }),
     getPendingRequests: vi.fn().mockResolvedValue({ requests: [], hasMore: false }),
     getRequestStatus: vi.fn().mockResolvedValue(receipt),
   };

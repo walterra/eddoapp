@@ -11,6 +11,7 @@ type PendingRequestIndex = {
 
 export const PendingRequests = defineDoc({
   kind: 'eddo.pending-requests',
+  checkpointWhen: () => true,
   version: 1,
   scope: 'session',
   initial: (): PendingRequestIndex => ({

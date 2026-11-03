@@ -117,7 +117,10 @@ export async function deliverAnswer(
     return;
   }
   if (checkpoint.retryAt) {
-    await runtime.sleep(checkpoint.retryAt, context);
+    if (checkpoint.retryAt > Date.now()) {
+      await runtime.sleepUntil(checkpoint.retryAt, checkpoint, context);
+      return;
+    }
     await runtime.commit(
       () => ({ status: 'running', checkpoint: { ...checkpoint, retryAt: undefined } }),
       context,
