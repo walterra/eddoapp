@@ -8,11 +8,13 @@
   "exports": {
     ".": "./dist/index.js",
     "./types/*": "./dist/types/*.js",
+    "./validation/*": "./dist/validation/*.js",
     "./utils/*": "./dist/utils/*.js",
     "./api/*": "./dist/api/*.js",
     "./versions/*": "./dist/versions/*.js"
   },
   "dependencies": {
+    "@earendil-works/pi-schema": "1.5.0",
     "date-fns": "^4.1.0",
     "lodash-es": "^4.18.1",
     "zod": "^4.6.7"
