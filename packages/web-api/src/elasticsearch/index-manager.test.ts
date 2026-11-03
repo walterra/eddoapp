@@ -119,6 +119,8 @@ describe('index-manager', () => {
     it('should create both templates', async () => {
       const mockClient = {
         indices: {
+          exists: vi.fn().mockResolvedValue(true),
+          putMapping: vi.fn().mockResolvedValue({}),
           putIndexTemplate: vi.fn().mockResolvedValue({}),
         },
       };
@@ -130,6 +132,14 @@ describe('index-manager', () => {
 
       expect(result.success).toBe(true);
       expect(mockClient.indices.putIndexTemplate).toHaveBeenCalledTimes(2);
+      expect(mockClient.indices.putMapping).toHaveBeenCalledWith(
+        expect.objectContaining({
+          index: 'eddo_audit_*',
+          properties: expect.objectContaining({
+            after: { type: 'flattened', ignore_above: 4096 },
+          }),
+        }),
+      );
     });
   });
 

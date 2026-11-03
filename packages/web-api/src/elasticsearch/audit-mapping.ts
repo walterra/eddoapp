@@ -61,16 +61,19 @@ export const AUDIT_INDEX_MAPPING = {
     // State before the action (partial todo snapshot)
     before: {
       type: 'flattened',
+      ignore_above: 4096,
     },
 
     // State after the action (partial todo snapshot)
     after: {
       type: 'flattened',
+      ignore_above: 4096,
     },
 
     // Additional metadata
     metadata: {
       type: 'flattened',
+      ignore_above: 4096,
     },
 
     // User ID for multi-tenant queries

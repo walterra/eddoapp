@@ -33,13 +33,18 @@ interface BatchState {
 export function createBatchProcessor(config: BatchProcessorConfig) {
   const { esClient, logger, batchSize, batchTimeoutMs } = config;
   const state: BatchState = { batchTimer: null, pendingDocs: [] };
+  let flushing: Promise<void> = Promise.resolve();
 
   /** Flushes pending documents to Elasticsearch. */
-  async function flushBatch(): Promise<void> {
-    if (state.pendingDocs.length === 0) return;
-
-    const docsToProcess = state.pendingDocs.splice(0, state.pendingDocs.length);
-    await executeBulkOperation(esClient, logger, docsToProcess, state);
+  function flushBatch(): Promise<void> {
+    flushing = flushing
+      .catch(() => undefined)
+      .then(async () => {
+        if (state.pendingDocs.length === 0) return;
+        const docsToProcess = state.pendingDocs.splice(0, state.pendingDocs.length);
+        await executeBulkOperation(esClient, logger, docsToProcess, state);
+      });
+    return flushing;
   }
 
   /** Adds a document to the pending batch. */
@@ -80,7 +85,11 @@ function scheduleBatchFlush(
 
   state.batchTimer = setTimeout(async () => {
     state.batchTimer = null;
-    await flushBatch();
+    try {
+      await flushBatch();
+    } catch {
+      scheduleBatchFlush(state, flushBatch, timeoutMs);
+    }
   }, timeoutMs);
 }
 
@@ -101,7 +110,7 @@ async function executeBulkOperation(
     } catch (error) {
       span.setAttribute('es.bulk.error', true);
       logger.error({ error }, 'Bulk indexing failed');
-      state.pendingDocs.push(...docsToProcess);
+      state.pendingDocs.unshift(...docsToProcess);
       throw error;
     }
   });
@@ -153,7 +162,8 @@ function handleBulkResult(
   if (result.errors) {
     const errors = result.items.filter((item) => (item.index || item.delete)?.error);
     span.setAttribute('es.bulk.errors', errors.length);
-    logger.error({ errorCount: errors.length, errors }, 'Bulk indexing had errors');
+    logger.error({ errorCount: errors.length }, 'Bulk indexing had errors');
+    throw new Error(`Elasticsearch rejected ${errors.length} bulk operations`);
   } else {
     span.setAttribute('es.bulk.success', true);
     logger.debug({ count }, 'Bulk indexed');
