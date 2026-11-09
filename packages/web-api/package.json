@@ -29,7 +29,7 @@
     "dockerode": "^5.0.1",
     "feedsmith": "^2.9.0",
     "google-auth-library": "^11.1.0",
-    "hono": "^4.11.9",
+    "hono": "^4.13.16",
     "imapflow": "^2.2.5",
     "jsonwebtoken": "^9.0.3",
     "nano": "^11.0.4",
