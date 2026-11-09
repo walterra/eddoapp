@@ -27,7 +27,7 @@
     "@viz-js/viz": "^3.28.0",
     "bcryptjs": "^3.0.3",
     "dockerode": "^5.0.1",
-    "feedsmith": "^2.9.0",
+    "feedsmith": "^3.0.1",
     "google-auth-library": "^11.1.0",
     "hono": "^4.11.9",
     "imapflow": "^2.2.5",
